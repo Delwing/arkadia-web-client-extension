@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { Settings } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
 
@@ -21,6 +22,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
   const [labelVisible, setLabelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
   const [alwaysShowNote, setAlwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
+  const [showGrid, setShowGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -33,6 +35,12 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   useEffect(() => {
     eventBus.emit('mapAlwaysShowNote', alwaysShowNote);
   }, [alwaysShowNote]);
+
+  // Emit showGrid state on mount and when it changes
+  useEffect(() => {
+    Settings.gridEnabled = showGrid;
+    eventBus.emit('mapShowGrid', showGrid);
+  }, [showGrid]);
 
   const calculateDropdownPosition = useCallback(() => {
     if (toggleRef.current) {
@@ -238,6 +246,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [setAlwaysShowNote, closeMenu]);
 
+  const handleToggleGrid = useCallback(() => {
+    setShowGrid((prev) => !prev);
+    closeMenu();
+  }, [setShowGrid, closeMenu]);
+
   const handleCopyAsImage = useCallback(async () => {
     const mapContainer = document.getElementById('map');
     if (!mapContainer) return;
@@ -381,20 +394,22 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 Zmien poziom
               </button>
-              <button
-                type="button"
-                className="map-header-menu__item"
-                onClick={handleZoomIn}
-              >
-                Zbliz
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item"
-                onClick={handleZoomOut}
-              >
-                Oddal
-              </button>
+              <div className="map-header-menu__zoom-row">
+                <button
+                  type="button"
+                  className="map-header-menu__item"
+                  onClick={handleZoomIn}
+                >
+                  Zbliz
+                </button>
+                <button
+                  type="button"
+                  className="map-header-menu__item"
+                  onClick={handleZoomOut}
+                >
+                  Oddal
+                </button>
+              </div>
               <button
                 type="button"
                 className="map-header-menu__item"
@@ -424,6 +439,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 <span className={`map-header-menu__checkbox${alwaysShowNote ? ' map-header-menu__checkbox--checked' : ''}`} />
                 Notatka zawsze widoczna
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item map-header-menu__item--checkbox"
+                onClick={handleToggleGrid}
+              >
+                <span className={`map-header-menu__checkbox${showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
+                Siatka
               </button>
             </>
           )}

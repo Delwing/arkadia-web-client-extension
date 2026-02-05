@@ -2,6 +2,8 @@ type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-ov
 
 type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
 
+export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
+
 export interface FooterComponentConfig {
     id: string;
     visible: boolean;
@@ -59,6 +61,7 @@ export interface UiSettings {
     mapPlayerMarkerStrokeWidth: number;
     mapPlayerMarkerSizeFactor: number;
     mapPlayerMarkerDashEnabled: boolean;
+    mapRoomShape: MapRoomShape;
     objectContextMenuCommands: string[];
     footerComponents: FooterComponentConfig[];
     keepMultibindsVisible: boolean;
@@ -102,6 +105,7 @@ export const defaultUiSettings: UiSettings = {
     mapPlayerMarkerStrokeWidth: 0.1,
     mapPlayerMarkerSizeFactor: 1.7,
     mapPlayerMarkerDashEnabled: true,
+    mapRoomShape: 'rectangle',
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
     footerComponents: defaultFooterComponents,
     keepMultibindsVisible: false,

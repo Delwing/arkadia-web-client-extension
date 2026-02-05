@@ -839,6 +839,14 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   background-color: rgba(96, 165, 250, 0.25);
 }
 
+.map-header-menu__zoom-row {
+  display: flex;
+}
+
+.map-header-menu__zoom-row .map-header-menu__item {
+  flex: 1;
+}
+
 .map-header-menu__area-list {
   max-height: 300px;
   overflow-y: auto;

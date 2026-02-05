@@ -7,10 +7,10 @@ import { createElement } from "react";
 import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import { loadLayoutState, saveLayoutState, resetLayoutState } from "@web/layout";
-import { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig } from "./defaultUiSettings";
+import { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape } from "./defaultUiSettings";
 
 // Re-export for backwards compatibility
-export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig } from "./defaultUiSettings";
+export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape } from "./defaultUiSettings";
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -304,6 +304,7 @@ function apply(settings: UiSettings) {
     Settings.playerMarker.strokeWidth = settings.mapPlayerMarkerStrokeWidth;
     Settings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
     Settings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
+    Settings.roomShape = settings.mapRoomShape;
     embedded?.refresh();
     const payload: UiSettingsEventPayload = {
         mobileDirectionButtons: settings.showButtons,
@@ -407,6 +408,9 @@ async function load(): Promise<UiSettings> {
             const mapPlayerMarkerDashEnabled = typeof parsed.mapPlayerMarkerDashEnabled === 'boolean'
                 ? parsed.mapPlayerMarkerDashEnabled
                 : defaultUiSettings.mapPlayerMarkerDashEnabled;
+            const mapRoomShape = (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle')
+                ? parsed.mapRoomShape as MapRoomShape
+                : defaultUiSettings.mapRoomShape;
             const objectContextMenuCommands = Array.isArray(parsed.objectContextMenuCommands)
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
                 : defaultUiSettings.objectContextMenuCommands;
@@ -454,6 +458,7 @@ async function load(): Promise<UiSettings> {
                 mapPlayerMarkerStrokeWidth,
                 mapPlayerMarkerSizeFactor,
                 mapPlayerMarkerDashEnabled,
+                mapRoomShape,
                 objectContextMenuCommands,
                 footerComponents,
                 keepMultibindsVisible,
@@ -524,6 +529,7 @@ export default async function initUiSettings() {
     const mapPlayerMarkerSizeFactorInput = modalEl.querySelector('#ui-map-player-marker-size-factor') as HTMLInputElement;
     const mapPlayerMarkerSizeFactorValue = modalEl.querySelector('#ui-map-player-marker-size-factor-value') as HTMLSpanElement;
     const mapPlayerMarkerDashEnabledInput = modalEl.querySelector('#ui-map-player-marker-dash-enabled') as HTMLInputElement;
+    const mapRoomShapeInput = modalEl.querySelector('#ui-map-room-shape') as HTMLSelectElement;
     const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
     const objectContextMenuContainer = modalEl.querySelector('#ui-object-context-menu-container') as HTMLDivElement;
     const objectContextMenuInput = modalEl.querySelector('#ui-object-context-menu-input') as HTMLInputElement;
@@ -821,6 +827,7 @@ export default async function initUiSettings() {
         mapPlayerMarkerSizeFactorInput.value = String(settings.mapPlayerMarkerSizeFactor);
         mapPlayerMarkerSizeFactorValue.textContent = String(settings.mapPlayerMarkerSizeFactor);
         mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
+        mapRoomShapeInput.value = settings.mapRoomShape;
         objectContextMenuCommands = [...settings.objectContextMenuCommands];
         renderObjectContextMenuCommands();
         footerComponentsConfig = [...settings.footerComponents];
@@ -998,6 +1005,7 @@ export default async function initUiSettings() {
         // Get current values
         const roomSize = parseFloat(mapRoomSizeInput.value);
         const lineWidth = parseFloat(mapLineWidthInput.value);
+        const roomShape = mapRoomShapeInput.value as MapRoomShape;
         const strokeColor = mapPlayerMarkerStrokeColorInput.value;
         const fillColor = mapPlayerMarkerFillColorInput.value;
         const strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
@@ -1013,15 +1021,39 @@ export default async function initUiSettings() {
         const centerX = width / 2;
         const centerY = height / 2;
 
-        // Draw sample room (square)
+        // Draw sample room based on shape
         ctx.strokeStyle = '#888';
         ctx.lineWidth = scaledLineWidth;
-        ctx.strokeRect(
-            centerX - scaledRoomSize / 2,
-            centerY - scaledRoomSize / 2,
-            scaledRoomSize,
-            scaledRoomSize
-        );
+
+        if (roomShape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, scaledRoomSize / 2, 0, Math.PI * 2);
+            ctx.stroke();
+        } else if (roomShape === 'roundedRectangle') {
+            const radius = scaledRoomSize * 0.2; // 20% corner radius
+            const x = centerX - scaledRoomSize / 2;
+            const y = centerY - scaledRoomSize / 2;
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + scaledRoomSize - radius, y);
+            ctx.quadraticCurveTo(x + scaledRoomSize, y, x + scaledRoomSize, y + radius);
+            ctx.lineTo(x + scaledRoomSize, y + scaledRoomSize - radius);
+            ctx.quadraticCurveTo(x + scaledRoomSize, y + scaledRoomSize, x + scaledRoomSize - radius, y + scaledRoomSize);
+            ctx.lineTo(x + radius, y + scaledRoomSize);
+            ctx.quadraticCurveTo(x, y + scaledRoomSize, x, y + scaledRoomSize - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.stroke();
+        } else {
+            // rectangle (default)
+            ctx.strokeRect(
+                centerX - scaledRoomSize / 2,
+                centerY - scaledRoomSize / 2,
+                scaledRoomSize,
+                scaledRoomSize
+            );
+        }
 
         // Draw player marker (circle)
         const markerRadius = (scaledRoomSize / 2) * sizeFactor;
@@ -1096,6 +1128,12 @@ export default async function initUiSettings() {
 
     mapPlayerMarkerDashEnabledInput.addEventListener('change', () => {
         Settings.playerMarker.dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
+        drawPreview();
+    });
+
+    mapRoomShapeInput.addEventListener('change', () => {
+        Settings.roomShape = mapRoomShapeInput.value as MapRoomShape;
+        refreshEmbeddedMap();
         drawPreview();
     });
 
@@ -1201,6 +1239,9 @@ export default async function initUiSettings() {
             mapPlayerMarkerStrokeWidth: parseFloat(mapPlayerMarkerStrokeWidthInput.value) || defaultUiSettings.mapPlayerMarkerStrokeWidth,
             mapPlayerMarkerSizeFactor: parseFloat(mapPlayerMarkerSizeFactorInput.value) || defaultUiSettings.mapPlayerMarkerSizeFactor,
             mapPlayerMarkerDashEnabled: mapPlayerMarkerDashEnabledInput.checked,
+            mapRoomShape: (mapRoomShapeInput.value === 'rectangle' || mapRoomShapeInput.value === 'circle' || mapRoomShapeInput.value === 'roundedRectangle')
+                ? mapRoomShapeInput.value as MapRoomShape
+                : defaultUiSettings.mapRoomShape,
             objectContextMenuCommands: [...objectContextMenuCommands],
             footerComponents: [...footerComponentsConfig],
             commandEcho: commandEchoInput.checked,
@@ -1282,6 +1323,7 @@ export default async function initUiSettings() {
         Settings.playerMarker.strokeWidth = current.mapPlayerMarkerStrokeWidth;
         Settings.playerMarker.sizeFactor = current.mapPlayerMarkerSizeFactor;
         Settings.playerMarker.dashEnabled = current.mapPlayerMarkerDashEnabled;
+        Settings.roomShape = current.mapRoomShape;
         refreshEmbeddedMap();
     });
 

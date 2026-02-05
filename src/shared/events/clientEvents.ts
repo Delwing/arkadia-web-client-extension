@@ -257,6 +257,7 @@ export interface KnownEvents {
     "map.showPath": { toRoomId: number };
     "mapLabelVisibility": boolean;
     "mapAlwaysShowNote": boolean;
+    "mapShowGrid": boolean;
     "objectListViewMode": "list" | "card" | "compact" | "compact-dots";
     "objectListDemo.popup.open": void;
     "layoutManagerStateChanged": { type?: 'import' } | void;

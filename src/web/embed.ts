@@ -138,6 +138,7 @@ export class EmbeddedMap {
         Settings.transparentLabels = transparentLabels;
         Settings.labelRenderMode = labelRenderMode;
         Settings.playerMarker.dash = [0.05, 0.05]
+        Settings.gridColor = 'rgba(255, 255, 255, 0.12)';
 
         // Initialize map rendering settings from storage
         try {
@@ -170,6 +171,9 @@ export class EmbeddedMap {
                 }
                 if (typeof parsed.mapPlayerMarkerDashEnabled === 'boolean') {
                     Settings.playerMarker.dashEnabled = parsed.mapPlayerMarkerDashEnabled;
+                }
+                if (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle') {
+                    Settings.roomShape = parsed.mapRoomShape;
                 }
             }
         } catch {
@@ -218,6 +222,11 @@ export class EmbeddedMap {
             }
             this.renderer.centerOn(data.roomId);
             this.updatePlayerMarker();
+        });
+
+        eventBus.on('mapShowGrid', (value: boolean) => {
+            Settings.gridEnabled = value;
+            this.refreshRender();
         });
 
         eventBus.on('map.setLocation', (data: { roomId: number }) => {

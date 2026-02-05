@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Renderer, RoomContextMenuEventDetail } from 'mudlet-map-renderer';
+import { Renderer, Settings, RoomContextMenuEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getClientInstance } from '@shared/runtime';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
-import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 
 interface StaticMapInstance {
     id: string;
@@ -22,6 +22,7 @@ interface StaticMapState {
     titleRoomId: number | null;
     titleAreaName: string;
     followPlayer: boolean;
+    showGrid: boolean;
 }
 
 type SubmenuType = 'none' | 'areas' | 'levels';
@@ -309,6 +310,16 @@ function StaticMapMenu({
         closeMenu();
     }, [setState, closeMenu]);
 
+    const handleToggleGrid = useCallback(() => {
+        const newValue = !state.showGrid;
+        Settings.gridEnabled = newValue;
+        setBuiltInPanelSetting('map', 'showGrid', newValue);
+        eventBus.emit('mapShowGrid', newValue);
+        rendererRef.current?.refresh();
+        setState(s => ({ ...s, showGrid: newValue }));
+        closeMenu();
+    }, [state.showGrid, rendererRef, setState, closeMenu]);
+
     return (
         <div ref={menuRef} className="map-header-menu">
             <button
@@ -362,8 +373,10 @@ function StaticMapMenu({
                         <>
                             <button type="button" className="map-header-menu__item" onClick={handleShowAreas}>Zmien obszar</button>
                             <button type="button" className="map-header-menu__item" onClick={handleShowLevels} disabled={state.viewedAreaId === null}>Zmien poziom</button>
-                            <button type="button" className="map-header-menu__item" onClick={handleZoomIn}>Zbliz</button>
-                            <button type="button" className="map-header-menu__item" onClick={handleZoomOut}>Oddal</button>
+                            <div className="map-header-menu__zoom-row">
+                                <button type="button" className="map-header-menu__item" onClick={handleZoomIn}>Zbliz</button>
+                                <button type="button" className="map-header-menu__item" onClick={handleZoomOut}>Oddal</button>
+                            </div>
                             <button type="button" className="map-header-menu__item" onClick={handleCenterOnPlayer}>Idz do gracza</button>
                             <button
                                 type="button"
@@ -372,6 +385,14 @@ function StaticMapMenu({
                             >
                                 <span className={`map-header-menu__checkbox${state.followPlayer ? ' map-header-menu__checkbox--checked' : ''}`} />
                                 Sledz gracza
+                            </button>
+                            <button
+                                type="button"
+                                className="map-header-menu__item map-header-menu__item--checkbox"
+                                onClick={handleToggleGrid}
+                            >
+                                <span className={`map-header-menu__checkbox${state.showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
+                                Siatka
                             </button>
                         </>
                     )}
@@ -398,6 +419,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         titleRoomId: null,
         titleAreaName: '',
         followPlayer: false,
+        showGrid: Settings.gridEnabled,
     });
     const [note, setNote] = useState<LocationNote | null>(null);
     const [mapNote, setMapNote] = useState<string | null>(null);
@@ -465,6 +487,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let contextMenuHandler: ((ev: Event) => void) | null = null;
         let zoomHandler: (() => void) | null = null;
         let settingsHandler: (() => void) | null = null;
+        let gridHandler: ((value: boolean) => void) | null = null;
 
         const initTimeout = requestAnimationFrame(() => {
             if (!parentContainer) return;
@@ -679,10 +702,19 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 });
             };
 
+            gridHandler = (value: boolean) => {
+                const renderer = rendererRef.current;
+                if (!renderer) return;
+                Settings.gridEnabled = value;
+                renderer.refresh();
+                setState(s => ({ ...s, showGrid: value }));
+            };
+
             eventBus.on('mapPath', pathHandler);
             eventBus.on('mapHighlights', highlightHandler);
             eventBus.on('enterLocation', moveHandler);
             eventBus.on('uiSettings', settingsHandler);
+            eventBus.on('mapShowGrid', gridHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
             container.addEventListener('zoom', zoomHandler);
 
@@ -704,6 +736,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (highlightHandler) eventBus.off('mapHighlights', highlightHandler);
             if (moveHandler) eventBus.off('enterLocation', moveHandler);
             if (settingsHandler) eventBus.off('uiSettings', settingsHandler);
+            if (gridHandler) eventBus.off('mapShowGrid', gridHandler);
             if (container && contextMenuHandler) {
                 container.removeEventListener('roomcontextmenu', contextMenuHandler);
             }
