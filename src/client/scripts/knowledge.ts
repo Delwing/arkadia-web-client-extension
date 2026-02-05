@@ -801,7 +801,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     let reportUpdateTimer: ReturnType<typeof setTimeout> | undefined;
 
     function scheduleReportUpdate() {
-        if (reportUpdateTimer != null) return;
+        // Debounce: cancel previous timer and schedule a new one
+        // This ensures we emit the report only once after all updates settle
+        if (reportUpdateTimer != null) {
+            clearTimeout(reportUpdateTimer);
+        }
         reportUpdateTimer = setTimeout(() => {
             reportUpdateTimer = undefined;
             if (!knowledgeDetailsSnapshot) return;
@@ -814,7 +818,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             if (payload) {
                 client.sendEvent('knowledgeDetailsReport', payload);
             }
-        }, 0);
+        }, 50);
     }
 
     function markKnowledgeEntryKnown(

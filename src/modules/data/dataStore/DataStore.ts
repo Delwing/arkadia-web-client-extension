@@ -34,6 +34,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
   private initializationPromise: Promise<void> | null = null;
   private activeRefresh: Promise<TSnapshot | undefined> | null = null;
   private pendingProgressListeners: ProgressListener[] | null = null;
+  private snapshotVersion = 0;
   private readonly progressDispatcher: ProgressListener = (progress, loaded, total) => {
     if (!this.pendingProgressListeners) {
       return;
@@ -107,6 +108,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     await this.ensureInitialized();
     const nextSnapshot = mutator(this.currentSnapshot);
     this.currentSnapshot = nextSnapshot;
+    this.snapshotVersion++;
     await this.storage.writeSnapshot(this.currentSnapshot);
     this.emitter.emit(this.currentSnapshot);
     return nextSnapshot;
@@ -150,6 +152,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
 
   private async performRefresh(force: boolean): Promise<TSnapshot | undefined> {
     const onProgress = this.pendingProgressListeners ? this.progressDispatcher : undefined;
+    const versionAtStart = this.snapshotVersion;
 
     const result = await this.loader.load({
       previousSnapshot: this.currentSnapshot,
@@ -157,6 +160,18 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
       force,
       onProgress,
     });
+
+    // If local changes happened during refresh, don't overwrite with stale data
+    if (this.snapshotVersion !== versionAtStart) {
+      this.currentMetadata = {
+        ...(this.currentMetadata ?? {}),
+        refreshedAt: this.clock(),
+        ...(result.metadata ?? {}),
+      } as TMeta;
+      await this.storage.writeMetadata(this.currentMetadata);
+      onProgress?.(100);
+      return this.currentSnapshot;
+    }
 
     this.currentSnapshot = result.snapshot;
     this.currentMetadata = {
