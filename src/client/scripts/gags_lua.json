@@ -1609,11 +1609,39 @@
                             "type": 1
                           },
                           {
-                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) naglym kopniakiem podcina (?<where_target>.+?) przewracajac (?:go|ja) na ziemie\\. Stajac okrakiem nad przeciwnikiem wznosi swoj (?<weapon>zielonkawy bretonski mlot) nad glowe i poteznym ciosem (?<damage>miazdzy) ",
+                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) naglym (?<damage>kopniakiem) podcina (?<where_target>.+?) przewracajac (?:go|ja) na ziemie\\. Stajac okrakiem nad przeciwnikiem wznosi swoj (?<weapon>zielonkawy bretonski mlot) nad glowe i poteznym ciosem miazdzy ",
                             "type": 1
                           },
                           {
                             "pattern": "^Kolczasta glowica (?<weapon>zielonkawego bretonskiego mlota) (?<attacker>\\w+(?: \\w+){0,4}) z pelnego rozpedu trafia (?<target>\\w+(?: \\w+){0,4}) w (?<where>.+?)\\. Slyszysz nieprzyjemne chrupniecie gdy cios dosiega celu (?<damage>miazdzac) okoliczne kosci\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Rozpedzona glowica twojego (?<weapon>zielonkawego bretonskiego mlota) pechowo (?<damage>mija) .+? o wlos\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Glowica (?<weapon>zielonkawego bretonskiego mlota) zahaczasz (?<where_target>.+?) pozostawiajac na je(?:go|j) ciele (?<damage>niewielkie) zasinienie\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Wykonujac zamaszysty cios swoim (?<weapon>zielonkawym bretonskim mlotem) (?<damage>tlucze)sz (?<where_target>.+?) pozostawiajac paskudna rane\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Sciskajac mocno trzonek (?<weapon>zielonkawego bretonskiego mlota) i celujac w (?<where_target>.+?) tluczesz (?:go|ja) (?<damage>raniac) dotkliwie\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Kolczasta glowica twojego (?<weapon>zielonkawego bretonskiego mlota) z pelnego rozpedu trafia .+? i z nieprzyjemnym chrupnieciem (?<damage>miazdzy) ",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Z zacieciem przeprowadzasz atak na .+? (?<weapon>zielonkawym bretonskim mlotem)\\. .+?(?<damage>fontanne) gestej, sinawej krwi\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Naglym (?<damage>kopnieciem) podcinasz nogi .+?\\. Stajac okrakiem nad przeciwnikiem wznosisz swoj (?<weapon>zielonkawy bretonski mlot) nad glowe i poteznym ciosem miazdzysz",
                             "type": 1
                           }
                         ],
@@ -2229,6 +2257,34 @@
                           },
                           {
                             "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) blyskawicznie kontruje atak (?<target>\\w+(?: \\w+){0,4}), (?<damage>tnac) (?:go|ja) w (?<where>.+?) waskim kunsztownym sihillem\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Wykonujesz zamaszysty cios .+? tuz (?<damage>obok) (?<target>.+)\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Niezbyt czysto trafiasz (?<target>.+) waskim kunsztownym sihillem, pozostawiajac na (?:jego|jej) ciele zaledwie (?<damage>nieznaczne) drasniecie\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Wykonujesz oszczedne (?:ciecie|pchniecie), (?<damage>lekko raniac) (?<target>.+) w (?:.+) koncowka waskiego kunsztownego sihilla\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Blyskawicznie (?<damage>kontrujesz) atak (?<target>.+), (?:dzgajac|tnac) (?:go|ja) w (?:.+) waskim kunsztownym sihillem\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Precyzyjnym i mocnym sztychem waskiego kunsztownego sihilla dosiegasz (?:.+) (?<target>.+), (?<damage>gleboko) (?:go|ja) raniac\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Atakujesz waskim kunsztownym sihillem z niemozliwie wygietego przegubu dloni, zadajac zaskoczon(?:emu|ej) (?<target>.+) (?<damage>ogromne) obrazenia\\.$",
+                            "type": 1
+                          },
+                          {
+                            "pattern": "^Zgrabnym ruchem zwodzisz (?<target>.+) i .+? wbijasz w (?:jego|jej) cialo (?<damage>smiertelne) ostrze waskiego kunsztownego sihilla\\.$",
                             "type": 1
                           }
                         ],
@@ -3173,7 +3229,7 @@
                             "name": "kosa_4",
                             "patterns": [
                               {
-                                "pattern": "raniac",
+                                "pattern": "bojowa, raniac",
                                 "type": 0
                               }
                             ],
@@ -9111,6 +9167,10 @@
                   {
                     "pattern": " poteznym ciosem ogona oglusza cie.",
                     "type": 0
+                  },
+                  {
+                    "pattern": "^.+ trafia cie kopytem w glowe z taka sila, ze robi ci sie ciemno przed oczami\\.$",
+                    "type": 1
                   }
                 ],
                 "script": "trigger_func_skrypty_ui_gags_color_color_ogluchy_ogluch()"
@@ -9218,6 +9278,10 @@
                   },
                   {
                     "pattern": "^(?:Saurgl|Posepny okrutny rycerz chaosu) pochyla glowe i szarzuje, by uderzyc ([ a-zA-Z]+) dlugimi, ostro zakonczonymi rogami wyrastajacymi mu spod czarnego helmu\\. Potezny cios odrzuca ofiare i wyrywa jej oddech z piersi\\.$",
+                    "type": 1
+                  },
+                  {
+                    "pattern": "^.+ trafia ([ a-zA-Z]+) kopytem w glowe z taka sila, ze ofiara zaczyna chwiac sie na nogach polprzytomnie\\.$",
                     "type": 1
                   }
                 ],
@@ -9409,7 +9473,7 @@
                 "name": "wycofanie-za-ciebie",
                 "patterns": [
                   {
-                    "pattern": "^[ >]*.* unosi swoja .* i szybko przesuwa sie za ciebie, kryjac.*",
+                    "pattern": "^[ >]*.* (unosi|zastawia sie) swoja .* i szybko przesuwa sie za ciebie, kryjac.*",
                     "type": 1
                   }
                 ],
@@ -9429,7 +9493,7 @@
                 "name": "wycofanie-kogos",
                 "patterns": [
                   {
-                    "pattern": "(?:unosi swoja .+? i |)szybko przesuwa sie za (?!ciebie).+?, (?:kryjac sie przed atakami .+?|uciekajac przed twoimi ciosami)\\.$",
+                    "pattern": "(?:(?:unosi|zastawia sie) swoja .+? i |)szybko przesuwa sie za (?!ciebie).+?, (?:kryjac sie przed atakami .+?|uciekajac przed twoimi ciosami)\\.$",
                     "type": 1
                   }
                 ],

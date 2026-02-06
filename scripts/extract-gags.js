@@ -24,6 +24,23 @@ const FILTERED_SCRIPTS = [
     'trigger_func_skrypty_ui_gags_color_color_other_zabil_color',
 ];
 
+async function listFilesRecursive(apiUrl, relativePath = '') {
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error(`Failed to list directory: ${response.status}`);
+    const entries = await response.json();
+    const files = [];
+    for (const entry of entries) {
+        const entryRelPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+        if (entry.type === 'dir') {
+            const subFiles = await listFilesRecursive(entry.url, entryRelPath);
+            files.push(...subFiles);
+        } else if (entry.name.endsWith('.lua')) {
+            files.push({ ...entry, relativePath: entryRelPath });
+        }
+    }
+    return files;
+}
+
 async function downloadFile(url, destPath, normalizeLineEndings = false) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to download ${url}: ${response.status}`);
@@ -161,19 +178,16 @@ async function main() {
                     title: 'Fetch lua file list',
                     task: async (ctx) => {
                         const colorGagsUrl = `${GITHUB_API_BASE}/skrypty/ui/gags/color`;
-                        const response = await fetch(colorGagsUrl);
-                        if (!response.ok) throw new Error(`Failed to list directory: ${response.status}`);
-                        const files = await response.json();
-                        ctx.luaFiles = files.filter(f => f.name.endsWith('.lua'));
+                        ctx.luaFiles = await listFilesRecursive(colorGagsUrl);
                     }
                 },
                 {
                     title: 'Download lua files',
                     task: (ctx, task) => task.newListr(
                         ctx.luaFiles.map(file => ({
-                            title: file.name,
+                            title: file.relativePath,
                             task: async () => {
-                                const destPath = path.join(rootDir, 'src', 'client', 'lua', file.name);
+                                const destPath = path.join(rootDir, 'src', 'client', 'lua', ...file.relativePath.split('/'));
                                 await downloadFile(file.download_url, destPath, true);
                             }
                         })),
