@@ -2284,7 +2284,7 @@
                             "type": 1
                           },
                           {
-                            "pattern": "^Zgrabnym ruchem zwodzisz (?<target>.+) i .+? wbijasz w (?:jego|jej) cialo (?<damage>smiertelne) ostrze waskiego kunsztownego sihilla\\.$",
+                            "pattern": "^Zgrabnym ruchem zwodzisz (?<target>.+) i .+? wbijasz w (?:jego|jej) cialo (?<damage>smiertelne) ostrze waskiego kunsztownego sihilla\\.",
                             "type": 1
                           }
                         ],
