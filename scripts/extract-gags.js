@@ -24,6 +24,31 @@ const FILTERED_SCRIPTS = [
     'trigger_func_skrypty_ui_gags_color_color_other_zabil_color',
 ];
 
+// Fixes for upstream lua files that need patching after download.
+// Each entry specifies an upstream line to find and what to replace it with.
+// If the upstream line is not found (and the fix isn't already applied), the script
+// will emit a loud warning — the upstream source has changed and the fix needs review.
+const LUA_FIXES = [
+    {
+        file: 'color_innych_spece/bar/ktos_spec.lua',
+        description: 'Remove matches["stun"] guard before string.len()',
+        upstream: '    if matches["stun"] and string.len(matches["stun"]) > 0 then',
+        fixed: '    if string.len(matches["stun"]) > 0 then',
+    },
+    {
+        file: 'color_innych_spece/str.lua',
+        description: 'Replace 1 with true in dmg:find() — lua-in-js bug was fixed',
+        upstream: '    elseif dmg:find("lecz impet uderzenia", 1, 1) then value = 0',
+        fixed: '    elseif dmg:find("lecz impet uderzenia", 1, true) then value = 0',
+    },
+    {
+        file: 'color_moje_spece/bar.lua',
+        description: 'Remove matches["stun"] guard before string.len()',
+        upstream: '    if matches["stun"] and string.len(matches["stun"]) > 0 then',
+        fixed: '    if string.len(matches["stun"]) > 0 then',
+    },
+];
+
 async function listFilesRecursive(apiUrl, relativePath = '') {
     const response = await fetch(apiUrl);
     if (!response.ok) throw new Error(`Failed to list directory: ${response.status}`);
@@ -195,6 +220,35 @@ async function main() {
                     )
                 }
             ], { concurrent: false })
+        },
+        {
+            title: 'Apply lua fixes',
+            enabled: () => downloadFlag,
+            task: (ctx, task) => {
+                const warnings = [];
+                for (const fix of LUA_FIXES) {
+                    const filePath = path.join(rootDir, 'src', 'client', 'lua', ...fix.file.split('/'));
+                    const content = fs.readFileSync(filePath, 'utf8');
+                    if (content.includes(fix.upstream)) {
+                        const patched = content.replace(fix.upstream, fix.fixed);
+                        fs.writeFileSync(filePath, patched, 'utf8');
+                    } else if (content.includes(fix.fixed)) {
+                        // Already patched, nothing to do
+                    } else {
+                        warnings.push(fix);
+                    }
+                }
+                if (warnings.length) {
+                    const msg = warnings.map(w =>
+                        `\n  !!!  ${w.file}: ${w.description}\n  !!!  Expected upstream line: ${w.upstream}`
+                    ).join('');
+                    throw new Error(
+                        `\n\n${'!'.repeat(72)}\n` +
+                        `!!!  UPSTREAM LUA SOURCE HAS CHANGED — fixes need review!${msg}\n` +
+                        `${'!'.repeat(72)}\n`
+                    );
+                }
+            }
         },
         {
             title: 'Setup paths',

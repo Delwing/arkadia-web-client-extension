@@ -197,12 +197,12 @@ export class EmbeddedMap {
 
         eventBus.on('mapPath', (data: { segments: Array<{ path: number[]; color: string }> } | null) => {
             this.currentPath = data;
-            this.refresh();
+            this.renderCurrentPathAndHighlights();
         });
 
         eventBus.on('mapHighlights', (data: { roomId: number; color: string }[]) => {
             this.currentHighlights = data;
-            this.refresh();
+            this.renderCurrentPathAndHighlights();
         });
         // Request current highlights and path in case they were created before map loaded
         eventBus.emit('requestMapHighlights');
