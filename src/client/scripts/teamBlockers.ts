@@ -43,7 +43,7 @@ export default function initTeamBlockers(client: Client) {
 
     // Register blockers from blockers.json
     blockers.forEach(blocker => {
-        const blockerPattern = blocker.type === "0" ? blocker.pattern : new RegExp(blocker.pattern);
+        const blockerPattern = blocker.type === "1" ? new RegExp(blocker.pattern) : blocker.pattern;
         client.Triggers.registerTrigger(blockerPattern, handler, 'blocker');
     });
 }
