@@ -2509,7 +2509,7 @@
     "id": 1163,
     "Domena": "Ishtar",
     "lokalizacja": "Wyzima",
-    "note": "Musisz wziac quest w palacu ksiecia w wyzimie, dostaniesz lancuchy, ktorymi musisz utrzymac strzyge do switu na zewnatrz nim klatwa nie pusci i nie zmieni sie ponownie w dziewczynke.Pod murami SW od miasta jest rezydencja gdzie strzyga przebywa"
+    "note": "Musisz udac sie w palacowego maga ksiecia pod wyzima.Idz do maga zapytaj \"o specyfiki\" zaplac 20 zk, przeloguj i powtorz.Zbierz ze 3-4 lancuchy. Pod murami SW od miasta jest rezydencja gdzie strzyga przebywa(na polnocy jest przejscie ktore omija straz \"wyrwij deske\"). Sprawdz kiedy jest swit, musisz ja spetac przed switem i utrzymac do 3h po swicie. \"zarzuc lancuch na strzyge\" jak sie zerwie zarzuc kolejny. Musisz byc na dziedzincu przy bramie a nie przypadkiem w samej rezydencji.(id:1163). Jak znajdziesz ja to cie zaatakuje i bedzie cie gonic wiec wyprowadzenie jej nie jest problemem."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3354,10 +3354,10 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Doswiadczyles uzdrowicielskiej mocy wod z kotliny Col Serrai",
-    "id": 19727,
+    "id": 25212,
     "Domena": "Ishtar",
     "lokalizacja": "Zachodnia Temeria - Brokilon",
-    "note": "Trzeba zanurzyc sie bez niczego w wodach."
+    "note": "Zdejmij doslownie wszystko z postaci co tylko mozesz i odloz lub podaj komus nim usiadziesz a nastepnie \"usiadz w niecce\" potem \"wstan\""
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -5586,7 +5586,7 @@
   {
     "Rodzaj": "Wiedza o starszych rasach",
     "Wiedza": "Ogladales bursztynowy driadzi sztylet",
-    "id": 18725,
+    "id": 19725,
     "Domena": "Ishtar",
     "lokalizacja": "Zachodnia Temeria - Brokilon",
     "note": "Bursztynowy plomienisty sztylet. Posiadaja go Driady w Brokilonie.Zabij wyjmij z ciala, czasem sie trafi w jakis kufrze na terenie Ishtar."
@@ -6477,7 +6477,7 @@
     "id": 3545,
     "Domena": "Ishtar",
     "lokalizacja": "Event - Trakty Ishtar",
-    "note": "Zamknieta elegancka rzezbiona skrzynia i przewrocona zniszczona bryczka.Przerosniety przygarbiony nietoperz \"ob nietoperza\""
+    "note": "Zamknieta elegancka rzezbiona skrzynia i przewrocona zniszczona bryczka.Przerosniety przygarbiony nietoperz \"ob nietoperza\" \"ob bryczke;ob truchlo\""
   },
   {
     "Rodzaj": "Wiedza o stworach pokoniunkcyjnych",
@@ -6581,7 +6581,7 @@
     "id": 19780,
     "Domena": "Ishtar",
     "lokalizacja": "Poludniowe Keadwen - Shaerweed/Lasy i Gory w domenie Ishtar",
-    "note": "Zwykla zlamana galaz. \"ob glaz\""
+    "note": "Zwykla zlamana galaz. \"ob galaz\""
   },
   {
     "Rodzaj": "Wiedza o stworach pokoniunkcyjnych",
