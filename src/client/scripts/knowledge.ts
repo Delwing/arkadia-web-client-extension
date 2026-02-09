@@ -1149,6 +1149,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         scheduleReportUpdate();
+        refreshKnowledgeHintsIfNeeded();
 
         if (!pendingGenderUpdate || !knowledgeDetailsSnapshot) {
             if (knowledgeDetailsSnapshot && pendingGenderUpdate) {
