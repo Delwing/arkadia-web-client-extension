@@ -17,7 +17,7 @@ end
 function trigger_func_skrypty_ui_gags_color_color_moje_spece_bar_ja_spec()
     local value = get_barb_damage_value(matches["damage"])
     scripts.gags:gag_own_spec(value, 6)
-    if matches["stun"] and string.len(matches["stun"]) > 0 then
+    if string.len(matches["stun"]) > 0 then
         trigger_func_skrypty_ui_gags_color_color_moje_spece_bar_ja_spec_ja_ogluch()
     end
 end
