@@ -211,9 +211,21 @@ describe('object aliases', () => {
 
   test('/puszczaj toggles release flag', () => {
     toggle();
-    expect(client.print).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining('OFF') }));
+    expect(client.print).toHaveBeenCalledWith(
+      expect.objectContaining({
+        segments: expect.arrayContaining([
+          expect.objectContaining({ text: expect.stringContaining('nie puszczam') }),
+        ]),
+      }),
+    );
     toggle();
-    expect(client.print).toHaveBeenCalledWith(expect.objectContaining({ text: expect.stringContaining('ON') }));
+    expect(client.print).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        segments: expect.arrayContaining([
+          expect.objectContaining({ text: 'Puszczanie zaslon: puszczam' }),
+        ]),
+      }),
+    );
   });
 
   test('/zas alias with release first guards then releases', () => {
