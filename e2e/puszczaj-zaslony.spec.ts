@@ -12,19 +12,19 @@ test.describe('Puszczaj zaslony', () => {
         // First toggle: should turn OFF (initial state is ON)
         await submitCommand(page, '/puszczaj');
         await expect(output, 'should display OFF state after first toggle').toContainText(
-            'Puszczanie zaslon: OFF'
+            'Puszczanie zaslon: nie puszczam'
         );
 
         // Second toggle: should turn back ON
         await submitCommand(page, '/puszczaj');
         await expect(output, 'should display ON state after second toggle').toContainText(
-            'Puszczanie zaslon: ON'
+            'Puszczanie zaslon: puszczam'
         );
 
         // Third toggle: should turn OFF again
         await submitCommand(page, '/puszczaj');
         await expect(output, 'should display OFF state after third toggle').toContainText(
-            'Puszczanie zaslon: OFF'
+            'Puszczanie zaslon: nie puszczam'
         );
     });
 });

@@ -195,7 +195,7 @@ export default function initObjectAliases(
             callback: () => {
                 releaseGuard = !releaseGuard;
                 const color = releaseGuard ? ON_COLOR : OFF_COLOR;
-                const state = releaseGuard ? 'ON' : 'OFF';
+                const state = releaseGuard ? 'puszczam' : 'nie puszczam';
                 client.print(colorString(`Puszczanie zaslon: ${state}`, color));
                 client.sendEvent('releaseGuard', releaseGuard);
             }
