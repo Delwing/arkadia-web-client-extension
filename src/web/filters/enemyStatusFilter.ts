@@ -92,7 +92,7 @@ function updateBestMatches(objects: Map<number, { desc?: string }>) {
             if (!status.paralyzed && !status.brokenDefense) continue;
 
             const score = calculateWordListScore(desc, name);
-            if (score > MIN_FUZZY_THRESHOLD && score > status.bestMatchScore) {
+            if (score > status.bestMatchScore) {
                 status.bestMatchScore = score;
                 status.bestMatchObjectNum = num;
             }
