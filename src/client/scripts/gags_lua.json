@@ -5033,16 +5033,6 @@
                 ],
                 "triggers": [
                   {
-                    "name": "ja_chybia",
-                    "patterns": [
-                      {
-                        "pattern": "^Probujesz .*, jednak twoja bron nieznacznie chybia celu\\.$",
-                        "type": 1
-                      }
-                    ],
-                    "script": "trigger_func_skrypty_ui_gags_color_moje_ciosy(0)"
-                  },
-                  {
                     "name": "ja_ledwo_muska",
                     "patterns": [
                       {
@@ -6289,7 +6279,7 @@
                         "name": "ja_spec_0",
                         "patterns": [
                           {
-                            "pattern": "^[ >]Probujesz dosiegnac * jednak twoja bron nieznacznie chybia celu\\.$",
+                            "pattern": "^[ >]*Probujesz dosiegnac * jednak twoja bron nieznacznie chybia celu\\.$",
                             "type": 1
                           }
                         ],
