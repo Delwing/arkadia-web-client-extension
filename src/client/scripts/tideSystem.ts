@@ -59,7 +59,7 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
     // Player is in tide area during high tide - activate; no "gore" = surface, "gore" = bottom
     client.Triggers.registerTrigger(
         /^[ >]*Mozesz stad poplynac na /,
-        (line, matches, type, originalLine) => {
+        (line, _matches, _type, originalLine) => {
             if (!isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
                 isHighTide = true;
                 activate(client);
@@ -77,6 +77,16 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
     ],
         (line) => {
             if (isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
+                isHighTide = false;
+                deactivate(client);
+            }
+            return line;
+        }, tag);
+
+    // No "Mozesz poplynac" in exits while in tide area = tide is off
+    client.Triggers.registerTrigger(/./,
+        (line, _matches, type, originalLine) => {
+            if (type === "room.exits" && isHighTide && client.Map.tryGetMapReader() && isInTideArea(client) && !originalLine.includes("Mozesz poplynac")) {
                 isHighTide = false;
                 deactivate(client);
             }
