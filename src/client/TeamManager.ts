@@ -229,7 +229,7 @@ export default class TeamManager {
         }, tag);
         triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (line, matches) => {
             this.clearTeam();
-            const leader = matches?.groups?.leader?.trim();
+            const leader = matches?.groups?.leader?.trim().replace(/^\[|]$/g, '');
             if (leader) {
                 this.leader = leader;
                 this.addMember(leader);
@@ -250,7 +250,7 @@ export default class TeamManager {
     }
 
     private parseNames(list: string): string[] {
-        return list.split(/,| i /).map(s => s.trim()).filter(Boolean);
+        return list.split(/,| i /).map(s => s.trim().replace(/^\[|]$/g, '')).filter(Boolean);
     }
 
     private addMember(name: string) {

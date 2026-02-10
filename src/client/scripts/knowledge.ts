@@ -2038,18 +2038,21 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         knowledgeHintsHideCompleted = hideCompleted;
         knowledgeHintsHighlighter = client.Map.createHighlighter({color: '#FF9F43'});
 
-        const knownEntries = hideCompleted ? buildKnownEntriesSet() : null;
+        const knownEntries = buildKnownEntriesSet();
         const roomIds: number[] = [];
         const notesByRoom = new Map<number, string[]>();
         for (const entry of knowledgeData as KnowledgeJsonEntry[]) {
             if (entry.id == null) continue;
-            if (knownEntries && knownEntries.has(normalizeKnowledgeLookupKey(entry.Wiedza))) continue;
-            roomIds.push(entry.id);
+            const isKnown = knownEntries.has(normalizeKnowledgeLookupKey(entry.Wiedza));
+            if (!isKnown) {
+                roomIds.push(entry.id);
+            }
             const parts: string[] = [];
             if (entry.lokalizacja) parts.push(entry.lokalizacja);
             if (entry.note) parts.push(entry.note);
             if (parts.length > 0) {
-                const line = `[${entry.Rodzaj}] ${entry.Wiedza}\n${parts.join(' — ')}`;
+                const prefix = isKnown ? '\u2713 ' : '';
+                const line = `${prefix}[${entry.Rodzaj}] ${entry.Wiedza}\n${parts.join(' — ')}`;
                 const existing = notesByRoom.get(entry.id);
                 if (existing) {
                     existing.push(line);
