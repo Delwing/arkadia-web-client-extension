@@ -56,20 +56,6 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
             return line;
         }, tag);
 
-    // Player is in tide area during high tide - activate; no "gore" = surface, "gore" = bottom
-    client.Triggers.registerTrigger(
-        /^[ >]*Mozesz stad poplynac na /,
-        (line, _matches, _type, originalLine) => {
-            if (!isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
-                isHighTide = true;
-                activate(client);
-                if (!originalLine.includes("gore")) {
-                    moveToTempRoom(client);
-                }
-            }
-            return line;
-        }, tag);
-
     // Tide goes out - deactivate if active
     client.Triggers.registerTrigger([
         /^[ >]*Poziom morza gwaltownie opada\./,
@@ -83,15 +69,23 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
             return line;
         }, tag);
 
-    // No "Mozesz poplynac" in exits while in tide area = tide is off
-    client.Triggers.registerTrigger(/./,
-        (line, _matches, type, originalLine) => {
-            if (type === "room.exits" && isHighTide && client.Map.tryGetMapReader() && isInTideArea(client) && !originalLine.includes("Mozesz poplynac")) {
-                isHighTide = false;
-                deactivate(client);
+    // Detect tide state from room exits: "Mozesz stad poplynac" = high tide, no "gore" = surface
+    client.on("gmcp_msg.room.exits", (exits) => {
+        if (!client.Map.tryGetMapReader() || !isInTideArea(client)) return;
+        const text = exits.text;
+        if (text.includes("Mozesz stad poplynac")) {
+            if (!isHighTide) {
+                isHighTide = true;
+                activate(client);
+                if (!text.includes("gore")) {
+                    moveToTempRoom(client);
+                }
             }
-            return line;
-        }, tag);
+        } else if (isHighTide) {
+            isHighTide = false;
+            deactivate(client);
+        }
+    });
 }
 
 function isInTideArea(client: Client): boolean {
