@@ -298,11 +298,15 @@ export class CommandInputController {
         const lastWord = lastWordMatch[1];
         const prefix = this.tabCompletionTyped.substring(0, this.tabCompletionTyped.length - lastWord.length);
 
-        // Build word list from output buffer + suggestions
-        const words = this.getOutputWords();
+        // Build word list: plugin suggestions first, then output words (newest first)
+        const words: string[] = [];
         const suggestions = this.deps.getCommandLineSuggestions();
         for (const s of suggestions) {
             if (s) words.push(s);
+        }
+        const outputWords = this.getOutputWords();
+        for (let i = outputWords.length - 1; i >= 0; i--) {
+            words.push(outputWords[i]);
         }
 
         // Remove blacklisted words (case-insensitive)

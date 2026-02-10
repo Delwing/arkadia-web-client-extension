@@ -146,6 +146,46 @@ test.describe('Tab completion — output buffer based', () => {
         expect(wrapped).toBe(first);
     });
 
+    test('plugin suggestions appear before output words', async ({page}) => {
+        // Push output with a matching word
+        await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
+        await page.waitForTimeout(50);
+
+        // Register a plugin suggestion that also matches
+        await page.evaluate(() => {
+            (window as any).clientExtension.commandLineSuggestions.push('potwornego');
+        });
+
+        await setInputValue(page, 'pot');
+        await pressTab(page);
+        const first = await getInputValue(page);
+
+        await pressTab(page);
+        const second = await getInputValue(page);
+
+        // Plugin suggestion should come first
+        expect(first).toBe('potwornego');
+        expect(second).toBe('poteznego');
+    });
+
+    test('newer output lines are suggested before older ones', async ({page}) => {
+        await pushText(page, 'Widzisz starego maga.\n');
+        await page.waitForTimeout(50);
+        await pushText(page, 'Widzisz stalowego golema.\n');
+        await page.waitForTimeout(50);
+
+        await setInputValue(page, 'sta');
+        await pressTab(page);
+        const first = await getInputValue(page);
+
+        await pressTab(page);
+        const second = await getInputValue(page);
+
+        // Newer line ("stalowego") should come before older ("starego")
+        expect(first).toBe('stalowego');
+        expect(second).toBe('starego');
+    });
+
     test('only completes the last word, preserving prefix', async ({page}) => {
         await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
         await page.waitForTimeout(50);

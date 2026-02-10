@@ -29,6 +29,16 @@ try {
   process.exit(1);
 }
 
+// Step 1.5: Set unique version to avoid Yarn cache integrity issues
+const pkgPath = path.join(TYPES_DIR, 'package.json');
+const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+const originalVersion = pkgJson.version;
+const now = new Date();
+const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+pkgJson.version = `1.0.0-${timestamp}`;
+fs.writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + '\n');
+console.log(`✓ Set version to ${pkgJson.version}`);
+
 console.log('');
 console.log('Step 2: Creating tarball...');
 
@@ -77,4 +87,8 @@ try {
 } catch (error) {
   console.error('✗ Error creating tarball:', error.message);
   process.exit(1);
+} finally {
+  // Restore original version in package.json
+  pkgJson.version = originalVersion;
+  fs.writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + '\n');
 }
