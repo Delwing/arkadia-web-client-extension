@@ -3,7 +3,7 @@ import {createColorFormat} from "@modules/core/Colors";
 
 export default function initPrzybywajaCount(client: Client) {
     const HIGHLIGHT = createColorFormat('#ccb3ff');
-    const pattern = /^[ >]*(.*) (przybyw(?:a|aja))\b/;
+    const pattern = /^[ >]*(.*) ((?:przybyw|podaz)(?:a|aja))\b/;
     client.Triggers.registerTrigger(pattern, (line, matches, type) => {
         if (type !== 'other') return line;
         line = line.colorWords(matches[2], HIGHLIGHT);
