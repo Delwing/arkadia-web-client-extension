@@ -1161,6 +1161,33 @@ export interface CommandApi {
    * ```
    */
   send(command: string, echo?: boolean, options?: any): Promise<void>;
+
+  /**
+   * Add words to the command line tab-completion suggestions.
+   * These suggestions appear alongside words extracted from the output buffer
+   * when the user presses Tab in the command input.
+   * Duplicate words are ignored.
+   *
+   * @param words - Words to add as tab-completion suggestions
+   *
+   * @example
+   * ```typescript
+   * api.command.addSuggestions("goblin", "dragon", "potezny");
+   * ```
+   */
+  addSuggestions(...words: string[]): void;
+
+  /**
+   * Remove words previously added via {@link addSuggestions}.
+   *
+   * @param words - Words to remove from tab-completion suggestions
+   *
+   * @example
+   * ```typescript
+   * api.command.removeSuggestions("goblin");
+   * ```
+   */
+  removeSuggestions(...words: string[]): void;
 }
 
 /**
@@ -2259,6 +2286,7 @@ export class PluginApiImpl implements PluginApi {
   private triggerMacroIds: Set<string> = new Set();
   private commandHookIds: Set<string> = new Set();
   private footerComponentIds: Set<string> = new Set();
+  private commandLineSuggestions: Set<string> = new Set();
   private stateChangeUnsubscribers: (() => void)[] = [];
   private persistentPopupHandles: Map<string, PersistentPopupHandle> = new Map();
 
@@ -2617,6 +2645,26 @@ export class PluginApiImpl implements PluginApi {
     return {
       send: async (command, echo, options) => {
         await this.client.sendCommand(command, echo, options);
+      },
+
+      addSuggestions: (...words: string[]) => {
+        for (const word of words) {
+          if (word && !this.commandLineSuggestions.has(word)) {
+            this.commandLineSuggestions.add(word);
+            this.client.commandLineSuggestions.push(word);
+          }
+        }
+      },
+
+      removeSuggestions: (...words: string[]) => {
+        for (const word of words) {
+          if (this.commandLineSuggestions.delete(word)) {
+            const idx = this.client.commandLineSuggestions.indexOf(word);
+            if (idx !== -1) {
+              this.client.commandLineSuggestions.splice(idx, 1);
+            }
+          }
+        }
       }
     };
   }
@@ -3071,6 +3119,15 @@ export class PluginApiImpl implements PluginApi {
       this.client.unregisterCommandHook(id);
     }
     this.commandHookIds.clear();
+
+    // Remove all command line suggestions registered by this plugin
+    for (const word of this.commandLineSuggestions) {
+      const idx = this.client.commandLineSuggestions.indexOf(word);
+      if (idx !== -1) {
+        this.client.commandLineSuggestions.splice(idx, 1);
+      }
+    }
+    this.commandLineSuggestions.clear();
 
     // Unsubscribe from all state change listeners
     for (const unsubscribe of this.stateChangeUnsubscribers) {

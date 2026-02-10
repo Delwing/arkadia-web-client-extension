@@ -824,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // First deployment in the list is the most recent
                 if (Array.isArray(data) && data.length > 0) {
                     const latestDeployment = data[0];
-                    const latestSha = latestDeployment.sha?.substring(0, 7);
+                    const latestSha = latestDeployment.sha?.substring(0, __COMMIT_SHA__.length);
                     if (latestSha && latestSha !== __COMMIT_SHA__) {
                         const warningDiv = document.createElement('div');
                         warningDiv.style.color = 'red';

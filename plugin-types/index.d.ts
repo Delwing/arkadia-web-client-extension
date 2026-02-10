@@ -1747,6 +1747,31 @@ export interface CommandApi {
      * ```
      */
     send(command: string, echo?: boolean, options?: any): Promise<void>;
+    /**
+     * Add words to the command line tab-completion suggestions.
+     * These suggestions appear alongside words extracted from the output buffer
+     * when the user presses Tab in the command input.
+     * Duplicate words are ignored.
+     *
+     * @param words - Words to add as tab-completion suggestions
+     *
+     * @example
+     * ```typescript
+     * api.command.addSuggestions("goblin", "dragon", "potezny");
+     * ```
+     */
+    addSuggestions(...words: string[]): void;
+    /**
+     * Remove words previously added via {@link addSuggestions}.
+     *
+     * @param words - Words to remove from tab-completion suggestions
+     *
+     * @example
+     * ```typescript
+     * api.command.removeSuggestions("goblin");
+     * ```
+     */
+    removeSuggestions(...words: string[]): void;
 }
 
 /**

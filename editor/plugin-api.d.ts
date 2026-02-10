@@ -521,6 +521,10 @@ interface ObjectsApi {
  */
 interface CommandApi {
   send(command: string, echo?: boolean, options?: any): Promise<void>;
+
+  addSuggestions(...words: string[]): void;
+
+  removeSuggestions(...words: string[]): void;
 }
 
 /**
