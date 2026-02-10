@@ -17,6 +17,7 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | `/z id` | Zabij obiekt o podanym id |
 | `/z` | Atakuj cel oznaczony jako cel ataku |
 | `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |
+| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |
 | `/x id` | Zaskocz obiekt o podanym id |
 | `/x` | Zaskocz cel oznaczony jako cel ataku |
 | `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |

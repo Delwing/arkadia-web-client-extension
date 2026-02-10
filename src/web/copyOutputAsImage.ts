@@ -3,6 +3,7 @@ import {areOutputTimestampsVisible} from "@shared/dom/outputMessageHandler";
 interface StyledSpan {
     text: string;
     color: string;
+    backgroundColor?: string;
     bold: boolean;
 }
 
@@ -16,11 +17,11 @@ const TIMESTAMP_COLOR = 'darkorange';
 function extractStyledText(node: Node, defaultColor: string, includeTimestamps: boolean): StyledSpan[] {
     const spans: StyledSpan[] = [];
 
-    function walk(n: Node, inheritedColor: string, inheritedBold: boolean) {
+    function walk(n: Node, inheritedColor: string, inheritedBgColor: string | undefined, inheritedBold: boolean) {
         if (n.nodeType === Node.TEXT_NODE) {
             const text = n.textContent || '';
             if (text) {
-                spans.push({ text, color: inheritedColor, bold: inheritedBold });
+                spans.push({ text, color: inheritedColor, backgroundColor: inheritedBgColor, bold: inheritedBold });
             }
             return;
         }
@@ -31,7 +32,7 @@ function extractStyledText(node: Node, defaultColor: string, includeTimestamps: 
                 if (includeTimestamps) {
                     const text = el.textContent || '';
                     if (text) {
-                        spans.push({ text: text + ' ', color: TIMESTAMP_COLOR, bold: false });
+                        spans.push({ text: text + ' ', color: TIMESTAMP_COLOR, backgroundColor: undefined, bold: false });
                     }
                 }
                 return;
@@ -47,11 +48,16 @@ function extractStyledText(node: Node, defaultColor: string, includeTimestamps: 
                 color = el.style.color;
             }
 
+            let bgColor = inheritedBgColor;
+            if (el.style.backgroundColor) {
+                bgColor = el.style.backgroundColor;
+            }
+
             const computedStyle = window.getComputedStyle(el);
             const bold = inheritedBold || computedStyle.fontWeight === 'bold' || parseInt(computedStyle.fontWeight) >= 700;
 
             for (const child of n.childNodes) {
-                walk(child, color, bold);
+                walk(child, color, bgColor, bold);
             }
 
             if (isBlock && spans.length > 0) {
@@ -63,7 +69,7 @@ function extractStyledText(node: Node, defaultColor: string, includeTimestamps: 
         }
     }
 
-    walk(node, defaultColor, false);
+    walk(node, defaultColor, undefined, false);
     return spans;
 }
 
@@ -214,7 +220,7 @@ export async function copyOutputAsImage(): Promise<void> {
                 currentLine = [];
             }
             if (parts[i]) {
-                currentLine.push({ text: parts[i], color: span.color, bold: span.bold });
+                currentLine.push({ text: parts[i], color: span.color, backgroundColor: span.backgroundColor, bold: span.bold });
             }
         }
     }
@@ -278,7 +284,7 @@ export async function copyOutputAsImage(): Promise<void> {
                 if (currentX + textWidth <= containerWidth) {
                     // Text fits on current line
                     if (remainingText.length > 0) {
-                        wrappedLine.push({ text: remainingText, color: span.color, bold: span.bold });
+                        wrappedLine.push({ text: remainingText, color: span.color, backgroundColor: span.backgroundColor, bold: span.bold });
                     }
                     currentX += textWidth;
                     remainingText = '';
@@ -311,7 +317,7 @@ export async function copyOutputAsImage(): Promise<void> {
                     // Add the fitting part to current line
                     const fittingPart = remainingText.substring(0, fitChars);
                     if (fittingPart.length > 0) {
-                        wrappedLine.push({ text: fittingPart, color: span.color, bold: span.bold });
+                        wrappedLine.push({ text: fittingPart, color: span.color, backgroundColor: span.backgroundColor, bold: span.bold });
                     }
                     remainingText = remainingText.substring(fitChars);
 
@@ -336,7 +342,7 @@ export async function copyOutputAsImage(): Promise<void> {
     }
 
     // Measure actual width of each line (including offsets)
-    let maxLineWidth = containerWidth; // Use container width as the max width
+    const maxLineWidth = containerWidth; // Use container width as the max width
 
     const scale = 2;
     const lineHeightPx = fontSize * lineHeight;
@@ -370,9 +376,16 @@ export async function copyOutputAsImage(): Promise<void> {
         for (let j = 0; j < lines[i].length; j++) {
             const span = lines[i][j];
             ctx.font = span.bold ? boldFont : font;
+            const textWidth = ctx.measureText(span.text).width;
+
+            if (span.backgroundColor) {
+                ctx.fillStyle = span.backgroundColor;
+                ctx.fillRect(x, y - 2, textWidth, fontSize + 2);
+            }
+
             ctx.fillStyle = span.color;
             ctx.fillText(span.text, x, y);
-            x += ctx.measureText(span.text).width;
+            x += textWidth;
 
             // After rendering the timestamp on first line with prepended timestamp, add the offset
             if (i === 0 && firstLineHasPrependedTimestamp && j === 0 && span.color === TIMESTAMP_COLOR) {
@@ -450,6 +463,9 @@ export async function saveOutputAsHtml(): Promise<void> {
                 .replace(/>/g, '&gt;');
 
             const styles: string[] = [`color: ${span.color}`];
+            if (span.backgroundColor) {
+                styles.push(`background-color: ${span.backgroundColor}`);
+            }
             if (span.bold) {
                 styles.push('font-weight: bold');
             }

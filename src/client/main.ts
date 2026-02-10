@@ -121,6 +121,8 @@ import initAligatorEmoji from './scripts/aligatorEmoji'
 import initStaticMapWindow from './scripts/staticMapWindow'
 import initAttackModeAlias from './scripts/attackModeAlias'
 import initDeliveryStats from './scripts/deliveryStats'
+import initAfterDeathProgress from './scripts/afterDeathProgress'
+import initBrokilon from './scripts/brokilon'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -271,5 +273,7 @@ export function registerScripts(client: Client) {
     initAligatorEmoji(client)
     initStaticMapWindow(client, aliases)
     initDeliveryStats(client, aliases)
+    initAfterDeathProgress(client)
+    initBrokilon(client)
 
 }

@@ -34,6 +34,7 @@ function getOutputWindowStyles(): { backgroundColor: string; fontFamily: string;
 interface StyledSegment {
     text: string;
     color: string;
+    backgroundColor?: string;
     bold: boolean;
 }
 
@@ -81,18 +82,23 @@ export async function bufferToImage(
     for (const segment of segments) {
         const state = segment.state;
         let color = defaultColor;
+        let bgColor: string | undefined;
         let bold = false;
 
         if (state) {
             // Handle inverse (swaps foreground and background)
             const fg = state.inverse ? state.background : state.foreground;
+            const bg = state.inverse ? state.foreground : state.background;
             if (fg) {
                 color = colorToHex(fg);
+            }
+            if (bg) {
+                bgColor = colorToHex(bg);
             }
             bold = !!state.bold;
         }
 
-        styledSegments.push({text: segment.text, color, bold});
+        styledSegments.push({text: segment.text, color, backgroundColor: bgColor, bold});
     }
 
     // Split into lines
@@ -107,7 +113,7 @@ export async function bufferToImage(
                 currentLine = [];
             }
             if (parts[i]) {
-                currentLine.push({text: parts[i], color: segment.color, bold: segment.bold});
+                currentLine.push({text: parts[i], color: segment.color, backgroundColor: segment.backgroundColor, bold: segment.bold});
             }
         }
     }
@@ -151,9 +157,16 @@ export async function bufferToImage(
 
         for (const segment of lines[i]) {
             ctx.font = segment.bold ? boldFont : font;
+            const textWidth = ctx.measureText(segment.text).width;
+
+            if (segment.backgroundColor) {
+                ctx.fillStyle = segment.backgroundColor;
+                ctx.fillRect(x, y - 2, textWidth, fontSize + 2);
+            }
+
             ctx.fillStyle = segment.color;
             ctx.fillText(segment.text, x, y);
-            x += ctx.measureText(segment.text).width;
+            x += textWidth;
         }
     }
 

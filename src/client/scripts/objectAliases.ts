@@ -284,6 +284,12 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
+            pattern: /^\/zz (.+)$/,
+            callback: (m: RegExpMatchArray) => {
+                client.sendCommand(`${attackController.getAttackCommand()} ${m[1]}`);
+            }
+        });
+        aliases.push({
             pattern: /^\/walka_restart$/,
             callback: () => {
                 client.ObjectManager.resetTeamShortcuts();

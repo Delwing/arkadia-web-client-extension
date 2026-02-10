@@ -276,6 +276,17 @@ export default function initBagManager(
     client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
     window.addEventListener("beforeunload", () => saveConfig(client));
 
+    client.Triggers.registerTrigger(
+        "Nie masz wystarczajacej ilosci pieniedzy, zeby zaplacic.",
+        (line) => {
+            client.FunctionalBind.set("wez monety z pojemnika", () => {
+                containerAction(client, "money", "take", "monety");
+            });
+            return line;
+        },
+        "bagManager"
+    );
+
     if (aliases) {
         aliases.push({ pattern: /^\/pojemnik$/, callback: () => configure(client) });
         aliases.push({ pattern: /^\/pojemniki$/, callback: () => showConfig(client) });
