@@ -21,7 +21,3 @@ export default function initTideWarningHighlight(client: Client) {
         }, "tide-warning-highlight");
     });
 }
-
-
-// Szczyt fali chwile balansuje, a nastepnie z duza szybkoscia przechyla sie, zalewajac wszystko w dole, w tym rowniez ciebie.
-// Poziom morza gwaltownie opada. Fale gniewnie pienia sie bryzgajac dookola kropelkami wody. Pod powierzchnia widac, jak wszystkie wodorosty, kawalki drewna, a nawet wieksze kamienie sa ciagniete w jednym kierunku - na zachod.
