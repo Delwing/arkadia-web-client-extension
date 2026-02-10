@@ -26,7 +26,6 @@ async function pressArrowUp(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('ArrowUp');
-    // Wait for async selection handling
     await page.waitForTimeout(50);
 }
 
@@ -34,204 +33,186 @@ async function pressArrowDown(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('ArrowDown');
-    // Wait for async selection handling
     await page.waitForTimeout(50);
 }
 
-test.describe('Command history traversal', () => {
+async function pressEscape(page: Page): Promise<void> {
+    const input = page.locator(MESSAGE_INPUT);
+    await input.focus();
+    await input.press('Escape');
+    await page.waitForTimeout(50);
+}
+
+async function getSelection(page: Page) {
+    return await page.evaluate(() => {
+        const input = document.querySelector<HTMLTextAreaElement>('#message-input');
+        if (!input) return null;
+        return {
+            start: input.selectionStart,
+            end: input.selectionEnd,
+            length: input.value.length,
+        };
+    });
+}
+
+test.describe('Command history — Mudlet-style', () => {
     test.beforeEach(async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        // Trigger receivedFirstGmcp by sending char.info
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
         await page.waitForTimeout(100);
     });
 
-    test('should store commands in history when sent', async ({page}) => {
+    // ── Full browse mode (input empty or all selected) ────────────────
+
+    test('should store commands and browse newest-first', async ({page}) => {
         await submitCommand(page, 'look');
         await submitCommand(page, 'north');
         await submitCommand(page, 'south');
 
-        // Press up to get last command
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'should show most recent command').toBe('south');
+        expect(await getInputValue(page)).toBe('south');
+
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('north');
+
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('look');
     });
 
-    test('should navigate up through history with ArrowUp', async ({page}) => {
-        await submitCommand(page, 'command1');
-        await submitCommand(page, 'command2');
-        await submitCommand(page, 'command3');
-
-        await pressArrowUp(page);
-        expect(await getInputValue(page), 'first up should show command3').toBe('command3');
-
-        await pressArrowUp(page);
-        expect(await getInputValue(page), 'second up should show command2').toBe('command2');
-
-        await pressArrowUp(page);
-        expect(await getInputValue(page), 'third up should show command1').toBe('command1');
-
-        // Should not go past first command
-        await pressArrowUp(page);
-        expect(await getInputValue(page), 'should stay at oldest command').toBe('command1');
-    });
-
-    test('should navigate down through history with ArrowDown', async ({page}) => {
+    test('should navigate down through history back to sentinel', async ({page}) => {
         await submitCommand(page, 'first');
         await submitCommand(page, 'second');
         await submitCommand(page, 'third');
 
-        // Navigate up to oldest command
+        // Go up to oldest
         await pressArrowUp(page);
         await pressArrowUp(page);
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'should be at oldest').toBe('first');
+        expect(await getInputValue(page)).toBe('first');
 
         // Navigate back down
         await pressArrowDown(page);
-        expect(await getInputValue(page), 'down should show second').toBe('second');
+        expect(await getInputValue(page)).toBe('second');
 
         await pressArrowDown(page);
-        expect(await getInputValue(page), 'down should show third').toBe('third');
+        expect(await getInputValue(page)).toBe('third');
+
+        // Down to sentinel (empty string)
+        await pressArrowDown(page);
+        expect(await getInputValue(page)).toBe('');
     });
 
-    test('should return to original input when navigating down past most recent', async ({page}) => {
-        await submitCommand(page, 'history1');
-        await submitCommand(page, 'history2');
+    test('should not go past oldest command on ArrowUp', async ({page}) => {
+        await submitCommand(page, 'only');
 
-        const input = page.locator(MESSAGE_INPUT);
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('only');
 
-        // Keep focus on input for all operations
-        await input.focus();
-        await page.waitForTimeout(100);
-
-        // Navigate up
-        await input.press('ArrowUp');
-        await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'up should show history2').toBe('history2');
-
-        // Navigate up again
-        await input.press('ArrowUp');
-        await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'up should show history1').toBe('history1');
-
-        // Navigate down
-        await input.press('ArrowDown');
-        await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'down should show history2').toBe('history2');
-
-        // Navigate down again - should restore original empty input
-        await input.press('ArrowDown');
-        await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'down should restore original empty input').toBe('');
+        // Should stay at oldest
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('only');
     });
 
-    test('should filter history by prefix when input has text', async ({page}) => {
+    test('should select entire text when browsing history', async ({page}) => {
+        await submitCommand(page, 'test command');
+
+        await pressArrowUp(page);
+
+        const selection = await getSelection(page);
+        expect(selection).not.toBeNull();
+        expect(selection?.start).toBe(0);
+        expect(selection?.end).toBe(selection?.length);
+    });
+
+    // ── Full deduplication ────────────────────────────────────────────
+
+    test('should fully deduplicate on submit (not just consecutive)', async ({page}) => {
+        await submitCommand(page, 'look');
+        await submitCommand(page, 'north');
+        await submitCommand(page, 'look');  // duplicate of first, should be removed from old position
+
+        // History should be: ["", "look", "north"] (newest-first)
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('look');
+
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('north');
+
+        // No more entries (look was fully deduped)
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('north');
+    });
+
+    // ── Prefix auto-complete mode (partial text in input) ─────────────
+
+    test('should enter prefix mode when input has unselected text', async ({page}) => {
         await submitCommand(page, 'look north');
         await submitCommand(page, 'attack goblin');
         await submitCommand(page, 'look south');
         await submitCommand(page, 'examine sword');
         await submitCommand(page, 'look east');
 
-        // Type prefix and press up
+        // Type prefix — the text is NOT selected, so should enter prefix mode
         await setInputValue(page, 'look');
-        await pressArrowUp(page);
-        expect(await getInputValue(page), 'first match should be look east').toBe('look east');
 
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'second match should be look south').toBe('look south');
+        expect(await getInputValue(page)).toBe('look east');
 
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'third match should be look north').toBe('look north');
+        expect(await getInputValue(page)).toBe('look south');
+
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('look north');
     });
 
-    test('should not add duplicate consecutive commands to history', async ({page}) => {
-        await submitCommand(page, 'look');
-        await submitCommand(page, 'look');
-        await submitCommand(page, 'look');
-        await submitCommand(page, 'north');
+    // ── Escape key ────────────────────────────────────────────────────
 
-        await pressArrowUp(page);
-        expect(await getInputValue(page), 'first up should show north').toBe('north');
+    test('should reset state on Escape', async ({page}) => {
+        await submitCommand(page, 'cmd1');
+        await submitCommand(page, 'cmd2');
 
+        // Navigate into history
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'second up should show look (only one)').toBe('look');
+        expect(await getInputValue(page)).toBe('cmd2');
 
-        // Should be at the beginning of history
+        // Escape should select all and reset
+        await pressEscape(page);
+
+        // After pressing up again, should start from the top (most recent)
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'should stay at look').toBe('look');
+        expect(await getInputValue(page)).toBe('cmd2');
     });
+
+    // ── Button navigation ─────────────────────────────────────────────
 
     test('should work with history buttons', async ({page}) => {
         await submitCommand(page, 'cmd1');
         await submitCommand(page, 'cmd2');
         await submitCommand(page, 'cmd3');
 
-        // Click first up button
         await page.click(HISTORY_UP_BUTTON);
         await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'up button should show cmd3').toBe('cmd3');
+        expect(await getInputValue(page)).toBe('cmd3');
 
-        // Click second up button
         await page.click(HISTORY_UP_BUTTON);
         await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'up button should show cmd2').toBe('cmd2');
+        expect(await getInputValue(page)).toBe('cmd2');
 
         await page.click(HISTORY_DOWN_BUTTON);
         await page.waitForTimeout(100);
-        expect(await getInputValue(page), 'down button should show cmd3').toBe('cmd3');
+        expect(await getInputValue(page)).toBe('cmd3');
     });
 
-    test('should select entire text when navigating history', async ({page}) => {
-        await submitCommand(page, 'test command');
-
-        await pressArrowUp(page);
-
-        // Check that text is selected
-        const selection = await page.evaluate(() => {
-            const input = document.querySelector<HTMLInputElement>('#message-input');
-            if (!input) return null;
-            return {
-                start: input.selectionStart,
-                end: input.selectionEnd,
-                length: input.value.length,
-            };
-        });
-
-        expect(selection, 'should have selection data').not.toBeNull();
-        expect(selection?.start, 'selection should start at 0').toBe(0);
-        expect(selection?.end, 'selection should end at text length').toBe(selection?.length);
-    });
-
-    test('should reset history navigation when typing new input', async ({page}) => {
-        await submitCommand(page, 'old1');
-        await submitCommand(page, 'old2');
-
-        // Navigate to history
-        await pressArrowUp(page);
-        expect(await getInputValue(page)).toBe('old2');
-
-        // Start typing - this should reset history navigation
-        await page.locator(MESSAGE_INPUT).fill('new');
-
-        // Press up - should start fresh search from history
-        await pressArrowUp(page);
-        // Since 'new' doesn't match any history, input should remain unchanged
-        // or if there are matches, it should show them
-        const value = await getInputValue(page);
-        // No commands start with 'new', so it should stay as 'new'
-        expect(value).toBe('new');
-    });
+    // ── GMCP gating ──────────────────────────────────────────────────
 
     test('should not navigate history before receiving GMCP', async ({page}) => {
-        // Create a fresh page without GMCP
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        // Don't send GMCP this time
+        // Don't send GMCP
 
-        // Submit command directly (won't be added to history without GMCP)
         const input = page.locator(MESSAGE_INPUT);
         await input.fill('test');
         await input.press('Enter');
@@ -239,34 +220,91 @@ test.describe('Command history traversal', () => {
 
         await input.fill('');
         await pressArrowUp(page);
-
-        // Should remain empty since history is disabled before GMCP
-        expect(await getInputValue(page), 'should be empty without GMCP').toBe('');
+        expect(await getInputValue(page)).toBe('');
     });
+
+    // ── Empty history ────────────────────────────────────────────────
 
     test('should handle empty history gracefully', async ({page}) => {
-        // No commands submitted yet
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'should remain empty').toBe('');
+        expect(await getInputValue(page)).toBe('');
 
         await pressArrowDown(page);
-        expect(await getInputValue(page), 'should remain empty').toBe('');
+        expect(await getInputValue(page)).toBe('');
     });
 
-    test('should preserve and restore current input across history navigation', async ({page}) => {
-        // Submit commands that start with common prefix
-        await submitCommand(page, 'my command 1');
-        await submitCommand(page, 'my command 2');
+    // ── Typing resets history browsing ────────────────────────────────
 
-        // Type a matching prefix
-        await setInputValue(page, 'my');
+    test('should reset history navigation when typing new input', async ({page}) => {
+        await submitCommand(page, 'old1');
+        await submitCommand(page, 'old2');
 
-        // Go up to history - should filter by 'my' prefix
         await pressArrowUp(page);
-        expect(await getInputValue(page), 'should show matching history').toBe('my command 2');
+        expect(await getInputValue(page)).toBe('old2');
 
-        // Go back down - should restore our prefix
-        await pressArrowDown(page);
-        expect(await getInputValue(page), 'should restore original prefix').toBe('my');
+        // Start typing — resets history
+        await page.locator(MESSAGE_INPUT).fill('new');
+
+        // Press up — should do prefix search for "new"
+        await pressArrowUp(page);
+        // No commands start with 'new', so it should stay unchanged
+        expect(await getInputValue(page)).toBe('new');
+    });
+
+    // ── Persistent history via localStorage ──────────────────────────
+
+    test('should persist history across page reloads', async ({page}) => {
+        await submitCommand(page, 'persisted1');
+        await submitCommand(page, 'persisted2');
+
+        // Reload page
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
+        await page.waitForTimeout(100);
+
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('persisted2');
+
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('persisted1');
+    });
+
+    // ── Multiline cursor checks ──────────────────────────────────────
+
+    test('ArrowUp navigates history, does not move cursor in multiline textarea', async ({page}) => {
+        await submitCommand(page, 'history1');
+
+        const input = page.locator(MESSAGE_INPUT);
+        await input.focus();
+        await input.fill('');
+        await input.type('line1');
+        await input.press('Shift+Enter');
+        await input.type('line2');
+
+        // ArrowUp is intercepted (not moving cursor within textarea).
+        // Since "line1\nline2" doesn't match any history prefix, content stays unchanged.
+        await input.press('ArrowUp');
+        await page.waitForTimeout(50);
+        const value = await getInputValue(page);
+        expect(value).toContain('line1');
+        expect(value).toContain('line2');
+    });
+
+    test('multiline input is stored as a single history entry', async ({page}) => {
+        const input = page.locator(MESSAGE_INPUT);
+        await input.focus();
+        await input.type('first line');
+        await input.press('Shift+Enter');
+        await input.type('second line');
+        await input.press('Enter');
+        await page.waitForTimeout(50);
+
+        // Press up to retrieve — should get the full multiline entry
+        await pressArrowUp(page);
+        const value = await getInputValue(page);
+        expect(value).toContain('first line');
+        expect(value).toContain('second line');
     });
 });

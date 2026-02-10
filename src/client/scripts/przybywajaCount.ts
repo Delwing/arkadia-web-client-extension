@@ -1,8 +1,12 @@
 import Client from "../Client";
+import {createColorFormat} from "@modules/core/Colors";
 
 export default function initPrzybywajaCount(client: Client) {
-    const pattern = /^[ >]*(.*) przybywaja\b/;
-    client.Triggers.registerTrigger(pattern, (line, matches) => {
+    const HIGHLIGHT = createColorFormat('#ccb3ff');
+    const pattern = /^[ >]*(.*) (przybyw(?:a|aja))\b/;
+    client.Triggers.registerTrigger(pattern, (line, matches, type) => {
+        if (type !== 'other') return line;
+        line = line.colorWords(matches[2], HIGHLIGHT);
         const names = matches[1]
             .split(/,| i /)
             .map(name => name.trim())

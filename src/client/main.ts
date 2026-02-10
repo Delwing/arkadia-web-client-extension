@@ -62,7 +62,6 @@ import initMagikZnika from './scripts/magikZnika'
 import initSeasonPrint from './scripts/seasonPrint'
 import initWorldRebirth from './scripts/worldRebirth'
 import initDajeCiHighlight from './scripts/dajeCiHighlight'
-import initPrzybywajaHighlight from './scripts/przybywajaHighlight'
 import initPrzybywajaCount from './scripts/przybywajaCount'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
@@ -239,7 +238,6 @@ export function registerScripts(client: Client) {
     initSeasonPrint(client)
     initWorldRebirth(client)
     initDajeCiHighlight(client)
-    initPrzybywajaHighlight(client)
     initPrzybywajaCount(client)
     initGuildPostfix(client)
     initLanguage(client, aliases)

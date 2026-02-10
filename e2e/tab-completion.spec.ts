@@ -2,9 +2,9 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
-    submitCommand,
     waitForCommandInput,
     pushGmcp,
+    pushText,
     GMCP_PATHS,
 } from './support/mocks';
 
@@ -27,145 +27,134 @@ async function pressTab(page: Page): Promise<void> {
     await page.waitForTimeout(50);
 }
 
-test.describe('Tab completion', () => {
+async function pressShiftTab(page: Page): Promise<void> {
+    const input = page.locator(MESSAGE_INPUT);
+    await input.focus();
+    await input.press('Shift+Tab');
+    await page.waitForTimeout(50);
+}
+
+test.describe('Tab completion — output buffer based', () => {
     test.beforeEach(async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        // Enable command history by sending GMCP char.info
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
         await page.waitForTimeout(100);
     });
 
-    test('Tab completes to matching command from history', async ({page}) => {
-        await submitCommand(page, 'look north');
-        await submitCommand(page, 'attack goblin');
+    test('Tab completes last word from output text', async ({page}) => {
+        // Push text to output buffer
+        await pushText(page, 'Widzisz tutaj poteznego wojownika i mlodego druida.\n');
+        await page.waitForTimeout(50);
 
-        await setInputValue(page, 'loo');
+        await setInputValue(page, 'zabij pote');
         await pressTab(page);
 
-        // First tab extends common prefix to "look" (longestCommonWord)
-        const first = await getInputValue(page);
-        expect(first.startsWith('look')).toBe(true);
-
-        // Second tab cycles to the full match
-        await pressTab(page);
-        const second = await getInputValue(page);
-        expect(second).toBe('look north');
+        const value = await getInputValue(page);
+        expect(value).toBe('zabij poteznego');
     });
 
-    test('Tab cycles to next match on repeated press', async ({page}) => {
-        await submitCommand(page, 'look north');
-        await submitCommand(page, 'look south');
+    test('Tab cycles through multiple matches', async ({page}) => {
+        await pushText(page, 'Na polce stoi wielka ksiazka i wielki miecz.\n');
+        await page.waitForTimeout(50);
 
-        await setInputValue(page, 'look ');
+        await setInputValue(page, 'wiel');
         await pressTab(page);
-
         const first = await getInputValue(page);
-        expect(first.startsWith('look ')).toBe(true);
 
         await pressTab(page);
         const second = await getInputValue(page);
-        expect(second.startsWith('look ')).toBe(true);
 
-        // The two cycled values should be different
+        // Both should start with "wiel" and be different
+        expect(first.startsWith('wiel')).toBe(true);
+        expect(second.startsWith('wiel')).toBe(true);
         expect(first).not.toBe(second);
     });
 
-    test('Shift+Tab cycles in reverse direction', async ({page}) => {
-        await submitCommand(page, 'look north');
-        await submitCommand(page, 'look south');
-        await submitCommand(page, 'look east');
-
-        // Tab forward from "look " to get the first match
-        const input = page.locator(MESSAGE_INPUT);
-        await input.focus();
-        await input.fill('look ');
-
-        await input.press('Tab');
+    test('Shift+Tab cycles backward', async ({page}) => {
+        await pushText(page, 'Siedziba alpha beta gamma.\n');
         await page.waitForTimeout(50);
-        const firstForward = await getInputValue(page);
 
-        // Start fresh with Shift+Tab (backward)
-        await input.fill('look ');
-        await input.press('Shift+Tab');
+        await setInputValue(page, 'Siedzi');
+        // Tab forward
+        await pressTab(page);
+        const forward = await getInputValue(page);
+        expect(forward.toLowerCase().startsWith('siedzi')).toBe(true);
+
+        // Reset and try Shift+Tab
+        await setInputValue(page, 'Siedzi');
+        await pressShiftTab(page);
+        const backward = await getInputValue(page);
+        expect(backward.toLowerCase().startsWith('siedzi')).toBe(true);
+    });
+
+    test('case-insensitive matching', async ({page}) => {
+        await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
         await page.waitForTimeout(50);
-        const firstBackward = await getInputValue(page);
 
-        // Forward and backward should start from different ends
-        expect(firstForward.startsWith('look ')).toBe(true);
-        expect(firstBackward.startsWith('look ')).toBe(true);
-        expect(firstForward).not.toBe(firstBackward);
+        // Type with uppercase prefix — should match lowercase "poteznego" from output
+        await setInputValue(page, 'zabij Pote');
+        await pressTab(page);
+
+        const value = await getInputValue(page);
+        // Should match "poteznego" case-insensitively despite typing "Pote"
+        expect(value.startsWith('zabij ')).toBe(true);
+        expect(value.toLowerCase()).toContain('potezn');
     });
 
     test('no matches leaves input unchanged', async ({page}) => {
-        await submitCommand(page, 'attack goblin');
+        await pushText(page, 'zwykly tekst\n');
+        await page.waitForTimeout(50);
 
-        await setInputValue(page, 'xyz');
+        await setInputValue(page, 'xyzxyz');
         await pressTab(page);
 
-        expect(await getInputValue(page)).toBe('xyz');
-    });
-
-    test('common prefix extension before cycling', async ({page}) => {
-        await submitCommand(page, 'look north');
-        await submitCommand(page, 'look south');
-
-        await setInputValue(page, 'loo');
-        await pressTab(page);
-
-        const value = await getInputValue(page);
-        // Both start with "look", so common prefix "look" should be extended first
-        expect(value).toBe('look');
+        expect(await getInputValue(page)).toBe('xyzxyz');
     });
 
     test('Tab state resets when typing a new character', async ({page}) => {
-        await submitCommand(page, 'attack goblin');
-        await submitCommand(page, 'look here');
+        await pushText(page, 'wojownik i druid stoja obok.\n');
+        await page.waitForTimeout(50);
 
-        await setInputValue(page, 'att');
+        await setInputValue(page, 'woj');
         await pressTab(page);
-
         const first = await getInputValue(page);
-        expect(first.startsWith('att')).toBe(true);
+        expect(first.toLowerCase().startsWith('woj')).toBe(true);
 
-        // Type a new value to reset tab state
-        await setInputValue(page, 'loo');
-
+        // Type a new value — resets tab state
+        await setInputValue(page, 'dru');
         await pressTab(page);
-        // Should now match "look here", not "attack" commands
         const value = await getInputValue(page);
-        expect(value.startsWith('look')).toBe(true);
+        expect(value.toLowerCase().startsWith('dru')).toBe(true);
     });
 
-    test('Tab cycles wrap around', async ({page}) => {
-        await submitCommand(page, 'look north');
-        await submitCommand(page, 'look south');
+    test('Tab wraps around matches', async ({page}) => {
+        await pushText(page, 'raz dwa trzy raz_b raz_c\n');
+        await page.waitForTimeout(50);
 
-        await setInputValue(page, 'look ');
-
-        // Press Tab enough times to cycle through all matches and wrap
+        await setInputValue(page, 'ra');
+        // Cycle through all matches
         await pressTab(page);
         const first = await getInputValue(page);
 
         await pressTab(page);
-
-        // After wrapping, we should be back to first match
         await pressTab(page);
-        const third = await getInputValue(page);
 
-        expect(third).toBe(first);
+        // After wrapping we should be back to first
+        const wrapped = await getInputValue(page);
+        expect(wrapped).toBe(first);
     });
 
-    test('empty prefix matches all history entries', async ({page}) => {
-        await submitCommand(page, 'north');
-        await submitCommand(page, 'south');
+    test('only completes the last word, preserving prefix', async ({page}) => {
+        await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
+        await page.waitForTimeout(50);
 
-        await setInputValue(page, '');
+        await setInputValue(page, 'zabij pote');
         await pressTab(page);
 
         const value = await getInputValue(page);
-        // Should complete to something from history (most recent first)
-        expect(value === 'south' || value === 'north').toBe(true);
+        // Should only replace the last word "pote" with a match, keeping "zabij "
+        expect(value.startsWith('zabij ')).toBe(true);
     });
 });

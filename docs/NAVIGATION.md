@@ -54,6 +54,13 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 | `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |
 | `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |
 
+## Informacje o lokacji
+
+| Komenda | Opis |
+|---------|------|
+| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |
+| `/info id` | Wyswietl informacje o lokacji o podanym id |
+
 ## Notatki lokacji
 
 | Komenda | Opis |

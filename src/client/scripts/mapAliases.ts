@@ -3,6 +3,8 @@ import { longToShort } from "@shared/map/directions";
 import {getShortcut} from "./shortcuts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import {getNote} from "@web/options/locationNotesStorage";
+import {getPluginLocationNotes} from "@modules/core/pluginLocationNotesRegistry";
 
 type SearchableRoom = {
     id: number;
@@ -10,6 +12,12 @@ type SearchableRoom = {
     name?: string;
     exits?: Record<string, number>;
     specialExits?: Record<string, number>;
+    doors?: Record<string, number>;
+    userData?: Record<string, string>;
+    x?: number;
+    y?: number;
+    z?: number;
+    env?: number;
 };
 
 export default function initMapAliases(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
@@ -82,6 +90,157 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             pattern: /\/zlok$/,
             callback: () => {
                 client.Map.refresh();
+            }
+        },
+        {
+            pattern: /^\/info(?:\s+(\d+))?$/i,
+            callback: async (m: RegExpMatchArray) => {
+                const reader = client.Map.tryGetMapReader();
+                let room: SearchableRoom | undefined;
+                if (m[1]) {
+                    const id = parseInt(m[1]);
+                    room = (reader ? (reader as any).getRoom(id) : null) ?? client.Map.getRoomById(id) as SearchableRoom | undefined;
+                    if (!room) {
+                        client.println(`Nie znaleziono lokacji o id ${id}.`);
+                        return;
+                    }
+                } else {
+                    room = client.Map.currentRoom as SearchableRoom | undefined;
+                    if (!room) {
+                        client.println('Brak aktualnej lokalizacji.');
+                        return;
+                    }
+                }
+                const area = reader && typeof (reader as any).getArea === 'function'
+                    ? (reader as any).getArea(room.area) : null;
+                const areaName = area?.getAreaName?.() ?? client.Map.getAreaName(String(room.area)) ?? '';
+                const envColor: string | null = reader && typeof (reader as any).getColorValue === 'function'
+                    ? (reader as any).getColorValue(room.env) ?? null : null;
+
+                const DIRECTION_LABELS: Record<string, string> = {
+                    north: 'polnoc', south: 'poludnie', east: 'wschod', west: 'zachod',
+                    northeast: 'polnocny-wschod', northwest: 'polnocny-zachod',
+                    southeast: 'poludniowy-wschod', southwest: 'poludniowy-zachod',
+                    up: 'gora', down: 'dol', in: 'do srodka', out: 'na zewnatrz',
+                };
+                const DOOR_LABELS: Record<number, string> = { 1: 'otwarte', 2: 'zamkniete', 3: 'zablokowane' };
+                const fmtDir = (d: string) => DIRECTION_LABELS[d] ?? d;
+
+                const COL = 22;
+                const gray = { foreground: { space: 'hex' as const, color: '#888888' } };
+                const white = { foreground: { space: 'hex' as const, color: '#dddddd' } };
+                const row = (label: string, value: string, valueStyle?: import('@client/ansi/FormatState').FormatStateSnapshot) => {
+                    output.append(label.padEnd(COL), gray);
+                    output.append(`${value}\n`, valueStyle ?? white);
+                };
+
+                const output = new AnsiAwareBuffer();
+                output.append(`--- Lokacja: ${room.id} ---\n`);
+                row('Nazwa', room.name || `#${room.id}`);
+                row('Kraina', areaName);
+                row('Wspolrzedne', `${room.x ?? 0}, ${room.y ?? 0}, ${room.z ?? 0}`);
+                output.append('Srodowisko'.padEnd(COL), gray);
+                if (envColor) {
+                    output.append(' ', { background: { space: 'hex' as const, color: envColor } });
+                    output.append(' ');
+                }
+                output.append(` ${room.env ?? 0}\n`, white);
+
+                const exits = Object.entries(room.exits ?? {});
+                const specialExits = Object.entries(room.specialExits ?? {});
+                if (exits.length > 0 || specialExits.length > 0) {
+                    output.append('Wyjscia\n', gray);
+                    for (const [dir, targetId] of exits) {
+                        const doorState = room.doors?.[dir];
+                        const doorInfo = doorState != null ? ` (drzwi: ${DOOR_LABELS[doorState] ?? doorState})` : '';
+                        row(`  ${fmtDir(dir)}`, `${targetId}${doorInfo}`);
+                    }
+                    for (const [cmd, targetId] of specialExits) {
+                        row(`  ${cmd}`, String(targetId));
+                    }
+                }
+
+                const doorsWithoutExits = Object.entries(room.doors ?? {}).filter(([dir]) => !(room.exits ?? {})[dir]);
+                if (doorsWithoutExits.length > 0) {
+                    output.append('Drzwi\n', gray);
+                    for (const [dir, state] of doorsWithoutExits) {
+                        row(`  ${fmtDir(dir)}`, DOOR_LABELS[state] ?? String(state));
+                    }
+                }
+
+                const userData = room.userData ?? {};
+                const mapNote = userData.note;
+                const locationNote = await getNote(room.id).catch(() => null);
+                const pluginNotes = getPluginLocationNotes(room.id);
+
+                if (mapNote || locationNote || pluginNotes.length > 0) {
+                    output.append('Notatki\n', gray);
+                    if (mapNote) row('  Mapa', mapNote);
+                    if (locationNote) row('  Uzytkownik', locationNote.note);
+                    for (const pn of pluginNotes) {
+                        row(`  ${pn.pluginName}`, pn.note);
+                    }
+                }
+
+                const dirBind = userData.dir_bind;
+                if (dirBind) {
+                    const entries = dirBind.split('&').map(item => item.split('=')).filter(pair => pair.length === 2);
+                    if (entries.length > 0) {
+                        output.append('Bindy kierunkow\n', gray);
+                        for (const [longDir, shortDir] of entries) {
+                            row(`  ${fmtDir(longDir)}`, shortDir);
+                        }
+                    }
+                }
+
+                if ((userData.bind != null && userData.bind !== '') || (userData.drinkable != null && userData.drinkable !== '')) {
+                    output.append('Bindy lokacji\n', gray);
+                    if (userData.bind != null && userData.bind !== '') row('  bind', userData.bind);
+                    if (userData.drinkable != null && userData.drinkable !== '') row('  drinkable', 'tak');
+                }
+
+                const teamFollowLink = userData.team_follow_link;
+                if (teamFollowLink) {
+                    const entries = teamFollowLink.split('#').map(e => e.split('*')).filter(p => p.length === 2);
+                    if (entries.length > 0) {
+                        output.append('Team follow\n', gray);
+                        for (const [search, exit] of entries) {
+                            row(`  ${search}`, exit);
+                        }
+                    }
+                }
+
+                let gpsEntries: { gps_string_lines: string[]; room_id: number; area_name?: string }[] = [];
+                if (userData.gps) {
+                    try { gpsEntries = JSON.parse(userData.gps); } catch { /* ignore */ }
+                }
+                if (gpsEntries.length > 0) {
+                    output.append(`GPS (${gpsEntries.length})\n`, gray);
+                    for (const gps of gpsEntries) {
+                        row('  room_id', String(gps.room_id));
+                        for (const line of gps.gps_string_lines) {
+                            output.append(`    ${line}\n`);
+                        }
+                        if (gps.area_name) row('  area', gps.area_name);
+                    }
+                }
+
+                const description = userData.description;
+                if (description) {
+                    output.append('Opis\n', gray);
+                    output.append(`  ${description.split('\\n').join('\n  ')}\n`);
+                }
+
+                const KNOWN_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link']);
+                const otherEntries = Object.entries(userData).filter(([key]) => !KNOWN_KEYS.has(key));
+                if (otherEntries.length > 0) {
+                    output.append('Dane uzytkownika\n', gray);
+                    for (const [key, value] of otherEntries) {
+                        row(`  ${key}`, value);
+                    }
+                }
+
+                client.println(output);
             }
         },
         {
