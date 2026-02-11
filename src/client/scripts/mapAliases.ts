@@ -5,6 +5,8 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {getNote} from "@web/options/locationNotesStorage";
 import {getPluginLocationNotes} from "@modules/core/pluginLocationNotesRegistry";
+import {getSnapshot as getMultibindSnapshot} from "@web/dataStores/multibindStore";
+import {getMultibindLabel} from "../multibindKeys";
 
 type SearchableRoom = {
     id: number;
@@ -212,6 +214,15 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     output.append('Bindy lokacji\n', gray);
                     if (userData.bind != null && userData.bind !== '') row('  bind', userData.bind);
                     if (userData.drinkable != null && userData.drinkable !== '') row('  drinkable', 'tak');
+                }
+
+                const allMultibinds = await getMultibindSnapshot().catch(() => []);
+                const roomMultibinds = allMultibinds.filter(mb => mb.roomId === room.id).sort((a, b) => a.index - b.index);
+                if (roomMultibinds.length > 0) {
+                    output.append('Multibindy\n', gray);
+                    for (const { index, action } of roomMultibinds) {
+                        row(`  [${getMultibindLabel(index)}]`, action);
+                    }
                 }
 
                 const teamFollowLink = userData.team_follow_link;

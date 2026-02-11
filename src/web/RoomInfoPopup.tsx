@@ -5,6 +5,8 @@ import { usePopup } from './hooks/usePopup';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getSnapshot as getNpcSnapshot, type NpcListEntry } from '@web/dataStores/npcStore';
+import { getSnapshot as getMultibindSnapshot, type StoredMultibindRecord } from '@web/dataStores/multibindStore';
+import { getMultibindLabel } from '@client/multibindKeys';
 
 interface CustomLineAttributes {
     color: { r: number; g: number; b: number; alpha: number };
@@ -65,6 +67,7 @@ const RoomInfoPopup: React.FC = () => {
     const [locationNote, setLocationNote] = useState<LocationNote | null>(null);
     const [pluginNotes, setPluginNotes] = useState<PluginLocationNote[]>([]);
     const [npcs, setNpcs] = useState<NpcListEntry[]>([]);
+    const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
     const currentRoomIdRef = useRef<number | null>(null);
 
     const refreshNotes = useCallback((roomId: number) => {
@@ -97,6 +100,7 @@ const RoomInfoPopup: React.FC = () => {
             setLocationNote(null);
             setPluginNotes([]);
             setNpcs([]);
+            setMultibinds([]);
             return;
         }
 
@@ -130,6 +134,10 @@ const RoomInfoPopup: React.FC = () => {
             const roomNpcs = snapshot.all.data.filter(npc => npc.loc === data.roomId);
             setNpcs(roomNpcs);
         }).catch(() => setNpcs([]));
+
+        getMultibindSnapshot().then(all => {
+            setMultibinds(all.filter(mb => mb.roomId === data.roomId).sort((a, b) => a.index - b.index));
+        }).catch(() => setMultibinds([]));
     }, [refreshNotes]);
 
     const { wrapperProps, isOpen } = usePopup<'roomInfo.popup.open'>(POPUP_ID, {
@@ -379,6 +387,19 @@ const RoomInfoPopup: React.FC = () => {
                                 <span className="room-info-popup__value">tak</span>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Multibinds */}
+                {multibinds.length > 0 && (
+                    <div className="room-info-popup__section">
+                        <div className="room-info-popup__section-title">Multibindy</div>
+                        {multibinds.map(({ index, action }) => (
+                            <div key={index} className="room-info-popup__row">
+                                <span className="room-info-popup__label">[{getMultibindLabel(index)}]:</span>
+                                <span className="room-info-popup__value">{action}</span>
+                            </div>
+                        ))}
                     </div>
                 )}
 

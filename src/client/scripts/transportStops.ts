@@ -293,6 +293,7 @@ class TransportTracker {
         this.registerTriggers();
         this.registerExitFailureTriggers();
         this.registerAbortTriggers();
+        this.registerFollowExitTriggers();
         this.registerListeners();
         this.emitTimer(null);
         void this.loadSegmentDurationOverrides();
@@ -425,6 +426,13 @@ class TransportTracker {
                 return triggerLine;
             }, "transport-tracker");
         });
+    }
+
+    private registerFollowExitTriggers() {
+        this.client.Triggers.registerTrigger(/[pP]odazasz za .* na zewnatrz\.$/, (triggerLine) => {
+            this.handleExit();
+            return triggerLine;
+        }, "transport-tracker");
     }
 
     private registerAbortTriggers() {
