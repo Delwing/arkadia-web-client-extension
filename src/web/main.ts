@@ -45,7 +45,7 @@ import LocationNotes from "./options/LocationNotes.tsx"
 import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
-import { LayoutManagerWrapper } from "@web/layout"
+import { LayoutManagerWrapper, loadLayoutState, saveLayoutState, invalidateLayoutCache } from "@web/layout"
 import {copyOutputAsImage, saveOutputAsHtml} from "./copyOutputAsImage";
 import {
     applySettings as applyMobileButtonSettings,
@@ -1626,6 +1626,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize button state
     updateConnectButtons();
+
+    // Layout manager suggestion for desktop users
+    {
+        const suggestionEl = document.getElementById('layout-manager-suggestion');
+        const enableBtn = document.getElementById('layout-suggestion-enable');
+        const dismissBtn = document.getElementById('layout-suggestion-dismiss');
+
+        if (suggestionEl && enableBtn && dismissBtn) {
+            const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
+            const layoutState = loadLayoutState();
+            const dismissed = localStorage.getItem('layoutManagerSuggestionDismissed') === '1';
+
+            if (!isMobileLike && !layoutState.enabled && !dismissed) {
+                suggestionEl.style.display = '';
+            }
+
+            enableBtn.addEventListener('click', () => {
+                const state = loadLayoutState();
+                state.enabled = true;
+                saveLayoutState(state);
+                invalidateLayoutCache();
+                suggestionEl.style.display = 'none';
+            });
+
+            dismissBtn.addEventListener('click', () => {
+                localStorage.setItem('layoutManagerSuggestionDismissed', '1');
+                suggestionEl.style.display = 'none';
+            });
+        }
+    }
 
     // Mount React components
     mountMigratedComponents();

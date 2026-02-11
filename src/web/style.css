@@ -5183,6 +5183,27 @@ body.mobile-command-radial-active {
   margin: 2vh 0;
 }
 
+#layout-manager-suggestion {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 60, 90, 0.9);
+  border: 1px solid rgba(100, 160, 220, 0.4);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  color: #fff;
+  text-align: left;
+  z-index: 1052;
+  max-width: 400px;
+  width: max-content;
+}
+
+#layout-manager-suggestion p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
 #commit-info {
   position: absolute;
   bottom: 0.5rem;
