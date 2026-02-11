@@ -54,4 +54,8 @@ export default function initCoverTimer(client: Client) {
             return line;
         }, tag);
     });
+
+    client.on('maneuverAttempted', () => {
+        startTimer();
+    });
 }

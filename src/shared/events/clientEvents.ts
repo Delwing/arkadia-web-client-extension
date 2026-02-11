@@ -290,6 +290,8 @@ export interface KnownEvents {
     "stunEnd": void;
     // Team follow events
     "followSpecialExit": { exit: string };
+    // Lua gag events - maneuver
+    "maneuverAttempted": void;
 }
 
 export interface WalkerState {
