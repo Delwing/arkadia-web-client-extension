@@ -31,6 +31,8 @@ const TRANSFERRED_EXIT_PAIRS: { tideRoomId: number; externalRoomId: number }[] =
     {tideRoomId: 18975, externalRoomId: 3287},
 ];
 
+const NEARBY_ROOM_IDS = new Set(TRANSFERRED_EXIT_PAIRS.map(p => p.externalRoomId));
+
 interface SavedRoomState {
     z: number;
     hash: string;
@@ -71,7 +73,7 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
             'Tam, gdzie przed chwila byl suchy lad, jest teraz falujace morze.'
         ],
         (line) => {
-            if (!isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
+            if (!isHighTide && client.Map.tryGetMapReader() && isNearTideArea(client)) {
                 isHighTide = true;
                 activate(client);
             }
@@ -84,7 +86,7 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
             /^[ >]*Czujesz jak w jednej chwili poziom morza gwaltownie opada\./,
         ],
         (line) => {
-            if (isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
+            if (isHighTide && client.Map.tryGetMapReader() && isNearTideArea(client)) {
                 isHighTide = false;
                 deactivate(client);
             }
@@ -113,7 +115,13 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
 function isInTideArea(client: Client): boolean {
     const id = client.Map.currentRoom?.id;
     if (!id) return false;
-    return id == 3287 || ALL_AFFECTED_SET.has(id) || (id >= TEMP_ID_OFFSET && ALL_AFFECTED_SET.has(id - TEMP_ID_OFFSET));
+    return ALL_AFFECTED_SET.has(id) || (id >= TEMP_ID_OFFSET && ALL_AFFECTED_SET.has(id - TEMP_ID_OFFSET));
+}
+
+function isNearTideArea(client: Client): boolean {
+    const id = client.Map.currentRoom?.id;
+    if (!id) return false;
+    return NEARBY_ROOM_IDS.has(id) || isInTideArea(client);
 }
 
 function activate(client: Client) {
