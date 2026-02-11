@@ -7,6 +7,25 @@ const ALL_AFFECTED_IDS = [...TIDE_ROOM_IDS, SHIFT_ONLY_ROOM_ID];
 const TIDE_ROOM_SET = new Set(TIDE_ROOM_IDS);
 const TEMP_ID_OFFSET = 100000;
 
+// Additional exits for temp surface rooms based on visual grid adjacency
+// These connections don't exist on the underwater level but should exist on the surface
+const ADDITIONAL_TEMP_EXITS: Record<number, Record<string, number>> = {
+    18976: {south: 18980, southeast: 18977},
+    18977: {west: 18980, southwest: 18979, northwest: 18976},
+    18978: {south: 20806, southwest: 20807, northwest: 18980},
+    18979: {south: 20807, southeast: 20806, northeast: 18977, northwest: 20798},
+    18980: {north: 18976, east: 18977, southeast: 18978},
+    20798: {south: 20809, southeast: 18979},
+    20799: {south: 20800, southeast: 20809},
+    20800: {north: 20799, east: 20809},
+    20801: {north: 20809, east: 20807},
+    20802: {east: 20803},
+    20803: {west: 20802, northeast: 20807},
+    20806: {north: 18978, west: 20807, northwest: 18979},
+    20807: {north: 18979, east: 20806, west: 20801, northeast: 18978, southwest: 20803, northwest: 20809},
+    20809: {north: 20798, south: 20801, southeast: 20807, west: 20800, northwest: 20799},
+};
+
 // Room pairs where all exits between them transfer from shifted room to its temp room
 const TRANSFERRED_EXIT_PAIRS: { tideRoomId: number; externalRoomId: number }[] = [
     {tideRoomId: 18975, externalRoomId: 3287},
@@ -153,7 +172,7 @@ function activate(client: Client) {
             symbol: original.symbol,
             name: original.name,
             userData: {},
-            customLines: {},
+            customLines: original.customLines,
             stubs: [],
             hash: saved.hash,
             env: original.env,
@@ -169,7 +188,17 @@ function activate(client: Client) {
         areaSources[original.area].rooms.push(tempRoom);
     }
 
-    // 3. Transfer all exits between tide/external room pairs
+    // 3. Add additional surface connections between temp rooms
+    for (const [roomId, exits] of Object.entries(ADDITIONAL_TEMP_EXITS)) {
+        const tempId = Number(roomId) + TEMP_ID_OFFSET;
+        const tempRoom = readerRooms[tempId];
+        if (!tempRoom) continue;
+        for (const [dir, targetId] of Object.entries(exits)) {
+            tempRoom.exits[dir as MapData.direction] = targetId + TEMP_ID_OFFSET;
+        }
+    }
+
+    // 4. Transfer all exits between tide/external room pairs
     for (const {tideRoomId, externalRoomId} of TRANSFERRED_EXIT_PAIRS) {
         const tempId = tideRoomId + TEMP_ID_OFFSET;
         const shiftedRoom = readerRooms[tideRoomId];
@@ -195,7 +224,7 @@ function activate(client: Client) {
         affectedAreas.add(externalRoom.area);
     }
 
-    // 4. Rebuild areas, pathfinder, re-render
+    // 5. Rebuild areas, pathfinder, re-render
     rebuildAreas(reader, affectedAreas);
     rebuildPathFinder((client.Map as any).pathFinder);
     rerender(client);
