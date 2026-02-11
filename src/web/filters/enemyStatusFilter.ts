@@ -111,10 +111,14 @@ export function registerEnemyStatusFilter(client: Client) {
     };
 
     const triggerBestMatchUpdate = () => {
-        const objects = client.TeamManager?.getAccumulatedObjectsData();
-        if (objects) {
-            updateBestMatches(objects as Map<number, { desc?: string }>);
+        const locationObjects = client.ObjectManager.getObjectsOnLocation();
+        const objectsMap = new Map<number, { desc?: string }>();
+        for (const obj of locationObjects) {
+            if (obj.num != null) {
+                objectsMap.set(obj.num, { desc: obj.desc });
+            }
         }
+        updateBestMatches(objectsMap);
     };
 
     client.on("enemy.paralyzed", ({ name }) => {

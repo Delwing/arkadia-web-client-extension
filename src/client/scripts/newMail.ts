@@ -7,6 +7,6 @@ export default function initNewMail(client: Client) {
     const pattern = /^Masz nowa poczte od (?<sender>[A-Za-z]+)\.$/;
 
     client.Triggers.registerTrigger(pattern, (line) => {
-        return line.prefix("\n[ POCZTA ]", TOMATO).suffix("\n\n");
+        return line.prefix("\n[ POCZTA ] ", TOMATO).suffix("\n\n");
     }, tag);
 }
