@@ -8344,6 +8344,19 @@ body.mobile-command-radial-active {
   margin-right: 0.35rem;
 }
 
+.room-info-popup__copy-btn {
+  all: unset;
+  cursor: pointer;
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+  color: rgba(241, 245, 249, 0.4);
+  vertical-align: middle;
+}
+
+.room-info-popup__copy-btn:hover {
+  color: rgba(241, 245, 249, 0.9);
+}
+
 .room-info-popup__door {
   color: rgba(241, 245, 249, 0.5);
   font-size: 0.75rem;

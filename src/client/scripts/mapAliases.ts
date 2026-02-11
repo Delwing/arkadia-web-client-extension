@@ -13,6 +13,7 @@ type SearchableRoom = {
     exits?: Record<string, number>;
     specialExits?: Record<string, number>;
     doors?: Record<string, number>;
+    customLines?: Record<string, { points: { x: number; y: number }[]; attributes: { color: { r: number; g: number; b: number; alpha: number }; style: string; arrow: boolean } }>;
     userData?: Record<string, string>;
     x?: number;
     y?: number;
@@ -165,6 +166,20 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     output.append('Drzwi\n', gray);
                     for (const [dir, state] of doorsWithoutExits) {
                         row(`  ${fmtDir(dir)}`, DOOR_LABELS[state] ?? String(state));
+                    }
+                }
+
+                const customLines = Object.entries(room.customLines ?? {});
+                if (customLines.length > 0) {
+                    output.append('Linie\n', gray);
+                    for (const [dir, line] of customLines) {
+                        const { r, g, b } = line.attributes.color;
+                        const colorHex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                        output.append(`  ${fmtDir(dir)}`.padEnd(COL), gray);
+                        output.append('  ', { background: { space: 'hex' as const, color: colorHex } });
+                        const arrowInfo = line.attributes.arrow ? ', strzalka' : '';
+                        const pointsInfo = line.points.length > 0 ? ` (${line.points.length} pkt)` : '';
+                        output.append(` ${line.attributes.style}${arrowInfo}${pointsInfo}\n`, white);
                     }
                 }
 

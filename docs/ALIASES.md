@@ -46,6 +46,14 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 |---------|------|
 | `/binds` | Wyswietl liste skonfigurowanych bindow |
 
+## Przyplyw
+
+| Komenda | Opis |
+|---------|------|
+| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |
+
+> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.
+
 ## Lowienie ryb
 
 | Komenda | Opis |

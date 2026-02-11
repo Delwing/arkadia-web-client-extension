@@ -6,6 +6,17 @@ import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getSnapshot as getNpcSnapshot, type NpcListEntry } from '@web/dataStores/npcStore';
 
+interface CustomLineAttributes {
+    color: { r: number; g: number; b: number; alpha: number };
+    style: string;
+    arrow: boolean;
+}
+
+interface CustomLine {
+    points: { x: number; y: number }[];
+    attributes: CustomLineAttributes;
+}
+
 interface RoomData {
     roomId: number;
     name: string;
@@ -18,6 +29,7 @@ interface RoomData {
     exits: Record<string, number>;
     specialExits: Record<string, number>;
     doors: Record<string, number>;
+    customLines: Record<string, CustomLine>;
     userData: Record<string, string>;
 }
 
@@ -79,6 +91,7 @@ const RoomInfoPopup: React.FC = () => {
                 exits: {},
                 specialExits: {},
                 doors: {},
+                customLines: {},
                 userData: {},
             });
             setLocationNote(null);
@@ -103,6 +116,7 @@ const RoomInfoPopup: React.FC = () => {
             exits: room.exits ?? {},
             specialExits: room.specialExits ?? {},
             doors: room.doors ?? {},
+            customLines: room.customLines ?? {},
             userData: room.userData ?? {},
         });
 
@@ -159,6 +173,7 @@ const RoomInfoPopup: React.FC = () => {
     const exitEntries = Object.entries(roomData.exits);
     const specialExitEntries = Object.entries(roomData.specialExits);
     const doorEntries = Object.entries(roomData.doors);
+    const customLineEntries = Object.entries(roomData.customLines);
 
     // Extract known userData keys into dedicated sections
     const mapNote = roomData.userData.note;
@@ -207,7 +222,14 @@ const RoomInfoPopup: React.FC = () => {
                 <div className="room-info-popup__section">
                     <div className="room-info-popup__row">
                         <span className="room-info-popup__label">ID:</span>
-                        <span className="room-info-popup__value">{roomData.roomId}</span>
+                        <span className="room-info-popup__value">
+                            {roomData.roomId}
+                            <button
+                                className="room-info-popup__copy-btn"
+                                title="Kopiuj ID"
+                                onClick={() => navigator.clipboard.writeText(String(roomData.roomId))}
+                            >&#x2398;</button>
+                        </span>
                     </div>
                     <div className="room-info-popup__row">
                         <span className="room-info-popup__label">Nazwa:</span>
@@ -275,6 +297,31 @@ const RoomInfoPopup: React.FC = () => {
                                     </span>
                                 </div>
                             ))}
+                    </div>
+                )}
+
+                {/* Custom Lines */}
+                {customLineEntries.length > 0 && (
+                    <div className="room-info-popup__section">
+                        <div className="room-info-popup__section-title">Linie</div>
+                        {customLineEntries.map(([dir, line]) => {
+                            const { r, g, b } = line.attributes.color;
+                            const colorHex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                            return (
+                                <div key={dir} className="room-info-popup__row">
+                                    <span className="room-info-popup__label">{formatDirection(dir)}:</span>
+                                    <span className="room-info-popup__value">
+                                        <span
+                                            className="room-info-popup__env-color"
+                                            style={{ backgroundColor: colorHex }}
+                                        />
+                                        {line.attributes.style}
+                                        {line.attributes.arrow && ', strzalka'}
+                                        {line.points.length > 0 && ` (${line.points.length} pkt)`}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
 
