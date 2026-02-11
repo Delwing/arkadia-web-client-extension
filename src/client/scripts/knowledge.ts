@@ -2044,9 +2044,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         for (const entry of knowledgeData as KnowledgeJsonEntry[]) {
             if (entry.id == null) continue;
             const isKnown = knownEntries.has(normalizeKnowledgeLookupKey(entry.Wiedza));
-            if (!isKnown) {
-                roomIds.push(entry.id);
-            }
+            if (isKnown && hideCompleted) continue;
+            roomIds.push(entry.id);
             const parts: string[] = [];
             if (entry.lokalizacja) parts.push(entry.lokalizacja);
             if (entry.note) parts.push(entry.note);

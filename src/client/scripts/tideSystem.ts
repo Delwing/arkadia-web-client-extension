@@ -1,4 +1,5 @@
 import Client from "../Client";
+import eventBus from "@modules/core/eventBus";
 
 const TIDE_ROOM_IDS = [18975, 18990, 18977, 18978, 18979, 18976, 18980, 20809, 20798, 20799, 20800, 20801, 20802, 20803, 20804, 20805, 20807, 20806];
 const SHIFT_ONLY_ROOM_ID = 20808;
@@ -46,8 +47,10 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
     });
 
     // Tide comes in - activate if not already active
-    client.Triggers.registerTrigger(
-        /^[ >]*Szczyt fali chwile balansuje, a nastepnie z duza szybkoscia przechyla sie/,
+    client.Triggers.registerTrigger([
+            /^[ >]*Szczyt fali chwile balansuje, a nastepnie z duza szybkoscia przechyla sie/,
+            'Tam, gdzie przed chwila byl suchy lad, jest teraz falujace morze.'
+        ],
         (line) => {
             if (!isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
                 isHighTide = true;
@@ -58,9 +61,9 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
 
     // Tide goes out - deactivate if active
     client.Triggers.registerTrigger([
-        /^[ >]*Poziom morza gwaltownie opada\./,
-        /^[ >]*Czujesz jak w jednej chwili poziom morza gwaltownie opada\./,
-    ],
+            /poziom morza gwaltownie opada/,
+            /^[ >]*Czujesz jak w jednej chwili poziom morza gwaltownie opada\./,
+        ],
         (line) => {
             if (isHighTide && client.Map.tryGetMapReader() && isInTideArea(client)) {
                 isHighTide = false;
@@ -91,7 +94,7 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
 function isInTideArea(client: Client): boolean {
     const id = client.Map.currentRoom?.id;
     if (!id) return false;
-    return ALL_AFFECTED_SET.has(id) || (id >= TEMP_ID_OFFSET && ALL_AFFECTED_SET.has(id - TEMP_ID_OFFSET));
+    return id == 3287 || ALL_AFFECTED_SET.has(id) || (id >= TEMP_ID_OFFSET && ALL_AFFECTED_SET.has(id - TEMP_ID_OFFSET));
 }
 
 function activate(client: Client) {
@@ -196,6 +199,7 @@ function activate(client: Client) {
     rebuildAreas(reader, affectedAreas);
     rebuildPathFinder((client.Map as any).pathFinder);
     rerender(client);
+    eventBus.emit('mapDataChanged');
 }
 
 function deactivate(client: Client) {
@@ -256,6 +260,7 @@ function deactivate(client: Client) {
     if (currentId) {
         client.Map.renderRoomById(currentId);
     }
+    eventBus.emit('mapDataChanged');
 }
 
 function rebuildAreas(reader: any, affectedAreas: Set<number>) {

@@ -488,6 +488,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let zoomHandler: (() => void) | null = null;
         let settingsHandler: (() => void) | null = null;
         let gridHandler: ((value: boolean) => void) | null = null;
+        let dataChangedHandler: (() => void) | null = null;
 
         const initTimeout = requestAnimationFrame(() => {
             if (!parentContainer) return;
@@ -710,11 +711,30 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 setState(s => ({ ...s, showGrid: value }));
             };
 
+            dataChangedHandler = () => {
+                const renderer = rendererRef.current;
+                const embedded = getEmbedded();
+                if (!renderer || !embedded) return;
+
+                levelsCache.clear();
+                setState(currentState => {
+                    if (currentState.viewedAreaId !== null) {
+                        renderer.drawArea(currentState.viewedAreaId, currentState.viewedLevel);
+                        if (embedded.currentRoom) {
+                            renderer.updatePositionMarker(embedded.currentRoom);
+                        }
+                        renderPathsAndHighlights();
+                    }
+                    return currentState;
+                });
+            };
+
             eventBus.on('mapPath', pathHandler);
             eventBus.on('mapHighlights', highlightHandler);
             eventBus.on('enterLocation', moveHandler);
             eventBus.on('uiSettings', settingsHandler);
             eventBus.on('mapShowGrid', gridHandler);
+            eventBus.on('mapDataChanged', dataChangedHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
             container.addEventListener('zoom', zoomHandler);
 
@@ -737,6 +757,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (moveHandler) eventBus.off('enterLocation', moveHandler);
             if (settingsHandler) eventBus.off('uiSettings', settingsHandler);
             if (gridHandler) eventBus.off('mapShowGrid', gridHandler);
+            if (dataChangedHandler) eventBus.off('mapDataChanged', dataChangedHandler);
             if (container && contextMenuHandler) {
                 container.removeEventListener('roomcontextmenu', contextMenuHandler);
             }

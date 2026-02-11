@@ -270,6 +270,7 @@ export interface KnownEvents {
     "poczta.letter.loaded": LetterContent;
     "roomInfo.popup.open": { roomId: number };
     "staticmap.popup.open": { roomId?: number; areaId?: number; instanceId?: string };
+    "mapDataChanged": void;
     "walker.stop": void;
     "walker.resume": void;
     "walker.setDelay": number;
