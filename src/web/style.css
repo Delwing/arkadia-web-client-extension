@@ -1722,6 +1722,24 @@ h1 {
   color: rgba(250, 204, 21, 0.92);
 }
 
+.knowledge-details-entry-categories {
+  flex-basis: 100%;
+  margin-left: 1.15rem;
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.knowledge-details-entry-category-badge {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.7rem;
+  background: rgba(139, 92, 246, 0.15);
+  color: rgba(196, 181, 253, 0.85);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 .knowledge-details-entry-location {
   flex: 0 0 auto;
   padding: 0.05rem 0.4rem;

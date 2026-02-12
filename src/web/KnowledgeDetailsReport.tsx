@@ -107,14 +107,15 @@ function getCurrentArea(): string | undefined {
   return getAreaForRoom(roomId);
 }
 
+type AreaSectionEntry = KnowledgeDetailsReportEntry & {
+  categories: string[];
+};
+
 type AreaSection = {
   areaName: string;
   known: number;
   total: number;
-  categories: {
-    categoryName: string;
-    entries: KnowledgeDetailsReportEntry[];
-  }[];
+  entries: AreaSectionEntry[];
 };
 
 const KnowledgeDetailsReport: React.FC = () => {
@@ -400,9 +401,9 @@ const KnowledgeDetailsReport: React.FC = () => {
       return [];
     }
 
-    const areaMap = new Map<string, Map<string, KnowledgeDetailsReportEntry[]>>();
-    const areaKnown = new Map<string, number>();
-    const areaTotal = new Map<string, number>();
+    // Flat deduplicated entries per area, each tracking which categories it belongs to
+    const areaEntryMap = new Map<string, Map<string, AreaSectionEntry>>();
+    const areaSeenEntries = new Map<string, Map<string, boolean>>();
 
     for (const category of data.categories) {
       for (const { key, showDetails } of TYPE_CONFIG) {
@@ -418,47 +419,68 @@ const KnowledgeDetailsReport: React.FC = () => {
             areaName = getAreaForRoom(entry.id) ?? 'Inne';
           }
 
-          let catMap = areaMap.get(areaName);
-          if (!catMap) {
-            catMap = new Map();
-            areaMap.set(areaName, catMap);
+          let entryMap = areaEntryMap.get(areaName);
+          if (!entryMap) {
+            entryMap = new Map();
+            areaEntryMap.set(areaName, entryMap);
           }
 
-          let catEntries = catMap.get(category.name);
-          if (!catEntries) {
-            catEntries = [];
-            catMap.set(category.name, catEntries);
+          const entryKey = entry.name.toLowerCase();
+          const existing = entryMap.get(entryKey);
+          if (existing) {
+            if (!existing.categories.includes(category.name)) {
+              existing.categories.push(category.name);
+            }
+          } else {
+            entryMap.set(entryKey, { ...entry, categories: [category.name] });
           }
-          catEntries.push(entry);
         }
 
-        // Count totals per area (regardless of hideCompleted)
+        // Count totals per area (regardless of hideCompleted), deduplicated by entry name
         for (const entry of summary.entries) {
           let areaName = 'Inne';
           if (entry.id != null) {
             areaName = getAreaForRoom(entry.id) ?? 'Inne';
           }
-          areaTotal.set(areaName, (areaTotal.get(areaName) ?? 0) + 1);
-          if (entry.status === 'known') {
-            areaKnown.set(areaName, (areaKnown.get(areaName) ?? 0) + 1);
+          let areaSeen = areaSeenEntries.get(areaName);
+          if (!areaSeen) {
+            areaSeen = new Map();
+            areaSeenEntries.set(areaName, areaSeen);
+          }
+          const entryKey = entry.name.toLowerCase();
+          const isKnown = entry.status === 'known';
+          const existingSeen = areaSeen.get(entryKey);
+          if (existingSeen === undefined) {
+            areaSeen.set(entryKey, isKnown);
+          } else if (!existingSeen && isKnown) {
+            areaSeen.set(entryKey, true);
           }
         }
       }
     }
 
+    const areaKnown = new Map<string, number>();
+    const areaTotal = new Map<string, number>();
+    for (const [areaName, seen] of areaSeenEntries) {
+      let total = 0;
+      let known = 0;
+      for (const isKnown of seen.values()) {
+        total++;
+        if (isKnown) known++;
+      }
+      areaTotal.set(areaName, total);
+      areaKnown.set(areaName, known);
+    }
+
     const currentArea = getCurrentArea();
     const sections: AreaSection[] = [];
 
-    for (const [areaName, catMap] of areaMap) {
-      const categories: AreaSection['categories'] = [];
-      for (const [categoryName, entries] of catMap) {
-        categories.push({ categoryName, entries });
-      }
+    for (const [areaName, entryMap] of areaEntryMap) {
       sections.push({
         areaName,
         known: areaKnown.get(areaName) ?? 0,
         total: areaTotal.get(areaName) ?? 0,
-        categories,
+        entries: Array.from(entryMap.values()),
       });
     }
 
@@ -498,16 +520,61 @@ const KnowledgeDetailsReport: React.FC = () => {
             {section.known}/{section.total}
           </span>
         </div>
-        {section.categories.map(({ categoryName, entries }) => (
-          <div key={categoryName} className="knowledge-details-area-category">
-            <div className="knowledge-details-type-heading">
-              <span className="knowledge-details-type-label">{categoryName}</span>
-            </div>
-            <ul className="knowledge-details-entries">
-              {entries.map((entry) => renderEntry(entry, `area-${section.areaName}-${categoryName}`))}
-            </ul>
-          </div>
-        ))}
+        <ul className="knowledge-details-entries">
+          {section.entries.map((entry) => {
+            const unavailable = entry.status !== 'known' && isUnavailable(entry);
+            const lokalizacja = isBlank(entry.lokalizacja) || entry.lokalizacja!.toLowerCase().includes('niedostepna') ? undefined : entry.lokalizacja;
+            const note = isBlank(entry.note) ? undefined : entry.note;
+            const statusClass = unavailable ? 'unavailable' : entry.status;
+
+            return (
+              <li
+                key={`area-${section.areaName}-${entry.name}`}
+                className={`knowledge-details-entry knowledge-details-entry--${statusClass}`}
+              >
+                <span
+                  className={`knowledge-details-entry-indicator knowledge-details-entry-indicator--${statusClass}`}
+                />
+                <span className="knowledge-details-entry-name">{entry.name}</span>
+                {showHints && lokalizacja && (
+                  <button
+                    type="button"
+                    className="knowledge-details-entry-location"
+                    title={lokalizacja}
+                    onClick={entry.id != null ? () => handleLeadToEntry(entry.id!) : undefined}
+                  >
+                    {lokalizacja}
+                  </button>
+                )}
+                {showHints && entry.id != null && (
+                  <button
+                    type="button"
+                    className="knowledge-details-entry-map"
+                    title="Pokaz na mapie"
+                    onClick={() => handleShowOnMap(entry.id!)}
+                  >
+                    &#x1f50d;
+                  </button>
+                )}
+                {showHints && unavailable && (
+                  <span className="knowledge-details-entry-note" title="Obecnie niedostepne">
+                    Obecnie niedostepne
+                  </span>
+                )}
+                {showHints && !unavailable && note && (
+                  <span className="knowledge-details-entry-note" title={note}>
+                    {note}
+                  </span>
+                )}
+                <span className="knowledge-details-entry-categories">
+                  {entry.categories.map((cat) => (
+                    <span key={cat} className="knowledge-details-entry-category-badge">{cat}</span>
+                  ))}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       </section>
     ));
   }, [filteredAreaSections, renderEntry]);
@@ -517,27 +584,39 @@ const KnowledgeDetailsReport: React.FC = () => {
       return null;
     }
 
-    const totals = data.categories.reduce(
-      (acc, category) => {
-        TYPE_CONFIG.forEach(({ key }) => {
-          const summary = category.types[key];
-          if (!summary) {
-            return;
+    const seen = new Map<string, boolean>();
+
+    for (const category of data.categories) {
+      for (const { key } of TYPE_CONFIG) {
+        const summary = category.types[key];
+        if (!summary) {
+          continue;
+        }
+
+        for (const entry of summary.entries) {
+          const entryKey = entry.name.toLowerCase();
+          const isKnown = entry.status === 'known';
+          const existing = seen.get(entryKey);
+          if (existing === undefined) {
+            seen.set(entryKey, isKnown);
+          } else if (!existing && isKnown) {
+            seen.set(entryKey, true);
           }
+        }
+      }
+    }
 
-          acc.total += summary.total;
-          acc.known += summary.known;
-        });
-
-        return acc;
-      },
-      { total: 0, known: 0 },
-    );
+    let total = 0;
+    let known = 0;
+    for (const isKnown of seen.values()) {
+      total++;
+      if (isKnown) known++;
+    }
 
     const percentage =
-      totals.total > 0 ? Math.round((totals.known / totals.total) * 100) : 0;
+      total > 0 ? Math.round((known / total) * 100) : 0;
 
-    return { ...totals, percentage };
+    return { total, known, percentage };
   }, [data]);
 
   const titleWithProgress = overallProgress
