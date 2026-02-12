@@ -120,22 +120,28 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         const transforms = getTransformDefinitions();
         const pad = 1;
 
-        type Card = { title: string; lines: AnsiAwareBuffer[]; contentWidth: number };
+        type Card = { title: string; countLabel: string; lines: AnsiAwareBuffer[]; contentWidth: number; small: boolean };
         const cards: Card[] = [];
 
         for (const { name, items } of depositEntries) {
             const lines: AnsiAwareBuffer[] = [];
             let contentWidth = name.length;
+            let small = false;
+            let countLabel = '';
 
             if (items === null) {
                 const line = new AnsiAwareBuffer('brak depozytu');
                 lines.push(line);
                 contentWidth = Math.max(contentWidth, line.text.length);
+                small = true;
             } else if (items.length === 0) {
                 const line = new AnsiAwareBuffer('(pusty)');
                 lines.push(line);
                 contentWidth = Math.max(contentWidth, line.text.length);
+                small = true;
             } else {
+                countLabel = `(${items.length})`;
+                contentWidth = Math.max(contentWidth, name.length + 3 + countLabel.length);
                 for (const item of items) {
                     const countStr = String(item.count).padStart(3, ' ');
                     const itemLine = new AnsiAwareBuffer(`${countStr} | `);
@@ -149,8 +155,12 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
                 }
             }
 
-            cards.push({ title: name, lines, contentWidth });
+            cards.push({ title: name, countLabel, lines, contentWidth, small });
         }
+
+        // Separate full deposits from empty/not-bought ones
+        const fullCards = cards.filter(c => !c.small);
+        const smallCards = cards.filter(c => c.small);
 
         // Calculate total coin wealth across all deposits
         let totalCopper = 0;
@@ -180,59 +190,136 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         const gapStr = ' '.repeat(gap);
         const output = new AnsiAwareBuffer();
 
-        for (let rowStart = 0; rowStart < cards.length; rowStart += numCols) {
-            const rowCards = cards.slice(rowStart, rowStart + numCols);
-            const maxLines = Math.max(...rowCards.map(c => c.lines.length));
-
-            if (rowStart > 0) output.append('\n');
-
-            // top border
-            output.append(rowCards.map(() => `+${horiz}+`).join(gapStr) + '\n');
-
-            // title row
+        function renderTitleLine(card: Card): AnsiAwareBuffer {
             const titleLine = new AnsiAwareBuffer();
-            for (let c = 0; c < rowCards.length; c++) {
-                if (c > 0) titleLine.append(gapStr);
-                const title = rowCards[c].title;
-                titleLine.append(`|${padStr}`);
-                const titleBuf = new AnsiAwareBuffer(title);
-                titleBuf.color([0, titleBuf.length], BANK_NAME_COLOR);
-                titleLine.appendBuffer(titleBuf);
-                titleLine.append(`${' '.repeat(colContentWidth - title.length)}${padStr}|`, {});
+            titleLine.append(`|${padStr}`);
+            const titleBuf = new AnsiAwareBuffer(card.title);
+            titleBuf.color([0, titleBuf.length], BANK_NAME_COLOR);
+            titleLine.appendBuffer(titleBuf);
+            const spaceBetween = colContentWidth - card.title.length - card.countLabel.length;
+            titleLine.append(' '.repeat(spaceBetween) + card.countLabel + `${padStr}|`, {});
+            return titleLine;
+        }
+
+        // Helper to render a small card into lines (natural height, no padding)
+        function renderCard(card: Card): AnsiAwareBuffer[] {
+            const result: AnsiAwareBuffer[] = [];
+            result.push(new AnsiAwareBuffer(`+${horiz}+`));
+            result.push(renderTitleLine(card));
+            result.push(new AnsiAwareBuffer(`+${horiz}+`));
+            for (const line of card.lines) {
+                const itemLine = new AnsiAwareBuffer();
+                itemLine.append(`|${padStr}`);
+                itemLine.appendBuffer(line);
+                const remaining = colContentWidth - line.text.length;
+                if (remaining > 0) itemLine.append(' '.repeat(remaining), {});
+                itemLine.append(`${padStr}|`, {});
+                result.push(itemLine);
             }
-            output.appendBuffer(titleLine);
-            output.append('\n');
+            result.push(new AnsiAwareBuffer(`+${horiz}+`));
+            return result;
+        }
 
-            // separator
-            output.append(rowCards.map(() => `+${horiz}+`).join(gapStr) + '\n');
+        // Render full card column padded to maxContentLines
+        function renderFullColumn(card: Card, maxContentLines: number): AnsiAwareBuffer[] {
+            const col: AnsiAwareBuffer[] = [];
+            col.push(new AnsiAwareBuffer(`+${horiz}+`));
+            col.push(renderTitleLine(card));
+            col.push(new AnsiAwareBuffer(`+${horiz}+`));
+            for (let i = 0; i < maxContentLines; i++) {
+                if (i < card.lines.length) {
+                    const itemLine = new AnsiAwareBuffer();
+                    itemLine.append(`|${padStr}`);
+                    itemLine.appendBuffer(card.lines[i]);
+                    const remaining = colContentWidth - card.lines[i].text.length;
+                    if (remaining > 0) itemLine.append(' '.repeat(remaining), {});
+                    itemLine.append(`${padStr}|`, {});
+                    col.push(itemLine);
+                } else {
+                    col.push(new AnsiAwareBuffer(`|${' '.repeat(colContentWidth + pad * 2)}|`));
+                }
+            }
+            col.push(new AnsiAwareBuffer(`+${horiz}+`));
+            return col;
+        }
 
-            // item rows
-            for (let i = 0; i < maxLines; i++) {
+        // Composite column arrays side by side
+        function renderColumns(columns: AnsiAwareBuffer[][], totalHeight: number) {
+            const emptyCell = ' '.repeat(colWidth);
+            for (let row = 0; row < totalHeight; row++) {
+                if (output.length > 0) output.append('\n');
                 const rowLine = new AnsiAwareBuffer();
-                for (let c = 0; c < rowCards.length; c++) {
+                for (let c = 0; c < columns.length; c++) {
                     if (c > 0) rowLine.append(gapStr);
-                    const card = rowCards[c];
-                    if (i < card.lines.length) {
-                        const line = card.lines[i];
-                        rowLine.append(`|${padStr}`);
-                        rowLine.appendBuffer(line);
-                        const remaining = colContentWidth - line.text.length;
-                        if (remaining > 0) rowLine.append(' '.repeat(remaining), {});
-                        rowLine.append(`${padStr}|`, {});
+                    if (row < columns[c].length) {
+                        rowLine.appendBuffer(columns[c][row]);
                     } else {
-                        rowLine.append(`|${' '.repeat(colContentWidth + pad * 2)}|`);
+                        rowLine.append(emptyCell);
                     }
                 }
                 output.appendBuffer(rowLine);
-                output.append('\n');
             }
+        }
 
-            // bottom border
-            output.append(rowCards.map(() => `+${horiz}+`).join(gapStr));
+        const smallCardHeight = 5; // border + title + sep + 1 content line + border
+        let fullIdx = 0;
+        let smallIdx = 0;
+        let maxRenderedCols = 0;
+
+        while (fullIdx < fullCards.length || smallIdx < smallCards.length) {
+            const rowFull = fullCards.slice(fullIdx, fullIdx + numCols);
+            fullIdx += rowFull.length;
+            const slotsForSmall = numCols - rowFull.length;
+
+            if (rowFull.length > 0) {
+                const maxContentLines = Math.max(...rowFull.map(c => c.lines.length));
+                const totalRowHeight = maxContentLines + 4;
+                const cardsPerSlot = Math.max(1, Math.floor(totalRowHeight / smallCardHeight));
+
+                const columns: AnsiAwareBuffer[][] = [];
+
+                // Full card columns (padded to uniform height)
+                for (const card of rowFull) {
+                    columns.push(renderFullColumn(card, maxContentLines));
+                }
+
+                // Fill remaining slots with stacked small cards
+                for (let s = 0; s < slotsForSmall && smallIdx < smallCards.length; s++) {
+                    const col: AnsiAwareBuffer[] = [];
+                    for (let i = 0; i < cardsPerSlot && smallIdx < smallCards.length; i++) {
+                        col.push(...renderCard(smallCards[smallIdx++]));
+                    }
+                    // Pad to row height with blank space
+                    const blank = new AnsiAwareBuffer(' '.repeat(colWidth));
+                    while (col.length < totalRowHeight) {
+                        col.push(blank);
+                    }
+                    columns.push(col);
+                }
+
+                maxRenderedCols = Math.max(maxRenderedCols, columns.length);
+                renderColumns(columns, totalRowHeight);
+            } else {
+                // Only small cards left — masonry pack into columns
+                const cols: AnsiAwareBuffer[][] = Array.from({ length: numCols }, () => []);
+                while (smallIdx < smallCards.length) {
+                    let minIdx = 0;
+                    for (let i = 1; i < numCols; i++) {
+                        if (cols[i].length < cols[minIdx].length) minIdx = i;
+                    }
+                    cols[minIdx].push(...renderCard(smallCards[smallIdx++]));
+                }
+                while (cols.length > 1 && cols[cols.length - 1].length === 0) {
+                    cols.pop();
+                }
+                maxRenderedCols = Math.max(maxRenderedCols, cols.length);
+                const maxHeight = Math.max(...cols.map(c => c.length));
+                renderColumns(cols, maxHeight);
+            }
         }
 
         if (totalCopper > 0) {
-            const totalWidth = numCols * colWidth + (numCols - 1) * gap;
+            const totalWidth = maxRenderedCols * colWidth + (maxRenderedCols - 1) * gap;
             output.append('\n\n🪙 ');
             output.appendBuffer(convertCurrency(totalCopper));
             output.append('\n', {});
