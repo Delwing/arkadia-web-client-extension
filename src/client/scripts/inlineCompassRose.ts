@@ -20,6 +20,18 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
 
     const boxContainer = document.getElementById('compass-rose-box') as HTMLDivElement | null;
 
+    // Click handler for directions and special exits (event delegation)
+    boxContainer?.addEventListener('click', (e) => {
+        const target = (e.target as HTMLElement).closest<HTMLElement>('.cr-clickable');
+        if (!target) return;
+        const dir = target.dataset.dir;
+        if (dir) {
+            client.sendCommand(dir);
+        } else if (target.dataset.exit) {
+            client.sendCommand(target.dataset.exit);
+        }
+    });
+
     const listener = () => {
         const data = gmcp?.room?.info;
         const parsed = parseExits(data);
@@ -234,7 +246,9 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         dirs.forEach(el => {
             const dir = el.dataset.dir;
             if (dir) {
-                el.classList.toggle('active', hasExit(dir));
+                const active = hasExit(dir);
+                el.classList.toggle('active', active);
+                el.classList.toggle('cr-clickable', active);
             }
         });
 
@@ -244,7 +258,8 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             specialContainer.innerHTML = '';
             specialExits.forEach(exit => {
                 const span = document.createElement('span');
-                span.className = 'cr-special';
+                span.className = 'cr-special cr-clickable';
+                span.dataset.exit = exit;
                 span.textContent = exit.toUpperCase();
                 specialContainer.appendChild(span);
             });

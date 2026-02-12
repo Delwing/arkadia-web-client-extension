@@ -8515,6 +8515,15 @@ body.mobile-command-radial-active {
   color: #00ff7f;
 }
 
+.cr-clickable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.cr-clickable:hover {
+  color: #fff;
+}
+
 .compass-rose-grid .cr-center {
   color: #696969;
 }
