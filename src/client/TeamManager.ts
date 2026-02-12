@@ -240,13 +240,23 @@ export default class TeamManager {
             }
             return line;
         }, tag);
-        triggers.registerTrigger(/^Dolaczasz do druzyny/, (line) => {
+        triggers.registerTrigger(/^Dolaczasz do druzyny \[?([A-Z][a-z ]+?)]?\.(?: Od teraz jej sklad stanowicie ty(?:, | i )(.+)\.)?$/, (line, matches) => {
+            this.clearTeam();
+            const leader = matches?.[1]?.trim();
+            if (leader) {
+                this.leader = leader;
+                this.addMember(leader);
+            }
+            const teamList = matches?.[2];
+            if (teamList) {
+                this.parseNames(teamList).forEach(name => this.addMember(name));
+            }
             this.joined = true;
-            this.client.sendGMCP("objects.nums")
-            this.client.sendGMCP("objects.data")
+            this.client.sendGMCP("objects.nums");
+            this.client.sendGMCP("objects.data");
             this.client.sendEvent('teamChange');
             return line;
-        })
+        }, tag)
     }
 
     private parseNames(list: string): string[] {

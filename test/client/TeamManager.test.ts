@@ -7,6 +7,7 @@ class FakeClient {
   private emitter = new EventEmitter();
   Triggers = new Triggers({} as any);
   println = jest.fn();
+  sendGMCP = jest.fn();
   on(event: string, cb: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
@@ -211,6 +212,31 @@ describe('TeamManager', () => {
     manager.addEnemyToQueue(7);
     client.sendEvent('gmcp.room.info', { num: 123 });
     expect(manager.getEnemyQueue()).toEqual([]);
+  });
+
+  test('clears team on "Porzucasz swoja druzyne."', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    client.Triggers.parseLine(new AnsiAwareBuffer('Porzucasz swoja druzyne.'), '');
+    expect(manager.getTeamMembers()).toEqual([]);
+    expect(manager.isInAnyTeam()).toBe(false);
+  });
+
+  test('populates team on "Dolaczasz do druzyny" with member list', () => {
+    client.Triggers.parseLine(new AnsiAwareBuffer('Dolaczasz do druzyny Vesper. Od teraz jej sklad stanowicie ty, Pablo i Vesper.'), '');
+    expect(manager.getLeader()).toBe('Vesper');
+    expect(manager.isInTeam('Vesper')).toBe(true);
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    expect(manager.isInAnyTeam()).toBe(true);
+  });
+
+  test('populates team on "Dolaczasz do druzyny" with only leader', () => {
+    client.Triggers.parseLine(new AnsiAwareBuffer('Dolaczasz do druzyny Vesper. Od teraz jej sklad stanowicie ty i Vesper.'), '');
+    expect(manager.getLeader()).toBe('Vesper');
+    expect(manager.isInTeam('Vesper')).toBe(true);
+    expect(manager.isInAnyTeam()).toBe(true);
   });
 
   test('clears leader attack target when target disappears from objects.nums', () => {

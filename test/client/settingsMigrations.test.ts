@@ -66,6 +66,29 @@ describe('settingsMigrations', () => {
         });
     });
 
+    describe('migration v5: inlineCompassRose boolean to number', () => {
+        it('converts true to 1', () => {
+            const oldSettings = { inlineCompassRose: true } as any;
+            const { settings, migrated } = migrateSettings(oldSettings);
+            expect(migrated).toBe(true);
+            expect(settings.inlineCompassRose).toBe(1);
+        });
+
+        it('converts false to 0', () => {
+            const oldSettings = { inlineCompassRose: false } as any;
+            const { settings, migrated } = migrateSettings(oldSettings);
+            expect(migrated).toBe(true);
+            expect(settings.inlineCompassRose).toBe(0);
+        });
+
+        it('preserves number values', () => {
+            const oldSettings = { inlineCompassRose: 2 } as any;
+            const { settings, migrated } = migrateSettings(oldSettings);
+            expect(migrated).toBe(true);
+            expect(settings.inlineCompassRose).toBe(2);
+        });
+    });
+
     describe('runAllSettingsMigrations', () => {
         it('migrates settings in localStorage', () => {
             const oldSettings = {

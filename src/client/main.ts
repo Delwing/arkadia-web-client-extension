@@ -259,7 +259,7 @@ export function registerScripts(client: Client) {
     initCombatWindow(client, aliases)
     initKillTracker(client)
     initPackageHelper(client)
-    initInlineCompassRose(client)
+    initInlineCompassRose(client, aliases)
     initClock(client)
     initSunCalendarLogger(client)
     initWyroznienieOptions(client)

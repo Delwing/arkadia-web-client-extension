@@ -44,8 +44,9 @@ class ArkadiaClient implements ClientAdapter {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
-                if (path === "char.info") {
+                if (path === "char.info" && !this.receivedFirstGmcp) {
                     this.receivedFirstGmcp = true;
+                    this.maybeStartAutoRecording();
                 }
                 this.emit(`gmcp.${path}`, value);
                 this.emit('gmcp', {path, value});

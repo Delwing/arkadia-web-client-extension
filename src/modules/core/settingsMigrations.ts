@@ -65,6 +65,16 @@ const migrations: Migration[] = [
         description: 'Migrate showTransportLabel/showCombatTimer/showClockDisplay to footerComponents (handled by migrateFooterComponentVisibility)',
         migrate: settings => settings, // No-op for core Settings, actual migration is async
     },
+    {
+        version: 5,
+        description: 'Convert inlineCompassRose from boolean to number (0=off, 1=inline, 2=box)',
+        migrate: (settings) => {
+            if (typeof settings.inlineCompassRose === 'boolean') {
+                return { ...settings, inlineCompassRose: settings.inlineCompassRose ? 1 : 0 };
+            }
+            return settings;
+        },
+    },
 ];
 
 /**

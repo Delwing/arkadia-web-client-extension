@@ -3,48 +3,104 @@ import { createColorFormat } from "@modules/core/Colors";
 import { gmcp } from "../gmcp";
 import { getShortDir, longToShort } from "@shared/map";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
+import { getItemSync, setItemSync } from "@modules/core/storage";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");
 const DIM_GRAY = createColorFormat("#696969");
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
-export default function initInlineCompassRose(client: Client) {
+type Alias = { pattern: RegExp; callback: (m: RegExpMatchArray) => void };
+
+export default function initInlineCompassRose(client: Client, aliases?: Alias[]) {
     let exits = new Set<string>();
     let specialExits: string[] = [];
-    let enabled = false;
+    let mode = 0; // 0=off, 1=inline, 2=box
     let unsubscribeExits: (() => void) | undefined;
+
+    const boxContainer = document.getElementById('compass-rose-box') as HTMLDivElement | null;
 
     const listener = () => {
         const data = gmcp?.room?.info;
         const parsed = parseExits(data);
         exits = new Set(parsed.standard);
         specialExits = parsed.special;
-        showCompassRose();
+        if (mode === 1) {
+            showInlineCompassRose();
+        } else if (mode === 2) {
+            updateBoxCompassRose();
+        }
     };
 
+    function applySettingsValue(value: unknown) {
+        // Backward compat: boolean true → 1
+        if (value === true) value = 1;
+        if (value === false) value = 0;
+        setMode(typeof value === 'number' ? value : 0);
+    }
+
+    // Load initial value from storage so the box shows before game login
+    const initial = getItemSync('settings')?.settings;
+    if (initial) {
+        applySettingsValue(initial.inlineCompassRose);
+    }
+
     client.on("settings", (payload) => {
-        const detail = (payload ?? {}) as { inlineCompassRose?: boolean };
-        const shouldEnable = !!detail.inlineCompassRose;
-        if (shouldEnable) {
-            enable();
-        } else {
-            disable();
-        }
+        const detail = (payload ?? {}) as Record<string, unknown>;
+        applySettingsValue(detail.inlineCompassRose);
     });
 
-    function enable() {
-        if (enabled) return;
-        enabled = true;
-        unsubscribeExits = client.on("gmcp_msg.room.exits", () => listener());
+    function setMode(newMode: number) {
+        if (newMode === mode) return;
+        const wasSubscribed = mode > 0;
+        mode = newMode;
+        if (mode > 0 && !wasSubscribed) {
+            unsubscribeExits = client.on("gmcp_msg.room.exits", () => listener());
+        } else if (mode === 0 && wasSubscribed) {
+            unsubscribeExits?.();
+            unsubscribeExits = undefined;
+        }
+        if (mode !== 2) {
+            hideBox();
+        }
+        if (mode === 2) {
+            updateBoxCompassRose();
+        }
     }
 
-    function disable() {
-        if (!enabled) return;
-        enabled = false;
-        unsubscribeExits?.();
-        unsubscribeExits = undefined;
+    function persistMode(newMode: number) {
+        setMode(newMode);
+        const stored = getItemSync('settings')?.settings ?? {};
+        stored.inlineCompassRose = mode;
+        setItemSync('settings', stored);
     }
+
+    // --- /roza alias ---
+    if (aliases) {
+        aliases.push({
+            pattern: /^\/roza(?:\s+([012]))?$/,
+            callback: (m: RegExpMatchArray) => {
+                const arg = m[1];
+                if (arg === undefined) {
+                    // Toggle: off → last mode (default 1), on → off
+                    if (mode > 0) {
+                        persistMode(0);
+                        client.println("Roza wiatrow: wyl.");
+                    } else {
+                        persistMode(1);
+                        client.println("Roza wiatrow: wl. (tryb 1 - inline)");
+                    }
+                } else {
+                    const n = Number(arg);
+                    persistMode(n);
+                    const labels = ["wyl.", "wl. (tryb 1 - inline)", "wl. (tryb 2 - ramka)"];
+                    client.println(`Roza wiatrow: ${labels[n]}`);
+                }
+            },
+        });
+    }
+
+    // --- Shared exit parsing ---
 
     function parseExits(detail: any): { standard: string[]; special: string[] } {
         let list: string[] = [];
@@ -68,7 +124,6 @@ export default function initInlineCompassRose(client: Client) {
             if (VALID_SHORT_DIRS.has(shortDir)) {
                 standard.push(shortDir);
             } else {
-                // Keep original exit name for special exits
                 special.push(exit);
             }
         });
@@ -79,6 +134,8 @@ export default function initInlineCompassRose(client: Client) {
     function hasExit(short: string): boolean {
         return exits.has(short);
     }
+
+    // --- Mode 1: inline text compass rose ---
 
     function printExit(short: string): AnsiAwareBuffer {
         if (!hasExit(short)) {
@@ -93,7 +150,7 @@ export default function initInlineCompassRose(client: Client) {
         const line = new AnsiAwareBuffer();
         for (const part of parts) {
             if (typeof part === "string") {
-                line.append(part, {}); // Explicitly pass empty state to prevent color bleeding
+                line.append(part, {});
             } else {
                 line.appendBuffer(part);
             }
@@ -101,7 +158,7 @@ export default function initInlineCompassRose(client: Client) {
         return line;
     }
 
-    function showCompassRose() {
+    function showInlineCompassRose() {
         const lines: AnsiAwareBuffer[] = [
             buildLine("       ", printExit("nw"), "  ", printExit("n"), "  ", printExit("ne"), "    ", printExit("u")),
             buildLine("         ", hasExit("nw") ? "\\" : " ", " ", hasExit("n") ? "|" : " ", " ", hasExit("ne") ? "/" : " ", "      ", hasExit("u") ? "|" : ""),
@@ -111,25 +168,18 @@ export default function initInlineCompassRose(client: Client) {
             buildLine("       ", printExit("sw"), "  ", printExit("s"), "  ", printExit("se"), "    ", printExit("d")),
         ];
 
-        // Add colored "X" in the center line
         const centerX = new AnsiAwareBuffer("X");
         centerX.color([0, 1], DIM_GRAY);
         lines[2].appendBuffer(centerX);
         lines[2].appendBuffer(lines[3]);
 
-        // Add special exits column on the right
-        // Only show on lines 0, 2, 4 (same lines as NE, E, SE)
         if (specialExits.length > 0) {
-            const exitLines = [0, 2, 4]; // Lines where exits should appear
-
-            // Find the max length of lines that will have special exits, to align them
+            const exitLines = [0, 2, 4];
             const baseLength = Math.max(...exitLines.map(i => lines[i].length));
 
             let exitIndex = 0;
 
-            // Process exits in columns of 3
             while (exitIndex < specialExits.length) {
-                // Find max width needed for this column
                 const columnExits: string[] = [];
                 for (let i = 0; i < exitLines.length && exitIndex + i < specialExits.length; i++) {
                     columnExits.push(specialExits[exitIndex + i].toUpperCase());
@@ -138,7 +188,6 @@ export default function initInlineCompassRose(client: Client) {
 
                 for (let i = 0; i < exitLines.length; i++) {
                     const lineIdx = exitLines[i];
-                    // Pad line to base length before adding special exits
                     const currentLength = lines[lineIdx].length;
                     if (currentLength < baseLength) {
                         lines[lineIdx].append(" ".repeat(baseLength - currentLength));
@@ -152,7 +201,6 @@ export default function initInlineCompassRose(client: Client) {
                         lines[lineIdx].appendBuffer(exitBuffer);
                         exitIndex++;
                     } else {
-                        // Pad empty space to keep alignment for next column
                         lines[lineIdx].append("    " + " ".repeat(columnWidth));
                     }
                 }
@@ -161,7 +209,7 @@ export default function initInlineCompassRose(client: Client) {
 
         const output = new AnsiAwareBuffer();
         for (let i = 0; i < lines.length; i++) {
-            if (i === 3) continue; // Skip line 3 as it was merged into line 2
+            if (i === 3) continue;
             const line = lines[i];
             if (line.text.trim().length > 0) {
                 if (output.length > 0) {
@@ -172,5 +220,40 @@ export default function initInlineCompassRose(client: Client) {
         }
 
         client.println(output);
+    }
+
+    // --- Mode 2: floating box compass rose ---
+
+    function updateBoxCompassRose() {
+        if (!boxContainer) return;
+
+        boxContainer.style.display = 'flex';
+
+        // Update direction cells
+        const dirs = boxContainer.querySelectorAll<HTMLElement>('.cr-dir');
+        dirs.forEach(el => {
+            const dir = el.dataset.dir;
+            if (dir) {
+                el.classList.toggle('active', hasExit(dir));
+            }
+        });
+
+        // Update special exits (on top, growing upward)
+        const specialContainer = boxContainer.querySelector('.compass-rose-special-exits');
+        if (specialContainer) {
+            specialContainer.innerHTML = '';
+            specialExits.forEach(exit => {
+                const span = document.createElement('span');
+                span.className = 'cr-special';
+                span.textContent = exit.toUpperCase();
+                specialContainer.appendChild(span);
+            });
+        }
+    }
+
+    function hideBox() {
+        if (boxContainer) {
+            boxContainer.style.display = 'none';
+        }
     }
 }

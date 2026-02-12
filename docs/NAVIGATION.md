@@ -47,6 +47,17 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 |---------|------|
 | `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |
 
+## Roza wiatrow
+
+| Komenda | Opis |
+|---------|------|
+| `/roza` | Przelacz roze wiatrow (wl./wyl.) |
+| `/roza 0` | Wylacz roze wiatrow |
+| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |
+| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |
+
+> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja "Roza wiatrow").
+
 ## Zaznaczanie lokacji
 
 | Komenda | Opis |

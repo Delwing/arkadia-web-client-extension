@@ -77,7 +77,7 @@
     "id": 6226,
     "Domena": "Imperium",
     "lokalizacja": "Averland - Swiatynia Chaosu z  Xavierem",
-    "note": "\"ob ciala\""
+    "note": "\"ob cialo\""
   },
   {
     "Rodzaj": "Wiedza o Chaosie i jego tworach",
@@ -2509,7 +2509,7 @@
     "id": 1163,
     "Domena": "Ishtar",
     "lokalizacja": "Wyzima",
-    "note": "Musisz udac sie w palacowego maga ksiecia pod wyzima.Idz do maga zapytaj \"o specyfiki\" zaplac 20 zk, przeloguj i powtorz.Zbierz ze 3-4 lancuchy. Pod murami SW od miasta jest rezydencja gdzie strzyga przebywa(na polnocy jest przejscie ktore omija straz \"wyrwij deske\"). Sprawdz kiedy jest swit, musisz ja spetac przed switem i utrzymac do 3h po swicie. \"zarzuc lancuch na strzyge\" jak sie zerwie zarzuc kolejny. Musisz byc na dziedzincu przy bramie a nie przypadkiem w samej rezydencji.(id:1163). Jak znajdziesz ja to cie zaatakuje i bedzie cie gonic wiec wyprowadzenie jej nie jest problemem."
+    "note": "Musisz udac sie w palacowego maga ksiecia pod wyzima.Idz do maga zapytaj \"o specyfiki\" zaplac 20 zk, przeloguj i powtorz.Zbierz ze 3-4 lancuchy(relog wymagany by kupic kolejny). Pod murami SW od miasta jest rezydencja gdzie strzyga przebywa(na polnocy jest przejscie ktore omija straz \"wyrwij deske\"). Sprawdz kiedy jest swit, musisz ja spetac przed switem i utrzymac do 3h po swicie. \"zarzuc lancuch na strzyge\" jak sie zerwie zarzuc kolejny. Musisz byc na dziedzincu przy bramie a nie przypadkiem w samej rezydencji.(id:1163). Jak znajdziesz ja to cie zaatakuje i bedzie cie gonic wiec wyprowadzenie jej nie jest problemem. Laczy sie z wpisem 437 przeczytaj go takze."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -2685,7 +2685,7 @@
     "id": 25467,
     "Domena": "Ishtar",
     "lokalizacja": "Wyzima",
-    "note": "Niska ruda strzyga. Pobiegaj po Rezydencji w nocy az nie spotkasz strzygi i \"ob strzyge\". Na polnocy traktu jest przejscie do Rezydencji z pominieciem Straznikow."
+    "note": "Idz do rezydencji (NA SW OD WYZIMY) w Nocy. Pomin straz i idz na polnoc \" wyrwij deske\" i tedy dostaniesz sie do rezydencji. Obiegnij rezydencje gdzies w niej chodzi sobie strzyga \"ob strzyge\" i uciekaj bo goni kilka lokacji za deska jeszcze."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3454,6 +3454,22 @@
     "Domena": "Imperium",
     "lokalizacja": "Zamek Drachenfels",
     "note": "Czarny pulsujacy krysztal \"rozbij krysztal\""
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Widziales jak ktos uwolnil moc aury plomieni, zalewajac wszystko fala ognia",
+    "id": null,
+    "Domena": "Ishtar/Imperium",
+    "lokalizacja": "Wszedzie",
+    "note": "Czar z pergaminu"
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Zabezpieczyles wieko sarkofagu ochronnymi znakami z magicznego pergaminu",
+    "id": 25494,
+    "Domena": "Ishtar",
+    "lokalizacja": "Wyzima",
+    "note": "Udajesz sie do palacu pod Wyzima do maga(id 1180) \"zapytaj o specyfik\" \"zaplac czlowiekowi\" (20zk) procz lancuchow dostaniesz tez pergamin.Idziesz do sarkofagu strzygi w rezydencji (SW od Wyzimy) w NOCY gdy strzyga jest poza nim. \"zasun wieko\" \"Przerysuj wzor z pergaminu na wieko\" Moze ci sie udac za 1x a mozesz potrzebowac wiecej prob, dlatego warto pare kupic od razu od maga ( musisz relogowac po kazdym kupnie).Przy relogu odkladasz pergamin na glebe wiec podnies po zalogowaniu. Laczy sie z wiedza 317 zapoznaj sie i z nia."
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",

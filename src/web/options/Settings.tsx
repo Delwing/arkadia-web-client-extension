@@ -170,14 +170,20 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                 onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
                                 className="me-2"
                             />
-                            <Form.Check
-                                type="checkbox"
-                                id="inlineCompassRose"
-                                label="Róża wiatrów"
-                                checked={settings.inlineCompassRose}
-                                onChange={e => onChangeSetting(s => s.inlineCompassRose = e.target.checked)}
-                                className="me-2"
-                            />
+                            <Form.Group className="d-flex align-items-center me-2">
+                                <Form.Label className="me-1 mb-0" htmlFor="inlineCompassRose">Roza wiatrow:</Form.Label>
+                                <Form.Select
+                                    id="inlineCompassRose"
+                                    size="sm"
+                                    style={{width: 'auto'}}
+                                    value={settings.inlineCompassRose}
+                                    onChange={e => onChangeSetting(s => s.inlineCompassRose = Number(e.target.value))}
+                                >
+                                    <option value={0}>Wyl.</option>
+                                    <option value={1}>Inline</option>
+                                    <option value={2}>Ramka</option>
+                                </Form.Select>
+                            </Form.Group>
                             <Form.Check
                                 type="checkbox"
                                 id="shortenExits"
