@@ -138,6 +138,10 @@ export default class Client {
         attachGmcpListener(this);
 
         this.updateContentWidth();
+        const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
+        if (outputWrapper) {
+            new ResizeObserver(() => this.updateContentWidth()).observe(outputWrapper);
+        }
         window.addEventListener('resize', () => this.updateContentWidth());
         this.on('uiSettings', () => this.updateContentWidth());
 

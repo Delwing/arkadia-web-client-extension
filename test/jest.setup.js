@@ -16,6 +16,14 @@ if (typeof globalThis.localStorage === 'undefined') {
   globalThis.localStorage = new LocalStorageMock();
 }
 
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 if (typeof globalThis.structuredClone !== 'function') {
   globalThis.structuredClone = (val) => JSON.parse(JSON.stringify(val));
 }
