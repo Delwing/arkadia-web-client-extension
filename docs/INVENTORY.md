@@ -50,7 +50,11 @@ Menedzer pojemnikow pozwala przypisac wybrane torby, plecaki i inne pojemniki do
 |---------|------|
 | `/depozyt` | Sprawdz zawartosc depozytu w aktualnym banku |
 | `/depozyty` | Wyswietl liste zapisanych depozytow |
+| `/depozytyw` | Otworz okno depozytow |
+| `/depozytyw <filtr>` | Otworz okno depozytow z podanym filtrem |
 | `/depozyt_reset` | Usun wszystkie zapisane depozyty |
+
+> **Wskazowka:** Okno depozytow jest rowniez dostepne z menu kontekstowego (prawy przycisk myszy). Przedmioty sa kolorowane tak samo jak w `/depozyty` (monety, klucze magiczne, magie).
 
 ## Przegladanie i ocena
 

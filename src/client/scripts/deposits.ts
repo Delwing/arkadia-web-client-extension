@@ -3,10 +3,11 @@ import { prettyPrintContainer, parseItems, getTransformDefinitions, ContainerIte
 import { convertCurrency } from "./priceEvaluation";
 import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
+import eventBus from "@modules/core/eventBus";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
-interface DepositInfo {
+export interface DepositInfo {
     name: string;
     items: ContainerItem[] | null;
 }
@@ -36,12 +37,17 @@ function isBankRoom(room: any): boolean {
     return !!room?.userData?.bind && room.userData.bind.includes("depozyt");
 }
 
+export function getDepositsData(): Record<number, DepositInfo> {
+    return cloneDeposits(deposits);
+}
+
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     client.on("storage", ({ key, value }) => {
         if (key === STORAGE_KEY) {
             const nextDeposits = cloneDeposits(value as Record<number, DepositInfo> | undefined);
             Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
             Object.assign(deposits, nextDeposits);
+            eventBus.emit("deposits.updated");
         }
     });
 
@@ -50,6 +56,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
     const persist = () => {
         const snapshot = cloneDeposits(deposits);
         client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: snapshot });
+        eventBus.emit("deposits.updated");
     };
 
     const clearDeposits = () => {
@@ -333,6 +340,10 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         aliases.push({ pattern: /\/depozyt$/, callback: () => client.sendCommand("przejrzyj depozyt") });
         aliases.push({ pattern: /\/depozyty$/, callback: printDeposits });
         aliases.push({ pattern: /\/depozyt_reset$/, callback: clearDeposits });
+        aliases.push({ pattern: /\/depozytyw(?:\s+(.+))?$/, callback: (matches?: RegExpMatchArray) => {
+            const filter = matches?.[1]?.trim() || undefined;
+            eventBus.emit("deposits.popup.open", { filter });
+        }});
     }
 
     window.addEventListener("beforeunload", persist);

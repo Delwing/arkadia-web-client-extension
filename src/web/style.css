@@ -8465,7 +8465,7 @@ body.mobile-command-radial-active {
 .compass-rose-box {
   position: absolute;
   bottom: 4px;
-  right: 4px;
+  right: 20px;
   z-index: 10;
   background: rgba(0, 0, 0, 0.75);
   padding: 5px;
@@ -8531,3 +8531,133 @@ body.mobile-command-radial-active {
 .compass-rose-grid .cr-sep {
   /* empty cell placeholder between u and d column */
 }
+
+/* Deposits Popup */
+.deposits-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--surface-elevated);
+}
+
+.deposits-popup__filter {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  outline: none;
+  width: 100px;
+  transition: border-color 0.15s ease;
+}
+
+.deposits-popup__filter:focus {
+  border-color: rgba(255, 99, 71, 0.5);
+}
+
+.deposits-popup__filter::placeholder {
+  color: rgba(241, 245, 249, 0.3);
+}
+
+.deposits-popup__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+}
+
+.deposits-popup__empty {
+  padding: 1rem;
+  text-align: center;
+  color: rgba(241, 245, 249, 0.5);
+  font-style: italic;
+}
+
+.deposits-popup__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.deposits-popup__card {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.deposits-popup__card--empty {
+  opacity: 0.6;
+}
+
+.deposits-popup__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.deposits-popup__bank-name {
+  color: #ff6347;
+  font-weight: bold;
+}
+
+.deposits-popup__item-total {
+  color: rgba(241, 245, 249, 0.5);
+  font-size: 0.8em;
+  margin-left: 0.375rem;
+  flex-shrink: 0;
+}
+
+.deposits-popup__card-body {
+  padding: 0.25rem 0;
+}
+
+.deposits-popup__card-status {
+  padding: 0.375rem 0.5rem;
+  color: rgba(241, 245, 249, 0.4);
+  font-style: italic;
+}
+
+.deposits-popup__item-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.125rem 0.5rem;
+}
+
+.deposits-popup__item-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.deposits-popup__item-name {
+  color: var(--text-primary);
+}
+
+.deposits-popup__item-count {
+  color: #7cfc00;
+  min-width: 2rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.deposits-popup__footer {
+  padding: 0.375rem 0.75rem;
+  background-color: rgba(120, 152, 153, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8rem;
+  font-family: var(--output-font-family), monospace;
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.deposits-popup__coin--mithril { color: #afeeee; }
+.deposits-popup__coin--gold { color: #ffd700; }
+.deposits-popup__coin--silver { color: #dadada; }
+.deposits-popup__coin--copper { color: #875f00; }

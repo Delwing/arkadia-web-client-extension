@@ -476,6 +476,13 @@ outputWrapper.addEventListener('contextmenu', event => {
             opensWindow: true,
         },
         {
+            label: 'Depozyty',
+            action: () => {
+                eventBus.emit('deposits.popup.open', {});
+            },
+            opensWindow: true,
+        },
+        {
             label: 'Wedka',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/wedka'});

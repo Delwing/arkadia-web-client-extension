@@ -250,6 +250,8 @@ export interface KnownEvents {
     "postepy2.popup.open": void;
     "zabici.updated": unknown;
     "zabici.popup.open": void;
+    "deposits.updated": void;
+    "deposits.popup.open": { filter?: string };
     "skroty.popup.open": void;
     "peopleBrowser.popup.open": void;
     "map.centerOn": { roomId: number };
