@@ -587,6 +587,11 @@ body.layout-manager-enabled #main_text_output_msg_wrapper {
   grid-area: main;
 }
 
+/* Keep compass rose in the bottom-right of the main area, not the right dock */
+body.layout-manager-enabled .compass-rose-box {
+  right: calc(var(--dock-right-size, 0px) + 4px);
+}
+
 /* ============================================
    Docked Popup Panel Styles
    ============================================ */
