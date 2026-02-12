@@ -8500,7 +8500,7 @@ body.mobile-command-radial-active {
 
 .compass-rose-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, max-content);
   text-align: center;
   gap: 1px 4px;
   min-width: 96px;
@@ -8579,7 +8579,7 @@ body.mobile-command-radial-active {
 
 .deposits-popup__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 0.5rem;
 }
 
