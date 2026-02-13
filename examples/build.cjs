@@ -43,20 +43,53 @@ const buildOptions = {
   logLevel: 'info',
 };
 
-// Zbuduj pluginy
-esbuild.build(buildOptions)
-  .then(() => {
-    console.log('✓ Pluginy skompilowane pomyślnie!');
-    console.log(`✓ Wyjście: ${BUILD_DIR}`);
+// Bundled plugins (multi-file plugins with subdirectories)
+// Convention: subdirectory with a <dirname>-plugin.ts entry point
+const bundledPlugins = fs.readdirSync(EXAMPLES_DIR, { withFileTypes: true })
+  .filter(dirent => dirent.isDirectory())
+  .map(dirent => ({
+    name: dirent.name,
+    entryPoint: path.join(EXAMPLES_DIR, dirent.name, `${dirent.name}-plugin.ts`),
+    outfile: path.join(BUILD_DIR, `${dirent.name}-plugin.js`),
+  }))
+  .filter(bp => fs.existsSync(bp.entryPoint));
 
-    // Wylistuj skompilowane pliki
-    const compiledFiles = fs.readdirSync(BUILD_DIR);
-    console.log('\nSkompilowane pluginy:');
-    compiledFiles.forEach(file => {
-      console.log(`  - ${file}`);
+// Zbuduj pluginy
+async function buildAll() {
+  // Build single-file plugins
+  if (pluginFiles.length > 0) {
+    await esbuild.build(buildOptions);
+  }
+
+  // Build bundled plugins
+  for (const bp of bundledPlugins) {
+    console.log(`📦 Bundlowanie ${path.basename(bp.entryPoint)}...`);
+    await esbuild.build({
+      entryPoints: [bp.entryPoint],
+      bundle: true,
+      outfile: bp.outfile,
+      format: 'esm',
+      platform: 'browser',
+      target: 'es2020',
+      sourcemap: false,
+      minify: false,
+      loader: { '.ts': 'ts' },
+      logLevel: 'info',
+      external: ['@arkadia/plugin-types'],
     });
-  })
-  .catch((error) => {
-    console.error('✗ Błąd podczas kompilacji:', error);
-    process.exit(1);
+  }
+
+  console.log('✓ Pluginy skompilowane pomyślnie!');
+  console.log(`✓ Wyjście: ${BUILD_DIR}`);
+
+  const compiledFiles = fs.readdirSync(BUILD_DIR);
+  console.log('\nSkompilowane pluginy:');
+  compiledFiles.forEach(file => {
+    console.log(`  - ${file}`);
   });
+}
+
+buildAll().catch((error) => {
+  console.error('✗ Błąd podczas kompilacji:', error);
+  process.exit(1);
+});

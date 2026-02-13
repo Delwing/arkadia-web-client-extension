@@ -7,7 +7,7 @@
 
 const express = require('express');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, exec } = require('child_process');
 const fs = require('fs');
 
 const app = express();
@@ -315,6 +315,38 @@ function getPluginDescription(name) {
   };
   return descriptions[name] || '';
 }
+
+// Obserwuj zmiany w plikach .ts i rekompiluj
+let rebuildTimeout = null;
+let isRebuilding = false;
+
+function rebuildPlugins() {
+  if (isRebuilding) return;
+  isRebuilding = true;
+  console.log('\n🔄 Wykryto zmiany, rekompilowanie pluginów...');
+  exec('node examples/build.cjs', { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
+    isRebuilding = false;
+    if (error) {
+      console.error('✗ Błąd podczas rekompilacji:', stderr || error.message);
+    } else {
+      if (stdout) console.log(stdout);
+      console.log('✓ Pluginy przekompilowane pomyślnie');
+    }
+  });
+}
+
+function scheduleRebuild() {
+  if (rebuildTimeout) clearTimeout(rebuildTimeout);
+  rebuildTimeout = setTimeout(rebuildPlugins, 300);
+}
+
+fs.watch(EXAMPLES_DIR, { recursive: true }, (eventType, filename) => {
+  if (filename && filename.endsWith('.ts')) {
+    scheduleRebuild();
+  }
+});
+
+console.log('👀 Obserwowanie zmian w plikach .ts...');
 
 // Graceful shutdown
 process.on('SIGINT', () => {
