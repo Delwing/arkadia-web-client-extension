@@ -26,6 +26,7 @@ import LetterViewPopup from '../LetterViewPopup';
 import RoomInfoPopup from '../RoomInfoPopup';
 import StaticMapPopupManager from '../StaticMapPopup';
 import DepositsPopup from '../DepositsPopup';
+import PackageReceiverPopup from '../PackageReceiverPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -86,6 +87,7 @@ export function LayoutManagerWrapper({
       <LetterViewPopup />
       <RoomInfoPopup />
       <DepositsPopup />
+      <PackageReceiverPopup />
       <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />

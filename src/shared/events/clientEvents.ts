@@ -230,6 +230,7 @@ export interface KnownEvents {
     "fishing.cast": { bait: BaitType };
     "fishing.pull": void;
     "fishing.strike": void;
+    "packageReceiver.popup.open": void;
     "pluginButtonMacrosChanged": void;
     "pluginButtonMacroStateChanged": { macroType: string; newState: string; oldState: string | undefined };
     "pluginTriggerMacrosChanged": void;

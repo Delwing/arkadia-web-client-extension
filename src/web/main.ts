@@ -32,7 +32,6 @@ import {createRoot} from 'react-dom/client'
 import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import Binds from "./options/Binds.tsx"
-import Npc from "./options/Npc.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
@@ -914,8 +913,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const characterManagementModal = characterManagementModalElement ? new Modal(characterManagementModalElement) : null;
     const bindsModalElement = document.getElementById('binds-modal');
     const bindsModal = bindsModalElement ? new Modal(bindsModalElement) : null;
-    const npcModalElement = document.getElementById('npc-modal');
-    const npcModal = npcModalElement ? new Modal(npcModalElement) : null;
     const scriptsModalElement = document.getElementById('scripts-modal');
     const scriptsModal = scriptsModalElement ? new Modal(scriptsModalElement) : null;
     const aliasesModalElement = document.getElementById('aliases-modal');
@@ -1074,9 +1071,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bindsModal) {
             bindsModal.hide();
         }
-        if (npcModal) {
-            npcModal.hide();
-        }
         if (scriptsModal) {
             scriptsModal.hide();
         }
@@ -1158,9 +1152,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (npcButton && npcModal) {
+    if (npcButton) {
         npcButton.addEventListener('click', () => {
-            npcModal.show();
+            eventBus.emit('packageReceiver.popup.open');
         });
     }
 
@@ -1716,12 +1710,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bindsRoot) {
         createRoot(bindsRoot).render(createElement(Binds));
     }
-
-    const npcRoot = document.getElementById('npc-options');
-    if (npcRoot) {
-        createRoot(npcRoot).render(createElement(Npc));
-    }
-
 
     const scriptsRoot = document.getElementById('scripts-options');
     if (scriptsRoot) {
