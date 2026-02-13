@@ -86,7 +86,7 @@ export default class Client {
     public AllyProtection = initAllyProtection(this);
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
-    private soundManager = new SoundManager(this);
+    readonly SoundManager = new SoundManager(this);
     aliases: { pattern: RegExp; callback: Function }[] = [];
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
@@ -653,7 +653,7 @@ export default class Client {
     }
 
     prepareSounds(): Promise<void> {
-        return this.soundManager.prepare()
+        return this.SoundManager.prepare()
     }
 
     enableNotifications() {

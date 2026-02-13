@@ -1237,6 +1237,12 @@ export default class MobileDirectionButtons {
                     this.client.blockEnemySlot(enemySlot);
                 }
                 break;
+            case 'mute':
+                this.client.SoundManager.mute();
+                break;
+            case 'unmute':
+                this.client.SoundManager.unmute();
+                break;
             default:
                 // Handle plugin macros
                 if (macro.startsWith('plugin:') && cfg) {

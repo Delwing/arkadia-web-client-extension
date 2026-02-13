@@ -406,6 +406,12 @@ export default class DesktopButtons {
                 this.client.blockEnemySlot(slot);
                 break;
             }
+            case 'mute':
+                this.client.SoundManager.mute();
+                break;
+            case 'unmute':
+                this.client.SoundManager.unmute();
+                break;
         }
     }
 

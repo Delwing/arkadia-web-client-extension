@@ -171,6 +171,7 @@ export interface KnownEvents {
     "herbTextWindowOpen": void;
     "herbTextWindowClose": void;
     "sound:play": { key: string };
+    "sound:muted": boolean;
     "playBeep": void;
     "line-start": void;
     "storage": StorageEventPayload;

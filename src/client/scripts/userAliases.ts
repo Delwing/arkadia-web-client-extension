@@ -28,7 +28,7 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
                 pattern: regexp,
                 callback: (m: RegExpMatchArray) => {
                     const cmd = item.command.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
-                    client.sendCommand(cmd);
+                    return client.sendCommand(cmd);
                 }
             };
         }).filter((v): v is { pattern: RegExp; callback: (matches: RegExpMatchArray) => void } => v !== null);

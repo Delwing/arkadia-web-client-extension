@@ -123,6 +123,7 @@ import initDeliveryStats from './scripts/deliveryStats'
 import initAfterDeathProgress from './scripts/afterDeathProgress'
 import initBrokilon from './scripts/brokilon'
 import initTideSystem from './scripts/tideSystem'
+import initSoundAliases from './scripts/soundAliases'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -142,6 +143,7 @@ export function registerScripts(client: Client) {
             emitFakeLine(client, matches[1])
         }
     })
+    initSoundAliases(client, aliases)
     initMapAliases(client, aliases)
     initZaznaczaj(client, aliases)
 

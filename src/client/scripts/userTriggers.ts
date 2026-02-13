@@ -4,7 +4,7 @@ import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -88,6 +88,12 @@ function applyMacrosToMatch(
             case 'beep':
                 client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
                 break;
+            case 'mute':
+                client.SoundManager.mute();
+                break;
+            case 'unmute':
+                client.SoundManager.unmute();
+                break;
             case 'command':
                 if (macro.command) {
                     client.sendCommand(macro.command);
@@ -139,6 +145,12 @@ function applyEventMacros(
         switch (macro.type) {
             case 'beep':
                 client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
+                break;
+            case 'mute':
+                client.SoundManager.mute();
+                break;
+            case 'unmute':
+                client.SoundManager.unmute();
                 break;
             case 'command':
                 if (macro.command) {

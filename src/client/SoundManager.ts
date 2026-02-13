@@ -26,6 +26,7 @@ export default class SoundManager {
     private sounds: Partial<Record<SoundKey, Howl>> = {};
     private soundLoaders: Partial<Record<SoundKey, Promise<Howl | undefined>>> = {};
     private howlConstructorPromise: Promise<typeof import('howler').Howl> | null = null;
+    private muted = false;
 
     constructor(private readonly client: Client) {
         this.client.on("sound:play", ({ key }) => {
@@ -33,6 +34,33 @@ export default class SoundManager {
                 void this.play(key);
             }
         });
+    }
+
+    get isMuted(): boolean {
+        return this.muted;
+    }
+
+    mute(): void {
+        if (!this.muted) {
+            this.muted = true;
+            this.client.sendEvent("sound:muted", true);
+        }
+    }
+
+    unmute(): void {
+        if (this.muted) {
+            this.muted = false;
+            this.client.sendEvent("sound:muted", false);
+        }
+    }
+
+    toggleMute(): boolean {
+        if (this.muted) {
+            this.unmute();
+        } else {
+            this.mute();
+        }
+        return this.muted;
     }
 
     async prepare(): Promise<void> {
@@ -149,6 +177,8 @@ export default class SoundManager {
     }
 
     private async play(key: SoundKey) {
+        if (this.muted) return;
+
         // Resume audio context if suspended (browser autoplay policy)
         resumeAudioContext();
 

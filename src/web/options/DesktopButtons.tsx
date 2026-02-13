@@ -50,6 +50,8 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "kierunek", label: "Kierunek" },
     { value: "specialExit", label: "Wyjscie specjalne" },
     { value: "toggleButtons", label: "Pokaz/ukryj przyciski" },
+    { value: "mute", label: "Wycisz dzwieki" },
+    { value: "unmute", label: "Wlacz dzwieki" },
     { value: "empty", label: "Pusty" },
 ];
 

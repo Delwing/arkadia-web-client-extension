@@ -16,6 +16,8 @@ export type MacroType =
     | 'toggleButtons'
     | 'attackEnemy'
     | 'blockEnemy'
+    | 'mute'
+    | 'unmute'
     | 'empty';
 
 export interface ButtonMacroConfig {

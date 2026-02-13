@@ -10,7 +10,7 @@ import {
 } from "@modules/core/pluginTriggerMacroRegistry";
 import eventBus from "@modules/core/eventBus";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
@@ -67,7 +67,7 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
 ];
 
 // Macro types that work without text context (for event triggers)
-const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'command', 'functionalBind']);
+const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind']);
 
 function normalizeMacro(macro: UserMacro): UserMacro {
     if (macro.type === 'beep' && (!macro.soundKey || typeof macro.soundKey !== 'string')) {
@@ -122,6 +122,8 @@ function MacroEditor({
                     {!isEventTrigger && <option value="color">Koloruj</option>}
                     {!isEventTrigger && <option value="replace">Zamien</option>}
                     <option value="beep">Dzwiek</option>
+                    <option value="mute">Wycisz dzwieki</option>
+                    <option value="unmute">Wlacz dzwieki</option>
                     <option value="command">Komenda</option>
                     {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
                     {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
@@ -567,6 +569,10 @@ function UserTriggers() {
                         const sound = customSounds.find(s => s.key === key);
                         return sound ? `sound ${sound.name}` : 'sound';
                     }
+                    case 'mute':
+                        return 'mute';
+                    case 'unmute':
+                        return 'unmute';
                     case 'command':
                         return m.command ? `command ${m.command}` : 'command';
                     case 'slowBlink':

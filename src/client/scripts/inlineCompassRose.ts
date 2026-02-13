@@ -10,7 +10,7 @@ const DIM_GRAY = createColorFormat("#696969");
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
-type Alias = { pattern: RegExp; callback: (m: RegExpMatchArray) => void };
+type Alias = { pattern: RegExp; callback: Function };
 
 export default function initInlineCompassRose(client: Client, aliases?: Alias[]) {
     let exits = new Set<string>();

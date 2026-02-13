@@ -46,6 +46,14 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 |---------|------|
 | `/binds` | Wyswietl liste skonfigurowanych bindow |
 
+## Dzwiek
+
+| Komenda | Opis |
+|---------|------|
+| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |
+| `/mute` | Wycisz dzwieki |
+| `/unmute` | Wlacz dzwieki |
+
 ## Przyplyw
 
 | Komenda | Opis |
