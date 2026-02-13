@@ -7,6 +7,36 @@ export type SoundKey = string;
 
 // Global reference to Howler for audio context management
 let howlerGlobal: typeof HowlerType | null = null;
+let howlerModulePromise: Promise<typeof import('howler').Howl> | null = null;
+
+function loadHowlerModule(): Promise<typeof import('howler').Howl> {
+    if (!howlerModulePromise) {
+        howlerModulePromise = import('howler').then((module: any) => {
+            if (module?.Howler) {
+                howlerGlobal = module.Howler;
+            } else if (module?.default?.Howler) {
+                howlerGlobal = module.default.Howler;
+            }
+            // Disable auto-suspend to prevent audio context from being suspended after inactivity
+            if (howlerGlobal) {
+                (howlerGlobal as any).autoSuspend = false;
+            }
+            // Try to resume immediately after loading (may work if close to a user gesture)
+            resumeAudioContext();
+            const constructor = module?.Howl ?? module?.default?.Howl ?? module?.default ?? module;
+            return constructor as typeof import('howler').Howl;
+        });
+    }
+    return howlerModulePromise;
+}
+
+/**
+ * Start loading Howler eagerly so that the AudioContext exists
+ * before the user clicks connect. Call this on first user interaction.
+ */
+export function preloadHowler(): void {
+    void loadHowlerModule();
+}
 
 /**
  * Resume the audio context if it's suspended.
@@ -25,7 +55,6 @@ export function resumeAudioContext(): void {
 export default class SoundManager {
     private sounds: Partial<Record<SoundKey, Howl>> = {};
     private soundLoaders: Partial<Record<SoundKey, Promise<Howl | undefined>>> = {};
-    private howlConstructorPromise: Promise<typeof import('howler').Howl> | null = null;
     private muted = false;
 
     constructor(private readonly client: Client) {
@@ -71,6 +100,24 @@ export default class SoundManager {
                 sound?.load();
             })
         );
+        // Play a near-silent sound to unlock the browser audio context
+        this.playSilent();
+    }
+
+    private async playSilent(): Promise<void> {
+        try {
+            const HowlConstructor = await this.loadHowler();
+            const silent = new HowlConstructor({
+                src: ['data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='],
+                volume: 0.01,
+                preload: true,
+                onload() {
+                    silent.play();
+                },
+            });
+        } catch {
+            // best-effort unlock
+        }
     }
 
     private async getKeysToPreload(): Promise<Set<SoundKey>> {
@@ -97,24 +144,8 @@ export default class SoundManager {
         return keys;
     }
 
-    private async loadHowler(): Promise<typeof import('howler').Howl> {
-        if (!this.howlConstructorPromise) {
-            this.howlConstructorPromise = import('howler').then((module: any) => {
-                // Capture the global Howler reference for audio context management
-                if (module?.Howler) {
-                    howlerGlobal = module.Howler;
-                } else if (module?.default?.Howler) {
-                    howlerGlobal = module.default.Howler;
-                }
-                // Disable auto-suspend to prevent audio context from being suspended after inactivity
-                if (howlerGlobal) {
-                    (howlerGlobal as any).autoSuspend = false;
-                }
-                const constructor = module?.Howl ?? module?.default?.Howl ?? module?.default ?? module;
-                return constructor as typeof import('howler').Howl;
-            });
-        }
-        return this.howlConstructorPromise;
+    private loadHowler(): Promise<typeof import('howler').Howl> {
+        return loadHowlerModule();
     }
 
     private async ensureSound(key: SoundKey): Promise<Howl | undefined> {

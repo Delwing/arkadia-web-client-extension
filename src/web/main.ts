@@ -4,7 +4,7 @@ import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import { resumeAudioContext } from "@client/SoundManager";
+import { resumeAudioContext, preloadHowler } from "@client/SoundManager";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
@@ -160,9 +160,12 @@ function preventTabSleep() {
     document.addEventListener('click', enableNoSleep, {once: true});
 }
 
-// Resume audio context on user interaction (browser autoplay policy)
+// Preload Howler on first user interaction so AudioContext exists before connect
 function setupAudioContextResume() {
-    const resumeOnInteraction = () => resumeAudioContext();
+    const resumeOnInteraction = () => {
+        preloadHowler();
+        resumeAudioContext();
+    };
     document.addEventListener('click', resumeOnInteraction);
     document.addEventListener('keydown', resumeOnInteraction);
     document.addEventListener('touchstart', resumeOnInteraction);
