@@ -9,7 +9,7 @@ const STORAGE_KEY = "aliases";
 
 export default function initUserAliases(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const list = aliases || client.aliases;
-    let mapped: { pattern: RegExp; callback: (matches: RegExpMatchArray) => void }[] = [];
+    let mapped: { pattern: RegExp; callback: (matches: RegExpMatchArray) => Promise<void> }[] = [];
 
     const apply = (arr: UserAlias[] = []) => {
         mapped.forEach(a => {
@@ -31,7 +31,7 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
                     return client.sendCommand(cmd);
                 }
             };
-        }).filter((v): v is { pattern: RegExp; callback: (matches: RegExpMatchArray) => void } => v !== null);
+        }).filter((v): v is { pattern: RegExp; callback: (matches: RegExpMatchArray) => Promise<void> } => v !== null);
         mapped.forEach(a => list.push(a));
     };
 
