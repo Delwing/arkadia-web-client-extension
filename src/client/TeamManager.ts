@@ -229,7 +229,11 @@ export default class TeamManager {
         }, tag);
         triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (line, matches) => {
             this.clearTeam();
-            // Leader is populated from GMCP objects.data (team_leader flag)
+            const leader = matches?.groups?.leader?.trim().replace(/^\[|]$/g, '');
+            if (leader) {
+                this.leader = leader;
+                this.addMember(leader);
+            }
             const list = matches?.groups?.team;
             if (list) {
                 this.parseNames(list).forEach(n => this.addMember(n));
