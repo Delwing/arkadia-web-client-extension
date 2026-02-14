@@ -7,6 +7,27 @@ const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
 const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?}|\{clickClose}/g;
 
+function clearDownloadedFlag() {
+  const req = indexedDB.open("ArkadiaLogsMetaDB", 1);
+  req.onupgradeneeded = () => {
+    const db = req.result;
+    if (!db.objectStoreNames.contains("downloaded")) {
+      db.createObjectStore("downloaded");
+    }
+  };
+  req.onsuccess = () => {
+    const db = req.result;
+    if (db.objectStoreNames.contains("downloaded")) {
+      const tx = db.transaction("downloaded", "readwrite");
+      tx.objectStore("downloaded").delete(storeName);
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    } else {
+      db.close();
+    }
+  };
+}
+
 let loggingEnabled = true;
 const saved = getItemSync("loggingEnabled");
 if (saved && typeof saved.loggingEnabled === "boolean") {
@@ -103,6 +124,7 @@ export default async function initSessionLogger(client: SessionClient) {
         db = null;
       }
       closeTimeout = null;
+      clearDownloadedFlag();
     }, 1000);
   }
 

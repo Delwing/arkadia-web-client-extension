@@ -53,12 +53,22 @@ describe('TeamManager', () => {
     expect(manager.getTeamMembers()).toEqual([]);
   });
 
-  test('full sync message sets leader and members', () => {
+  test('full sync message sets members but not leader', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
-    expect(manager.getLeader()).toBe('Vesper');
+    expect(manager.getLeader()).toBeUndefined();
     const members = manager.getTeamMembers();
-    expect(members).toEqual(expect.arrayContaining(['Vesper', 'Pablo', 'Opeteh']));
+    expect(members).toEqual(expect.arrayContaining(['Pablo', 'Opeteh']));
+    expect(members).not.toContain('Vesper');
     expect(manager.isInTeam('Pablo')).toBe(true);
+  });
+
+  test('full sync message leader comes from gmcp', () => {
+    client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
+    });
+    expect(manager.getLeader()).toBe('Vesper');
+    expect(manager.getLeaderId()).toBe(5);
   });
 
   test('returns leader id when available', () => {
@@ -224,19 +234,25 @@ describe('TeamManager', () => {
     expect(manager.isInAnyTeam()).toBe(false);
   });
 
-  test('populates team on "Dolaczasz do druzyny" with member list', () => {
+  test('populates team on "Dolaczasz do druzyny" with member list, leader from gmcp', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Dolaczasz do druzyny Vesper. Od teraz jej sklad stanowicie ty, Pablo i Vesper.'), '');
-    expect(manager.getLeader()).toBe('Vesper');
-    expect(manager.isInTeam('Vesper')).toBe(true);
+    expect(manager.getLeader()).toBeUndefined();
     expect(manager.isInTeam('Pablo')).toBe(true);
     expect(manager.isInAnyTeam()).toBe(true);
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
+    });
+    expect(manager.getLeader()).toBe('Vesper');
   });
 
-  test('populates team on "Dolaczasz do druzyny" with only leader', () => {
+  test('populates team on "Dolaczasz do druzyny" with only leader from gmcp', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Dolaczasz do druzyny Vesper. Od teraz jej sklad stanowicie ty i Vesper.'), '');
-    expect(manager.getLeader()).toBe('Vesper');
-    expect(manager.isInTeam('Vesper')).toBe(true);
+    expect(manager.getLeader()).toBeUndefined();
     expect(manager.isInAnyTeam()).toBe(true);
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
+    });
+    expect(manager.getLeader()).toBe('Vesper');
   });
 
   test('clears leader attack target when target disappears from objects.nums', () => {

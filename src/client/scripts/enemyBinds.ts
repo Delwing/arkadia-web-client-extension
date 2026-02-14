@@ -103,22 +103,13 @@ export default function initEnemyBinds(
     });
 
     function isEnemy(desc: string): boolean {
-        const person = peopleCache.find(p =>
-            p.description.toLowerCase() === desc.toLowerCase() ||
-            p.name.toLowerCase() === desc.toLowerCase()
-        );
-
-        if (!person) {
-            return false;
-        }
-
-        // Check individual enemy flag first
-        if (person.isEnemy) {
-            return true;
-        }
-
-        // Then check guild-based enemy status
-        return enemyGuilds.includes(person.guild);
+        const lowerDesc = desc.toLowerCase();
+        return peopleCache.some(p => {
+            if (p.description.toLowerCase() !== lowerDesc && p.name.toLowerCase() !== lowerDesc) {
+                return false;
+            }
+            return p.isEnemy || enemyGuilds.includes(p.guild);
+        });
     }
 
     function formatBindLabel(bind: Bind): string {
