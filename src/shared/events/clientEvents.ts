@@ -10,6 +10,7 @@ import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
+import type {LootPopupPayload} from "@client/scripts/lootParser.ts";
 
 export type SendCommandEvent = {
     command: string;
@@ -296,6 +297,10 @@ export interface KnownEvents {
     "followSpecialExit": { exit: string };
     // Lua gag events - maneuver
     "maneuverAttempted": void;
+    // Loot events
+    "loot.popup.open": LootPopupPayload;
+    "loot.popup.closed": void;
+    "loot.cleared": void;
 }
 
 export interface WalkerState {

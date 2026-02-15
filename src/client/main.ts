@@ -124,6 +124,7 @@ import initAfterDeathProgress from './scripts/afterDeathProgress'
 import initBrokilon from './scripts/brokilon'
 import initTideSystem from './scripts/tideSystem'
 import initSoundAliases from './scripts/soundAliases'
+import initLootParser from './scripts/lootParser'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -277,5 +278,6 @@ export function registerScripts(client: Client) {
     initAfterDeathProgress(client)
     initBrokilon(client)
     initTideSystem(client, aliases)
+    initLootParser(client)
 
 }

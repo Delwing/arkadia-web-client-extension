@@ -407,6 +407,50 @@ let favoriteMagicTypes: string[] = [];
 let favoriteMagicKeys: string[] = [];
 let magicsData: MagicsFile | undefined = undefined;
 
+// Module-level filters for magic keys and magics (populated after async load)
+let keyFilter: ((name: string) => boolean) | null = null;
+let magicFilter: ((name: string) => boolean) | null = null;
+
+/**
+ * Returns a CSS color string for an item name, using all loaded filters
+ * (coins, magic keys, magics, item categories).
+ */
+export function getItemCssColor(name: string): string | undefined {
+    // Coin colors (highest priority)
+    if (/mithryl\w+ monet/.test(name)) return '#afeeee';
+    if (/zlot\w+ monet/.test(name)) return '#ffd700';
+    if (/srebrn\w+ monet/.test(name)) return '#dadada';
+    if (/miedzian\w+ monet/.test(name)) return '#875f00';
+
+    // Magic keys
+    if (keyFilter?.(name)) return '#00ff87';
+
+    // Magics
+    if (magicFilter?.(name)) return '#d75f5f';
+
+    // Favorite magics get a special highlight
+    if (magicFilter?.(name) && isFavoriteMagic(name)) return '#00ff00';
+
+    // Item categories
+    for (const def of defs) {
+        if (def.filter(name)) {
+            switch (def.name) {
+                case 'bronie': return '#ffff00';
+                case 'tarcze': return '#87ceeb';
+                case 'korpus':
+                case 'glowa':
+                case 'nogi':
+                case 'rece': return '#cd853f';
+                case 'ubrania': return '#b0a090';
+                case 'bizuteria': return '#da70d6';
+                case 'kamienie': return '#40e0d0';
+            }
+        }
+    }
+
+    return undefined;
+}
+
 // API functions for plugin access
 export function getGroupDefinitions(): ReadonlyArray<Readonly<GroupDefinition>> {
     return defs;
@@ -471,6 +515,7 @@ async function loadMagicAndKeysFilter(client: Client) {
 
         const [keys, magics] = await Promise.all([loadMagicKeys(), loadMagics()]);
         const keyRegexp = createRegexpFilter(keys);
+        keyFilter = keyRegexp;
         defs.push({ name: "klucze", filter: keyRegexp });
         defaultTransforms.push({
             transform: (buffer, item) => {
@@ -487,6 +532,7 @@ async function loadMagicAndKeysFilter(client: Client) {
             },
         });
         const magicRegexp = createRegexpFilter(magics);
+        magicFilter = magicRegexp;
         defaultTransforms.push({
             transform: (buffer, item) => {
                 if (magicRegexp(item.name)) {

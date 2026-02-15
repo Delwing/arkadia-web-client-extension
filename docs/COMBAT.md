@@ -80,6 +80,14 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 |---------|------|
 | `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |
 
+## Loot
+
+| Komenda | Opis |
+|---------|------|
+| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |
+
+> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.
+
 ## Okno walki
 
 | Komenda | Opis |

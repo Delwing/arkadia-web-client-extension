@@ -53,12 +53,11 @@ describe('TeamManager', () => {
     expect(manager.getTeamMembers()).toEqual([]);
   });
 
-  test('full sync message sets members but not leader', () => {
+  test('full sync message sets members and leader from text', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
-    expect(manager.getLeader()).toBeUndefined();
+    expect(manager.getLeader()).toBe('Vesper');
     const members = manager.getTeamMembers();
-    expect(members).toEqual(expect.arrayContaining(['Pablo', 'Opeteh']));
-    expect(members).not.toContain('Vesper');
+    expect(members).toEqual(expect.arrayContaining(['Vesper', 'Pablo', 'Opeteh']));
     expect(manager.isInTeam('Pablo')).toBe(true);
   });
 

@@ -1,4 +1,5 @@
 import Client from "@client/Client.ts";
+import { setLootPopupMode } from "@client/scripts/lootParser.ts";
 
 const bodyLessTypes = [
     'licz',
@@ -28,9 +29,11 @@ export default function initKillTracker(client: Client) {
     let justKilled: undefined | "ME" | "TEAM" | "OTHER";
     let enemiesOnLocation = false;
     let killsOnLocation = false;
+    let bodyCount = 0;
 
     client.on('enterLocation', () => {
         killsOnLocation = false;
+        bodyCount = 0;
     });
 
     client.on('parsedObjects', () => {
@@ -43,7 +46,11 @@ export default function initKillTracker(client: Client) {
         if (justKilled && diff.length > 0) {
             for (const id of diff) {
                 const desc = client.TeamManager.getAccumulatedObjectsData().get(id);
-                client.emit("enemyKilled", { objNum: id, killer: justKilled, hasBody: desc ? !isBodiless(desc.desc) : true, enemyDesc: desc?.desc });
+                const hasBody = desc ? !isBodiless(desc.desc) : true;
+                client.emit("enemyKilled", { objNum: id, killer: justKilled, hasBody, enemyDesc: desc?.desc });
+                if (hasBody) {
+                    bodyCount++;
+                }
             }
             killsOnLocation = true;
             enemiesOnLocation = true;
@@ -58,5 +65,17 @@ export default function initKillTracker(client: Client) {
         justKilled = event.killer;
     });
 
-
+    client.aliases.push({
+        pattern: /^\/loot$/,
+        callback: () => {
+            if (bodyCount === 0) {
+                client.print('Brak cial do przeszukania.');
+                return;
+            }
+            setLootPopupMode(true);
+            for (let i = 1; i <= bodyCount; i++) {
+                client.sendCommand(`ob ${i}. cialo`);
+            }
+        },
+    });
 }
