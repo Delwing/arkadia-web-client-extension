@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { containerAction, getContainer, ContainerType } from "./bagManager";
 import type { CollectOverride } from "@modules/core/defaultSettings";
+import { getBodyExtras, clearBodyExtras } from "./lootParser";
 
 type KillerType = "ME" | "TEAM" | "OTHER";
 
@@ -218,7 +219,7 @@ export default class ItemCollector {
         return prefs.collectCopper || prefs.collectSilver || prefs.collectGold || prefs.collectGems || prefs.extra.length > 0;
     }
 
-    private collectBody(target: string, enemyDesc?: string): CollectionResult {
+    private collectBody(target: string, enemyDesc?: string, bodyIndex?: number | null): CollectionResult {
         const result: CollectionResult = { money: false, gems: false, extras: [] };
         const prefs = this.getCollectionPrefs(enemyDesc);
         if (prefs.collectCopper || prefs.collectSilver || prefs.collectGold) {
@@ -232,6 +233,14 @@ export default class ItemCollector {
                 this.client.sendCommand(`wez ${it} z ${target}`);
                 result.extras.push(it);
             });
+        }
+        // Collect magics/keys discovered during body inspection
+        const lootExtras = getBodyExtras().get(bodyIndex ?? null);
+        if (lootExtras && lootExtras.length > 0) {
+            for (const item of lootExtras) {
+                this.client.sendCommand(`wez ${item} z ${target}`);
+                result.extras.push(item);
+            }
         }
         return result;
     }
@@ -316,7 +325,7 @@ export default class ItemCollector {
 
             // Collect from this body (always use "ciala" without index for the most recent)
             const target = this.formatBodyTarget();
-            const result = this.collectBody(target, record.enemyDesc);
+            const result = this.collectBody(target, record.enemyDesc, null);
             this.depositCollected(result.money, result.gems, result.extras);
             record.collected = true;
 
@@ -384,7 +393,7 @@ export default class ItemCollector {
             }
 
             const target = this.formatBodyTarget(currentBodyIndex);
-            const result = this.collectBody(target, record.enemyDesc);
+            const result = this.collectBody(target, record.enemyDesc, currentBodyIndex);
             aggregated.money = aggregated.money || result.money;
             aggregated.gems = aggregated.gems || result.gems;
             if (result.extras.length > 0) {
@@ -397,6 +406,8 @@ export default class ItemCollector {
         if (collectedAny) {
             this.depositCollected(aggregated.money, aggregated.gems, aggregated.extras);
         }
+
+        clearBodyExtras();
 
         // Clear bind after collection
         this.client.FunctionalBind.clear();

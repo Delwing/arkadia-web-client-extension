@@ -22,6 +22,7 @@ export type BuiltInPopupType =
   | 'poczta'
   | 'fishing'
   | 'letter-view'
+  | 'loot'
   | 'roomInfo'
   | 'staticmap'
   | 'tripPlanner'

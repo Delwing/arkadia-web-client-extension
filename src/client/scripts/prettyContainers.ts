@@ -451,6 +451,10 @@ export function getItemCssColor(name: string): string | undefined {
     return undefined;
 }
 
+export function isItemMagicOrKey(name: string): boolean {
+    return !!(keyFilter?.(name) || magicFilter?.(name));
+}
+
 // API functions for plugin access
 export function getGroupDefinitions(): ReadonlyArray<Readonly<GroupDefinition>> {
     return defs;

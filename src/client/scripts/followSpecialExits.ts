@@ -243,6 +243,7 @@ export default function initFollowSpecialExits(client: Client) {
         {pattern: /zaczyna przeciskac sie przez odplyw\./, command: "przecisnij sie przez odplyw"},
         {pattern: /zaczyna wspinac sie na luk skalny\./, command: "wejdz na luk"},
         {pattern: /wchodzi ostroznie na luk skalny, potykajac sie lekko\./, command: "wejdz na luk"},
+        {pattern: /zaczyna ostroznie wspinac sie po sliskich belkach bramy/, command: "wespnij sie na brame"}
     ];
 
     function containsLeader(line: string) {

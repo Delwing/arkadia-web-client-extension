@@ -6674,6 +6674,15 @@ body.mobile-command-radial-active {
   margin-bottom: 0.375rem;
 }
 
+.loot-popup__section-header--special {
+  color: #00ff87;
+}
+
+.loot-popup__section--special {
+  border-bottom: 1px solid rgba(0, 255, 135, 0.25);
+  padding-bottom: 0.5rem;
+}
+
 .loot-popup__items {
   display: flex;
   flex-wrap: wrap;
