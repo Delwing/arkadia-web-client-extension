@@ -115,6 +115,9 @@ function shouldExport(node) {
         name === 'HerbsData' ||
         name === 'HerbForms' ||
         name === 'HerbUse' ||
+        // Container types
+        name === 'ContainerType' ||
+        name === 'ContainerForms' ||
         // Magics data types
         name === 'MagicEntry' ||
         name === 'MagicsFile' ||

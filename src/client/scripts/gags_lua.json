@@ -1836,6 +1836,10 @@
                               {
                                 "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) bierze potezny zamach wielkim runicznym mlotem wojennym mierzac w (?<target>.+?), t(?:a|en) jednak cudem unika ciosu, .*\\.$",
                                 "type": 1
+                              },
+                              {
+                                "pattern": "^Bierzesz potezny zamach wielkim runicznym mlotem wojennym mierzac w (?<target>.+?), t(?:a|en) jednak cudem unika ciosu, .*\\.$",
+                                "type": 1
                               }
                             ],
                             "script": "trigger_func_skrypty_ui_gags_ciosy_runiczny_mlot(0)"
@@ -2200,7 +2204,7 @@
                             "name": "gorejacy_dlugi_talwar_innych",
                             "patterns": [
                               {
-                                "pattern": "^Dostrzegajac slabosc (?<target>\\w+(?: \\w+){0,4}), (?<attacker>\\w+(?: \\w+ \\w+|)) do nie(go|j), by wbic swoj gorejacy dlugi talwar w (?<where>.+)\\. Klinga je(go|j) mieczawybucha (?<damage>olbrzymim) plomieniem, ktory w mgnieniu oka ogarnia przeciwnika w calosci\\.$",
+                                "pattern": "^Dostrzegajac slabosc (?<target>\\w+(?: \\w+){0,4}), (?<attacker>\\w+(?: \\w+ \\w+|)) do nie(go|j), by wbic swoj gorejacy dlugi talwar w (?<where>.+)\\. Klinga je(?:go|j) miecza wybucha (?<damage>olbrzymim) plomieniem, ktory w mgnieniu oka ogarnia przeciwni(?:czke|ka) w calosci\\.$",
                                 "type": 1
                               },
                               {
@@ -2217,6 +2221,14 @@
                               },
                               {
                                 "pattern": "^Brzeszczot gorejacego dlugiego talwara rozgrzewa sie nagle do czerwonosci, zas po jego powierzchni zaczynaja tanczyc krwistoczerwone plomienie\\. Wykorzystujac nadarzajaca sie okazje, (?<attacker>\\w+(?: \\w+ \\w+|)) z calych sil uderza nim (?<target>\\w+(?: \\w+){0,4}) w (?<where>.+?), pozostawiajac (?<damage>potworne) obrazenia\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) niezgrabnym ruchem (?<damage>probuje) zaskoczyc (?<target>\\w+(?: \\w+){0,4}), ale je(?:go|j) wyrzucony przed siebie gorejacy dlugi talwar dzga tylko powietrze\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) szybkim ruchem kluje (?<target>\\w+(?: \\w+){0,4}) gorejacym dlugim talwarem w (?<where>.+?)\\. W momencie dotyku z ostrza miecza bucha fala ognia, ktora znacznie parzy przeciwnika\\.$",
                                 "type": 1
                               }
                             ],
@@ -2319,6 +2331,16 @@
                           }
                         ],
                         "script": "trigger_func_skrypty_ui_gags_ciosy_rapier()"
+                      },
+                      {
+                        "name": "dlugi_mglisty_poltorak",
+                        "patterns": [
+                          {
+                            "pattern": "^Wiazki blyskawic przeskakuja (?:na ciebie )?z klingi dzierzonego przez (?<attacker>\\w+(?: \\w+){0,4}) dlugiego mglistego poltoraka(?: na (?<target>\\w+(?: \\w+){0,4}))?, (?<damage>.+?) (?:ci|jej|mu) (?<where>.+?)\\.$",
+                            "type": 1
+                          }
+                        ],
+                        "script": "trigger_func_skrypty_ui_gags_ciosy_dlugi_mglisty_poltorak()"
                       },
                       {
                         "name": "kruczoczarny_miecz",
@@ -3730,7 +3752,7 @@
                             "name": "archaiczny_fin",
                             "patterns": [
                               {
-                                "pattern": "znieruchomiec na zawsze.",
+                                "pattern": "Zmasakrowane cialo pada na ziemie by znieruchomiec na zawsze",
                                 "type": 0
                               }
                             ],
@@ -4238,7 +4260,7 @@
                                     "type": 1
                                   },
                                   {
-                                    "pattern": "^Poteznym cieciem opalizujacego runicznego topora obosiecznego dosiegasz swego przeciwnika\\. Ostrze zaglebia sie w jego (?<where>.+?), przecinajac miesnie i gruchoczac kosci\\. Biale, oslepiajace swiatlo ktore bije od runow zdaje sie dodatkowo (?:go |ja |)ranic\\. (?<target>.+?) zamiera, .* na ziemie, dygoczac chwile, po czym nieruchomieje\\.$",
+                                    "pattern": "^Poteznym cieciem opalizujacego runicznego topora obosiecznego dosiegasz swego przeciwnika\\. Ostrze zaglebia sie w jego (?<where>.+?), przecinajac miesnie i gruchoczac kosci\\. Biale, oslepiajace swiatlo ktore bije od runow zdaje sie dodatkowo (?:go |ja |)ranic\\. (?<target>.+?) zamiera, .* na ziemie, dygoczac (?:przez )?chwile, po czym nieruchomieje\\.$",
                                     "type": 1
                                   }
                                 ],
@@ -4543,15 +4565,15 @@
                         "name": "masywny_dlugi_sztylet",
                         "patterns": [
                           {
-                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) blyskawicznym pchnieciem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?)\\. W ostatniej chwili przeciwnik cofa sie gwaltownie o krok, przez co ostrze nie wchodzi w jego cialo dosc gleboko\\.$",
+                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) blyskawicznym pchnieciem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?)\\. W ostatniej chwili przeciwnik cofa sie gwaltownie o krok, przez co ostrze nie wchodzi w jego cialo dosc (?<damage>gleboko)\\.$",
                             "type": 1
                           },
                           {
-                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) raptownym ciosem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?) zostawiajac na (?:jego|jej|twojej) skorze plytka rane\\.$",
+                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) raptownym ciosem masywnego dlugiego sztyletu trafia (?<target>.+?) w (?<where>.+?) zostawiajac na (?:jego|jej|twojej) skorze (?<damage>plytka) rane\\.$",
                             "type": 1
                           },
                           {
-                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) wyprowadza gwaltowne pchniecie w (?<target>.+?), jednakze ostrze masywnego dlugiego sztyletu przecina tylko powietrze\\.$",
+                            "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) wyprowadza gwaltowne pchniecie w (?<target>.+?), jednakze ostrze masywnego dlugiego sztyletu (?<damage>przecina) tylko powietrze\\.$",
                             "type": 1
                           },
                           {
@@ -6862,10 +6884,6 @@
                           {
                             "pattern": "^(?<attacker>\\w+(?: \\w+ \\w+)?) (?:podbiega do ciebie|przesuwa sie nieznacznie w bok, obchodzac cie powoli|zdecydowanie napiera bokiem na ciebie)(?:, | i).*\\. (?<damage>\\w+).*\\.$",
                             "type": 1
-                          },
-                          {
-                            "pattern": "^(?<attacker>\\w+(?: \\w+ \\w+)?) podbiega do (?<target>.+?) i wyprowadzajac potezny cios od dolu, tnie (?:go|ja) w (?<where_target>.+?) swoim .+?, nie szczedzac nawet kosci\\. Widzisz, jak zmasakrowane cialo pada na ziemie, by znieruchomiec na zawsze\\.$",
-                            "type": 1
                           }
                         ],
                         "script": "trigger_func_skrypty_ui_gags_color_color_innych_spece_leg_ktos_spec()"
@@ -7181,7 +7199,7 @@
                         "name": "ktos_spec_0",
                         "patterns": [
                           {
-                            "pattern": "^Nie (?:zastanawiajac sie dlugo|przebierajac w srodkach|silac sie na wirtuozerie|tracac czasu na zbedne manewry) .+? probuje walnac (?<target>.+?) na odlew (?<weapon>.+), jednak przeciwnik w pore wykonuje unik, uciekajac poza zasieg broni\\.$",
+                            "pattern": "^Nie (?:zastanawiajac sie dlugo|przebierajac w srodkach|silac sie na wirtuozerie|tracac czasu na zbedne manewry) .+? probuje walnac (?<target>.+?) na odlew (?<weapon>.+), jednak (?:przeciwnik w pore wykonuje unik, uciekajac poza zasieg broni|bron jakims cudem nie siega celu)\\.$",
                             "type": 1
                           },
                           {
@@ -9221,7 +9239,7 @@
                 "name": "ktos_opuszcza_bron",
                 "patterns": [
                   {
-                    "pattern": "^[ >]*Uderzenie jest tak silne, ze (?<target>.+?) bezwiednie opuszcza [a-z ]+\\.$",
+                    "pattern": "^[ >]*Uderzenie jest tak silne, ze (?<target>.+?) bezwiednie opuszcza (.*)\\.$",
                     "type": 1
                   }
                 ],
@@ -9245,7 +9263,7 @@
                 "name": "ktos_dobywa_broni",
                 "patterns": [
                   {
-                    "pattern": "^(?<target>.+?) dobywa [a-z ]+\\.$",
+                    "pattern": "^(?<target>.+?) dobywa (.*)\\.$",
                     "type": 1
                   }
                 ],

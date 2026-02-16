@@ -56,8 +56,24 @@ const containerConfig: ContainerConfig = {
     other: "plecak",
 };
 
+export interface ContainerForms {
+    mianownik: string;
+    dopelniacz: string;
+    biernik: string;
+}
+
 export function getContainer(type: keyof ContainerConfig): string {
     return containerConfig[type];
+}
+
+export function getContainerForms(type: keyof ContainerConfig): ContainerForms | null {
+    const bag = containerConfig[type];
+    if (!bag || !bagInBiernik[bag]) return null;
+    return {
+        mianownik: bag,
+        dopelniacz: bagInDopelniacz[bag],
+        biernik: bagInBiernik[bag],
+    };
 }
 
 function getBagForms(bag: string) {

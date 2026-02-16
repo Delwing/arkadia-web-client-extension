@@ -53,6 +53,7 @@ import {
   getGroupDefinitions,
   getTransformDefinitions
 } from "./scripts/prettyContainers";
+import {containerAction, getContainer, getContainerForms} from "./scripts/bagManager";
 import loadMagics, { loadMagicsRaw } from "./scripts/magicsLoader";
 import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/magicKeyLoader";
 import loadHerbs from "./scripts/herbsLoader";
@@ -1508,6 +1509,101 @@ export interface MagicKeysApi {
 }
 
 /**
+ * Container type for bag assignment
+ * - "money" - money container
+ * - "gems" - gems container
+ * - "food" - food container
+ * - "other" - general items container
+ */
+export type ContainerType = "money" | "gems" | "food" | "other";
+
+/**
+ * Grammatical forms for a container bag name
+ */
+export interface ContainerForms {
+  /** Nominative form (mianownik) - e.g., "plecak", "torba" */
+  mianownik: string;
+  /** Genitive form (dopelniacz) - e.g., "plecaka", "torby" */
+  dopelniacz: string;
+  /** Accusative form (biernik) - e.g., "plecak", "torbe" */
+  biernik: string;
+}
+
+/**
+ * Containers API - Put items into and take items from assigned bags
+ */
+export interface ContainersApi {
+  /**
+   * Get the assigned bag name for a container type
+   *
+   * @param type - Container type ("money", "gems", "food", "other")
+   * @returns The bag name (e.g., "plecak", "torba")
+   *
+   * @example
+   * ```typescript
+   * const moneyBag = api.containers.getContainer("money");
+   * console.log(`Money is stored in: ${moneyBag}`);
+   * ```
+   */
+  getContainer(type: ContainerType): string;
+
+  /**
+   * Get grammatical forms for a container type's bag
+   * Returns mianownik, dopelniacz, and biernik forms
+   *
+   * @param type - Container type ("money", "gems", "food", "other")
+   * @returns Object with mianownik, dopelniacz, biernik forms, or null if bag is unknown
+   *
+   * @example
+   * ```typescript
+   * const forms = api.containers.getContainerForms("other");
+   * if (forms) {
+   *   console.log(`mianownik: ${forms.mianownik}`);   // "plecak"
+   *   console.log(`dopelniacz: ${forms.dopelniacz}`);   // "plecaka"
+   *   console.log(`biernik: ${forms.biernik}`);         // "plecak"
+   * }
+   * ```
+   */
+  getContainerForms(type: ContainerType): ContainerForms | null;
+
+  /**
+   * Put items into a container bag
+   * Opens the bag, puts items in, and closes the bag
+   *
+   * @param type - Container type ("money", "gems", "food", "other")
+   * @param item - Item name(s) to put in, comma-separated for multiple
+   *
+   * @example
+   * ```typescript
+   * // Put money into money bag
+   * api.containers.put("money", "monety");
+   *
+   * // Put multiple items into other bag
+   * api.containers.put("other", "miecz, tarcza");
+   * ```
+   */
+  put(type: ContainerType, item: string): void;
+
+  /**
+   * Take items from a container bag
+   * Opens the bag, takes items out, and closes the bag
+   *
+   * @param type - Container type ("money", "gems", "food", "other")
+   * @param item - Item name(s) to take out, comma-separated for multiple
+   *
+   * @example
+   * ```typescript
+   * // Take money from money bag
+   * api.containers.take("money", "monety");
+   *
+   * // Take multiple items from other bag
+   * api.containers.take("other", "miecz, tarcza");
+   * ```
+   */
+  take(type: ContainerType, item: string): void;
+}
+
+/**
  * Herbs API - Access herb inventory in bags
  */
 export interface HerbsApi {
@@ -2233,6 +2329,8 @@ export interface PluginApi {
   commandHooks: CommandHooksApi;
   /** Pretty containers - container formatting and filtering */
   prettyContainers: PrettyContainersApi;
+  /** Containers - put and take items from assigned bags */
+  containers: ContainersApi;
   /** Magics - magic item patterns */
   magics: MagicsApi;
   /** Magic keys - magic key patterns */
@@ -2305,6 +2403,7 @@ export class PluginApiImpl implements PluginApi {
   public command: CommandApi;
   public commandHooks: CommandHooksApi;
   public prettyContainers: PrettyContainersApi;
+  public containers: ContainersApi;
   public magics: MagicsApi;
   public magicKeys: MagicKeysApi;
   public herbs: HerbsApi;
@@ -2338,6 +2437,7 @@ export class PluginApiImpl implements PluginApi {
     this.command = this.createCommandApi();
     this.commandHooks = this.createCommandHooksApi();
     this.prettyContainers = this.createPrettyContainersApi();
+    this.containers = this.createContainersApi();
     this.magics = this.createMagicsApi();
     this.magicKeys = this.createMagicKeysApi();
     this.herbs = this.createHerbsApi();
@@ -2709,6 +2809,27 @@ export class PluginApiImpl implements PluginApi {
       },
       addTransform: (definition: TransformDefinition) => {
         addTransformDefinition(definition);
+      }
+    };
+  }
+
+  // ============================================================================
+  // Containers API
+  // ============================================================================
+
+  private createContainersApi(): ContainersApi {
+    return {
+      getContainer: (type: ContainerType) => {
+        return getContainer(type);
+      },
+      getContainerForms: (type: ContainerType) => {
+        return getContainerForms(type);
+      },
+      put: (type: ContainerType, item: string) => {
+        containerAction(this.client, type, "put", item);
+      },
+      take: (type: ContainerType, item: string) => {
+        containerAction(this.client, type, "take", item);
       }
     };
   }
