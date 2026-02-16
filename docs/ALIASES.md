@@ -34,6 +34,12 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 | `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |
 | `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |
 
+## Druzyna
+
+| Komenda | Opis |
+|---------|------|
+| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |
+
 ## Przedstawieni
 
 | Komenda | Opis |
