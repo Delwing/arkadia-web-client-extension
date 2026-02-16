@@ -3,6 +3,7 @@ import {objectListFilters} from "../objectListFilters";
 import {fuzzyMatchScore} from "@client/utils/fuzzyMatch";
 
 const MIN_FUZZY_THRESHOLD = 0.7;
+const MIN_BEST_MATCH_THRESHOLD = 0.5;
 const PARALYZED_TIMEOUT_MS = 15000;
 const BROKEN_DEFENSE_TIMEOUT_MS = 3000;
 
@@ -92,7 +93,7 @@ function updateBestMatches(objects: Map<number, { desc?: string }>) {
             if (!status.paralyzed && !status.brokenDefense) continue;
 
             const score = calculateWordListScore(desc, name);
-            if (score > status.bestMatchScore) {
+            if (score > MIN_BEST_MATCH_THRESHOLD && score > status.bestMatchScore) {
                 status.bestMatchScore = score;
                 status.bestMatchObjectNum = num;
             }
@@ -153,6 +154,18 @@ export function registerEnemyStatusFilter(client: Client) {
             client.sendEvent("enemy.broken_defense", { name: "" });
         }, BROKEN_DEFENSE_TIMEOUT_MS);
         triggerBestMatchUpdate();
+    });
+
+    client.on("enemyKilled", ({ objNum }) => {
+        for (const [name, status] of enemyStatusMap.entries()) {
+            if (status.bestMatchObjectNum === objNum) {
+                status.paralyzed = false;
+                status.brokenDefense = false;
+                clearParalyzedTimer(status);
+                clearBrokenDefenseTimer(status);
+                enemyStatusMap.delete(name);
+            }
+        }
     });
 
     client.on("parsedObjects", triggerBestMatchUpdate);

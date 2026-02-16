@@ -8883,8 +8883,8 @@
                         "type": 1
                       },
                       {
-                        "pattern": "nadstawia starozytny piecioboczny puklerz, zbijajac uderzenie",
-                        "type": 0
+                        "pattern": "nadstawia .+?, zbijajac uderzenie",
+                        "type": 1
                       }
                     ],
                     "script": "trigger_func_skrypty_ui_gags_color_color_innych_parowanie_ktos_tarcza_paruje()"
