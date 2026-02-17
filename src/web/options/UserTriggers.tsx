@@ -10,7 +10,7 @@ import {
 } from "@modules/core/pluginTriggerMacroRegistry";
 import eventBus from "@modules/core/eventBus";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap';
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
@@ -27,6 +27,10 @@ export interface UserMacro {
     dimEndOpacity?: number;
     dimDuration?: number;
     dimEasing?: DimEasing;
+    // Wrap (prefix/suffix) options
+    wrapPrefix?: string;
+    wrapSuffix?: string;
+    wrapScope?: 'match' | 'line';
 }
 
 export type TriggerType = 'pattern' | 'event';
@@ -121,6 +125,7 @@ function MacroEditor({
                     {!isEventTrigger && <option value="uppercase">Wielkie litery</option>}
                     {!isEventTrigger && <option value="color">Koloruj</option>}
                     {!isEventTrigger && <option value="replace">Zamien</option>}
+                    {!isEventTrigger && <option value="wrap">Otocz tekstem</option>}
                     <option value="beep">Dzwiek</option>
                     <option value="mute">Wycisz dzwieki</option>
                     <option value="unmute">Wlacz dzwieki</option>
@@ -261,6 +266,32 @@ function MacroEditor({
                                 <option value="ease-in-out">Ease In-Out</option>
                             </Form.Select>
                         </Form.Group>
+                    </div>
+                )}
+                {macro.type === 'wrap' && (
+                    <div className="d-flex flex-column gap-1 mt-1">
+                        <Form.Control
+                            size="sm"
+                            type="text"
+                            placeholder="Prefix"
+                            value={macro.wrapPrefix || ''}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapPrefix: e.target.value })}
+                        />
+                        <Form.Control
+                            size="sm"
+                            type="text"
+                            placeholder="Suffix"
+                            value={macro.wrapSuffix || ''}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapSuffix: e.target.value })}
+                        />
+                        <Form.Select
+                            size="sm"
+                            value={macro.wrapScope || 'match'}
+                            onChange={e => onChange({ ...macro, wrapScope: e.target.value as 'match' | 'line' })}
+                        >
+                            <option value="match">Dopasowanie</option>
+                            <option value="line">Cala linia</option>
+                        </Form.Select>
                     </div>
                 )}
             </div>
@@ -581,6 +612,13 @@ function UserTriggers() {
                         return 'rapid blink';
                     case 'functionalBind':
                         return m.label && m.command ? `bind [${m.label}] → ${m.command}` : 'functional bind';
+                    case 'wrap': {
+                        const parts: string[] = [];
+                        if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);
+                        parts.push(m.wrapScope === 'line' ? 'linia' : 'dopasowanie');
+                        if (m.wrapSuffix) parts.push(`+ "${m.wrapSuffix}"`);
+                        return `wrap ${parts.join(' ')}`;
+                    }
                     default:
                         return m.type;
                 }

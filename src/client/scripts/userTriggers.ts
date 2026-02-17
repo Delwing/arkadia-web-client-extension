@@ -4,7 +4,7 @@ import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -19,6 +19,10 @@ export interface UserMacro {
     dimEndOpacity?: number;
     dimDuration?: number;
     dimEasing?: DimEasing;
+    // Wrap (prefix/suffix) options
+    wrapPrefix?: string;
+    wrapSuffix?: string;
+    wrapScope?: 'match' | 'line';
 }
 
 export type TriggerType = 'pattern' | 'event';
@@ -115,6 +119,20 @@ function applyMacrosToMatch(
                     }
                 });
                 break;
+            case 'wrap': {
+                const prefix = macro.wrapPrefix || '';
+                const suffix = macro.wrapSuffix || '';
+                if (macro.wrapScope === 'line') {
+                    if (suffix) line.insert(line.length, suffix);
+                    if (prefix) line.insert(0, prefix);
+                    matchRange = [matchRange[0] + prefix.length, matchRange[1] + prefix.length];
+                } else {
+                    if (suffix) line.insert(matchRange[1], suffix);
+                    if (prefix) line.insert(matchRange[0], prefix);
+                    matchRange = [matchRange[0], matchRange[1] + prefix.length + suffix.length];
+                }
+                break;
+            }
             case 'functionalBind':
                 if (macro.command && macro.label) {
                     client.FunctionalBind.set(macro.label, () => {
