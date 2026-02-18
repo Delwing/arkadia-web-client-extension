@@ -43,9 +43,9 @@ const LUA_FIXES = [
     },
     {
         file: 'color_moje_spece/bar.lua',
-        description: 'Remove matches["stun"] guard before string.len()',
-        upstream: '    if matches["stun"] and string.len(matches["stun"]) > 0 then',
-        fixed: '    if string.len(matches["stun"]) > 0 then',
+        description: 'Adds matches["stun"] guard before string.len()',
+        upstream: '    if string.len(matches["stun"]) > 0 then',
+        fixed: '    if matches["stun"] and string.len(matches["stun"]) > 0 then',
     },
 ];
 
