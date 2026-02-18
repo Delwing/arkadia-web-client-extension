@@ -13,6 +13,7 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    type Modifier,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -48,6 +49,22 @@ interface SortableStopProps {
     color: string;
     onRemove: (uid: string) => void;
 }
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+    ...transform,
+    x: 0,
+});
+
+const restrictToParentElement: Modifier = ({ draggingNodeRect, containerNodeRect, transform }) => {
+    if (!draggingNodeRect || !containerNodeRect) return transform;
+    const clampedY = Math.min(
+        Math.max(transform.y, containerNodeRect.top - draggingNodeRect.top),
+        containerNodeRect.top + containerNodeRect.height - draggingNodeRect.top - draggingNodeRect.height,
+    );
+    return { ...transform, x: 0, y: clampedY };
+};
+
+const dndModifiers = [restrictToVerticalAxis, restrictToParentElement];
 
 const ROUTES_STORAGE_KEY = 'tripRoutes';
 
@@ -459,6 +476,7 @@ const TripPlannerPopup: React.FC = () => {
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
+                            modifiers={dndModifiers}
                         >
                             <SortableContext
                                 items={stops.map(s => s.uid)}

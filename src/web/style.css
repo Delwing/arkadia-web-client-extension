@@ -6889,6 +6889,8 @@ body.mobile-command-radial-active {
   gap: 0.25rem;
   max-height: 150px;
   overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
 }
 
 .trip-planner-stop {

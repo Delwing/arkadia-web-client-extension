@@ -131,7 +131,7 @@ test.describe('Multibind import', () => {
         await aliasesModal.getByPlaceholder('np. zabij $1').fill(aliasCommand);
         await aliasesModal.getByRole('button', { name: 'Dodaj', exact: true }).click();
         await expect(
-            aliasesModal.locator('.alias-list-item').filter({ hasText: aliasPattern }),
+            aliasesModal.locator('.alias-card').filter({ hasText: aliasPattern }),
             'should display newly created alias entry',
         ).toContainText(aliasCommand);
 
