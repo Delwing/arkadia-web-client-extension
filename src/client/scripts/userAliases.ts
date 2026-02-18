@@ -1,8 +1,10 @@
 import Client from "../Client";
+import { getCurrentCharacter } from "@modules/core/storage";
 
 export interface UserAlias {
     pattern: string;
     command: string;
+    overrides?: Record<string, string>;
 }
 
 const STORAGE_KEY = "aliases";
@@ -27,7 +29,9 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
             return {
                 pattern: regexp,
                 callback: (m: RegExpMatchArray) => {
-                    const cmd = item.command.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
+                    const char = getCurrentCharacter();
+                    const baseCmd = (char && item.overrides?.[char]) || item.command;
+                    const cmd = baseCmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
                     return client.sendCommand(cmd);
                 }
             };

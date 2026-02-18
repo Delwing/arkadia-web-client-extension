@@ -4,14 +4,13 @@ import { TiDelete, TiEdit } from "react-icons/ti";
 import storage from "@modules/core/storage";
 import { parseBlowtorch, Alias } from "./importBlowtorch";
 import { parseArkadia } from "./importArkadia";
+import AliasEditModal from "./AliasEditModal";
 
 function Aliases() {
     const [aliases, setAliases] = useState<Alias[]>([]);
-    const [pattern, setPattern] = useState("");
-    const [command, setCommand] = useState("");
-    const [editIndex, setEditIndex] = useState<number | null>(null);
-    const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState("");
+    const [showModal, setShowModal] = useState(false);
+    const [modalAlias, setModalAlias] = useState<{ alias: Alias; index: number } | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const arkadiaInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,15 +27,30 @@ function Aliases() {
         storage.setItem("aliases", list);
     }
 
-    function resetForm() {
-        setPattern("");
-        setCommand("");
-        setEditIndex(null);
+    function openNew() {
+        setModalAlias(undefined);
+        setShowModal(true);
     }
 
-    function openNew() {
-        resetForm();
-        setShowCreateForm(true);
+    function openEdit(idx: number) {
+        setModalAlias({ alias: aliases[idx], index: idx });
+        setShowModal(true);
+    }
+
+    function closeModal() {
+        setShowModal(false);
+        setModalAlias(undefined);
+    }
+
+    function handleSave(alias: Alias) {
+        const updated = [...aliases];
+        if (modalAlias !== undefined) {
+            updated[modalAlias.index] = alias;
+        } else {
+            updated.push(alias);
+        }
+        saveList(updated);
+        closeModal();
     }
 
     function openArkadiaImport() {
@@ -91,47 +105,29 @@ function Aliases() {
         }
     }
 
-    function openEdit(idx: number) {
-        const a = aliases[idx];
-        setPattern(a.pattern);
-        setCommand(a.command);
-        setEditIndex(idx);
-        setShowCreateForm(false);
-    }
-
-    function save() {
-        const p = pattern.trim();
-        const c = command.trim();
-        if (!p || !c) return;
-        if (aliases.some((a, i) => i !== editIndex && a.pattern === p)) {
-            alert("Alias już istnieje");
-            return;
-        }
-        const updated = [...aliases];
-        const entry = { pattern: p, command: c };
-        if (editIndex === null) {
-            updated.push(entry);
-        } else {
-            updated[editIndex] = entry;
-        }
-        saveList(updated);
-        resetForm();
-        setShowCreateForm(false);
-    }
-
-
     function remove(idx: number) {
         if (!confirm("Czy na pewno chcesz usunąć ten alias?")) return;
         const updated = aliases.filter((_, i) => i !== idx);
         saveList(updated);
     }
 
+    const lowerFilter = filter.toLowerCase();
     const filteredAliases = aliases
         .map((a, idx) => ({ ...a, idx }))
-        .filter(a =>
-            a.pattern.toLowerCase().includes(filter.toLowerCase()) ||
-            a.command.toLowerCase().includes(filter.toLowerCase())
-        );
+        .filter(a => {
+            if (!lowerFilter) return true;
+            if (a.pattern.toLowerCase().includes(lowerFilter)) return true;
+            if (a.command.toLowerCase().includes(lowerFilter)) return true;
+            if (a.overrides) {
+                for (const [char, cmd] of Object.entries(a.overrides)) {
+                    if (char.toLowerCase().includes(lowerFilter)) return true;
+                    if (cmd.toLowerCase().includes(lowerFilter)) return true;
+                }
+            }
+            return false;
+        });
+
+    const existingPatterns = aliases.map(a => a.pattern);
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
@@ -163,93 +159,43 @@ function Aliases() {
                     onChange={handleImport}
                 />
             </div>
-            
-            {showCreateForm && (
-                <div className="border rounded p-3 mb-3">
-                    <h6 className="mb-3">{editIndex === null ? 'Dodaj alias' : 'Edytuj alias'}</h6>
-                    <Form.Group className="d-flex flex-column gap-2">
-                        <div>
-                            <Form.Label className="mb-1 small">Wzorzec (pattern)</Form.Label>
-                            <Form.Control
-                                type="text"
-                                size="sm"
-                                placeholder="np. ^zab (.+)$"
-                                value={pattern}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                className="font-monospace"
-                            />
-                        </div>
-                        <div>
-                            <Form.Label className="mb-1 small">Komenda do wykonania</Form.Label>
-                            <Form.Control
-                                type="text"
-                                size="sm"
-                                placeholder="np. zabij $1"
-                                value={command}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
-                                className="font-monospace"
-                            />
-                        </div>
-                        <small className="text-secondary">
-                            Pattern jest wyrażeniem regularnym. Użyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawić odpowiednie grupy.<br/>
-                            Możesz także korzystać ze skrótów obiektów (<code>@1</code>, <code>@A</code>, <code>@@</code>), które zostaną rozwinięte do identyfikatorów obiektów.
-                        </small>
-                        <div className="d-flex gap-2">
-                            <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Anuluj</Button>
-                            <Button size="sm" onClick={save}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
-                        </div>
-                    </Form.Group>
-                </div>
-            )}
-            
-            <ul className="list-unstyled">
+
+            <div className="d-flex flex-column gap-2">
                 {filteredAliases.map(a => (
-                    editIndex === a.idx ? (
-                        <li key={a.idx} className="alias-list-item d-flex flex-column gap-2">
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <div>
-                                    <Form.Label className="mb-1 small">Wzorzec (pattern)</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        placeholder="np. ^zab (.+)$"
-                                        value={pattern}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                        className="font-monospace"
-                                    />
-                                </div>
-                                <div>
-                                    <Form.Label className="mb-1 small">Komenda do wykonania</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        placeholder="np. zabij $1"
-                                        value={command}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setCommand(e.target.value)}
-                                        className="font-monospace"
-                                    />
-                                </div>
-                                <div className="d-flex gap-2">
-                                    <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
-                                    <Button size="sm" onClick={save}>Zapisz</Button>
-                                </div>
-                            </Form.Group>
-                        </li>
-                    ) : (
-                        <li key={a.idx} className="alias-list-item d-flex flex-column flex-md-row gap-2 align-items-stretch align-items-md-center">
-                            <div className="alias-entry flex-grow-1">
+                    <div key={a.idx} className="alias-card">
+                        <div className="alias-card-body">
+                            <div className="alias-entry">
                                 <code className="alias-pattern">{a.pattern}</code>
-                                <span className="alias-divider">→</span>
+                                <span className="alias-divider">&rarr;</span>
                                 <code className="alias-command">{a.command}</code>
                             </div>
-                            <div className="alias-list-item-actions">
-                                <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><TiEdit /></Button>
-                                <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><TiDelete /></Button>
-                            </div>
-                        </li>
-                    )
+                            {a.overrides && Object.keys(a.overrides).length > 0 && (
+                                <div className="alias-overrides">
+                                    {Object.entries(a.overrides).map(([char, cmd]) => (
+                                        <div key={char} className="alias-override-entry">
+                                            <span className="alias-override-char">{char}</span>
+                                            <span className="alias-divider">&rarr;</span>
+                                            <code className="alias-command">{cmd}</code>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="alias-card-actions">
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><TiEdit /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><TiDelete /></Button>
+                        </div>
+                    </div>
                 ))}
-            </ul>
+            </div>
+
+            <AliasEditModal
+                show={showModal}
+                onClose={closeModal}
+                onSave={handleSave}
+                alias={modalAlias?.alias}
+                existingPatterns={existingPatterns}
+            />
         </div>
     );
 }

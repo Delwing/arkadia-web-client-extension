@@ -1,6 +1,7 @@
 export interface Alias {
     pattern: string;
     command: string;
+    overrides?: Record<string, string>;
 }
 
 function escapeRegex(str: string): string {
