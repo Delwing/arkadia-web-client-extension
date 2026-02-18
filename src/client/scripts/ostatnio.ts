@@ -36,7 +36,7 @@ export default function initOstatnio(
                 const member = members[index];
                 client.Triggers.registerOneTimeTrigger(
                     /^Aktywnosc\s+:\s*(.*)$/,
-                    (line, matches) => {
+                    (_, matches) => {
                         const activity = matches[1].trim();
                         const active = activity === "aktywny" || activity === "aktywna";
                         results.push({ name: member, activity, active });

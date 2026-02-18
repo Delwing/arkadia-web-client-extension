@@ -301,6 +301,8 @@ export interface KnownEvents {
     "loot.popup.open": LootPopupPayload;
     "loot.popup.closed": void;
     "loot.cleared": void;
+    "sunTracker.popup.open": void;
+    "sunTracker.updated": void;
 }
 
 export interface WalkerState {

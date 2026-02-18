@@ -28,6 +28,7 @@ import StaticMapPopupManager from '../StaticMapPopup';
 import DepositsPopup from '../DepositsPopup';
 import PackageReceiverPopup from '../PackageReceiverPopup';
 import LootPopup from '../LootPopup';
+import SunTrackerPopup from '../SunTrackerPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -90,6 +91,7 @@ export function LayoutManagerWrapper({
       <DepositsPopup />
       <PackageReceiverPopup />
       <LootPopup />
+      <SunTrackerPopup />
       <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />

@@ -200,6 +200,14 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                 onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                                 className="me-2"
                             />
+                            <Form.Check
+                                type="checkbox"
+                                id="sunTracker"
+                                label={<>Sledzenie slonca <FiHelpCircle title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Kliknij [czas] aby potwierdzic obserwacje. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
+                                checked={settings.sunTracker}
+                                onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
+                                className="me-2"
+                            />
                             <Form.Group className="d-flex align-items-center me-2">
                                 <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii
                                     listu:</Form.Label>

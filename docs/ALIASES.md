@@ -68,6 +68,12 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 
 > **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.
 
+## Kalendarz slonca
+
+| Komenda | Opis |
+|---------|------|
+| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |
+
 ## Lowienie ryb
 
 | Komenda | Opis |

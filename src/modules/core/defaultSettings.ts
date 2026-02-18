@@ -49,6 +49,7 @@ export interface Settings {
     favoriteMagicKeys?: string[];
     cuttingPreAction?: string;
     cuttingPostAction?: string;
+    sunTracker: boolean;
 }
 
 export const defaultSettings: Settings = {
@@ -98,4 +99,5 @@ export const defaultSettings: Settings = {
     favoriteMagicKeys: [],
     cuttingPreAction: '',
     cuttingPostAction: '',
+    sunTracker: false,
 };

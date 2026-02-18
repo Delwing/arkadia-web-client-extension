@@ -491,6 +491,13 @@ outputWrapper.addEventListener('contextmenu', event => {
             },
             opensWindow: true,
         },
+        {
+            label: 'Kalendarz',
+            action: () => {
+                eventBus.emit('sunTracker.popup.open');
+            },
+            opensWindow: true,
+        },
     );
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);

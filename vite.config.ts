@@ -37,6 +37,7 @@ export default defineConfig({
     build: {
         minify: true,
         sourcemap: true,
+        chunkSizeWarningLimit: 5000,
         rollupOptions: {
             input: {
                 client: resolve('index.html'),

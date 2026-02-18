@@ -26,7 +26,9 @@ export type BuiltInPopupType =
   | 'roomInfo'
   | 'staticmap'
   | 'tripPlanner'
-  | 'packageReceiver';
+  | 'deposits'
+  | 'packageReceiver'
+  | 'sunTracker';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;

@@ -107,7 +107,7 @@ import {initSpecialLocations} from "./scripts/specialLocations";
 import {emitFakeLine} from "./scripts/fakeLine";
 import initKillTracker from "@client/killTracker.ts";
 import {initClock} from "@client/scripts/clock.ts";
-import initSunCalendarLogger from "@client/scripts/sunCalendarLogger.ts";
+import initSunTracker from "@client/scripts/sunTracker.ts";
 import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
@@ -265,7 +265,7 @@ export function registerScripts(client: Client) {
     initPackageHelper(client)
     initInlineCompassRose(client, aliases)
     initClock(client)
-    initSunCalendarLogger(client)
+    initSunTracker(client)
     initWyroznienieOptions(client)
     initContracts(client, aliases)
     initFishing(client, aliases)
