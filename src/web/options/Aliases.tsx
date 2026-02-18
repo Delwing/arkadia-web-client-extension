@@ -166,16 +166,18 @@ function Aliases() {
                         <div className="alias-card-body">
                             <div className="alias-entry">
                                 <code className="alias-pattern">{a.pattern}</code>
-                                <span className="alias-divider">&rarr;</span>
-                                <code className="alias-command">{a.command}</code>
+                                <span className="alias-entry-command">
+                                    <code className="alias-command">{a.command}</code>
+                                </span>
                             </div>
                             {a.overrides && Object.keys(a.overrides).length > 0 && (
                                 <div className="alias-overrides">
                                     {Object.entries(a.overrides).map(([char, cmd]) => (
                                         <div key={char} className="alias-override-entry">
                                             <span className="alias-override-char">{char}</span>
-                                            <span className="alias-divider">&rarr;</span>
-                                            <code className="alias-command">{cmd}</code>
+                                            <span className="alias-entry-command">
+                                                <code className="alias-command">{cmd}</code>
+                                            </span>
                                         </div>
                                     ))}
                                 </div>

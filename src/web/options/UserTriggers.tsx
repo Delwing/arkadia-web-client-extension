@@ -1,14 +1,14 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete, TiEdit } from "react-icons/ti";
+import { TiDelete, TiEdit, TiFlash } from "react-icons/ti";
 import storage from "@modules/core/storage";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import {
     getRegisteredTriggerMacros,
-    isTriggerMacroAvailable,
     type PluginTriggerMacro,
 } from "@modules/core/pluginTriggerMacroRegistry";
 import eventBus from "@modules/core/eventBus";
+import TriggerEditModal from "./TriggerEditModal";
 
 export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap';
 
@@ -70,9 +70,6 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'transportTimer', label: 'Timer transportu', category: 'Timery' },
 ];
 
-// Macro types that work without text context (for event triggers)
-const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind']);
-
 function normalizeMacro(macro: UserMacro): UserMacro {
     if (macro.type === 'beep' && (!macro.soundKey || typeof macro.soundKey !== 'string')) {
         return { ...macro, soundKey: 'beep' };
@@ -89,298 +86,11 @@ function normalizeTriggerList(list: UserTrigger[] = []): UserTrigger[] {
     return list.map(normalizeTrigger);
 }
 
-function MacroEditor({
-    macro,
-    onChange,
-    onRemove,
-    sounds,
-    onRequestSoundUpload,
-    pluginMacros,
-    isEventTrigger = false,
-}: {
-    macro: UserMacro;
-    onChange: (m: UserMacro) => void;
-    onRemove: () => void;
-    sounds: CustomSound[];
-    onRequestSoundUpload: () => Promise<string | undefined>;
-    pluginMacros: PluginTriggerMacro[];
-    isEventTrigger?: boolean;
-}) {
-    return (
-        <div className="d-flex align-items-start gap-2 mb-1">
-            <div className="flex-grow-1">
-                <Form.Select
-                    size="sm"
-                    value={macro.type}
-                    className={!isTriggerMacroAvailable(macro.type) ? 'border-warning' : ''}
-                    onChange={e => {
-                        const nextType = e.target.value;
-                        onChange({
-                            ...macro,
-                            type: nextType,
-                            soundKey: nextType === 'beep' ? macro.soundKey || 'beep' : undefined,
-                        });
-                    }}
-                >
-                    {!isEventTrigger && <option value="uppercase">Wielkie litery</option>}
-                    {!isEventTrigger && <option value="color">Koloruj</option>}
-                    {!isEventTrigger && <option value="replace">Zamien</option>}
-                    {!isEventTrigger && <option value="wrap">Otocz tekstem</option>}
-                    <option value="beep">Dzwiek</option>
-                    <option value="mute">Wycisz dzwieki</option>
-                    <option value="unmute">Wlacz dzwieki</option>
-                    <option value="command">Komenda</option>
-                    {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
-                    {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
-                    {!isEventTrigger && <option value="dim">Pulsowanie</option>}
-                    <option value="functionalBind">Funkcyjny bind</option>
-                    {(() => {
-                        // Group macros by plugin
-                        const byPlugin = new Map<string, typeof pluginMacros>();
-                        for (const pm of pluginMacros) {
-                            const key = pm.pluginName || pm.pluginId;
-                            if (!byPlugin.has(key)) byPlugin.set(key, []);
-                            byPlugin.get(key)!.push(pm);
-                        }
-                        return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
-                            <optgroup key={pluginName} label={pluginName}>
-                                {macros.map(pm => (
-                                    <option key={pm.id} value={pm.id}>{pm.label}</option>
-                                ))}
-                            </optgroup>
-                        ));
-                    })()}
-                    {macro.type.startsWith('plugin:') && !isTriggerMacroAvailable(macro.type) && (
-                        <option value={macro.type} disabled>
-                            {macro.type} (wtyczka niedostepna)
-                        </option>
-                    )}
-                </Form.Select>
-                {!isTriggerMacroAvailable(macro.type) && (
-                    <Form.Text className="text-warning d-block">
-                        Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
-                    </Form.Text>
-                )}
-                {macro.type === 'beep' && (
-                    <Form.Select
-                        className="mt-1"
-                        size="sm"
-                        value={macro.soundKey || 'beep'}
-                        onChange={async e => {
-                            const value = e.target.value;
-                            if (value === '__upload__') {
-                                const newKey = await onRequestSoundUpload();
-                                if (newKey) {
-                                    onChange({ ...macro, soundKey: newKey });
-                                }
-                                return;
-                            }
-                            onChange({ ...macro, soundKey: value });
-                        }}
-                    >
-                        <option value="beep">Domyślny beep</option>
-                        {sounds.map(sound => (
-                            <option key={sound.key} value={sound.key}>{sound.name}</option>
-                        ))}
-                        <option value="__upload__">Dodaj dźwięk…</option>
-                    </Form.Select>
-                )}
-                {macro.type === 'command' && (
-                    <Form.Control
-                        className="mt-1 font-monospace"
-                        type="text"
-                        size="sm"
-                        placeholder="Command"
-                        value={macro.command || ''}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
-                    />
-                )}
-                {macro.type === 'functionalBind' && (
-                    <>
-                        <Form.Control
-                            className="mt-1 font-monospace"
-                            type="text"
-                            size="sm"
-                            placeholder="Label (np. 'zabij cel')"
-                            value={macro.label || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, label: e.target.value })}
-                        />
-                        <Form.Control
-                            className="mt-1 font-monospace"
-                            type="text"
-                            size="sm"
-                            placeholder="Command (np. 'zabij cel')"
-                            value={macro.command || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
-                        />
-                    </>
-                )}
-                {macro.type === 'dim' && (
-                    <div className="d-flex flex-wrap gap-2 mt-1">
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Jasnosc poczatkowa</Form.Label>
-                            <Form.Control
-                                type="number"
-                                size="sm"
-                                min={0}
-                                max={1}
-                                step={0.1}
-                                value={macro.dimStartOpacity ?? 1}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimStartOpacity: parseFloat(e.target.value) })}
-                            />
-                        </Form.Group>
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Jasnosc koncowa</Form.Label>
-                            <Form.Control
-                                type="number"
-                                size="sm"
-                                min={0}
-                                max={1}
-                                step={0.1}
-                                value={macro.dimEndOpacity ?? 0.3}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimEndOpacity: parseFloat(e.target.value) })}
-                            />
-                        </Form.Group>
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Czas (ms)</Form.Label>
-                            <Form.Control
-                                type="number"
-                                size="sm"
-                                min={100}
-                                step={100}
-                                value={macro.dimDuration ?? 1000}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimDuration: parseInt(e.target.value, 10) })}
-                            />
-                        </Form.Group>
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Przejscie</Form.Label>
-                            <Form.Select
-                                size="sm"
-                                value={macro.dimEasing ?? 'ease-in-out'}
-                                onChange={e => onChange({ ...macro, dimEasing: e.target.value as DimEasing })}
-                            >
-                                <option value="linear">Liniowe</option>
-                                <option value="ease">Ease</option>
-                                <option value="ease-in">Ease In</option>
-                                <option value="ease-out">Ease Out</option>
-                                <option value="ease-in-out">Ease In-Out</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </div>
-                )}
-                {macro.type === 'wrap' && (
-                    <div className="d-flex flex-column gap-1 mt-1">
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            placeholder="Prefix"
-                            value={macro.wrapPrefix || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapPrefix: e.target.value })}
-                        />
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            placeholder="Suffix"
-                            value={macro.wrapSuffix || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapSuffix: e.target.value })}
-                        />
-                        <Form.Select
-                            size="sm"
-                            value={macro.wrapScope || 'match'}
-                            onChange={e => onChange({ ...macro, wrapScope: e.target.value as 'match' | 'line' })}
-                        >
-                            <option value="match">Dopasowanie</option>
-                            <option value="line">Cala linia</option>
-                        </Form.Select>
-                    </div>
-                )}
-            </div>
-            {macro.type === 'color' && (
-                <Form.Control
-                    type="color"
-                    size="sm"
-                    style={{ width: '2.2rem' }}
-                    value={macro.color || '#ffffff'}
-                    onChange={e => onChange({ ...macro, color: e.target.value })}
-                />
-            )}
-            {macro.type === 'replace' && (
-                <Form.Control
-                    type="text"
-                    size="sm"
-                    placeholder="Replacement"
-                    value={macro.to || ''}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
-                    style={{ width: '100%', maxWidth: '8rem' }}
-                />
-            )}
-            {/* Plugin macro config fields */}
-            {macro.type.startsWith('plugin:') && (() => {
-                const pluginMacro = pluginMacros.find(pm => pm.id === macro.type);
-                if (!pluginMacro?.configFields?.length) return null;
-                const config = macro.pluginConfig || {};
-                return (
-                    <div className="d-flex flex-column gap-1">
-                        {pluginMacro.configFields.map(field => (
-                            <div key={field.name}>
-                                {field.type === 'text' && (
-                                    <Form.Control
-                                        size="sm"
-                                        type="text"
-                                        placeholder={field.label}
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => onChange({
-                                            ...macro,
-                                            pluginConfig: { ...config, [field.name]: e.target.value }
-                                        })}
-                                    />
-                                )}
-                                {field.type === 'number' && (
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        placeholder={field.label}
-                                        value={config[field.name] ?? field.defaultValue ?? 0}
-                                        onChange={e => onChange({
-                                            ...macro,
-                                            pluginConfig: { ...config, [field.name]: Number(e.target.value) }
-                                        })}
-                                    />
-                                )}
-                                {field.type === 'select' && field.options && (
-                                    <Form.Select
-                                        size="sm"
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => onChange({
-                                            ...macro,
-                                            pluginConfig: { ...config, [field.name]: e.target.value }
-                                        })}
-                                    >
-                                        {field.options.map(opt => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </Form.Select>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                );
-            })()}
-            <Button size="sm" variant="secondary" onClick={onRemove}><TiDelete /></Button>
-        </div>
-    );
-}
-
 function UserTriggers() {
     const [triggers, setTriggers] = useState<UserTrigger[]>([]);
-    const [triggerType, setTriggerType] = useState<TriggerType>('pattern');
-    const [pattern, setPattern] = useState('');
-    const [event, setEvent] = useState('');
-    const [flags, setFlags] = useState('');
-    const [macros, setMacros] = useState<UserMacro[]>([]);
-    const [editIndex, setEditIndex] = useState<number | null>(null);
-    const [showCreateForm, setShowCreateForm] = useState(false);
     const [filter, setFilter] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [modalTrigger, setModalTrigger] = useState<{ trigger: UserTrigger; index: number } | undefined>(undefined);
     const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
     const [pluginMacros, setPluginMacros] = useState<PluginTriggerMacro[]>([]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -509,77 +219,36 @@ function UserTriggers() {
         storage.setItem('triggers', normalized);
     }
 
-    function resetForm() {
-        setTriggerType('pattern');
-        setPattern('');
-        setEvent('');
-        setFlags('');
-        setMacros([]);
-        setEditIndex(null);
-    }
-
     function openNew() {
-        resetForm();
-        setShowCreateForm(true);
+        setModalTrigger(undefined);
+        setShowModal(true);
     }
 
-    function edit(idx: number) {
-        const t = triggers[idx];
-        setTriggerType(t.type || 'pattern');
-        setPattern(t.pattern || '');
-        setEvent(t.event || '');
-        setFlags(t.flags || '');
-        setMacros(t.macros ? t.macros.map(normalizeMacro) : []);
-        setEditIndex(idx);
-        setShowCreateForm(false);
+    function openEdit(idx: number) {
+        setModalTrigger({ trigger: triggers[idx], index: idx });
+        setShowModal(true);
+    }
+
+    function closeModal() {
+        setShowModal(false);
+        setModalTrigger(undefined);
+    }
+
+    function handleSave(trigger: UserTrigger) {
+        const updated = [...triggers];
+        if (modalTrigger !== undefined) {
+            updated[modalTrigger.index] = trigger;
+        } else {
+            updated.push(trigger);
+        }
+        saveList(updated);
+        closeModal();
     }
 
     function remove(idx: number) {
         if (!confirm('Delete trigger?')) return;
         const updated = triggers.filter((_, i) => i !== idx);
         saveList(updated);
-    }
-
-    function addMacro() {
-        const defaultType = triggerType === 'event' ? 'beep' : 'uppercase';
-        const newMacro: UserMacro = defaultType === 'beep'
-            ? { type: 'beep', soundKey: 'beep' }
-            : { type: defaultType };
-        setMacros(prev => [...prev, newMacro]);
-    }
-
-    function updateMacro(idx: number, macro: UserMacro) {
-        setMacros(prev => prev.map((m, i) => i === idx ? macro : m));
-    }
-
-    function removeMacro(idx: number) {
-        setMacros(prev => prev.filter((_, i) => i !== idx));
-    }
-
-    function save() {
-        const list = [...triggers];
-        let entry: UserTrigger;
-
-        if (triggerType === 'event') {
-            if (!event) return;
-            entry = { type: 'event', event, macros };
-        } else {
-            const p = pattern.trim();
-            if (!p) return;
-            entry = { type: 'pattern', pattern: p, macros };
-            if (flags.trim()) {
-                entry.flags = flags.trim();
-            }
-        }
-
-        if (editIndex === null) {
-            list.push(entry);
-        } else {
-            list[editIndex] = entry;
-        }
-        saveList(list);
-        resetForm();
-        setShowCreateForm(false);
     }
 
     function macrosToText(list: UserMacro[]): string {
@@ -630,6 +299,7 @@ function UserTriggers() {
         .map((t, idx) => ({ ...t, idx }))
         .filter(t => {
             const searchText = filter.toLowerCase();
+            if (!searchText) return true;
             if (t.type === 'event' && t.event) {
                 const eventInfo = SUPPORTED_EVENTS.find(e => e.id === t.event);
                 return t.event.toLowerCase().includes(searchText) ||
@@ -651,7 +321,7 @@ function UserTriggers() {
                 <Form.Control
                     type="text"
                     size="sm"
-                    placeholder="Filter"
+                    placeholder="Filtruj"
                     value={filter}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
                     className="flex-grow-1"
@@ -659,205 +329,15 @@ function UserTriggers() {
                 />
                 <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openNew}>Dodaj trigger</Button>
             </div>
-            
-            {showCreateForm && (
-                <div className="border rounded p-3 mb-3">
-                    <h6 className="mb-3">{editIndex === null ? 'Dodaj trigger' : 'Edytuj trigger'}</h6>
-                    <Form.Group className="d-flex flex-column gap-2">
-                        <div className="d-flex gap-2 mb-2">
-                            <Form.Check
-                                type="radio"
-                                id="triggerType-pattern"
-                                label="Wzorzec tekstu"
-                                checked={triggerType === 'pattern'}
-                                onChange={() => {
-                                    setTriggerType('pattern');
-                                    // Filter out incompatible macros when switching
-                                    setMacros(prev => prev.filter(m =>
-                                        !EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:') || EVENT_COMPATIBLE_MACROS.has(m.type)
-                                    ));
-                                }}
-                            />
-                            <Form.Check
-                                type="radio"
-                                id="triggerType-event"
-                                label="Zdarzenie"
-                                checked={triggerType === 'event'}
-                                onChange={() => {
-                                    setTriggerType('event');
-                                    // Filter out text-only macros when switching to event
-                                    setMacros(prev => prev.filter(m =>
-                                        EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:')
-                                    ));
-                                }}
-                            />
-                        </div>
-                        {triggerType === 'pattern' ? (
-                            <div className="d-flex gap-2">
-                                <Form.Control
-                                    type="text"
-                                    size="sm"
-                                    placeholder="Pattern"
-                                    value={pattern}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                    className="font-monospace flex-grow-1"
-                                />
-                                <Form.Control
-                                    type="text"
-                                    size="sm"
-                                    placeholder="Flagi (np. i, g, gi)"
-                                    value={flags}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setFlags(e.target.value)}
-                                    className="font-monospace"
-                                    style={{ width: '120px' }}
-                                />
-                            </div>
-                        ) : (
-                            <Form.Select
-                                size="sm"
-                                value={event}
-                                onChange={(e) => setEvent(e.target.value)}
-                            >
-                                <option value="">Wybierz zdarzenie...</option>
-                                {(() => {
-                                    const byCategory = new Map<string, SupportedEvent[]>();
-                                    for (const ev of SUPPORTED_EVENTS) {
-                                        if (!byCategory.has(ev.category)) byCategory.set(ev.category, []);
-                                        byCategory.get(ev.category)!.push(ev);
-                                    }
-                                    return Array.from(byCategory.entries()).map(([category, events]) => (
-                                        <optgroup key={category} label={category}>
-                                            {events.map(ev => (
-                                                <option key={ev.id} value={ev.id}>{ev.label}</option>
-                                            ))}
-                                        </optgroup>
-                                    ));
-                                })()}
-                            </Form.Select>
-                        )}
-                        {macros.map((m, i) => (
-                            <MacroEditor
-                                key={i}
-                                macro={m}
-                                onChange={macro => updateMacro(i, macro)}
-                                onRemove={() => removeMacro(i)}
-                                sounds={customSounds}
-                                onRequestSoundUpload={requestSoundUpload}
-                                pluginMacros={pluginMacros}
-                                isEventTrigger={triggerType === 'event'}
-                            />
-                        ))}
-                        <Button size="sm" onClick={addMacro}>Dodaj akcję</Button>
-                        <div className="d-flex gap-2 mt-2">
-                            <Button size="sm" variant="secondary" onClick={() => { resetForm(); setShowCreateForm(false); }}>Anuluj</Button>
-                            <Button size="sm" onClick={save}>{editIndex === null ? 'Dodaj' : 'Zapisz'}</Button>
-                        </div>
-                    </Form.Group>
-                </div>
-            )}
 
-            <ul className="list-unstyled">
+            <div className="d-flex flex-column gap-2">
                 {filteredTriggers.map(t => (
-                    editIndex === t.idx ? (
-                        <li key={t.idx} className="alias-list-item">
-                            <div className="border rounded p-3 mb-3">
-                                <h6 className="mb-3">Edytuj trigger</h6>
-                                <Form.Group className="d-flex flex-column gap-2">
-                                    <div className="d-flex gap-2 mb-2">
-                                        <Form.Check
-                                            type="radio"
-                                            id={`triggerType-pattern-${t.idx}`}
-                                            label="Wzorzec tekstu"
-                                            checked={triggerType === 'pattern'}
-                                            onChange={() => {
-                                                setTriggerType('pattern');
-                                                setMacros(prev => prev.filter(m =>
-                                                    !EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:') || EVENT_COMPATIBLE_MACROS.has(m.type)
-                                                ));
-                                            }}
-                                        />
-                                        <Form.Check
-                                            type="radio"
-                                            id={`triggerType-event-${t.idx}`}
-                                            label="Zdarzenie"
-                                            checked={triggerType === 'event'}
-                                            onChange={() => {
-                                                setTriggerType('event');
-                                                setMacros(prev => prev.filter(m =>
-                                                    EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:')
-                                                ));
-                                            }}
-                                        />
-                                    </div>
-                                    {triggerType === 'pattern' ? (
-                                        <div className="d-flex gap-2">
-                                            <Form.Control
-                                                type="text"
-                                                size="sm"
-                                                placeholder="Pattern"
-                                                value={pattern}
-                                                onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                                className="font-monospace flex-grow-1"
-                                            />
-                                            <Form.Control
-                                                type="text"
-                                                size="sm"
-                                                placeholder="Flagi (np. i, g, gi)"
-                                                value={flags}
-                                                onChange={(e: ChangeEvent<HTMLInputElement>) => setFlags(e.target.value)}
-                                                className="font-monospace"
-                                                style={{ width: '120px' }}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <Form.Select
-                                            size="sm"
-                                            value={event}
-                                            onChange={(e) => setEvent(e.target.value)}
-                                        >
-                                            <option value="">Wybierz zdarzenie...</option>
-                                            {(() => {
-                                                const byCategory = new Map<string, SupportedEvent[]>();
-                                                for (const ev of SUPPORTED_EVENTS) {
-                                                    if (!byCategory.has(ev.category)) byCategory.set(ev.category, []);
-                                                    byCategory.get(ev.category)!.push(ev);
-                                                }
-                                                return Array.from(byCategory.entries()).map(([category, events]) => (
-                                                    <optgroup key={category} label={category}>
-                                                        {events.map(ev => (
-                                                            <option key={ev.id} value={ev.id}>{ev.label}</option>
-                                                        ))}
-                                                    </optgroup>
-                                                ));
-                                            })()}
-                                        </Form.Select>
-                                    )}
-                                    {macros.map((m, i) => (
-                                        <MacroEditor
-                                            key={i}
-                                            macro={m}
-                                            onChange={macro => updateMacro(i, macro)}
-                                            onRemove={() => removeMacro(i)}
-                                            sounds={customSounds}
-                                            onRequestSoundUpload={requestSoundUpload}
-                                            pluginMacros={pluginMacros}
-                                            isEventTrigger={triggerType === 'event'}
-                                        />
-                                    ))}
-                                    <Button size="sm" onClick={addMacro}>Dodaj akcję</Button>
-                                    <div className="d-flex gap-2 mt-2">
-                                        <Button size="sm" variant="secondary" onClick={resetForm}>Anuluj</Button>
-                                        <Button size="sm" onClick={save}>Zapisz</Button>
-                                    </div>
-                                </Form.Group>
-                            </div>
-                        </li>
-                    ) : (
-                        <li key={t.idx} className="alias-list-item d-flex flex-column flex-md-row gap-2 align-items-stretch align-items-md-center">
-                            <div className="alias-entry flex-grow-1">
+                    <div key={t.idx} className="alias-card">
+                        <div className="alias-card-body">
+                            <div className="alias-entry">
                                 {t.type === 'event' && t.event ? (
                                     <>
-                                        <span className="text-muted me-1">[Zdarzenie]</span>
+                                        <TiFlash className="text-warning" style={{ flexShrink: 0 }} />
                                         <code className="alias-pattern">
                                             {SUPPORTED_EVENTS.find(e => e.id === t.event)?.label || t.event}
                                         </code>
@@ -869,20 +349,29 @@ function UserTriggers() {
                                     </>
                                 )}
                                 {t.macros?.length ? (
-                                    <>
-                                        <span className="alias-divider">→</span>
+                                    <span className="alias-entry-command">
                                         <code className="alias-command">{macrosToText(t.macros)}</code>
-                                    </>
+                                    </span>
                                 ) : null}
                             </div>
-                            <div className="alias-list-item-actions">
-                                <Button size="sm" variant="secondary" onClick={() => edit(t.idx)}><TiEdit /></Button>
-                                <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><TiDelete /></Button>
-                            </div>
-                        </li>
-                    )
+                        </div>
+                        <div className="alias-card-actions">
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(t.idx)}><TiEdit /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><TiDelete /></Button>
+                        </div>
+                    </div>
                 ))}
-            </ul>
+            </div>
+
+            <TriggerEditModal
+                show={showModal}
+                onClose={closeModal}
+                onSave={handleSave}
+                trigger={modalTrigger?.trigger}
+                customSounds={customSounds}
+                onRequestSoundUpload={requestSoundUpload}
+                pluginMacros={pluginMacros}
+            />
         </div>
     );
 }

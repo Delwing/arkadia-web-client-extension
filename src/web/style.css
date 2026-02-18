@@ -4959,13 +4959,21 @@ body.mobile-command-radial-active {
 .alias-entry {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.35rem;
   align-items: center;
   font-family: 'Space Mono', 'Courier New', monospace;
   font-size: 0.95rem;
   line-height: 1.45;
   min-width: 0;
   word-break: break-word;
+}
+
+.alias-entry-command {
+  display: block;
+  width: 100%;
+  font-size: 0.6em;
+  line-height: 1.4;
+  margin-top: 0.125rem;
 }
 
 .alias-pattern {
@@ -5012,11 +5020,15 @@ body.mobile-command-radial-active {
 .alias-override-entry {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.35rem;
   align-items: center;
   font-family: 'Space Mono', 'Courier New', monospace;
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
+.alias-override-entry .alias-entry-command {
+  font-size: 0.7em;
 }
 
 .alias-override-char {
