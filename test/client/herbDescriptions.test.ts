@@ -52,6 +52,14 @@ describe('herb descriptions', () => {
     expect(result?.text).toBe('Widzisz zolty jasny kwiat (deliona)');
   });
 
+  test('adds herb name with different case', async () => {
+    const client = new FakeClient();
+    await initHerbDescriptions((client as unknown) as any);
+    const line = 'Zolty jasny kwiat.';
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer(line), '');
+    expect(result?.text).toBe('Zolty jasny kwiat (deliona).');
+  });
+
   test('does not duplicate herb name', async () => {
     const client = new FakeClient();
     await initHerbDescriptions((client as unknown) as any);

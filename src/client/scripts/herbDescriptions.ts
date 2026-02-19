@@ -37,7 +37,7 @@ export default async function initHerbDescriptions(client: Client) {
             Object.values(forms).forEach(desc => {
                 client.Triggers.registerTokenTrigger(desc, (line) => {
                     const rawLine = line.text;
-                    const index = rawLine.indexOf(desc);
+                    const index = rawLine.toLowerCase().indexOf(desc.toLowerCase());
                     const suffix = rawLine.substring(index + desc.length);
                     const after = suffix.trimStart();
                     if (after.startsWith("(")) {

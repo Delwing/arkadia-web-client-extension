@@ -31,9 +31,9 @@ const FILTERED_SCRIPTS = [
 const LUA_FIXES = [
     {
         file: 'color_innych_spece/bar/ktos_spec.lua',
-        description: 'Remove matches["stun"] guard before string.len()',
-        upstream: '    if matches["stun"] and string.len(matches["stun"]) > 0 then',
-        fixed: '    if string.len(matches["stun"]) > 0 then',
+        description: 'Adds matches["stun"] guard before string.len()',
+        upstream: '    if string.len(matches["stun"]) > 0 then',
+        fixed: '    if matches["stun"] and string.len(matches["stun"]) > 0 then',
     },
     {
         file: 'color_innych_spece/str.lua',
