@@ -139,6 +139,22 @@ export function registerEnemyStatusFilter(client: Client) {
                 status.paralyzed = false;
                 clearParalyzedTimer(status);
             }
+            return;
+        }
+
+        // Fallback: match by GMCP object description (stun-end name in nominative = object desc)
+        if (!name) return;
+        const lowerName = name.toLowerCase();
+        const objects = client.ObjectManager.getObjectsOnLocation();
+        const matchingObj = objects.find(o => o.desc?.toLowerCase() === lowerName);
+        if (!matchingObj) return;
+
+        for (const status of enemyStatusMap.values()) {
+            if (status.paralyzed && status.bestMatchObjectNum === matchingObj.num) {
+                status.paralyzed = false;
+                clearParalyzedTimer(status);
+                return;
+            }
         }
     });
 
