@@ -177,6 +177,7 @@ export default function initSunTracker(client: Client) {
     let enabled = false;
     let pendingEvent: PendingSunEvent | null = null;
     let pendingTimer: number | null = null;
+    let skipNext = true;
 
     function clearPending(): void {
         if (pendingTimer !== null) {
@@ -249,16 +250,19 @@ export default function initSunTracker(client: Client) {
 
     client.on("client.disconnect", () => {
         clearPending();
+        skipNext = true;
     });
 
     client.on("clock.sunrise", (data) => {
         if (!enabled) return;
+        if (skipNext) { skipNext = false; return; }
         printSunMessage("sunrise", data);
         setPending(data.domain, "sunrise", data.dayOfYear, data.observedHour);
     });
 
     client.on("clock.sunset", (data) => {
         if (!enabled) return;
+        if (skipNext) { skipNext = false; return; }
         printSunMessage("sunset", data);
         setPending(data.domain, "sunset", data.dayOfYear, data.observedHour);
     });
