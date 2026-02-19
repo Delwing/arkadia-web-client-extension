@@ -41,6 +41,22 @@ export function getDepositsData(): Record<number, DepositInfo> {
     return cloneDeposits(deposits);
 }
 
+export function getTotalCopper(deposits: Record<number, DepositInfo>): number {
+    let totalCopper = 0;
+    for (const { items } of Object.values(deposits)) {
+        if (!items) continue;
+        for (const item of items) {
+            const count = typeof item.count === 'number' ? item.count : 0;
+            if (count <= 0) continue;
+            if (item.name.match(/mithryl\w+ monet/)) totalCopper += count * 24000;
+            else if (item.name.match(/zlot\w+ monet/)) totalCopper += count * 240;
+            else if (item.name.match(/srebrn\w+ monet/)) totalCopper += count * 12;
+            else if (item.name.match(/miedzian\w+ monet/)) totalCopper += count;
+        }
+    }
+    return totalCopper;
+}
+
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     client.on("storage", ({ key, value }) => {
         if (key === STORAGE_KEY) {
@@ -170,18 +186,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         const smallCards = cards.filter(c => c.small);
 
         // Calculate total coin wealth across all deposits
-        let totalCopper = 0;
-        for (const { items } of depositEntries) {
-            if (!items) continue;
-            for (const item of items) {
-                const count = typeof item.count === 'number' ? item.count : 0;
-                if (count <= 0) continue;
-                if (item.name.match(/mithryl\w+ monet/)) totalCopper += count * 24000;
-                else if (item.name.match(/zlot\w+ monet/)) totalCopper += count * 240;
-                else if (item.name.match(/srebrn\w+ monet/)) totalCopper += count * 12;
-                else if (item.name.match(/miedzian\w+ monet/)) totalCopper += count;
-            }
-        }
+        const totalCopper = getTotalCopper(deposits);
 
         const colContentWidth = Math.max(...cards.map(c => c.contentWidth));
         const colWidth = colContentWidth + pad * 2 + 2;

@@ -132,17 +132,6 @@ export function registerEnemyStatusFilter(client: Client) {
     });
 
     client.on("enemy.paralyzed.end", ({ name }) => {
-        const existingMatch = findMatchingEnemy(name);
-        if (existingMatch) {
-            const status = enemyStatusMap.get(existingMatch);
-            if (status) {
-                status.paralyzed = false;
-                clearParalyzedTimer(status);
-            }
-            return;
-        }
-
-        // Fallback: match by GMCP object description (stun-end name in nominative = object desc)
         if (!name) return;
         const lowerName = name.toLowerCase();
         const objects = client.ObjectManager.getObjectsOnLocation();

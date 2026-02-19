@@ -2,37 +2,12 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
-import { getDepositsData, type DepositInfo } from '@client/scripts/deposits';
+import { getDepositsData, getTotalCopper, type DepositInfo } from '@client/scripts/deposits';
+import { splitCurrency } from '@client/scripts/priceEvaluation';
 import { getTransformDefinitions, type ContainerItem } from '@client/scripts/prettyContainers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 const POPUP_ID = 'popup:deposits';
-
-function getTotalCopper(deposits: Record<number, DepositInfo>): number {
-    let totalCopper = 0;
-    for (const { items } of Object.values(deposits)) {
-        if (!items) continue;
-        for (const item of items) {
-            const count = typeof item.count === 'number' ? item.count : 0;
-            if (count <= 0) continue;
-            if (item.name.match(/mithryl\w+ monet/)) totalCopper += count * 24000;
-            else if (item.name.match(/zlot\w+ monet/)) totalCopper += count * 240;
-            else if (item.name.match(/srebrn\w+ monet/)) totalCopper += count * 12;
-            else if (item.name.match(/miedzian\w+ monet/)) totalCopper += count;
-        }
-    }
-    return totalCopper;
-}
-
-function splitCurrency(totalCopper: number): { mithril: number; gold: number; silver: number; copper: number } {
-    const mithril = Math.floor(totalCopper / 24000);
-    totalCopper %= 24000;
-    const gold = Math.floor(totalCopper / 240);
-    totalCopper %= 240;
-    const silver = Math.floor(totalCopper / 12);
-    const copper = totalCopper % 12;
-    return { mithril, gold, silver, copper };
-}
 
 function transformItemName(item: ContainerItem): string {
     const transforms = getTransformDefinitions();

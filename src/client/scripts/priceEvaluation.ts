@@ -3,20 +3,25 @@ import {colorString} from "@modules/core/Colors";
 import {MITHRIL_COLOR, GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
+export function splitCurrency(totalCopper: number): { mithril: number; gold: number; silver: number; copper: number } {
+    let rest = totalCopper;
+    const mithril = Math.floor(rest / 24000);
+    rest %= 24000;
+    const gold = Math.floor(rest / 240);
+    rest %= 240;
+    const silver = Math.floor(rest / 12);
+    const copper = rest % 12;
+    return { mithril, gold, silver, copper };
+}
+
 export function convertCurrency(amount: number): AnsiAwareBuffer {
     const buffer = new AnsiAwareBuffer();
     const values = []
-    let rest = amount;
-    const mth = Math.floor(rest / 24000);
-    rest %= 24000;
-    const zl = Math.floor(rest / 240);
-    rest %= 240;
-    const sr = Math.floor(rest / 12);
-    const mdz = rest % 12;
-    if (mth > 0) values.push(colorString(`${mth} mth`, MITHRIL_COLOR));
-    if (zl > 0) values.push(colorString(`${zl} zl`, GOLD_COLOR));
-    if (sr > 0) values.push(colorString(`${sr} sr`, SILVER_COLOR));
-    if (mdz > 0) values.push(colorString(`${mdz} mdz`, COPPER_COLOR));
+    const { mithril, gold, silver, copper } = splitCurrency(amount);
+    if (mithril > 0) values.push(colorString(`${mithril} mth`, MITHRIL_COLOR));
+    if (gold > 0) values.push(colorString(`${gold} zl`, GOLD_COLOR));
+    if (silver > 0) values.push(colorString(`${silver} sr`, SILVER_COLOR));
+    if (copper > 0) values.push(colorString(`${copper} mdz`, COPPER_COLOR));
     values.forEach((val, i) => {
         if (i > 0) buffer.append(', ');
         buffer.appendBuffer(val);
