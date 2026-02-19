@@ -658,6 +658,47 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 }
             };
 
+            const navigateToRoom = (roomId: number) => {
+                const renderer = rendererRef.current;
+                const embedded = getEmbedded();
+                if (!renderer || !embedded?.reader) return;
+
+                const room = embedded.reader.getRoom(roomId);
+                if (!room) return;
+
+                renderer.drawArea(room.area, room.z);
+                renderer.setPosition(roomId);
+
+                initialHighlightRoomRef.current = roomId;
+                renderer.clearHighlights();
+                renderer.renderHighlight(roomId, '#ffcc00');
+
+                const actualPlayerRoom = embedded.currentRoom;
+                if (actualPlayerRoom && actualPlayerRoom !== roomId) {
+                    renderer.updatePositionMarker(actualPlayerRoom);
+                }
+
+                const area = embedded.reader.getArea?.(room.area);
+                const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+
+                setState(s => ({
+                    ...s,
+                    viewedAreaId: room.area,
+                    viewedLevel: room.z,
+                    initialHighlightRoom: roomId,
+                    titleRoomId: roomId,
+                    titleAreaName: areaName,
+                }));
+
+                const roomMapNote = (room as any).userData?.note ?? null;
+                setMapNote(roomMapNote);
+                getNote(roomId).then(setNote);
+                setPluginNotes(getPluginLocationNotes(roomId));
+
+                loadLevels(room.area);
+                renderPathsAndHighlights();
+            };
+
             const containerForMenu = container;
             contextMenuHandler = (ev: Event) => {
                 const customEv = ev as CustomEvent<RoomContextMenuEventDetail>;
@@ -668,7 +709,12 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                     const rect = containerForMenu.getBoundingClientRect();
                     const viewportX = customEv.detail.position.x + rect.left;
                     const viewportY = customEv.detail.position.y + rect.top;
-                    client?.openMapContextMenu?.(room, viewportX, viewportY);
+                    client?.openMapContextMenu?.(room, viewportX, viewportY, [
+                        {
+                            label: 'Pokaz w tym oknie',
+                            action: () => navigateToRoom(room),
+                        },
+                    ]);
                 }
             };
 

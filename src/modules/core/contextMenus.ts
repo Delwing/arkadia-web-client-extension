@@ -86,8 +86,9 @@ export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
     });
 }
 
-export function openMapContextMenu(client: Client, roomId: number, x: number, y: number) {
+export function openMapContextMenu(client: Client, roomId: number, x: number, y: number, extraItems?: ContextMenuItem[]) {
     const items: ContextMenuItem[] = [
+        ...(extraItems ?? []),
         {
             label: 'Ustaw lokację',
             action: () => client.Map.setMapRoomById(roomId),

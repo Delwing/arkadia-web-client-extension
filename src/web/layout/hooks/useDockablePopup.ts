@@ -313,10 +313,11 @@ export function useDockablePopup({
       const target = event.target as Element | null;
       if (!target) return;
 
-      // Check if click is inside any popup panel (floating or docked)
+      // Check if click is inside any popup panel (floating or docked) or context menu
       const floatingPopup = target.closest('.floating-panel--popup');
       const dockedPopup = target.closest('.docked-panel--popup');
-      if (floatingPopup || dockedPopup) return;
+      const contextMenu = target.closest('#context-menu');
+      if (floatingPopup || dockedPopup || contextMenu) return;
 
       // Click was outside all popup panels, close this popup
       onCloseRef.current();
