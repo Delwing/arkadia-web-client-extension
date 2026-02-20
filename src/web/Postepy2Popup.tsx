@@ -10,6 +10,7 @@ import {
     deleteLifetimeEntry,
     LifetimeEntry,
     formatCount,
+    MergeMode,
 } from '../client/scripts/improveCounter';
 import { getCurrentCharacter } from '@modules/core/storage';
 import type { ImproveDbResult, ImproveDbWorkerRequest, ImproveDbWorkerResponse } from '@modules/data/improveDbImport.shared';
@@ -159,7 +160,7 @@ const Postepy2Popup: React.FC = () => {
     const [importState, setImportState] = useState<
         | { phase: 'idle' }
         | { phase: 'loading' }
-        | { phase: 'preview'; parsed: ImproveDbResult; selectedCharacter: string }
+        | { phase: 'preview'; parsed: ImproveDbResult; selectedCharacter: string; mergeMode: MergeMode }
         | { phase: 'done'; message: string }
         | { phase: 'error'; message: string }
     >({ phase: 'idle' });
@@ -238,7 +239,7 @@ const Postepy2Popup: React.FC = () => {
             const current = getCurrentCharacter()?.toLowerCase() ?? '';
             const preselected = parsed.characters.find(c => c.toLowerCase() === current)
                 ?? parsed.characters[0];
-            setImportState({ phase: 'preview', parsed, selectedCharacter: preselected });
+            setImportState({ phase: 'preview', parsed, selectedCharacter: preselected, mergeMode: 'max' });
         } catch (err) {
             setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Nieznany blad.' });
         }
@@ -251,7 +252,7 @@ const Postepy2Popup: React.FC = () => {
             setImportState({ phase: 'error', message: 'Brak danych dla wybranej postaci.' });
             return;
         }
-        const ok = mergeLifetimeData(entries);
+        const ok = mergeLifetimeData(entries, importState.mergeMode);
         if (ok) {
             const total = entries.reduce((s, e) => s + e.count, 0);
             setImportState({ phase: 'done', message: `Zaimportowano ${entries.length} dni (${total} postepow).` });
@@ -525,6 +526,17 @@ const Postepy2Popup: React.FC = () => {
                             </select>
                         </div>
                     )}
+                    <div className="postepy2-import-panel__row">
+                        <label className="postepy2-import-panel__label">Tryb:</label>
+                        <select
+                            className="postepy2-import-panel__select"
+                            value={importState.mergeMode}
+                            onChange={(e) => setImportState({ ...importState, mergeMode: e.target.value as MergeMode })}
+                        >
+                            <option value="max">Wez maksimum</option>
+                            <option value="add">Dodaj wszystko</option>
+                        </select>
+                    </div>
                     <div className="postepy2-import-panel__info">
                         {(() => {
                             const entries = importState.parsed.byCharacter[importState.selectedCharacter] ?? [];
@@ -533,7 +545,9 @@ const Postepy2Popup: React.FC = () => {
                         })()}
                     </div>
                     <div className="postepy2-import-panel__note">
-                        Dane zostana polaczone z istniejacymi.
+                        {importState.mergeMode === 'max'
+                            ? 'Dla kazdego dnia zostanie wziety wyzszy wynik.'
+                            : 'Postepy z Mudleta zostana dodane do istniejacych.'}
                     </div>
                     <div className="postepy2-import-panel__actions">
                         <button type="button" className="postepy2-import-panel__btn postepy2-import-panel__btn--confirm" onClick={handleImportConfirm}>

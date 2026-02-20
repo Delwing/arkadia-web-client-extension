@@ -156,9 +156,11 @@ export function getLifetimeData(): LifetimeEntry[] {
     return improveCounterInstance?.getLifetimeData() ?? [];
 }
 
-export function mergeLifetimeData(entries: { date: string; count: number }[]): boolean {
+export type MergeMode = 'max' | 'add';
+
+export function mergeLifetimeData(entries: { date: string; count: number }[], mode: MergeMode = 'max'): boolean {
     if (!improveCounterInstance) return false;
-    improveCounterInstance.mergeLifetimeData(entries);
+    improveCounterInstance.mergeLifetimeData(entries, mode);
     return true;
 }
 
@@ -579,7 +581,7 @@ export default class ImproveCounter {
         );
     }
 
-    mergeLifetimeData(entries: { date: string; count: number }[]) {
+    mergeLifetimeData(entries: { date: string; count: number }[], mode: MergeMode = 'max') {
         const dateMap = new Map<string, { count: number; noFormCount?: number }>();
         for (const e of this.lifetime) {
             const existing = dateMap.get(e.date);
@@ -593,7 +595,7 @@ export default class ImproveCounter {
         for (const e of entries) {
             const existing = dateMap.get(e.date);
             if (existing) {
-                existing.count = Math.max(existing.count, e.count);
+                existing.count = mode === 'add' ? existing.count + e.count : Math.max(existing.count, e.count);
             } else {
                 dateMap.set(e.date, { count: e.count });
             }
