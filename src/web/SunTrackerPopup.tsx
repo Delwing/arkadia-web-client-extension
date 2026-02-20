@@ -58,6 +58,7 @@ interface ClockState {
     minutes: number;
     sunrise: number | string | "?";
     sunset: number | string | "?";
+    dayOfYear?: number;
 }
 
 const MUD_MINUTE_IN_SECONDS = 2; // 1 MUD hour = 120 real seconds, 1 MUD minute = 2 real seconds
@@ -115,6 +116,7 @@ const SunTrackerPopup: React.FC = () => {
     const [editSunrise, setEditSunrise] = useState('');
     const [editSunset, setEditSunset] = useState('');
     const editRef = useRef<HTMLDivElement>(null);
+    const todayRef = useRef<HTMLDivElement>(null);
 
     const loadEvents = useCallback(async (domain: Domain) => {
         const data = await getEventsForDomain(domain);
@@ -125,10 +127,17 @@ const SunTrackerPopup: React.FC = () => {
         if (wrapperProps.isOpen) {
             loadEvents(activeTab);
         }
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = 0;
-        }
     }, [wrapperProps.isOpen, activeTab, refreshKey, loadEvents]);
+
+    // Scroll to current day when popup opens or tab changes
+    useEffect(() => {
+        if (wrapperProps.isOpen && todayRef.current && scrollRef.current) {
+            // Use requestAnimationFrame to ensure DOM is laid out
+            requestAnimationFrame(() => {
+                todayRef.current?.scrollIntoView({ block: 'center' });
+            });
+        }
+    }, [wrapperProps.isOpen, activeTab, events]);
 
     // Refresh when a new observation is confirmed
     useEffect(() => {
@@ -144,7 +153,7 @@ const SunTrackerPopup: React.FC = () => {
         return eventBus.on("clock.update", (data) => {
             setClockData(prev => ({
                 ...prev,
-                [data.domain]: { domain: data.domain as Domain, hours: data.hours, minutes: data.minutes, sunrise: data.sunrise, sunset: data.sunset },
+                [data.domain]: { domain: data.domain as Domain, hours: data.hours, minutes: data.minutes, sunrise: data.sunrise, sunset: data.sunset, dayOfYear: data.dayOfYear },
             }));
         });
     }, []);
@@ -229,6 +238,7 @@ const SunTrackerPopup: React.FC = () => {
     const yearLength = activeTab === "Empire" ? 400 : 360;
     const activeClock = clockData[activeTab];
     const nextSunLabel = activeClock ? getNextSunEvent(activeClock) : null;
+    const todayDayOfYear = activeClock?.dayOfYear;
 
     return (
         <DockablePopupWrapper
@@ -347,15 +357,17 @@ const SunTrackerPopup: React.FC = () => {
                                     const hasSunrise = dayData?.sunrise !== undefined;
                                     const hasSunset = dayData?.sunset !== undefined;
                                     const hasAny = hasSunrise || hasSunset;
+                                    const isToday = dayOfYear === todayDayOfYear;
 
                                     return (
                                         <div
                                             key={dayOfYear}
+                                            ref={isToday ? todayRef : undefined}
                                             onContextMenu={(ev) => openEditMenu(ev, dayOfYear, dayData?.sunrise, dayData?.sunset)}
                                             style={{
                                                 padding: '2px 3px',
                                                 textAlign: 'center',
-                                                border: `1px solid ${hasAny ? '#444' : '#2a2a2a'}`,
+                                                border: isToday ? '1px solid #cc9900' : `1px solid ${hasAny ? '#444' : '#2a2a2a'}`,
                                                 borderRadius: 3,
                                                 fontSize: 10,
                                                 lineHeight: 1.3,
