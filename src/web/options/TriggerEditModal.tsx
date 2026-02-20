@@ -7,7 +7,7 @@ import {
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
 import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent } from './UserTriggers';
-import { SUPPORTED_EVENTS } from './UserTriggers';
+import { SUPPORTED_EVENTS, GMCP_MSG_TYPES } from './UserTriggers';
 
 const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind']);
 
@@ -388,6 +388,7 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
     const [pattern, setPattern] = useState('');
     const [event, setEvent] = useState('');
     const [flags, setFlags] = useState('');
+    const [gmcpMsgType, setGmcpMsgType] = useState('');
     const [macros, setMacros] = useState<UserMacro[]>([]);
 
     useEffect(() => {
@@ -396,12 +397,14 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
             setPattern(trigger.pattern || '');
             setEvent(trigger.event || '');
             setFlags(trigger.flags || '');
+            setGmcpMsgType(trigger.gmcpMsgType || '');
             setMacros(trigger.macros ? trigger.macros.map(normalizeMacro) : []);
         } else {
             setTriggerType('pattern');
             setPattern('');
             setEvent('');
             setFlags('');
+            setGmcpMsgType('');
             setMacros([]);
         }
     }, [trigger, show]);
@@ -437,6 +440,9 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
             entry = { type: 'pattern', pattern: p, macros };
             if (flags.trim()) {
                 entry.flags = flags.trim();
+            }
+            if (gmcpMsgType.trim()) {
+                entry.gmcpMsgType = gmcpMsgType.trim();
             }
         }
         onSave(entry);
@@ -491,17 +497,34 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                         </div>
 
                         {triggerType === 'pattern' ? (
-                            <div className="d-flex gap-2 mb-3 align-items-start">
-                                <Form.Control
-                                    type="text"
-                                    size="sm"
-                                    placeholder="Pattern"
-                                    value={pattern}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                    className="font-monospace flex-grow-1"
-                                />
-                                <FlagsPicker value={flags} onChange={setFlags} />
-                            </div>
+                            <>
+                                <div className="d-flex gap-2 mb-2 align-items-start">
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        placeholder="Pattern"
+                                        value={pattern}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
+                                        className="font-monospace flex-grow-1"
+                                    />
+                                    <FlagsPicker value={flags} onChange={setFlags} />
+                                </div>
+                                <div className="mb-3">
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        list="gmcp-msg-types"
+                                        placeholder="Typ wiadomosci (opcjonalnie)"
+                                        value={gmcpMsgType}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setGmcpMsgType(e.target.value)}
+                                    />
+                                    <datalist id="gmcp-msg-types">
+                                        {GMCP_MSG_TYPES.map(t => (
+                                            <option key={t.id} value={t.id}>{t.label}</option>
+                                        ))}
+                                    </datalist>
+                                </div>
+                            </>
                         ) : (
                             <div className="mb-3">
                                 <Form.Select

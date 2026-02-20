@@ -146,6 +146,43 @@ describe('userTriggers', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('zabij cel');
   });
 
+  test('gmcpMsgType filters trigger to matching type only', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{
+      pattern: 'foo',
+      gmcpMsgType: 'combat.avatar',
+      macros: [{ type: 'uppercase' }]
+    }];
+    apply({ key: 'triggers', value: list });
+
+    // Should NOT apply when type doesn't match
+    const result1 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'comm');
+    expect(result1?.text).toBe('bar foo baz');
+
+    // Should apply when type matches
+    const result2 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'combat.avatar');
+    expect(result2?.text).toBe('bar FOO baz');
+  });
+
+  test('trigger without gmcpMsgType matches all types', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
+    const list: UserTrigger[] = [{
+      pattern: 'foo',
+      macros: [{ type: 'uppercase' }]
+    }];
+    apply({ key: 'triggers', value: list });
+
+    const result1 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'comm');
+    expect(result1?.text).toBe('bar FOO baz');
+
+    const result2 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'combat.avatar');
+    expect(result2?.text).toBe('bar FOO baz');
+  });
+
   test('functionalBind does nothing if label or command is missing', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);

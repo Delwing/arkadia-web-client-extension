@@ -40,8 +40,45 @@ export interface UserTrigger {
     pattern?: string;    // for pattern triggers
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
     flags?: string;      // for pattern triggers only
+    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type
     macros: UserMacro[];
 }
+
+export interface GmcpMsgTypeOption {
+    id: string;
+    label: string;
+}
+
+export const GMCP_MSG_TYPES: GmcpMsgTypeOption[] = [
+    { id: 'combat.avatar', label: 'Walka postaci gracza' },
+    { id: 'combat.team', label: 'Walka druzyny' },
+    { id: 'combat.others', label: 'Walka innych' },
+    { id: 'room.combat', label: 'Opis walki na lokacji' },
+    { id: 'comm', label: 'Mowienie/szeptanie/krzyczenie' },
+    { id: 'emotes', label: 'Emocje skierowane do gracza' },
+    { id: 'room.long', label: 'Dlugi opis lokacji' },
+    { id: 'room.short', label: 'Krotki opis lokacji' },
+    { id: 'room.item', label: 'Opisy przedmiotow na lokacji' },
+    { id: 'room.exits', label: 'Wyjscia z lokacji' },
+    { id: 'room.contents.living', label: 'Istoty zywe na lokacji' },
+    { id: 'room.contents.object', label: 'Obiekty na lokacji' },
+    { id: 'room.contents', label: 'Nieokreslone obiekty na lokacji' },
+    { id: 'living.long', label: 'Dlugi opis zywej istoty' },
+    { id: 'object.long', label: 'Dlugi opis obiektu' },
+    { id: 'system', label: 'Komunikaty systemowe' },
+    { id: 'system.login', label: 'Logowanie i konto' },
+    { id: 'mail', label: 'Poczta' },
+    { id: 'editor.mail', label: 'Edycja listow' },
+    { id: 'editor', label: 'Edycja tekstow' },
+    { id: 'notification.mail', label: 'Powiadomienia - poczta' },
+    { id: 'notification.common', label: 'Powiadomienia - Wiesci' },
+    { id: 'notification.knowledge', label: 'Powiadomienia - wiedza' },
+    { id: 'notification.relations', label: 'Powiadomienia - relacje' },
+    { id: 'notification.boards', label: 'Powiadomienia - tablice' },
+    { id: 'notification', label: 'Pozostale powiadomienia' },
+    { id: 'prompt', label: 'Znak zachety terminala' },
+    { id: 'other', label: 'Pozostale komunikaty' },
+];
 
 export interface SupportedEvent {
     id: string;
@@ -305,7 +342,9 @@ function UserTriggers() {
                 return t.event.toLowerCase().includes(searchText) ||
                     (eventInfo?.label.toLowerCase().includes(searchText) ?? false);
             }
-            return (t.pattern || '').toLowerCase().includes(searchText);
+            if ((t.pattern || '').toLowerCase().includes(searchText)) return true;
+            if (t.gmcpMsgType?.toLowerCase().includes(searchText)) return true;
+            return false;
         });
 
     return (
@@ -346,6 +385,7 @@ function UserTriggers() {
                                     <>
                                         <code className="alias-pattern">{t.pattern}</code>
                                         {t.flags && <code className="alias-flags text-muted ms-1">/{t.flags}</code>}
+                                        {t.gmcpMsgType && <span className="badge bg-secondary ms-1">{t.gmcpMsgType}</span>}
                                     </>
                                 )}
                                 {t.macros?.length ? (

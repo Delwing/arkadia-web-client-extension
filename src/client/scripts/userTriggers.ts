@@ -32,6 +32,7 @@ export interface UserTrigger {
     pattern?: string;    // for pattern triggers
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
     flags?: string;      // for pattern triggers only
+    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type
     macros: UserMacro[];
 }
 
@@ -241,7 +242,8 @@ export default function initUserTriggers(client: Client) {
                     return;
                 }
 
-                const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+                const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray, type: string) => {
+                    if (item.gmcpMsgType && type !== item.gmcpMsgType) return line;
                     if (hasGlobalFlag) {
                         // For global flag, find all matches and apply macros to each
                         const globalRegexp = new RegExp(item.pattern!, 'g' + (hasCaseInsensitiveFlag ? 'i' : ''));
