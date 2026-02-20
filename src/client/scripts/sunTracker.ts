@@ -216,8 +216,7 @@ export default function initSunTracker(client: Client) {
         const color = isSunrise ? SUNRISE_COLOR : SUNSET_COLOR;
         const icon = isSunrise ? "\u2600" : "\u263E";
         const label = isSunrise ? "WSCHOD" : "ZACHOD";
-        const hourStr = `${data.observedHour}:00`.padStart(5, ' ');
-        const inner = ` ${icon} ${label} ${hourStr}  [czas] `;
+        const inner = ` ${icon} ${label}  [czas] `;
         const border = "\u2550".repeat(inner.length);
 
         const top = new AnsiAwareBuffer(`\u2554${border}\u2557`).colorWords(`\u2554${border}\u2557`, color);
