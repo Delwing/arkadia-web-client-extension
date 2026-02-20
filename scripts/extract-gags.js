@@ -37,9 +37,9 @@ const LUA_FIXES = [
     },
     {
         file: 'color_innych_spece/str.lua',
-        description: 'Replace 1 with true in dmg:find() — lua-in-js bug was fixed',
+        description: 'Remove init+plain args from dmg:find() — lua-in-js does not support boolean plain flag',
         upstream: '    elseif dmg:find("lecz impet uderzenia", 1, 1) then value = 0',
-        fixed: '    elseif dmg:find("lecz impet uderzenia", 1, true) then value = 0',
+        fixed: '    elseif dmg:find("lecz impet uderzenia") then value = 0',
     },
     {
         file: 'color_moje_spece/bar.lua',
