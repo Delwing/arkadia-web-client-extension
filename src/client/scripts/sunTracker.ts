@@ -211,7 +211,7 @@ export default function initSunTracker(client: Client) {
         client.sendEvent("sunTracker.updated");
     }
 
-    function printSunMessage(type: SunEventType, data: { domain: Domain; dayOfYear: number; observedHour: number }): void {
+    function printSunMessage(type: SunEventType): void {
         const isSunrise = type === "sunrise";
         const color = isSunrise ? SUNRISE_COLOR : SUNSET_COLOR;
         const icon = isSunrise ? "\u2600" : "\u263E";
@@ -251,28 +251,22 @@ export default function initSunTracker(client: Client) {
 
     client.on("clock.sunrise", (data) => {
         if (!enabled) return;
-        const hour = parseInt(data.indicatedHour, 10);
-        printSunMessage("sunrise", { ...data, observedHour: hour });
-        setPending(data.domain, "sunrise", data.dayOfYear, hour);
+        printSunMessage("sunrise");
+        setPending(data.domain, "sunrise", data.dayOfYear, data.observedHour);
     });
 
     client.on("clock.sunset", (data) => {
         if (!enabled) return;
-        const hour = parseInt(data.indicatedHour, 10);
-        printSunMessage("sunset", { ...data, observedHour: hour });
-        setPending(data.domain, "sunset", data.dayOfYear, hour);
+        printSunMessage("sunset");
+        setPending(data.domain, "sunset", data.dayOfYear, data.observedHour);
     });
 
-    client.Triggers.registerTrigger(
-        /^Jest w przyblizeniu/,
-        (line) => {
-            if (enabled && pendingEvent) {
-                confirmPending();
-            }
-            return line;
-        },
-        "sunTracker"
-    );
+    client.on("clock.parsedTime", (data) => {
+        if (enabled && pendingEvent) {
+            pendingEvent.observedHour = data.hour;
+            confirmPending();
+        }
+    });
 
     client.aliases.push({
         pattern: /^\/slonce$/,

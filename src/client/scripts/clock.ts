@@ -376,6 +376,8 @@ export class ArkadiaTime {
 
         this.lastHourCheck = this.getEpoch();
         this.lastHour = intHour;
+
+        eventBus.emit("clock.parsedTime", { domain: this.domain, hour: intHour, dayOfYear: startDay });
     }
 
     private init(intHour: number, startMinutes: number, precision: number, startDay: number): void {

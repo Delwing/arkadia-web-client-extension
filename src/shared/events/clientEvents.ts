@@ -223,6 +223,7 @@ export interface KnownEvents {
     "clock.mismatch": ClockMismatchPayload;
     "clock.sunrise": ClockSunEventPayload;
     "clock.sunset": ClockSunEventPayload;
+    "clock.parsedTime": { domain: "Empire" | "Ishtar"; hour: number; dayOfYear: number };
     "contracts.popup.open": { contracts: Contract[]; currentLocationId: number | null };
     "contracts.updated": { contracts: Contract[] };
     "contracts.remove": { id: string };
