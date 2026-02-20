@@ -156,6 +156,22 @@ export function getLifetimeData(): LifetimeEntry[] {
     return improveCounterInstance?.getLifetimeData() ?? [];
 }
 
+export function mergeLifetimeData(entries: { date: string; count: number }[]): boolean {
+    if (!improveCounterInstance) return false;
+    improveCounterInstance.mergeLifetimeData(entries);
+    return true;
+}
+
+export function editLifetimeEntry(index: number, count: number): boolean {
+    if (!improveCounterInstance) return false;
+    return improveCounterInstance.editLifetimeEntry(index, count);
+}
+
+export function deleteLifetimeEntry(index: number): boolean {
+    if (!improveCounterInstance) return false;
+    return improveCounterInstance.deleteLifetimeEntry(index);
+}
+
 export function getFormattedPostepyTable(): AnsiAwareBuffer | null {
     return improveCounterInstance?.getFormattedTable() ?? null;
 }
@@ -561,6 +577,45 @@ export default class ImproveCounter {
         this.client.println(
             colorString("Dodano dane demo do postepy2.", SECTION_COLOR)
         );
+    }
+
+    mergeLifetimeData(entries: { date: string; count: number }[]) {
+        const dateMap = new Map<string, number>();
+        for (const e of this.lifetime) {
+            dateMap.set(e.date, Math.max(dateMap.get(e.date) || 0, e.count));
+        }
+        for (const e of entries) {
+            dateMap.set(e.date, Math.max(dateMap.get(e.date) || 0, e.count));
+        }
+        this.lifetime = Array.from(dateMap.entries())
+            .map(([date, count]) => ({ date, count }))
+            .sort((a, b) => {
+                const [ay, am, ad] = a.date.split('/').map(Number);
+                const [by, bm, bd] = b.date.split('/').map(Number);
+                return ay - by || am - bm || ad - bd;
+            });
+        this.persistLifetime();
+        eventBus.emit("postepy2.updated");
+    }
+
+    editLifetimeEntry(index: number, count: number): boolean {
+        if (index < 0 || index >= this.lifetime.length) return false;
+        if (count <= 0) {
+            this.lifetime.splice(index, 1);
+        } else {
+            this.lifetime[index].count = count;
+        }
+        this.persistLifetime();
+        eventBus.emit("postepy2.updated");
+        return true;
+    }
+
+    deleteLifetimeEntry(index: number): boolean {
+        if (index < 0 || index >= this.lifetime.length) return false;
+        this.lifetime.splice(index, 1);
+        this.persistLifetime();
+        eventBus.emit("postepy2.updated");
+        return true;
     }
 
     setLifetimeEnabled(on: boolean) {
