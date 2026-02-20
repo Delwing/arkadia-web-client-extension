@@ -580,15 +580,26 @@ export default class ImproveCounter {
     }
 
     mergeLifetimeData(entries: { date: string; count: number }[]) {
-        const dateMap = new Map<string, number>();
+        const dateMap = new Map<string, { count: number; noFormCount?: number }>();
         for (const e of this.lifetime) {
-            dateMap.set(e.date, Math.max(dateMap.get(e.date) || 0, e.count));
+            const existing = dateMap.get(e.date);
+            if (existing) {
+                existing.count = Math.max(existing.count, e.count);
+                if (e.noFormCount) existing.noFormCount = Math.max(existing.noFormCount || 0, e.noFormCount);
+            } else {
+                dateMap.set(e.date, { count: e.count, noFormCount: e.noFormCount });
+            }
         }
         for (const e of entries) {
-            dateMap.set(e.date, Math.max(dateMap.get(e.date) || 0, e.count));
+            const existing = dateMap.get(e.date);
+            if (existing) {
+                existing.count = Math.max(existing.count, e.count);
+            } else {
+                dateMap.set(e.date, { count: e.count });
+            }
         }
         this.lifetime = Array.from(dateMap.entries())
-            .map(([date, count]) => ({ date, count }))
+            .map(([date, v]) => ({ date, count: v.count, noFormCount: v.noFormCount }))
             .sort((a, b) => {
                 const [ay, am, ad] = a.date.split('/').map(Number);
                 const [by, bm, bd] = b.date.split('/').map(Number);
