@@ -252,14 +252,16 @@ export default function initSunTracker(client: Client) {
 
     client.on("clock.sunrise", (data) => {
         if (!enabled) return;
-        printSunMessage("sunrise", data);
-        setPending(data.domain, "sunrise", data.dayOfYear, data.observedHour);
+        const hour = parseInt(data.indicatedHour, 10);
+        printSunMessage("sunrise", { ...data, observedHour: hour });
+        setPending(data.domain, "sunrise", data.dayOfYear, hour);
     });
 
     client.on("clock.sunset", (data) => {
         if (!enabled) return;
-        printSunMessage("sunset", data);
-        setPending(data.domain, "sunset", data.dayOfYear, data.observedHour);
+        const hour = parseInt(data.indicatedHour, 10);
+        printSunMessage("sunset", { ...data, observedHour: hour });
+        setPending(data.domain, "sunset", data.dayOfYear, hour);
     });
 
     client.Triggers.registerTrigger(
