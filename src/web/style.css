@@ -885,9 +885,6 @@ h1 {
   touch-action: none;
   position: relative;
   z-index: 2;
-  padding: 3px 0;
-  margin: -3px 0;
-  background-clip: content-box;
 }
 
 #split-handle:hover,
