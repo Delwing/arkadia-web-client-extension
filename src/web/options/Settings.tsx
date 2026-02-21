@@ -203,7 +203,7 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             <Form.Check
                                 type="checkbox"
                                 id="sunTracker"
-                                label={<>Sledzenie slonca <FiHelpCircle title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Kliknij [czas] aby potwierdzic obserwacje. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
+                                label={<>Ramki wschodu/zachodu <FiHelpCircle title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
                                 checked={settings.sunTracker}
                                 onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
                                 className="me-2"

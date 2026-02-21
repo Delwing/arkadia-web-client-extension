@@ -250,19 +250,17 @@ export default function initSunTracker(client: Client) {
     });
 
     client.on("clock.sunrise", (data) => {
-        if (!enabled) return;
-        printSunMessage("sunrise");
+        if (enabled) printSunMessage("sunrise");
         setPending(data.domain, "sunrise", data.dayOfYear, data.observedHour);
     });
 
     client.on("clock.sunset", (data) => {
-        if (!enabled) return;
-        printSunMessage("sunset");
+        if (enabled) printSunMessage("sunset");
         setPending(data.domain, "sunset", data.dayOfYear, data.observedHour);
     });
 
     client.on("clock.parsedTime", (data) => {
-        if (enabled && pendingEvent) {
+        if (pendingEvent) {
             pendingEvent.observedHour = data.hour;
             confirmPending();
         }
