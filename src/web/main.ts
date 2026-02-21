@@ -308,6 +308,21 @@ function checkSplitView() {
 
 outputWrapper.addEventListener('scroll', checkSplitView);
 
+// Preemptively show split view on wheel scroll-up to prevent 1-frame jitter.
+// The 'wheel' event fires BEFORE the compositor processes the scroll, so showing
+// the split view here ensures it's visible in the same frame as the scroll.
+outputWrapper.addEventListener('wheel', (e) => {
+    if (e.deltaY < 0 && !isSplitView && Date.now() >= suppressSplitViewUntil) {
+        const atBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
+        if (atBottom) {
+            isSplitView = true;
+            suppressSplitViewUntil = Date.now() + 150;
+            splitBottom.classList.remove('split-hidden');
+            refreshStickyArea();
+        }
+    }
+}, {passive: true});
+
 // Split view resize handle drag logic
 const splitHandle = document.getElementById('split-handle')!;
 let isDraggingSplit = false;

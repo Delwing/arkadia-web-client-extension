@@ -362,6 +362,17 @@ export class CommandInputController {
     }
 
     private handleKeyDown(e: KeyboardEvent): void {
+        if (e.key === 'PageUp' || e.key === 'PageDown') {
+            e.preventDefault();
+            const wrapper = this.deps.outputWrapper;
+            const splitBottom = document.getElementById('split-bottom');
+            const splitHeight = splitBottom
+                ? (splitBottom.offsetHeight || parseFloat(splitBottom.style.height) || wrapper.clientHeight * 0.3)
+                : 0;
+            const delta = (wrapper.clientHeight - splitHeight) * 0.9;
+            wrapper.scrollTop += e.key === 'PageUp' ? -delta : delta;
+            return;
+        }
         if (e.key === 'ArrowUp' && !e.ctrlKey) {
             e.preventDefault();
             this.historyMove('up');
