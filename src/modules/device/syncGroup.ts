@@ -1,6 +1,7 @@
 import type { SyncGroup, SyncedDeviceSettings, SyncState } from './deviceTypes';
 import { DEVICE_STORAGE_KEYS } from './deviceTypes';
 import { getDeviceInfo } from './deviceStorage';
+import { ACTIVE_KEYMAP_STORAGE_KEY } from '@modules/core/keymapTypes';
 
 // Legacy storage keys (for migration)
 const LEGACY_SYNC_GROUP_KEY = 'arkadia.syncGroup';
@@ -180,6 +181,7 @@ export function getRawDeviceSettings(): SyncedDeviceSettings['settings'] {
         desktopButtonSettings: localStorage.getItem('desktopButtonSettings') || undefined,
         mobileButtonSettings: localStorage.getItem('mobileButtonSettings') || undefined,
         tripRoutes: localStorage.getItem('tripRoutes') || undefined,
+        activeKeymap: localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY) || undefined,
     };
 }
 
@@ -239,6 +241,15 @@ export function applySyncedSettings(syncedSettings: SyncedDeviceSettings): void 
         }
         if (settings.tripRoutes) {
             localStorage.setItem('tripRoutes', settings.tripRoutes);
+        }
+        if (settings.activeKeymap) {
+            localStorage.setItem(ACTIVE_KEYMAP_STORAGE_KEY, settings.activeKeymap);
+            // Re-apply the selected keymap's binds to the flat 'binds' key
+            import('@modules/core/keymapStorage').then(({ switchKeymap }) => {
+                switchKeymap(settings.activeKeymap!);
+            }).catch(() => {
+                // keymapStorage may not be available in all contexts
+            });
         }
 
         // Update local version to match remote

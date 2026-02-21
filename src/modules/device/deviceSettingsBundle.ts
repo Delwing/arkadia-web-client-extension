@@ -14,6 +14,7 @@ import {
 } from '@web/mobileButtonSettings';
 import type { DeviceSettings, DeviceSettingsExport } from './deviceTypes';
 import { getDeviceInfo } from './deviceStorage';
+import { ACTIVE_KEYMAP_STORAGE_KEY } from '@modules/core/keymapTypes';
 
 /**
  * Load uiSettings from storage
@@ -51,6 +52,8 @@ export async function exportDeviceSettings(): Promise<DeviceSettings> {
         loadMobileButtonSettings(),
     ]);
 
+    const activeKeymap = localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY) || undefined;
+
     return {
         deviceId: deviceInfo.id,
         version: 1,
@@ -59,6 +62,7 @@ export async function exportDeviceSettings(): Promise<DeviceSettings> {
         uiSettings,
         desktopButtonSettings,
         mobileButtonSettings,
+        activeKeymap,
     };
 }
 
@@ -86,6 +90,16 @@ export async function importDeviceSettings(settings: DeviceSettings): Promise<vo
     // Apply mobile button settings
     if (settings.mobileButtonSettings) {
         saveMobileButtonSettings(settings.mobileButtonSettings);
+    }
+
+    // Apply active keymap selection
+    if (settings.activeKeymap) {
+        localStorage.setItem(ACTIVE_KEYMAP_STORAGE_KEY, settings.activeKeymap);
+        import('@modules/core/keymapStorage').then(({ switchKeymap }) => {
+            switchKeymap(settings.activeKeymap!);
+        }).catch(() => {
+            // keymapStorage may not be available in all contexts
+        });
     }
 }
 
