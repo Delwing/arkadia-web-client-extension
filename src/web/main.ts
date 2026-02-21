@@ -284,11 +284,13 @@ function checkSplitView() {
     if (atBottom) {
         if (isSplitView) {
             isSplitView = false;
+            suppressSplitViewUntil = Date.now() + 150;
             splitBottom.classList.add('split-hidden');
             stickyArea.innerHTML = '';
         }
     } else if (!isSplitView) {
         isSplitView = true;
+        suppressSplitViewUntil = Date.now() + 150;
         splitBottom.classList.remove('split-hidden');
         stickyArea.innerHTML = '';
         const nodes = Array.from(outputWrapper.children).filter(n => n !== splitBottom);
@@ -697,6 +699,9 @@ arkadiaClient.on('client.disconnect', () => {
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
+        // Suppress split view checks during tab reactivation reflow
+        suppressSplitViewUntil = Date.now() + 500;
+
         const socketOpen = arkadiaClient.isSocketOpen();
         if (socketOpen && !isConnected) {
             isConnected = true;
