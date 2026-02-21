@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
-import storage from "@modules/core/storage";
 import {
     type MultibindImportRow,
     type MultibindImportWorkerRequest,
@@ -13,87 +12,22 @@ import {
     toKey,
     type StoredMultibindRecord,
 } from "../dataStores/multibindStore";
+import type { Bind, BindSettings, DirectionBinds, Keymap } from "@modules/core/keymapTypes";
+import {
+    getKeymapStore,
+    getKeymapList,
+    getActiveKeymapId,
+    saveKeymapBinds,
+    switchKeymap,
+    createKeymap,
+    renameKeymap,
+    deleteKeymap,
+    defaultBinds,
+    mergeBindSettings,
+} from "@modules/core/keymapStorage";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
-
-interface Bind {
-    key: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
-}
-
-interface CustomBind extends Bind {
-    command: string;
-}
-
-interface DirectionBinds {
-    n: Bind;
-    s: Bind;
-    w: Bind;
-    e: Bind;
-    nw: Bind;
-    ne: Bind;
-    sw: Bind;
-    se: Bind;
-    u: Bind;
-    d: Bind;
-    special: Bind;
-}
-
-interface BindSettings {
-    main: Bind;
-    lamp: Bind;
-    attack: Bind;
-    support: Bind;
-    moveMode: Bind;
-    roomBind: Bind;
-    drinkable: Bind;
-    directions: DirectionBinds;
-    custom: CustomBind[];
-    temp: Bind[];
-    enemy: Bind[];
-    enemyBlock: Bind[];
-}
-
-const defaultBinds: BindSettings = {
-    main: { key: 'BracketRight' },
-    lamp: { key: 'Digit4', ctrl: true },
-    attack: { key: 'Digit1', ctrl: true },
-    support: { key: 'KeyQ', ctrl: true },
-    moveMode: { key: 'Backquote' },
-    roomBind: { key: 'KeyP', alt: true },
-    drinkable: { key: 'KeyN', alt: true },
-    temp: [
-        { key: 'F4' },
-        { key: 'F5' },
-    ],
-    enemy: [
-        { key: 'F1' },
-        { key: 'F2' },
-        { key: 'F3' },
-    ],
-    enemyBlock: [
-        { key: 'F1', ctrl: true },
-        { key: 'F2', ctrl: true },
-        { key: 'F3', ctrl: true },
-    ],
-    directions: {
-        n: { key: 'Numpad8' },
-        s: { key: 'Numpad2' },
-        w: { key: 'Numpad4' },
-        e: { key: 'Numpad6' },
-        nw: { key: 'Numpad7' },
-        ne: { key: 'Numpad9' },
-        sw: { key: 'Numpad1' },
-        se: { key: 'Numpad3' },
-        u: { key: 'NumpadMultiply' },
-        d: { key: 'NumpadSubtract' },
-        special: { key: 'Numpad0' },
-    },
-    custom: [],
-};
 
 type ConflictPolicy = 'keep-last' | 'keep-first' | 'skip-conflicts';
 
@@ -169,6 +103,11 @@ function label(bind: Bind) {
 
 function Binds() {
     const [binds, setBinds] = useState<BindSettings>(defaultBinds);
+    const [keymapList, setKeymapList] = useState<Keymap[]>([]);
+    const [selectedKeymapId, setSelectedKeymapId] = useState<string>('');
+    const [editingName, setEditingName] = useState(false);
+    const [keymapNameDraft, setKeymapNameDraft] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
     const [importData, setImportData] = useState<ImportData | null>(null);
     const [conflictPolicy, setConflictPolicy] = useState<ConflictPolicy>('keep-last');
@@ -243,38 +182,27 @@ function Binds() {
         });
     }
 
+    function loadKeymap(keymapId?: string) {
+        const list = getKeymapList();
+        setKeymapList(list);
+
+        const targetId = keymapId || getActiveKeymapId();
+        setSelectedKeymapId(targetId);
+
+        const store = getKeymapStore();
+        const keymap = store.keymaps[targetId];
+        if (keymap) {
+            setBinds(mergeBindSettings(keymap.binds));
+        } else if (list.length > 0) {
+            setSelectedKeymapId(list[0].id);
+            setBinds(mergeBindSettings(list[0].binds));
+        } else {
+            setBinds(defaultBinds);
+        }
+    }
+
     useEffect(() => {
-        storage.getItem('binds').then(res => {
-            setBinds({
-                ...defaultBinds,
-                main: res?.binds?.main || defaultBinds.main,
-                lamp: res?.binds?.lamp || defaultBinds.lamp,
-                attack: res?.binds?.attack || defaultBinds.attack,
-                support: res?.binds?.support || defaultBinds.support,
-                moveMode: res?.binds?.moveMode || defaultBinds.moveMode,
-                roomBind: res?.binds?.roomBind || defaultBinds.roomBind,
-                drinkable: res?.binds?.drinkable || defaultBinds.drinkable,
-                temp: [
-                    { ...defaultBinds.temp[0], ...(res?.binds?.temp?.[0] || {}) },
-                    { ...defaultBinds.temp[1], ...(res?.binds?.temp?.[1] || {}) },
-                ],
-                enemy: [
-                    { ...defaultBinds.enemy[0], ...(res?.binds?.enemy?.[0] || {}) },
-                    { ...defaultBinds.enemy[1], ...(res?.binds?.enemy?.[1] || {}) },
-                    { ...defaultBinds.enemy[2], ...(res?.binds?.enemy?.[2] || {}) },
-                ],
-                enemyBlock: [
-                    { ...defaultBinds.enemyBlock[0], ...(res?.binds?.enemyBlock?.[0] || {}) },
-                    { ...defaultBinds.enemyBlock[1], ...(res?.binds?.enemyBlock?.[1] || {}) },
-                    { ...defaultBinds.enemyBlock[2], ...(res?.binds?.enemyBlock?.[2] || {}) },
-                ],
-                directions: {
-                    ...defaultBinds.directions,
-                    ...res?.binds?.directions,
-                },
-                custom: res?.binds?.custom || [],
-            });
-        });
+        loadKeymap();
     }, []);
 
     useEffect(() => {
@@ -525,9 +453,66 @@ function Binds() {
     }
 
     function save() {
-        storage.setItem('binds', binds).then(() => {
-            window.dispatchEvent(new Event('close-options'));
-        });
+        saveKeymapBinds(selectedKeymapId, binds);
+        window.dispatchEvent(new Event('close-options'));
+    }
+
+    function handleKeymapSwitch(keymapId: string) {
+        // Save current edits to the current keymap before switching
+        saveKeymapBinds(selectedKeymapId, binds);
+
+        setSelectedKeymapId(keymapId);
+        const store = getKeymapStore();
+        const keymap = store.keymaps[keymapId];
+        if (keymap) {
+            setBinds(mergeBindSettings(keymap.binds));
+        }
+        // Also activate this keymap for the current device
+        switchKeymap(keymapId);
+    }
+
+    function handleCreateKeymap() {
+        // Save current edits first
+        saveKeymapBinds(selectedKeymapId, binds);
+        // Create new keymap carrying over currently shown bindings
+        const newKeymap = createKeymap('Nowa mapa klawiszy', binds);
+        // Switch to the new keymap
+        switchKeymap(newKeymap.id);
+        loadKeymap(newKeymap.id);
+        // Start editing the name immediately
+        setEditingName(true);
+        setKeymapNameDraft(newKeymap.name);
+    }
+
+    function handleStartRename() {
+        const current = keymapList.find(k => k.id === selectedKeymapId);
+        if (current) {
+            setEditingName(true);
+            setKeymapNameDraft(current.name);
+        }
+    }
+
+    function handleFinishRename() {
+        if (keymapNameDraft.trim()) {
+            renameKeymap(selectedKeymapId, keymapNameDraft.trim());
+        }
+        setEditingName(false);
+        setKeymapList(getKeymapList());
+    }
+
+    function handleRenameKeyDown(ev: React.KeyboardEvent) {
+        if (ev.key === 'Enter') {
+            handleFinishRename();
+        } else if (ev.key === 'Escape') {
+            setEditingName(false);
+        }
+    }
+
+    function handleDeleteKeymap() {
+        if (deleteKeymap(selectedKeymapId)) {
+            setShowDeleteConfirm(false);
+            loadKeymap();
+        }
     }
 
     return (
@@ -636,6 +621,63 @@ function Binds() {
             {importError && !showImportModal && (
                 <Alert variant="danger" className="mb-0">{importError}</Alert>
             )}
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+                <Form.Label className="mb-0 fw-bold">Mapa klawiszy:</Form.Label>
+                {editingName ? (
+                    <Form.Control
+                        type="text"
+                        size="sm"
+                        style={{ width: '200px' }}
+                        value={keymapNameDraft}
+                        onChange={ev => setKeymapNameDraft(ev.target.value)}
+                        onBlur={handleFinishRename}
+                        onKeyDown={handleRenameKeyDown}
+                        autoFocus
+                        autoCorrect="off"
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                    />
+                ) : (
+                    <Form.Select
+                        size="sm"
+                        style={{ width: '200px' }}
+                        value={selectedKeymapId}
+                        onChange={ev => handleKeymapSwitch(ev.target.value)}
+                    >
+                        {keymapList.map(k => (
+                            <option key={k.id} value={k.id}>{k.name}</option>
+                        ))}
+                    </Form.Select>
+                )}
+                <Button size="sm" variant="outline-secondary" onClick={handleStartRename} disabled={editingName} title="Zmień nazwę">
+                    Zmień nazwę
+                </Button>
+                <Button size="sm" variant="outline-primary" onClick={handleCreateKeymap} title="Nowa mapa (kopia bieżących bindów)">
+                    Nowa mapa
+                </Button>
+                <Button
+                    size="sm"
+                    variant="outline-danger"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={keymapList.length <= 1}
+                    title="Usuń mapę klawiszy"
+                >
+                    Usuń
+                </Button>
+            </div>
+            <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)} size="sm">
+                <Modal.Header closeButton>
+                    <Modal.Title>Usunąć mapę klawiszy?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Czy na pewno chcesz usunąć mapę klawiszy <strong>{keymapList.find(k => k.id === selectedKeymapId)?.name}</strong>?
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
+                    <Button variant="danger" size="sm" onClick={handleDeleteKeymap}>Usuń</Button>
+                </Modal.Footer>
+            </Modal>
             <fieldset className="p-0 border-0 m-0">
                 <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
                     <tbody className="align-middle">

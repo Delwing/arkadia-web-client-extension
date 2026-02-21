@@ -504,7 +504,7 @@ export interface CategoryData {
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;  // includes radial
     };
-    binds?: { binds?: string };
+    binds?: { binds?: string; keymaps?: string };
     shortcuts?: { shortcuts?: string };
     characterSettings?: Record<string, Record<string, string>>;
     triggers?: { triggers?: string };
@@ -547,7 +547,11 @@ export async function exportCategory(
             }
             case 'binds': {
                 const binds = localStorage.getItem('binds');
-                return binds ? JSON.stringify({ binds }) : null;
+                const keymaps = localStorage.getItem('keymaps');
+                const result: Record<string, string> = {};
+                if (binds) result.binds = binds;
+                if (keymaps) result.keymaps = keymaps;
+                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
             }
             case 'shortcuts': {
                 const shortcuts = localStorage.getItem('shortcuts');
@@ -738,6 +742,7 @@ export async function importCategory(
                 break;
             }
             case 'binds': {
+                if (data.keymaps) localStorage.setItem('keymaps', data.keymaps);
                 if (data.binds) localStorage.setItem('binds', data.binds);
                 break;
             }
