@@ -363,6 +363,10 @@ function DesktopButtons() {
                                 value={selectedBtn.command}
                                 onChange={e => updateButton(selectedBtn.id, { command: e.target.value })}
                                 placeholder="Wpisz komendę do wykonania"
+                                autoCorrect="off"
+                                autoComplete="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
                             />
                         </Form.Group>
                     )}
@@ -617,6 +621,10 @@ function DesktopButtons() {
                                                     rows={2}
                                                     value={holdCfg.command || ''}
                                                     onChange={e => updateHold('command', e.target.value)}
+                                                    autoCorrect="off"
+                                                    autoComplete="off"
+                                                    autoCapitalize="off"
+                                                    spellCheck={false}
                                                 />
                                             </Form.Group>
                                         )}

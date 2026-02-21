@@ -959,6 +959,10 @@ function Binds() {
                                         size="sm"
                                         value={b.command}
                                         onChange={ev => handleCommandChange(idx, ev.target.value)}
+                                        autoCorrect="off"
+                                        autoComplete="off"
+                                        autoCapitalize="off"
+                                        spellCheck={false}
                                     />
                                 </td>
                                 <td>

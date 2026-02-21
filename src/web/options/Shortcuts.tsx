@@ -75,7 +75,7 @@ function Shortcuts() {
                 <div className="border rounded p-3">
                     <Form.Group className="d-flex align-items-center gap-2 mb-2">
                         <Form.Label className="w-32 mb-0">Nazwa</Form.Label>
-                        <Form.Control type="text" size="sm" value={key} onChange={e => setKey(e.target.value)} />
+                        <Form.Control type="text" size="sm" value={key} onChange={e => setKey(e.target.value)} autoCorrect="off" autoComplete="off" autoCapitalize="off" spellCheck={false} />
                     </Form.Group>
                     <Form.Group className="d-flex align-items-center gap-2 mb-2">
                         <Form.Label className="w-32 mb-0">Lokalizacja</Form.Label>
@@ -84,7 +84,7 @@ function Shortcuts() {
                     </Form.Group>
                     <Form.Group className="d-flex align-items-center gap-2 mb-2">
                         <Form.Label className="w-32 mb-0">Opis</Form.Label>
-                        <Form.Control type="text" size="sm" value={label} onChange={e => setLabel(e.target.value)} />
+                        <Form.Control type="text" size="sm" value={label} onChange={e => setLabel(e.target.value)} autoCorrect="off" autoComplete="off" autoCapitalize="off" spellCheck={false} />
                     </Form.Group>
                     <div className="d-flex gap-2">
                         <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setKey(''); setLoc(''); setLabel(''); }}>Anuluj</Button>
