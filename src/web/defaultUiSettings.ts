@@ -68,6 +68,7 @@ export interface UiSettings {
     wakeLock: boolean;
     commandEcho: boolean;
     outputBottomPadding: number;
+    splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
 }

@@ -50,7 +50,7 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {getItemSync} from "@modules/core/storage"
+import {getItemSync, setItemSync} from "@modules/core/storage"
 import {runAllSettingsMigrations, migrateButtonSizeMultiplier, migrateFooterComponentVisibility} from "@modules/core/settingsMigrations"
 import {
     areOutputTimestampsVisible,
@@ -343,6 +343,14 @@ function onSplitDragEnd() {
     document.removeEventListener('touchend', onSplitDragEnd);
     refreshStickyArea();
     suppressSplitViewUntil = Date.now() + 300;
+    // Persist split view height to UI settings
+    const height = splitBottom.clientHeight;
+    if (height >= 60) {
+        const data = getItemSync('uiSettings');
+        const settings = data?.uiSettings ?? {};
+        settings.splitViewHeight = height;
+        setItemSync('uiSettings', settings);
+    }
 }
 
 splitHandle.addEventListener('mousedown', onSplitDragStart);

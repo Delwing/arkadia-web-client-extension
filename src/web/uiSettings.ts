@@ -268,6 +268,9 @@ function apply(settings: UiSettings) {
     const splitBottom = document.getElementById('split-bottom');
     if (splitBottom) {
         splitBottom.style.backgroundColor = settings.outputBackground;
+        if (settings.splitViewHeight && settings.splitViewHeight >= 60) {
+            splitBottom.style.height = settings.splitViewHeight + 'px';
+        }
     }
     const mainContainer = document.getElementById('main-container') as HTMLElement | null;
     if (mainContainer && settings.mapPosition !== 'top-overlay') {
@@ -427,6 +430,9 @@ async function load(): Promise<UiSettings> {
             const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
                 ? parsed.outputBottomPadding
                 : defaultUiSettings.outputBottomPadding;
+            const splitViewHeight = typeof parsed.splitViewHeight === 'number' && parsed.splitViewHeight >= 60
+                ? parsed.splitViewHeight
+                : undefined;
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -465,6 +471,7 @@ async function load(): Promise<UiSettings> {
                 wakeLock,
                 commandEcho,
                 outputBottomPadding,
+                splitViewHeight,
             };
         }
     } catch {
@@ -1246,6 +1253,7 @@ export default async function initUiSettings() {
             footerComponents: [...footerComponentsConfig],
             commandEcho: commandEchoInput.checked,
             outputBottomPadding: Math.max(0, parseInt(outputBottomPaddingInput.value) || 0),
+            splitViewHeight: current.splitViewHeight,
         };
     }
 
