@@ -363,8 +363,9 @@ export class CommandInputController {
 
     private handleKeyDown(e: KeyboardEvent): void {
         if (e.key === 'PageUp' || e.key === 'PageDown') {
-            e.preventDefault();
             const wrapper = this.deps.outputWrapper;
+            if (wrapper.scrollHeight <= wrapper.clientHeight) return;
+            e.preventDefault();
             const splitBottom = document.getElementById('split-bottom');
             const splitHeight = splitBottom
                 ? (splitBottom.offsetHeight || parseFloat(splitBottom.style.height) || wrapper.clientHeight * 0.3)

@@ -312,7 +312,7 @@ outputWrapper.addEventListener('scroll', checkSplitView);
 // The 'wheel' event fires BEFORE the compositor processes the scroll, so showing
 // the split view here ensures it's visible in the same frame as the scroll.
 outputWrapper.addEventListener('wheel', (e) => {
-    if (e.deltaY < 0 && !isSplitView && Date.now() >= suppressSplitViewUntil) {
+    if (e.deltaY < 0 && !isSplitView && Date.now() >= suppressSplitViewUntil && outputWrapper.scrollHeight > outputWrapper.clientHeight) {
         const atBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
         if (atBottom) {
             isSplitView = true;
