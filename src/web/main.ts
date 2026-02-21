@@ -260,10 +260,20 @@ const splitBottom = document.getElementById('split-bottom') as HTMLElement;
 const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 const multiBindsElement = document.getElementById('multi-binds');
 let isSplitView = false;
-const STICKY_LINES = 15;
+const STICKY_LINES = 50;
 const DOUBLE_CLICK_TIMEOUT_MS = 300;
 let suppressSplitViewUntil = 0;
 let lastMultiBindsState = multiBindsElement?.classList.contains('active') ?? false;
+
+function refreshStickyArea() {
+    stickyArea.innerHTML = '';
+    const nodes = Array.from(outputWrapper.children).filter(n => n !== splitBottom);
+    const linesToShow = STICKY_LINES;
+    const start = Math.max(0, nodes.length - linesToShow);
+    for (let i = start; i < nodes.length; i++) {
+        stickyArea.appendChild(nodes[i].cloneNode(true));
+    }
+}
 
 function checkSplitView() {
     // Skip check if we're in a suppression period
@@ -292,16 +302,51 @@ function checkSplitView() {
         isSplitView = true;
         suppressSplitViewUntil = Date.now() + 150;
         splitBottom.classList.remove('split-hidden');
-        stickyArea.innerHTML = '';
-        const nodes = Array.from(outputWrapper.children).filter(n => n !== splitBottom);
-        const start = Math.max(0, nodes.length - STICKY_LINES);
-        for (let i = start; i < nodes.length; i++) {
-            stickyArea.appendChild(nodes[i].cloneNode(true));
-        }
+        refreshStickyArea();
     }
 }
 
 outputWrapper.addEventListener('scroll', checkSplitView);
+
+// Split view resize handle drag logic
+const splitHandle = document.getElementById('split-handle')!;
+let isDraggingSplit = false;
+
+function onSplitDragStart(e: MouseEvent | TouchEvent) {
+    e.preventDefault();
+    isDraggingSplit = true;
+    suppressSplitViewUntil = Infinity;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onSplitDragMove);
+    document.addEventListener('mouseup', onSplitDragEnd);
+    document.addEventListener('touchmove', onSplitDragMove);
+    document.addEventListener('touchend', onSplitDragEnd);
+}
+
+function onSplitDragMove(e: MouseEvent | TouchEvent) {
+    if (!isDraggingSplit) return;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const wrapperRect = outputWrapper.getBoundingClientRect();
+    const newHeight = Math.max(60, wrapperRect.bottom - clientY);
+    splitBottom.style.height = newHeight + 'px';
+}
+
+function onSplitDragEnd() {
+    if (!isDraggingSplit) return;
+    isDraggingSplit = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.removeEventListener('mousemove', onSplitDragMove);
+    document.removeEventListener('mouseup', onSplitDragEnd);
+    document.removeEventListener('touchmove', onSplitDragMove);
+    document.removeEventListener('touchend', onSplitDragEnd);
+    refreshStickyArea();
+    suppressSplitViewUntil = Date.now() + 300;
+}
+
+splitHandle.addEventListener('mousedown', onSplitDragStart);
+splitHandle.addEventListener('touchstart', onSplitDragStart);
 
 // Observe multibinds appearance/disappearance to prevent split view activation
 if (multiBindsElement) {

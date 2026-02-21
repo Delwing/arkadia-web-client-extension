@@ -869,13 +869,30 @@ h1 {
   background-color: inherit;
   z-index: 1;
   height: 15rem;
-  max-height: 25vh;
+  max-height: 50vh;
   overflow: hidden;
-  border-top: 2px solid rgba(255, 255, 255, 0.6);
 }
 
 #split-bottom.split-hidden {
   display: none;
+}
+
+#split-handle {
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.6);
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  z-index: 2;
+  padding: 3px 0;
+  margin: -3px 0;
+  background-clip: content-box;
+}
+
+#split-handle:hover,
+#split-handle:active {
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 #sticky-area {
