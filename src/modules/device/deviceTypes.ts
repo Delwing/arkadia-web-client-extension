@@ -44,6 +44,8 @@ export interface DeviceSettings {
     desktopButtonSettings?: DesktopButtonsSettings;
     /** Mobile button settings */
     mobileButtonSettings?: MobileButtonsSettings;
+    /** Per-device active keymap ID */
+    activeKeymap?: string;
 }
 
 /**
@@ -129,6 +131,8 @@ export interface SyncedDeviceSettings {
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;
         tripRoutes?: string;
+        /** Per-device active keymap ID */
+        activeKeymap?: string;
     };
 }
 
