@@ -17,7 +17,8 @@
   },
   "include": [
     "src/**/*",
-    "editor/**/*"
+    "editor/**/*",
+    "viewer/**/*"
   ],
   "exclude": [
     "node_modules",
