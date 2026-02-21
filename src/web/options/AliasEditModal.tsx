@@ -109,6 +109,10 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                                 value={pattern}
                                 onChange={e => setPattern(e.target.value)}
                                 placeholder="np. ^zab (.+)$"
+                                autoCorrect="off"
+                                autoComplete="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
                             />
                             {isDuplicate && (
                                 <div className="text-danger small mt-1">Alias o takim wzorcu juz istnieje</div>
@@ -123,6 +127,10 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                                 value={command}
                                 onChange={e => setCommand(e.target.value)}
                                 placeholder="np. zabij $1"
+                                autoCorrect="off"
+                                autoComplete="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
                             />
                         </div>
 
@@ -139,6 +147,10 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                                         value={o.cmd}
                                         onChange={e => updateOverrideCmd(idx, e.target.value)}
                                         placeholder="Komenda dla tej postaci"
+                                        autoCorrect="off"
+                                        autoComplete="off"
+                                        autoCapitalize="off"
+                                        spellCheck={false}
                                     />
                                     <button
                                         type="button"

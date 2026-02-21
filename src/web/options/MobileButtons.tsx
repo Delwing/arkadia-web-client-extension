@@ -718,6 +718,10 @@ function MobileButtons() {
                                     className="mobile-button-command"
                                     value={activeCfg.command || ""}
                                     onChange={e => update(active!.set, active!.id, "command", e.target.value)}
+                                    autoCorrect="off"
+                                    autoComplete="off"
+                                    autoCapitalize="off"
+                                    spellCheck={false}
                                 />
                             </div>
                         )}
@@ -936,6 +940,10 @@ function MobileButtons() {
                                                         size="sm"
                                                         value={holdCfg.command || ''}
                                                         onChange={e => updateHold('command', e.target.value)}
+                                                        autoCorrect="off"
+                                                        autoComplete="off"
+                                                        autoCapitalize="off"
+                                                        spellCheck={false}
                                                     />
                                                 </Form.Group>
                                             )}

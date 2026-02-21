@@ -188,6 +188,10 @@ function MacroEditor({
                         placeholder="Command"
                         value={macro.command || ''}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
+                        autoCorrect="off"
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
                     />
                 )}
                 {macro.type === 'functionalBind' && (
@@ -199,6 +203,10 @@ function MacroEditor({
                             placeholder="Label (np. 'zabij cel')"
                             value={macro.label || ''}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, label: e.target.value })}
+                            autoCorrect="off"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
                         />
                         <Form.Control
                             className="mt-1 font-monospace"
@@ -207,6 +215,10 @@ function MacroEditor({
                             placeholder="Command (np. 'zabij cel')"
                             value={macro.command || ''}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
+                            autoCorrect="off"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
                         />
                     </>
                 )}
@@ -271,6 +283,10 @@ function MacroEditor({
                             placeholder="Prefix"
                             value={macro.wrapPrefix || ''}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapPrefix: e.target.value })}
+                            autoCorrect="off"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
                         />
                         <Form.Control
                             size="sm"
@@ -278,6 +294,10 @@ function MacroEditor({
                             placeholder="Suffix"
                             value={macro.wrapSuffix || ''}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapSuffix: e.target.value })}
+                            autoCorrect="off"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
                         />
                         <Form.Select
                             size="sm"
@@ -307,6 +327,10 @@ function MacroEditor({
                     value={macro.to || ''}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
                     style={{ width: '100%', maxWidth: '8rem' }}
+                    autoCorrect="off"
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                 />
             )}
             {macro.type.startsWith('plugin:') && (() => {
@@ -506,6 +530,10 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                                         value={pattern}
                                         onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
                                         className="font-monospace flex-grow-1"
+                                        autoCorrect="off"
+                                        autoComplete="off"
+                                        autoCapitalize="off"
+                                        spellCheck={false}
                                     />
                                     <FlagsPicker value={flags} onChange={setFlags} />
                                 </div>
@@ -517,6 +545,10 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                                         placeholder="Typ wiadomosci (opcjonalnie)"
                                         value={gmcpMsgType}
                                         onChange={(e: ChangeEvent<HTMLInputElement>) => setGmcpMsgType(e.target.value)}
+                                        autoCorrect="off"
+                                        autoComplete="off"
+                                        autoCapitalize="off"
+                                        spellCheck={false}
                                     />
                                     <datalist id="gmcp-msg-types">
                                         {GMCP_MSG_TYPES.map(t => (
