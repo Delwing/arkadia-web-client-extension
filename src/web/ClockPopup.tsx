@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { MONTHS, MONTHS_ORDER } from '@client/scripts/clock';
 
 type ClockData = {
     domain: "Empire" | "Ishtar";
@@ -43,6 +44,20 @@ function formatSunTime(value: number | string | "?"): string {
     return `${num.toString().padStart(2, '0')}:00`;
 }
 
+function getDayOfYear(domain: "Empire" | "Ishtar", month: string, dayOfMonth: number): number {
+    const months = MONTHS_ORDER[domain];
+    let dayOfYear = 0;
+    for (const m of months) {
+        if (m === month) {
+            return dayOfYear + dayOfMonth;
+        }
+        dayOfYear += MONTHS[m].length;
+    }
+    return dayOfYear + dayOfMonth;
+}
+
+type DateMode = "month" | "dayOfYear";
+
 const POPUP_ID = 'popup:clock';
 
 const ClockPopup: React.FC = () => {
@@ -50,6 +65,13 @@ const ClockPopup: React.FC = () => {
     const [empireData, setEmpireData] = useState<ClockData | null>(null);
     const [ishtarData, setIshtarData] = useState<ClockData | null>(null);
     const [activeTab, setActiveTab] = useState<"Empire" | "Ishtar">("Empire");
+    const [showEdit, setShowEdit] = useState(false);
+    const [setHourValue, setSetHourValue] = useState<string>("");
+    const [setMinuteValue, setSetMinuteValue] = useState<string>("");
+    const [selectedMonth, setSelectedMonth] = useState<string>("");
+    const [setDayOfMonthValue, setSetDayOfMonthValue] = useState<string>("");
+    const [setDayOfYearValue, setSetDayOfYearValue] = useState<string>("");
+    const [dateMode, setDateMode] = useState<DateMode>("month");
 
     useEffect(() => {
         const handleClockUpdate = (data: ClockData) => {
@@ -99,7 +121,69 @@ const ClockPopup: React.FC = () => {
         };
     }, []);
 
+    // Reset date selections when switching tabs
+    useEffect(() => {
+        setSelectedMonth("");
+        setSetDayOfMonthValue("");
+        setSetDayOfYearValue("");
+    }, [activeTab]);
+
+    const months = useMemo(() => MONTHS_ORDER[activeTab], [activeTab]);
+    const selectedMonthLength = selectedMonth ? MONTHS[selectedMonth]?.length ?? 1 : 1;
+    const maxDay = activeTab === "Empire" ? 400 : 360;
+
+    const handleSetTime = () => {
+        const hour = parseInt(setHourValue, 10);
+        if (isNaN(hour) || hour < 0 || hour > 23) {
+            return;
+        }
+        const payload: { domain: "Empire" | "Ishtar"; hour: number; minutes?: number; dayOfYear?: number } = { domain: activeTab, hour };
+
+        if (setMinuteValue) {
+            const minutes = parseInt(setMinuteValue, 10);
+            if (!isNaN(minutes) && minutes >= 0 && minutes <= 59) {
+                payload.minutes = minutes;
+            }
+        }
+
+        if (dateMode === "month" && selectedMonth && setDayOfMonthValue) {
+            const dayOfMonth = parseInt(setDayOfMonthValue, 10);
+            if (!isNaN(dayOfMonth) && dayOfMonth >= 1 && dayOfMonth <= selectedMonthLength) {
+                payload.dayOfYear = getDayOfYear(activeTab, selectedMonth, dayOfMonth);
+            }
+        } else if (dateMode === "dayOfYear" && setDayOfYearValue) {
+            const dayOfYear = parseInt(setDayOfYearValue, 10);
+            if (!isNaN(dayOfYear) && dayOfYear >= 1 && dayOfYear <= maxDay) {
+                payload.dayOfYear = dayOfYear;
+            }
+        }
+
+        eventBus.emit("clock.setTime", payload);
+        setSetHourValue("");
+        setSetMinuteValue("");
+        setSelectedMonth("");
+        setSetDayOfMonthValue("");
+        setSetDayOfYearValue("");
+    };
+
+    const isHourValid = setHourValue !== "" && !isNaN(parseInt(setHourValue, 10)) && parseInt(setHourValue, 10) >= 0 && parseInt(setHourValue, 10) <= 23;
+    const isMinuteValid = setMinuteValue === "" || (!isNaN(parseInt(setMinuteValue, 10)) && parseInt(setMinuteValue, 10) >= 0 && parseInt(setMinuteValue, 10) <= 59);
+    const isDayValid = dateMode === "month"
+        ? (!selectedMonth || !setDayOfMonthValue || (!isNaN(parseInt(setDayOfMonthValue, 10)) && parseInt(setDayOfMonthValue, 10) >= 1 && parseInt(setDayOfMonthValue, 10) <= selectedMonthLength))
+        : (!setDayOfYearValue || (!isNaN(parseInt(setDayOfYearValue, 10)) && parseInt(setDayOfYearValue, 10) >= 1 && parseInt(setDayOfYearValue, 10) <= maxDay));
+
     const currentData = activeTab === "Empire" ? empireData : ishtarData;
+
+    const headerActions = (
+        <button
+            type="button"
+            className={`clock-header-toggle${showEdit ? ' clock-header-toggle--active' : ''}`}
+            onClick={() => setShowEdit(!showEdit)}
+            title={showEdit ? 'Ukryj edycje' : 'Ustaw czas'}
+        >
+            Ustaw
+        </button>
+    );
 
     return (
         <DockablePopupWrapper
@@ -111,6 +195,7 @@ const ClockPopup: React.FC = () => {
             initialWidth={480}
             className="clock-window"
             bodyClassName="clock-window-body"
+            headerActions={headerActions}
         >
             <div className="clock-tabs">
                 <button
@@ -175,6 +260,117 @@ const ClockPopup: React.FC = () => {
                             {currentData?.daylight !== undefined ? (currentData.daylight ? 'Dzien' : 'Noc') : '--'}
                         </span>
                     </div>
+                    {showEdit && (
+                        <>
+                            <div className="clock-detail-separator"></div>
+                            <div className="clock-set-time-section">
+                                <div className="clock-set-time-row">
+                                    <span className="clock-detail-label">Godzina:</span>
+                                    <div className="clock-set-time-controls">
+                                        <input
+                                            type="number"
+                                            className="clock-set-time-input"
+                                            min={0}
+                                            max={23}
+                                            value={setHourValue}
+                                            onChange={(e) => setSetHourValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSetTime(); }}
+                                            placeholder="0-23"
+                                        />
+                                        <span className="clock-set-time-colon">:</span>
+                                        <input
+                                            type="number"
+                                            className="clock-set-time-input"
+                                            min={0}
+                                            max={59}
+                                            value={setMinuteValue}
+                                            onChange={(e) => setSetMinuteValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSetTime(); }}
+                                            placeholder="00"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="clock-set-time-row">
+                                    <span className="clock-detail-label">Data:</span>
+                                    <div className="clock-set-time-controls">
+                                        <button
+                                            type="button"
+                                            className={`clock-set-time-toggle ${dateMode === 'month' ? 'clock-set-time-toggle--active' : ''}`}
+                                            onClick={() => setDateMode('month')}
+                                        >
+                                            Miesiac
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`clock-set-time-toggle ${dateMode === 'dayOfYear' ? 'clock-set-time-toggle--active' : ''}`}
+                                            onClick={() => setDateMode('dayOfYear')}
+                                        >
+                                            Dzien roku
+                                        </button>
+                                    </div>
+                                </div>
+                                {dateMode === "month" ? (
+                                    <>
+                                        <div className="clock-set-time-row">
+                                            <span className="clock-detail-label">Miesiac:</span>
+                                            <select
+                                                className="clock-set-time-select"
+                                                value={selectedMonth}
+                                                onChange={(e) => {
+                                                    setSelectedMonth(e.target.value);
+                                                    setSetDayOfMonthValue("");
+                                                }}
+                                            >
+                                                <option value="">--</option>
+                                                {months.map((m) => (
+                                                    <option key={m} value={m}>{m}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {selectedMonth && (
+                                            <div className="clock-set-time-row">
+                                                <span className="clock-detail-label">Dzien:</span>
+                                                <input
+                                                    type="number"
+                                                    className="clock-set-time-input"
+                                                    min={1}
+                                                    max={selectedMonthLength}
+                                                    value={setDayOfMonthValue}
+                                                    onChange={(e) => setSetDayOfMonthValue(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSetTime(); }}
+                                                    placeholder={`1-${selectedMonthLength}`}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="clock-set-time-row">
+                                        <span className="clock-detail-label">Dzien roku:</span>
+                                        <input
+                                            type="number"
+                                            className="clock-set-time-input"
+                                            min={1}
+                                            max={maxDay}
+                                            value={setDayOfYearValue}
+                                            onChange={(e) => setSetDayOfYearValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSetTime(); }}
+                                            placeholder={`1-${maxDay}`}
+                                        />
+                                    </div>
+                                )}
+                                <div className="clock-set-time-row clock-set-time-row--action">
+                                    <button
+                                        type="button"
+                                        className="clock-set-time-button"
+                                        onClick={handleSetTime}
+                                        disabled={!isHourValid || !isMinuteValid || !isDayValid}
+                                    >
+                                        Ustaw
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </DockablePopupWrapper>

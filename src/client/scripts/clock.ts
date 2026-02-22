@@ -80,7 +80,7 @@ const PM: Record<string, (hour: number) => boolean> = {
     nocy: (hour) => hour >= 6
 };
 
-interface MonthDefinition {
+export interface MonthDefinition {
     sunrise: number | "?" | string;
     sunset: number | "?" | string;
     length: number;
@@ -88,7 +88,7 @@ interface MonthDefinition {
     alt_name?: string;
 }
 
-const MONTHS: Record<string, MonthDefinition> = {
+export const MONTHS: Record<string, MonthDefinition> = {
     Hexenstag: {sunrise: 8, sunset: 17, length: 1, alt_name: "Hexensnacht"},
     Nachhexen: {sunrise: 8, sunset: 17, length: 32},
     Jahrdrung: {sunrise: 7, sunset: 18, length: 33},
@@ -117,7 +117,7 @@ const MONTHS: Record<string, MonthDefinition> = {
     Saovine: {sunrise: "6", sunset: "17", length: 45}
 };
 
-const MONTHS_ORDER: Record<Domain, string[]> = {
+export const MONTHS_ORDER: Record<Domain, string[]> = {
     Empire: [
         "Hexenstag",
         "Nachhexen",
@@ -691,6 +691,11 @@ export class ArkadiaTime {
         this.init(finalHour, 0, 0, currentDay);
     }
 
+    public setTime(hour: number, minutes?: number, dayOfYear?: number): void {
+        const day = dayOfYear ?? this.startDay ?? 1;
+        this.init(hour, minutes ?? 0, 0, day);
+    }
+
     private getEpoch(): number {
         return Math.floor(Date.now() / 1000);
     }
@@ -727,18 +732,55 @@ export class ClockManager {
     public restoreActiveDomain(): void {
         this.display.restoreActiveDomain();
     }
+
+    public setTime(domain: Domain, hour: number, minutes?: number, dayOfYear?: number): void {
+        if (domain === "Empire") {
+            this.empireClock.setTime(hour, minutes, dayOfYear);
+        } else {
+            this.ishtarClock.setTime(hour, minutes, dayOfYear);
+        }
+    }
 }
 
 export function initClock(client: Client): ClockManager {
     const manager = new ClockManager(client);
 
     client.aliases.push({
-        pattern: /\/czas/,
+        pattern: /^\/czas$/,
         callback: () => {
             const activeDomain = manager.getActiveDomain();
             eventBus.emit("clock.popup.open", { domain: activeDomain })
         }
     })
+
+    client.aliases.push({
+        pattern: /^\/czas\s+(imperium|ishtar)\s+(\d+)(?:\s+(\d+))?$/i,
+        callback: (matches: RegExpMatchArray) => {
+            const rawDomain = matches[1].toLowerCase();
+            const domain: Domain = rawDomain === "imperium" ? "Empire" : "Ishtar";
+            const hour = parseInt(matches[2], 10);
+            if (hour < 0 || hour > 23) {
+                client.println("Godzina musi byc w zakresie 0-23.");
+                return;
+            }
+            const maxDay = domain === "Empire" ? 400 : 360;
+            let dayOfYear: number | undefined;
+            if (matches[3]) {
+                dayOfYear = parseInt(matches[3], 10);
+                if (dayOfYear < 1 || dayOfYear > maxDay) {
+                    client.println(`Dzien roku musi byc w zakresie 1-${maxDay}.`);
+                    return;
+                }
+            }
+            manager.setTime(domain, hour, dayOfYear);
+            const dayInfo = dayOfYear !== undefined ? `, dzien ${dayOfYear}` : "";
+            client.println(`Ustawiono czas ${domain === "Empire" ? "Imperium" : "Ishtar"}: ${hour.toString().padStart(2, '0')}:00${dayInfo}`);
+        }
+    })
+
+    eventBus.on("clock.setTime", (payload: { domain: "Empire" | "Ishtar"; hour: number; minutes?: number; dayOfYear?: number }) => {
+        manager.setTime(payload.domain, payload.hour, payload.minutes, payload.dayOfYear);
+    });
 
     // Restore active domain when character info arrives (after login)
     client.on('gmcp.char.info', (info) => {

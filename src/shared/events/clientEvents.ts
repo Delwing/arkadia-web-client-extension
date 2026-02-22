@@ -90,6 +90,13 @@ type ClockSunEventPayload = {
     indicatedHour?: string; // Raw observed hour before correction (e.g., "4:59")
 }
 
+type ClockSetTimePayload = {
+    domain: "Empire" | "Ishtar";
+    hour: number;
+    minutes?: number;
+    dayOfYear?: number;
+}
+
 type PluginLoadedPayload = {
     url: string;
     info: PluginInfo;
@@ -224,6 +231,7 @@ export interface KnownEvents {
     "clock.sunrise": ClockSunEventPayload;
     "clock.sunset": ClockSunEventPayload;
     "clock.parsedTime": { domain: "Empire" | "Ishtar"; hour: number; dayOfYear: number };
+    "clock.setTime": ClockSetTimePayload;
     "contracts.popup.open": { contracts: Contract[]; currentLocationId: number | null };
     "contracts.updated": { contracts: Contract[] };
     "contracts.remove": { id: string };

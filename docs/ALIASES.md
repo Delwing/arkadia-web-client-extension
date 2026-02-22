@@ -26,6 +26,10 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 | Komenda | Opis |
 |---------|------|
 | `/czas` | Otworz okno zegara z aktualnym czasem w grze |
+| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |
+| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |
+
+> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij "Ustaw".
 
 ## Jezyk
 
