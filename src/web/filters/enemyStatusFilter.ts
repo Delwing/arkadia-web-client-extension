@@ -41,6 +41,12 @@ function clearBrokenDefenseTimer(status: EnemyStatus) {
     }
 }
 
+function cleanupInactiveStatus(name: string, status: EnemyStatus) {
+    if (!status.paralyzed && !status.brokenDefense) {
+        enemyStatusMap.delete(name);
+    }
+}
+
 function calculateWordListScore(a: string, b: string): number {
     const aWords = a.toLowerCase().split(/\s+/).filter(w => w.length > 0);
     const bWords = b.toLowerCase().split(/\s+/).filter(w => w.length > 0);
@@ -102,11 +108,12 @@ function updateBestMatches(objects: Map<number, { desc?: string }>) {
 }
 
 export function registerEnemyStatusFilter(client: Client) {
-    const startParalyzedTimer = (status: EnemyStatus) => {
+    const startParalyzedTimer = (name: string, status: EnemyStatus) => {
         clearParalyzedTimer(status);
         status.paralyzedTimer = setTimeout(() => {
             status.paralyzed = false;
             status.paralyzedTimer = null;
+            cleanupInactiveStatus(name, status);
             client.sendEvent("enemy.paralyzed.end", { name: "" });
         }, PARALYZED_TIMEOUT_MS);
     };
@@ -127,7 +134,7 @@ export function registerEnemyStatusFilter(client: Client) {
         const targetName = existingMatch || name;
         const status = getOrCreateStatus(targetName);
         status.paralyzed = true;
-        startParalyzedTimer(status);
+        startParalyzedTimer(targetName, status);
         triggerBestMatchUpdate();
     });
 
@@ -156,7 +163,8 @@ export function registerEnemyStatusFilter(client: Client) {
         status.brokenDefenseTimer = setTimeout(() => {
             status.brokenDefense = false;
             status.brokenDefenseTimer = null;
-            client.sendEvent("enemy.broken_defense", { name: "" });
+            cleanupInactiveStatus(targetName, status);
+            client.sendEvent("enemy.paralyzed.end", { name: "" });
         }, BROKEN_DEFENSE_TIMEOUT_MS);
         triggerBestMatchUpdate();
     });
