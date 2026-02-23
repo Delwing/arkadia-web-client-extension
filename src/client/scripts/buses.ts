@@ -79,7 +79,7 @@ export default function initBuses(client: Client) {
         if (type !== "room.contents.object") {
             return line;
         }
-        return boardDylizans(line);
+        return boardPowoz(line);
     }, "buses", {caseInsensitive: true});
 
     const boardPowozPatterns: Array<RegExp | string> = [
