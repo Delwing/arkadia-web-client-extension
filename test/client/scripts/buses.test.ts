@@ -11,13 +11,13 @@ class FakeClient {
 
 describe('buses triggers', () => {
   let client: FakeClient;
-  let parse: (line: string) => AnsiAwareBuffer | null;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initBuses((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+    parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
     jest.clearAllMocks();
   });
 
@@ -46,7 +46,7 @@ describe('buses triggers', () => {
   });
 
   test('woz z plandeka triggers once', () => {
-    parse('Kupiecki stojacy woz z plandeka');
+    parse('Kupiecki stojacy woz z plandeka', 'room.contents.object');
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
   });
 
