@@ -112,11 +112,13 @@ const SunTrackerPopup: React.FC = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [clockData, setClockData] = useState<Record<Domain, ClockState | null>>({ Empire: null, Ishtar: null });
+    const lastDomainRef = useRef<Domain | null>(null);
     const [editCell, setEditCell] = useState<{ dayOfYear: number; x: number; y: number; sunrise?: number; sunset?: number } | null>(null);
     const [editSunrise, setEditSunrise] = useState('');
     const [editSunset, setEditSunset] = useState('');
     const editRef = useRef<HTMLDivElement>(null);
     const todayRef = useRef<HTMLDivElement>(null);
+    const needsScrollRef = useRef(false);
 
     const loadEvents = useCallback(async (domain: Domain) => {
         const data = await getEventsForDomain(domain);
@@ -129,15 +131,22 @@ const SunTrackerPopup: React.FC = () => {
         }
     }, [wrapperProps.isOpen, activeTab, refreshKey, loadEvents]);
 
-    // Scroll to current day when popup opens or tab changes
+    // Mark that we need to scroll when popup opens or tab changes
     useEffect(() => {
-        if (wrapperProps.isOpen && todayRef.current && scrollRef.current) {
-            // Use requestAnimationFrame to ensure DOM is laid out
+        if (wrapperProps.isOpen) {
+            needsScrollRef.current = true;
+        }
+    }, [wrapperProps.isOpen, activeTab]);
+
+    // Scroll to current day only on open/tab change, not on edits
+    useEffect(() => {
+        if (needsScrollRef.current && wrapperProps.isOpen && todayRef.current && scrollRef.current) {
+            needsScrollRef.current = false;
             requestAnimationFrame(() => {
                 todayRef.current?.scrollIntoView({ block: 'center' });
             });
         }
-    }, [wrapperProps.isOpen, activeTab, events]);
+    }, [wrapperProps.isOpen, events]);
 
     // Refresh when a new observation is confirmed
     useEffect(() => {
@@ -151,12 +160,20 @@ const SunTrackerPopup: React.FC = () => {
     // Track clock data for next sun event display
     useEffect(() => {
         return eventBus.on("clock.update", (data) => {
+            lastDomainRef.current = data.domain as Domain;
             setClockData(prev => ({
                 ...prev,
                 [data.domain]: { domain: data.domain as Domain, hours: data.hours, minutes: data.minutes, sunrise: data.sunrise, sunset: data.sunset, dayOfYear: data.dayOfYear },
             }));
         });
     }, []);
+
+    // Auto-select tab based on current domain when popup opens
+    useEffect(() => {
+        if (wrapperProps.isOpen && lastDomainRef.current) {
+            setActiveTab(lastDomainRef.current);
+        }
+    }, [wrapperProps.isOpen]);
 
     const handleClear = async () => {
         await clearEventsForDomain(activeTab);
