@@ -217,7 +217,7 @@ export default function initSunTracker(client: Client) {
         const icon = isSunrise ? "\u2600" : "\u263E";
         const label = isSunrise ? "WSCHOD" : "ZACHOD";
         const inner = ` ${icon} ${label}  [czas] `;
-        const border = "\u2550".repeat(inner.length);
+        const border = "\u2550".repeat(inner.length + 1);
 
         const top = new AnsiAwareBuffer(`\u2554${border}\u2557`).colorWords(`\u2554${border}\u2557`, color);
         const mid = new AnsiAwareBuffer(`\u2551${inner}\u2551`).colorWords(`\u2551${inner}\u2551`, color);
