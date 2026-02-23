@@ -11,7 +11,7 @@ const BRYCZKA_LABEL = BRYCZKA_CMDS.join(";");
 
 function bindBus(client: Client, commands: string[], label: string, beep: boolean, locationBound = true) {
     if (beep) {
-        client.sendEvent("sound:play", { key: "beep" });
+        client.sendEvent("sound:play", {key: "beep"});
     }
     client.FunctionalBind.set(label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));
@@ -57,19 +57,33 @@ export default function initBuses(client: Client) {
     client.Triggers.registerTrigger(
         [
             /.*dylizans powoli zatrzymuje sie.*/,
-            /.*i wsiada do.*dylizansu/,
-            /[A-Za-z]+ stojacy dylizans/,
+            /.*i wsiada do.*dylizansu/
         ],
         boardDylizans,
         "buses"
     );
 
+    client.Triggers.registerTrigger(/[A-Za-z]+ stojacy dylizans/, (line, _, type) => {
+        if (type !== "room.contents.object") {
+            return line;
+        }
+        return boardDylizans(line);
+    });
+
+    client.Triggers.registerTrigger([
+        /kupiecki stojacy (po|)woz$/,
+        "drewniany stojacy woz",
+        "otwarty stojacy powoz",
+        "kupiecki stojacy woz z plandeka",
+    ], (line, _, type) => {
+        if (type !== "room.contents.object") {
+            return line;
+        }
+        return boardDylizans(line);
+    }, "buses", {caseInsensitive: true});
+
     const boardPowozPatterns: Array<RegExp | string> = [
         /.*(?:po)?woz.*powoli zatrzymuje sie\./,
-        /^Kupiecki stojacy (po|)woz$/,
-        "Drewniany stojacy woz",
-        "Otwarty stojacy powoz",
-        "Kupiecki stojacy woz z plandeka",
         /.*i wsiada do.*powozu/,
     ];
     client.Triggers.registerTrigger(boardPowozPatterns, boardPowoz, "buses");
