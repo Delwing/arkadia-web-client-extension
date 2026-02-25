@@ -19,6 +19,9 @@ type MockedClient = {
     postMessage: jest.Mock;
   };
   on: jest.Mock;
+  Triggers: {
+    registerOneTimeTrigger: jest.Mock;
+  };
 };
 
 type ClientTestContext = {
@@ -51,6 +54,9 @@ function createMockClient(): ClientTestContext {
     },
     port: {
       postMessage: postMessageMock,
+    },
+    Triggers: {
+      registerOneTimeTrigger: jest.fn(),
     },
     on: jest.fn((event: string, callback: (ev: any) => void) => {
       if (!listeners[event]) {

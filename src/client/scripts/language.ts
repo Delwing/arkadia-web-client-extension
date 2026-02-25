@@ -25,8 +25,17 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
 
     client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
 
+    function gagLanguageConfirmation() {
+        client.Triggers.registerOneTimeTrigger(
+            /^Ustawiles jezyk: .+\.$/,
+            () => null,
+            'language-gag'
+        );
+    }
+
     function setLanguage(lang: string) {
         if (lang !== lastLang && lang !== 'potoczna') {
+            gagLanguageConfirmation();
             client.sendCommand(`justaw ${lang}`, false);
         }
     }
@@ -52,7 +61,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     client.aliases.push({
         pattern: /^justaw (.*)$/,
         callback: (matches: RegExpMatchArray) => {
-            client.send('justaw ' + matches[1], false);
+            client.send('justaw ' + matches[1], true);
             lastLang = matches[1];
             client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
         }
