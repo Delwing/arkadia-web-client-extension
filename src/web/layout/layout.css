@@ -170,6 +170,7 @@ body.layout-objectlist-enabled #objects-list {
   height: 28px;
   padding: 0 0.5rem;
   cursor: grab;
+  touch-action: none;
 }
 
 .docked-panel__header:active {
@@ -221,6 +222,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   background: transparent;
   z-index: 10;
   transition: background-color 0.15s ease;
+  touch-action: none;
 }
 
 .resize-handle:hover,
@@ -267,6 +269,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   background: var(--surface-border, #333);
   position: relative;
   transition: background-color 0.15s ease;
+  touch-action: none;
 }
 
 /* Extended hit area using ::before */
@@ -315,6 +318,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   background: var(--surface-border, #333);
   position: relative;
   transition: background-color 0.15s ease;
+  touch-action: none;
 }
 
 /* Extended hit area using ::before */
@@ -462,6 +466,7 @@ body.layout-dragging * {
   padding: 0.35rem 0.5rem;
   cursor: move;
   min-height: 24px;
+  touch-action: none;
 }
 
 .floating-panel__title {
@@ -508,6 +513,7 @@ body.layout-dragging * {
   position: absolute;
   background: transparent;
   z-index: 10;
+  touch-action: none;
 }
 
 .floating-panel__edge--n {
@@ -549,6 +555,7 @@ body.layout-dragging * {
   height: 12px;
   background: transparent;
   z-index: 11;
+  touch-action: none;
 }
 
 .floating-panel__corner--nw {
