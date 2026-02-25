@@ -1168,7 +1168,15 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     });
 
+    let lastCharacterKey: string | null = null;
+
     client.on('gmcp.char.info', (detail) => {
+        const characterKey = getCharacterProgressKey();
+        if (lastCharacterKey !== null && lastCharacterKey !== characterKey) {
+            refreshKnowledgeHintsIfNeeded();
+        }
+        lastCharacterKey = characterKey;
+
         const parsedGender = parseKnowledgeGender(detail);
         if (!parsedGender) {
             return;
