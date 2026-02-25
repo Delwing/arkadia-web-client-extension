@@ -66,15 +66,12 @@ export default function initAttackQueue(
 
     const add = (matches: RegExpMatchArray) => {
         const resolved = resolveEnemy(client, matches[1] ?? matches[0]);
-        console.log(`[DEBUG /q] Resolved enemy: ${JSON.stringify(resolved)} from input: ${matches[1] ?? matches[0]}`);
         if (!resolved) {
             client.println("Niepoprawne id przeciwnika.");
             return;
         }
         const { id, description } = resolved;
-        console.log(`[DEBUG /q] Adding to queue, id: ${id}, description: ${description}`);
         const added = client.TeamManager.addEnemyToQueue(id);
-        console.log(`[DEBUG /q] After add, queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
         if (added) {
             const displayName = description ?? id;
             client.println(`Dodano ${displayName} do kolejki ataku.`);
@@ -84,7 +81,6 @@ export default function initAttackQueue(
     };
 
     const killNext = () => {
-        console.log(`[DEBUG /nn] Queue: ${JSON.stringify(client.TeamManager.getEnemyQueue?.() ?? 'N/A')}`);
         const next = client.TeamManager.peekEnemyFromQueue?.();
         if (!next) {
             client.println("Kolejka ataku jest pusta.");
@@ -94,8 +90,6 @@ export default function initAttackQueue(
         if (allyProtection.isAlly(next)) {
             // Check if this is a confirmation (same command repeated within timeout)
             if (allyProtection.checkPendingAttack(next, undefined)) {
-                // Confirmed - allow the attack
-                console.log(`[DEBUG /nn] Confirmed attack on ally, id: ${next}`);
                 attackController.attackById(next);
                 return;
             }
@@ -105,7 +99,6 @@ export default function initAttackQueue(
             allyProtection.setPendingAttack(next, undefined);
             return;
         }
-        console.log(`[DEBUG /nn] Attacking target id: ${next}`);
         attackController.attackById(next);
     };
 
