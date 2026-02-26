@@ -103,6 +103,7 @@ export class EmbeddedMap {
         let labelRenderMode: LabelRenderMode = 'data';
         let transparentLabels = true;
         let initialRoom = startId ?? 1;
+        let mapPosition = 'top-overlay';
         try {
             const data = getItemSync('uiSettings');
             const parsed = data?.uiSettings as any;
@@ -124,6 +125,9 @@ export class EmbeddedMap {
                 }
                 if (typeof parsed.transparentLabels === 'boolean') {
                     transparentLabels = parsed.transparentLabels;
+                }
+                if (typeof parsed.mapPosition === 'string') {
+                    mapPosition = parsed.mapPosition;
                 }
             }
         } catch {
@@ -147,6 +151,9 @@ export class EmbeddedMap {
         settings.playerMarker.dash = [0.05, 0.05]
         settings.gridColor = 'rgba(255, 255, 255, 0.25)';
         settings.gridEnabled = getBuiltInPanelSetting('map', 'showGrid', false);
+        if (mapPosition.includes('overlay')) {
+            settings.backgroundColor = 'transparent';
+        }
 
         // Initialize map rendering settings from storage
         try {

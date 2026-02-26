@@ -305,6 +305,10 @@ function apply(settings: UiSettings) {
         mapSettings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
         mapSettings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
         mapSettings.roomShape = settings.mapRoomShape;
+        mapSettings.backgroundColor = settings.mapPosition.includes('overlay')
+            ? 'transparent'
+            : '#000000';
+        embedded.renderer?.updateBackground?.();
     }
     const pathFinder = embedded?.pathFinder;
     if (pathFinder?.setAlgorithm) {
