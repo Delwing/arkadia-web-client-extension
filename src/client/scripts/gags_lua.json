@@ -9453,6 +9453,10 @@
                   {
                     "pattern": "(^[ >]*Zdecydowanym krokiem wysuwasz sie przed [\\[a-zA-Z (),!\\]]+, zimnym spojrzeniem dajac wszystkim do zrozumienia, ze moga sie do (niego|niej) zblizyc jedynie po twoim trupie\\.$)",
                     "type": 1
+                  },
+                  {
+                    "pattern": "(^[ >]*Na rozkaz .* zaslaniasz ([\\[a-zA-Z (),!\\]]+) przed ciosami [\\[a-zA-Z (),!\\]]+\\.$)",
+                    "type": 1
                   }
                 ],
                 "script": "trigger_func_skrypty_ui_gags_color_color_zaslony_udane_zaslaniasz_ty()"
