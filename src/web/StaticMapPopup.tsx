@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Renderer, RoomContextMenuEventDetail } from 'mudlet-map-renderer';
+import { Renderer, RoomContextMenuEventDetail, type RoomClickEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getClientInstance } from '@shared/runtime';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
 
 interface StaticMapInstance {
     id: string;
@@ -486,6 +487,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let highlightHandler: ((data: { roomId: number; color: string }[]) => void) | null = null;
         let moveHandler: ((ev: { id: number }) => void) | null = null;
         let contextMenuHandler: ((ev: Event) => void) | null = null;
+        let roomClickHandler: ((ev: Event) => void) | null = null;
         let zoomHandler: (() => void) | null = null;
         let settingsHandler: (() => void) | null = null;
         let gridHandler: ((value: boolean) => void) | null = null;
@@ -719,6 +721,19 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 }
             };
 
+            roomClickHandler = (ev: Event) => {
+                const customEv = ev as CustomEvent<RoomClickEventDetail>;
+                const room = customEv.detail.roomId;
+                if (room && containerForMenu) {
+                    const rect = containerForMenu.getBoundingClientRect();
+                    const viewportX = customEv.detail.position.x + rect.left;
+                    const viewportY = customEv.detail.position.y + rect.top;
+                    const embedded = getEmbedded();
+                    const mapNote = embedded?.reader?.getRoom(room)?.userData?.note;
+                    showMapNoteTooltipForRoom(room, viewportX, viewportY, mapNote);
+                }
+            };
+
             zoomHandler = () => {
                 if (rendererRef.current) {
                     const newZoom = rendererRef.current.getZoom();
@@ -784,6 +799,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             eventBus.on('mapShowGrid', gridHandler);
             eventBus.on('mapDataChanged', dataChangedHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
+            container.addEventListener('roomclick', roomClickHandler);
             container.addEventListener('zoom', zoomHandler);
 
             const resizeObserver = new ResizeObserver(() => {
@@ -808,6 +824,9 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (dataChangedHandler) eventBus.off('mapDataChanged', dataChangedHandler);
             if (container && contextMenuHandler) {
                 container.removeEventListener('roomcontextmenu', contextMenuHandler);
+            }
+            if (container && roomClickHandler) {
+                container.removeEventListener('roomclick', roomClickHandler);
             }
             if (container && zoomHandler) {
                 container.removeEventListener('zoom', zoomHandler);

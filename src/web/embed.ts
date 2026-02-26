@@ -4,12 +4,14 @@ import {
     createSettings,
     type Settings,
     RoomContextMenuEventDetail,
+    type RoomClickEventDetail,
     LabelRenderMode
 } from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
 import { getClientInstance } from "@shared/runtime";
+import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
 
 const MIN_ZOOM = 0.01;
 
@@ -90,6 +92,7 @@ export class EmbeddedMap {
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
+        this.map.addEventListener('roomclick', (ev: CustomEvent<RoomClickEventDetail>) => this.onRoomClick(ev));
         this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
 
@@ -300,6 +303,19 @@ export class EmbeddedMap {
             const viewportY = ev.detail.position.y + mapRect.top;
             client?.openMapContextMenu?.(room, viewportX, viewportY);
         }
+    }
+
+    private onRoomClick(ev: CustomEvent<RoomClickEventDetail>) {
+        const roomId = ev.detail.roomId;
+        if (!roomId) {
+            hideMapNoteTooltip();
+            return;
+        }
+        const mapRect = this.map.getBoundingClientRect();
+        const viewportX = ev.detail.position.x + mapRect.left;
+        const viewportY = ev.detail.position.y + mapRect.top;
+        const mapNote = this.reader.getRoom(roomId)?.userData?.note;
+        showMapNoteTooltipForRoom(roomId, viewportX, viewportY, mapNote);
     }
 
     renderRoomById(id: number) {
