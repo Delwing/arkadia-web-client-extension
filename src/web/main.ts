@@ -657,6 +657,10 @@ Promise.all([mapDataPromise, colorsPromise])
         }
 
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
+        const savedAlgorithm = getItemSync('uiSettings')?.pathFindingAlgorithm;
+        if (savedAlgorithm && pathFinder.setAlgorithm) {
+            pathFinder.setAlgorithm(savedAlgorithm);
+        }
         const embedded = new EmbeddedMap(reader, startId);
         (embedded as any).pathFinder = pathFinder;
         (globalThis as any).embedded = embedded;

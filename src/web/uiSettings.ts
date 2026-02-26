@@ -6,10 +6,10 @@ import { createElement } from "react";
 import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
 import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import { loadLayoutState, saveLayoutState, resetLayoutState } from "@web/layout";
-import { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape } from "./defaultUiSettings";
+import { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
 
 // Re-export for backwards compatibility
-export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape } from "./defaultUiSettings";
+export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
 
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -306,6 +306,10 @@ function apply(settings: UiSettings) {
         mapSettings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
         mapSettings.roomShape = settings.mapRoomShape;
     }
+    const pathFinder = embedded?.pathFinder;
+    if (pathFinder?.setAlgorithm) {
+        pathFinder.setAlgorithm(settings.pathFindingAlgorithm);
+    }
     embedded?.setTransparentLabels?.(settings.transparentLabels);
     embedded?.setLabelRenderMode?.(settings.transparentLabels ? 'data' : settings.labelRenderMode);
     embedded?.setInstantMove?.(settings.instantMove);
@@ -416,6 +420,9 @@ async function load(): Promise<UiSettings> {
             const mapRoomShape = (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle')
                 ? parsed.mapRoomShape as MapRoomShape
                 : defaultUiSettings.mapRoomShape;
+            const pathFindingAlgorithm = (parsed.pathFindingAlgorithm === 'dijkstra' || parsed.pathFindingAlgorithm === 'astar')
+                ? parsed.pathFindingAlgorithm as PathFindingAlgorithm
+                : defaultUiSettings.pathFindingAlgorithm;
             const objectContextMenuCommands = Array.isArray(parsed.objectContextMenuCommands)
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
                 : defaultUiSettings.objectContextMenuCommands;
@@ -467,6 +474,7 @@ async function load(): Promise<UiSettings> {
                 mapPlayerMarkerSizeFactor,
                 mapPlayerMarkerDashEnabled,
                 mapRoomShape,
+                pathFindingAlgorithm,
                 objectContextMenuCommands,
                 footerComponents,
                 keepMultibindsVisible,
@@ -539,6 +547,7 @@ export default async function initUiSettings() {
     const mapPlayerMarkerSizeFactorValue = modalEl.querySelector('#ui-map-player-marker-size-factor-value') as HTMLSpanElement;
     const mapPlayerMarkerDashEnabledInput = modalEl.querySelector('#ui-map-player-marker-dash-enabled') as HTMLInputElement;
     const mapRoomShapeInput = modalEl.querySelector('#ui-map-room-shape') as HTMLSelectElement;
+    const pathFindingAlgorithmInput = modalEl.querySelector('#ui-map-pathfinding-algorithm') as HTMLSelectElement;
     const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
     const objectContextMenuContainer = modalEl.querySelector('#ui-object-context-menu-container') as HTMLDivElement;
     const objectContextMenuInput = modalEl.querySelector('#ui-object-context-menu-input') as HTMLInputElement;
@@ -837,6 +846,7 @@ export default async function initUiSettings() {
         mapPlayerMarkerSizeFactorValue.textContent = String(settings.mapPlayerMarkerSizeFactor);
         mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
         mapRoomShapeInput.value = settings.mapRoomShape;
+        pathFindingAlgorithmInput.value = settings.pathFindingAlgorithm;
         objectContextMenuCommands = [...settings.objectContextMenuCommands];
         renderObjectContextMenuCommands();
         footerComponentsConfig = [...settings.footerComponents];
@@ -1156,6 +1166,14 @@ export default async function initUiSettings() {
         drawPreview();
     });
 
+    pathFindingAlgorithmInput.addEventListener('change', () => {
+        const embedded = (globalThis as any).embedded;
+        const pathFinder = embedded?.pathFinder;
+        if (pathFinder?.setAlgorithm) {
+            pathFinder.setAlgorithm(pathFindingAlgorithmInput.value as PathFindingAlgorithm);
+        }
+    });
+
     mapPlayerMarkerStrokeColorInput.addEventListener('input', () => {
         drawPreview();
     });
@@ -1261,6 +1279,9 @@ export default async function initUiSettings() {
             mapRoomShape: (mapRoomShapeInput.value === 'rectangle' || mapRoomShapeInput.value === 'circle' || mapRoomShapeInput.value === 'roundedRectangle')
                 ? mapRoomShapeInput.value as MapRoomShape
                 : defaultUiSettings.mapRoomShape,
+            pathFindingAlgorithm: (pathFindingAlgorithmInput.value === 'dijkstra' || pathFindingAlgorithmInput.value === 'astar')
+                ? pathFindingAlgorithmInput.value as PathFindingAlgorithm
+                : defaultUiSettings.pathFindingAlgorithm,
             objectContextMenuCommands: [...objectContextMenuCommands],
             footerComponents: [...footerComponentsConfig],
             commandEcho: commandEchoInput.checked,

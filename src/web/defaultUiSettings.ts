@@ -4,6 +4,8 @@ type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mo
 
 export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 
+export type PathFindingAlgorithm = 'dijkstra' | 'astar';
+
 export interface FooterComponentConfig {
     id: string;
     visible: boolean;
@@ -62,6 +64,7 @@ export interface UiSettings {
     mapPlayerMarkerSizeFactor: number;
     mapPlayerMarkerDashEnabled: boolean;
     mapRoomShape: MapRoomShape;
+    pathFindingAlgorithm: PathFindingAlgorithm;
     objectContextMenuCommands: string[];
     footerComponents: FooterComponentConfig[];
     keepMultibindsVisible: boolean;
@@ -107,6 +110,7 @@ export const defaultUiSettings: UiSettings = {
     mapPlayerMarkerSizeFactor: 1.7,
     mapPlayerMarkerDashEnabled: true,
     mapRoomShape: 'rectangle',
+    pathFindingAlgorithm: 'dijkstra',
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
     footerComponents: defaultFooterComponents,
     keepMultibindsVisible: false,
