@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Settings } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
 
@@ -26,6 +25,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
+  const getEmbedded = useCallback(() => {
+    return (globalThis as any).embedded;
+  }, []);
+
   // Emit label visibility state on mount and when it changes
   useEffect(() => {
     eventBus.emit('mapLabelVisibility', labelVisible);
@@ -38,9 +41,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
 
   // Emit showGrid state on mount and when it changes
   useEffect(() => {
-    Settings.gridEnabled = showGrid;
+    const embedded = getEmbedded();
+    if (embedded?.settings) embedded.settings.gridEnabled = showGrid;
     eventBus.emit('mapShowGrid', showGrid);
-  }, [showGrid]);
+  }, [showGrid, getEmbedded]);
 
   const calculateDropdownPosition = useCallback(() => {
     if (toggleRef.current) {
@@ -99,10 +103,6 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
       window.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, closeMenu]);
-
-  const getEmbedded = useCallback(() => {
-    return (globalThis as any).embedded;
-  }, []);
 
   const handleZoomIn = useCallback(() => {
     const embedded = getEmbedded();

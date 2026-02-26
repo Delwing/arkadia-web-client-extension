@@ -1,12 +1,14 @@
 import {
     MapReader,
     Renderer,
-    Settings,
+    createSettings,
+    type Settings,
     RoomContextMenuEventDetail,
     LabelRenderMode
 } from "mudlet-map-renderer";
 import {getCurrentCharacter, getItemSync, setItemSync} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
+import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
 import { getClientInstance } from "@shared/runtime";
 
 const MIN_ZOOM = 0.01;
@@ -70,6 +72,7 @@ export class EmbeddedMap {
     private readonly map: HTMLDivElement;
     public readonly reader: MapReader;
     public renderer: Renderer;
+    public readonly settings: Settings;
     public currentRoom: any;
     private zoom: number;
     private explorationMode = false;
@@ -135,10 +138,12 @@ export class EmbeddedMap {
         if (transparentLabels) {
             labelRenderMode = 'data';
         }
-        Settings.transparentLabels = transparentLabels;
-        Settings.labelRenderMode = labelRenderMode;
-        Settings.playerMarker.dash = [0.05, 0.05]
-        Settings.gridColor = 'rgba(255, 255, 255, 0.25)';
+        const settings = createSettings();
+        settings.transparentLabels = transparentLabels;
+        settings.labelRenderMode = labelRenderMode;
+        settings.playerMarker.dash = [0.05, 0.05]
+        settings.gridColor = 'rgba(255, 255, 255, 0.25)';
+        settings.gridEnabled = getBuiltInPanelSetting('map', 'showGrid', false);
 
         // Initialize map rendering settings from storage
         try {
@@ -146,41 +151,42 @@ export class EmbeddedMap {
             const parsed = data?.uiSettings as any;
             if (parsed) {
                 if (typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0) {
-                    Settings.roomSize = parsed.mapRoomSize;
+                    settings.roomSize = parsed.mapRoomSize;
                 }
                 if (typeof parsed.mapLineWidth === 'number' && parsed.mapLineWidth > 0) {
-                    Settings.lineWidth = parsed.mapLineWidth;
+                    settings.lineWidth = parsed.mapLineWidth;
                 }
                 if (typeof parsed.mapPlayerMarkerStrokeColor === 'string') {
-                    Settings.playerMarker.strokeColor = parsed.mapPlayerMarkerStrokeColor;
+                    settings.playerMarker.strokeColor = parsed.mapPlayerMarkerStrokeColor;
                 }
                 if (typeof parsed.mapPlayerMarkerStrokeAlpha === 'number') {
-                    Settings.playerMarker.strokeAlpha = parsed.mapPlayerMarkerStrokeAlpha;
+                    settings.playerMarker.strokeAlpha = parsed.mapPlayerMarkerStrokeAlpha;
                 }
                 if (typeof parsed.mapPlayerMarkerFillColor === 'string') {
-                    Settings.playerMarker.fillColor = parsed.mapPlayerMarkerFillColor;
+                    settings.playerMarker.fillColor = parsed.mapPlayerMarkerFillColor;
                 }
                 if (typeof parsed.mapPlayerMarkerFillAlpha === 'number') {
-                    Settings.playerMarker.fillAlpha = parsed.mapPlayerMarkerFillAlpha;
+                    settings.playerMarker.fillAlpha = parsed.mapPlayerMarkerFillAlpha;
                 }
                 if (typeof parsed.mapPlayerMarkerStrokeWidth === 'number') {
-                    Settings.playerMarker.strokeWidth = parsed.mapPlayerMarkerStrokeWidth;
+                    settings.playerMarker.strokeWidth = parsed.mapPlayerMarkerStrokeWidth;
                 }
                 if (typeof parsed.mapPlayerMarkerSizeFactor === 'number') {
-                    Settings.playerMarker.sizeFactor = parsed.mapPlayerMarkerSizeFactor;
+                    settings.playerMarker.sizeFactor = parsed.mapPlayerMarkerSizeFactor;
                 }
                 if (typeof parsed.mapPlayerMarkerDashEnabled === 'boolean') {
-                    Settings.playerMarker.dashEnabled = parsed.mapPlayerMarkerDashEnabled;
+                    settings.playerMarker.dashEnabled = parsed.mapPlayerMarkerDashEnabled;
                 }
                 if (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle') {
-                    Settings.roomShape = parsed.mapRoomShape;
+                    settings.roomShape = parsed.mapRoomShape;
                 }
             }
         } catch {
             // ignore malformed data
         }
 
-        this.renderer = new Renderer(this.map, this.reader);
+        this.settings = settings;
+        this.renderer = new Renderer(this.map, this.reader, settings);
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
         this.setHighlightCurrentRoom(highlightCurrentRoom);
@@ -225,7 +231,7 @@ export class EmbeddedMap {
         });
 
         eventBus.on('mapShowGrid', (value: boolean) => {
-            Settings.gridEnabled = value;
+            this.settings.gridEnabled = value;
             this.refreshRender();
         });
 
@@ -376,24 +382,24 @@ export class EmbeddedMap {
     }
 
     setInstantMove(on: boolean) {
-        Settings.instantMapMove = on;
+        this.settings.instantMapMove = on;
     }
 
     setHighlightCurrentRoom(on: boolean) {
-        Settings.highlightCurrentRoom = on;
+        this.settings.highlightCurrentRoom = on;
         this.renderer.setPosition(this.currentRoom);
 
     }
 
     setLabelRenderMode(mode: LabelRenderMode) {
-        Settings.labelRenderMode = Settings.transparentLabels ? 'data' : mode;
+        this.settings.labelRenderMode = this.settings.transparentLabels ? 'data' : mode;
         this.refreshLabels();
     }
 
     setTransparentLabels(on: boolean) {
-        Settings.transparentLabels = on;
+        this.settings.transparentLabels = on;
         if (on) {
-            Settings.labelRenderMode = 'data';
+            this.settings.labelRenderMode = 'data';
         }
         this.refreshLabels();
     }

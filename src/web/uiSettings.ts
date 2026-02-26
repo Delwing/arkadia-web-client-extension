@@ -1,5 +1,4 @@
 import Modal from "bootstrap/js/dist/modal";
-import {Settings} from "mudlet-map-renderer";
 import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
 import eventBus from "@modules/core/eventBus";
 import { createRoot, type Root } from "react-dom/client";
@@ -289,25 +288,28 @@ function apply(settings: UiSettings) {
         embedded.setExplorationMode?.(settings.explorationMode);
         embedded.refresh();
     }
-    Settings.transparentLabels = settings.transparentLabels;
-    const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
-    Settings.labelRenderMode = labelRenderMode;
+    const mapSettings = embedded?.settings;
+    if (mapSettings) {
+        mapSettings.transparentLabels = settings.transparentLabels;
+        const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
+        mapSettings.labelRenderMode = labelRenderMode;
+        mapSettings.instantMapMove = settings.instantMove;
+        mapSettings.highlightCurrentRoom = settings.highlightCurrentRoom;
+        mapSettings.roomSize = settings.mapRoomSize;
+        mapSettings.lineWidth = settings.mapLineWidth;
+        mapSettings.playerMarker.strokeColor = settings.mapPlayerMarkerStrokeColor;
+        mapSettings.playerMarker.strokeAlpha = settings.mapPlayerMarkerStrokeAlpha;
+        mapSettings.playerMarker.fillColor = settings.mapPlayerMarkerFillColor;
+        mapSettings.playerMarker.fillAlpha = settings.mapPlayerMarkerFillAlpha;
+        mapSettings.playerMarker.strokeWidth = settings.mapPlayerMarkerStrokeWidth;
+        mapSettings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
+        mapSettings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
+        mapSettings.roomShape = settings.mapRoomShape;
+    }
     embedded?.setTransparentLabels?.(settings.transparentLabels);
-    embedded?.setLabelRenderMode?.(labelRenderMode);
-    Settings.instantMapMove = settings.instantMove;
+    embedded?.setLabelRenderMode?.(settings.transparentLabels ? 'data' : settings.labelRenderMode);
     embedded?.setInstantMove?.(settings.instantMove);
-    Settings.highlightCurrentRoom = settings.highlightCurrentRoom;
     embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    Settings.roomSize = settings.mapRoomSize;
-    Settings.lineWidth = settings.mapLineWidth;
-    Settings.playerMarker.strokeColor = settings.mapPlayerMarkerStrokeColor;
-    Settings.playerMarker.strokeAlpha = settings.mapPlayerMarkerStrokeAlpha;
-    Settings.playerMarker.fillColor = settings.mapPlayerMarkerFillColor;
-    Settings.playerMarker.fillAlpha = settings.mapPlayerMarkerFillAlpha;
-    Settings.playerMarker.strokeWidth = settings.mapPlayerMarkerStrokeWidth;
-    Settings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
-    Settings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
-    Settings.roomShape = settings.mapRoomShape;
     embedded?.refresh();
     const payload: UiSettingsEventPayload = {
         mobileDirectionButtons: settings.showButtons,
@@ -1095,51 +1097,61 @@ export default async function initUiSettings() {
         ctx.setLineDash([]);
     };
 
+    const getMapSettings = () => (globalThis as any).embedded?.settings;
+
     mapRoomSizeInput.addEventListener('input', () => {
         mapRoomSizeValue.textContent = mapRoomSizeInput.value;
-        Settings.roomSize = parseFloat(mapRoomSizeInput.value);
+        const s = getMapSettings();
+        if (s) s.roomSize = parseFloat(mapRoomSizeInput.value);
         refreshEmbeddedMap();
         drawPreview();
     });
 
     mapLineWidthInput.addEventListener('input', () => {
         mapLineWidthValue.textContent = mapLineWidthInput.value;
-        Settings.lineWidth = parseFloat(mapLineWidthInput.value);
+        const s = getMapSettings();
+        if (s) s.lineWidth = parseFloat(mapLineWidthInput.value);
         refreshEmbeddedMap();
         drawPreview();
     });
 
     mapPlayerMarkerStrokeAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeAlphaValue.textContent = mapPlayerMarkerStrokeAlphaInput.value;
-        Settings.playerMarker.strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
+        const s = getMapSettings();
+        if (s) s.playerMarker.strokeAlpha = parseFloat(mapPlayerMarkerStrokeAlphaInput.value);
         drawPreview();
     });
 
     mapPlayerMarkerFillAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerFillAlphaValue.textContent = mapPlayerMarkerFillAlphaInput.value;
-        Settings.playerMarker.fillAlpha = parseFloat(mapPlayerMarkerFillAlphaInput.value);
+        const s = getMapSettings();
+        if (s) s.playerMarker.fillAlpha = parseFloat(mapPlayerMarkerFillAlphaInput.value);
         drawPreview();
     });
 
     mapPlayerMarkerStrokeWidthInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeWidthValue.textContent = mapPlayerMarkerStrokeWidthInput.value;
-        Settings.playerMarker.strokeWidth = parseFloat(mapPlayerMarkerStrokeWidthInput.value);
+        const s = getMapSettings();
+        if (s) s.playerMarker.strokeWidth = parseFloat(mapPlayerMarkerStrokeWidthInput.value);
         drawPreview();
     });
 
     mapPlayerMarkerSizeFactorInput.addEventListener('input', () => {
         mapPlayerMarkerSizeFactorValue.textContent = mapPlayerMarkerSizeFactorInput.value;
-        Settings.playerMarker.sizeFactor = parseFloat(mapPlayerMarkerSizeFactorInput.value);
+        const s = getMapSettings();
+        if (s) s.playerMarker.sizeFactor = parseFloat(mapPlayerMarkerSizeFactorInput.value);
         drawPreview();
     });
 
     mapPlayerMarkerDashEnabledInput.addEventListener('change', () => {
-        Settings.playerMarker.dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
+        const s = getMapSettings();
+        if (s) s.playerMarker.dashEnabled = mapPlayerMarkerDashEnabledInput.checked;
         drawPreview();
     });
 
     mapRoomShapeInput.addEventListener('change', () => {
-        Settings.roomShape = mapRoomShapeInput.value as MapRoomShape;
+        const s = getMapSettings();
+        if (s) s.roomShape = mapRoomShapeInput.value as MapRoomShape;
         refreshEmbeddedMap();
         drawPreview();
     });
@@ -1324,14 +1336,17 @@ export default async function initUiSettings() {
     // Restore original settings when modal is closed without saving
     modalEl.addEventListener('hidden.bs.modal', () => {
         // Restore map rendering settings to their saved values
-        Settings.roomSize = current.mapRoomSize;
-        Settings.lineWidth = current.mapLineWidth;
-        Settings.playerMarker.strokeAlpha = current.mapPlayerMarkerStrokeAlpha;
-        Settings.playerMarker.fillAlpha = current.mapPlayerMarkerFillAlpha;
-        Settings.playerMarker.strokeWidth = current.mapPlayerMarkerStrokeWidth;
-        Settings.playerMarker.sizeFactor = current.mapPlayerMarkerSizeFactor;
-        Settings.playerMarker.dashEnabled = current.mapPlayerMarkerDashEnabled;
-        Settings.roomShape = current.mapRoomShape;
+        const s = getMapSettings();
+        if (s) {
+            s.roomSize = current.mapRoomSize;
+            s.lineWidth = current.mapLineWidth;
+            s.playerMarker.strokeAlpha = current.mapPlayerMarkerStrokeAlpha;
+            s.playerMarker.fillAlpha = current.mapPlayerMarkerFillAlpha;
+            s.playerMarker.strokeWidth = current.mapPlayerMarkerStrokeWidth;
+            s.playerMarker.sizeFactor = current.mapPlayerMarkerSizeFactor;
+            s.playerMarker.dashEnabled = current.mapPlayerMarkerDashEnabled;
+            s.roomShape = current.mapRoomShape;
+        }
         refreshEmbeddedMap();
     });
 

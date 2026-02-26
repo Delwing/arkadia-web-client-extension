@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Renderer, Settings, RoomContextMenuEventDetail } from 'mudlet-map-renderer';
+import { Renderer, RoomContextMenuEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getClientInstance } from '@shared/runtime';
@@ -312,13 +312,14 @@ function StaticMapMenu({
 
     const handleToggleGrid = useCallback(() => {
         const newValue = !state.showGrid;
-        Settings.gridEnabled = newValue;
+        const embedded = getEmbedded();
+        if (embedded?.settings) embedded.settings.gridEnabled = newValue;
         setBuiltInPanelSetting('map', 'showGrid', newValue);
         eventBus.emit('mapShowGrid', newValue);
         rendererRef.current?.refresh();
         setState(s => ({ ...s, showGrid: newValue }));
         closeMenu();
-    }, [state.showGrid, rendererRef, setState, closeMenu]);
+    }, [state.showGrid, getEmbedded, rendererRef, setState, closeMenu]);
 
     return (
         <div ref={menuRef} className="map-header-menu">
@@ -419,7 +420,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         titleRoomId: null,
         titleAreaName: '',
         followPlayer: false,
-        showGrid: Settings.gridEnabled,
+        showGrid: (globalThis as any).embedded?.settings?.gridEnabled ?? false,
     });
     const [note, setNote] = useState<LocationNote | null>(null);
     const [mapNote, setMapNote] = useState<string | null>(null);
@@ -498,7 +499,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             container.style.touchAction = 'none';
             parentContainer.appendChild(container);
 
-            const renderer = new Renderer(container, embedded.reader);
+            const renderer = new Renderer(container, embedded.reader, embedded.settings);
             rendererRef.current = renderer;
 
             renderer.centerOnResize = false;
@@ -752,7 +753,8 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             gridHandler = (value: boolean) => {
                 const renderer = rendererRef.current;
                 if (!renderer) return;
-                Settings.gridEnabled = value;
+                const embedded = getEmbedded();
+                if (embedded?.settings) embedded.settings.gridEnabled = value;
                 renderer.refresh();
                 setState(s => ({ ...s, showGrid: value }));
             };
