@@ -25,7 +25,7 @@ import initUiSettings from "./uiSettings";
 import "@client/main.ts"
 import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
-import {loadColors, loadMapData} from "./mapDataLoader.ts";
+import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
@@ -664,6 +664,21 @@ Promise.all([mapDataPromise, colorsPromise])
         const embedded = new EmbeddedMap(reader, startId);
         (embedded as any).pathFinder = pathFinder;
         (globalThis as any).embedded = embedded;
+
+        subscribeToMapData((newMapData) => {
+            if (!newMapData) return;
+            const currentEmbedded = (globalThis as any).embedded as EmbeddedMap | undefined;
+            if (!currentEmbedded) return;
+
+            const result = client.Map.initialize(newMapData, colors);
+            const newSavedAlgorithm = getItemSync('uiSettings')?.pathFindingAlgorithm;
+            if (newSavedAlgorithm && result.pathFinder.setAlgorithm) {
+                result.pathFinder.setAlgorithm(newSavedAlgorithm);
+            }
+            currentEmbedded.reload(result.reader);
+            (currentEmbedded as any).pathFinder = result.pathFinder;
+            eventBus.emit('mapDataChanged');
+        }, { emitInitial: false });
     })
     .catch(error => {
         progressContainer.style.display = 'none';

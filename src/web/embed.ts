@@ -72,14 +72,14 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
 
 export class EmbeddedMap {
     private readonly map: HTMLDivElement;
-    public readonly reader: MapReader;
+    public reader: MapReader;
     public renderer: Renderer;
     public readonly settings: Settings;
     public currentRoom: any;
     private zoom: number;
     private explorationMode = false;
     private visited = new Set<number>();
-    private readonly totalRooms: number;
+    private totalRooms: number;
     private currentPath: { segments: Array<{ path: number[]; color: string }> } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
     private _isViewingPlayerPosition = true;
@@ -570,5 +570,26 @@ export class EmbeddedMap {
         this.renderer.drawArea(room.area, room.z);
         this.renderRoom(this.currentRoom);
         this.setViewingPlayerPosition(true);
+    }
+
+    reload(reader: MapReader) {
+        this.reader = reader;
+        this.totalRooms = reader.getRooms().length;
+
+        if (typeof (this.renderer as any).destroy === 'function') {
+            (this.renderer as any).destroy();
+        }
+
+        this.renderer = new Renderer(this.map, this.reader, this.settings);
+
+        this.reader.addVisitedRooms(Array.from(this.visited));
+
+        if (this.explorationMode) {
+            this.reader.decorateWithExploration();
+        }
+
+        if (typeof this.currentRoom === 'number') {
+            this.renderRoom(this.currentRoom);
+        }
     }
 }
