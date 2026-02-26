@@ -21,6 +21,7 @@ interface CustomLine {
 
 interface RoomData {
     roomId: number;
+    hash: string;
     name: string;
     areaName: string;
     x: number;
@@ -84,6 +85,7 @@ const RoomInfoPopup: React.FC = () => {
         if (!room) {
             setRoomData({
                 roomId: data.roomId,
+                hash: '',
                 name: '(nieznana)',
                 areaName: '(nieznany)',
                 x: 0,
@@ -110,6 +112,7 @@ const RoomInfoPopup: React.FC = () => {
 
         setRoomData({
             roomId: data.roomId,
+            hash: room.hash ?? '',
             name: room.name || `#${data.roomId}`,
             areaName,
             x: room.x ?? 0,
@@ -239,6 +242,19 @@ const RoomInfoPopup: React.FC = () => {
                             >&#x2398;</button>
                         </span>
                     </div>
+                    {roomData.hash && (
+                        <div className="room-info-popup__row">
+                            <span className="room-info-popup__label">Hash:</span>
+                            <span className="room-info-popup__value">
+                                {roomData.hash}
+                                <button
+                                    className="room-info-popup__copy-btn"
+                                    title="Kopiuj hash"
+                                    onClick={() => navigator.clipboard.writeText(roomData.hash)}
+                                >&#x2398;</button>
+                            </span>
+                        </div>
+                    )}
                     <div className="room-info-popup__row">
                         <span className="room-info-popup__label">Nazwa:</span>
                         <span className="room-info-popup__value">{roomData.name}</span>

@@ -467,6 +467,20 @@ export interface MapApi {
   getRoom(): MapData.Room | undefined;
 
   /**
+   * Get room information by ID
+   * @param roomId - Room ID to look up
+   * @returns Room with full details or null if not found
+   *
+   * @example
+   * const room = api.map.getRoomById(12345);
+   * if (room) {
+   *   console.log(`Room: ${room.name} (${room.id})`);
+   *   console.log(`Hash: ${room.hash}`);
+   * }
+   */
+  getRoomById(roomId: number): MapData.Room | null;
+
+  /**
    * Get all areas with their rooms
    * @returns Array of area information objects
    *
@@ -2563,6 +2577,10 @@ export class PluginApiImpl implements PluginApi {
     return {
       getRoom: () => {
         return this.client.Map.currentRoom;
+      },
+
+      getRoomById: (roomId: number) => {
+        return this.client.Map.getRoomById(roomId);
       },
 
       getAreas: (): AreaInfo[] => {

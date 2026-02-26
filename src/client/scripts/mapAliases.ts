@@ -11,6 +11,7 @@ import {getMultibindLabel} from "../multibindKeys";
 type SearchableRoom = {
     id: number;
     area: number;
+    hash?: string;
     name?: string;
     exits?: Record<string, number>;
     specialExits?: Record<string, number>;
@@ -139,6 +140,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
 
                 const output = new AnsiAwareBuffer();
                 output.append(`--- Lokacja: ${room.id} ---\n`);
+                if (room.hash) row('Hash', room.hash);
                 row('Nazwa', room.name || `#${room.id}`);
                 row('Kraina', areaName);
                 row('Wspolrzedne', `${room.x ?? 0}, ${room.y ?? 0}, ${room.z ?? 0}`);
