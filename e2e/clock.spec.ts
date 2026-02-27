@@ -220,6 +220,77 @@ test.describe('Clock System', () => {
         expect(textAfter).toMatch(/\d{2}:\d{2}/);
     });
 
+    test('sunrise before first czas sets precision 0', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const clockDisplay = page.locator('#clock-display');
+
+        // Set domain via GMCP without initializing clock
+        await pushGmcp(page, 'room.info', { map: { domain: 'Imperium' } });
+
+        // Establish nighttime baseline
+        await pushGmcp(page, 'room.time', { daylight: false });
+        await page.waitForTimeout(500);
+
+        // Sunrise transition
+        await pushGmcp(page, 'room.time', { daylight: true });
+        await page.waitForTimeout(500);
+
+        // Clock still not initialized — shows placeholder
+        await expect(clockDisplay).toContainText('--:--');
+
+        // Now czas fires — should initialize with precision 0
+        await pushText(page, 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await expect(clockDisplay).toContainText('05:00');
+        const text = await clockDisplay.textContent();
+        expect(text).not.toContain('±');
+    });
+
+    test('sunset before first czas sets precision 0', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const clockDisplay = page.locator('#clock-display');
+
+        // Set domain via GMCP
+        await pushGmcp(page, 'room.info', { map: { domain: 'Imperium' } });
+
+        // Establish daytime baseline
+        await pushGmcp(page, 'room.time', { daylight: true });
+        await page.waitForTimeout(500);
+
+        // Sunset transition
+        await pushGmcp(page, 'room.time', { daylight: false });
+        await page.waitForTimeout(500);
+
+        // czas fires — should initialize with precision 0
+        await pushText(page, 'Jest w przyblizeniu piata wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await expect(clockDisplay).toContainText('17:00');
+        const text = await clockDisplay.textContent();
+        expect(text).not.toContain('±');
+    });
+
+    test('no transition before first czas uses normal precision 60', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const clockDisplay = page.locator('#clock-display');
+
+        // Set domain but no daylight transition
+        await pushGmcp(page, 'room.info', { map: { domain: 'Imperium' } });
+        await pushGmcp(page, 'room.time', { daylight: true });
+        await page.waitForTimeout(500);
+
+        // czas without any transition — normal precision
+        await pushText(page, 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+        await expect(clockDisplay).toContainText('05:00');
+        await expect(clockDisplay).toContainText('±60');
+    });
+
     test('clock shows day/night color coding', async ({page}) => {
         await page.clock.install();
         await page.goto('/');

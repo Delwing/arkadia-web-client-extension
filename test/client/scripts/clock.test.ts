@@ -304,6 +304,132 @@ describe('ArkadiaTime - Clock System', () => {
         });
     });
 
+    describe('Sunrise/Sunset without clock initializes with precision 0', () => {
+        test('sunrise transition before first czas sets precision 0', () => {
+            // Clock is NOT initialized (no czas yet)
+            expect(display.getSnapshot("Empire")).toBeUndefined();
+
+            // Set active domain so GMCP events are processed
+            display.setActiveDomain("Empire");
+
+            // First GMCP event establishes isDaylight baseline
+            (clock as any).handleGmcp(false); // night
+
+            // Sunrise transition detected (daylight changes to true)
+            (clock as any).handleGmcp(true);
+
+            // Clock is still not initialized
+            expect(display.getSnapshot("Empire")).toBeUndefined();
+
+            // Now player types czas — trigger fires
+            const line = 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.';
+            parse(line);
+
+            const snapshot = display.getSnapshot("Empire");
+            expect(snapshot).toBeDefined();
+            expect(snapshot.hours).toBe(5);
+            expect(snapshot.precision).toBe(0); // Not 60!
+        });
+
+        test('sunset transition before first czas sets precision 0', () => {
+            display.setActiveDomain("Empire");
+
+            // Establish daylight baseline
+            (clock as any).handleGmcp(true); // day
+
+            // Sunset transition
+            (clock as any).handleGmcp(false);
+
+            // Now player types czas
+            const line = 'Jest w przyblizeniu piata wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.';
+            parse(line);
+
+            const snapshot = display.getSnapshot("Empire");
+            expect(snapshot).toBeDefined();
+            expect(snapshot.hours).toBe(17);
+            expect(snapshot.precision).toBe(0);
+        });
+
+        test('emits clock.sunrise event on czas after pending sunrise', () => {
+            display.setActiveDomain("Empire");
+
+            const sunriseHandler = jest.fn();
+            eventBus.on("clock.sunrise", sunriseHandler);
+
+            // Establish baseline and trigger sunrise
+            (clock as any).handleGmcp(false);
+            (clock as any).handleGmcp(true);
+
+            // No event emitted yet (clock not initialized)
+            expect(sunriseHandler).not.toHaveBeenCalled();
+
+            // czas fires
+            const line = 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.';
+            parse(line);
+
+            expect(sunriseHandler).toHaveBeenCalledWith(expect.objectContaining({
+                domain: "Empire",
+                observedHour: 5,
+                observedMinutes: 0
+            }));
+
+            eventBus.off("clock.sunrise", sunriseHandler);
+        });
+
+        test('expired transition (>120s) falls back to precision 60', () => {
+            display.setActiveDomain("Empire");
+
+            // Establish baseline and trigger sunrise
+            (clock as any).handleGmcp(false);
+            (clock as any).handleGmcp(true);
+
+            // Advance time past ONE_HOUR (120 seconds)
+            mockDate += 121 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+
+            // czas fires — transition expired
+            const line = 'Jest w przyblizeniu szosta rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.';
+            parse(line);
+
+            const snapshot = display.getSnapshot("Empire");
+            expect(snapshot.hours).toBe(6);
+            expect(snapshot.precision).toBe(60); // Expired, so normal precision
+        });
+
+        test('no transition means normal precision 60', () => {
+            // No GMCP events at all — just czas
+            const line = 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.';
+            parse(line);
+
+            const snapshot = display.getSnapshot("Empire");
+            expect(snapshot.hours).toBe(5);
+            expect(snapshot.precision).toBe(60);
+        });
+
+        test('transition with clock already set uses normal sunrise flow', () => {
+            // Initialize clock first via czas
+            const line = 'Jest w przyblizeniu osma rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.';
+            parse(line);
+
+            let snapshot = display.getSnapshot("Empire");
+            expect(snapshot.precision).toBe(60);
+
+            // Set up for normal sunrise flow
+            display.setActiveDomain("Empire");
+            (clock as any).isDaylight = false;
+
+            mockDate += 1 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+
+            // GMCP sunrise — should use normal markObservedSunrise, not pending
+            (clock as any).handleGmcp(true);
+
+            snapshot = display.getSnapshot("Empire");
+            expect(snapshot.precision).toBe(0); // Normal sunrise flow
+            expect((clock as any).pendingDaylightTransition).toBeUndefined();
+        });
+    });
+
     describe('Edge cases', () => {
         test('midnight to morning transition', () => {
             const line = 'Jest w przyblizeniu polnoc w nocy, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.';

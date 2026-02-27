@@ -292,6 +292,8 @@ export class ArkadiaTime {
 
     private isDaylight?: boolean;
 
+    private pendingDaylightTransition?: { type: "sunrise" | "sunset"; timestamp: number };
+
     private startDay?: number;
 
     constructor(private domain: Domain, private client: Client, display: ClockDisplay) {
@@ -347,12 +349,18 @@ export class ArkadiaTime {
     }
 
     private handleGmcp(daylight: boolean): void {
-        // Only process sunrise/sunset if clock has been initialized via trigger
-        if (this.startTime !== null && this.isDaylight !== undefined && this.isDaylight !== daylight) {
-            if (daylight) {
-                this.markObservedSunrise();
+        if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
+            if (this.startTime !== null) {
+                if (daylight) {
+                    this.markObservedSunrise();
+                } else {
+                    this.markObservedSunset();
+                }
             } else {
-                this.markObservedSunset();
+                this.pendingDaylightTransition = {
+                    type: daylight ? "sunrise" : "sunset",
+                    timestamp: Date.now()
+                };
             }
         }
         this.isDaylight = daylight;
@@ -368,7 +376,16 @@ export class ArkadiaTime {
         const startDay = this.getDayOfYear(this.getDayFromString(stringDayOfMonth), month);
 
         if (this.startTime === null || this.startHour === null || this.startMinutes === null || !this.startDay) {
-            this.init(intHour, 0, 60, startDay);
+            const pending = this.consumePendingTransition();
+            this.init(intHour, 0, pending ? 0 : 60, startDay);
+            if (pending) {
+                eventBus.emit(pending === "sunrise" ? "clock.sunrise" : "clock.sunset", {
+                    domain: this.domain,
+                    dayOfYear: startDay,
+                    observedHour: intHour,
+                    observedMinutes: 0
+                });
+            }
         } else {
             this.handleMismatch(intHour, startDay);
         }
@@ -433,6 +450,15 @@ export class ArkadiaTime {
         } catch (error) {
             console.error("Nie udalo sie wczytac stanu zegara", error);
         }
+    }
+
+    private consumePendingTransition(): "sunrise" | "sunset" | undefined {
+        if (!this.pendingDaylightTransition) return undefined;
+        const elapsed = Date.now() - this.pendingDaylightTransition.timestamp;
+        const type = this.pendingDaylightTransition.type;
+        this.pendingDaylightTransition = undefined;
+        if (elapsed > ONE_HOUR * 1000) return undefined;
+        return type;
     }
 
     private calculateHour(hour: string, expression: string): number {
