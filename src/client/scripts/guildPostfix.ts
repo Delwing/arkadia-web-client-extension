@@ -33,7 +33,7 @@ export default function initGuildPostfix(client: Client) {
         }, tag);
     }
 
-    register(/^Na szyi ma zawiazana .* ze znakiem czarnego gryfa\.$/, "KG");
+    register(/^Na .* ma zawiazana .* ze znakiem czarnego gryfa\.$/, "KG");
     register(/Jego brzuszek wyglada/, "ZH");
     register(/^Jest dumnym wlascicielem .* brzucha\.$/, "ZH");
     register(/^ Na .* szyi, na skorzanym rzemieniu wisi .* elfi flet\.$/, "LE");
@@ -41,6 +41,7 @@ export default function initGuildPostfix(client: Client) {
     register(/Jego bialy plaszcz symbolizuje przynaleznosc do Zakonu Rycerskiego Sigmara Mlotodzierzcy./, "ZS");
     register(/biala tunika zakonna symbolizuje/, "ZS");
     register(/Na zbroje ma narzucona zgrzebna szate zakonna./, "ZS");
+    register(/^Na biodrach nosi stalowy pas rycerski, symbol jego przynaleznosci do stanu rycerskiego\.$/, "ZS");
     register(/na szyi nosi .* lancuch o najwiekszym ogniwie zwienczonym miniaturowa tarcza, na ktorej tle umieszczono skrzyzowany z waga kupiecka buzdygan\./, "GL");
     register(/pocieta jest .* wojownik/, "GL");
     register(/Przy pasie nosi bawoli rog/, "OHM");
