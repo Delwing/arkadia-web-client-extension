@@ -41,7 +41,7 @@ export default function initGuildPostfix(client: Client) {
     register(/Jego bialy plaszcz symbolizuje przynaleznosc do Zakonu Rycerskiego Sigmara Mlotodzierzcy./, "ZS");
     register(/biala tunika zakonna symbolizuje/, "ZS");
     register(/Na zbroje ma narzucona zgrzebna szate zakonna./, "ZS");
-    register(/na szyi nosi .* lancuch o najwiekszym ogniwie zwienczonym miniaturowa tarcza, na ktorej tle umieszczono skrzyzowany z waga kupiecka buzdygan\./, "GL");
+    register(/lancuch o najwiekszym ogniwie zwienczonym miniaturowa tarcza, na ktorej tle umieszczono/, "GL");
     register(/pocieta jest .* wojownik/, "GL");
     register(/Przy pasie nosi bawoli rog/, "OHM");
     register(/ herb.* Rodziny Alderazzi/, "RA");
