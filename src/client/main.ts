@@ -126,6 +126,7 @@ import initTideSystem from './scripts/tideSystem'
 import initSoundAliases from './scripts/soundAliases'
 import initLootParser from './scripts/lootParser'
 import initOstatnio from './scripts/ostatnio'
+import initDobOp from './scripts/dobOp'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -281,5 +282,6 @@ export function registerScripts(client: Client) {
     initTideSystem(client, aliases)
     initLootParser(client)
     initOstatnio(client, aliases)
+    initDobOp(client, aliases)
 
 }

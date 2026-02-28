@@ -525,6 +525,75 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             </Form.Group>
                         </div>
                     </section>
+                    <section className="character-settings-section">
+                        <h5 className="character-settings-section-title">Dobywanie/Opuszczanie</h5>
+                        <div className="character-settings-stack">
+                            <Form.Text className="text-muted mb-2">
+                                /dob bez argumentu wysyla komendy 1 i 2, /dob [1-3] wysyla wybrany slot. Analogicznie /op.
+                                Oddziel komendy srednikiem (;).
+                            </Form.Text>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda /dob 1:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.dobCommand1}
+                                    onChange={e => onChangeSetting(s => s.dobCommand1 = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda /dob 2:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.dobCommand2}
+                                    onChange={e => onChangeSetting(s => s.dobCommand2 = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda /dob 3:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.dobCommand3}
+                                    onChange={e => onChangeSetting(s => s.dobCommand3 = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda /op 1:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.opCommand1}
+                                    onChange={e => onChangeSetting(s => s.opCommand1 = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda /op 2:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.opCommand2}
+                                    onChange={e => onChangeSetting(s => s.opCommand2 = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label className="me-1 mb-0">Komenda /op 3:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    value={settings.opCommand3}
+                                    onChange={e => onChangeSetting(s => s.opCommand3 = e.target.value)}
+                                    style={{width: '100%', maxWidth: '20rem'}}
+                                />
+                            </Form.Group>
+                        </div>
+                    </section>
                     <section className="character-settings-section character-settings-section--full">
                         <h5 className="character-settings-section-title">Język</h5>
                         <div className="d-flex flex-wrap gap-3 align-items-center">

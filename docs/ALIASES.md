@@ -72,6 +72,17 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 
 > **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.
 
+## Dobywanie/Opuszczanie
+
+| Komenda | Opis |
+|---------|------|
+| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |
+| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |
+| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |
+| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |
+
+> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji "Dobywanie/Opuszczanie". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).
+
 ## Kalendarz slonca
 
 | Komenda | Opis |

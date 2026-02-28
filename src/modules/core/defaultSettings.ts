@@ -50,6 +50,12 @@ export interface Settings {
     cuttingPreAction?: string;
     cuttingPostAction?: string;
     sunTracker: boolean;
+    dobCommand1: string;
+    dobCommand2: string;
+    dobCommand3: string;
+    opCommand1: string;
+    opCommand2: string;
+    opCommand3: string;
 }
 
 export const defaultSettings: Settings = {
@@ -100,4 +106,10 @@ export const defaultSettings: Settings = {
     cuttingPreAction: '',
     cuttingPostAction: '',
     sunTracker: false,
+    dobCommand1: '',
+    dobCommand2: '',
+    dobCommand3: '',
+    opCommand1: '',
+    opCommand2: '',
+    opCommand3: '',
 };
