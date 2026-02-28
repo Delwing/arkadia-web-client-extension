@@ -4,7 +4,7 @@ import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import { resumeAudioContext, preloadHowler } from "@client/SoundManager";
+import {preloadHowler, resumeAudioContext} from "@client/SoundManager";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
@@ -44,14 +44,18 @@ import LocationNotes from "./options/LocationNotes.tsx"
 import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
-import { LayoutManagerWrapper, loadLayoutState, saveLayoutState, invalidateLayoutCache } from "@web/layout"
+import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
 import {copyOutputAsImage, saveOutputAsHtml} from "./copyOutputAsImage";
 import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
 import {getItemSync, setItemSync} from "@modules/core/storage"
-import {runAllSettingsMigrations, migrateButtonSizeMultiplier, migrateFooterComponentVisibility} from "@modules/core/settingsMigrations"
+import {
+    migrateButtonSizeMultiplier,
+    migrateFooterComponentVisibility,
+    runAllSettingsMigrations
+} from "@modules/core/settingsMigrations"
 import {
     areOutputTimestampsVisible,
     setOutputTimestampVisibility,
@@ -268,8 +272,7 @@ let lastMultiBindsState = multiBindsElement?.classList.contains('active') ?? fal
 function refreshStickyArea() {
     stickyArea.innerHTML = '';
     const nodes = Array.from(outputWrapper.children).filter(n => n !== splitBottom);
-    const linesToShow = STICKY_LINES;
-    const start = Math.max(0, nodes.length - linesToShow);
+    const start = Math.max(0, nodes.length - STICKY_LINES);
     for (let i = start; i < nodes.length; i++) {
         stickyArea.appendChild(nodes[i].cloneNode(true));
     }
@@ -537,6 +540,13 @@ outputWrapper.addEventListener('contextmenu', event => {
             label: 'Zabici',
             action: () => {
                 eventBus.emit('zabici.popup.open');
+            },
+            opensWindow: true,
+        },
+        {
+            label: 'Zabici 2',
+            action: () => {
+                eventBus.emit('zabici2.popup.open');
             },
             opensWindow: true,
         },

@@ -16,6 +16,7 @@ import CombatPopup from '../CombatPopup';
 import PostepyPopup from '../PostepyPopup';
 import Postepy2Popup from '../Postepy2Popup';
 import ZabiciPopup from '../ZabiciPopup';
+import Zabici2Popup from '../Zabici2Popup';
 import SkrotyPopup from '../SkrotyPopup';
 import TripPlannerPopup from '../TripPlannerPopup';
 import PeopleBrowser from '../PeopleBrowser/PeopleBrowser';
@@ -80,6 +81,7 @@ export function LayoutManagerWrapper({
       <PostepyPopup />
       <Postepy2Popup />
       <ZabiciPopup />
+      <Zabici2Popup />
       <SkrotyPopup />
       <TripPlannerPopup />
       <PeopleBrowser />

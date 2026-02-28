@@ -190,33 +190,9 @@ function getKnowledgeLevelFromLabel(level: string | undefined): KnowledgeLevelRe
 }
 
 function computeKnowledgeLevel(
-    known: number,
-    total: number,
-    fallback: string | undefined,
+    gameReportedLevel: string | undefined,
 ): KnowledgeLevelResult | undefined {
-    if (total > 0) {
-        const clampedKnown = Math.max(0, Math.min(known, total));
-        const ratio = clampedKnown / total;
-        const maxIndex = Math.max(KNOWLEDGE_LEVEL_LABELS.length - 1, 0);
-
-        if (maxIndex === 0) {
-            return {label: KNOWLEDGE_LEVEL_LABELS[0], index: 0};
-        }
-
-        if (ratio >= 1) {
-            return {label: KNOWLEDGE_LEVEL_LABELS[maxIndex], index: maxIndex};
-        }
-
-        let index = Math.max(0, Math.min(Math.floor(ratio * maxIndex), maxIndex));
-
-        if (index === 0 && clampedKnown > 0) {
-            index = 1;
-        }
-
-        return {label: KNOWLEDGE_LEVEL_LABELS[index], index};
-    }
-
-    return getKnowledgeLevelFromLabel(fallback);
+    return getKnowledgeLevelFromLabel(gameReportedLevel);
 }
 
 type KnowledgeRunCategoryState = {
@@ -403,7 +379,7 @@ function buildKnowledgeDetailsReportPayload(
                 (count, entry) => (knownSet.has(entry.normalized) ? count + 1 : count),
                 0,
             );
-            const levelResult = computeKnowledgeLevel(known, total, rawLevelValue);
+            const levelResult = computeKnowledgeLevel(rawLevelValue);
 
             if (known > 0 || missing.length > 0 || unknown.length > 0 || levelResult) {
                 hasData = true;

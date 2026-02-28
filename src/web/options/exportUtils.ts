@@ -1,6 +1,7 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "./recordingStorage";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
+import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import eventBus from '@modules/core/eventBus';
 import {
     getDeviceInfo,
@@ -516,7 +517,7 @@ export interface CategoryData {
     recordings?: ExportedRecording[];
     visitedRooms?: ExportedVisitedRoomsEntry[];
     locationNotes?: LocationNote[];
-    killCounts?: Record<string, string>;      // CharacterName -> kill_counter JSON
+    killCounts?: Record<string, string> | {_v: 2; records: KillRecord[]};  // v1: CharacterName -> kill_counter JSON, v2: IndexedDB records
     improveCounts?: Record<string, string>;   // CharacterName -> improve_counter_lifetime JSON
     deposits?: Record<string, string>;        // CharacterName -> deposits JSON
     containers?: Record<string, string>;      // CharacterName -> containers JSON
@@ -626,8 +627,18 @@ export async function exportCategory(
                 return locationNotes.length > 0 ? JSON.stringify(locationNotes) : null;
             }
             case 'killCounts': {
-                const result: Record<string, string> = {};
                 const selectedSet = new Set(selectedCharacters);
+                try {
+                    const allRecords = await exportAllKillRecords();
+                    const filtered = allRecords.filter(r => selectedSet.has(r.character));
+                    if (filtered.length > 0) {
+                        return JSON.stringify({_v: 2, records: filtered});
+                    }
+                } catch {
+                    // Fallback to localStorage if IndexedDB fails
+                }
+                // Fallback: export from localStorage (pre-migration data)
+                const result: Record<string, string> = {};
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     if (!key) continue;
@@ -826,10 +837,28 @@ export async function importCategory(
                 break;
             }
             case 'killCounts': {
-                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
-                    if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:kill_counter`, raw);
-                });
+                if (data && typeof data === 'object' && '_v' in data && (data as any)._v === 2) {
+                    // New format: IndexedDB records with date info
+                    const records = (data as {_v: number; records: KillRecord[]}).records;
+                    if (Array.isArray(records) && records.length > 0) {
+                        await importAllKillRecords(records);
+                        // Also update localStorage for backward compat
+                        const byChar: Record<string, Record<string, number>> = {};
+                        for (const r of records) {
+                            if (!byChar[r.character]) byChar[r.character] = {};
+                            byChar[r.character][r.mob] = (byChar[r.character][r.mob] ?? 0) + r.count;
+                        }
+                        for (const [charName, totals] of Object.entries(byChar)) {
+                            localStorage.setItem(`${charName}:kill_counter`, JSON.stringify(totals));
+                        }
+                    }
+                } else {
+                    // Old format: localStorage-based Record<string, string>
+                    Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
+                        if (typeof raw !== 'string') return;
+                        localStorage.setItem(`${charName}:kill_counter`, raw);
+                    });
+                }
                 break;
             }
             case 'improveCounts': {

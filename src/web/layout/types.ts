@@ -15,6 +15,7 @@ export type BuiltInPopupType =
   | 'postepy'
   | 'postepy2'
   | 'zabici'
+  | 'zabici2'
   | 'skroty'
   | 'peopleBrowser'
   | 'objectListDemo'

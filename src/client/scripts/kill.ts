@@ -2,6 +2,23 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import {getCurrentCharacter} from "@modules/core/storage";
+import {
+    recordKillToDB,
+    getLifetimeTotals,
+    getKillsByDate,
+    getGlobalKillStats,
+    getKillsGroupedByDate,
+    migrateFromLocalStorage,
+    getAllRecords,
+    getDistinctDates,
+    getTodayDate,
+    type LifetimeKillSummary,
+    type DailyKillSummary,
+    type GlobalKillStats,
+    type DateGroupedKills,
+    type KillRecord,
+} from './killLifetimeStorage';
 
 export type KillEntry = {
     mySession: number;
@@ -25,6 +42,7 @@ const TEAM_KILLS_STORAGE_KEY = "kill_counter_team";
 
 const KILL_HEADER_COLOR = createColorFormat("#7cfc00");
 const KILL_MY_COLOR = createColorFormat("#ffff00");
+const KILL_NAME_COLOR = createColorFormat("#ffff00");
 const KILL_TOTAL_COLOR = createColorFormat("#778899");
 const KILL_UPPER_COLOR = createColorFormat("#ffa500");
 const KILL_LOWER_COLOR = createColorFormat("#7cfc00");
@@ -62,6 +80,10 @@ const twoWordNames = [
 ];
 
 const width = 50
+
+function titleCase(str: string): string {
+    return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function parseName(full: string): string {
     const originalWords = full.trim().split(/\s+/);
@@ -223,7 +245,7 @@ function formatSessionTable(counts: KillCounts, teamKills: TeamMemberKills = {})
     return output;
 }
 
-function formatLifetimeTable(counts: KillCounts): AnsiAwareBuffer {
+function formatLifetimeTable(counts: KillCounts, character: string): AnsiAwareBuffer {
     const WIDTH = width;
     const LEFT_PADDING = 2;
     const RIGHT_PADDING = 5;
@@ -270,6 +292,14 @@ function formatLifetimeTable(counts: KillCounts): AnsiAwareBuffer {
     output.append("\n", {});
     output.appendBuffer(pad());
     output.append("\n", {});
+
+    const nameLine = new AnsiAwareBuffer();
+    nameLine.append("POSTAC: ", {});
+    nameLine.append(titleCase(character), KILL_NAME_COLOR);
+    output.appendBuffer(pad(nameLine));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
     entries.forEach(([name, entry]) => {
         output.appendBuffer(mobLine(name, entry.myTotal));
         output.append("\n", {});
@@ -298,7 +328,186 @@ function formatLifetimeTable(counts: KillCounts): AnsiAwareBuffer {
     return output;
 }
 
-export {parseName, formatSessionTable, formatLifetimeTable};
+function formatLifetimeByDateTable(kills: DailyKillSummary[], date: string, character: string): AnsiAwareBuffer {
+    const WIDTH = width;
+    const LEFT_PADDING = 2;
+    const RIGHT_PADDING = 5;
+    const INNER = WIDTH - 2;
+    const CONTENT_WIDTH = INNER - LEFT_PADDING - RIGHT_PADDING;
+
+    const HEADER_COLOR = KILL_HEADER_COLOR;
+    const UPPER_COLOR = KILL_UPPER_COLOR;
+    const LOWER_COLOR = KILL_LOWER_COLOR;
+    const PINK_COLOR = KILL_PINK_COLOR;
+
+    const pad = createPad(INNER, LEFT_PADDING, RIGHT_PADDING);
+    const header = createHeader(WIDTH, 4, HEADER_COLOR);
+
+    const entries = kills
+        .filter(k => k.count > 0)
+        .sort((a, b) => {
+            const aUpper = /^[A-Z]/.test(a.mob);
+            const bUpper = /^[A-Z]/.test(b.mob);
+            if (aUpper !== bUpper) return aUpper ? -1 : 1;
+            return a.mob.localeCompare(b.mob);
+        });
+
+    const total = entries.reduce((s, k) => s + k.count, 0);
+
+    const mobLine = (name: string, count: number) => {
+        const color = /^[A-Z]/.test(name) ? UPPER_COLOR : LOWER_COLOR;
+        const buffer = new AnsiAwareBuffer();
+        buffer.append("  ", {});
+        buffer.append(name, color);
+        buffer.append(" ", {});
+        const dots = CONTENT_WIDTH - 3 - name.length - String(count).length;
+        buffer.append(".".repeat(Math.max(0, dots)), {});
+        buffer.append(String(count), {});
+        return pad(buffer);
+    };
+
+    const output = new AnsiAwareBuffer();
+    output.appendBuffer(header(`Zabici (${date})`));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const nameLine = new AnsiAwareBuffer();
+    nameLine.append("POSTAC: ", {});
+    nameLine.append(titleCase(character), KILL_NAME_COLOR);
+    output.appendBuffer(pad(nameLine));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+    entries.forEach(({mob, count}) => {
+        output.appendBuffer(mobLine(mob, count));
+        output.append("\n", {});
+    });
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const separatorBuffer = new AnsiAwareBuffer();
+    separatorBuffer.append("    ----------------------------------- ", {});
+    output.appendBuffer(pad(separatorBuffer));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const summaryBuffer = new AnsiAwareBuffer();
+    summaryBuffer.append("  ", {});
+    summaryBuffer.append("LACZNIE: ", PINK_COLOR);
+    summaryBuffer.append(String(total), LOWER_COLOR);
+    summaryBuffer.append(" zabitych", LOWER_COLOR);
+
+    output.appendBuffer(pad(summaryBuffer));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+    output.append(`+${"-".repeat(INNER)}+`, {});
+    return output;
+}
+
+function formatGlobalStatsTable(groups: DateGroupedKills[], character: string): AnsiAwareBuffer {
+    const WIDTH = width;
+    const LEFT_PADDING = 2;
+    const RIGHT_PADDING = 5;
+    const INNER = WIDTH - 2;
+    const CONTENT_WIDTH = INNER - LEFT_PADDING - RIGHT_PADDING;
+
+    const HEADER_COLOR = KILL_HEADER_COLOR;
+    const UPPER_COLOR = KILL_UPPER_COLOR;
+    const LOWER_COLOR = KILL_LOWER_COLOR;
+    const PINK_COLOR = KILL_PINK_COLOR;
+    const DATE_COLOR = KILL_UPPER_COLOR;
+    const TOTAL_COLOR = KILL_TOTAL_COLOR;
+
+    const pad = createPad(INNER, LEFT_PADDING, RIGHT_PADDING);
+    const header = createHeader(WIDTH, 4, HEADER_COLOR);
+
+    const grandTotal = groups.reduce((s, g) => s + g.total, 0);
+
+    const mobLine = (name: string, count: number) => {
+        const color = /^[A-Z]/.test(name) ? UPPER_COLOR : LOWER_COLOR;
+        const buffer = new AnsiAwareBuffer();
+        buffer.append("  - ", {});
+        buffer.append(name, color);
+        buffer.append(" ", {});
+        const num = String(count);
+        const dots = CONTENT_WIDTH - 4 - name.length - 1 - num.length;
+        buffer.append(".".repeat(Math.max(0, dots)), {});
+        buffer.append(num, {});
+        return pad(buffer);
+    };
+
+    const output = new AnsiAwareBuffer();
+    output.appendBuffer(header("Zabici - historia"));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const nameLine = new AnsiAwareBuffer();
+    nameLine.append("POSTAC: ", {});
+    nameLine.append(titleCase(character), KILL_NAME_COLOR);
+    output.appendBuffer(pad(nameLine));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    groups.forEach((group, idx) => {
+        if (idx > 0) {
+            output.appendBuffer(pad());
+            output.append("\n", {});
+        }
+        const dateLine = new AnsiAwareBuffer();
+        dateLine.append(group.date, DATE_COLOR);
+        output.appendBuffer(pad(dateLine));
+        output.append("\n", {});
+
+        const sepLine = new AnsiAwareBuffer();
+        sepLine.append("----------", {});
+        output.appendBuffer(pad(sepLine));
+        output.append("\n", {});
+
+        group.kills.forEach(({mob, count}) => {
+            output.appendBuffer(mobLine(mob, count));
+            output.append("\n", {});
+        });
+
+        output.appendBuffer(pad());
+        output.append("\n", {});
+
+        const sumBuffer = new AnsiAwareBuffer();
+        sumBuffer.append("SUMA: ", TOTAL_COLOR);
+        sumBuffer.append(`${group.total} zabitych`, LOWER_COLOR);
+        output.appendBuffer(pad(sumBuffer));
+        output.append("\n", {});
+    });
+
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const separatorBuffer = new AnsiAwareBuffer();
+    separatorBuffer.append("    ----------------------------------- ", {});
+    output.appendBuffer(pad(separatorBuffer));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+
+    const summaryBuffer = new AnsiAwareBuffer();
+    summaryBuffer.append("  ", {});
+    summaryBuffer.append("WSZYSTKICH DO TEJ PORY: ", PINK_COLOR);
+    summaryBuffer.append(String(grandTotal), LOWER_COLOR);
+    summaryBuffer.append(" zabitych", LOWER_COLOR);
+
+    output.appendBuffer(pad(summaryBuffer));
+    output.append("\n", {});
+    output.appendBuffer(pad());
+    output.append("\n", {});
+    output.append(`+${"-".repeat(INNER)}+`, {});
+    return output;
+}
+
+export {parseName, formatSessionTable, formatLifetimeTable, formatLifetimeByDateTable, formatGlobalStatsTable};
 
 function isNumberRecord(value: unknown): value is Record<string, number> {
     if (!value || typeof value !== "object") {
@@ -343,10 +552,25 @@ export function getKillData(): KillData | null {
     return killCounterInstance?.getData() ?? null;
 }
 
+export type LifetimeKillData = {
+    totals: LifetimeKillSummary[];
+    grandTotal: number;
+};
+
+let lifetimeKillDataCache: LifetimeKillData | null = null;
+
+export function getLifetimeKillData(): LifetimeKillData | null {
+    return lifetimeKillDataCache;
+}
+
+export {type KillRecord, type DailyKillSummary, type GlobalKillStats};
+export {getAllRecords, getDistinctDates, getKillsByDate as getKillsByDateFromDB, getGlobalKillStats as getGlobalKillStatsFromDB};
+
 class KillCounter {
     private client: Client;
     private kills: KillCounts = {};
     private teamKills: TeamMemberKills = {};
+    private migrationDone = false;
 
     constructor(client: Client) {
         this.client = client;
@@ -355,6 +579,7 @@ class KillCounter {
         this.client.on("storage", ({ key, value }) => {
             if (key === STORAGE_KEY) {
                 this.loadTotals(isNumberRecord(value) ? value : {});
+                this.migrateIfNeeded();
             }
             if (key === SESSION_STORAGE_KEY) {
                 this.loadSession(isSessionRecord(value) ? value : {});
@@ -492,6 +717,7 @@ class KillCounter {
             entry.mySession += 1;
             entry.myTotal += 1;
             this.persistTotals();
+            this.persistKillToIDB(mob);
         } else {
             entry.teamSession += 1;
             if (player) {
@@ -547,6 +773,104 @@ class KillCounter {
         this.emitUpdate();
     }
 
+    private async migrateIfNeeded() {
+        if (this.migrationDone) return;
+        this.migrationDone = true;
+        const character = getCurrentCharacter();
+        if (!character) return;
+        try {
+            await migrateFromLocalStorage(character);
+            await this.syncTotalsFromIDB();
+        } catch (e) {
+            console.warn('Kill counter migration failed:', e);
+        }
+    }
+
+    private async persistKillToIDB(mob: string): Promise<void> {
+        const character = getCurrentCharacter();
+        if (!character) return;
+        const date = getTodayDate();
+        try {
+            await recordKillToDB(character, mob, date);
+            await this.refreshLifetimeCache();
+        } catch (e) {
+            console.warn('Failed to persist kill to IndexedDB:', e);
+        }
+    }
+
+    private async refreshLifetimeCache(): Promise<void> {
+        const character = getCurrentCharacter();
+        if (!character) return;
+        try {
+            const totals = await getLifetimeTotals(character);
+            const grandTotal = totals.reduce((sum, t) => sum + t.total, 0);
+            lifetimeKillDataCache = {totals, grandTotal};
+            eventBus.emit("zabici2.updated", lifetimeKillDataCache);
+        } catch (e) {
+            console.warn('Failed to refresh lifetime kill cache:', e);
+        }
+    }
+
+    private async syncTotalsFromIDB(): Promise<void> {
+        const character = getCurrentCharacter();
+        if (!character) return;
+        try {
+            const totals = await getLifetimeTotals(character);
+            for (const {mob, total} of totals) {
+                const entry = this.kills[mob] ?? {mySession: 0, myTotal: 0, teamSession: 0};
+                entry.myTotal = total;
+                this.kills[mob] = entry;
+            }
+            await this.refreshLifetimeCache();
+        } catch {
+            // Silently fall back to localStorage data
+        }
+    }
+
+    async showLifetimeByDate(dateStr: string): Promise<void> {
+        const character = getCurrentCharacter();
+        if (!character) {
+            this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
+            return;
+        }
+        try {
+            const kills = await getKillsByDate(character, dateStr);
+            if (kills.length === 0) {
+                this.client.print(new AnsiAwareBuffer(`Brak zabitych w dniu ${dateStr}.\n`));
+                return;
+            }
+            const output = new AnsiAwareBuffer();
+            output.append("\n", {});
+            output.appendBuffer(formatLifetimeByDateTable(kills, dateStr, character));
+            output.append("\n", {});
+            this.client.print(output);
+        } catch {
+            this.client.print(new AnsiAwareBuffer("Blad odczytu danych z bazy.\n"));
+        }
+    }
+
+    async showGlobalStats(): Promise<void> {
+        const character = getCurrentCharacter();
+        if (!character) {
+            this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
+            return;
+        }
+        try {
+            const groups = await getKillsGroupedByDate(character);
+            if (groups.length === 0) {
+                this.client.print(new AnsiAwareBuffer("Brak danych o zabitych.\n"));
+                return;
+            }
+            const output = new AnsiAwareBuffer();
+            output.append("\n", {});
+            output.appendBuffer(formatGlobalStatsTable(groups, character));
+            output.append("\n", {});
+            this.client.print(output);
+        } catch {
+            this.client.print(new AnsiAwareBuffer("Blad odczytu danych z bazy.\n"));
+        }
+    }
+
     private formatPrefix(
         line: AnsiAwareBuffer,
         entry: KillEntry | null,
@@ -583,12 +907,26 @@ class KillCounter {
         this.client.print(output);
     }
 
-    showLifetime() {
-        const output = new AnsiAwareBuffer();
-        output.append("\n", {});
-        output.appendBuffer(formatLifetimeTable(this.kills));
-        output.append("\n", {});
-        this.client.print(output);
+    async showLifetime(): Promise<void> {
+        const character = getCurrentCharacter();
+        if (!character) {
+            this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
+            return;
+        }
+        try {
+            const totals = await getLifetimeTotals(character);
+            const counts: KillCounts = {};
+            for (const {mob, total} of totals) {
+                counts[mob] = {mySession: 0, myTotal: total, teamSession: 0};
+            }
+            const output = new AnsiAwareBuffer();
+            output.append("\n", {});
+            output.appendBuffer(formatLifetimeTable(counts, character));
+            output.append("\n", {});
+            this.client.print(output);
+        } catch {
+            this.client.print(new AnsiAwareBuffer("Blad odczytu danych z bazy.\n"));
+        }
     }
 }
 
@@ -600,7 +938,10 @@ export function initKillCounter(
     if (aliases) {
         aliases.push({pattern: /\/zabici$/, callback: () => counter.showSession()});
         aliases.push({pattern: /\/zabiciw$/, callback: () => eventBus.emit("zabici.popup.open")});
+        aliases.push({pattern: /\/zabici2 (\d{4}\/\d{1,2}\/\d{1,2})$/, callback: (m: RegExpMatchArray) => counter.showLifetimeByDate(m[1])});
         aliases.push({pattern: /\/zabici2$/, callback: () => counter.showLifetime()});
+        aliases.push({pattern: /\/zabici2w$/, callback: () => eventBus.emit("zabici2.popup.open")});
+        aliases.push({pattern: /\/zabici2!$/, callback: () => counter.showGlobalStats()});
         aliases.push({pattern: /\/zabici_reset$/, callback: () => counter.resetSession()});
     }
     return counter;

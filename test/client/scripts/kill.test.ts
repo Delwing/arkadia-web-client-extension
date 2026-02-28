@@ -1,4 +1,4 @@
-import { initKillCounter, parseName, formatSessionTable, formatLifetimeTable } from '@client/scripts/kill';
+import { initKillCounter, parseName, formatSessionTable, formatLifetimeTable, formatLifetimeByDateTable, formatGlobalStatsTable } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
@@ -112,8 +112,8 @@ describe('kill counter scenario', () => {
     printSessionTable();
     let printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).toMatch(/smoka chaosu/);
-    // alias[3] corresponds to /zabici_reset (after /zabici, /zabici_popup, /zabici2)
-    aliases[3].callback();
+    // alias[6] corresponds to /zabici_reset
+    aliases[6].callback();
     printSessionTable();
     printed = client.print.mock.calls.pop()[0]?.text;
     expect(printed).not.toMatch(/smoka chaosu/);
@@ -148,16 +148,92 @@ describe('parseName and formatTable', () => {
     expect(table.text).toMatch(/DRUZYNA LACZNIE/);
   });
 
-  test('formatLifetimeTable prints header and sorts names', () => {
+  test('formatLifetimeTable prints header with character name and sorts names', () => {
     const summary = formatLifetimeTable({
       Bbb: { mySession: 0, myTotal: 1, teamSession: 0 },
       Aaa: { mySession: 0, myTotal: 2, teamSession: 0 },
       goblin: { mySession: 0, myTotal: 1, teamSession: 0 },
-    });
+    }, 'Eamon');
     const stripped = summary?.text;
     expect(stripped).toMatch(/Licznik zabitych/);
+    expect(stripped).toMatch(/POSTAC: Eamon/);
     const indexAaa = stripped.indexOf('Aaa');
     const indexGoblin = stripped.indexOf('goblin');
     expect(indexAaa).toBeLessThan(indexGoblin);
+  });
+
+  test('formatLifetimeByDateTable shows character, date in header and totals', () => {
+    const table = formatLifetimeByDateTable(
+      [
+        { mob: 'goblin', count: 3 },
+        { mob: 'troll', count: 2 },
+      ],
+      '2025/1/15',
+      'Eamon'
+    );
+    expect(table.text).toMatch(/2025\/1\/15/);
+    expect(table.text).toMatch(/POSTAC: Eamon/);
+    expect(table.text).toMatch(/goblin/);
+    expect(table.text).toMatch(/troll/);
+    expect(table.text).toMatch(/LACZNIE/);
+    expect(table.text).toMatch(/5/);
+  });
+
+  test('formatGlobalStatsTable shows character and chronological day-by-day breakdown', () => {
+    const table = formatGlobalStatsTable([
+      {
+        date: '2025/1/15',
+        kills: [{ mob: 'goblin', count: 3 }, { mob: 'Troll', count: 2 }],
+        total: 5,
+      },
+      {
+        date: '2025/1/16',
+        kills: [{ mob: 'goblin', count: 1 }],
+        total: 1,
+      },
+    ], 'Eamon');
+    expect(table.text).toMatch(/historia/);
+    expect(table.text).toMatch(/POSTAC: Eamon/);
+    expect(table.text).toMatch(/2025\/1\/15/);
+    expect(table.text).toMatch(/2025\/1\/16/);
+    expect(table.text).toMatch(/goblin/);
+    expect(table.text).toMatch(/Troll/);
+    expect(table.text).toMatch(/SUMA/);
+    expect(table.text).toMatch(/WSZYSTKICH DO TEJ PORY/);
+    expect(table.text).toMatch(/6/);
+  });
+});
+
+describe('kill counter new aliases', () => {
+  test('registers all expected aliases', () => {
+    const client = new FakeClient();
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initKillCounter((client as unknown) as any, aliases);
+
+    const patterns = aliases.map(a => a.pattern.source);
+    expect(patterns).toContain('\\/zabici$');
+    expect(patterns).toContain('\\/zabiciw$');
+    expect(patterns).toContain('\\/zabici2 (\\d{4}\\/\\d{1,2}\\/\\d{1,2})$');
+    expect(patterns).toContain('\\/zabici2$');
+    expect(patterns).toContain('\\/zabici2w$');
+    expect(patterns).toContain('\\/zabici2!$');
+    expect(patterns).toContain('\\/zabici_reset$');
+  });
+
+  test('/zabici2 date alias matches date pattern', () => {
+    const client = new FakeClient();
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initKillCounter((client as unknown) as any, aliases);
+
+    const dateAlias = aliases.find(a => a.pattern.source.includes('\\d{4}'));
+    expect(dateAlias).toBeDefined();
+
+    const match = '/zabici2 2017/1/22'.match(dateAlias!.pattern);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe('2017/1/22');
+
+    const match2 = '/zabici2 2025/12/31'.match(dateAlias!.pattern);
+    expect(match2).not.toBeNull();
+    expect(match2![1]).toBe('2025/12/31');
   });
 });

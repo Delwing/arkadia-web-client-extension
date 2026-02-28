@@ -9,6 +9,9 @@ Liczniki zabitych, postepow, stazu i zlecen.
 | `/zabici` | Pokaz tabele z liczba zabitych istot w biezacej sesji |
 | `/zabiciw` | Otworz okno z liczba zabitych istot |
 | `/zabici2` | Wyswietl podsumowanie liczby zabitych istot |
+| `/zabici2 data` | Wyswietl zabitych z danego dnia (np. `/zabici2 2017/1/22`) |
+| `/zabici2w` | Otworz okno z globalnym licznikiem zabitych (zakladki: wszystkie, wg dnia, statystyki) |
+| `/zabici2!` | Wyswietl globalne statystyki zabitych z uwzglednieniem zabitych/dzien |
 | `/zabici_reset` | Zeruj licznik zabitych istot |
 
 ## Postepy i cechy

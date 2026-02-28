@@ -262,6 +262,8 @@ export interface KnownEvents {
     "postepy2.popup.open": void;
     "zabici.updated": unknown;
     "zabici.popup.open": void;
+    "zabici2.updated": unknown;
+    "zabici2.popup.open": void;
     "deposits.updated": void;
     "deposits.popup.open": { filter?: string };
     "skroty.popup.open": void;

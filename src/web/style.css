@@ -7086,6 +7086,62 @@ body.mobile-command-radial-active {
   background-color: rgba(135, 206, 235, 0.3);
 }
 
+/* Zabici2 (Lifetime) Popup */
+.zabici2-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--surface-elevated);
+}
+
+.zabici2-popup__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.zabici2-popup__tab-content {
+  padding: 0.5rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+}
+
+.zabici2-popup__empty {
+  padding: 1rem;
+  text-align: center;
+  color: rgba(241, 245, 249, 0.5);
+  font-style: italic;
+}
+
+.zabici2-popup__mob-name {
+  color: #7cfc00;
+}
+
+.zabici2-popup__mob-name--boss {
+  color: #ffa500;
+}
+
+.zabici2-popup__date-selector {
+  margin-bottom: 0.5rem;
+}
+
+.zabici2-popup__date-select {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.25rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.zabici2-popup__date-select:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
 /* Loot Popup */
 .loot-popup-body {
   display: flex;
