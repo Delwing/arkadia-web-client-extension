@@ -54,8 +54,10 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
                 client.sendCommand(cmd, false);
             }
         }
-        client.clientAdapter.output("→ '" + msg, 'command');
-        client.clientAdapter.flushMessageBuffer();
+        if (client.clientAdapter.isCommandEchoEnabled()) {
+            client.clientAdapter.output("→ '" + msg, 'command');
+            client.clientAdapter.flushMessageBuffer();
+        }
     }
 
     client.aliases.push({

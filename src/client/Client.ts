@@ -62,6 +62,8 @@ export interface ClientAdapter {
     flushMessageBuffer(): void
 
     emit(event: string, ...args: any[]): void;
+
+    isCommandEchoEnabled(): boolean;
 }
 
 export default class Client {

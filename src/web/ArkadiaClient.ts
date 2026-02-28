@@ -174,6 +174,13 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     /**
+     * Returns true if command echo is enabled in UI settings
+     */
+    isCommandEchoEnabled(): boolean {
+        return this.commandEcho;
+    }
+
+    /**
      * Send a message through the WebSocket
      */
     send(message: string, echo: boolean = true, options?: CommandOptions): void {
