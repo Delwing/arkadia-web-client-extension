@@ -47,8 +47,7 @@ test.describe('Clock System', () => {
     });
 
     test('sunrise event sets clock to rounded hour with precision 0', async ({page}) => {
-        // Note: This test cannot use page.clock because the clock internal state
-        // depends on real timestamps for daylight transition detection
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -61,24 +60,27 @@ test.describe('Clock System', () => {
 
         // First set nighttime to establish daylight state
         await pushGmcp(page, 'room.time', { daylight: false });
-        await page.waitForTimeout(1000);
+        await page.clock.runFor(500);
+
+        // Advance time to get to 05:58 (116 seconds = 58 game minutes)
+        // This ensures the clock will round up to 06:00 on sunrise
+        await page.clock.runFor(116 * 1000);
 
         // Then trigger sunrise by changing daylight to true
         await pushGmcp(page, 'room.time', { daylight: true });
 
-        // Wait for clock to update (needs time for next tick)
-        await page.waitForTimeout(500);
+        // Wait for clock to update
+        await page.clock.runFor(1000);
 
-        // Clock should show 06:xx with no precision indicator (precision 0)
-        // Note: Clock continues ticking so we check for hour 06, not exact 06:00
+        // Clock should show 06:00 with no precision indicator (precision 0)
+        // (05:58 rounds up to 06:00 on sunrise)
         await expect(clockDisplay).toContainText('06:');
         const text = await clockDisplay.textContent();
         expect(text).not.toContain('±');
     });
 
     test('sunset event at 20:59 sets clock to 21:00 with precision 0', async ({page}) => {
-        // Note: This test cannot use page.clock because the clock internal state
-        // depends on real timestamps for daylight transition detection
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -90,16 +92,21 @@ test.describe('Clock System', () => {
 
         // First set daytime to establish daylight state
         await pushGmcp(page, 'room.time', { daylight: true });
-        await page.waitForTimeout(1500);
+        await page.clock.runFor(500);
+
+        // Advance time to get to 20:58 (116 seconds = 58 game minutes)
+        // This ensures the clock will round up to 21:00 on sunset
+        await page.clock.runFor(116 * 1000);
 
         // Then trigger sunset by changing daylight to false
         await pushGmcp(page, 'room.time', { daylight: false });
 
-        // Wait for clock to update (needs time for next tick)
-        await page.waitForTimeout(1000);
+        // Wait for clock to update
+        await page.clock.runFor(1000);
 
         // Clock should show 21:00 with no precision indicator
-        await expect(clockDisplay).toContainText('21:', { timeout: 10000 });
+        // (20:58 rounds up to 21:00 on sunset)
+        await expect(clockDisplay).toContainText('21:');
         const text = await clockDisplay.textContent();
         expect(text).not.toContain('±');
     });
