@@ -108,6 +108,7 @@ function Binds() {
     const [editingName, setEditingName] = useState(false);
     const [keymapNameDraft, setKeymapNameDraft] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
     const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
     const [importData, setImportData] = useState<ImportData | null>(null);
     const [conflictPolicy, setConflictPolicy] = useState<ConflictPolicy>('keep-last');
@@ -515,6 +516,11 @@ function Binds() {
         }
     }
 
+    function handleRestoreDefaults() {
+        setBinds({ ...structuredClone(defaultBinds), custom: binds.custom });
+        setShowRestoreConfirm(false);
+    }
+
     return (
         <div className="m-2 d-flex flex-column gap-2">
             <input
@@ -665,6 +671,14 @@ function Binds() {
                 >
                     Usuń
                 </Button>
+                <Button
+                    size="sm"
+                    variant="outline-warning"
+                    onClick={() => setShowRestoreConfirm(true)}
+                    title="Przywróć domyślne bindy (zachowaj własne skróty)"
+                >
+                    Przywróć domyślne
+                </Button>
             </div>
             <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)} size="sm">
                 <Modal.Header closeButton>
@@ -676,6 +690,18 @@ function Binds() {
                 <Modal.Footer>
                     <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
                     <Button variant="danger" size="sm" onClick={handleDeleteKeymap}>Usuń</Button>
+                </Modal.Footer>
+            </Modal>
+            <Modal show={showRestoreConfirm} onHide={() => setShowRestoreConfirm(false)} size="sm">
+                <Modal.Header closeButton>
+                    <Modal.Title>Przywrócić domyślne bindy?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Standardowe bindy zostaną przywrócone do wartości domyślnych. Własne skróty pozostaną bez zmian.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" size="sm" onClick={() => setShowRestoreConfirm(false)}>Anuluj</Button>
+                    <Button variant="warning" size="sm" onClick={handleRestoreDefaults}>Przywróć</Button>
                 </Modal.Footer>
             </Modal>
             <fieldset className="p-0 border-0 m-0">

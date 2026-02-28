@@ -160,12 +160,20 @@ const SunTrackerPopup: React.FC = () => {
     // Track clock data for next sun event display
     useEffect(() => {
         return eventBus.on("clock.update", (data) => {
-            lastDomainRef.current = data.domain as Domain;
             setClockData(prev => ({
                 ...prev,
                 [data.domain]: { domain: data.domain as Domain, hours: data.hours, minutes: data.minutes, sunrise: data.sunrise, sunset: data.sunset, dayOfYear: data.dayOfYear },
             }));
         });
+    }, []);
+
+    // Track active domain from clock system
+    useEffect(() => {
+        const handler = (data: { domain: Domain }) => {
+            lastDomainRef.current = data.domain;
+        };
+        eventBus.on("clock.domain.active", handler);
+        return () => { eventBus.off("clock.domain.active", handler); };
     }, []);
 
     // Auto-select tab based on current domain when popup opens
