@@ -14,6 +14,7 @@ type MockedClient = {
   clientAdapter: {
     output: jest.Mock;
     flushMessageBuffer: jest.Mock;
+    isCommandEchoEnabled: jest.Mock;
   };
   port: {
     postMessage: jest.Mock;
@@ -51,6 +52,7 @@ function createMockClient(): ClientTestContext {
     clientAdapter: {
       output: outputMock,
       flushMessageBuffer: flushMock,
+      isCommandEchoEnabled: jest.fn(() => true),
     },
     port: {
       postMessage: postMessageMock,

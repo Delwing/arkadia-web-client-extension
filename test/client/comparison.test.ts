@@ -18,6 +18,7 @@ describe('compare all alias', () => {
       sendGmcp: jest.fn(),
       flushMessageBuffer: jest.fn(),
       emit: jest.fn(),
+      isCommandEchoEnabled: jest.fn(() => true),
     };
 
     // Mock port (minimal)

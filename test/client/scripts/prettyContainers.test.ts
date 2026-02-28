@@ -29,6 +29,7 @@ describe('prettyContainers with real Client', () => {
       sendGmcp: jest.fn(),
       flushMessageBuffer: jest.fn(),
       emit: jest.fn(),
+      isCommandEchoEnabled: jest.fn(() => true),
     };
 
     // Setup port mock

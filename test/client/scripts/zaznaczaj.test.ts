@@ -17,6 +17,7 @@ describe('zaznaczaj', () => {
             sendGmcp: jest.fn(),
             flushMessageBuffer: jest.fn(),
             emit: jest.fn(),
+            isCommandEchoEnabled: jest.fn(() => true),
         };
 
         mockPort = {
