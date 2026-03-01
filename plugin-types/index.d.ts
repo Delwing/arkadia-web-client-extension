@@ -441,7 +441,7 @@ export interface Room {
   /** Room weight for pathfinding */
   weight: number;
   /** Room symbol */
-  symbol: string;
+  roomChar: string;
   /** User-defined data */
   userData: Record<string, string>;
   /** Custom lines */

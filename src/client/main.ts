@@ -142,9 +142,9 @@ export function getPluginManager() {
 export function registerScripts(client: Client) {
     const aliases = client.aliases
     aliases.push({
-        pattern: /\/fake (.*)/,
+        pattern: /\/fake (?:--type=(\S+) )?(.+)/,
         callback: (matches: RegExpMatchArray) => {
-            emitFakeLine(client, matches[1])
+            emitFakeLine(client, matches[2], matches[1] || undefined)
         }
     })
     initSoundAliases(client, aliases)

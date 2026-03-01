@@ -177,7 +177,7 @@ function activate(client: Client) {
             y: original.y,
             z: 0,
             weight: original.weight,
-            symbol: original.symbol,
+            roomChar: original.roomChar,
             name: original.name,
             userData: {},
             customLines: original.customLines,

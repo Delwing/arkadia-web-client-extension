@@ -26,10 +26,14 @@ interface PendingMove {
     targetId: number;
 }
 
+const COMBAT_SYMBOL = "⚔";
+
 let isActive = false;
 const labyrinthRooms = new Set<number>();
 const savedExits = new Map<number, Record<string, number>>();
+const savedSymbols = new Map<number, string>();
 const removedExits = new Map<number, Set<string>>();
+const combatRooms = new Set<number>();
 let pendingMove: PendingMove | null = null;
 
 function extractDirection(command: string): string | null {
@@ -70,15 +74,19 @@ function findLabyrinthRooms(client: Client) {
 function activate(client: Client) {
     findLabyrinthRooms(client);
     savedExits.clear();
+    savedSymbols.clear();
     removedExits.clear();
+    combatRooms.clear();
     pendingMove = null;
 
     const reader = client.Map.getMapReader();
     for (const roomId of labyrinthRooms) {
         const room = reader.getRoom(roomId);
-        if (room?.exits) {
+        if (!room) continue;
+        if (room.exits) {
             savedExits.set(roomId, {...room.exits});
         }
+        savedSymbols.set(roomId, room.roomChar);
     }
 }
 
@@ -94,11 +102,18 @@ function deactivate(client: Client) {
         affectedAreas.add(room.area);
     }
 
+    for (const [roomId, roomChar] of savedSymbols) {
+        const room = readerRooms[roomId];
+        if (room) room.roomChar = roomChar;
+    }
+
     rebuildAreas(reader, affectedAreas);
     rebuildPathFinder((client.Map as any).pathFinder);
 
     savedExits.clear();
+    savedSymbols.clear();
     removedExits.clear();
+    combatRooms.clear();
     pendingMove = null;
     labyrinthRooms.clear();
 
@@ -245,6 +260,31 @@ export default function initLabyrinth(client: Client, aliases: { pattern: RegExp
         (line) => {
             if (pendingMove) {
                 pendingMove = null;
+            }
+            return line;
+        },
+        tag
+    );
+
+    // Mark labyrinth rooms with sword symbol when combat.avatar lines appear
+    client.Triggers.registerTrigger(
+        /.*/,
+        (line, _matches, type) => {
+            if (!isActive || type !== "combat.avatar") return line;
+            const roomId = client.Map.currentRoom?.id;
+            if (!roomId || !labyrinthRooms.has(roomId) || combatRooms.has(roomId)) return line;
+
+            combatRooms.add(roomId);
+            const reader = client.Map.getMapReader() as any;
+            const room: MapData.Room = reader.rooms[roomId];
+            if (room) {
+                room.roomChar = COMBAT_SYMBOL;
+                const areas: Record<number, any> = reader.areas;
+                const area = areas[room.area];
+                if (area) {
+                    area.markDirty();
+                }
+                client.Map.renderRoomById(roomId);
             }
             return line;
         },

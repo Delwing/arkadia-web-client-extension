@@ -44,7 +44,7 @@ declare namespace MapData {
         y: number;
         z: number;
         weight: number;
-        symbol: string;
+        roomChar: string;
         name: string;
         userData: Record<string, string>;
         customLines: Record<string, Line>;
