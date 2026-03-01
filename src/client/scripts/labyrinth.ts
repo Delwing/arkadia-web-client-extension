@@ -254,6 +254,14 @@ export default function initLabyrinth(client: Client, aliases: { pattern: RegExp
         tag
     );
 
+    // Sunrise: labyrinth resets, turn off automatically
+    client.on("clock.sunrise", () => {
+        if (isActive) {
+            isActive = false;
+            deactivate(client);
+        }
+    });
+
     // Demon blocker: uncertain, exit might or might not exist
     client.Triggers.registerTrigger(
         /^Nie mozesz sie tam udac, gdyz ktos lapie cie kurczowo/,
