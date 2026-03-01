@@ -127,6 +127,7 @@ import initSoundAliases from './scripts/soundAliases'
 import initLootParser from './scripts/lootParser'
 import initOstatnio from './scripts/ostatnio'
 import initDobOp from './scripts/dobOp'
+import initLabyrinth from './scripts/labyrinth'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -280,6 +281,7 @@ export function registerScripts(client: Client) {
     initAfterDeathProgress(client)
     initBrokilon(client)
     initTideSystem(client, aliases)
+    initLabyrinth(client, aliases)
     initLootParser(client)
     initOstatnio(client, aliases)
     initDobOp(client, aliases)
