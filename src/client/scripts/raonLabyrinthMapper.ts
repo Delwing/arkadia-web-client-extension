@@ -69,7 +69,9 @@ const COLOR_KNOWN = createColorFormat("#00CC00");
 const COLOR_UNKNOWN = createColorFormat("#CC0000");
 const COLOR_TYPE = createColorFormat("#FFD700");
 
-// Custom line routing for non-Euclidean exits
+const GRID_SPACING = 2;
+
+// Direction deltas for room placement and custom lines (positive y = south on map)
 const DIRECTION_DELTA: Record<string, { x: number; y: number }> = {
     north: {x: 0, y: -1}, south: {x: 0, y: 1},
     east: {x: 1, y: 0}, west: {x: -1, y: 0},
@@ -131,11 +133,14 @@ interface RaonRoom {
 }
 
 interface SavedRoomData {
+    ref: MapData.Room;
     exits: Record<string, number>;
     stubs: number[];
     env: number;
     roomChar: string;
     customLines: Record<string, MapData.Line>;
+    x: number;
+    y: number;
 }
 
 type CaptureState =
@@ -159,6 +164,9 @@ const rooms = new Map<string, RaonRoom>();
 let availablePool: number[] = [];
 let availableSpares: number[] = [];
 const savedRoomData = new Map<number, SavedRoomData>();
+const occupiedPositions = new Set<string>();
+let entryX = 0;
+let entryY = 0;
 
 
 function claimNextRoom(): number | null {
@@ -267,24 +275,18 @@ function buildCustomLines(client: Client) {
         for (const [dir, targetFP] of room.exits) {
             if (!targetFP || !DIRECTION_DELTA[dir]) continue;
 
-            // Determine target map room
             let targetMap: MapData.Room | undefined;
             let returnDir: string | undefined;
 
             if (targetFP === '__entry__') {
                 targetMap = readerRooms[ENTRY_ROOM_ID];
-                // From entry's perspective, the exit back into labyrinth is the reverse
                 returnDir = reverseDirection[dir];
             } else {
                 const targetRoom = rooms.get(targetFP);
                 if (!targetRoom) continue;
                 targetMap = readerRooms[targetRoom.mapRoomId];
-                // Find which direction at target leads back to source
                 for (const [tDir, tFP] of targetRoom.exits) {
-                    if (tFP === room.fingerprint) {
-                        returnDir = tDir;
-                        break;
-                    }
+                    if (tFP === room.fingerprint) { returnDir = tDir; break; }
                 }
                 if (!returnDir) returnDir = reverseDirection[dir];
             }
@@ -300,7 +302,6 @@ function buildCustomLines(client: Client) {
             const shortDir = SHORT_DIR[dir];
             if (!shortDir) continue;
 
-            // 3 points: depart source in dir, approach target from reverse-of-returnDir, arrive at target
             sourceMap.customLines[shortDir] = {
                 points: [
                     {x: sx + d1.x * CUSTOM_LINE_SEG, y: -(sy + d1.y * CUSTOM_LINE_SEG)},
@@ -320,7 +321,6 @@ function buildCustomLines(client: Client) {
             const targetMap = readerRooms[targetId as unknown as number];
             if (!targetMap) continue;
 
-            // Find which labyrinth room this connects to and its return dir
             let returnDir = reverseDirection[dir];
             for (const [, room] of rooms) {
                 if (room.mapRoomId === (targetId as unknown as number)) {
@@ -350,6 +350,29 @@ function buildCustomLines(client: Client) {
             };
         }
     }
+}
+
+function isOnEntryLine(x: number, y: number): boolean {
+    return x === entryX && y >= entryY && y <= entryY + 20;
+}
+
+function findFreePosition(baseX: number, baseY: number): { x: number; y: number } {
+    if (!occupiedPositions.has(`${baseX}:${baseY}`) && !isOnEntryLine(baseX, baseY)) {
+        return {x: baseX, y: baseY};
+    }
+    for (let radius = 1; radius <= 10; radius++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+                if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+                const nx = baseX + dx * GRID_SPACING;
+                const ny = baseY + dy * GRID_SPACING;
+                if (!occupiedPositions.has(`${nx}:${ny}`) && !isOnEntryLine(nx, ny)) {
+                    return {x: nx, y: ny};
+                }
+            }
+        }
+    }
+    return {x: baseX, y: baseY};
 }
 
 function finishCapture(client: Client, descriptionLines: string[], exitString: string, direction: string | null, sourceFingerprint: string | null, doorDirection: string | null) {
@@ -408,18 +431,58 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
         };
         rooms.set(fingerprint, room);
 
-        // Set env color based on room type
+        const saved = savedRoomData.get(mapRoomId);
+        if (!saved) return;
+        const mapRoom = saved.ref;
+
+        // Clear the claimed room
+        mapRoom.exits = {} as Record<MapData.direction, number>;
+        mapRoom.stubs = [];
+        mapRoom.roomChar = '';
+        mapRoom.customLines = {} as Record<string, MapData.Line>;
+
+        // Position room based on direction from source
         const reader = client.Map.getMapReader() as any;
-        const mapRoom: MapData.Room = reader.rooms[mapRoomId];
-        if (mapRoom) {
-            if (roomType === 'chapel') {
-                // Chapel keeps its original env
-                const saved = savedRoomData.get(mapRoomId);
-                if (saved) mapRoom.env = saved.env;
-            } else {
-                mapRoom.env = ROOM_TYPE_ENV[roomType];
+        const readerRooms: Record<number, MapData.Room> = reader.rooms;
+        if (direction) {
+            const delta = DIRECTION_DELTA[direction];
+            if (delta) {
+                let srcX: number | undefined, srcY: number | undefined;
+                if (sourceFingerprint) {
+                    const src = rooms.get(sourceFingerprint);
+                    if (src) {
+                        const srcMap = readerRooms[src.mapRoomId];
+                        if (srcMap) { srcX = srcMap.x; srcY = srcMap.y; }
+                    }
+                } else {
+                    // First room: place 20 units below entry
+                    const entryMap = readerRooms[ENTRY_ROOM_ID];
+                    if (entryMap) { srcX = entryMap.x; srcY = entryMap.y + 20; }
+                }
+                if (srcX !== undefined && srcY !== undefined) {
+                    const pos = sourceFingerprint
+                        ? findFreePosition(srcX + delta.x * GRID_SPACING, srcY + delta.y * GRID_SPACING)
+                        : {x: srcX, y: srcY};
+                    mapRoom.x = pos.x;
+                    mapRoom.y = pos.y;
+                    occupiedPositions.add(`${pos.x}:${pos.y}`);
+                }
             }
         }
+
+        // Set env color based on room type
+        if (roomType === 'chapel') {
+            mapRoom.env = saved.env;
+        } else {
+            mapRoom.env = ROOM_TYPE_ENV[roomType];
+        }
+
+        // Re-add room to map
+        const hashes: Record<string, number> = (client.Map as any).hashes;
+        readerRooms[mapRoomId] = mapRoom;
+        hashes[mapRoom.hash] = mapRoomId;
+        const areaSources: Record<number, MapData.Area> = reader.areaSources;
+        areaSources[mapRoom.area].rooms.push(mapRoom);
     }
 
     room!.visitCount++;
@@ -521,25 +584,38 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
 function initRooms(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
+    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const areaSources: Record<number, MapData.Area> = reader.areaSources;
 
-    // Snapshot and clear pool/spare rooms (entry room handled separately)
+    // Snapshot all rooms, then remove pool rooms from map entirely
     savedRoomData.clear();
+    occupiedPositions.clear();
     for (const roomId of ALL_ROOM_IDS) {
         const room = readerRooms[roomId];
         if (!room) continue;
         savedRoomData.set(roomId, {
+            ref: room,
             exits: {...room.exits},
             stubs: [...room.stubs],
             env: room.env,
             roomChar: room.roomChar,
             customLines: {...room.customLines},
+            x: room.x,
+            y: room.y,
         });
-        if (roomId === ENTRY_ROOM_ID) continue; // don't clear entry room
-        room.exits = {} as Record<MapData.direction, number>;
-        room.stubs = [];
-        room.roomChar = '';
-        room.env = 272;
-        room.customLines = {} as Record<string, MapData.Line>;
+        if (roomId === ENTRY_ROOM_ID) {
+            entryX = room.x;
+            entryY = room.y;
+            occupiedPositions.add(`${room.x}:${room.y}`);
+            continue;
+        }
+        // Remove from map
+        delete hashes[room.hash];
+        delete readerRooms[roomId];
+        const areaSource = areaSources[room.area];
+        if (areaSource) {
+            areaSource.rooms = areaSource.rooms.filter((r: MapData.Room) => r.id !== roomId);
+        }
     }
 
     // Entry room: keep env, set exits to up + south stub
@@ -571,17 +647,30 @@ function activate(client: Client) {
 function fullReset(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
+    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const areaSources: Record<number, MapData.Area> = reader.areaSources;
     const areas: Record<number, any> = reader.areas;
     const affectedAreas = new Set<number>();
 
     for (const [roomId, saved] of savedRoomData) {
-        const room = readerRooms[roomId];
-        if (!room) continue;
+        const room = saved.ref;
         room.exits = {...saved.exits} as Record<MapData.direction, number>;
         room.stubs = [...saved.stubs];
         room.env = saved.env;
         room.roomChar = saved.roomChar;
         room.customLines = {...saved.customLines};
+        room.x = saved.x;
+        room.y = saved.y;
+
+        // Re-add to map if not present (rooms removed but never claimed)
+        if (!readerRooms[roomId]) {
+            readerRooms[roomId] = room;
+            hashes[room.hash] = roomId;
+            const areaSource = areaSources[room.area];
+            if (areaSource) {
+                areaSource.rooms.push(room);
+            }
+        }
         affectedAreas.add(room.area);
     }
 
@@ -600,6 +689,7 @@ function fullReset(client: Client) {
 
     rooms.clear();
     savedRoomData.clear();
+    occupiedPositions.clear();
     availablePool = [];
     availableSpares = [];
     currentFingerprint = null;
