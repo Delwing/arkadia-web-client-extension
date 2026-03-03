@@ -1,0 +1,248 @@
+[
+  {
+    "cmd": "d",
+    "exits": "polnocny-wschod i zachod"
+  },
+  {
+    "cmd": "u",
+    "fail": true
+  },
+  {
+    "cmd": "d",
+    "fail": true
+  },
+  {
+    "cmd": "ne",
+    "exits": "polnocny-zachod i poludniowy-zachod",
+    "spText": "Sen to czy jawa nie sposob powiedziec. Wszystko wokol jest niczym wymysl chorego umyslu pragnacego zniewolic w swym szalenstwie innych. I jeszcze ta krew splywajaca ze\nscian, kapiaca z sufitu. Krople przybierajace przerozne ksztalty i rzucajace wyzwanie kazdej zywej istocie, ktora tylko w to miejsce trafi. Czas tu nie ma dostepu.\nKrysztalowe lustra wmurowane w sciane daja zludne, blade swiatlo, rzucajac ostre blaski na cale to ponure otoczenie."
+  },
+  {
+    "cmd": "ne",
+    "fail": true
+  },
+  {
+    "cmd": "se",
+    "fail": true
+  },
+  {
+    "cmd": "u",
+    "fail": true
+  },
+  {
+    "cmd": "nw",
+    "exits": "polnocny-wschod i zachod"
+  },
+  {
+    "cmd": "w",
+    "exits": "poludniowy-wschod, polnocny-wschod i poludnie",
+    "spText": "W migotliwym blasku krysztalowych luster wszystko wydaje sie byc takie wypaczone, inne niz gdy sie patrzy swoimi oczami. I trudno juz dociec co jest prawda a co uluda,\ngdzie zaczyna sie sen a konczy jawa. Trudno zreszta snem to nazywac bo tylko najgorszy koszmar moglby byc obrazem tych wszystkich mysli i rzeczy tutaj uwiezionych. Czas\nzatrzymal bieg wsluchany w miarowy odglos roztrzaskujacych sie o kamien kropel. Krwistoczerwonych kropel..."
+  },
+  {
+    "cmd": "s",
+    "exits": "poludniowy-wschod, polnocny-zachod i poludniowy-zachod",
+    "spText": "Gdziekolwiek nie pojdziesz wszystko jest w ciaglym ruchu. Tam gdzie padnie spojrzenie umeczonych oczu odbija sie twa nieczuly kamien. Echo niesie szybki oddech, a zimny\npowiew na prozno stara sie ukoic skolatane mysli przemierzajace przestrzen pod lukami strzelistych arkad. Wykrzywione pogardliwie, marmurowe bazyliszki z triumfem w\nmartwych oczach spogladaja na twe zmagania, szczesliwe, ze nie musza same dzielic udreki wiecznej samotnosci."
+  },
+  {
+    "cmd": "sw",
+    "exits": "poludniowy-wschod, polnocny-wschod i poludnie"
+  },
+  {
+    "cmd": "ne",
+    "exits": "polnocny-wschod i zachod"
+  },
+  {
+    "cmd": "w",
+    "exits": "poludniowy-wschod, polnocny-wschod i poludnie"
+  },
+  {
+    "cmd": "nw",
+    "fail": true
+  },
+  {
+    "cmd": "ne",
+    "exits": "polnocny-wschod i zachod"
+  },
+  {
+    "cmd": "w",
+    "exits": "poludniowy-wschod, polnocny-wschod i poludnie"
+  },
+  {
+    "cmd": "s",
+    "exits": "poludniowy-wschod, polnocny-zachod i poludniowy-zachod"
+  },
+  {
+    "cmd": "sw",
+    "exits": "poludniowy-wschod, polnocny-wschod i poludnie"
+  },
+  {
+    "cmd": "s",
+    "exits": "poludniowy-wschod, polnocny-zachod i poludniowy-zachod"
+  },
+  {
+    "cmd": "nw",
+    "exits": "wschod, poludniowy-zachod i polnocny-zachod",
+    "spText": "Okaleczone odbicia tancza po scianach, niczym oblakane wedrujac od jednego fragmentu lustrzanej mozaiki do drugiego. Miedzy nimi, jak otwarte w agonii oczy, zieja ciemne\notwory owalnych okien, przybranych w pedy wykutych w kamieniu roslin. Furia miesza sie z miloscia, gniew z chlodnym opanowaniem, wszystko to splecione nierozerwalnie i\nrzucone w objecia wypuklych plaskorzezb, tak pieknych i zywych... Ze niemal poruszajacych sie w twej wyobrazni. Jeszcze chwila, jeszcze moment a porzuca okowy i chwyca\ncie za rece pociagaj ze soba w niekonczacy sie sen."
+  },
+  {
+    "cmd": "nw",
+    "exits": "wschod, poludniowy-zachod i zachod",
+    "spText": "Gdzie nie spojrzec, wszedzie tylko korytarze, przejscia, arkady... Nie ma tutaj granicy oddzielajacej oblakanie od rzeczywistosci. Uwiezione w mozaikach slowa, uwiezione\nczyny i zdarzenia, martwy kamien gluchy na wszelkie nawolywania i prosby. A nad tym wszystkim radosnie wyszczerzone pyski smokow, upiornie wpatrujacych sie w ciebie,\nczyhajace na najmniejsze zalamanie i z utesknieniem wygladajace chwili az sie poddasz."
+  },
+  {
+    "cmd": "w",
+    "exits": "zachod i polnoc",
+    "spText": "Sale i korytarze. Dziesiatki, setki a moze tylko kilka? Kazde pomieszczenie takie samo jak pozostale a zarazem inne. Ciche, kamienne mury spajajace swymi silnymi\nramionami calosc i wysmukle kolumny podtrzymujace przestrzen nad toba, kruche i wiotkie. Krysztalowe lusterka wmurowane w sciane mamia wzrok, kuszac ulotnym, sztucznym\nblaskiem, wabia smialkow i ukazujac im ulomna, wypaczona rzeczywistosc i pietnujac nia kazdego, kto tylko w nie spojrzy."
+  },
+  {
+    "cmd": "w",
+    "exits": "wschod, poludniowy-zachod i zachod"
+  },
+  {
+    "cmd": "e",
+    "exits": "wschod, poludniowy-zachod i polnocny-zachod"
+  },
+  {
+    "cmd": "nw",
+    "exits": "wschod, poludniowy-zachod i zachod"
+  },
+  {
+    "cmd": "w",
+    "exits": "zachod i polnoc"
+  },
+  {
+    "cmd": "n",
+    "exits": "poludnie, wschod, poludniowy-zachod i polnocny-wschod",
+    "spText": "Labirynt zyje, umiera i rodzi sie w kazdej sekundzie. Kamienne plaskorzezby spogladaja szklistym wzrokiem na rysujace sie po scianach pekniecia z ktorych saczy sie krew.\nCichy spiew wedruje korytarzami, zabierajac ze soba coraz to nowe dusze zablakanych tu istot. Z kazdym uderzeniem serca coraz bardziej rozumiesz slowa piesni, coraz\nbardziej sie nimi upajasz zatracajac i zapominajac powoli o istniejacym gdzies u gory swiecie."
+  },
+  {
+    "cmd": "sw",
+    "exits": "polnocny-wschod i polnocny-zachod",
+    "spText": "Ciemnosc litosciwie otula obtrzaskane kikuty rzezb. Lecz ich oczy bynajmniej nie sa martwe, zyja, pulsuja... Krwiste rubiny, blekitne opale i zielone szmaragdy, znamiona\nbogactwa i zadufania w sobie daja temu wszystkiemu wokol sile by trwac. Nic nie jest w stanie wyrwac tego skrawka przestrzeni spod panowania mroku, szalony byl tworca\ntego piekna. Szalony w swym dazeniu do idealnosci. Kazdy kamien, kazda plaskorzezba przesycone sa pieknem tak niewiarygodnym, ze az strasznym."
+  },
+  {
+    "cmd": "nw",
+    "exits": "poludnie, wschod, poludniowy-zachod i polnocny-wschod"
+  },
+  {
+    "cmd": "se",
+    "fail": true
+  },
+  {
+    "cmd": "sw",
+    "exits": "polnocny-wschod i polnocny-zachod"
+  },
+  {
+    "cmd": "ne",
+    "exits": "polnocny-zachod, wschod i zachod",
+    "spText": "Piekno zaklete w kamien. Kamien zbrukany krwia. Bialy marmur kluje w oczy niczym kosci wygrzebane na cmentarzysku... Arkady nikna w mroku, chowajac przed roztrzesionym\nwzrokiem sklepienie splywajace krwia. Czy to swiatynia mrocznego boga czy tylko sen zrodzony w umysle oblakanego? Sale i korytarze oblozone szlachetnymi kamieniami,\nplaskorzezby tak misterne, ze krolewskie palace by zdobic mogly. A na wszystkim te same, czasem juz zakrzeple, plamy brunatnorudej krwi."
+  },
+  {
+    "cmd": "w",
+    "exits": "polnocny-wschod i polnocny-zachod",
+    "spText": "Ciemnosc litosciwie otula obtrzaskane kikuty rzezb. Lecz ich oczy bynajmniej nie sa martwe, zyja, pulsuja... Krwiste rubiny, blekitne opale i zielone szmaragdy, znamiona\nbogactwa i zadufania w sobie daja temu wszystkiemu wokol sile by trwac. Nic nie jest w stanie wyrwac tego skrawka przestrzeni spod panowania mroku, szalony byl tworca\ntego piekna. Szalony w swym dazeniu do idealnosci. Kazdy kamien, kazda plaskorzezba przesycone sa pieknem tak niewiarygodnym, ze az strasznym."
+  },
+  {
+    "cmd": "ne",
+    "exits": "polnocny-zachod, wschod i zachod",
+    "spText": "Piekno zaklete w kamien. Kamien zbrukany krwia. Bialy marmur kluje w oczy niczym kosci wygrzebane na cmentarzysku... Arkady nikna w mroku, chowajac przed roztrzesionym\nwzrokiem sklepienie splywajace krwia. Czy to swiatynia mrocznego boga czy tylko sen zrodzony w umysle oblakanego? Sale i korytarze oblozone szlachetnymi kamieniami,\nplaskorzezby tak misterne, ze krolewskie palace by zdobic mogly. A na wszystkim te same, czasem juz zakrzeple, plamy brunatnorudej krwi."
+  },
+  {
+    "cmd": "nw",
+    "exits": "poludniowy-zachod, polnocny-wschod i zachod",
+    "spText": "Cienie czaja sie we wglebieniach po wydlubanych kamieniach mozaiki. Kolory juz dawno przygasly lecz wnetrze scian ciagle trawi ten sam ogien, ktory musial palic szalona\ndusze architekta projektujacego to miejsce. Dziesiatki sal, jedna podobna do drugiej, a kazda jednak inna, szepczaca inne slowa i kuszaca na rozne sposoby. Czerwienia\nkrwi, szmaragdem klejnotu i zlotymi oczami rzezb... Lub cisza wiecznosci dla tych, co chcac wyrwac sie z tego obledu juz tylko smierci pragna."
+  },
+  {
+    "cmd": "w",
+    "exits": "wschod, zachod i polnocny-wschod",
+    "spText": "Wieki snow i marzen uwiezione w otaczajacych cie murach. Snow o rzeczach przyziemnych, prostych... marzen o bogactwie, wladzy i milosci. Zarysowane dlutem oblakanego\nrzezbiarza w plaskorzezbach zdobiacych kamienne sciany, tak realnych, ze wydajacych sie bardziej prawdziwymi od tego otoczenia, labiryntu sal zagubionych w niebycie. Nikt\ntutaj nie placze, nikt sie nie smieje a kazdy dzwiek  chciwie spija spragniony kamien... na wiecznosc zamykajac go w swym nieczulym wnetrzu."
+  },
+  {
+    "cmd": "w",
+    "exits": "wschod, poludniowy-zachod i zachod",
+    "spText": "Gdzie nie spojrzec, wszedzie tylko korytarze, przejscia, arkady... Nie ma tutaj granicy oddzielajacej oblakanie od rzeczywistosci. Uwiezione w mozaikach slowa, uwiezione\nczyny i zdarzenia, martwy kamien gluchy na wszelkie nawolywania i prosby. A nad tym wszystkim radosnie wyszczerzone pyski smokow, upiornie wpatrujacych sie w ciebie,\nczyhajace na najmniejsze zalamanie i z utesknieniem wygladajace chwili az sie poddasz."
+  },
+  {
+    "cmd": "nw",
+    "fail": true
+  },
+  {
+    "cmd": "sw",
+    "exits": "wschod, zachod i polnocny-wschod",
+    "spText": "Wieki snow i marzen uwiezione w otaczajacych cie murach. Snow o rzeczach przyziemnych, prostych... marzen o bogactwie, wladzy i milosci. Zarysowane dlutem oblakanego\nrzezbiarza w plaskorzezbach zdobiacych kamienne sciany, tak realnych, ze wydajacych sie bardziej prawdziwymi od tego otoczenia, labiryntu sal zagubionych w niebycie. Nikt\ntutaj nie placze, nikt sie nie smieje a kazdy dzwiek  chciwie spija spragniony kamien... na wiecznosc zamykajac go w swym nieczulym wnetrzu."
+  },
+  {
+    "cmd": "w",
+    "exits": "wschod, poludniowy-zachod i zachod",
+    "spText": "Gdzie nie spojrzec, wszedzie tylko korytarze, przejscia, arkady... Nie ma tutaj granicy oddzielajacej oblakanie od rzeczywistosci. Uwiezione w mozaikach slowa, uwiezione\nczyny i zdarzenia, martwy kamien gluchy na wszelkie nawolywania i prosby. A nad tym wszystkim radosnie wyszczerzone pyski smokow, upiornie wpatrujacych sie w ciebie,\nczyhajace na najmniejsze zalamanie i z utesknieniem wygladajace chwili az sie poddasz."
+  },
+  {
+    "cmd": "e",
+    "exits": "wschod, poludniowy-zachod i polnocny-zachod",
+    "spText": "Okaleczone odbicia tancza po scianach, niczym oblakane wedrujac od jednego fragmentu lustrzanej mozaiki do drugiego. Miedzy nimi, jak otwarte w agonii oczy, zieja ciemne\notwory owalnych okien, przybranych w pedy wykutych w kamieniu roslin. Furia miesza sie z miloscia, gniew z chlodnym opanowaniem, wszystko to splecione nierozerwalnie i\nrzucone w objecia wypuklych plaskorzezb, tak pieknych i zywych... Ze niemal poruszajacych sie w twej wyobrazni. Jeszcze chwila, jeszcze moment a porzuca okowy i chwyca\ncie za rece pociagaj ze soba w niekonczacy sie sen."
+  },
+  {
+    "cmd": "e",
+    "exits": "polnocny-wschod, poludniowy-wschod, polnocny-zachod, zachod i poludniowy-zachod",
+    "spText": "Koszmar stal sie rzeczywistoscia a pieklo chyba wzorowalo swe wnetrze na tym miejscu. Ucielesnieniem wizji architekta jest posag. Pelen ekspresji, zycia a zarazem pelen\nspokoju wiecznosci. Na niewielkim cokole unosi sie smukla postac o tysiacu twarzy, na kazde spojrzenie przybierajaca inna maske, inny charakter. Nawet blyszczace sie\nwszedzie krople krwi nie sa juz tak przerazajace gdyz do ich widoku mozna sie przyzwyczaic... lecz nie sposob ogarnac umyslem tej wykonanej z lsniacego alabastru rzezby.\nGdzies z jej jarzacego sie blekitnym plomieniem wnetrza dobiega czysty kobiecy glos, nucacy piesn smutna i pelna goryczy. Piesn konca."
+  },
+  {
+    "cmd": "ne",
+    "exits": "poludniowy-wschod, poludniowy-zachod, polnocny-wschod, polnoc i polnocny-zachod",
+    "spText": "Kamienne sciany juz wiele widzialy a wtopione w nie plaskorzezby wpatruja sie uporczywie w swe nieludzkie piekno, ignorujac obecnosc innych. Prawie czuc od nich zimny\nchlod, samouwielbienie, zupelnie jakby zyly, myslaly, czuly. Moze i w ich marmurowych wnetrzach tli sie ognik zycia, niedostrzegalny dla istot smiertelnych a one same\ncierpia zakute w w okowy i unieruchomione. Tylko waskie struzki krwi zlobia na nich delikatne wzory, obmywajac i otulajac zarazem."
+  },
+  {
+    "cmd": "n",
+    "exits": "zachod, polnocny-zachod, wschod, poludniowy-zachod i poludniowy-wschod",
+    "spText": "Jedno pomieszczenie za drugim, lukowate przejscia i ciagnacy sie wszedzie za toba zapach krwi. Nic tutaj nie jest pewne, nic nie jest stale. Korytarze wydaja sie zmieniac\nswoje ksztalty a ich sciany zyc wlasnym zyciem, zamykajac cie w potrzasku pelnym cichego zawodzenia i necacych oczy bogactw. Kamienne lby gryfow wpatruja sie w ciebie\nblyszczacymi oczami ze srebra, kazdy twoj ruch, kazdy krok nieustannie ktos sledzi. A z zakrzywionych, ostrych dziobow splywaja wolno, jedna po drugie, krople krwi."
+  },
+  {
+    "cmd": "ne",
+    "fail": true
+  },
+  {
+    "cmd": "nw",
+    "exits": "poludniowy-wschod, poludniowy-zachod, polnocny-wschod, polnoc i polnocny-zachod",
+    "spText": "Kamienne sciany juz wiele widzialy a wtopione w nie plaskorzezby wpatruja sie uporczywie w swe nieludzkie piekno, ignorujac obecnosc innych. Prawie czuc od nich zimny\nchlod, samouwielbienie, zupelnie jakby zyly, myslaly, czuly. Moze i w ich marmurowych wnetrzach tli sie ognik zycia, niedostrzegalny dla istot smiertelnych a one same\ncierpia zakute w w okowy i unieruchomione. Tylko waskie struzki krwi zlobia na nich delikatne wzory, obmywajac i otulajac zarazem."
+  },
+  {
+    "cmd": "n",
+    "exits": "zachod, polnocny-zachod, wschod, poludniowy-zachod i poludniowy-wschod",
+    "spText": "Jedno pomieszczenie za drugim, lukowate przejscia i ciagnacy sie wszedzie za toba zapach krwi. Nic tutaj nie jest pewne, nic nie jest stale. Korytarze wydaja sie zmieniac\nswoje ksztalty a ich sciany zyc wlasnym zyciem, zamykajac cie w potrzasku pelnym cichego zawodzenia i necacych oczy bogactw. Kamienne lby gryfow wpatruja sie w ciebie\nblyszczacymi oczami ze srebra, kazdy twoj ruch, kazdy krok nieustannie ktos sledzi. A z zakrzywionych, ostrych dziobow splywaja wolno, jedna po drugie, krople krwi."
+  },
+  {
+    "cmd": "e",
+    "exits": "poludniowy-wschod, polnocny-wschod, polnoc i zachod",
+    "spText": "Arkady wsparte o smukle kolumny na prozno podtrzymujac sufit z dala od splamionej krwia posadzki. Sklepienie bowiem samo placze krwawymi lzami, laczac sie w cichym plusku\nz pulsujaca czerwienia podloga. A piekne plaskorzezby i wysmukle figury przygladaja sie temu z wystudiowana obojetnoscia, bezlitosnie omijajac wzrokiem kazda krople\ncieczy zawieszona w powietrzu. I chociaz jest cicho to jednak nie do konca. Gdzies na krancu umyslu, na dnie serca, rodzi sie placz ratujacy zmysly przed popadnieciem w\nhisterie."
+  },
+  {
+    "cmd": "ne",
+    "exits": "zachod, polnocny-zachod, wschod, poludniowy-zachod i poludniowy-wschod",
+    "spText": "Jedno pomieszczenie za drugim, lukowate przejscia i ciagnacy sie wszedzie za toba zapach krwi. Nic tutaj nie jest pewne, nic nie jest stale. Korytarze wydaja sie zmieniac\nswoje ksztalty a ich sciany zyc wlasnym zyciem, zamykajac cie w potrzasku pelnym cichego zawodzenia i necacych oczy bogactw. Kamienne lby gryfow wpatruja sie w ciebie\nblyszczacymi oczami ze srebra, kazdy twoj ruch, kazdy krok nieustannie ktos sledzi. A z zakrzywionych, ostrych dziobow splywaja wolno, jedna po drugie, krople krwi."
+  },
+  {
+    "cmd": "e",
+    "exits": "poludniowy-wschod, polnocny-wschod, polnoc i zachod",
+    "spText": "Arkady wsparte o smukle kolumny na prozno podtrzymujac sufit z dala od splamionej krwia posadzki. Sklepienie bowiem samo placze krwawymi lzami, laczac sie w cichym plusku\nz pulsujaca czerwienia podloga. A piekne plaskorzezby i wysmukle figury przygladaja sie temu z wystudiowana obojetnoscia, bezlitosnie omijajac wzrokiem kazda krople\ncieczy zawieszona w powietrzu. I chociaz jest cicho to jednak nie do konca. Gdzies na krancu umyslu, na dnie serca, rodzi sie placz ratujacy zmysly przed popadnieciem w\nhisterie."
+  },
+  {
+    "cmd": "se",
+    "exits": "poludnie, poludniowy-wschod i polnocny-wschod",
+    "spText": "Szalenczy smiech snuje sie zakolami korytarzy, rozbrzmiewa w uszach i brulatnie wdziera sie do kazdego zakamarku jazni. Plaskorzezby na scianach milcza, zaczarowane\ndalekim, kobiecym spiewem i wpatrzone w swe przerazajace piekno. Krew plynie strumieniami, krew plami buty, dlonie, kapie z sufitu i scian. I kazda jej kropla szydzi z\nciebie, przez jedna, koszmarnie dluga chwile odbijajac rysy twej twarzy, naznaczone pietnem obledu i smierci.\nNa samym srodku posadzki znajduje sie obramowana blyszczacym, krwistoczerwonej barwy kamieniem, studnia. Saczy sie z niej demoniczne, czerwone swiatlo, rzucajace ulotne\nblyski na sciany komnaty i zdobiace je plaskorzezby."
+  },
+  {
+    "cmd": "ne",
+    "fail": true
+  },
+  {
+    "cmd": "w",
+    "fail": true
+  },
+  {
+    "cmd": "d",
+    "fail": true
+  },
+  {
+    "cmd": "d",
+    "fail": true
+  }
+]

@@ -427,7 +427,12 @@ class ArkadiaClient implements ClientAdapter {
     private createRecorder(auto: boolean) {
         const recorder = new Recorder({
             processIncomingData: (d, opts) => this.processIncomingData(d, opts),
-            sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
+            sendCommand: (cmd, echo, options) => {
+                const client = getClientInstance<Client>();
+                if (client) {
+                    client.sendCommand(cmd, echo ?? false, options, true);
+                }
+            },
             emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
             getCurrentMapLocation: () => {
                 const ext = getClientInstance();

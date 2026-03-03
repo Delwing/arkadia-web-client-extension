@@ -1,0 +1,454 @@
+{
+  "Labirynt (test)": [
+    {
+      "message": "ÿúÉchar.info {\"object_num\":12345,\"name\":\"Testowy\"}ÿð",
+      "timestamp": 1772406110709,
+      "direction": "in",
+      "locationId": 25344,
+      "initialLocationId": 25344
+    },
+    {
+      "message": "ÿúÉobjects.data {\"12345\":{\"desc\":\"Testowy\",\"team_leader\":true,\"team\":true,\"living\":true,\"hp\":100,\"attack_num\":false,\"attack_target\":false,\"defense_target\":false,\"hidden\":false}}ÿð",
+      "timestamp": 1772406110759,
+      "direction": "in",
+      "locationId": 25344
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"dol\"]}ÿðÿúÉgmcp_msgs {\"text\":\"VSBzemN6eXR1IHNjaG9kb3cu\",\"type\":\"room.short\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHphY2hvZCBpIGRvbC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406111309,
+      "direction": "in",
+      "locationId": 25344
+    },
+    {
+      "message": "d",
+      "timestamp": 1772406113359,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzEu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406113609,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406114459,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-zachod\",\"poludniowy-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"U2VuIHRvIGN6eSBqYXdhIG5pZSBzcG9zb2IgcG93aWVkemllYy4gV3N6eXN0a28gd29rb2wgamVzdCBuaWN6eW0gd3lteXNsIGNob3JlZ28gdW15c2x1IHByYWduYWNlZ28gem5pZXdvbGljIHcgc3d5bSBzemFsZW5zdHdpZSBpbm55Y2guIEkgamVzemN6ZSB0YSBrcmV3IHNwbHl3YWphY2EgemUKc2NpYW4sIGthcGlhY2EgeiBzdWZpdHUuIEtyb3BsZSBwcnp5YmllcmFqYWNlIHByemVyb3puZSBrc3p0YWx0eSBpIHJ6dWNhamFjZSB3eXp3YW5pZSBrYXpkZWogenl3ZWogaXN0b2NpZSwga3RvcmEgdHlsa28gdyB0byBtaWVqc2NlIHRyYWZpLiBDemFzIHR1IG5pZSBtYSBkb3N0ZXB1LgpLcnlzenRhbG93ZSBsdXN0cmEgd211cm93YW5lIHcgc2NpYW5lIGRhamEgemx1ZG5lLCBibGFkZSBzd2lhdGxvLCByenVjYWphYyBvc3RyZSBibGFza2kgbmEgY2FsZSB0byBwb251cmUgb3RvY3plbmllLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXphY2hvZCBpIHBvbHVkbmlvd3ktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406114709,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406115559,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzIu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406115809,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406116659,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"poludnie\"]}ÿðÿúÉgmcp_msgs {\"text\":\"VyBtaWdvdGxpd3ltIGJsYXNrdSBrcnlzenRhbG93eWNoIGx1c3RlciB3c3p5c3RrbyB3eWRhamUgc2llIGJ5YyB0YWtpZSB3eXBhY3pvbmUsIGlubmUgbml6IGdkeSBzaWUgcGF0cnp5IHN3b2ltaSBvY3phbWkuIEkgdHJ1ZG5vIGp1eiBkb2NpZWMgY28gamVzdCBwcmF3ZGEgYSBjbyB1bHVkYSwKZ2R6aWUgemFjenluYSBzaWUgc2VuIGEga29uY3p5IGphd2EuIFRydWRubyB6cmVzenRhIHNuZW0gdG8gbmF6eXdhYyBibyB0eWxrbyBuYWpnb3Jzenkga29zem1hciBtb2dsYnkgYnljIG9icmF6ZW0gdHljaCB3c3p5c3RraWNoIG15c2xpIGkgcnplY3p5IHR1dGFqIHV3aWV6aW9ueWNoLiBDemFzCnphdHJ6eW1hbCBiaWVnIHdzbHVjaGFueSB3IG1pYXJvd3kgb2RnbG9zIHJvenRyemFza3VqYWN5Y2ggc2llIG8ga2FtaWVuIGtyb3BlbC4gS3J3aXN0b2N6ZXJ3b255Y2gga3JvcGVsLi4u\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktd3NjaG9kIGkgcG9sdWRuaWUu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406116909,
+      "direction": "in"
+    },
+    {
+      "message": "s",
+      "timestamp": 1772406117759,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-zachod\",\"poludniowy-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"R2R6aWVrb2x3aWVrIG5pZSBwb2pkemllc3ogd3N6eXN0a28gamVzdCB3IGNpYWdseW0gcnVjaHUuIFRhbSBnZHppZSBwYWRuaWUgc3BvanJ6ZW5pZSB1bWVjem9ueWNoIG9jenUgb2RiaWphIHNpZSB0d2EgbmllY3p1bHkga2FtaWVuLiBFY2hvIG5pZXNpZSBzenlia2kgb2RkZWNoLCBhIHppbW55CnBvd2lldyBuYSBwcm96bm8gc3RhcmEgc2llIHVrb2ljIHNrb2xhdGFuZSBteXNsaSBwcnplbWllcnphamFjZSBwcnplc3RyemVuIHBvZCBsdWthbWkgc3RyemVsaXN0eWNoIGFya2FkLiBXeWtyenl3aW9uZSBwb2dhcmRsaXdpZSwgbWFybXVyb3dlIGJhenlsaXN6a2kgeiB0cml1bWZlbSB3Cm1hcnR3eWNoIG9jemFjaCBzcG9nbGFkYWphIG5hIHR3ZSB6bWFnYW5pYSwgc3pjemVzbGl3ZSwgemUgbmllIG11c3phIHNhbWUgZHppZWxpYyB1ZHJla2kgd2llY3puZWogc2Ftb3Rub3NjaS4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktemFjaG9kIGkgcG9sdWRuaW93eS16YWNob2Qu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406118009,
+      "direction": "in"
+    },
+    {
+      "message": "sw",
+      "timestamp": 1772406118859,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"poludnie\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzMu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktd3NjaG9kIGkgcG9sdWRuaWUu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406119109,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406119959,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzQu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406120209,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406121059,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"poludnie\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzUu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktd3NjaG9kIGkgcG9sdWRuaWUu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406121309,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406122159,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzYu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406122409,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406123259,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"poludnie\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzcu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktd3NjaG9kIGkgcG9sdWRuaWUu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406123509,
+      "direction": "in"
+    },
+    {
+      "message": "s",
+      "timestamp": 1772406124359,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-zachod\",\"poludniowy-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzgu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktemFjaG9kIGkgcG9sdWRuaW93eS16YWNob2Qu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406124609,
+      "direction": "in"
+    },
+    {
+      "message": "sw",
+      "timestamp": 1772406125459,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"poludnie\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzku\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktd3NjaG9kIGkgcG9sdWRuaWUu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406125709,
+      "direction": "in"
+    },
+    {
+      "message": "s",
+      "timestamp": 1772406126559,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-zachod\",\"poludniowy-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzEwLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sbm9jbnktemFjaG9kIGkgcG9sdWRuaW93eS16YWNob2Qu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406126809,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406127659,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"T2thbGVjem9uZSBvZGJpY2lhIHRhbmN6YSBwbyBzY2lhbmFjaCwgbmljenltIG9ibGFrYW5lIHdlZHJ1amFjIG9kIGplZG5lZ28gZnJhZ21lbnR1IGx1c3RyemFuZWogbW96YWlraSBkbyBkcnVnaWVnby4gTWllZHp5IG5pbWksIGphayBvdHdhcnRlIHcgYWdvbmlpIG9jenksIHppZWphIGNpZW1uZQpvdHdvcnkgb3dhbG55Y2ggb2tpZW4sIHByenlicmFueWNoIHcgcGVkeSB3eWt1dHljaCB3IGthbWllbml1IHJvc2xpbi4gRnVyaWEgbWllc3phIHNpZSB6IG1pbG9zY2lhLCBnbmlldyB6IGNobG9kbnltIG9wYW5vd2FuaWVtLCB3c3p5c3RrbyB0byBzcGxlY2lvbmUgbmllcm96ZXJ3YWxuaWUgaQpyenVjb25lIHcgb2JqZWNpYSB3eXB1a2x5Y2ggcGxhc2tvcnplemIsIHRhayBwaWVrbnljaCBpIHp5d3ljaC4uLiBaZSBuaWVtYWwgcG9ydXN6YWphY3ljaCBzaWUgdyB0d2VqIHd5b2JyYXpuaS4gSmVzemN6ZSBjaHdpbGEsIGplc3pjemUgbW9tZW50IGEgcG9yenVjYSBva293eSBpIGNod3ljYQpjaWUgemEgcmVjZSBwb2NpYWdhaiB6ZSBzb2JhIHcgbmlla29uY3phY3kgc2llIHNlbi4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgcG9sbm9jbnktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406127909,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406128759,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"R2R6aWUgbmllIHNwb2pyemVjLCB3c3plZHppZSB0eWxrbyBrb3J5dGFyemUsIHByemVqc2NpYSwgYXJrYWR5Li4uIE5pZSBtYSB0dXRhaiBncmFuaWN5IG9kZHppZWxhamFjZWogb2JsYWthbmllIG9kIHJ6ZWN6eXdpc3Rvc2NpLiBVd2llemlvbmUgdyBtb3phaWthY2ggc2xvd2EsIHV3aWV6aW9uZQpjenlueSBpIHpkYXJ6ZW5pYSwgbWFydHd5IGthbWllbiBnbHVjaHkgbmEgd3N6ZWxraWUgbmF3b2x5d2FuaWEgaSBwcm9zYnkuIEEgbmFkIHR5bSB3c3p5c3RraW0gcmFkb3NuaWUgd3lzemN6ZXJ6b25lIHB5c2tpIHNtb2tvdywgdXBpb3JuaWUgd3BhdHJ1amFjeWNoIHNpZSB3IGNpZWJpZSwKY3p5aGFqYWNlIG5hIG5ham1uaWVqc3plIHphbGFtYW5pZSBpIHogdXRlc2tuaWVuaWVtIHd5Z2xhZGFqYWNlIGNod2lsaSBheiBzaWUgcG9kZGFzei4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406129009,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406129859,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"polnoc\"]}ÿðÿúÉgmcp_msgs {\"text\":\"U2FsZSBpIGtvcnl0YXJ6ZS4gRHppZXNpYXRraSwgc2V0a2kgYSBtb3plIHR5bGtvIGtpbGthPyBLYXpkZSBwb21pZXN6Y3plbmllIHRha2llIHNhbW8gamFrIHBvem9zdGFsZSBhIHphcmF6ZW0gaW5uZS4gQ2ljaGUsIGthbWllbm5lIG11cnkgc3BhamFqYWNlIHN3eW1pIHNpbG55bWkKcmFtaW9uYW1pIGNhbG9zYyBpIHd5c211a2xlIGtvbHVtbnkgcG9kdHJ6eW11amFjZSBwcnplc3RyemVuIG5hZCB0b2JhLCBrcnVjaGUgaSB3aW90a2llLiBLcnlzenRhbG93ZSBsdXN0ZXJrYSB3bXVyb3dhbmUgdyBzY2lhbmUgbWFtaWEgd3pyb2ssIGt1c3phYyB1bG90bnltLCBzenR1Y3pueW0KYmxhc2tpZW0sIHdhYmlhIHNtaWFsa293IGkgdWthenVqYWMgaW0gdWxvbW5hLCB3eXBhY3pvbmEgcnplY3p5d2lzdG9zYyBpIHBpZXRudWphYyBuaWEga2F6ZGVnbywga3RvIHR5bGtvIHcgbmllIHNwb2pyenku\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHphY2hvZCBpIHBvbG5vYy4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406130109,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406130959,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzExLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406131209,
+      "direction": "in"
+    },
+    {
+      "message": "e",
+      "timestamp": 1772406132059,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzEyLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgcG9sbm9jbnktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406132309,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406133159,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzEzLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406133409,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406134259,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"polnoc\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzE0Lg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHphY2hvZCBpIHBvbG5vYy4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406134509,
+      "direction": "in"
+    },
+    {
+      "message": "n",
+      "timestamp": 1772406135359,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludnie\",\"wschod\",\"poludniowy-zachod\",\"polnocny-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"TGFiaXJ5bnQgenlqZSwgdW1pZXJhIGkgcm9kemkgc2llIHcga2F6ZGVqIHNla3VuZHppZS4gS2FtaWVubmUgcGxhc2tvcnplemJ5IHNwb2dsYWRhamEgc3prbGlzdHltIHd6cm9raWVtIG5hIHJ5c3VqYWNlIHNpZSBwbyBzY2lhbmFjaCBwZWtuaWVjaWEgeiBrdG9yeWNoIHNhY3p5IHNpZSBrcmV3LgpDaWNoeSBzcGlldyB3ZWRydWplIGtvcnl0YXJ6YW1pLCB6YWJpZXJhamFjIHplIHNvYmEgY29yYXogdG8gbm93ZSBkdXN6ZSB6YWJsYWthbnljaCB0dSBpc3RvdC4gWiBrYXpkeW0gdWRlcnplbmllbSBzZXJjYSBjb3JheiBiYXJkemllaiByb3p1bWllc3ogc2xvd2EgcGllc25pLCBjb3JhegpiYXJkemllaiBzaWUgbmltaSB1cGFqYXN6IHphdHJhY2FqYWMgaSB6YXBvbWluYWphYyBwb3dvbGkgbyBpc3RuaWVqYWN5bSBnZHppZXMgdSBnb3J5IHN3aWVjaWUu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogY3p0ZXJ5IHdpZG9jem5lIHd5anNjaWE6IHBvbHVkbmllLCB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgcG9sbm9jbnktd3NjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406135609,
+      "direction": "in"
+    },
+    {
+      "message": "sw",
+      "timestamp": 1772406136459,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"Q2llbW5vc2MgbGl0b3NjaXdpZSBvdHVsYSBvYnRyemFza2FuZSBraWt1dHkgcnplemIuIExlY3ogaWNoIG9jenkgYnluYWptbmllaiBuaWUgc2EgbWFydHdlLCB6eWphLCBwdWxzdWphLi4uIEtyd2lzdGUgcnViaW55LCBibGVraXRuZSBvcGFsZSBpIHppZWxvbmUgc3ptYXJhZ2R5LCB6bmFtaW9uYQpib2dhY3R3YSBpIHphZHVmYW5pYSB3IHNvYmllIGRhamEgdGVtdSB3c3p5c3RraWVtdSB3b2tvbCBzaWxlIGJ5IHRyd2FjLiBOaWMgbmllIGplc3QgdyBzdGFuaWUgd3lyd2FjIHRlZ28gc2tyYXdrYSBwcnplc3RyemVuaSBzcG9kIHBhbm93YW5pYSBtcm9rdSwgc3phbG9ueSBieWwgdHdvcmNhCnRlZ28gcGlla25hLiBTemFsb255IHcgc3d5bSBkYXplbml1IGRvIGlkZWFsbm9zY2kuIEthemR5IGthbWllbiwga2F6ZGEgcGxhc2tvcnplemJhIHByemVzeWNvbmUgc2EgcGlla25lbSB0YWsgbmlld2lhcnlnb2RueW0sIHplIGF6IHN0cmFzem55bS4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHBvbG5vY255LXphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406136709,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406137559,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludnie\",\"wschod\",\"poludniowy-zachod\",\"polnocny-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzE1Lg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogY3p0ZXJ5IHdpZG9jem5lIHd5anNjaWE6IHBvbHVkbmllLCB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgcG9sbm9jbnktd3NjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406137809,
+      "direction": "in"
+    },
+    {
+      "message": "sw",
+      "timestamp": 1772406138659,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UG9taWVzemN6ZW5pZSBsYWJpcnludHUgIzE2Lg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHBvbG5vY255LXphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406138909,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406139759,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-zachod\",\"wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UGlla25vIHpha2xldGUgdyBrYW1pZW4uIEthbWllbiB6YnJ1a2FueSBrcndpYS4gQmlhbHkgbWFybXVyIGtsdWplIHcgb2N6eSBuaWN6eW0ga29zY2kgd3lncnplYmFuZSBuYSBjbWVudGFyenlza3UuLi4gQXJrYWR5IG5pa25hIHcgbXJva3UsIGNob3dhamFjIHByemVkIHJvenRyemVzaW9ueW0Kd3pyb2tpZW0gc2tsZXBpZW5pZSBzcGx5d2FqYWNlIGtyd2lhLiBDenkgdG8gc3dpYXR5bmlhIG1yb2N6bmVnbyBib2dhIGN6eSB0eWxrbyBzZW4genJvZHpvbnkgdyB1bXlzbGUgb2JsYWthbmVnbz8gU2FsZSBpIGtvcnl0YXJ6ZSBvYmxvem9uZSBzemxhY2hldG55bWkga2FtaWVuaWFtaSwKcGxhc2tvcnplemJ5IHRhayBtaXN0ZXJuZSwgemUga3JvbGV3c2tpZSBwYWxhY2UgYnkgemRvYmljIG1vZ2x5LiBBIG5hIHdzenlzdGtpbSB0ZSBzYW1lLCBjemFzZW0ganV6IHpha3J6ZXBsZSwgcGxhbXkgYnJ1bmF0bm9ydWRlaiBrcndpLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2xub2NueS16YWNob2QsIHdzY2hvZCBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406140009,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406140859,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"Q2llbW5vc2MgbGl0b3NjaXdpZSBvdHVsYSBvYnRyemFza2FuZSBraWt1dHkgcnplemIuIExlY3ogaWNoIG9jenkgYnluYWptbmllaiBuaWUgc2EgbWFydHdlLCB6eWphLCBwdWxzdWphLi4uIEtyd2lzdGUgcnViaW55LCBibGVraXRuZSBvcGFsZSBpIHppZWxvbmUgc3ptYXJhZ2R5LCB6bmFtaW9uYQpib2dhY3R3YSBpIHphZHVmYW5pYSB3IHNvYmllIGRhamEgdGVtdSB3c3p5c3RraWVtdSB3b2tvbCBzaWxlIGJ5IHRyd2FjLiBOaWMgbmllIGplc3QgdyBzdGFuaWUgd3lyd2FjIHRlZ28gc2tyYXdrYSBwcnplc3RyemVuaSBzcG9kIHBhbm93YW5pYSBtcm9rdSwgc3phbG9ueSBieWwgdHdvcmNhCnRlZ28gcGlla25hLiBTemFsb255IHcgc3d5bSBkYXplbml1IGRvIGlkZWFsbm9zY2kuIEthemR5IGthbWllbiwga2F6ZGEgcGxhc2tvcnplemJhIHByemVzeWNvbmUgc2EgcGlla25lbSB0YWsgbmlld2lhcnlnb2RueW0sIHplIGF6IHN0cmFzem55bS4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHBvbG5vY255LXdzY2hvZCBpIHBvbG5vY255LXphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406141109,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406141959,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-zachod\",\"wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"UGlla25vIHpha2xldGUgdyBrYW1pZW4uIEthbWllbiB6YnJ1a2FueSBrcndpYS4gQmlhbHkgbWFybXVyIGtsdWplIHcgb2N6eSBuaWN6eW0ga29zY2kgd3lncnplYmFuZSBuYSBjbWVudGFyenlza3UuLi4gQXJrYWR5IG5pa25hIHcgbXJva3UsIGNob3dhamFjIHByemVkIHJvenRyemVzaW9ueW0Kd3pyb2tpZW0gc2tsZXBpZW5pZSBzcGx5d2FqYWNlIGtyd2lhLiBDenkgdG8gc3dpYXR5bmlhIG1yb2N6bmVnbyBib2dhIGN6eSB0eWxrbyBzZW4genJvZHpvbnkgdyB1bXlzbGUgb2JsYWthbmVnbz8gU2FsZSBpIGtvcnl0YXJ6ZSBvYmxvem9uZSBzemxhY2hldG55bWkga2FtaWVuaWFtaSwKcGxhc2tvcnplemJ5IHRhayBtaXN0ZXJuZSwgemUga3JvbGV3c2tpZSBwYWxhY2UgYnkgemRvYmljIG1vZ2x5LiBBIG5hIHdzenlzdGtpbSB0ZSBzYW1lLCBjemFzZW0ganV6IHpha3J6ZXBsZSwgcGxhbXkgYnJ1bmF0bm9ydWRlaiBrcndpLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2xub2NueS16YWNob2QsIHdzY2hvZCBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406142209,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406143059,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-zachod\",\"polnocny-wschod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"Q2llbmllIGN6YWphIHNpZSB3ZSB3Z2xlYmllbmlhY2ggcG8gd3lkbHViYW55Y2gga2FtaWVuaWFjaCBtb3phaWtpLiBLb2xvcnkganV6IGRhd25vIHByenlnYXNseSBsZWN6IHduZXRyemUgc2NpYW4gY2lhZ2xlIHRyYXdpIHRlbiBzYW0gb2dpZW4sIGt0b3J5IG11c2lhbCBwYWxpYyBzemFsb25hCmR1c3plIGFyY2hpdGVrdGEgcHJvamVrdHVqYWNlZ28gdG8gbWllanNjZS4gRHppZXNpYXRraSBzYWwsIGplZG5hIHBvZG9ibmEgZG8gZHJ1Z2llaiwgYSBrYXpkYSBqZWRuYWsgaW5uYSwgc3plcGN6YWNhIGlubmUgc2xvd2EgaSBrdXN6YWNhIG5hIHJvem5lIHNwb3NvYnkuIEN6ZXJ3aWVuaWEKa3J3aSwgc3ptYXJhZ2RlbSBrbGVqbm90dSBpIHpsb3R5bWkgb2N6YW1pIHJ6ZXpiLi4uIEx1YiBjaXN6YSB3aWVjem5vc2NpIGRsYSB0eWNoLCBjbyBjaGNhYyB3eXJ3YWMgc2llIHogdGVnbyBvYmxlZHUganV6IHR5bGtvIHNtaWVyY2kgcHJhZ25hLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pb3d5LXphY2hvZCwgcG9sbm9jbnktd3NjaG9kIGkgemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406143309,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406144159,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"zachod\",\"polnocny-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"V2lla2kgc25vdyBpIG1hcnplbiB1d2llemlvbmUgdyBvdGFjemFqYWN5Y2ggY2llIG11cmFjaC4gU25vdyBvIHJ6ZWN6YWNoIHByenl6aWVtbnljaCwgcHJvc3R5Y2guLi4gbWFyemVuIG8gYm9nYWN0d2llLCB3bGFkenkgaSBtaWxvc2NpLiBaYXJ5c293YW5lIGRsdXRlbSBvYmxha2FuZWdvCnJ6ZXpiaWFyemEgdyBwbGFza29yemV6YmFjaCB6ZG9iaWFjeWNoIGthbWllbm5lIHNjaWFueSwgdGFrIHJlYWxueWNoLCB6ZSB3eWRhamFjeWNoIHNpZSBiYXJkemllaiBwcmF3ZHppd3ltaSBvZCB0ZWdvIG90b2N6ZW5pYSwgbGFiaXJ5bnR1IHNhbCB6YWd1YmlvbnljaCB3IG5pZWJ5Y2llLiBOaWt0CnR1dGFqIG5pZSBwbGFjemUsIG5pa3Qgc2llIG5pZSBzbWllamUgYSBrYXpkeSBkendpZWsgIGNoY2l3aWUgc3BpamEgc3ByYWduaW9ueSBrYW1pZW4uLi4gbmEgd2llY3pub3NjIHphbXlrYWphYyBnbyB3IHN3eW0gbmllY3p1bHltIHduZXRyenUu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHphY2hvZCBpIHBvbG5vY255LXdzY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406144409,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406145259,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"R2R6aWUgbmllIHNwb2pyemVjLCB3c3plZHppZSB0eWxrbyBrb3J5dGFyemUsIHByemVqc2NpYSwgYXJrYWR5Li4uIE5pZSBtYSB0dXRhaiBncmFuaWN5IG9kZHppZWxhamFjZWogb2JsYWthbmllIG9kIHJ6ZWN6eXdpc3Rvc2NpLiBVd2llemlvbmUgdyBtb3phaWthY2ggc2xvd2EsIHV3aWV6aW9uZQpjenlueSBpIHpkYXJ6ZW5pYSwgbWFydHd5IGthbWllbiBnbHVjaHkgbmEgd3N6ZWxraWUgbmF3b2x5d2FuaWEgaSBwcm9zYnkuIEEgbmFkIHR5bSB3c3p5c3RraW0gcmFkb3NuaWUgd3lzemN6ZXJ6b25lIHB5c2tpIHNtb2tvdywgdXBpb3JuaWUgd3BhdHJ1amFjeWNoIHNpZSB3IGNpZWJpZSwKY3p5aGFqYWNlIG5hIG5ham1uaWVqc3plIHphbGFtYW5pZSBpIHogdXRlc2tuaWVuaWVtIHd5Z2xhZGFqYWNlIGNod2lsaSBheiBzaWUgcG9kZGFzei4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406145509,
+      "direction": "in"
+    },
+    {
+      "message": "sw",
+      "timestamp": 1772406146359,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"zachod\",\"polnocny-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"V2lla2kgc25vdyBpIG1hcnplbiB1d2llemlvbmUgdyBvdGFjemFqYWN5Y2ggY2llIG11cmFjaC4gU25vdyBvIHJ6ZWN6YWNoIHByenl6aWVtbnljaCwgcHJvc3R5Y2guLi4gbWFyemVuIG8gYm9nYWN0d2llLCB3bGFkenkgaSBtaWxvc2NpLiBaYXJ5c293YW5lIGRsdXRlbSBvYmxha2FuZWdvCnJ6ZXpiaWFyemEgdyBwbGFza29yemV6YmFjaCB6ZG9iaWFjeWNoIGthbWllbm5lIHNjaWFueSwgdGFrIHJlYWxueWNoLCB6ZSB3eWRhamFjeWNoIHNpZSBiYXJkemllaiBwcmF3ZHppd3ltaSBvZCB0ZWdvIG90b2N6ZW5pYSwgbGFiaXJ5bnR1IHNhbCB6YWd1YmlvbnljaCB3IG5pZWJ5Y2llLiBOaWt0CnR1dGFqIG5pZSBwbGFjemUsIG5pa3Qgc2llIG5pZSBzbWllamUgYSBrYXpkeSBkendpZWsgIGNoY2l3aWUgc3BpamEgc3ByYWduaW9ueSBrYW1pZW4uLi4gbmEgd2llY3pub3NjIHphbXlrYWphYyBnbyB3IHN3eW0gbmllY3p1bHltIHduZXRyenUu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHphY2hvZCBpIHBvbG5vY255LXdzY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406146609,
+      "direction": "in"
+    },
+    {
+      "message": "w",
+      "timestamp": 1772406147459,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"R2R6aWUgbmllIHNwb2pyemVjLCB3c3plZHppZSB0eWxrbyBrb3J5dGFyemUsIHByemVqc2NpYSwgYXJrYWR5Li4uIE5pZSBtYSB0dXRhaiBncmFuaWN5IG9kZHppZWxhamFjZWogb2JsYWthbmllIG9kIHJ6ZWN6eXdpc3Rvc2NpLiBVd2llemlvbmUgdyBtb3phaWthY2ggc2xvd2EsIHV3aWV6aW9uZQpjenlueSBpIHpkYXJ6ZW5pYSwgbWFydHd5IGthbWllbiBnbHVjaHkgbmEgd3N6ZWxraWUgbmF3b2x5d2FuaWEgaSBwcm9zYnkuIEEgbmFkIHR5bSB3c3p5c3RraW0gcmFkb3NuaWUgd3lzemN6ZXJ6b25lIHB5c2tpIHNtb2tvdywgdXBpb3JuaWUgd3BhdHJ1amFjeWNoIHNpZSB3IGNpZWJpZSwKY3p5aGFqYWNlIG5hIG5ham1uaWVqc3plIHphbGFtYW5pZSBpIHogdXRlc2tuaWVuaWVtIHd5Z2xhZGFqYWNlIGNod2lsaSBheiBzaWUgcG9kZGFzei4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406147709,
+      "direction": "in"
+    },
+    {
+      "message": "e",
+      "timestamp": 1772406148559,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"wschod\",\"poludniowy-zachod\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"T2thbGVjem9uZSBvZGJpY2lhIHRhbmN6YSBwbyBzY2lhbmFjaCwgbmljenltIG9ibGFrYW5lIHdlZHJ1amFjIG9kIGplZG5lZ28gZnJhZ21lbnR1IGx1c3RyemFuZWogbW96YWlraSBkbyBkcnVnaWVnby4gTWllZHp5IG5pbWksIGphayBvdHdhcnRlIHcgYWdvbmlpIG9jenksIHppZWphIGNpZW1uZQpvdHdvcnkgb3dhbG55Y2ggb2tpZW4sIHByenlicmFueWNoIHcgcGVkeSB3eWt1dHljaCB3IGthbWllbml1IHJvc2xpbi4gRnVyaWEgbWllc3phIHNpZSB6IG1pbG9zY2lhLCBnbmlldyB6IGNobG9kbnltIG9wYW5vd2FuaWVtLCB3c3p5c3RrbyB0byBzcGxlY2lvbmUgbmllcm96ZXJ3YWxuaWUgaQpyenVjb25lIHcgb2JqZWNpYSB3eXB1a2x5Y2ggcGxhc2tvcnplemIsIHRhayBwaWVrbnljaCBpIHp5d3ljaC4uLiBaZSBuaWVtYWwgcG9ydXN6YWphY3ljaCBzaWUgdyB0d2VqIHd5b2JyYXpuaS4gSmVzemN6ZSBjaHdpbGEsIGplc3pjemUgbW9tZW50IGEgcG9yenVjYSBva293eSBpIGNod3ljYQpjaWUgemEgcmVjZSBwb2NpYWdhaiB6ZSBzb2JhIHcgbmlla29uY3phY3kgc2llIHNlbi4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiB3c2Nob2QsIHBvbHVkbmlvd3ktemFjaG9kIGkgcG9sbm9jbnktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406148809,
+      "direction": "in"
+    },
+    {
+      "message": "e",
+      "timestamp": 1772406149659,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"polnocny-wschod\",\"poludniowy-wschod\",\"polnocny-zachod\",\"zachod\",\"poludniowy-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"S29zem1hciBzdGFsIHNpZSByemVjenl3aXN0b3NjaWEgYSBwaWVrbG8gY2h5YmEgd3pvcm93YWxvIHN3ZSB3bmV0cnplIG5hIHR5bSBtaWVqc2N1LiBVY2llbGVzbmllbmllbSB3aXpqaSBhcmNoaXRla3RhIGplc3QgcG9zYWcuIFBlbGVuIGVrc3ByZXNqaSwgenljaWEgYSB6YXJhemVtIHBlbGVuCnNwb2tvanUgd2llY3pub3NjaS4gTmEgbmlld2llbGtpbSBjb2tvbGUgdW5vc2kgc2llIHNtdWtsYSBwb3N0YWMgbyB0eXNpYWN1IHR3YXJ6eSwgbmEga2F6ZGUgc3BvanJ6ZW5pZSBwcnp5YmllcmFqYWNhIGlubmEgbWFza2UsIGlubnkgY2hhcmFrdGVyLiBOYXdldCBibHlzemN6YWNlIHNpZQp3c3plZHppZSBrcm9wbGUga3J3aSBuaWUgc2EganV6IHRhayBwcnplcmF6YWphY2UgZ2R5eiBkbyBpY2ggd2lkb2t1IG1vem5hIHNpZSBwcnp5end5Y3phaWMuLi4gbGVjeiBuaWUgc3Bvc29iIG9nYXJuYWMgdW15c2xlbSB0ZWogd3lrb25hbmVqIHogbHNuaWFjZWdvIGFsYWJhc3RydSByemV6YnkuCkdkemllcyB6IGplaiBqYXJ6YWNlZ28gc2llIGJsZWtpdG55bSBwbG9taWVuaWVtIHduZXRyemEgZG9iaWVnYSBjenlzdHkga29iaWVjeSBnbG9zLCBudWNhY3kgcGllc24gc211dG5hIGkgcGVsbmEgZ29yeWN6eS4gUGllc24ga29uY2Eu\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogcGllYyB3aWRvY3pueWNoIHd5anNjOiBwb2xub2NueS13c2Nob2QsIHBvbHVkbmlvd3ktd3NjaG9kLCBwb2xub2NueS16YWNob2QsIHphY2hvZCBpIHBvbHVkbmlvd3ktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406149909,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406150759,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"poludniowy-zachod\",\"polnocny-wschod\",\"polnoc\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"S2FtaWVubmUgc2NpYW55IGp1eiB3aWVsZSB3aWR6aWFseSBhIHd0b3Bpb25lIHcgbmllIHBsYXNrb3J6ZXpieSB3cGF0cnVqYSBzaWUgdXBvcmN6eXdpZSB3IHN3ZSBuaWVsdWR6a2llIHBpZWtubywgaWdub3J1amFjIG9iZWNub3NjIGlubnljaC4gUHJhd2llIGN6dWMgb2QgbmljaCB6aW1ueQpjaGxvZCwgc2Ftb3V3aWVsYmllbmllLCB6dXBlbG5pZSBqYWtieSB6eWx5LCBteXNsYWx5LCBjenVseS4gTW96ZSBpIHcgaWNoIG1hcm11cm93eWNoIHduZXRyemFjaCB0bGkgc2llIG9nbmlrIHp5Y2lhLCBuaWVkb3N0cnplZ2FsbnkgZGxhIGlzdG90IHNtaWVydGVsbnljaCBhIG9uZSBzYW1lCmNpZXJwaWEgemFrdXRlIHcgdyBva293eSBpIHVuaWVydWNob21pb25lLiBUeWxrbyB3YXNraWUgc3RydXpraSBrcndpIHpsb2JpYSBuYSBuaWNoIGRlbGlrYXRuZSB3em9yeSwgb2JteXdhamFjIGkgb3R1bGFqYWMgemFyYXplbS4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogcGllYyB3aWRvY3pueWNoIHd5anNjOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sdWRuaW93eS16YWNob2QsIHBvbG5vY255LXdzY2hvZCwgcG9sbm9jIGkgcG9sbm9jbnktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406151009,
+      "direction": "in"
+    },
+    {
+      "message": "n",
+      "timestamp": 1772406151859,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"polnocny-zachod\",\"wschod\",\"poludniowy-zachod\",\"poludniowy-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"SmVkbm8gcG9taWVzemN6ZW5pZSB6YSBkcnVnaW0sIGx1a293YXRlIHByemVqc2NpYSBpIGNpYWduYWN5IHNpZSB3c3plZHppZSB6YSB0b2JhIHphcGFjaCBrcndpLiBOaWMgdHV0YWogbmllIGplc3QgcGV3bmUsIG5pYyBuaWUgamVzdCBzdGFsZS4gS29yeXRhcnplIHd5ZGFqYSBzaWUgem1pZW5pYWMKc3dvamUga3N6dGFsdHkgYSBpY2ggc2NpYW55IHp5YyB3bGFzbnltIHp5Y2llbSwgemFteWthamFjIGNpZSB3IHBvdHJ6YXNrdSBwZWxueW0gY2ljaGVnbyB6YXdvZHplbmlhIGkgbmVjYWN5Y2ggb2N6eSBib2dhY3R3LiBLYW1pZW5uZSBsYnkgZ3J5Zm93IHdwYXRydWphIHNpZSB3IGNpZWJpZQpibHlzemN6YWN5bWkgb2N6YW1pIHplIHNyZWJyYSwga2F6ZHkgdHdvaiBydWNoLCBrYXpkeSBrcm9rIG5pZXVzdGFubmllIGt0b3Mgc2xlZHppLiBBIHogemFrcnp5d2lvbnljaCwgb3N0cnljaCBkemlvYm93IHNwbHl3YWphIHdvbG5vLCBqZWRuYSBwbyBkcnVnaWUsIGtyb3BsZSBrcndpLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogcGllYyB3aWRvY3pueWNoIHd5anNjOiB6YWNob2QsIHBvbG5vY255LXphY2hvZCwgd3NjaG9kLCBwb2x1ZG5pb3d5LXphY2hvZCBpIHBvbHVkbmlvd3ktd3NjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406152109,
+      "direction": "in"
+    },
+    {
+      "message": "nw",
+      "timestamp": 1772406152959,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"poludniowy-zachod\",\"polnocny-wschod\",\"polnoc\",\"polnocny-zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"S2FtaWVubmUgc2NpYW55IGp1eiB3aWVsZSB3aWR6aWFseSBhIHd0b3Bpb25lIHcgbmllIHBsYXNrb3J6ZXpieSB3cGF0cnVqYSBzaWUgdXBvcmN6eXdpZSB3IHN3ZSBuaWVsdWR6a2llIHBpZWtubywgaWdub3J1amFjIG9iZWNub3NjIGlubnljaC4gUHJhd2llIGN6dWMgb2QgbmljaCB6aW1ueQpjaGxvZCwgc2Ftb3V3aWVsYmllbmllLCB6dXBlbG5pZSBqYWtieSB6eWx5LCBteXNsYWx5LCBjenVseS4gTW96ZSBpIHcgaWNoIG1hcm11cm93eWNoIHduZXRyemFjaCB0bGkgc2llIG9nbmlrIHp5Y2lhLCBuaWVkb3N0cnplZ2FsbnkgZGxhIGlzdG90IHNtaWVydGVsbnljaCBhIG9uZSBzYW1lCmNpZXJwaWEgemFrdXRlIHcgdyBva293eSBpIHVuaWVydWNob21pb25lLiBUeWxrbyB3YXNraWUgc3RydXpraSBrcndpIHpsb2JpYSBuYSBuaWNoIGRlbGlrYXRuZSB3em9yeSwgb2JteXdhamFjIGkgb3R1bGFqYWMgemFyYXplbS4=\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogcGllYyB3aWRvY3pueWNoIHd5anNjOiBwb2x1ZG5pb3d5LXdzY2hvZCwgcG9sdWRuaW93eS16YWNob2QsIHBvbG5vY255LXdzY2hvZCwgcG9sbm9jIGkgcG9sbm9jbnktemFjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406153209,
+      "direction": "in"
+    },
+    {
+      "message": "n",
+      "timestamp": 1772406154059,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"polnocny-zachod\",\"wschod\",\"poludniowy-zachod\",\"poludniowy-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"SmVkbm8gcG9taWVzemN6ZW5pZSB6YSBkcnVnaW0sIGx1a293YXRlIHByemVqc2NpYSBpIGNpYWduYWN5IHNpZSB3c3plZHppZSB6YSB0b2JhIHphcGFjaCBrcndpLiBOaWMgdHV0YWogbmllIGplc3QgcGV3bmUsIG5pYyBuaWUgamVzdCBzdGFsZS4gS29yeXRhcnplIHd5ZGFqYSBzaWUgem1pZW5pYWMKc3dvamUga3N6dGFsdHkgYSBpY2ggc2NpYW55IHp5YyB3bGFzbnltIHp5Y2llbSwgemFteWthamFjIGNpZSB3IHBvdHJ6YXNrdSBwZWxueW0gY2ljaGVnbyB6YXdvZHplbmlhIGkgbmVjYWN5Y2ggb2N6eSBib2dhY3R3LiBLYW1pZW5uZSBsYnkgZ3J5Zm93IHdwYXRydWphIHNpZSB3IGNpZWJpZQpibHlzemN6YWN5bWkgb2N6YW1pIHplIHNyZWJyYSwga2F6ZHkgdHdvaiBydWNoLCBrYXpkeSBrcm9rIG5pZXVzdGFubmllIGt0b3Mgc2xlZHppLiBBIHogemFrcnp5d2lvbnljaCwgb3N0cnljaCBkemlvYm93IHNwbHl3YWphIHdvbG5vLCBqZWRuYSBwbyBkcnVnaWUsIGtyb3BsZSBrcndpLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogcGllYyB3aWRvY3pueWNoIHd5anNjOiB6YWNob2QsIHBvbG5vY255LXphY2hvZCwgd3NjaG9kLCBwb2x1ZG5pb3d5LXphY2hvZCBpIHBvbHVkbmlvd3ktd3NjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406154309,
+      "direction": "in"
+    },
+    {
+      "message": "e",
+      "timestamp": 1772406155159,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"polnoc\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"QXJrYWR5IHdzcGFydGUgbyBzbXVrbGUga29sdW1ueSBuYSBwcm96bm8gcG9kdHJ6eW11amFjIHN1Zml0IHogZGFsYSBvZCBzcGxhbWlvbmVqIGtyd2lhIHBvc2FkemtpLiBTa2xlcGllbmllIGJvd2llbSBzYW1vIHBsYWN6ZSBrcndhd3ltaSBsemFtaSwgbGFjemFjIHNpZSB3IGNpY2h5bSBwbHVza3UKeiBwdWxzdWphY2EgY3plcndpZW5pYSBwb2Rsb2dhLiBBIHBpZWtuZSBwbGFza29yemV6YnkgaSB3eXNtdWtsZSBmaWd1cnkgcHJ6eWdsYWRhamEgc2llIHRlbXUgeiB3eXN0dWRpb3dhbmEgb2JvamV0bm9zY2lhLCBiZXpsaXRvc25pZSBvbWlqYWphYyB3enJva2llbSBrYXpkYSBrcm9wbGUKY2llY3p5IHphd2llc3pvbmEgdyBwb3dpZXRyenUuIEkgY2hvY2lheiBqZXN0IGNpY2hvIHRvIGplZG5hayBuaWUgZG8ga29uY2EuIEdkemllcyBuYSBrcmFuY3UgdW15c2x1LCBuYSBkbmllIHNlcmNhLCByb2R6aSBzaWUgcGxhY3ogcmF0dWphY3kgem15c2x5IHByemVkIHBvcGFkbmllY2llbSB3Cmhpc3RlcmllLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogY3p0ZXJ5IHdpZG9jem5lIHd5anNjaWE6IHBvbHVkbmlvd3ktd3NjaG9kLCBwb2xub2NueS13c2Nob2QsIHBvbG5vYyBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406155409,
+      "direction": "in"
+    },
+    {
+      "message": "ne",
+      "timestamp": 1772406156259,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"polnocny-zachod\",\"wschod\",\"poludniowy-zachod\",\"poludniowy-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"SmVkbm8gcG9taWVzemN6ZW5pZSB6YSBkcnVnaW0sIGx1a293YXRlIHByemVqc2NpYSBpIGNpYWduYWN5IHNpZSB3c3plZHppZSB6YSB0b2JhIHphcGFjaCBrcndpLiBOaWMgdHV0YWogbmllIGplc3QgcGV3bmUsIG5pYyBuaWUgamVzdCBzdGFsZS4gS29yeXRhcnplIHd5ZGFqYSBzaWUgem1pZW5pYWMKc3dvamUga3N6dGFsdHkgYSBpY2ggc2NpYW55IHp5YyB3bGFzbnltIHp5Y2llbSwgemFteWthamFjIGNpZSB3IHBvdHJ6YXNrdSBwZWxueW0gY2ljaGVnbyB6YXdvZHplbmlhIGkgbmVjYWN5Y2ggb2N6eSBib2dhY3R3LiBLYW1pZW5uZSBsYnkgZ3J5Zm93IHdwYXRydWphIHNpZSB3IGNpZWJpZQpibHlzemN6YWN5bWkgb2N6YW1pIHplIHNyZWJyYSwga2F6ZHkgdHdvaiBydWNoLCBrYXpkeSBrcm9rIG5pZXVzdGFubmllIGt0b3Mgc2xlZHppLiBBIHogemFrcnp5d2lvbnljaCwgb3N0cnljaCBkemlvYm93IHNwbHl3YWphIHdvbG5vLCBqZWRuYSBwbyBkcnVnaWUsIGtyb3BsZSBrcndpLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogcGllYyB3aWRvY3pueWNoIHd5anNjOiB6YWNob2QsIHBvbG5vY255LXphY2hvZCwgd3NjaG9kLCBwb2x1ZG5pb3d5LXphY2hvZCBpIHBvbHVkbmlvd3ktd3NjaG9kLg==\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406156509,
+      "direction": "in"
+    },
+    {
+      "message": "e",
+      "timestamp": 1772406157359,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludniowy-wschod\",\"polnocny-wschod\",\"polnoc\",\"zachod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"QXJrYWR5IHdzcGFydGUgbyBzbXVrbGUga29sdW1ueSBuYSBwcm96bm8gcG9kdHJ6eW11amFjIHN1Zml0IHogZGFsYSBvZCBzcGxhbWlvbmVqIGtyd2lhIHBvc2FkemtpLiBTa2xlcGllbmllIGJvd2llbSBzYW1vIHBsYWN6ZSBrcndhd3ltaSBsemFtaSwgbGFjemFjIHNpZSB3IGNpY2h5bSBwbHVza3UKeiBwdWxzdWphY2EgY3plcndpZW5pYSBwb2Rsb2dhLiBBIHBpZWtuZSBwbGFza29yemV6YnkgaSB3eXNtdWtsZSBmaWd1cnkgcHJ6eWdsYWRhamEgc2llIHRlbXUgeiB3eXN0dWRpb3dhbmEgb2JvamV0bm9zY2lhLCBiZXpsaXRvc25pZSBvbWlqYWphYyB3enJva2llbSBrYXpkYSBrcm9wbGUKY2llY3p5IHphd2llc3pvbmEgdyBwb3dpZXRyenUuIEkgY2hvY2lheiBqZXN0IGNpY2hvIHRvIGplZG5hayBuaWUgZG8ga29uY2EuIEdkemllcyBuYSBrcmFuY3UgdW15c2x1LCBuYSBkbmllIHNlcmNhLCByb2R6aSBzaWUgcGxhY3ogcmF0dWphY3kgem15c2x5IHByemVkIHBvcGFkbmllY2llbSB3Cmhpc3RlcmllLg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogY3p0ZXJ5IHdpZG9jem5lIHd5anNjaWE6IHBvbHVkbmlvd3ktd3NjaG9kLCBwb2xub2NueS13c2Nob2QsIHBvbG5vYyBpIHphY2hvZC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406157609,
+      "direction": "in"
+    },
+    {
+      "message": "se",
+      "timestamp": 1772406158459,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"poludnie\",\"poludniowy-wschod\",\"polnocny-wschod\"]}ÿðÿúÉgmcp_msgs {\"text\":\"U3phbGVuY3p5IHNtaWVjaCBzbnVqZSBzaWUgemFrb2xhbWkga29yeXRhcnp5LCByb3picnptaWV3YSB3IHVzemFjaCBpIGJydWxhdG5pZSB3ZHppZXJhIHNpZSBkbyBrYXpkZWdvIHpha2FtYXJrdSBqYXpuaS4gUGxhc2tvcnplemJ5IG5hIHNjaWFuYWNoIG1pbGN6YSwgemFjemFyb3dhbmUKZGFsZWtpbSwga29iaWVjeW0gc3BpZXdlbSBpIHdwYXRyem9uZSB3IHN3ZSBwcnplcmF6YWphY2UgcGlla25vLiBLcmV3IHBseW5pZSBzdHJ1bWllbmlhbWksIGtyZXcgcGxhbWkgYnV0eSwgZGxvbmllLCBrYXBpZSB6IHN1Zml0dSBpIHNjaWFuLiBJIGthemRhIGplaiBrcm9wbGEgc3p5ZHppIHoKY2llYmllLCBwcnpleiBqZWRuYSwga29zem1hcm5pZSBkbHVnYSBjaHdpbGUgb2RiaWphamFjIHJ5c3kgdHdlaiB0d2FyenksIG5hem5hY3pvbmUgcGlldG5lbSBvYmxlZHUgaSBzbWllcmNpLgpOYSBzYW15bSBzcm9ka3UgcG9zYWR6a2kgem5hamR1amUgc2llIG9icmFtb3dhbmEgYmx5c3pjemFjeW0sIGtyd2lzdG9jemVyd29uZWogYmFyd3kga2FtaWVuaWVtLCBzdHVkbmlhLiBTYWN6eSBzaWUgeiBuaWVqIGRlbW9uaWN6bmUsIGN6ZXJ3b25lIHN3aWF0bG8sIHJ6dWNhamFjZSB1bG90bmUKYmx5c2tpIG5hIHNjaWFueSBrb21uYXR5IGkgemRvYmlhY2UgamUgcGxhc2tvcnplemJ5Lg==\",\"type\":\"room.long\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogdHJ6eSB3aWRvY3puZSB3eWpzY2lhOiBwb2x1ZG5pZSwgcG9sdWRuaW93eS13c2Nob2QgaSBwb2xub2NueS13c2Nob2Qu\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406158709,
+      "direction": "in"
+    },
+    {
+      "message": "u",
+      "timestamp": 1772406160559,
+      "direction": "out"
+    },
+    {
+      "message": "ÿúÉroom.info {\"exits\":[\"zachod\",\"dol\"],\"map\":{\"x\":10,\"y\":20,\"name\":\"U szczytu schodow.\"}}ÿðÿúÉgmcp_msgs {\"text\":\"VSBzemN6eXR1IHNjaG9kb3cu\",\"type\":\"room.short\"}ÿðÿúÉgmcp_msgs {\"text\":\"U2EgdHV0YWogZHdhIHdpZG9jem5lIHd5anNjaWE6IHphY2hvZCBpIGRvbC4=\",\"type\":\"room.exits\"}ÿð",
+      "timestamp": 1772406160809,
+      "direction": "in",
+      "locationId": 25344
+    }
+  ]
+}

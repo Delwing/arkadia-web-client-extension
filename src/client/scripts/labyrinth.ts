@@ -2,6 +2,7 @@ import Client from "../Client";
 import {getLongDir, isDirection} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
+import {PathFinder} from "mudlet-map-renderer";
 
 const LABYRINTH_ENV = 266;
 const LABYRINTH_AREA = 39;
@@ -108,7 +109,7 @@ function deactivate(client: Client) {
     }
 
     rebuildAreas(reader, affectedAreas);
-    rebuildPathFinder((client.Map as any).pathFinder);
+    rebuildPathFinder(client);
 
     savedExits.clear();
     savedSymbols.clear();
@@ -149,7 +150,7 @@ function removeExit(client: Client, move: PendingMove) {
     }
 
     rebuildAreas(reader, affectedAreas);
-    rebuildPathFinder((client.Map as any).pathFinder);
+    rebuildPathFinder(client);
 
     if (client.Map.currentRoom) {
         client.Map.renderRoomById(client.Map.currentRoom.id);
@@ -169,9 +170,8 @@ function rebuildAreas(reader: any, affectedAreas: Set<number>) {
     }
 }
 
-function rebuildPathFinder(pathFinder: any) {
-    pathFinder.graph = pathFinder.buildGraph();
-    pathFinder.cache = new Map();
+function rebuildPathFinder(client: Client) {
+    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
 }
 
 export default function initLabyrinth(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {

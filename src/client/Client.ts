@@ -443,15 +443,17 @@ export default class Client {
         }
         this.sendEvent('command', command)
 
-        let commandChanged = false
-        if (!skipMapParse) {
-            const parsedCommand = this.Map.parseCommand(command)
-            if (parsedCommand === null) {
-                return
-            }
-            commandChanged = parsedCommand !== command
-            command = parsedCommand
+        if (skipMapParse) {
+            this.clientAdapter.send(command, echo, options)
+            return
         }
+
+        const parsedCommand = this.Map.parseCommand(command)
+        if (parsedCommand === null) {
+            return
+        }
+        const commandChanged = parsedCommand !== command
+        command = parsedCommand
         command = this.expandObjectShortcuts(command)
         if (command.startsWith('echo ')) {
             this.print(mudletColorLine(command.substring(5)))
@@ -460,7 +462,7 @@ export default class Client {
         const split = command.split((fromUserInput && !commandChanged) ? /;/ : /[#;]/)
         if (split.length > 1) {
             for (const part of split) {
-                await this.sendCommand(part, echo, options, skipMapParse || commandChanged)
+                await this.sendCommand(part, echo, options, commandChanged)
             }
             return
         }

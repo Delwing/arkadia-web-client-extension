@@ -128,6 +128,8 @@ import initLootParser from './scripts/lootParser'
 import initOstatnio from './scripts/ostatnio'
 import initDobOp from './scripts/dobOp'
 import initLabyrinth from './scripts/labyrinth'
+import initLabyrinthMapper from './scripts/rindeLabyrinthMapper'
+import initRaonLabyrinthMapper from './scripts/raonLabyrinthMapper'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -282,6 +284,8 @@ export function registerScripts(client: Client) {
     initBrokilon(client)
     initTideSystem(client, aliases)
     initLabyrinth(client, aliases)
+    initLabyrinthMapper(client, aliases)
+    initRaonLabyrinthMapper(client, aliases)
     initLootParser(client)
     initOstatnio(client, aliases)
     initDobOp(client, aliases)
