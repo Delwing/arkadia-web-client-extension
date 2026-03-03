@@ -8,14 +8,43 @@ const WEEKLY_POINTS = 10;
 const PLUS_POINT = 3;
 const ONE_WEEK_IN_SECONDS = 604800;
 
-interface ProfessionState {
+export interface ProfessionState {
+    start_time: number;
+    plus_events: number[];
+}
+
+interface LegacyProfessionState {
     start_time: number;
     plus_points: number;
 }
 
+type StoredProfessionState = ProfessionState | LegacyProfessionState;
+
+function migrateLegacy(legacy: LegacyProfessionState): ProfessionState {
+    const eventCount = Math.round(legacy.plus_points / PLUS_POINT);
+    const plus_events: number[] = [];
+    for (let i = 0; i < eventCount; i++) {
+        plus_events.push(legacy.start_time + i + 1);
+    }
+    return { start_time: legacy.start_time, plus_events };
+}
+
+function normalize(state: StoredProfessionState): ProfessionState {
+    if ('plus_events' in state) return state as ProfessionState;
+    return migrateLegacy(state as LegacyProfessionState);
+}
+
 function getState(): ProfessionState | null {
     const stored = getItemSync(STORAGE_KEY);
-    return stored?.[STORAGE_KEY] ?? null;
+    const raw = stored?.[STORAGE_KEY] ?? null;
+    if (!raw) return null;
+
+    const state = normalize(raw);
+    // Persist migration if needed
+    if (!('plus_events' in raw)) {
+        setState(state);
+    }
+    return state;
 }
 
 function setState(state: ProfessionState): void {
@@ -49,14 +78,24 @@ function getNextBreakPoint(time: number): number {
     return nextBreakpoint;
 }
 
+function getPlusPoints(state: ProfessionState): number {
+    return state.plus_events.length * PLUS_POINT;
+}
+
 function printLog(client: Client, message: string): void {
     client.println(mudletColorLine(`<CadetBlue>(skrypty)<reset>: ${message}`));
 }
 
 function initTraining(client: Client, plusPoints: number): void {
+    const startTime = Math.floor(Date.now() / 1000);
+    const eventCount = Math.round(plusPoints / PLUS_POINT);
+    const plus_events: number[] = [];
+    for (let i = 0; i < eventCount; i++) {
+        plus_events.push(startTime + i + 1);
+    }
     const state: ProfessionState = {
-        start_time: Math.floor(Date.now() / 1000),
-        plus_points: plusPoints,
+        start_time: startTime,
+        plus_events,
     };
     setState(state);
     printLog(client, "Rozpoczeto trening zawodu");
@@ -69,7 +108,7 @@ function addPlusPoint(client: Client): void {
         printLog(client, "Zliczanie stazu w zawodzie nie zostalo zainicjalizowane");
         return;
     }
-    state.plus_points += PLUS_POINT;
+    state.plus_events.push(Math.floor(Date.now() / 1000));
     setState(state);
     showPercentage(client);
 }
@@ -81,12 +120,35 @@ function showPercentage(client: Client): void {
         return;
     }
     const currentTime = Math.floor(Date.now() / 1000);
-    const total = getTimePoints(state, currentTime) + state.plus_points;
+    const total = getTimePoints(state, currentTime) + getPlusPoints(state);
     const percentage = (total / FULL_PROFESSION_POINTS) * 100;
     printLog(
         client,
         `Zawod ukonczony w ${percentage.toFixed(2)}% (${total}/${FULL_PROFESSION_POINTS})`
     );
+}
+
+/**
+ * Merge two profession states using CRDT grow-only set semantics.
+ * Takes the union of plus_events arrays (deduplicated) and the earlier start_time.
+ * Handles both legacy and new format on either side.
+ */
+export function mergeProfessionStates(
+    local: StoredProfessionState | null,
+    cloud: StoredProfessionState | null
+): ProfessionState | null {
+    if (!local && !cloud) return null;
+    if (!local) return normalize(cloud!);
+    if (!cloud) return normalize(local);
+
+    const normalLocal = normalize(local);
+    const normalCloud = normalize(cloud);
+
+    const start_time = Math.min(normalLocal.start_time, normalCloud.start_time);
+    const eventSet = new Set([...normalLocal.plus_events, ...normalCloud.plus_events]);
+    const plus_events = Array.from(eventSet).sort((a, b) => a - b);
+
+    return { start_time, plus_events };
 }
 
 export default function initProfession(

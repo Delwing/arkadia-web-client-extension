@@ -46,6 +46,7 @@ import {
     collectCharacters,
     exportCategories,
     importCategories,
+    mergeCloudProfessionData,
 } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
 
@@ -647,6 +648,21 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
             setIsSyncing(true);
 
             try {
+                // Pre-merge CRDT data (profession) from cloud before overwriting
+                if (categories.includes('characterSettings')) {
+                    try {
+                        const cloudResult = await downloadCategories(
+                            ['characterSettings'],
+                            encryptionEnabled ? passphrase : undefined
+                        );
+                        if (cloudResult.success && cloudResult.data.characterSettings) {
+                            mergeCloudProfessionData(cloudResult.data.characterSettings);
+                        }
+                    } catch {
+                        // Non-critical: proceed with upload even if pre-merge fails
+                    }
+                }
+
                 const allCharacters = collectCharacters();
                 const categoryData = await exportCategories(categories, allCharacters);
 

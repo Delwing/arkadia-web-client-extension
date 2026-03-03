@@ -2,6 +2,7 @@ import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, 
 import type { RecordedEvent } from "./recordingStorage";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
 import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
+import { mergeProfessionStates } from "@client/scripts/profession";
 import eventBus from '@modules/core/eventBus';
 import {
     getDeviceInfo,
@@ -435,6 +436,23 @@ export function applyLocalStorageImport(data: ExportedLocalStorage) {
             const baseIdx = storageKey.lastIndexOf(":");
             const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
             if (isExcludedLocalStorageKey(baseKey)) return;
+
+            // CRDT merge for profession data
+            if (baseKey === 'profession') {
+                try {
+                    const cloudState = JSON.parse(raw);
+                    const localRaw = localStorage.getItem(storageKey);
+                    const localState = localRaw ? JSON.parse(localRaw) : null;
+                    const merged = mergeProfessionStates(localState, cloudState);
+                    if (merged) {
+                        localStorage.setItem(storageKey, JSON.stringify(merged));
+                    }
+                } catch {
+                    localStorage.setItem(storageKey, raw);
+                }
+                return;
+            }
+
             localStorage.setItem(storageKey, raw);
         });
     });
@@ -770,6 +788,23 @@ export async function importCategory(
                         const baseIdx = storageKey.lastIndexOf(':');
                         const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
                         if (isExcludedLocalStorageKey(baseKey)) return;
+
+                        // CRDT merge for profession data
+                        if (baseKey === 'profession') {
+                            try {
+                                const cloudState = JSON.parse(raw);
+                                const localRaw = localStorage.getItem(storageKey);
+                                const localState = localRaw ? JSON.parse(localRaw) : null;
+                                const merged = mergeProfessionStates(localState, cloudState);
+                                if (merged) {
+                                    localStorage.setItem(storageKey, JSON.stringify(merged));
+                                }
+                            } catch {
+                                localStorage.setItem(storageKey, raw);
+                            }
+                            return;
+                        }
+
                         localStorage.setItem(storageKey, raw);
                     });
                 });
@@ -897,6 +932,40 @@ export async function importCategory(
     } catch (err) {
         console.error(`Failed to import category ${category}`, err);
         return { success: false, error: String(err) };
+    }
+}
+
+/**
+ * Merge only profession data from cloud characterSettings JSON into local storage.
+ * Used before "keep-local" upload to preserve cloud +staz events via CRDT merge.
+ */
+export function mergeCloudProfessionData(cloudCharacterSettingsJson: string): void {
+    try {
+        const cloudData = JSON.parse(cloudCharacterSettingsJson) as Record<string, Record<string, string>>;
+        Object.entries(cloudData).forEach(([character, entries]) => {
+            if (!entries || typeof entries !== 'object') return;
+            Object.entries(entries).forEach(([key, raw]) => {
+                if (typeof raw !== 'string') return;
+                const storageKey = key.includes(':') ? key : `${character}:${key}`;
+                const baseIdx = storageKey.lastIndexOf(':');
+                const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
+                if (baseKey !== 'profession') return;
+
+                try {
+                    const cloudState = JSON.parse(raw);
+                    const localRaw = localStorage.getItem(storageKey);
+                    const localState = localRaw ? JSON.parse(localRaw) : null;
+                    const merged = mergeProfessionStates(localState, cloudState);
+                    if (merged) {
+                        localStorage.setItem(storageKey, JSON.stringify(merged));
+                    }
+                } catch {
+                    // Skip if parse fails
+                }
+            });
+        });
+    } catch {
+        // Skip if cloud data is invalid
     }
 }
 
