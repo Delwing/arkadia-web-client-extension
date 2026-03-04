@@ -29,6 +29,7 @@ export type BuiltInPopupType =
   | 'tripPlanner'
   | 'deposits'
   | 'packageReceiver'
+  | 'profession'
   | 'sunTracker';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}

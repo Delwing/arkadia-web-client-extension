@@ -578,6 +578,13 @@ outputWrapper.addEventListener('contextmenu', event => {
             },
             opensWindow: true,
         },
+        {
+            label: 'Zawod',
+            action: () => {
+                eventBus.emit('profession.popup.open');
+            },
+            opensWindow: true,
+        },
     );
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);

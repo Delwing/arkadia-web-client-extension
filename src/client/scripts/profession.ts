@@ -1,12 +1,13 @@
 import Client from "../Client";
 import { getItemSync, setItemSync } from "@modules/core/storage";
 import { mudletColorLine } from "@modules/core/Colors";
+import eventBus from "@modules/core/eventBus";
 
-const STORAGE_KEY = "profession";
-const FULL_PROFESSION_POINTS = 240;
-const WEEKLY_POINTS = 10;
-const PLUS_POINT = 3;
-const ONE_WEEK_IN_SECONDS = 604800;
+export const STORAGE_KEY = "profession";
+export const FULL_PROFESSION_POINTS = 240;
+export const WEEKLY_POINTS = 10;
+export const PLUS_POINT = 3;
+export const ONE_WEEK_IN_SECONDS = 604800;
 
 export interface ProfessionState {
     start_time: number;
@@ -34,7 +35,7 @@ function normalize(state: StoredProfessionState): ProfessionState {
     return migrateLegacy(state as LegacyProfessionState);
 }
 
-function getState(): ProfessionState | null {
+export function getState(): ProfessionState | null {
     const stored = getItemSync(STORAGE_KEY);
     const raw = stored?.[STORAGE_KEY] ?? null;
     if (!raw) return null;
@@ -47,21 +48,21 @@ function getState(): ProfessionState | null {
     return state;
 }
 
-function setState(state: ProfessionState): void {
+export function setState(state: ProfessionState): void {
     setItemSync(STORAGE_KEY, state);
 }
 
-function getTimePoints(state: ProfessionState, time: number): number {
+export function getTimePoints(state: ProfessionState, time: number): number {
     return WEEKLY_POINTS * getNumberOfWeeks(state, time);
 }
 
-function getNumberOfWeeks(state: ProfessionState, time: number): number {
+export function getNumberOfWeeks(state: ProfessionState, time: number): number {
     const firstBreakPoint = getNextBreakPoint(state.start_time);
     const timeDiff = (time - firstBreakPoint) / ONE_WEEK_IN_SECONDS;
     return Math.floor(timeDiff) + 1;
 }
 
-function getNextBreakPoint(time: number): number {
+export function getNextBreakPoint(time: number): number {
     const date = new Date(time * 1000);
     // Get day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     // In Lua: wday 1 = Sunday, 2 = Monday, etc. Target is 2 (Monday at 2:00)
@@ -78,7 +79,7 @@ function getNextBreakPoint(time: number): number {
     return nextBreakpoint;
 }
 
-function getPlusPoints(state: ProfessionState): number {
+export function getPlusPoints(state: ProfessionState): number {
     return state.plus_events.length * PLUS_POINT;
 }
 
@@ -98,6 +99,7 @@ function initTraining(client: Client, plusPoints: number): void {
         plus_events,
     };
     setState(state);
+    eventBus.emit("profession.updated");
     printLog(client, "Rozpoczeto trening zawodu");
     showPercentage(client);
 }
@@ -110,6 +112,7 @@ function addPlusPoint(client: Client): void {
     }
     state.plus_events.push(Math.floor(Date.now() / 1000));
     setState(state);
+    eventBus.emit("profession.updated");
     showPercentage(client);
 }
 
@@ -156,6 +159,14 @@ export default function initProfession(
     aliases?: { pattern: RegExp; callback: Function }[]
 ): void {
     const aliasList = aliases ?? client.aliases;
+
+    // Alias: /zawod - open profession popup
+    aliasList.push({
+        pattern: /^\/zawod$/,
+        callback: () => {
+            eventBus.emit("profession.popup.open");
+        },
+    });
 
     // Alias: /staz ?(.*)
     aliasList.push({

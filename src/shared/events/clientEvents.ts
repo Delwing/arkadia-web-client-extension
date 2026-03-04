@@ -312,6 +312,8 @@ export interface KnownEvents {
     "loot.popup.open": LootPopupPayload;
     "loot.popup.closed": void;
     "loot.cleared": void;
+    "profession.popup.open": void;
+    "profession.updated": void;
     "sunTracker.popup.open": void;
     "sunTracker.updated": void;
 }
