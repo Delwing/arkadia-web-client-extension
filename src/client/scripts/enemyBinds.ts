@@ -5,6 +5,7 @@ import type { PersonListEntry } from '../types/people';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import storage from '@modules/core/storage';
+import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -13,13 +14,6 @@ const NUM_SLOTS = 3;
 const ORANGE = createColorFormat('#ff8800');
 const RED = createColorFormat('#ff0000');
 const WHITE = createColorFormat('#ffffff');
-
-interface Bind {
-    key: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
-}
 
 const defaultEnemyBinds: Bind[] = [
     { key: 'F1' },
@@ -262,13 +256,8 @@ export default function initEnemyBinds(
     window.addEventListener('keydown', (ev) => {
         for (let index = 0; index < NUM_SLOTS; index++) {
             const bind = enemyBindKeys[index];
-            const matchesKey = ev.code === bind.key || ev.key === bind.key;
-            const matchesModifiers =
-                (bind.ctrl ?? false) === ev.ctrlKey &&
-                (bind.alt ?? false) === ev.altKey &&
-                (bind.shift ?? false) === ev.shiftKey;
 
-            if (matchesKey && matchesModifiers) {
+            if (bindMatches(ev, bind)) {
                 const objectId = bindSlots[index];
                 if (objectId !== null && enabled && enabledSlots[index]) {
                     attackController.attackById(objectId);
@@ -283,13 +272,8 @@ export default function initEnemyBinds(
     window.addEventListener('keydown', (ev) => {
         for (let index = 0; index < NUM_SLOTS; index++) {
             const bind = enemyBlockBindKeys[index];
-            const matchesKey = ev.code === bind.key || ev.key === bind.key;
-            const matchesModifiers =
-                (bind.ctrl ?? false) === ev.ctrlKey &&
-                (bind.alt ?? false) === ev.altKey &&
-                (bind.shift ?? false) === ev.shiftKey;
 
-            if (matchesKey && matchesModifiers) {
+            if (bindMatches(ev, bind)) {
                 const objectId = bindSlots[index];
                 if (objectId !== null && enabled && enabledSlots[index]) {
                     client.sendCommand(`zablokuj ob_${objectId}`);

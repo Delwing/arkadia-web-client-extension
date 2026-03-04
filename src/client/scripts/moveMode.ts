@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {bindMatches} from "@modules/core/keymapTypes";
 
 const LABELS = ["zwykly", "prz", "prz dr"];
 const TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
@@ -72,13 +73,7 @@ export default function initMoveMode(client: Client) {
     }
 
     window.addEventListener('keydown', (ev) => {
-        const bind = client.moveModeBind;
-        if (
-            (ev.code === bind.key || ev.key === bind.key) &&
-            !!bind.ctrl === ev.ctrlKey &&
-            !!bind.alt === ev.altKey &&
-            !!bind.shift === ev.shiftKey
-        ) {
+        if (bindMatches(ev, client.moveModeBind)) {
             toggle(true);
             ev.preventDefault();
         }

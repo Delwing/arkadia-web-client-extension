@@ -317,9 +317,9 @@ test.describe('Clock System', () => {
         await page.clock.runFor(1000);
 
         // Check that clock has yellow color for daytime (calculated from hour vs sunrise/sunset)
-        const innerHTML = await clockDisplay.innerHTML();
-        // Daytime color is #fbbf24 (yellow)
-        expect(innerHTML).toContain('#fbbf24');
+        // Daytime color is #fbbf24 (yellow) → rgb(251, 191, 36)
+        const timeSpan = clockDisplay.locator('span').nth(1);
+        await expect(timeSpan).toHaveCSS('color', 'rgb(251, 191, 36)');
 
         // Set time at sunset
         await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -329,8 +329,7 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: false });
         await page.clock.runFor(2000);
 
-        const innerHTMLNight = await clockDisplay.innerHTML();
-        // Nighttime color is #60a5fa (blue)
-        expect(innerHTMLNight).toContain('#60a5fa');
+        // Nighttime color is #60a5fa (blue) → rgb(96, 165, 250)
+        await expect(timeSpan).toHaveCSS('color', 'rgb(96, 165, 250)');
     });
 });

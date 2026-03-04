@@ -1,18 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useClientEvent } from "../../hooks";
 
 /**
  * OrderTimer component - displays order timer status
  * Shows "Rozkaz: OK" (green) when no timer, or "Rozkaz: X.XX" (yellow) when counting down
  * Only visible when character is team leader
- *
- * Note: This component manipulates the container element directly to match
- * the behavior of the old class-based implementation.
  */
 export const OrderTimer: React.FC = () => {
   const [seconds, setSeconds] = useState<number | null>(null);
   const [isLeader, setIsLeader] = useState(false);
-  const containerRef = useRef<HTMLElement | null>(null);
 
   useClientEvent<boolean>("isTeamLeader", (flag) => {
     setIsLeader(Boolean(flag));
@@ -22,33 +18,32 @@ export const OrderTimer: React.FC = () => {
     setSeconds(newSeconds);
   });
 
-  // Get reference to the container element
-  useEffect(() => {
-    containerRef.current = document.getElementById("order-timer");
-  }, []);
+  const isActive = seconds != null && seconds > 0;
 
-  // Update the container element's properties
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = document.getElementById("order-timer");
+    if (!container) return;
 
-    // Hide if not team leader
     if (!isLeader) {
-      containerRef.current.style.display = "none";
+      container.className = "";
+      container.style.display = "none";
       return;
     }
 
-    const isActive = seconds != null && seconds > 0;
+    container.style.display = "";
+    container.className = isActive ? "yellow" : "green";
+  }, [isLeader, isActive]);
 
-    if (isActive) {
-      containerRef.current.innerHTML = `<span style="color: white;">Rozkaz: </span><span style="color: yellow;">${seconds.toFixed(2)}</span>`;
-    } else {
-      containerRef.current.innerHTML = `<span style="color: white;">Rozkaz: </span><span style="color: springgreen;">OK</span>`;
-    }
+  if (!isLeader) {
+    return null;
+  }
 
-    containerRef.current.style.display = "block";
-  }, [seconds, isLeader]);
-
-  return null;
+  return (
+    <>
+      <span style={{ color: "white" }}>Rozkaz: </span>
+      <span>{isActive ? seconds.toFixed(2) : "OK"}</span>
+    </>
+  );
 };
 
 export default OrderTimer;

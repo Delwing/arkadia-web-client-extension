@@ -88,3 +88,12 @@ export const DEFAULT_KEYMAP_ID = 'default';
 
 /** Default name for the initial keymap (Polish UI). */
 export const DEFAULT_KEYMAP_NAME = 'Domyślna';
+
+/**
+ * Check whether a KeyboardEvent matches a Bind.
+ */
+export function bindMatches(ev: KeyboardEvent, bind: Bind): boolean {
+    const matchesKey = ev.code === bind.key || ev.key === bind.key.toLowerCase()
+    if (!matchesKey) return false
+    return !!bind.ctrl === ev.ctrlKey && !!bind.alt === ev.altKey && !!bind.shift === ev.shiftKey
+}

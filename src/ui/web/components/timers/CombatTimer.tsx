@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useClientEvent, useLocalStorage } from "../../hooks";
 import type { UiSettings } from "@web/uiSettings";
 
@@ -7,15 +7,11 @@ import type { UiSettings } from "@web/uiSettings";
  * Shows "Walka: X" with color based on remaining seconds
  * Color: red (>20s), yellow (>10s), green (<=10s)
  * Can be toggled via UI settings
- *
- * Note: This component manipulates the container element directly to match
- * the behavior of the old class-based implementation.
  */
 export const CombatTimer: React.FC = () => {
   const [seconds, setSeconds] = useState<number | null>(null);
   const [uiSettings] = useLocalStorage<Partial<UiSettings>>("uiSettings", {});
   const [enabled, setEnabled] = useState(() => uiSettings.showCombatTimer ?? true);
-  const containerRef = useRef<HTMLElement | null>(null);
 
   useClientEvent<number | null>("combatTimer", (newSeconds) => {
     setSeconds(newSeconds);
@@ -27,35 +23,36 @@ export const CombatTimer: React.FC = () => {
     }
   });
 
-  // Get reference to the container element
-  useEffect(() => {
-    containerRef.current = document.getElementById("combat-timer");
-  }, []);
+  const isVisible = enabled && seconds != null && seconds > 0;
 
-  // Update the container element's properties
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = document.getElementById("combat-timer");
+    if (!container) return;
 
-    // Hide if disabled or no active timer
-    if (!enabled || seconds == null || seconds <= 0) {
-      containerRef.current.innerHTML = "";
-      containerRef.current.style.display = "none";
+    if (!isVisible) {
+      container.className = "";
       return;
     }
 
-    // Determine color based on remaining time
-    let color = "springgreen";
-    if (seconds > 20) {
-      color = "tomato";
-    } else if (seconds > 10) {
-      color = "yellow";
+    if (seconds! > 20) {
+      container.className = "red";
+    } else if (seconds! > 10) {
+      container.className = "yellow";
+    } else {
+      container.className = "green";
     }
+  }, [isVisible, seconds]);
 
-    containerRef.current.style.display = "block";
-    containerRef.current.innerHTML = `<span style="color: white;">Walka: </span><span style="color: ${color};">${seconds}</span>`;
-  }, [enabled, seconds]);
+  if (!isVisible) {
+    return null;
+  }
 
-  return null;
+  return (
+    <>
+      <span style={{ color: "white" }}>Walka: </span>
+      <span>{seconds}</span>
+    </>
+  );
 };
 
 export default CombatTimer;

@@ -2241,6 +2241,44 @@ h1 {
   color: tomato;
 }
 
+#cover-timer {
+  display: none;
+}
+
+#cover-timer.green {
+  display: block;
+  color: springgreen;
+}
+
+#cover-timer.yellow {
+  display: block;
+  color: yellow;
+}
+
+#order-timer {
+  display: none;
+}
+
+#order-timer.green {
+  display: block;
+  color: springgreen;
+}
+
+#order-timer.yellow {
+  display: block;
+  color: yellow;
+}
+
+#world-destruction-timer {
+  display: none;
+}
+
+#world-destruction-timer.active {
+  display: inline;
+  color: red;
+  font-weight: bold;
+}
+
 #state-info {
   display: none;
 }

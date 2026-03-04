@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useClientEvent } from "../../hooks";
 import eventBus from "@modules/core/eventBus";
 
@@ -43,8 +43,6 @@ export const ClockDisplay: React.FC = () => {
     // Listen for clock updates from all domains
     useClientEvent<ClockData>("clock.update", (data) => {
         const currentActiveDomain = activeDomainRef.current;
-        // Only update footer display if this is the active domain
-        // (activeDomain is set by clock.domain.active event when time is checked)
         if (currentActiveDomain && data.domain === currentActiveDomain) {
             setClockData(data);
         }
@@ -56,59 +54,47 @@ export const ClockDisplay: React.FC = () => {
             setClockData(null);
             return;
         }
-
-        // Clear current data to show placeholder briefly if switching domains
-        // The clock emits updates every 500ms, so we'll get fresh data soon
         setClockData(null);
     }, [activeDomain]);
 
-    const handleClick = () => {
+    const handleClick = useCallback(() => {
         if (clockData) {
             eventBus.emit("clock.popup.open", { domain: clockData.domain });
         }
-    };
+    }, [clockData]);
 
-    // Update the container's display and content
+    // Manage container attributes that React cannot control (cursor, title, onclick)
     useEffect(() => {
         const container = document.getElementById("clock-display");
         if (!container) return;
-
-        // If no clock data yet, show placeholder
-        if (!clockData) {
-            container.style.display = "block";
-            container.style.cursor = "pointer";
-            container.title = "Kliknij aby otworzyc szczegoly zegara";
-            container.innerHTML = `<span style="color: gray;">--- | --:--</span>`;
-            container.onclick = handleClick;
-            return;
-        }
-
-        // Format time as HH:MM
-        const hours = clockData.hours.toString().padStart(2, "0");
-        const minutes = Math.floor(clockData.minutes).toString().padStart(2, "0");
-        const timeValue = `${hours}:${minutes}`;
-
-        // Format precision as ±M
-        const precisionValue = clockData.precision > 0 ? `±${clockData.precision}` : "";
-
-        // Determine day/month color based on season
-        const seasonIndex = typeof clockData.season === "number" && clockData.season >= 0 && clockData.season < SEASON_COLORS.length
-            ? clockData.season
-            : -1;
-        const dayColor = seasonIndex >= 0 ? SEASON_COLORS[seasonIndex] : "lightgray";
-
-        // Determine time color based on day/night
-        const timeColor = clockData.daylight === true ? "#fbbf24" : clockData.daylight === false ? "#60a5fa" : "white";
-
-        // Display day/month | time precision
         container.style.display = "block";
         container.style.cursor = "pointer";
         container.title = "Kliknij aby otworzyc szczegoly zegara";
-        container.innerHTML = `<span style="color: ${dayColor};">${clockData.dayLabel}</span> | <span style="color: ${timeColor};">${timeValue}</span>${precisionValue ? ` <span style="color: gray;">${precisionValue}</span>` : ""}`;
         container.onclick = handleClick;
-    }, [clockData, handleClick]);
+    }, [handleClick]);
 
-    return null;
+    if (!clockData) {
+        return <span style={{ color: "gray" }}>--- | --:--</span>;
+    }
+
+    const hours = clockData.hours.toString().padStart(2, "0");
+    const minutes = Math.floor(clockData.minutes).toString().padStart(2, "0");
+    const timeValue = `${hours}:${minutes}`;
+    const precisionValue = clockData.precision > 0 ? `\u00b1${clockData.precision}` : "";
+
+    const seasonIndex = typeof clockData.season === "number" && clockData.season >= 0 && clockData.season < SEASON_COLORS.length
+        ? clockData.season : -1;
+    const dayColor = seasonIndex >= 0 ? SEASON_COLORS[seasonIndex] : "lightgray";
+    const timeColor = clockData.daylight === true ? "#fbbf24" : clockData.daylight === false ? "#60a5fa" : "white";
+
+    return (
+        <>
+            <span style={{ color: dayColor }}>{clockData.dayLabel}</span>
+            {" | "}
+            <span style={{ color: timeColor }}>{timeValue}</span>
+            {precisionValue && <> <span style={{ color: "gray" }}>{precisionValue}</span></>}
+        </>
+    );
 };
 
 export default ClockDisplay;

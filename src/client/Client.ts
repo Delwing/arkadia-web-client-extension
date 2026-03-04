@@ -42,6 +42,7 @@ import {createAttackController} from "./utils/attackController";
 import initAllyProtection from "./scripts/allyProtection";
 import SoundManager from "./SoundManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {bindMatches} from "@modules/core/keymapTypes";
 
 type EventKey = keyof ClientEvents;
 type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
@@ -148,21 +149,11 @@ export default class Client {
         this.on('uiSettings', () => this.updateContentWidth());
 
         window.addEventListener('keydown', (ev) => {
-            if (
-                (ev.code === this.lampBind.key || ev.key === this.lampBind.key) &&
-                !!this.lampBind.ctrl === ev.ctrlKey &&
-                !!this.lampBind.alt === ev.altKey &&
-                !!this.lampBind.shift === ev.shiftKey
-            ) {
+            if (bindMatches(ev, this.lampBind)) {
                 this.sendCommand('napelnij lampe olejem')
                 ev.preventDefault()
             }
-            if (
-                (ev.code === this.attackBind.key || ev.key === this.attackBind.key) &&
-                !!this.attackBind.ctrl === ev.ctrlKey &&
-                !!this.attackBind.alt === ev.altKey &&
-                !!this.attackBind.shift === ev.shiftKey
-            ) {
+            if (bindMatches(ev, this.attackBind)) {
                 const id = this.TeamManager.getAttackTargetId?.()
                 if (id) {
                     if (this.AllyProtection.isAlly(id)) {
@@ -181,12 +172,7 @@ export default class Client {
                 }
                 ev.preventDefault()
             }
-            if (
-                (ev.code === this.supportBind.key || ev.key === this.supportBind.key) &&
-                !!this.supportBind.ctrl === ev.ctrlKey &&
-                !!this.supportBind.alt === ev.altKey &&
-                !!this.supportBind.shift === ev.shiftKey
-            ) {
+            if (bindMatches(ev, this.supportBind)) {
                 const targetId = this.TeamManager.getAttackTargetId?.()
                 if (targetId && this.AllyProtection.isAlly(targetId)) {
                     if (this.AllyProtection.checkPendingAttack(targetId, 'supportBind')) {
@@ -202,12 +188,7 @@ export default class Client {
                 ev.preventDefault()
             }
             this.customBinds.forEach(cb => {
-                if (
-                    (ev.code === cb.key || ev.key === cb.key) &&
-                    !!cb.ctrl === ev.ctrlKey &&
-                    !!cb.alt === ev.altKey &&
-                    !!cb.shift === ev.shiftKey
-                ) {
+                if (bindMatches(ev, cb)) {
                     this.sendCommand(cb.command)
                     ev.preventDefault()
                 }
@@ -216,12 +197,7 @@ export default class Client {
                 if (!tb.command) {
                     return
                 }
-                if (
-                    (ev.code === tb.key || ev.key === tb.key) &&
-                    !!tb.ctrl === ev.ctrlKey &&
-                    !!tb.alt === ev.altKey &&
-                    !!tb.shift === ev.shiftKey
-                ) {
+                if (bindMatches(ev, tb)) {
                     this.sendCommand(tb.command)
                     ev.preventDefault()
                 }

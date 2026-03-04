@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useClientEvent } from "../../hooks";
 
 /**
@@ -7,37 +7,29 @@ import { useClientEvent } from "../../hooks";
  */
 export const WorldDestructionTimer: React.FC = () => {
   const [seconds, setSeconds] = useState<number | null>(null);
-  const containerRef = useRef<HTMLElement | null>(null);
 
   useClientEvent<number | null>("worldDestructionTimer", (newSeconds) => {
     setSeconds(newSeconds);
   });
 
-  // Get reference to the container element
+  const isActive = seconds != null && seconds > 0;
+
   useEffect(() => {
-    containerRef.current = document.getElementById("world-destruction-timer");
-  }, []);
+    const container = document.getElementById("world-destruction-timer");
+    if (!container) return;
+    container.className = isActive ? "active" : "";
+  }, [isActive]);
 
-  // Update the container element's properties
-  useEffect(() => {
-    if (!containerRef.current) return;
+  if (!isActive) {
+    return null;
+  }
 
-    const isActive = seconds != null && seconds > 0;
+  const totalSeconds = Math.ceil(seconds!);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  const timeStr = `${mins}:${secs.toString().padStart(2, "0")}`;
 
-    if (isActive) {
-      const totalSeconds = Math.ceil(seconds);
-      const mins = Math.floor(totalSeconds / 60);
-      const secs = totalSeconds % 60;
-      const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-      containerRef.current.innerHTML = `<span style="color: red; font-weight: bold;">Apokalipsa: ${timeStr}</span>`;
-      containerRef.current.style.display = "inline";
-    } else {
-      containerRef.current.innerHTML = "";
-      containerRef.current.style.display = "none";
-    }
-  }, [seconds]);
-
-  return null;
+  return <>Apokalipsa: {timeStr}</>;
 };
 
 export default WorldDestructionTimer;

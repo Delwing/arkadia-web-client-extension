@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
+import {bindMatches} from "@modules/core/keymapTypes";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -80,12 +81,7 @@ export class FunctionalBind {
         this.alt = !!options.alt;
         this.shift = !!options.shift;
         window.addEventListener('keydown', (ev) => {
-            if (
-                (ev.code === this.key || ev.key === this.key) &&
-                (!!this.ctrl === ev.ctrlKey) &&
-                (!!this.alt === ev.altKey) &&
-                (!!this.shift === ev.shiftKey)
-            ) {
+            if (bindMatches(ev, { key: this.key, ctrl: this.ctrl, alt: this.alt, shift: this.shift })) {
                 this.functionalBind();
                 ev.preventDefault();
             }

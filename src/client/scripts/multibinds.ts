@@ -6,6 +6,7 @@ import {
     type StoredMultibindRecord,
 } from "@web/dataStores/multibindStore";
 import storage from "@modules/core/storage";
+import { type Bind, bindMatches } from "@modules/core/keymapTypes";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -16,13 +17,6 @@ interface DisplayMultibind {
     index: number;
     action: string;
     label: string;
-}
-
-interface Bind {
-    key: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
 }
 
 function isValidIndex(index: number) {
@@ -42,12 +36,6 @@ function bindLabel(bind: Bind): string {
     if (bind.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');
-}
-
-function bindMatches(ev: KeyboardEvent, bind: Bind): boolean {
-    const matchesKey = ev.code === bind.key || ev.key === bind.key.toLowerCase();
-    if (!matchesKey) return false;
-    return (!!bind.ctrl === ev.ctrlKey) && (!!bind.alt === ev.altKey) && (!!bind.shift === ev.shiftKey);
 }
 
 export default function initMultibinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -327,14 +315,8 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             return;
         }
         const entry = Object.entries(MULTIBIND_KEYS).find(([, def]) => {
-            if (!def) {
-                return false;
-            }
-            const matchesKey = ev.code === def.key || ev.key === def.key;
-            if (!matchesKey) {
-                return false;
-            }
-            return (!!def.ctrl === ev.ctrlKey) && (!!def.alt === ev.altKey) && (!!def.shift === ev.shiftKey);
+            if (!def) return false;
+            return bindMatches(ev, def);
         });
         if (!entry) {
             return;
