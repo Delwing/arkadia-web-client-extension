@@ -43,6 +43,22 @@ export class Trigger {
         public parent?: Trigger,
         private options: TriggerOptions = {}
     ) {
+        if (options.caseInsensitive) {
+            this.pattern = this.precompileCaseInsensitive(pattern);
+        }
+    }
+
+    private precompileCaseInsensitive(pattern: TriggerPattern): TriggerPattern {
+        const compile = (p: TriggerSubPattern): TriggerSubPattern => {
+            if (p instanceof RegExp && !p.flags.includes('i')) {
+                return new RegExp(p.source, p.flags + 'i');
+            }
+            return p;
+        };
+        if (Array.isArray(pattern)) {
+            return pattern.map(compile);
+        }
+        return compile(pattern);
     }
 
     registerChild(
@@ -74,19 +90,17 @@ export class Trigger {
         return child;
     }
 
-    execute(line: AnsiAwareBuffer, type: string, originalText?: string): AnsiAwareBuffer | null {
-        // Use originalText for matching if provided, otherwise use current line text
-        const plainLine = (originalText ?? line.text).replace(/\s$/g, "");
+    execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer | null {
+        // Use pre-trimmed plainLine if provided, otherwise compute from originalText/line.text
+        if (plainLine === undefined) {
+            plainLine = (originalText ?? line.text).replace(/\s$/g, "");
+        }
         this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         let matches: RegExpMatchArray | undefined;
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
         for (const pattern of patterns) {
             if (pattern instanceof RegExp) {
-                let effectivePattern = pattern;
-                if (this.options.caseInsensitive && !pattern.flags.includes('i')) {
-                    effectivePattern = new RegExp(pattern.source, pattern.flags + 'i');
-                }
-                matches = plainLine.match(effectivePattern);
+                matches = plainLine.match(pattern);
             } else if (typeof pattern === "string") {
                 const patternStr = pattern.toString();
                 const haystack = !this.options.caseInsensitive ? plainLine : plainLine.toLowerCase();
@@ -126,7 +140,7 @@ export class Trigger {
                 }
             }
             for (const child of this.children.values()) {
-                const childResult = child.execute(line, type, originalText);
+                const childResult = child.execute(line, type, originalText, plainLine);
                 if (childResult === null) {
                     return null;
                 }
@@ -257,7 +271,7 @@ export default class Triggers {
         };
 
         for (const trigger of this.triggers.values()) {
-            const result = trigger.execute(line, type, originalText);
+            const result = trigger.execute(line, type, originalText, plain);
             if (result === null) {
                 return null;
             }
@@ -275,7 +289,7 @@ export default class Triggers {
                 for (const {trigger} of zeroBucket) {
                     if (!seen.has(trigger.id)) {
                         seen.add(trigger.id);
-                        const result = trigger.execute(line, type, originalText);
+                        const result = trigger.execute(line, type, originalText, plain);
                         if (result === null) {
                             return null;
                         }
@@ -312,7 +326,7 @@ export default class Triggers {
                         }
                         if (matches) {
                             seen.add(trigger.id);
-                            const result = trigger.execute(line, type, originalText);
+                            const result = trigger.execute(line, type, originalText, plain);
                             if (result === null) {
                                 return null;
                             }
@@ -332,8 +346,9 @@ export default class Triggers {
     parseMultiline(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
         // Preserve original text for pattern matching
         const originalText = line.text;
+        const plain = originalText.replace(/\s$/g, "");
         for (const trigger of this.multilineTriggers.values()) {
-            const result = trigger.execute(line, type, originalText);
+            const result = trigger.execute(line, type, originalText, plain);
             if (result === null) {
                 return null;
             }

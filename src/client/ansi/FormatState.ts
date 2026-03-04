@@ -387,6 +387,7 @@ export class AnsiAwareBuffer {
     private segments: BufferSegment[] = [];
     private _deleted = false;
     private _onRender?: (container: HTMLElement) => void;
+    private _textCache: string | null = null;
 
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {
@@ -438,7 +439,10 @@ export class AnsiAwareBuffer {
     }
 
     get text(): string {
-        return this.segments.map(segment => segment.text).join("");
+        if (this._textCache === null) {
+            this._textCache = this.segments.map(segment => segment.text).join("");
+        }
+        return this._textCache;
     }
 
     get length(): number {
@@ -447,6 +451,7 @@ export class AnsiAwareBuffer {
 
     clear(): this {
         this.segments = [];
+        this._textCache = null;
         return this;
     }
 
@@ -486,6 +491,7 @@ export class AnsiAwareBuffer {
 
         if (this.segments.length === 0) {
             this.segments = sourceSegments;
+            this._textCache = null;
             return this;
         }
 
@@ -532,6 +538,7 @@ export class AnsiAwareBuffer {
                 text: segment.text,
                 state: cloneState(segment.state),
             }));
+            this._textCache = null;
             return;
         }
         if (index === this.length) {
@@ -1059,6 +1066,7 @@ export class AnsiAwareBuffer {
             }
         }
         this.segments = normalized;
+        this._textCache = null;
     }
 
     private assertRange(start: number, end: number): void {
