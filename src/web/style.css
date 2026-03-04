@@ -7175,6 +7175,11 @@ body.mobile-command-radial-active {
   font-size: 0.8rem;
 }
 
+.zabici2-popup__date-select option {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
 .zabici2-popup__date-select:focus {
   outline: none;
   border-color: rgba(59, 130, 246, 0.5);
