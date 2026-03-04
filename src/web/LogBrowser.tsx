@@ -1845,7 +1845,6 @@ function initLogBrowser(): boolean {
   });
 
   initialized = true;
-  console.log("[Logs] React log browser initialized");
   return true;
 }
 
