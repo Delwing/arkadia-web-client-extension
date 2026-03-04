@@ -4978,10 +4978,10 @@ ms@2.1.3, ms@^2.1.3:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-mudlet-map-renderer@0.24.0-konva:
-  version "0.24.0-konva"
-  resolved "https://registry.yarnpkg.com/mudlet-map-renderer/-/mudlet-map-renderer-0.24.0-konva.tgz#e12c6961fa20ddad4eeb407c4624323e0ccc3242"
-  integrity sha512-Y0/eNFtfMTL2U/Q7KYcuFzJjL+rjz4oA5Q025dsxRxpGa4KnoEiPB+LUn6U1o5qqhtpG+AVDv7WBt26HqiDSuQ==
+mudlet-map-renderer@0.26.1-konva:
+  version "0.26.1-konva"
+  resolved "https://registry.yarnpkg.com/mudlet-map-renderer/-/mudlet-map-renderer-0.26.1-konva.tgz#f4a7bd43907111ca0793816332b34cf499c5ce3c"
+  integrity sha512-QwPGxWYFSs95tDQLMk2docelsujWISDbWnQ0MKzGPSYlsmZe/Ftj+MnAdDjogeyzXyN710ZLvpVSrlCmNl2s8w==
   dependencies:
     konva "^10.0.2"
     node-dijkstra "^2.5.1"

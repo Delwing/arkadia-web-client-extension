@@ -171,6 +171,7 @@ function Scripts() {
             // Close modal
             console.log("[Scripts] Closing modal, codeModal:", codeModal);
             if (codeModal) {
+                (document.activeElement as HTMLElement)?.blur?.();
                 codeModal.hide();
                 console.log("[Scripts] Modal hide() called");
             } else {

@@ -813,6 +813,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                                         onChange={e => setEmail(e.target.value)}
                                         disabled={isAuthBusy}
                                         required
+                                        autoComplete="username"
                                     />
                                     <Form.Text className="text-muted">
                                         Podaj adres email powiazany z kontem.
@@ -849,6 +850,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                                         onChange={e => setEmail(e.target.value)}
                                         disabled={isAuthBusy}
                                         required
+                                        autoComplete="username"
                                     />
                                 </Form.Group>
                                 <Form.Group className="mb-2">
@@ -861,6 +863,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                                         disabled={isAuthBusy}
                                         required
                                         minLength={6}
+                                        autoComplete="current-password"
                                     />
                                 </Form.Group>
                                 {authMode === 'login' && (

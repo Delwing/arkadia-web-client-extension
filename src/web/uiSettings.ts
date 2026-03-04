@@ -1,12 +1,20 @@
 import Modal from "bootstrap/js/dist/modal";
 import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
 import eventBus from "@modules/core/eventBus";
-import { createRoot, type Root } from "react-dom/client";
-import { createElement } from "react";
-import type { UiSettingsEventPayload } from "@client/types/uiSettingsEvent";
-import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
-import { loadLayoutState, saveLayoutState, resetLayoutState } from "@web/layout";
-import { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
+import {createRoot, type Root} from "react-dom/client";
+import {createElement} from "react";
+import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
+import {CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds} from "@modules/core/customSounds";
+import {loadLayoutState, resetLayoutState, saveLayoutState} from "@web/layout";
+import {
+    defaultFooterComponents,
+    defaultUiSettings,
+    type FooterComponentConfig,
+    type MapRoomShape,
+    type PathFindingAlgorithm,
+    type UiSettings
+} from "./defaultUiSettings";
+import storage from "@modules/core/storage";
 
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
@@ -291,8 +299,7 @@ function apply(settings: UiSettings) {
     const mapSettings = embedded?.settings;
     if (mapSettings) {
         mapSettings.transparentLabels = settings.transparentLabels;
-        const labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
-        mapSettings.labelRenderMode = labelRenderMode;
+        mapSettings.labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
         mapSettings.instantMapMove = settings.instantMove;
         mapSettings.highlightCurrentRoom = settings.highlightCurrentRoom;
         mapSettings.roomSize = settings.mapRoomSize;
@@ -337,8 +344,6 @@ function apply(settings: UiSettings) {
         window.dispatchEvent(new CustomEvent('map-position-change'));
     }
 }
-
-import storage from "@modules/core/storage";
 
 async function load(): Promise<UiSettings> {
     try {
@@ -1301,6 +1306,7 @@ export default async function initUiSettings() {
         }
         save(current);
         apply(current);
+        (document.activeElement as HTMLElement)?.blur?.();
         modal.hide();
     });
 

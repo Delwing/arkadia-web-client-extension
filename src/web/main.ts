@@ -331,19 +331,20 @@ const splitHandle = document.getElementById('split-handle')!;
 let isDraggingSplit = false;
 
 function onSplitDragStart(e: MouseEvent | TouchEvent) {
-    e.preventDefault();
+    if (e.type === 'mousedown') e.preventDefault();
     isDraggingSplit = true;
     suppressSplitViewUntil = Infinity;
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onSplitDragMove);
     document.addEventListener('mouseup', onSplitDragEnd);
-    document.addEventListener('touchmove', onSplitDragMove);
+    document.addEventListener('touchmove', onSplitDragMove, { passive: false });
     document.addEventListener('touchend', onSplitDragEnd);
 }
 
 function onSplitDragMove(e: MouseEvent | TouchEvent) {
     if (!isDraggingSplit) return;
+    e.preventDefault();
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     const wrapperRect = outputWrapper.getBoundingClientRect();
     const newHeight = Math.max(60, wrapperRect.bottom - clientY);
@@ -372,7 +373,7 @@ function onSplitDragEnd() {
 }
 
 splitHandle.addEventListener('mousedown', onSplitDragStart);
-splitHandle.addEventListener('touchstart', onSplitDragStart);
+splitHandle.addEventListener('touchstart', onSplitDragStart, { passive: true });
 
 // Observe multibinds appearance/disappearance to prevent split view activation
 if (multiBindsElement) {
@@ -1181,6 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.addEventListener('close-options', () => {
+        (document.activeElement as HTMLElement)?.blur?.();
         if (optionsModal) {
             optionsModal.hide();
         }
@@ -1234,6 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (optionsExportImportBtn) {
         optionsExportImportBtn.addEventListener('click', () => {
+            (document.activeElement as HTMLElement)?.blur?.();
             optionsModal?.hide();
             setTimeout(() => window.dispatchEvent(new Event('show-export-import')), 150);
         });
