@@ -514,6 +514,22 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
                 return;
             }
 
+            // Pre-merge CRDT data (profession) from cloud before exporting
+            // This prevents overwriting cloud +staz events that were added on another device
+            if (enabledCategories.includes('characterSettings')) {
+                try {
+                    const cloudResult = await downloadCategories(
+                        ['characterSettings'],
+                        encryptionEnabled ? passphrase : undefined
+                    );
+                    if (cloudResult.success && cloudResult.data.characterSettings) {
+                        mergeCloudProfessionData(cloudResult.data.characterSettings);
+                    }
+                } catch {
+                    // Non-critical: proceed with upload even if pre-merge fails
+                }
+            }
+
             // Export data for enabled categories
             const allCharacters = collectCharacters();
             const categoryData = await exportCategories(enabledCategories, allCharacters);
