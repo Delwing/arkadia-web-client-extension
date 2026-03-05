@@ -209,6 +209,223 @@ test.describe('People browser popup', () => {
     });
 });
 
+test.describe('People browser popup – extended', () => {
+    test('marks person as ally and shows ally badge', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+        const firstPerson = popup.locator('.people-browser__item').first();
+        await firstPerson.locator('button').click();
+
+        const modal = page.locator('.modal.show');
+        await expect(modal, 'should open edit modal').toBeVisible();
+
+        // Click "Sojusznik" (ally) button
+        await modal.locator('button', {hasText: 'Sojusznik'}).click();
+
+        // Close modal
+        await modal.locator('button', {hasText: 'Anuluj'}).click();
+        await expect(modal, 'should close edit modal').not.toBeVisible();
+
+        // Verify ally badge
+        const allyBadge = firstPerson.locator('.people-browser__badge--ally');
+        await expect(allyBadge, 'should display ally badge after marking as ally').toBeVisible();
+
+        // Verify ally CSS class on the item row
+        await expect(firstPerson, 'should have ally class on item').toHaveClass(/people-browser__item--ally/);
+    });
+
+    test('ignores a remote person and restores them', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+        const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
+
+        // Open edit modal for Aldous
+        await aldousItem.locator('button').click();
+
+        const modal = page.locator('.modal.show');
+        await expect(modal, 'should open edit modal for Aldous').toBeVisible();
+
+        // Click "Ignoruj" (ignore) button
+        await modal.locator('button', {hasText: 'Ignoruj'}).click();
+        await expect(modal, 'should close modal after ignoring').not.toBeVisible();
+
+        // Aldous should now have ignored styling
+        await expect(aldousItem, 'should have ignored class').toHaveClass(/people-browser__item--ignored/);
+
+        // Count stays the same (ignored people still show)
+        await expect(popup, 'should still show 5 people with ignored person visible').toContainText('Baza postaci (5)');
+
+        // Now restore: click the edit button on ignored Aldous (shows ↩ icon)
+        await aldousItem.locator('button').click();
+        await expect(modal, 'should open edit modal for ignored Aldous').toBeVisible();
+
+        // Click "Przywroc" (restore) button
+        await modal.locator('button', {hasText: 'Przywroc'}).click();
+        await expect(modal, 'should close modal after restoring').not.toBeVisible();
+
+        // Aldous should no longer be ignored
+        await expect(aldousItem, 'should not have ignored class after restore').not.toHaveClass(/people-browser__item--ignored/);
+    });
+
+    test('edits a remote person and shows edited badge', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+
+        // Open edit modal for Aldous
+        const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
+        await aldousItem.locator('button').click();
+
+        const modal = page.locator('.modal.show');
+        await expect(modal, 'should open edit modal').toBeVisible();
+
+        // Change description
+        const descInput = modal.locator('input.form-control').nth(1);
+        await descInput.fill('Zmodyfikowany opis');
+
+        await modal.locator('button', {hasText: 'Zapisz'}).click();
+        await expect(modal, 'should close modal after saving edit').not.toBeVisible();
+
+        // Aldous should now show edited badge (*)
+        const editedItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
+        const editedBadge = editedItem.locator('.people-browser__badge--edited');
+        await expect(editedBadge, 'should display edited badge after modifying person').toBeVisible();
+
+        // Verify the description was changed in the list
+        await expect(editedItem, 'should show updated description').toContainText('Zmodyfikowany opis');
+
+        // Count should remain the same (edit, not add)
+        await expect(popup, 'should still show 5 people after edit').toContainText('Baza postaci (5)');
+    });
+
+    test('status filter shows only enemies or allies', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+        const statusSelect = popup.locator('.people-browser__status-filter select');
+
+        // Mark first person (Aldous) as enemy
+        const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
+        await aldousItem.locator('button').click();
+        let modal = page.locator('.modal.show');
+        await modal.locator('button', {hasText: 'Wrog'}).click();
+        await modal.locator('button', {hasText: 'Anuluj'}).click();
+        await expect(modal, 'should close modal after marking enemy').not.toBeVisible();
+
+        // Mark second person (Berenika) as ally
+        const berenikaItem = popup.locator('.people-browser__item').filter({hasText: 'Berenika'});
+        await berenikaItem.locator('button').click();
+        modal = page.locator('.modal.show');
+        await modal.locator('button', {hasText: 'Sojusznik'}).click();
+        await modal.locator('button', {hasText: 'Anuluj'}).click();
+        await expect(modal, 'should close modal after marking ally').not.toBeVisible();
+
+        // Filter by enemies
+        await statusSelect.selectOption('enemy');
+        await expect(
+            popup.locator('.people-browser__item'),
+            'should show only 1 enemy',
+        ).toHaveCount(1);
+        await expect(popup.locator('.people-browser__item').first(), 'should show Aldous as enemy').toContainText('Aldous');
+
+        // Filter by allies
+        await statusSelect.selectOption('ally');
+        await expect(
+            popup.locator('.people-browser__item'),
+            'should show only 1 ally',
+        ).toHaveCount(1);
+        await expect(popup.locator('.people-browser__item').first(), 'should show Berenika as ally').toContainText('Berenika');
+
+        // Clear filter
+        await statusSelect.selectOption('');
+        await expect(popup.locator('.people-browser__item'), 'should show all 5 people after clearing status filter').toHaveCount(5);
+    });
+
+    test('search clear button resets results', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+        const searchInput = popup.locator('input[placeholder*="Szukaj"]');
+
+        // Type a search term
+        await searchInput.fill('Aldous');
+        await expect(
+            popup.locator('.people-browser__item'),
+            'should filter to single result',
+        ).toHaveCount(1);
+
+        // Click the clear button (X)
+        await popup.locator('.people-browser__search-clear').click();
+
+        // All results should be back
+        await expect(searchInput, 'should clear the search input').toHaveValue('');
+        await expect(popup.locator('.people-browser__item'), 'should show all 5 people after clearing search').toHaveCount(5);
+    });
+
+    test('pagination controls navigate between pages', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+
+        // Add enough local people to exceed a small page size
+        for (const suffix of ['Pag1', 'Pag2', 'Pag3', 'Pag4', 'Pag5', 'Pag6', 'Pag7', 'Pag8', 'Pag9', 'Pag10', 'Pag11']) {
+            await addLocalPerson(page, {
+                name: `Osoba${suffix}`,
+                description: `opis ${suffix}`,
+            });
+        }
+
+        // Now we have 16 people (5 remote + 11 local)
+        await expect(popup, 'should show 16 people total').toContainText('Baza postaci (16)');
+
+        // Change page size to 10
+        const pageSizeSelect = popup.locator('.people-browser__page-size select');
+        await pageSizeSelect.selectOption('10');
+
+        // Pagination should appear
+        const pagination = popup.locator('.people-browser__pagination');
+        await expect(pagination, 'should show pagination controls').toBeVisible();
+
+        // Should show "Strona 1 z 2"
+        await expect(
+            popup.locator('.people-browser__pagination-info'),
+            'should show page 1 of 2',
+        ).toContainText('Strona 1 z 2');
+
+        // First page should have 10 items
+        await expect(popup.locator('.people-browser__item'), 'should show 10 items on first page').toHaveCount(10);
+
+        // Navigate to next page
+        await pagination.locator('button[title="Nastepna strona"]').click();
+        await expect(
+            popup.locator('.people-browser__pagination-info'),
+            'should show page 2 of 2',
+        ).toContainText('Strona 2 z 2');
+        await expect(popup.locator('.people-browser__item'), 'should show remaining items on second page').toHaveCount(6);
+
+        // Navigate back to first page
+        await pagination.locator('button[title="Poprzednia strona"]').click();
+        await expect(
+            popup.locator('.people-browser__pagination-info'),
+            'should show page 1 again',
+        ).toContainText('Strona 1 z 2');
+    });
+});
+
 test.describe('PeopleLocalEvents character switch', () => {
     test('locally added people are isolated between characters', async ({page}) => {
         await prepareClient(page, 'PeopleCharA');
