@@ -17,7 +17,6 @@ const NEWLY_SCOPED_KEYS = [
     'improve_counter',
     'attack_mode',
     'chat_history',
-    'contracts',
 ] as const;
 
 const SCOPED_MIGRATION_FLAG = 'characterScopeMigrationV1';

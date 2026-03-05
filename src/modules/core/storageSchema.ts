@@ -48,7 +48,6 @@ export interface CharacterStorageSchema {
     lua_gags_walka_config: any; // TODO: type lua gags walka config
     attack_mode: AttackMode;
     chat_history: any[]; // TODO: use serialized ChatEntry[] type
-    contracts: ContractsSnapshot;
 }
 
 /**
@@ -74,6 +73,7 @@ export interface GlobalStorageSchema {
     objectsListPosition: any; // TODO: type position data
     mobileButtonsPosition: any; // TODO: type position data
     settingsMigrationsVersion: number;
+    contracts: ContractsSnapshot;
     custom_sounds: CustomSound[];
     last_world_rebirth: number;
 }
@@ -96,11 +96,20 @@ export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema,
     peopleLocalEvents: { notifyOnNull: true },
     attack_mode: { notifyOnNull: true },
     chat_history: { notifyOnNull: true },
-    contracts: { notifyOnNull: true },
+    containers: { notifyOnNull: true },
+    deposits: { notifyOnNull: true },
     herb_counts: { notifyOnNull: true },
     improve_counter: { notifyOnNull: true },
+    improve_counter_lifetime: { notifyOnNull: true },
+    introduced_remembered: { notifyOnNull: true },
+    kill_counter: { notifyOnNull: true },
     kill_counter_session: { notifyOnNull: true },
     kill_counter_team: { notifyOnNull: true },
+    lastLang: { notifyOnNull: true },
+    lua_gags_delete_lines: { notifyOnNull: true },
+    lua_gags_colors: { notifyOnNull: true },
+    lua_gags_walka_config: { notifyOnNull: true },
+    profession: { notifyOnNull: true },
 };
 
 /** All character-scoped storage keys as a const array for runtime use. */
@@ -129,7 +138,6 @@ export const characterStorageKeys = [
     'lua_gags_walka_config',
     'attack_mode',
     'chat_history',
-    'contracts',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */

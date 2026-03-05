@@ -115,27 +115,23 @@ describe('CharacterTypedStorage', () => {
         test('notifyOnNull: newly scoped keys fire onChange when new character has no data', () => {
             characterStorage.setCharacter('Alice');
             characterStorage.set('attack_mode', 'offensive' as any);
-            characterStorage.set('contracts', { entries: [] } as any);
             const attackListener = jest.fn();
-            const contractsListener = jest.fn();
             characterStorage.onChange('attack_mode', attackListener);
-            characterStorage.onChange('contracts', contractsListener);
 
             characterStorage.setCharacter('Bob');
-            // Bob has no data for these keys, but they have notifyOnNull: true
+            // Bob has no data for this key, but it has notifyOnNull: true
             expect(attackListener).toHaveBeenCalledWith(undefined, 'offensive');
-            expect(contractsListener).toHaveBeenCalledWith(undefined, { entries: [] });
         });
 
-        test('non-notifyOnNull keys do NOT fire onChange when new character has no data', () => {
+        test('notifyOnNull keys fire onChange with undefined when new character has no data', () => {
             characterStorage.setCharacter('Alice');
             characterStorage.set('kill_counter', { wolf: 5 });
             const listener = jest.fn();
             characterStorage.onChange('kill_counter', listener);
 
             characterStorage.setCharacter('Bob');
-            // Bob has no kill_counter, and kill_counter does NOT have notifyOnNull
-            expect(listener).not.toHaveBeenCalled();
+            // Bob has no kill_counter, but kill_counter has notifyOnNull: true
+            expect(listener).toHaveBeenCalledWith(undefined, { wolf: 5 });
         });
 
         test('character switch does not fire when old and new values are identical', () => {
@@ -155,17 +151,14 @@ describe('CharacterTypedStorage', () => {
         test('moves newly scoped keys to character prefix for existing profiles', () => {
             localStorage.setItem('currentCharacter', 'Hero');
             localStorage.setItem('attack_mode', JSON.stringify('offensive'));
-            localStorage.setItem('contracts', JSON.stringify({ entries: [] }));
             localStorage.setItem('improve_counter', JSON.stringify({ sword: 3 }));
 
             migrateNewlyCharacterScopedKeys();
 
             expect(localStorage.getItem('Hero:attack_mode')).toBe(JSON.stringify('offensive'));
-            expect(localStorage.getItem('Hero:contracts')).toBe(JSON.stringify({ entries: [] }));
             expect(localStorage.getItem('Hero:improve_counter')).toBe(JSON.stringify({ sword: 3 }));
             // Unscoped keys removed
             expect(localStorage.getItem('attack_mode')).toBeNull();
-            expect(localStorage.getItem('contracts')).toBeNull();
             expect(localStorage.getItem('improve_counter')).toBeNull();
         });
 
@@ -198,12 +191,12 @@ describe('CharacterTypedStorage', () => {
             expect(localStorage.getItem('attack_mode')).toBeNull();
 
             // Add new unscoped data after migration
-            localStorage.setItem('contracts', JSON.stringify({ entries: [1] }));
+            localStorage.setItem('chat_history', JSON.stringify([{ msg: 'hi' }]));
             migrateNewlyCharacterScopedKeys();
 
             // Not migrated because flag was already set
-            expect(localStorage.getItem('contracts')).toBe(JSON.stringify({ entries: [1] }));
-            expect(localStorage.getItem('Hero:contracts')).toBeNull();
+            expect(localStorage.getItem('chat_history')).toBe(JSON.stringify([{ msg: 'hi' }]));
+            expect(localStorage.getItem('Hero:chat_history')).toBeNull();
         });
     });
 

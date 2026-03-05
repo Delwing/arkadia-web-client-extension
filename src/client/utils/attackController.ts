@@ -21,6 +21,10 @@ export function createAttackController(client: Client) {
         attackMode = mode as AttackMode;
         characterStorage.set("attack_mode", attackMode);
     });
+    characterStorage.onChange("attack_mode", (mode) => {
+        attackMode = mode ?? "A";
+        client.sendEvent("attackMode", attackMode);
+    });
     client.sendEvent("attackMode", attackMode);
 
     const attackById = (id: number, command: string = attackCommand) => {

@@ -1,6 +1,7 @@
 import { globalStorage } from './storage';
 import type { BindSettings, Keymap, KeymapStore } from './keymapTypes';
 import {
+    ACTIVE_KEYMAP_STORAGE_KEY,
     DEFAULT_KEYMAP_ID,
     DEFAULT_KEYMAP_NAME,
 } from './keymapTypes';
@@ -66,10 +67,22 @@ export function getKeymapStore(): KeymapStore {
 
 /**
  * Get the active keymap ID for this device.
- * Falls back to the default keymap if none is set.
+ * Falls back to the legacy `arkadia.activeKeymap` key, then to the default keymap.
  */
 export function getActiveKeymapId(): string {
-    return globalStorage.get('active_keymap_id') || DEFAULT_KEYMAP_ID;
+    const stored = globalStorage.get('active_keymap_id');
+    if (stored) return stored;
+
+    // Migrate legacy key if present
+    const legacy = localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY);
+    if (legacy) {
+        const id = legacy.replace(/^"|"$/g, '');
+        globalStorage.set('active_keymap_id', id);
+        localStorage.removeItem(ACTIVE_KEYMAP_STORAGE_KEY);
+        return id;
+    }
+
+    return DEFAULT_KEYMAP_ID;
 }
 
 /**

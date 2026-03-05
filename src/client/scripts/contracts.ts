@@ -1,6 +1,6 @@
 import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
-import {characterStorage} from "@modules/core/storage.ts";
+import {globalStorage} from "@modules/core/storage.ts";
 
 export interface Contract {
     id: string;
@@ -172,7 +172,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     let pendingContract: Partial<Contract> | null = null;
 
     const loadContracts = (): void => {
-        const snapshot = characterStorage.get(STORAGE_KEY);
+        const snapshot = globalStorage.get(STORAGE_KEY);
         if (snapshot) {
             contracts = snapshot.contracts || [];
         }
@@ -183,7 +183,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
             contracts,
             lastCleanup: Date.now(),
         };
-        characterStorage.set(STORAGE_KEY, snapshot);
+        globalStorage.set(STORAGE_KEY, snapshot);
         eventBus.emit("contracts.updated", { contracts: [...contracts] });
     };
 

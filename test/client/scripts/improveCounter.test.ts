@@ -238,11 +238,14 @@ describe('improve counter', () => {
 
   test('does not record false improvement when switching characters without reload', () => {
     // Character A logs in and plays
+    characterStorage.setCharacter('charA');
+    characterStorage.set('object_num', '1');
     client.dispatch('gmcp.char.state', { improve: 2 });
     client.println.mockClear();
+    client.print.mockClear();
 
     // Simulate character switch: storage scope changes, triggering onChange
-    characterStorage.setCharacter('newchar');
+    characterStorage.setCharacter('charB');
     // The reset event fires (from Client.ts when object_num changes)
     client.dispatch('reset', undefined);
     characterStorage.set('object_num', '99');
