@@ -17,6 +17,7 @@ import Client from '@client/Client';
 import type { ClientAdapter } from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
+import eventBus from '@modules/core/eventBus';
 
 describe('prettyContainers with real Client', () => {
   let client: Client;
@@ -52,6 +53,7 @@ describe('prettyContainers with real Client', () => {
     // Clear mocks between tests
     jest.clearAllMocks();
     localStorage.clear();
+    eventBus.clear();
   });
 
   // Helper to get table text from output calls
