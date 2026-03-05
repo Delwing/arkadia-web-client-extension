@@ -3,7 +3,6 @@ import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
     primeCharInfo,
-    pushGmcp,
     waitForCommandInput,
     waitForMapReady,
 } from './support/mocks';
