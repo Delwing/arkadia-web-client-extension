@@ -14,6 +14,7 @@ import {
 } from "../constants/colors";
 import { polishNumberWords, polishNumberPattern } from "./polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const GROUP_NAME_COLOR = createColorFormat('#557C99');
 
@@ -602,7 +603,7 @@ export default function initContainers(client: Client) {
     };
 
     const applyContainerSettings = (settings: any) => {
-        const detail = (settings ?? {}) as {
+        const detail = (settings ?? defaultSettings) as {
             containerColumns?: number;
             prettyContainers?: boolean;
             favoriteMagicTypes?: string[];
@@ -611,7 +612,7 @@ export default function initContainers(client: Client) {
         columns = detail.containerColumns ?? columns;
         favoriteMagicTypes = detail.favoriteMagicTypes ?? favoriteMagicTypes;
         favoriteMagicKeys = detail.favoriteMagicKeys ?? favoriteMagicKeys;
-        const shouldEnable = !!detail.prettyContainers;
+        const shouldEnable = detail.prettyContainers ?? defaultSettings.prettyContainers;
         if (shouldEnable && !enabled) {
             enabled = true;
             register();

@@ -90,7 +90,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     characterStorage.onChange(STORAGE_KEY, async (newValue) => {
-        storedBags = normalizeHerbBagsState(newValue);
+        storedBags = newValue ? normalizeHerbBagsState(newValue) : {};
         await ensureData();
         broadcastBags();
     });
