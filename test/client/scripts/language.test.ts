@@ -1,4 +1,5 @@
 import initLanguage from '@client/scripts/language';
+import { setTestSettings } from '../helpers/testSettings';
 
 type ListenerMap = Record<string, Array<(event: any) => void>>;
 
@@ -101,7 +102,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'elficki',
       languageAdjective: 'smoothly',
       languageAliases: [],
@@ -120,7 +121,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'potoczna',
       languageAdjective: '',
       languageAliases: [],
@@ -139,7 +140,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'potoczna',
       languageAdjective: 'warmly',
       languageAliases: [],
@@ -158,7 +159,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'elficki',
       languageAdjective: '',
       languageAliases: [],
@@ -180,7 +181,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'norski',
       languageAdjective: 'gruffly',
       languageAliases: [
@@ -209,7 +210,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'potoczna',
       languageAdjective: '',
       languageAliases: [
@@ -243,7 +244,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'potoczna',
       languageAdjective: '',
       languageAliases: [
@@ -266,7 +267,7 @@ describe('language speech handling', () => {
 
     initLanguage(context.client as any, context.client.aliases);
 
-    context.dispatch('settings', {
+    setTestSettings({
       language: 'elficki',
       languageAdjective: '',
       languageAliases: [],

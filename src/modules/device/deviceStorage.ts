@@ -255,24 +255,12 @@ export async function triggerSettingsReload(): Promise<void> {
         eventBus.emit('layoutManagerStateChanged');
     }
 
-    // 2. Reload and emit uiSettings (for mobile buttons visibility, etc.)
+    // 2. Reload and fire uiSettings listeners (for mobile buttons visibility, etc.)
     try {
-        const eventBus = (await import('@modules/core/eventBus')).default;
-        const { defaultUiSettings } = await import('@web/defaultUiSettings');
         const stored = globalStorage.get('uiSettings');
-        const uiSettings = stored ? { ...defaultUiSettings, ...stored } : defaultUiSettings;
-
-        // Emit uiSettings event with relevant payload
-        eventBus.emit('uiSettings', {
-            mobileDirectionButtons: uiSettings.showButtons,
-            hapticFeedback: uiSettings.hapticFeedback,
-            emojiLabels: uiSettings.emojiLabels,
-            xtermPalette: uiSettings.xtermPalette,
-            footerMode: uiSettings.footerMode,
-            fightTitleIcon: uiSettings.fightTitleIcon,
-            clearInputOnSend: uiSettings.clearInputOnSend,
-            autoLowercaseCommands: uiSettings.autoLowercaseCommands,
-        });
+        if (stored) {
+            globalStorage.fireListeners('uiSettings', stored, stored);
+        }
     } catch (err) {
         console.error('Failed to reload uiSettings', err);
     }

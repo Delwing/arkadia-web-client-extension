@@ -62,8 +62,8 @@ const ProfessionPopup: React.FC = () => {
 
     // Reload on storage changes (e.g. character switch)
     useEffect(() => {
-        return eventBus.on('storage', (payload) => {
-            if (payload.key === 'profession' && wrapperProps.isOpen) loadState();
+        return characterStorage.onChange('profession', () => {
+            if (wrapperProps.isOpen) loadState();
         });
     }, [wrapperProps.isOpen, loadState]);
 

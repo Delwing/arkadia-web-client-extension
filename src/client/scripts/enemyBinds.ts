@@ -4,7 +4,7 @@ import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/pe
 import type { PersonListEntry } from '../types/people';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { globalStorage } from '@modules/core/storage';
+import { globalStorage, characterStorage } from '@modules/core/storage';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
@@ -76,7 +76,7 @@ export default function initEnemyBinds(
         }));
     }
 
-    client.on('settings', (settings) => {
+    const applySettings = (settings: any) => {
         const detail = (settings ?? {}) as {
             enemyGuilds?: unknown;
             enemyBindsKeepUnchanged?: boolean;
@@ -91,7 +91,9 @@ export default function initEnemyBinds(
         if (Array.isArray(detail.enemyBindsEnabledSlots) && detail.enemyBindsEnabledSlots.length === 3) {
             enabledSlots = detail.enemyBindsEnabledSlots as [boolean, boolean, boolean];
         }
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     function isEnemy(desc: string): boolean {
         const lowerDesc = desc.toLowerCase();

@@ -576,17 +576,30 @@ class KillCounter {
         this.client = client;
         killCounterInstance = this;
 
-        this.client.on("storage", ({ key, value }) => {
-            if (key === STORAGE_KEY) {
-                this.loadTotals(isNumberRecord(value) ? value : {});
-                this.migrateIfNeeded();
-            }
-            if (key === SESSION_STORAGE_KEY) {
-                this.loadSession(isSessionRecord(value) ? value : {});
-            }
-            if (key === TEAM_KILLS_STORAGE_KEY) {
-                this.loadTeamKills(isTeamMemberKills(value) ? value : {});
-            }
+        // Load initial data from storage
+        const initialTotals = characterStorage.get(STORAGE_KEY);
+        if (initialTotals) {
+            this.loadTotals(isNumberRecord(initialTotals) ? initialTotals : {});
+            this.migrateIfNeeded();
+        }
+        const initialSession = characterStorage.get(SESSION_STORAGE_KEY);
+        if (initialSession) {
+            this.loadSession(isSessionRecord(initialSession) ? initialSession : {});
+        }
+        const initialTeam = characterStorage.get(TEAM_KILLS_STORAGE_KEY);
+        if (initialTeam) {
+            this.loadTeamKills(isTeamMemberKills(initialTeam) ? initialTeam : {});
+        }
+
+        characterStorage.onChange(STORAGE_KEY, (newValue) => {
+            this.loadTotals(isNumberRecord(newValue) ? newValue : {});
+            this.migrateIfNeeded();
+        });
+        characterStorage.onChange(SESSION_STORAGE_KEY, (newValue) => {
+            this.loadSession(isSessionRecord(newValue) ? newValue : {});
+        });
+        characterStorage.onChange(TEAM_KILLS_STORAGE_KEY, (newValue) => {
+            this.loadTeamKills(isTeamMemberKills(newValue) ? newValue : {});
         });
 
         this.client.on("reset", () => this.resetSession());
@@ -630,9 +643,6 @@ class KillCounter {
             }
         );
 
-        this.client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY});
-        this.client.port?.postMessage({type: "GET_STORAGE", key: SESSION_STORAGE_KEY});
-        this.client.port?.postMessage({type: "GET_STORAGE", key: TEAM_KILLS_STORAGE_KEY});
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
@@ -652,11 +662,7 @@ class KillCounter {
         Object.entries(this.kills).forEach(([name, entry]) => {
             totals[name] = entry.myTotal;
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: STORAGE_KEY,
-            value: totals,
-        });
+        characterStorage.set(STORAGE_KEY, totals);
     };
 
     private loadSession(
@@ -678,11 +684,7 @@ class KillCounter {
                 sessions[name] = {mySession: entry.mySession, teamSession: entry.teamSession};
             }
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: SESSION_STORAGE_KEY,
-            value: sessions,
-        });
+        characterStorage.set(SESSION_STORAGE_KEY, sessions);
     };
 
     private loadTeamKills(teamKills: TeamMemberKills = {}): void {
@@ -697,11 +699,7 @@ class KillCounter {
                 filtered[player] = mobs;
             }
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: TEAM_KILLS_STORAGE_KEY,
-            value: filtered,
-        });
+        characterStorage.set(TEAM_KILLS_STORAGE_KEY, filtered);
     };
 
     private ensureEntry(name: string): KillEntry {

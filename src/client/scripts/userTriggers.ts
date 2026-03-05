@@ -3,6 +3,7 @@ import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
+import { globalStorage } from "@modules/core/storage";
 
 export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap';
 
@@ -276,15 +277,10 @@ export default function initUserTriggers(client: Client) {
         });
     };
 
-    client.on('storage', ({key, value}) => {
-        if (key === STORAGE_KEY) {
-            apply(Array.isArray(value) ? value : []);
-        }
-    });
+    const initialTriggers = globalStorage.get(STORAGE_KEY);
+    if (initialTriggers) apply(Array.isArray(initialTriggers) ? initialTriggers : []);
 
-    client.on('port-connected', () => {
-        client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
+    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+        apply(Array.isArray(newValue) ? newValue : []);
     });
-
-    client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
 }

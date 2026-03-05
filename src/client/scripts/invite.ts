@@ -2,6 +2,7 @@ import Client from "../Client";
 import { gmcp } from "../gmcp";
 import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
 import type { PersonListEntry } from '../types/people';
+import { characterStorage } from "@modules/core/storage";
 
 export default function initInvite(client: Client) {
     const tag = "invite";
@@ -49,13 +50,15 @@ export default function initInvite(client: Client) {
     }
 
     // Listen for settings updates to get enemy guilds list
-    client.on('settings', (settings) => {
+    const applySettings = (settings: any) => {
         const detail = (settings ?? {}) as { enemyGuilds?: unknown };
         if (Array.isArray(detail.enemyGuilds)) {
             enemyGuilds = [...detail.enemyGuilds];
         }
         ensurePeopleLoaded().catch(() => undefined);
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     // Register trigger for invite pattern
     // Pattern: ^\[?([A-Z][a-z ]+?)\]? zaprasza cie do swojej druzyny\.$

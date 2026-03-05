@@ -2,6 +2,8 @@ import initAttackBeep from '@client/scripts/attackBeep';
 import Triggers from '@client/Triggers';
 import {refresh, subscribe} from '@modules/data/peopleStore';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 jest.mock('@modules/data/peopleStore', () => ({
   subscribe: jest.fn(),
@@ -19,7 +21,6 @@ const MOCK_PEOPLE = [
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   sendEvent = jest.fn();
-  on = jest.fn();
 }
 
 describe('attack beep triggers', () => {
@@ -42,15 +43,13 @@ describe('attack beep triggers', () => {
       subscribers.forEach((listener) => listener(MOCK_PEOPLE));
       return MOCK_PEOPLE;
     });
+    characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     initAttackBeep((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     // initialize with enemy guilds so beeping is enabled only for configured guilds
-    const handler = client.on.mock.calls[0]?.[1];
-    if (handler) {
-      handler({ enemyGuilds: ['CKN'] } as any);
-    }
+    setTestSettings({ enemyGuilds: ['CKN'] });
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
     jest.clearAllMocks();
@@ -59,6 +58,7 @@ describe('attack beep triggers', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    localStorage.clear();
   });
 
   test('beeps and highlights on attack', () => {

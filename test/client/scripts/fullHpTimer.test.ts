@@ -1,6 +1,8 @@
 import initFullHpTimer from '@client/scripts/fullHpTimer';
 import { EventEmitter } from 'events';
 import { colorString, createColorFormat } from '@modules/core/Colors';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 describe('full hp timer', () => {
   class FakeClient {
@@ -18,14 +20,16 @@ describe('full hp timer', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    characterStorage.setCharacter('TestChar');
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    localStorage.clear();
   });
 
-  function enable(client: FakeClient) {
-    client.sendEvent('settings', { fullHpMessage: true });
+  function enable(_client: FakeClient) {
+    setTestSettings({ fullHpMessage: true });
   }
 
   test('prints message after three minutes when recovering to full hp', () => {

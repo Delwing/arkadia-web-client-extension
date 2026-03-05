@@ -8,6 +8,7 @@ import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {getWearValue} from "./wearUsed";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { polishWordToNumber } from "./polishNumberConverter";
+import { characterStorage } from "@modules/core/storage";
 
 const headerColor = createColorFormat('#8470ff')
 const WHITE = createColorFormat('#ffffff');
@@ -62,7 +63,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     const persistBags = () => {
         const snapshot = normalizeHerbBagsState(cloneBags());
-        client.port?.postMessage({type: 'SET_STORAGE', key: STORAGE_KEY, value: snapshot});
+        characterStorage.set(STORAGE_KEY, snapshot);
         client.sendEvent('herbCounts', structuredClone(snapshot));
         storedBags = snapshot;
     };
@@ -75,24 +76,30 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         if (Object.keys(storedBags).length > 0) {
             broadcastBags();
         } else {
-            client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
+            const stored = characterStorage.get(STORAGE_KEY);
+            if (stored) {
+                storedBags = normalizeHerbBagsState(stored);
+                broadcastBags();
+            }
         }
     };
 
-    client.on('storage', async ({key, value}) => {
-        if (key === STORAGE_KEY) {
-            storedBags = normalizeHerbBagsState(value);
-            await ensureData();
-            broadcastBags();
-        }
+    const initialHerbs = characterStorage.get(STORAGE_KEY);
+    if (initialHerbs) {
+        storedBags = normalizeHerbBagsState(initialHerbs);
+    }
+
+    characterStorage.onChange(STORAGE_KEY, async (newValue) => {
+        storedBags = normalizeHerbBagsState(newValue);
+        await ensureData();
+        broadcastBags();
     });
-    client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
     client.on('requestHerbCounts', () => requestBagsIfNeeded());
 
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
     let wieleCount = 25;
-    client.on('settings', (settings) => {
+    const applyHerbSettings = (settings: any) => {
         const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string; herbWieleCount?: number };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
@@ -101,7 +108,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
         wieleCount = typeof st.herbWieleCount === 'number' && st.herbWieleCount > 0 ? st.herbWieleCount : 25;
-    });
+    };
+    applyHerbSettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applyHerbSettings);
 
     async function ensureData() {
         if (!herbs) {
@@ -601,23 +610,16 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({pattern: /\/woreczki_buduj$/, callback: evaluateBagConditions});
         aliases.push({
-            pattern: /\/ziola_pokaz$/, callback: () => {
-                let unsubscribe: (() => void) | undefined;
-                // eslint-disable-next-line prefer-const -- Forward reference: unsubscribe used in its own initializer
-                unsubscribe = client.on('storage', async ({key, value}) => {
-                    if (key === STORAGE_KEY) {
-                        const bags = normalizeHerbBagsState(value);
-                        await ensureData();
-                        const output = buildSummary(bags, false, false);
-                        if (output.length > 0) {
-                            client.print(output);
-                        } else {
-                            client.println('Brak podsumowania.');
-                        }
-                        unsubscribe?.();
-                    }
-                });
-                client.port?.postMessage({type: 'GET_STORAGE', key: STORAGE_KEY});
+            pattern: /\/ziola_pokaz$/, callback: async () => {
+                const stored = characterStorage.get(STORAGE_KEY);
+                const bags = normalizeHerbBagsState(stored);
+                await ensureData();
+                const output = buildSummary(bags, false, false);
+                if (output.length > 0) {
+                    client.print(output);
+                } else {
+                    client.println('Brak podsumowania.');
+                }
             }
         });
         aliases.push({

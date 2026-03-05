@@ -26,10 +26,13 @@ import type { AttackMode } from '@client/utils/attackController';
 export interface CharacterStorageSchema {
     settings: Settings;
     kill_counter: Record<string, number>;
-    improve_counter_lifetime: Record<string, number>;
+    kill_counter_session: Record<string, { mySession: number; teamSession: number }>;
+    kill_counter_team: Record<string, Record<string, number>>;
+    improve_counter: any;
+    improve_counter_lifetime: any;
     deposits: any; // TODO: type when deposits structure is defined
     containers: any; // TODO: type when containers structure is defined
-    herb_counts: Record<string, number>;
+    herb_counts: any; // HerbBagsState
     herbs_data: any; // TODO: type when herbs data structure is defined
     mapperRoomId: number;
     lastLang: string;
@@ -97,6 +100,9 @@ export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema,
 export const characterStorageKeys = [
     'settings',
     'kill_counter',
+    'kill_counter_session',
+    'kill_counter_team',
+    'improve_counter',
     'improve_counter_lifetime',
     'deposits',
     'containers',

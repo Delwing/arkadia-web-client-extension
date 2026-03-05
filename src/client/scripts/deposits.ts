@@ -4,6 +4,7 @@ import { convertCurrency } from "./priceEvaluation";
 import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import { characterStorage } from "@modules/core/storage";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
@@ -58,20 +59,20 @@ export function getTotalCopper(deposits: Record<number, DepositInfo>): number {
 }
 
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
-    client.on("storage", ({ key, value }) => {
-        if (key === STORAGE_KEY) {
-            const nextDeposits = cloneDeposits(value as Record<number, DepositInfo> | undefined);
-            Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
-            Object.assign(deposits, nextDeposits);
-            eventBus.emit("deposits.updated");
-        }
+    const loadDeposits = (value: Record<number, DepositInfo> | undefined) => {
+        const nextDeposits = cloneDeposits(value);
+        Object.keys(deposits).forEach(key => delete deposits[Number(key)]);
+        Object.assign(deposits, nextDeposits);
+        eventBus.emit("deposits.updated");
+    };
+    loadDeposits(characterStorage.get(STORAGE_KEY) as Record<number, DepositInfo> | undefined);
+    characterStorage.onChange(STORAGE_KEY, (value) => {
+        loadDeposits(value as Record<number, DepositInfo> | undefined);
     });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
 
     const persist = () => {
         const snapshot = cloneDeposits(deposits);
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: snapshot });
+        characterStorage.set(STORAGE_KEY, snapshot);
         eventBus.emit("deposits.updated");
     };
 
@@ -83,9 +84,13 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
 
     let columns = 1;
     let width = client.contentWidth;
-    client.on('settings', (settings) => {
+    const applySettings = (settings: any) => {
         const detail = (settings ?? {}) as { containerColumns?: number };
         columns = detail.containerColumns ?? columns;
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings);
     });
     client.on('contentWidth', (value) => {
         width = value;

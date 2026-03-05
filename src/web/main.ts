@@ -23,7 +23,6 @@ import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
 
 import "@client/main.ts"
-import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
@@ -50,7 +49,7 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {globalStorage} from "@modules/core/storage"
+import {characterStorage, globalStorage} from "@modules/core/storage"
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
@@ -73,10 +72,9 @@ migrateFooterComponentVisibility();
 
 let mobileRadial: MobileCommandRadial | null = null;
 
-const client = new Client(arkadiaClient, new MockPort());
+const client = new Client(arkadiaClient);
 setClientInstance(client);
 registerScripts(client);
-client.connect(client.port, true);
 
 const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {
     if (typeof command !== 'string') {
@@ -209,7 +207,7 @@ const isDirectionMap = (value: unknown): value is Record<string, Partial<RawDire
     });
 };
 
-arkadiaClient.on('settings', (detail) => {
+characterStorage.onChange('settings', (detail) => {
     const payload = detail as { binds?: { directions?: unknown } } | undefined;
     const directions = payload?.binds?.directions;
     if (isDirectionMap(directions)) {
@@ -217,7 +215,7 @@ arkadiaClient.on('settings', (detail) => {
     }
 });
 
-client.on('binds', (detail) => {
+globalStorage.onChange('binds', (detail) => {
     const payload = detail as { directions?: unknown } | undefined;
     const directions = payload?.directions;
     if (isDirectionMap(directions)) {
@@ -970,7 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     const uiSettingsData = globalStorage.get('uiSettings');
     let clearInputOnSend = !!uiSettingsData?.clearInputOnSend;
-    client.on('uiSettings', (payload) => {
+    globalStorage.onChange('uiSettings', (payload) => {
         if (typeof payload?.clearInputOnSend === 'boolean') {
             clearInputOnSend = payload.clearInputOnSend;
         }

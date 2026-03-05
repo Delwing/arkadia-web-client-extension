@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { createColorFormat, colorString } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
 
 const STORAGE_KEY_REMEMBERED = "introduced_remembered";
 const STORAGE_KEY_INTRODUCED = "introduced_presented";
@@ -21,35 +22,28 @@ export default function initIntroduced(
     const loaded = {remembered: false, introduced: false};
 
     // Load from storage
-    client.on("storage", ({key, value}) => {
-        if (key === STORAGE_KEY_REMEMBERED) {
-            const stored = Array.isArray(value) ? value : [];
-            previousRemembered = stored;
-            remembered = [...stored]; // Also restore remembered for use in processIntroduced
-            loaded.remembered = true;
-        }
-        if (key === STORAGE_KEY_INTRODUCED) {
-            loaded.introduced = true;
-        }
+    const initialRemembered = characterStorage.get(STORAGE_KEY_REMEMBERED);
+    if (initialRemembered) {
+        const stored = Array.isArray(initialRemembered) ? initialRemembered : [];
+        previousRemembered = stored;
+        remembered = [...stored];
+        loaded.remembered = true;
+    }
+    loaded.introduced = true;
+
+    characterStorage.onChange(STORAGE_KEY_REMEMBERED, (newValue) => {
+        const stored = Array.isArray(newValue) ? newValue : [];
+        previousRemembered = stored;
+        remembered = [...stored];
+        loaded.remembered = true;
     });
 
-    client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY_REMEMBERED});
-    client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY_INTRODUCED});
-
     const persistRemembered = () => {
-        client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: STORAGE_KEY_REMEMBERED,
-            value: remembered,
-        });
+        characterStorage.set(STORAGE_KEY_REMEMBERED, remembered);
     };
 
     const persistIntroduced = () => {
-        client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: STORAGE_KEY_INTRODUCED,
-            value: introduced,
-        });
+        characterStorage.set(STORAGE_KEY_INTRODUCED, introduced);
     };
 
     /**

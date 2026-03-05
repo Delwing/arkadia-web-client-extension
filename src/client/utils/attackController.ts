@@ -9,7 +9,7 @@ export function createAttackController(client: Client) {
     const storedSettings = characterStorage.get("settings");
     let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
     let supportCommand = normalizeSupportCommand(storedSettings?.supportCommand);
-    client.on("settings", (settings) => {
+    characterStorage.onChange("settings", (settings) => {
         const detail = (settings ?? {}) as { attackCommand?: string; supportCommand?: string };
         attackCommand = normalizeAttackCommand(detail?.attackCommand);
         supportCommand = normalizeSupportCommand(detail?.supportCommand);

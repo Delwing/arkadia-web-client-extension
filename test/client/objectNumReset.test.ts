@@ -55,13 +55,17 @@ describe('object_num persistence and reset event', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
     (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
     (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
     (globalThis as any).dispatchEvent = jest.fn();
-    (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
     (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
-    client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+    client = new Client((global as any).clientAdapterMock as any);
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   test('stores object_num and emits reset when changed', () => {

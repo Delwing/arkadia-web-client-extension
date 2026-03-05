@@ -2,6 +2,7 @@ import Client from "../Client";
 import { containerAction, getContainer, ContainerType } from "./bagManager";
 import type { CollectOverride } from "@modules/core/defaultSettings";
 import { getBodyExtras, clearBodyExtras } from "./lootParser";
+import { characterStorage } from "@modules/core/storage";
 
 type KillerType = "ME" | "TEAM" | "OTHER";
 
@@ -56,7 +57,8 @@ export default class ItemCollector {
     constructor(client: Client) {
         this.client = client;
 
-        this.client.on("settings", (payload) => {
+        this.applySettings(characterStorage.get('settings') ?? {});
+        characterStorage.onChange('settings', (payload) => {
             this.applySettings(payload ?? {});
         });
 

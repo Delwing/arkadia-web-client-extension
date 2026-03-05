@@ -280,7 +280,9 @@ const HerbManager = () => {
             preUseCommandsRef.current = pre;
             postUseCommandsRef.current = post;
         };
-        const unsubscribe = eventBus.on("settings", handleSettings as any);
+        const initial = characterStorage.get('settings');
+        if (initial) handleSettings(initial);
+        const unsubscribe = characterStorage.onChange("settings", handleSettings as any);
         return () => {
             unsubscribe();
         };

@@ -2,6 +2,7 @@ import Client from "../Client";
 import { longToShort } from "@shared/map/directions";
 import { getShortcut } from "./shortcuts";
 import type { WalkerState } from "@shared/events/clientEvents";
+import { characterStorage } from "@modules/core/storage";
 
 
 export default function initIdz(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -32,14 +33,16 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         client.sendEvent('walker.update', getState());
     };
 
-    client.on('settings', (payload) => {
+    const applySettings = (payload: any) => {
         const detail = (payload ?? {}) as { autoWalkDelay?: unknown } & Record<string, unknown>;
         settings = detail;
         const value = detail.autoWalkDelay !== undefined ? parseFloat(String(detail.autoWalkDelay)) : NaN;
         if (!isNaN(value)) {
             lastDelay = value;
         }
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     const clearTimer = () => {
         if (timer !== null) {
@@ -110,7 +113,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, d);
             lastDelay = delay;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            characterStorage.set('settings', settings as any);
         } else {
             delay = Math.max(0.5, lastDelay);
         }
@@ -178,7 +181,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         lastDelay = Math.max(0.5, d);
         delay = lastDelay;
         settings.autoWalkDelay = lastDelay;
-        client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+        characterStorage.set('settings', settings as any);
         client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         emitUpdate();
     });
@@ -186,7 +189,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         lastDelay = Math.max(0.5, lastDelay - 0.5);
         delay = Math.max(0.5, delay - 0.5);
         settings.autoWalkDelay = lastDelay;
-        client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+        characterStorage.set('settings', settings as any);
         client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         emitUpdate();
     });
@@ -194,7 +197,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         lastDelay += 0.5;
         delay += 0.5;
         settings.autoWalkDelay = lastDelay;
-        client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+        characterStorage.set('settings', settings as any);
         client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
         emitUpdate();
     });
@@ -249,7 +252,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay = Math.max(0.5, parseFloat(m[1]));
             delay = lastDelay;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            characterStorage.set('settings', settings as any);
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
             emitUpdate();
         }
@@ -261,7 +264,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay = Math.max(0.5, lastDelay - 0.5);
             delay = Math.max(0.5, delay - 0.5);
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            characterStorage.set('settings', settings as any);
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
             emitUpdate();
         }
@@ -273,7 +276,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             lastDelay += 0.5;
             delay += 0.5;
             settings.autoWalkDelay = lastDelay;
-            client.port?.postMessage({ type: 'SET_STORAGE', key: 'settings', value: settings });
+            characterStorage.set('settings', settings as any);
             client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
             emitUpdate();
         }

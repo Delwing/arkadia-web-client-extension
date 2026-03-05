@@ -2,6 +2,7 @@ import Client from "../Client";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import type {LetterTemplate} from "../types/letter";
 import {LETTER_TEMPLATE_PREVIEW_LABELS, isLetterTemplate} from "../types/letter";
+import {characterStorage} from "@modules/core/storage";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
@@ -403,7 +404,12 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         });
     }
 
-    client.on("settings", (settings) => {
+    const initialSettings = characterStorage.get('settings');
+    if (initialSettings) {
+        const detail = (initialSettings ?? {}) as { letterLineWidth?: number };
+        updateLineWidth(detail?.letterLineWidth);
+    }
+    characterStorage.onChange('settings', (settings) => {
         const detail = (settings ?? {}) as { letterLineWidth?: number };
         updateLineWidth(detail?.letterLineWidth);
     });

@@ -3,6 +3,7 @@ import type { PersonListEntry } from './types/people';
 import Client from "./Client";
 import {createColorFormat} from '@modules/core/Colors';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
+import { characterStorage } from "@modules/core/storage";
 
 const RED = createColorFormat('#ff0000')
 
@@ -29,7 +30,7 @@ export default class People {
                 this.client.Triggers.removeByTag(this.tag)
             }
         })
-        this.client.on('settings', (settings) => {
+        const applySettings = (settings: any) => {
             const detail = (settings ?? {}) as {
                 guilds?: string[];
                 enemyGuilds?: string[];
@@ -39,6 +40,10 @@ export default class People {
             this.enemyGuilds = detail.enemyGuilds || []
             this.guildColors = detail.guildColors || {}
             this.ensurePeopleTriggers()
+        }
+        applySettings(characterStorage.get('settings'))
+        characterStorage.onChange('settings', (settings) => {
+            applySettings(settings)
         })
         this.ensurePeopleTriggers()
     }

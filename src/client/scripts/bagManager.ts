@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
 
 const STORAGE_KEY = "containers";
 
@@ -85,8 +86,8 @@ function getBagForms(bag: string) {
     };
 }
 
-function saveConfig(client: Client) {
-    client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: containerConfig });
+function saveConfig(_client: Client) {
+    characterStorage.set(STORAGE_KEY, containerConfig);
 }
 
 function setContainer(type: keyof ContainerConfig, bag: string, client: Client) {
@@ -284,12 +285,12 @@ export default function initBagManager(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
-    client.on("storage", ({ key, value }) => {
-        if (key === STORAGE_KEY && value) {
-            Object.assign(containerConfig, value);
-        }
+    const initialContainers = characterStorage.get(STORAGE_KEY);
+    if (initialContainers) Object.assign(containerConfig, initialContainers);
+
+    characterStorage.onChange(STORAGE_KEY, (newValue) => {
+        if (newValue) Object.assign(containerConfig, newValue);
     });
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
     window.addEventListener("beforeunload", () => saveConfig(client));
 
     client.Triggers.registerTrigger(

@@ -12,7 +12,7 @@ describe('default settings loading', () => {
 
   test('returns stored settings when present', () => {
     characterStorage.setCharacter('Alice');
-    characterStorage.set('settings', { ...defaultSettings, shortenExits: true } as any);
+    characterStorage.set('settings', { ...defaultSettings, shortenExits: true });
     expect(characterStorage.get('settings')).toEqual({ ...defaultSettings, shortenExits: true });
   });
 });

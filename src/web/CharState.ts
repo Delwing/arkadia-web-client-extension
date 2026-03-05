@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "./colors.ts";
+import { characterStorage, globalStorage } from "@modules/core/storage";
 
 export interface CharStateData {
   hp: number;
@@ -158,16 +159,16 @@ export default class CharState {
     this.applyOverrides(overrides);
     this.initDOM();
 
-    this.client.on('settings', (ev: any) => {
-      if (typeof ev.detail?.emojiLabels === 'boolean') {
-        this.applyLabelMode(ev.detail.emojiLabels);
+    characterStorage.onChange('settings', (ev: any) => {
+      if (typeof ev?.emojiLabels === 'boolean') {
+        this.applyLabelMode(ev.emojiLabels);
       }
-      if (typeof ev.detail?.footerMode === 'number') {
-        this.applyMode(ev.detail.footerMode);
+      if (typeof ev?.footerMode === 'number') {
+        this.applyMode(ev.footerMode);
       }
     });
 
-    this.client.on('uiSettings', (detail) => {
+    globalStorage.onChange('uiSettings', (detail) => {
       if (detail && typeof detail.emojiLabels === 'boolean') {
         this.applyLabelMode(detail.emojiLabels);
       }

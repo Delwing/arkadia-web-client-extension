@@ -15,13 +15,16 @@ jest.mock('@modules/data/dataStores/magicsStore', () => ({
 import initContainers from '@client/scripts/prettyContainers';
 import Client from '@client/Client';
 import type { ClientAdapter } from '@client/Client';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 describe('prettyContainers with real Client', () => {
   let client: Client;
   let mockAdapter: jest.Mocked<ClientAdapter>;
-  let mockPort: any;
 
   beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     // Setup ClientAdapter mock
     mockAdapter = {
       send: jest.fn(),
@@ -32,28 +35,23 @@ describe('prettyContainers with real Client', () => {
       isCommandEchoEnabled: jest.fn(() => true),
     };
 
-    // Setup port mock
-    mockPort = {
-      postMessage: jest.fn(),
-      onMessage: { addListener: jest.fn() },
-    };
-
     // Create real Client
-    client = new Client(mockAdapter, mockPort);
+    client = new Client(mockAdapter);
 
     // Initialize prettyContainers
     initContainers(client);
 
     // Enable prettyContainers via settings
-    client.sendEvent('settings', {
+    characterStorage.set('settings', {
       prettyContainers: true,
       containerColumns: 1,
-    });
+    } as any);
   });
 
   afterEach(() => {
     // Clear mocks between tests
     jest.clearAllMocks();
+    localStorage.clear();
   });
 
   // Helper to get table text from output calls
@@ -197,10 +195,10 @@ describe('prettyContainers with real Client', () => {
   describe('multi-column layout', () => {
     test('uses multiple columns when configured', () => {
       // Reconfigure for 2 columns
-      client.sendEvent('settings', {
+      characterStorage.set('settings', {
         prettyContainers: true,
         containerColumns: 2,
-      });
+      } as any);
 
       const input = 'Otwarty szary skorzany plecak zawiera zlocisty piryt, upiorny mglisty calun, skorzany buklak, gornicza lampe, mithrylowa monete, wiele zlotych monet.';
 
@@ -258,9 +256,9 @@ describe('prettyContainers with real Client', () => {
   describe('prettyContainers toggle', () => {
     test('does not transform when disabled', () => {
       // Disable prettyContainers
-      client.sendEvent('settings', {
+      characterStorage.set('settings', {
         prettyContainers: false,
-      });
+      } as any);
 
       const input = 'Otwarty skorzany plecak zawiera zloty miecz.';
 
@@ -274,8 +272,8 @@ describe('prettyContainers with real Client', () => {
 
     test('transforms when re-enabled', () => {
       // Disable then re-enable
-      client.sendEvent('settings', { prettyContainers: false });
-      client.sendEvent('settings', { prettyContainers: true });
+      setTestSettings({ prettyContainers: false });
+      setTestSettings({ prettyContainers: true });
 
       const input = 'Otwarty skorzany plecak zawiera zloty miecz.';
 

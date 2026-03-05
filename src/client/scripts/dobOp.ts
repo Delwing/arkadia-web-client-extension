@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { characterStorage } from "@modules/core/storage";
 
 export default function initDobOp(
     client: Client,
@@ -9,7 +10,7 @@ export default function initDobOp(
         op: ['', '', ''] as [string, string, string],
     };
 
-    client.on('settings', (settings) => {
+    const applySettings = (settings: any) => {
         const st = (settings ?? {}) as any;
         commands.dob[0] = typeof st.dobCommand1 === 'string' ? st.dobCommand1 : '';
         commands.dob[1] = typeof st.dobCommand2 === 'string' ? st.dobCommand2 : '';
@@ -17,6 +18,10 @@ export default function initDobOp(
         commands.op[0] = typeof st.opCommand1 === 'string' ? st.opCommand1 : '';
         commands.op[1] = typeof st.opCommand2 === 'string' ? st.opCommand2 : '';
         commands.op[2] = typeof st.opCommand3 === 'string' ? st.opCommand3 : '';
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings);
     });
 
     async function runSlot(cmds: string) {

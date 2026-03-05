@@ -1,4 +1,5 @@
 import Client from "../Client";
+import { characterStorage } from "@modules/core/storage";
 
 function escapeRegExp(str: string) {
     return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -13,17 +14,11 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     let lastLang = '';
     let customAliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
 
-    client.on('storage', ({ key, value }) => {
-        if (key === STORAGE_KEY) {
-            lastLang = (value as string) || '';
-        }
-    });
+    lastLang = characterStorage.get(STORAGE_KEY) || '';
 
-    client.on('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    characterStorage.onChange(STORAGE_KEY, (newValue) => {
+        lastLang = newValue || '';
     });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
 
     function gagLanguageConfirmation() {
         client.Triggers.registerOneTimeTrigger(
@@ -65,7 +60,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         callback: (matches: RegExpMatchArray) => {
             client.send('justaw ' + matches[1], true);
             lastLang = matches[1];
-            client.port?.postMessage({ type: 'SET_STORAGE', key: STORAGE_KEY, value: lastLang });
+            characterStorage.set(STORAGE_KEY, lastLang);
         }
     })
 
@@ -91,7 +86,19 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         customAliases.forEach(a => aliases.push(a));
     };
 
-    client.on('settings', (settings) => {
+    const initialSettings = characterStorage.get('settings');
+    if (initialSettings) {
+        const detail = (initialSettings ?? {}) as {
+            language?: string;
+            languageAdjective?: string;
+            languageAliases?: { alias: string; adjective: string; language: string }[];
+        };
+        currentLang = detail.language || 'potoczna';
+        adjective = detail.languageAdjective || '';
+        applyAliases(detail.languageAliases || []);
+    }
+
+    characterStorage.onChange('settings', (settings) => {
         const detail = (settings ?? {}) as {
             language?: string;
             languageAdjective?: string;

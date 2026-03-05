@@ -11,6 +11,7 @@ jest.mock('howler', () => ({
 
 import Client from '@client/Client';
 import initTempBinds from '@client/scripts/tempBinds';
+import { globalStorage } from '@modules/core/storage';
 
 describe('temp binds', () => {
   function createClient() {
@@ -21,11 +22,7 @@ describe('temp binds', () => {
       sendGmcp: jest.fn(),
       flushMessageBuffer: jest.fn(),
     } as any;
-    const port = {
-      postMessage: jest.fn(),
-      onMessage: { addListener: jest.fn() },
-    } as any;
-    const client = new Client(adapter, port);
+    const client = new Client(adapter);
     (client as any).println = jest.fn();
     return client;
   }
@@ -48,7 +45,7 @@ describe('temp binds', () => {
   test('bind settings event updates key and triggers stored command', () => {
     const client = createClient();
     (client as any).sendCommand = jest.fn();
-    client.sendEvent('binds', { temp: [{ key: 'F6', ctrl: true }] });
+    globalStorage.set('binds', { temp: [{ key: 'F6', ctrl: true }] } as any);
     expect(client.tempBinds[0].key).toBe('F6');
     expect(client.tempBinds[0].ctrl).toBe(true);
     (client.println as jest.Mock).mockClear();

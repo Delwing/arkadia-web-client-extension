@@ -6,7 +6,7 @@ import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/function
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
-import {characterStorage} from "@modules/core/storage";
+import {characterStorage, globalStorage} from "@modules/core/storage";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
@@ -69,7 +69,6 @@ export interface ClientAdapter {
 
 export default class Client {
     clientAdapter: ClientAdapter;
-    port?: any;
     Colors = Colors;
     FunctionalBind = new FunctionalBind(this);
     public Triggers = new Triggers(this);
@@ -136,7 +135,7 @@ export default class Client {
     private commandHooks: CommandHook[] = [];
 
 
-    constructor(clientAdapter: ClientAdapter, port: any) {
+    constructor(clientAdapter: ClientAdapter) {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
 
@@ -146,7 +145,7 @@ export default class Client {
             new ResizeObserver(() => this.updateContentWidth()).observe(outputWrapper);
         }
         window.addEventListener('resize', () => this.updateContentWidth());
-        this.on('uiSettings', () => this.updateContentWidth());
+        globalStorage.onChange('uiSettings', () => this.updateContentWidth());
 
         window.addEventListener('keydown', (ev) => {
             if (bindMatches(ev, this.lampBind)) {
@@ -272,19 +271,17 @@ export default class Client {
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
         this.drawWeaponCommand = normalizeDrawWeaponCommand(initialSettings?.drawWeaponCommand);
 
-        this.on('settings', (settings) => {
+        characterStorage.onChange('settings', (settings) => {
             const detail = (settings ?? {}) as Record<string, any>;
-            // Note: binds are stored separately under 'binds' key, not inside 'settings'
-            // The 'binds' event handler applies binds changes
             this.attackCommand = normalizeAttackCommand(detail?.attackCommand);
             this.drawWeaponCommand = normalizeDrawWeaponCommand(detail?.drawWeaponCommand);
         });
 
-        this.on('binds', (binds) => {
+        globalStorage.onChange('binds', (binds) => {
             applyBinds(binds as any);
         });
 
-        this.on('uiSettings', (uiSettings) => {
+        globalStorage.onChange('uiSettings', (uiSettings) => {
             if (uiSettings?.xtermPalette === 'arkadia' || uiSettings?.xtermPalette === 'proper') {
                 setXtermPalette(uiSettings.xtermPalette);
             }
@@ -294,11 +291,6 @@ export default class Client {
             const detail = info as any;
             if (detail?.name) {
                 characterStorage.setCharacter(detail.name);
-                if (this.port) {
-                    ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
-                        this.port!.postMessage({ type: 'GET_STORAGE', key: k });
-                    });
-                }
             }
             if (typeof detail?.object_num !== 'undefined') {
                 const newNum = String(detail.object_num);
@@ -322,18 +314,13 @@ export default class Client {
             this.buffer = []
         });
 
-        this.port = port
-        port.onMessage.addListener((message) => {
-            if (message && typeof message.type === 'string') {
-                this.sendEvent(message.type, message.data)
-                return
-            }
-            if (message && typeof message === 'object') {
-                Object.entries(message).forEach(([key, value]) => {
-                    this.sendEvent(key, value)
-                })
-            }
-        })
+        // Apply initial binds and uiSettings from storage
+        const initialBinds = globalStorage.get('binds');
+        if (initialBinds) applyBinds(initialBinds as any);
+        const initialUiSettings = globalStorage.get('uiSettings');
+        if (initialUiSettings?.xtermPalette === 'arkadia' || initialUiSettings?.xtermPalette === 'proper') {
+            setXtermPalette(initialUiSettings.xtermPalette);
+        }
     }
 
     on<K extends EventKey>(event: K, listener: ClientEventListener<K>, options?: ListenerOptions): () => void {
@@ -361,15 +348,6 @@ export default class Client {
         } else {
             this.println(`Tymczasowe przypisanie ${index + 1} (${label}) zostalo wyczyszczone.`)
         }
-    }
-
-    connect(port: any, initial: boolean) {
-        if (initial) {
-            port.postMessage({type: 'GET_STORAGE', key: 'scripts'})
-        }
-        this.port = port
-        this.sendEvent('port-connected')
-        console.log("Client connected to background service.")
     }
 
     send(command: string, echo: boolean = true, options?: CommandOptions) {

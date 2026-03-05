@@ -13,6 +13,7 @@ import {
     MAGICS_COLOR
 } from "../constants/colors";
 import { polishNumberWords, polishNumberPattern } from "./polishNumberConverter";
+import { characterStorage } from "@modules/core/storage";
 
 const GROUP_NAME_COLOR = createColorFormat('#557C99');
 
@@ -600,7 +601,7 @@ export default function initContainers(client: Client) {
         });
     };
 
-    client.on('settings', (settings) => {
+    const applyContainerSettings = (settings: any) => {
         const detail = (settings ?? {}) as {
             containerColumns?: number;
             prettyContainers?: boolean;
@@ -618,7 +619,9 @@ export default function initContainers(client: Client) {
             client.Triggers.removeByTag(tag);
             enabled = false;
         }
-    });
+    };
+    applyContainerSettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applyContainerSettings);
 
     client.aliases.push({
         pattern: /^\/przejrzyj(?: (\w+))?$/,

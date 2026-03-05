@@ -66,6 +66,8 @@ describe('object aliases', () => {
   let setAttackMode: (mode: 'A' | 'AW' | 'AWR') => void;
 
   beforeEach(() => {
+    (characterStorage.onChange as jest.Mock).mockClear();
+    (characterStorage.get as jest.Mock).mockClear();
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     initObjectAliases((client as unknown) as any, aliases);
@@ -121,8 +123,8 @@ describe('object aliases', () => {
   });
 
   test('kill alias uses attack command from settings when provided', () => {
-    const settingsListenerCall = client.on.mock.calls.find(
-      call => call[0] === 'settings',
+    const settingsListenerCall = (characterStorage.onChange as jest.Mock).mock.calls.find(
+      (call: any[]) => call[0] === 'settings',
     );
     const settingsListener = settingsListenerCall && settingsListenerCall[1];
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useClientEvent, useLocalStorage } from "../../hooks";
 import type { UiSettings } from "@web/uiSettings";
 import {TransportTimerPayload} from "@client/types/transport.ts";
+import {globalStorage} from "@modules/core/storage";
 
 /**
  * TransportTimer component - displays transport timer with label
@@ -23,11 +24,13 @@ export const TransportTimer: React.FC = () => {
     setPayload(newPayload);
   });
 
-  useClientEvent<Partial<UiSettings>>("uiSettings", (newSettings) => {
-    if (newSettings && typeof newSettings.showTransportLabel === "boolean") {
-      setShowTransportLabel(newSettings.showTransportLabel);
-    }
-  });
+  useEffect(() => {
+    return globalStorage.onChange('uiSettings', (newSettings) => {
+      if (newSettings && typeof newSettings.showTransportLabel === "boolean") {
+        setShowTransportLabel(newSettings.showTransportLabel);
+      }
+    });
+  }, []);
 
   // Update the container's className based on timer state
   useEffect(() => {

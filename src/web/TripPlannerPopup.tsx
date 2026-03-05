@@ -289,13 +289,10 @@ const TripPlannerPopup: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleStorageChange = ({ key, value }: { key: string; value: unknown }) => {
-            if (key === 'shortcuts') {
-                const arr = Array.isArray(value) ? value : [];
-                setShortcuts(arr);
-            }
-        };
-        return eventBus.on('storage', handleStorageChange);
+        return globalStorage.onChange('shortcuts', (newValue) => {
+            const arr = newValue ? (Array.isArray(newValue) ? newValue : Object.values(newValue)) : [];
+            setShortcuts(arr);
+        });
     }, []);
 
     // Calculate reachability and distances for each stop

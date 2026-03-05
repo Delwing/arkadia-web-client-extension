@@ -1,6 +1,8 @@
 import initCutting from '@client/scripts/cutting';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 jest.mock('@client/scripts/bagManager', () => ({
     containerAction: jest.fn(),
@@ -13,7 +15,6 @@ class FakeClient {
     Triggers = new Triggers((({} as unknown) as any));
     sendCommand = jest.fn().mockResolvedValue(undefined);
     println = jest.fn();
-    on = jest.fn();
     commandsSent: string[] = [];
 
     constructor() {
@@ -31,24 +32,22 @@ describe('cutting/tearing system', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         jest.useFakeTimers();
+        characterStorage.setCharacter('TestChar');
         client = new FakeClient();
         initCutting((client as unknown) as any, client.aliases);
         parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
 
-        // Mock settings event handler
-        const settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings');
-        if (settingsHandler) {
-            // Call with mock settings
-            settingsHandler[1]({
-                cuttingPreAction: 'schowaj wszystko;dobadz sztylet',
-                cuttingPostAction: 'schowaj sztylet;dobadz miecz'
-            });
-        }
+        // Set settings via characterStorage
+        characterStorage.set('settings', {
+            cuttingPreAction: 'schowaj wszystko;dobadz sztylet',
+            cuttingPostAction: 'schowaj sztylet;dobadz miecz'
+        } as any);
     });
 
     afterEach(() => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
+        localStorage.clear();
     });
 
     describe('alias registration', () => {
@@ -439,18 +438,17 @@ describe('cutting/tearing system', () => {
 
     describe('settings integration', () => {
         test('handles empty pre-action settings', async () => {
-            const settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings');
-            settingsHandler![1]({
+            characterStorage.set('settings', {
                 cuttingPreAction: '',
                 cuttingPostAction: ''
-            });
+            } as any);
 
             const alias = client.aliases.find(a => a.pattern.test('/wyc'))!;
             const m = '/wyc'.match(alias.pattern) as RegExpMatchArray;
 
             alias.callback(m);
             await jest.runAllTimersAsync();
-            
+
 
             // Should go straight to policz command
             expect(client.sendCommand).toHaveBeenCalledWith('policz wszystkie ciala');
@@ -458,33 +456,31 @@ describe('cutting/tearing system', () => {
         });
 
         test('handles undefined settings', async () => {
-            const settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings');
-            settingsHandler![1]({});
+            setTestSettings({});
 
             const alias = client.aliases.find(a => a.pattern.test('/wyc'))!;
             const m = '/wyc'.match(alias.pattern) as RegExpMatchArray;
 
             alias.callback(m);
             await jest.runAllTimersAsync();
-            
+
 
             // Should work without pre-actions
             expect(client.sendCommand).toHaveBeenCalledWith('policz wszystkie ciala');
         });
 
         test('handles multiple commands in pre-action', async () => {
-            const settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings');
-            settingsHandler![1]({
+            characterStorage.set('settings', {
                 cuttingPreAction: 'cmd1;cmd2;cmd3',
                 cuttingPostAction: ''
-            });
+            } as any);
 
             const alias = client.aliases.find(a => a.pattern.test('/wyc'))!;
             const m = '/wyc'.match(alias.pattern) as RegExpMatchArray;
 
             alias.callback(m);
             await jest.runAllTimersAsync();
-            
+
 
             expect(client.sendCommand).toHaveBeenCalledWith('cmd1');
             expect(client.sendCommand).toHaveBeenCalledWith('cmd2');

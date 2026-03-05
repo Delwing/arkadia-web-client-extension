@@ -1,7 +1,6 @@
 import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
 import {LetterSubmitPayload} from "@client/types/letter.ts";
 import {TransportTimerPayload} from "@client/types/transport.ts";
-import {UiSettingsEventPayload} from "@client/types/uiSettingsEvent.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
@@ -21,11 +20,6 @@ export type SendCommandEvent = {
 type NotificationPayload = {
     text: string;
     time?: number;
-};
-
-type StorageEventPayload = {
-    key: string;
-    value: unknown;
 };
 
 type MultibindList = {
@@ -120,7 +114,6 @@ export interface KnownEvents {
     "enemy.paralyzed.end": EnemyStatusPayload;
     "enemy.broken_defense": EnemyStatusPayload;
     "command": string;
-    "port-connected": void;
     "output-sent": number;
     "buffer-sent": number;
     "mapMove": void;
@@ -182,10 +175,6 @@ export interface KnownEvents {
     "sound:muted": boolean;
     "playBeep": void;
     "line-start": void;
-    "storage": StorageEventPayload;
-    "settings": unknown;
-    "binds": unknown;
-    "uiSettings": UiSettingsEventPayload | null | undefined;
     "mobileButtonsSettings": unknown;
     "desktopButtonsSettings": unknown;
     "orderTimer": number | null;

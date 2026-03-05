@@ -1,4 +1,5 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import {globalStorage} from "@modules/core/storage";
 
 export default class FightTitle {
   private baseTitle: string;
@@ -17,7 +18,11 @@ export default class FightTitle {
       this.updateTitle(fighting);
     });
     client.on("client.disconnect", () => this.reset());
-    client.on("uiSettings", (payload) => {
+    const initialUi = globalStorage.get('uiSettings');
+    if (initialUi && typeof initialUi.fightTitleIcon === "boolean") {
+      this.enabled = initialUi.fightTitleIcon;
+    }
+    globalStorage.onChange('uiSettings', (payload) => {
       if (payload && typeof payload.fightTitleIcon === "boolean") {
         this.enabled = payload.fightTitleIcon;
         this.updateTitle(this.isFighting, true);

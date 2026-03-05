@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { characterStorage } from "@modules/core/storage";
+import { characterStorage, globalStorage } from "@modules/core/storage";
 
 export interface UserAlias {
     pattern: string;
@@ -39,16 +39,10 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
         mapped.forEach(a => list.push(a));
     };
 
-    client.on('storage', ({ key, value }) => {
-        if (key === STORAGE_KEY) {
-            const valueArray = Array.isArray(value) ? value : [];
-            apply(valueArray);
-        }
-    });
+    const initial = globalStorage.get(STORAGE_KEY);
+    if (initial) apply(Array.isArray(initial) ? initial : []);
 
-    client.on('port-connected', () => {
-        client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
+    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+        apply(Array.isArray(newValue) ? newValue : []);
     });
-
-    client.port?.postMessage({ type: 'GET_STORAGE', key: STORAGE_KEY });
 }

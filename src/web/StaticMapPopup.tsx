@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Renderer, RoomContextMenuEventDetail, type RoomClickEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
+import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getClientInstance } from '@shared/runtime';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
@@ -490,6 +491,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let roomClickHandler: ((ev: Event) => void) | null = null;
         let zoomHandler: (() => void) | null = null;
         let settingsHandler: (() => void) | null = null;
+        let settingsUnsubscribe: (() => void) | null = null;
         let gridHandler: ((value: boolean) => void) | null = null;
         let dataChangedHandler: (() => void) | null = null;
 
@@ -795,7 +797,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             eventBus.on('mapPath', pathHandler);
             eventBus.on('mapHighlights', highlightHandler);
             eventBus.on('enterLocation', moveHandler);
-            eventBus.on('uiSettings', settingsHandler);
+            settingsUnsubscribe = globalStorage.onChange('uiSettings', settingsHandler);
             eventBus.on('mapShowGrid', gridHandler);
             eventBus.on('mapDataChanged', dataChangedHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
@@ -819,7 +821,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (pathHandler) eventBus.off('mapPath', pathHandler);
             if (highlightHandler) eventBus.off('mapHighlights', highlightHandler);
             if (moveHandler) eventBus.off('enterLocation', moveHandler);
-            if (settingsHandler) eventBus.off('uiSettings', settingsHandler);
+            if (settingsUnsubscribe) settingsUnsubscribe();
             if (gridHandler) eventBus.off('mapShowGrid', gridHandler);
             if (dataChangedHandler) eventBus.off('mapDataChanged', dataChangedHandler);
             if (container && contextMenuHandler) {

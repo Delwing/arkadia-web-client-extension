@@ -5,6 +5,7 @@ import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {containerAction} from "@client/scripts/bagManager";
+import { characterStorage } from "@modules/core/storage";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -60,7 +61,7 @@ export default function initPackageHelper(client: Client) {
         list.forEach((item: { name: string | number; loc: number; }) => npc[item.name] = item.loc)
     })
 
-    client.on('settings', (event) => {
+    const applySettings = (event: any) => {
         const detail = (event ?? {}) as { packageHelper?: boolean; packageInContainer?: boolean };
         const setting = detail?.packageHelper
         const shouldEnable = setting === undefined ? true : setting
@@ -70,6 +71,10 @@ export default function initPackageHelper(client: Client) {
         } else if (enabled && !shouldEnable) {
             disable()
         }
+    }
+    applySettings(characterStorage.get('settings'))
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings)
     })
 
     function init() {

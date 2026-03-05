@@ -1,6 +1,8 @@
 import initGuildPostfix from "@client/scripts/guildPostfix";
 import Triggers from "@client/Triggers";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
+import { setTestSettings } from "./helpers/testSettings";
 
 describe("guildPostfix", () => {
   class FakeClient {
@@ -13,32 +15,29 @@ describe("guildPostfix", () => {
 
   let client: FakeClient;
   let parse: (line: string) => AnsiAwareBuffer | null;
-  let settingsHandler: ((detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> }) => void) | undefined;
 
   beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     initGuildPostfix((client as unknown) as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), "");
-    settingsHandler = client.on.mock.calls[0]?.[1] as typeof settingsHandler;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
-
-  function emitSettings(detail: { enemyGuilds?: string[]; guildColors?: Record<string, string | undefined> }) {
-    settingsHandler?.(detail);
-  }
 
   test("colors guild postfix with configured color", () => {
     const greenHex = "#00ff00";
-    emitSettings({ guildColors: { CKN: greenHex }, enemyGuilds: [] });
+    setTestSettings({ guildColors: { CKN: greenHex }, enemyGuilds: [] });
     const result = parse(enemyLine);
     expect(result?.text).toContain("[CKN]");
   });
 
   test("colors enemy guild postfix red", () => {
-    emitSettings({ enemyGuilds: ["CKN"] });
+    setTestSettings({ enemyGuilds: ["CKN"] });
     const result = parse(enemyLine);
     expect(result?.text).toContain("[CKN]");
   });

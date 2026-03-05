@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
+import { characterStorage } from "@modules/core/storage";
 
 export default function initHpAlert(client: Client) {
     const ORANGE = createColorFormat("#ffa500");
@@ -16,7 +17,7 @@ export default function initHpAlert(client: Client) {
     let prev = Infinity;
     let alertLevel = 2;
 
-    client.on('settings', (settings) => {
+    const applySettings = (settings: any) => {
         const detail = (settings ?? {}) as { lowHpAlert?: unknown };
         if (typeof detail.lowHpAlert === 'boolean') {
             alertLevel = detail.lowHpAlert ? 2 : 0;
@@ -29,7 +30,9 @@ export default function initHpAlert(client: Client) {
         } else {
             alertLevel = 2;
         }
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     client.on('gmcp.char.state', (state) => {
         const detail = state as { hp?: number };

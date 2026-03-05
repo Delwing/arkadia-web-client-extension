@@ -1,12 +1,10 @@
 import initUserTriggers, { UserTrigger } from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { globalStorage } from '@modules/core/storage';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  on = jest.fn();
-  off = jest.fn();
-  port = { postMessage: jest.fn() } as any;
   sendEvent = jest.fn();
   sendCommand = jest.fn();
   FunctionalBind = {
@@ -16,12 +14,15 @@ class FakeClient {
 }
 
 describe('userTriggers', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   test('macros modify match only', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'uppercase' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
     expect(result?.text).toBe('bar FOO baz');
   });
@@ -29,9 +30,8 @@ describe('userTriggers', () => {
   test('uppercase does not break colors', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'color', color: '#ff0000' }, { type: 'uppercase' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
 
     // Check text content
@@ -47,9 +47,8 @@ describe('userTriggers', () => {
   test('replace uses pattern match', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'replace', to: 'bar' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo foo'), '');
     // Only the first match is replaced
     expect(result?.text).toBe('bar foo');
@@ -58,9 +57,8 @@ describe('userTriggers', () => {
   test('beep plays sound', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'beep' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
     expect(result?.text).toBe('foo');
     expect(client.sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
@@ -69,9 +67,8 @@ describe('userTriggers', () => {
   test('command sends command', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'command', command: 'bar' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
     expect(result?.text).toBe('foo');
     expect(client.sendCommand).toHaveBeenCalledWith('bar');
@@ -80,9 +77,8 @@ describe('userTriggers', () => {
   test('slowBlink applies slow blink to match', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'slowBlink' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
 
     expect(result?.text).toBe('bar foo baz');
@@ -96,9 +92,8 @@ describe('userTriggers', () => {
   test('rapidBlink applies rapid blink to match', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'rapidBlink' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
 
     expect(result?.text).toBe('bar foo baz');
@@ -112,9 +107,8 @@ describe('userTriggers', () => {
   test('slowBlink preserves existing color', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'color', color: '#ff0000' }, { type: 'slowBlink' }] }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
 
     expect(result?.text).toBe('bar foo baz');
@@ -129,12 +123,11 @@ describe('userTriggers', () => {
   test('functionalBind sets functional bind with label and command', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{
       pattern: 'foo',
       macros: [{ type: 'functionalBind', label: 'Attack', command: 'zabij cel' }]
     }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
 
     expect(result?.text).toBe('foo');
@@ -149,13 +142,12 @@ describe('userTriggers', () => {
   test('gmcpMsgType filters trigger to matching type only', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{
       pattern: 'foo',
       gmcpMsgType: 'combat.avatar',
       macros: [{ type: 'uppercase' }]
     }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
 
     // Should NOT apply when type doesn't match
     const result1 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'comm');
@@ -169,12 +161,11 @@ describe('userTriggers', () => {
   test('trigger without gmcpMsgType matches all types', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{
       pattern: 'foo',
       macros: [{ type: 'uppercase' }]
     }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
 
     const result1 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'comm');
     expect(result1?.text).toBe('bar FOO baz');
@@ -186,12 +177,11 @@ describe('userTriggers', () => {
   test('functionalBind does nothing if label or command is missing', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
-    const apply = client.on.mock.calls.find(c => c[0] === 'storage')[1];
     const list: UserTrigger[] = [{
       pattern: 'foo',
       macros: [{ type: 'functionalBind', label: 'Attack' }]
     }];
-    apply({ key: 'triggers', value: list });
+    globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
 
     expect(result?.text).toBe('foo');

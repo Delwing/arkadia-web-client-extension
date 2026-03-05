@@ -6,11 +6,11 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 describe('compare all alias', () => {
   let client: Client;
   let mockAdapter: jest.Mocked<ClientAdapter>;
-  let mockPort: any;
   let sendCommandSpy: jest.SpyInstance;
   let printlnSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    localStorage.clear();
     // Mock only the external boundary
     mockAdapter = {
       send: jest.fn(),
@@ -21,16 +21,8 @@ describe('compare all alias', () => {
       isCommandEchoEnabled: jest.fn(() => true),
     };
 
-    // Mock port (minimal)
-    mockPort = {
-      postMessage: jest.fn(),
-      onMessage: {
-        addListener: jest.fn(),
-      },
-    };
-
     // Create REAL Client instance
-    client = new Client(mockAdapter, mockPort);
+    client = new Client(mockAdapter);
 
     // Spy on methods we need to verify
     sendCommandSpy = jest.spyOn(client, 'sendCommand');
@@ -48,6 +40,7 @@ describe('compare all alias', () => {
   afterEach(() => {
     jest.restoreAllMocks();
     jest.useRealTimers();
+    localStorage.clear();
   });
 
   test('sends ocen commands for each target', () => {

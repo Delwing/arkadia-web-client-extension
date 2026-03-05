@@ -2,6 +2,7 @@ import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { getShortDir } from "@shared/map";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
 
 const ORANGE = createColorFormat('#ffa500');
 
@@ -49,7 +50,12 @@ const EXIT_PATTERNS: RegExp[] = [
 export default function initShortExits(client: Client) {
     let enabled = false;
 
-    client.on('settings', (settings) => {
+    const initialSettings = characterStorage.get('settings');
+    if (initialSettings) {
+        const detail = (initialSettings ?? {}) as { shortenExits?: boolean };
+        enabled = !!detail.shortenExits;
+    }
+    characterStorage.onChange('settings', (settings) => {
         const detail = (settings ?? {}) as { shortenExits?: boolean };
         enabled = !!detail.shortenExits;
     });

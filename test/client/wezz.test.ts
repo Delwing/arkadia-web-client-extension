@@ -1,7 +1,14 @@
 import { FakeClient, initHerbClient } from './helpers/herbClient';
+import { characterStorage } from '@modules/core/storage';
 
 beforeEach(() => {
+  localStorage.clear();
+  characterStorage.setCharacter('TestChar');
   jest.clearAllMocks();
+});
+
+afterEach(() => {
+  localStorage.clear();
 });
 
 describe('wezz alias', () => {
@@ -21,14 +28,11 @@ describe('wezz alias', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wez zolty jasny kwiat z 2. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swoj woreczek');
-    expect(client.port.postMessage).toHaveBeenCalledWith({ type: 'SET_STORAGE', key: 'herb_counts', value: { 1: { herbs: {} }, 2: { herbs: {} } } });
+    expect(characterStorage.get('herb_counts')).toEqual({ 1: { herbs: {} }, 2: { herbs: {} } });
   });
 
   test('takes multiple herbs from one bag in bulk', async () => {
-    client.dispatch('storage', {
-      key: 'herb_counts',
-      value: { 1: { deliona: 5 } }
-    });
+    characterStorage.set('herb_counts', { 1: { herbs: { deliona: 5 } } } as any);
     const alias = client.aliases.find(a => a.pattern.test('/wezz deliona 3'))!;
     const m = '/wezz deliona 3'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
@@ -38,11 +42,7 @@ describe('wezz alias', () => {
       'wez 3 zolte jasne kwiaty z 1. swojego woreczka'
     );
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
-    expect(client.port.postMessage).toHaveBeenCalledWith({
-      type: 'SET_STORAGE',
-      key: 'herb_counts',
-      value: { 1: { herbs: { deliona: 2 } } }
-    });
+    expect(characterStorage.get('herb_counts')).toEqual({ 1: { herbs: { deliona: 2 } } });
   });
 
   test('defaults to one herb', async () => {
@@ -52,6 +52,6 @@ describe('wezz alias', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
-    expect(client.port.postMessage).toHaveBeenCalledWith({ type: 'SET_STORAGE', key: 'herb_counts', value: { 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } } });
+    expect(characterStorage.get('herb_counts')).toEqual({ 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } });
   });
 });

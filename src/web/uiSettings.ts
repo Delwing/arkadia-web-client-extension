@@ -3,7 +3,7 @@ import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader
 import eventBus from "@modules/core/eventBus";
 import {createRoot, type Root} from "react-dom/client";
 import {createElement} from "react";
-import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
+
 import {CustomSound, getCustomSounds, saveCustomSounds} from "@modules/core/customSounds";
 import {loadLayoutState, resetLayoutState, saveLayoutState} from "@web/layout";
 import {
@@ -326,20 +326,6 @@ function apply(settings: UiSettings) {
     embedded?.setInstantMove?.(settings.instantMove);
     embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
     embedded?.refresh();
-    const payload: UiSettingsEventPayload = {
-        mobileDirectionButtons: settings.showButtons,
-        hapticFeedback: settings.hapticFeedback,
-        emojiLabels: settings.emojiLabels,
-        xtermPalette: settings.xtermPalette,
-        footerMode: settings.footerMode,
-        fightTitleIcon: settings.fightTitleIcon,
-        clearInputOnSend: settings.clearInputOnSend,
-        autoLowercaseCommands: settings.autoLowercaseCommands,
-        keepMultibindsVisible: settings.keepMultibindsVisible,
-        wakeLock: settings.wakeLock,
-        commandEcho: settings.commandEcho,
-    };
-    eventBus.emit('uiSettings', payload);
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('map-position-change'));
     }

@@ -119,22 +119,13 @@ export default function registerLuaGagTriggers(client: Client) {
     applyDeleteLinesConfig(characterStorage.get(LUA_GAGS_STORAGE_KEY));
     applyWalkaConfig(characterStorage.get(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY));
 
-    client.on("storage", ({ key, value }) => {
-        if (key === LUA_GAGS_STORAGE_KEY) {
-            applyDeleteLinesConfig(value);
-        }
-        if (key === LUA_GAGS_WALKA_CONFIG_STORAGE_KEY) {
-            applyWalkaConfig(value);
-        }
+    characterStorage.onChange(LUA_GAGS_STORAGE_KEY, (newValue) => {
+        applyDeleteLinesConfig(newValue);
     });
 
-    client.on("port-connected", () => {
-        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
-        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_WALKA_CONFIG_STORAGE_KEY });
+    characterStorage.onChange(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, (newValue) => {
+        applyWalkaConfig(newValue);
     });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
-    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_WALKA_CONFIG_STORAGE_KEY });
 
     function toPattern(p: PatternObj) {
         if (p.type === 1) {

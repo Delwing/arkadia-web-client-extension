@@ -7,7 +7,7 @@ import {
     defaultFontColor,
     defaultBackground,
 } from "../mobileButtonSettings";
-import {globalStorage} from "@modules/core/storage";
+import {characterStorage, globalStorage} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
 import {
     executeButtonMacro,
@@ -218,15 +218,26 @@ export default class MobileDirectionButtons {
         });
 
         // Listen for UI settings changes
-        this.client.on("uiSettings", (settings) => {
+        const initialUi = globalStorage.get('uiSettings');
+        if (initialUi) {
+            if (typeof initialUi.hapticFeedback === 'boolean') {
+                this.hapticEnabled = initialUi.hapticFeedback !== false;
+            }
+            if (typeof initialUi.showButtons === 'boolean') {
+                if (initialUi.showButtons === false) {
+                    this.disable();
+                }
+            }
+        }
+        globalStorage.onChange('uiSettings', (settings) => {
             if (!settings) {
                 return;
             }
             if ("hapticFeedback" in settings) {
                 this.hapticEnabled = settings.hapticFeedback !== false;
             }
-            if ("mobileDirectionButtons" in settings) {
-                const disabled = settings.mobileDirectionButtons === false;
+            if ("showButtons" in settings) {
+                const disabled = settings.showButtons === false;
                 if (disabled) {
                     this.disable();
                 } else {
@@ -270,7 +281,18 @@ export default class MobileDirectionButtons {
         });
 
         // Listen for bind settings changes
-        this.client.on('settings', (settings) => {
+        const initialSettings = characterStorage.get('settings');
+        if (initialSettings) {
+            const bind = (initialSettings as any)?.binds?.main;
+            if (bind) {
+                this.boundKey = bind.key;
+                this.boundCtrl = !!bind.ctrl;
+                this.boundAlt = !!bind.alt;
+                this.boundShift = !!bind.shift;
+                this.updateBracketRightButton();
+            }
+        }
+        characterStorage.onChange('settings', (settings) => {
             const bind = (settings as any)?.binds?.main;
             if (bind) {
                 this.boundKey = bind.key;

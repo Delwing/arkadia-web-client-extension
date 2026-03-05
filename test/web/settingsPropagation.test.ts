@@ -38,7 +38,7 @@ describe('settings propagation to scripts', () => {
       }
     });
 
-    characterStorage.set('settings', { ...defaultSettings, shortenExits: true } as any);
+    characterStorage.set('settings', { ...defaultSettings, shortenExits: true });
 
     const result2 = parse(line);
     expect(result2?.text).toBe('-----: N E');

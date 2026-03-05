@@ -57,7 +57,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         applySettingsValue(initial.inlineCompassRose);
     }
 
-    client.on("settings", (payload) => {
+    characterStorage.onChange('settings', (payload) => {
         const detail = (payload ?? {}) as Record<string, unknown>;
         applySettingsValue(detail.inlineCompassRose);
     });

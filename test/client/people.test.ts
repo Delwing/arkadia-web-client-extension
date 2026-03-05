@@ -2,6 +2,8 @@ import People from '@client/People';
 import Triggers from '@client/Triggers';
 import { refresh, subscribe, forceRefresh } from '@modules/data/peopleStore';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from './helpers/testSettings';
 
 // Helper to check if any segment containing text has a foreground color
 function hasColoredText(buffer: AnsiAwareBuffer | null, text: string): boolean {
@@ -47,6 +49,8 @@ describe('people triggers enemy highlight', () => {
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     subscribers.length = 0;
     subscribeMock.mockReset().mockImplementation((listener) => {
       subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
@@ -70,10 +74,7 @@ describe('people triggers enemy highlight', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
-    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
-    if (handler) {
-      handler({ guilds: [], enemyGuilds: ['CKN'] });
-    }
+    setTestSettings({ guilds: [], enemyGuilds: ['CKN'] });
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
   });
@@ -81,6 +82,7 @@ describe('people triggers enemy highlight', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    localStorage.clear();
   });
 
   test('colors enemy description red', () => {
@@ -141,11 +143,11 @@ describe('people triggers enemy highlight', () => {
 describe('people triggers guild highlight', () => {
   let client: FakeClient;
   let parse: (line: string) => AnsiAwareBuffer | null;
-  type SettingsPayload = { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> };
-  let settingsHandler: ((event: SettingsPayload) => void) | undefined;
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     subscribers.length = 0;
     subscribeMock.mockReset().mockImplementation((listener) => {
       subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
@@ -165,9 +167,6 @@ describe('people triggers guild highlight', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
-    settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1] as
-      | ((event: SettingsPayload) => void)
-      | undefined;
     const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastGuildCall?.value;
   });
@@ -175,10 +174,11 @@ describe('people triggers guild highlight', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    localStorage.clear();
   });
 
-  const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
-    settingsHandler?.(detail);
+  const emitSettings = (detail: { guilds?: string[]; enemyGuilds?: string[]; guildColors?: Record<string, string> }) => {
+    setTestSettings(detail);
   };
 
   test('adds name after description without red color', () => {
@@ -243,6 +243,8 @@ describe('people triggers case sensitivity', () => {
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     subscribers.length = 0;
     subscribeMock.mockReset().mockImplementation((listener) => {
       subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
@@ -266,10 +268,7 @@ describe('people triggers case sensitivity', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
-    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
-    if (handler) {
-      handler({ guilds: [], enemyGuilds: ['CKN'] });
-    }
+    setTestSettings({ guilds: [], enemyGuilds: ['CKN'] });
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
   });
@@ -277,6 +276,7 @@ describe('people triggers case sensitivity', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    localStorage.clear();
   });
 
   test('name trigger matches exact case', () => {
@@ -352,11 +352,11 @@ describe('people triggers case sensitivity', () => {
 describe('people triggers wanted letter with existing name', () => {
   let client: FakeClient;
   let parse: (line: string) => AnsiAwareBuffer | null;
-  type SettingsPayload = { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> };
-  let settingsHandler: ((event: SettingsPayload) => void) | undefined;
   const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
   beforeEach(async () => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     subscribers.length = 0;
     subscribeMock.mockReset().mockImplementation((listener) => {
       subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
@@ -376,9 +376,6 @@ describe('people triggers wanted letter with existing name', () => {
     new People((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
-    settingsHandler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1] as
-      | ((event: SettingsPayload) => void)
-      | undefined;
     const lastGuildCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastGuildCall?.value;
   });
@@ -386,10 +383,11 @@ describe('people triggers wanted letter with existing name', () => {
   afterEach(() => {
     jest.clearAllMocks();
     subscribers.length = 0;
+    localStorage.clear();
   });
 
-  const emitSettings = (detail: { guilds: string[]; enemyGuilds: string[]; guildColors?: Record<string, string> }) => {
-    settingsHandler?.(detail);
+  const emitSettings = (detail: { guilds?: string[]; enemyGuilds?: string[]; guildColors?: Record<string, string> }) => {
+    setTestSettings(detail);
   };
 
   test('adds guild suffix to existing "(to chyba Name)" in table line', () => {

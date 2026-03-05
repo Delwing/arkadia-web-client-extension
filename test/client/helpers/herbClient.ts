@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import initHerbCounter from '@client/scripts/herbCounter';
 import { normalizeHerbBagsState } from '@client/types/herbs';
+import { characterStorage } from '@modules/core/storage';
 
 export class FakeClient {
   private emitter = new EventEmitter();
@@ -8,7 +9,6 @@ export class FakeClient {
   Triggers = { registerTrigger: jest.fn() } as any;
   sendCommand = jest.fn();
   println = jest.fn();
-  port = { postMessage: jest.fn() } as any;
   herbManager: any;
   sendEvent(type: string, detail: any) {
     this.emitter.emit(type, detail);
@@ -51,5 +51,5 @@ export function initHerbClient(
     json: () => Promise.resolve(herbData)
   });
   initHerbCounter((client as unknown) as any, aliases);
-  client.dispatch('storage', { key: 'herb_counts', value: normalizeHerbBagsState(herbCounts) });
+  characterStorage.set('herb_counts', normalizeHerbBagsState(herbCounts) as any);
 }
