@@ -7,6 +7,7 @@ arkadia-extension.zip
 vite.config.js
 .yarn
 .DS_Store
+package-lock.json
 playwright-report/
 test-results/
 .claude
