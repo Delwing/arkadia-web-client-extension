@@ -1,5 +1,16 @@
 import { defaultSettings } from './defaultSettings';
 import { LUA_GAGS_STORAGE_KEY, LUA_GAGS_COLORS_STORAGE_KEY, LUA_GAGS_WALKA_CONFIG_STORAGE_KEY } from "@client/luaGagsSettings";
+import {
+    type CharacterStorageSchema,
+    type GlobalStorageSchema,
+    CHARACTER_KEY_OPTIONS,
+    characterStorageKeys,
+} from './storageSchema';
+import { fetchWithCache } from './httpCache';
+
+// ---------------------------------------------------------------------------
+// Legacy Storage interface & download (kept for backward compat)
+// ---------------------------------------------------------------------------
 
 interface Storage {
     getItem(key: string): Promise<any>;
@@ -14,19 +25,14 @@ interface Storage {
     };
 }
 
-const download = async (storage: Storage, url: string, ttl: number) => {
-    return storage.getItem(url).then(cacheContent => {
-        if (cacheContent && cacheContent.value && cacheContent.cacheTime && cacheContent.cacheTime + cacheContent.ttl > Date.now()) {
-            return cacheContent.value;
-        } else {
-            return fetch(url).then(data => data.json()).then(data => {
-                storage.setItem(url, {value: data, cacheTime: Date.now(), ttl: ttl});
-                return {value: data, cacheTime: Date.now(), ttl: ttl}
-            })
-        }
-    })
+/** @deprecated Use fetchWithCache from httpCache.ts directly */
+const download = async (_storage: Storage, url: string, ttl: number) => {
+    return fetchWithCache(url, ttl);
 }
 
+// ---------------------------------------------------------------------------
+// Legacy character-scoped key set (used by old code paths)
+// ---------------------------------------------------------------------------
 
 const characterScopedKeys = new Set([
     'settings',
@@ -52,6 +58,208 @@ const characterScopedKeys = new Set([
 
 let currentCharacter: string | null = localStorage.getItem('currentCharacter');
 
+// ---------------------------------------------------------------------------
+// New TypedStorage classes
+// ---------------------------------------------------------------------------
+
+type ChangeListener<T> = (newValue: T | undefined, oldValue: T | undefined) => void;
+
+/**
+ * Generic typed storage wrapper over localStorage.
+ * Provides synchronous get/set with JSON serialization and per-key onChange listeners.
+ */
+export class TypedStorage<TSchema extends Record<string, any>> {
+    private listeners = new Map<string, Set<ChangeListener<any>>>();
+    private resolveKeyFn: ((key: string) => string) | undefined;
+
+    constructor(resolveKey?: (key: string) => string) {
+        this.resolveKeyFn = resolveKey;
+    }
+
+    private resolveKey(key: string): string {
+        return this.resolveKeyFn ? this.resolveKeyFn(key) : key;
+    }
+
+    get<K extends keyof TSchema & string>(key: K): TSchema[K] | undefined {
+        const realKey = this.resolveKey(key);
+        const raw = localStorage.getItem(realKey);
+        if (raw !== null) {
+            try { return JSON.parse(raw) as TSchema[K]; } catch { return raw as any; }
+        }
+        return undefined;
+    }
+
+    set<K extends keyof TSchema & string>(key: K, value: TSchema[K]): void {
+        const realKey = this.resolveKey(key);
+        const oldRaw = localStorage.getItem(realKey);
+        let oldValue: TSchema[K] | undefined;
+        if (oldRaw !== null) {
+            try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw as any; }
+        }
+        localStorage.setItem(realKey, JSON.stringify(value));
+        this.fireListeners(key, value, oldValue);
+        // Also notify legacy listeners
+        const changes: { [k: string]: { oldValue: any, newValue: any } } = {
+            [key]: { oldValue, newValue: value }
+        };
+        (storage as any).listeners?.forEach?.((l: any) => l(changes));
+    }
+
+    remove<K extends keyof TSchema & string>(key: K): void {
+        const realKey = this.resolveKey(key);
+        const oldRaw = localStorage.getItem(realKey);
+        let oldValue: TSchema[K] | undefined;
+        if (oldRaw !== null) {
+            try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw as any; }
+        }
+        localStorage.removeItem(realKey);
+        this.fireListeners(key, undefined, oldValue);
+    }
+
+    onChange<K extends keyof TSchema & string>(
+        key: K,
+        listener: ChangeListener<TSchema[K]>,
+    ): () => void {
+        let set = this.listeners.get(key);
+        if (!set) {
+            set = new Set();
+            this.listeners.set(key, set);
+        }
+        set.add(listener);
+        return () => { set!.delete(listener); };
+    }
+
+    /** Fire typed per-key listeners. */
+    fireListeners<K extends keyof TSchema & string>(key: K, newValue: TSchema[K] | undefined, oldValue: TSchema[K] | undefined): void {
+        const set = this.listeners.get(key);
+        if (set) {
+            set.forEach(l => l(newValue, oldValue));
+        }
+    }
+
+    /** Handle cross-tab StorageEvent for a resolved key. Returns true if handled. */
+    handleStorageEvent(_storageKey: string, _oldRaw: string | null, _newRaw: string | null): boolean {
+        // Subclasses override to map storageKey back to schema key
+        return false;
+    }
+}
+
+/**
+ * Character-scoped typed storage. Keys are prefixed with `<character>:` in localStorage.
+ */
+export class CharacterTypedStorage extends TypedStorage<CharacterStorageSchema> {
+    constructor() {
+        super((key) => currentCharacter ? `${currentCharacter}:${key}` : key);
+    }
+
+    getCharacter(): string | null {
+        return currentCharacter;
+    }
+
+    setCharacter(name: string): void {
+        const prev = currentCharacter;
+        const firstCharacter = !currentCharacter && !localStorage.getItem('currentCharacter');
+        currentCharacter = name ? String(name) : null;
+
+        // First-character migration: move unscoped keys to character-prefixed
+        if (firstCharacter && currentCharacter) {
+            characterStorageKeys.forEach(key => {
+                const raw = localStorage.getItem(key);
+                if (raw !== null) {
+                    localStorage.setItem(`${currentCharacter}:${key}`, raw);
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+
+        if (currentCharacter) {
+            localStorage.setItem('currentCharacter', currentCharacter);
+        } else {
+            localStorage.removeItem('currentCharacter');
+        }
+
+        // Fire change events for all character-scoped keys
+        this.notifyCharacterChange(prev);
+    }
+
+    private notifyCharacterChange(prev: string | null): void {
+        characterStorageKeys.forEach(key => {
+            const prevKey = prev ? `${prev}:${key}` : key;
+            const newKey = currentCharacter ? `${currentCharacter}:${key}` : key;
+            const oldRaw = localStorage.getItem(prevKey);
+            const newRaw = localStorage.getItem(newKey);
+            if (oldRaw === newRaw) {
+                return;
+            }
+            const opts = CHARACTER_KEY_OPTIONS[key];
+            if (newRaw === null && !opts?.notifyOnNull) {
+                return;
+            }
+            let oldValue: any;
+            let newValue: any;
+            if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+            if (newRaw !== null) { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+
+            // Fire typed per-key listeners
+            this.fireListeners(key, newValue, oldValue);
+
+            // Also fire legacy listeners
+            const changes: { [k: string]: { oldValue: any, newValue: any } } = {
+                [key]: { oldValue, newValue }
+            };
+            (storage as any).listeners?.forEach?.((l: any) => l(changes));
+        });
+    }
+
+    override handleStorageEvent(storageKey: string, oldRaw: string | null, newRaw: string | null): boolean {
+        const idx = storageKey.indexOf(':');
+        if (idx > 0) {
+            const base = storageKey.substring(idx + 1);
+            if (characterScopedKeys.has(base)) {
+                let oldValue: any;
+                let newValue: any;
+                if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+                if (newRaw !== null) { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+                this.fireListeners(base as keyof CharacterStorageSchema & string, newValue, oldValue);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+/**
+ * Global (non-character-scoped) typed storage.
+ */
+export class GlobalTypedStorage extends TypedStorage<GlobalStorageSchema> {
+    constructor() {
+        super();
+    }
+
+    override handleStorageEvent(storageKey: string, oldRaw: string | null, newRaw: string | null): boolean {
+        // Only handle keys that are NOT character-scoped
+        if (characterScopedKeys.has(storageKey) || storageKey.indexOf(':') > 0) {
+            return false;
+        }
+        let oldValue: any;
+        let newValue: any;
+        if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+        if (newRaw !== null) { try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; } }
+        this.fireListeners(storageKey as keyof GlobalStorageSchema & string, newValue, oldValue);
+        return true;
+    }
+}
+
+/** Character-scoped typed storage singleton. */
+export const characterStorage = new CharacterTypedStorage();
+
+/** Global typed storage singleton. */
+export const globalStorage = new GlobalTypedStorage();
+
+// ---------------------------------------------------------------------------
+// Legacy code (backward compat)
+// ---------------------------------------------------------------------------
+
 function notifyCharacterChange(prev: string | null) {
     characterScopedKeys.forEach(key => {
         const prevKey = prev ? `${prev}:${key}` : key;
@@ -61,8 +269,6 @@ function notifyCharacterChange(prev: string | null) {
         if (oldRaw === newRaw) {
             return;
         }
-        // For settings and peopleLocalEvents, always fire event even if newRaw is null (so data refreshes)
-        // For other keys, skip if newRaw is null (avoid side effects like displaying messages)
         if (newRaw === null && key !== 'settings' && key !== 'peopleLocalEvents') {
             return;
         }
@@ -78,24 +284,7 @@ function notifyCharacterChange(prev: string | null) {
 }
 
 export function setCurrentCharacter(name: string) {
-    const prev = currentCharacter;
-    const firstCharacter = !currentCharacter && !localStorage.getItem('currentCharacter');
-    currentCharacter = name ? String(name) : null;
-    if (firstCharacter && currentCharacter) {
-        characterScopedKeys.forEach(key => {
-            const raw = localStorage.getItem(key);
-            if (raw !== null) {
-                localStorage.setItem(`${currentCharacter}:${key}`, raw);
-                localStorage.removeItem(key);
-            }
-        });
-    }
-    if (currentCharacter) {
-        localStorage.setItem('currentCharacter', currentCharacter);
-    } else {
-        localStorage.removeItem('currentCharacter');
-    }
-    notifyCharacterChange(prev);
+    characterStorage.setCharacter(name);
 }
 
 export function getCurrentCharacter() {
@@ -149,6 +338,10 @@ class LocalStorage implements Storage {
             }
             changes[baseKey] = { oldValue, newValue };
             this.listeners.forEach(l => l(changes));
+
+            // Also fire typed storage listeners for cross-tab sync
+            characterStorage.handleStorageEvent(ev.key, ev.oldValue, ev.newValue);
+            globalStorage.handleStorageEvent(ev.key, ev.oldValue, ev.newValue);
         });
     }
 
