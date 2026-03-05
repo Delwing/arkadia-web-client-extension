@@ -4,6 +4,7 @@ import {refresh as refreshPeopleStore, subscribeMerged} from '@modules/data/peop
 import type {PersonListEntry} from '../types/people';
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {characterStorage} from "@modules/core/storage";
+import {defaultSettings} from "@modules/core/defaultSettings";
 
 const ALLY_WARNING_COLOR = createColorFormat("#ffff00");
 
@@ -59,7 +60,7 @@ export default function initAllyProtection(client: Client) {
     }
 
     const applySettings = (settings: any) => {
-        const detail = (settings ?? {}) as { allyGuilds?: unknown };
+        const detail = (settings ?? defaultSettings) as { allyGuilds?: unknown };
         if (Array.isArray(detail.allyGuilds)) {
             allyGuilds = [...detail.allyGuilds];
         } else {

@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initHpAlert(client: Client) {
     const ORANGE = createColorFormat("#ffa500");
@@ -18,7 +19,7 @@ export default function initHpAlert(client: Client) {
     let alertLevel = 2;
 
     const applySettings = (settings: any) => {
-        const detail = (settings ?? {}) as { lowHpAlert?: unknown };
+        const detail = (settings ?? defaultSettings) as { lowHpAlert?: unknown };
         if (typeof detail.lowHpAlert === 'boolean') {
             alertLevel = detail.lowHpAlert ? 2 : 0;
             return;

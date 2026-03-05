@@ -4,6 +4,7 @@ import { gmcp } from "../gmcp";
 import { getShortDir, longToShort } from "@shared/map";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");
 const DIM_GRAY = createColorFormat("#696969");
@@ -58,7 +59,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     }
 
     characterStorage.onChange('settings', (payload) => {
-        const detail = (payload ?? {}) as Record<string, unknown>;
+        const detail = (payload ?? defaultSettings) as { inlineCompassRose?: number | boolean };
         applySettingsValue(detail.inlineCompassRose);
     });
 

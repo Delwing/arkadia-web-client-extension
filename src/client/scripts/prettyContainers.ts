@@ -612,7 +612,7 @@ export default function initContainers(client: Client) {
         columns = detail.containerColumns ?? columns;
         favoriteMagicTypes = detail.favoriteMagicTypes ?? favoriteMagicTypes;
         favoriteMagicKeys = detail.favoriteMagicKeys ?? favoriteMagicKeys;
-        const shouldEnable = detail.prettyContainers ?? defaultSettings.prettyContainers;
+        const shouldEnable = !!detail.prettyContainers;
         if (shouldEnable && !enabled) {
             enabled = true;
             register();

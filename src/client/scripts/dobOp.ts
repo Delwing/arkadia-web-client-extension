@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initDobOp(
     client: Client,
@@ -11,7 +12,7 @@ export default function initDobOp(
     };
 
     const applySettings = (settings: any) => {
-        const st = (settings ?? {}) as any;
+        const st = (settings ?? defaultSettings) as any;
         commands.dob[0] = typeof st.dobCommand1 === 'string' ? st.dobCommand1 : '';
         commands.dob[1] = typeof st.dobCommand2 === 'string' ? st.dobCommand2 : '';
         commands.dob[2] = typeof st.dobCommand3 === 'string' ? st.dobCommand3 : '';

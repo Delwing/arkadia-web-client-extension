@@ -3,6 +3,7 @@ import { gmcp } from "../gmcp";
 import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
 import type { PersonListEntry } from '../types/people';
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initInvite(client: Client) {
     const tag = "invite";
@@ -51,7 +52,7 @@ export default function initInvite(client: Client) {
 
     // Listen for settings updates to get enemy guilds list
     const applySettings = (settings: any) => {
-        const detail = (settings ?? {}) as { enemyGuilds?: unknown };
+        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown };
         if (Array.isArray(detail.enemyGuilds)) {
             enemyGuilds = [...detail.enemyGuilds];
         }

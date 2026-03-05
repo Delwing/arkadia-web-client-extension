@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { containerAction, getContainer, ContainerType } from "./bagManager";
-import type { CollectOverride } from "@modules/core/defaultSettings";
+import { type CollectOverride, defaultSettings } from "@modules/core/defaultSettings";
 import { getBodyExtras, clearBodyExtras } from "./lootParser";
 import { characterStorage } from "@modules/core/storage";
 
@@ -57,9 +57,9 @@ export default class ItemCollector {
     constructor(client: Client) {
         this.client = client;
 
-        this.applySettings(characterStorage.get('settings') ?? {});
+        this.applySettings(characterStorage.get('settings') ?? defaultSettings);
         characterStorage.onChange('settings', (payload) => {
-            this.applySettings(payload ?? {});
+            this.applySettings(payload ?? defaultSettings);
         });
 
         this.client.on("enemyKilled", (event) => {

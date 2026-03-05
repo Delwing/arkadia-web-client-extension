@@ -9,6 +9,7 @@ import {getWearValue} from "./wearUsed";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { polishWordToNumber } from "./polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const headerColor = createColorFormat('#8470ff')
 const WHITE = createColorFormat('#ffffff');
@@ -100,7 +101,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let postUseCommands: string[] = [];
     let wieleCount = 25;
     const applyHerbSettings = (settings: any) => {
-        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string; herbWieleCount?: number };
+        const st = (settings ?? defaultSettings) as { herbPreUseCommand?: string; herbPostUseCommand?: string; herbWieleCount?: number };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];

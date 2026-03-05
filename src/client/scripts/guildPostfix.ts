@@ -2,6 +2,7 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {FormatStateSnapshot} from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const SLATE_BLUE = createColorFormat("#6a5acd");
 const ENEMY_RED = createColorFormat("#ff0000");
@@ -14,7 +15,7 @@ export default function initGuildPostfix(client: Client) {
     let enemyGuilds = new Set<string>();
 
     const applySettings = (payload: any) => {
-        const detail = (payload ?? {}) as { guildColors?: Record<string, string | undefined>; enemyGuilds?: string[] };
+        const detail = (payload ?? defaultSettings) as { guildColors?: Record<string, string | undefined>; enemyGuilds?: string[] };
         const colors: Record<string, string | undefined> = detail.guildColors || {};
         const enemies: string[] = detail.enemyGuilds || [];
         guildColors = {};

@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 import { normalizeAttackCommand } from "./attackCommand";
 import { normalizeSupportCommand } from "./supportCommand";
 
@@ -10,7 +11,7 @@ export function createAttackController(client: Client) {
     let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
     let supportCommand = normalizeSupportCommand(storedSettings?.supportCommand);
     characterStorage.onChange("settings", (settings) => {
-        const detail = (settings ?? {}) as { attackCommand?: string; supportCommand?: string };
+        const detail = (settings ?? defaultSettings) as { attackCommand?: string; supportCommand?: string };
         attackCommand = normalizeAttackCommand(detail?.attackCommand);
         supportCommand = normalizeSupportCommand(detail?.supportCommand);
     });

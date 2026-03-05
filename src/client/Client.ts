@@ -7,6 +7,7 @@ import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
 import {characterStorage, globalStorage} from "@modules/core/storage";
+import {defaultSettings} from "@modules/core/defaultSettings";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
@@ -272,7 +273,7 @@ export default class Client {
         this.drawWeaponCommand = normalizeDrawWeaponCommand(initialSettings?.drawWeaponCommand);
 
         characterStorage.onChange('settings', (settings) => {
-            const detail = (settings ?? {}) as Record<string, any>;
+            const detail = (settings ?? defaultSettings) as Record<string, any>;
             this.attackCommand = normalizeAttackCommand(detail?.attackCommand);
             this.drawWeaponCommand = normalizeDrawWeaponCommand(detail?.drawWeaponCommand);
         });

@@ -3,6 +3,7 @@ import { colorString, createColorFormat } from "@modules/core/Colors";
 import { getShortDir } from "@shared/map";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const ORANGE = createColorFormat('#ffa500');
 
@@ -52,11 +53,11 @@ export default function initShortExits(client: Client) {
 
     const initialSettings = characterStorage.get('settings');
     if (initialSettings) {
-        const detail = (initialSettings ?? {}) as { shortenExits?: boolean };
+        const detail = (initialSettings ?? defaultSettings) as { shortenExits?: boolean };
         enabled = !!detail.shortenExits;
     }
     characterStorage.onChange('settings', (settings) => {
-        const detail = (settings ?? {}) as { shortenExits?: boolean };
+        const detail = (settings ?? defaultSettings) as { shortenExits?: boolean };
         enabled = !!detail.shortenExits;
     });
 

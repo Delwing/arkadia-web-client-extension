@@ -4,6 +4,7 @@ import Client from "./Client";
 import {createColorFormat} from '@modules/core/Colors';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const RED = createColorFormat('#ff0000')
 
@@ -31,7 +32,7 @@ export default class People {
             }
         })
         const applySettings = (settings: any) => {
-            const detail = (settings ?? {}) as {
+            const detail = (settings ?? defaultSettings) as {
                 guilds?: string[];
                 enemyGuilds?: string[];
                 guildColors?: Record<string, string | undefined>;

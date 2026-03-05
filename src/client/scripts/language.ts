@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 function escapeRegExp(str: string) {
     return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -99,7 +100,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     }
 
     characterStorage.onChange('settings', (settings) => {
-        const detail = (settings ?? {}) as {
+        const detail = (settings ?? defaultSettings) as {
             language?: string;
             languageAdjective?: string;
             languageAliases?: { alias: string; adjective: string; language: string }[];

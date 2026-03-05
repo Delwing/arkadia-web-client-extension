@@ -5,6 +5,7 @@ import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
@@ -85,7 +86,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
     let columns = 1;
     let width = client.contentWidth;
     const applySettings = (settings: any) => {
-        const detail = (settings ?? {}) as { containerColumns?: number };
+        const detail = (settings ?? defaultSettings) as { containerColumns?: number };
         columns = detail.containerColumns ?? columns;
     };
     applySettings(characterStorage.get('settings'));

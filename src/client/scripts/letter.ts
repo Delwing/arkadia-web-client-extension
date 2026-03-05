@@ -406,11 +406,11 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
 
     const initialSettings = characterStorage.get('settings');
     if (initialSettings) {
-        const detail = (initialSettings ?? {}) as { letterLineWidth?: number };
+        const detail = (initialSettings ?? defaultSettings) as { letterLineWidth?: number };
         updateLineWidth(detail?.letterLineWidth);
     }
     characterStorage.onChange('settings', (settings) => {
-        const detail = (settings ?? {}) as { letterLineWidth?: number };
+        const detail = (settings ?? defaultSettings) as { letterLineWidth?: number };
         updateLineWidth(detail?.letterLineWidth);
     });
 

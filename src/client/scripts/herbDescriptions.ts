@@ -3,6 +3,7 @@ import loadHerbs from "./herbsLoader";
 import {createColorFormat} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export const HERB_NAME_COLOR = createColorFormat("#ffffff");
 
@@ -11,7 +12,7 @@ export default async function initHerbDescriptions(client: Client) {
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
     const applySettings = (settings: any) => {
-        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
+        const st = (settings ?? defaultSettings) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];

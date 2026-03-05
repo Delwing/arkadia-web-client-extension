@@ -4,6 +4,7 @@ import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } fr
 import type { PersonEntry } from '../types/people';
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const RED = createColorFormat("#ff0000");
 
@@ -77,7 +78,7 @@ export default function initAttackBeep(client: Client) {
 
     // Listen for settings changes
     const applySettings = (settings: any) => {
-        const detail = (settings ?? {}) as { enemyGuilds?: unknown };
+        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown };
         if (Array.isArray(detail.enemyGuilds)) {
             enemyGuilds = [...detail.enemyGuilds];
         }

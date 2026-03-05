@@ -5,6 +5,7 @@ import type { PersonListEntry } from '../types/people';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage, characterStorage } from '@modules/core/storage';
+import { defaultSettings } from '@modules/core/defaultSettings';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
@@ -77,7 +78,7 @@ export default function initEnemyBinds(
     }
 
     const applySettings = (settings: any) => {
-        const detail = (settings ?? {}) as {
+        const detail = (settings ?? defaultSettings) as {
             enemyGuilds?: unknown;
             enemyBindsKeepUnchanged?: boolean;
             enemyBindsShowMode?: 'always' | 'whenBound' | 'never';

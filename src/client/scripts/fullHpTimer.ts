@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initFullHpTimer(client: Client) {
     const FULL_HP = 6;
@@ -30,7 +31,7 @@ export default function initFullHpTimer(client: Client) {
     }
 
     const applySettings = (payload: any) => {
-        const settings = (payload ?? {}) as { fullHpMessage?: boolean };
+        const settings = (payload ?? defaultSettings) as { fullHpMessage?: boolean };
         enabled = !!settings.fullHpMessage;
         if (!enabled) {
             clearTimer();
