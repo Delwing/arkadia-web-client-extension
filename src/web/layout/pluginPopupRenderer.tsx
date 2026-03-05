@@ -20,6 +20,7 @@ import {
   subscribeToPluginPopups,
   type PluginPopupConfig,
 } from './pluginPopupRegistry';
+import eventBus from '@modules/core/eventBus';
 
 // Compute viewport-aware initial width for plugin popups
 function getInitialPopupWidth(): number {
@@ -162,12 +163,12 @@ export function PluginPopupRenderer() {
 
   useEffect(() => {
     // Function to check newly registered popups for auto-open
-    const checkForAutoOpen = () => {
+    const checkForAutoOpen = (forceRecheck = false) => {
       const allPopups = getPluginPopups();
 
       for (const popup of allPopups) {
-        // Skip if we've already checked this popup
-        if (checkedPopupsRef.current.has(popup.popupId)) continue;
+        // Skip if we've already checked this popup (unless force rechecking)
+        if (!forceRecheck && checkedPopupsRef.current.has(popup.popupId)) continue;
         checkedPopupsRef.current.add(popup.popupId);
 
         // Check if this popup should be auto-opened (was docked/pinned)
@@ -185,9 +186,22 @@ export function PluginPopupRenderer() {
     checkForAutoOpen();
 
     // Subscribe to registry changes
-    return subscribeToPluginPopups(() => {
+    const unsubscribeRegistry = subscribeToPluginPopups(() => {
       checkForAutoOpen();
     });
+
+    // Listen for layout state imports (settings import from file/cloud/device)
+    const unsubscribeLayout = eventBus.on('layoutManagerStateChanged', (data) => {
+      if (data && typeof data === 'object' && 'type' in data && data.type === 'import') {
+        // Re-check all popups since layout state was replaced by import
+        checkForAutoOpen(true);
+      }
+    });
+
+    return () => {
+      unsubscribeRegistry();
+      unsubscribeLayout();
+    };
   }, []);
 
   return (

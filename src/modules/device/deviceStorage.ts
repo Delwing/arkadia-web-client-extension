@@ -250,9 +250,12 @@ export async function triggerSettingsReload(): Promise<void> {
     try {
         const { invalidateLayoutCache } = await import('@web/layout');
         invalidateLayoutCache();
+        // Also emit with import type so popups re-evaluate auto-open state
+        const eventBus = (await import('@modules/core/eventBus')).default;
+        eventBus.emit('layoutManagerStateChanged', { type: 'import' });
     } catch {
         const eventBus = (await import('@modules/core/eventBus')).default;
-        eventBus.emit('layoutManagerStateChanged');
+        eventBus.emit('layoutManagerStateChanged', { type: 'import' });
     }
 
     // 2. Reload and fire uiSettings listeners (for mobile buttons visibility, etc.)

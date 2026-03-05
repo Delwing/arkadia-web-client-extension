@@ -67,7 +67,7 @@ export function importDeviceSettings(settings: DeviceSettings): void {
     if (settings.layoutManagerState) {
         saveLayoutState(settings.layoutManagerState);
         // Notify React context
-        eventBus.emit('layoutManagerStateChanged');
+        eventBus.emit('layoutManagerStateChanged', { type: 'import' });
     }
 
     // Apply UI settings
