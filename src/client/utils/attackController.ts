@@ -17,20 +17,17 @@ export function createAttackController(client: Client) {
     });
 
     let attackMode: AttackMode = characterStorage.get("attack_mode") ?? "A";
-    let syncing = false;
     client.on("attackMode", (mode) => {
-        if (syncing) return;
-        syncing = true;
-        attackMode = mode as AttackMode;
+        const m = mode as AttackMode;
+        if (m === attackMode) return;
+        attackMode = m;
         characterStorage.set("attack_mode", attackMode);
-        syncing = false;
     });
     characterStorage.onChange("attack_mode", (mode) => {
-        if (syncing) return;
-        syncing = true;
-        attackMode = mode ?? "A";
+        const m = mode ?? "A";
+        if (m === attackMode) return;
+        attackMode = m;
         client.sendEvent("attackMode", attackMode);
-        syncing = false;
     });
     client.sendEvent("attackMode", attackMode);
 
