@@ -646,15 +646,15 @@ class KillCounter {
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
+        const newKills: KillCounts = {};
         Object.entries(totals).forEach(([name, total]) => {
-            const entry = this.kills[name] ?? {
-                mySession: 0,
-                myTotal: 0,
-                teamSession: 0,
+            newKills[name] = {
+                mySession: this.kills[name]?.mySession ?? 0,
+                myTotal: total,
+                teamSession: this.kills[name]?.teamSession ?? 0,
             };
-            entry.myTotal = total as number;
-            this.kills[name] = entry;
         });
+        this.kills = newKills;
     }
 
     private persistTotals = () => {
@@ -668,6 +668,10 @@ class KillCounter {
     private loadSession(
         session: Record<string, Partial<{ mySession: number; teamSession: number }>> = {}
     ): void {
+        for (const entry of Object.values(this.kills)) {
+            entry.mySession = 0;
+            entry.teamSession = 0;
+        }
         Object.entries(session).forEach(([name, data]) => {
             const entry = this.kills[name] ?? { mySession: 0, myTotal: 0, teamSession: 0 };
             entry.mySession = typeof data.mySession === "number" ? data.mySession : 0;
