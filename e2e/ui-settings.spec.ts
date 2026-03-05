@@ -250,4 +250,44 @@ test.describe('UI settings', () => {
             'should show persisted output background color in UI settings',
         ).toHaveValue('#123456');
     });
+
+    test('hide mobile buttons persists after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Buttons should be visible by default
+        const mobileButtons = page.locator('#mobile-direction-buttons');
+        await expect(mobileButtons, 'mobile buttons should be visible by default').toBeVisible();
+
+        // Uncheck "show buttons" and save
+        const modal = await openUiSettings(page);
+        const showButtonsCheckbox = modal.locator('#ui-show-buttons');
+        if (await showButtonsCheckbox.isChecked()) {
+            await showButtonsCheckbox.uncheck();
+        }
+        await modal.locator('#ui-settings-save').click();
+        await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+
+        // Buttons should be hidden now
+        await expect(mobileButtons, 'mobile buttons should be hidden after unchecking').not.toBeVisible();
+
+        // Reload the page
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Buttons should still be hidden after reload
+        await expect(
+            mobileButtons,
+            'mobile buttons should remain hidden after reload',
+        ).not.toBeVisible();
+
+        // The checkbox should still be unchecked
+        const reloadedModal = await openUiSettings(page);
+        await expect(
+            reloadedModal.locator('#ui-show-buttons'),
+            'show buttons checkbox should remain unchecked after reload',
+        ).not.toBeChecked();
+    });
 });

@@ -19,6 +19,14 @@ yarn test 2>&1 > /dev/null || true
 yarn test --silent 2>&1 | tail -20
 ```
 
+For e2e tests:
+```bash
+# Use a timeout — the process may hang on Windows after tests complete
+timeout 600 yarn test:e2e 2>&1 || true
+# For a single spec:
+timeout 180 yarn test:e2e e2e/some-spec.spec.ts 2>&1 || true
+```
+
 Never trust the exit code from piped build/test commands on this platform.
 
 @AGENTS.md

@@ -223,11 +223,6 @@ export default class MobileDirectionButtons {
             if (typeof initialUi.hapticFeedback === 'boolean') {
                 this.hapticEnabled = initialUi.hapticFeedback !== false;
             }
-            if (typeof initialUi.showButtons === 'boolean') {
-                if (initialUi.showButtons === false) {
-                    this.disable();
-                }
-            }
         }
         globalStorage.onChange('uiSettings', (settings) => {
             if (!settings) {
@@ -303,8 +298,11 @@ export default class MobileDirectionButtons {
             }
         });
 
-        // Enable by default for all devices
-        this.enable();
+        // Enable by default for all devices (unless showButtons is explicitly false)
+        const uiSettings = globalStorage.get('uiSettings');
+        if (!uiSettings || uiSettings.showButtons !== false) {
+            this.enable();
+        }
     }
 
     private checkMobile() {
