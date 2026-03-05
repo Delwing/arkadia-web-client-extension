@@ -487,9 +487,8 @@ export default function initPackageHelper(client: Client) {
     }
 
     function disable() {
+        enabled = false;
         client.Triggers.removeByTag(tag)
         stopTimer()
     }
-
-    init()
 }

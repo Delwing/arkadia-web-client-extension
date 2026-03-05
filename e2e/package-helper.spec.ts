@@ -157,6 +157,137 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await expect(locationLabel, 'should not set navigation target when helper disabled').not.toContainText('→');
 });
 
+test('Package helper works after being disabled and re-enabled', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+    await waitForMapReady(page);
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
+    });
+
+    // Disable package helper
+    const optionsModal = page.locator('#options-modal');
+    await page.click('#menu-button');
+    await page.click('#options-button');
+    await expect(optionsModal, 'should open options modal').toBeVisible();
+
+    const packageHelperToggle = optionsModal.locator('#packageHelper');
+    await expect(packageHelperToggle, 'should be enabled by default').toBeChecked();
+    await packageHelperToggle.uncheck();
+    await optionsModal.locator('#options-save').click();
+    await expect(optionsModal, 'should close modal after disabling').not.toBeVisible();
+
+    // Verify disabled — push board text, no annotations
+    await pushText(page, BOARD_TEXT);
+
+    const disabledBoard = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Borgaf Kriegmann'})
+        .last();
+
+    await expect(disabledBoard, 'should not show distance annotations when disabled').not.toContainText('dystans:');
+
+    // Re-enable package helper
+    await page.click('#menu-button');
+    await page.click('#options-button');
+    await expect(optionsModal, 'should reopen options modal').toBeVisible();
+
+    await expect(packageHelperToggle, 'should be unchecked after disabling').not.toBeChecked();
+    await packageHelperToggle.check();
+    await optionsModal.locator('#options-save').click();
+    await expect(optionsModal, 'should close modal after re-enabling').not.toBeVisible();
+
+    // Push board text again — should show annotations now
+    await pushText(page, BOARD_TEXT);
+
+    const reenabledBoard = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Borgaf Kriegmann'})
+        .last();
+
+    await expect(reenabledBoard, 'should show distance annotations after re-enable').toContainText('dystans: 3');
+
+    const clickableNpc = reenabledBoard.locator('span[data-output-clickable="true"]', {hasText: 'Borgaf Kriegmann'});
+    await expect(clickableNpc, 'should make NPC clickable after re-enable').toHaveCount(1);
+});
+
+test('Package helper stays disabled after page reload', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+    await waitForMapReady(page);
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
+    });
+
+    // Disable package helper
+    const optionsModal = page.locator('#options-modal');
+    await page.click('#menu-button');
+    await page.click('#options-button');
+    await expect(optionsModal, 'should open options modal').toBeVisible();
+
+    await optionsModal.locator('#packageHelper').uncheck();
+    await optionsModal.locator('#options-save').click();
+    await expect(optionsModal, 'should close modal after disabling').not.toBeVisible();
+
+    // Reload the page
+    await page.reload();
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+    await waitForMapReady(page);
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: {
+            x: 0,
+            y: 0,
+            name: 'Miasteczko Poslan',
+        },
+    });
+
+    // Push board text — should NOT show annotations since helper is disabled
+    await pushText(page, BOARD_TEXT);
+
+    const boardMessage = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Borgaf Kriegmann'})
+        .last();
+
+    await expect(boardMessage, 'should not show distance annotations after reload while disabled').not.toContainText('dystans:');
+    await expect(
+        boardMessage.locator('span[data-output-clickable="true"]'),
+        'should keep NPCs non-clickable after reload while disabled'
+    ).toHaveCount(0);
+});
+
 test('Package helper sets delivery bind on arrival and clears status after handing off', async ({page}) => {
     await page.goto('/');
     await waitForCommandInput(page);
