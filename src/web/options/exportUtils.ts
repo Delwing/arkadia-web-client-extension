@@ -102,6 +102,7 @@ export interface ExportPayload {
         recordings?: ExportedRecording[];
         visitedRooms: ExportedVisitedRoomsEntry[];
         locationNotes?: LocationNote[];
+        killRecords?: KillRecord[];
     };
     /** Device info and settings from the exporting device */
     device?: ExportedDeviceInfo;
@@ -344,7 +345,7 @@ export async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): 
 }
 
 export async function buildExport(selectedCharacters: string[], options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<ExportPayload> {
-    const [multibinds, recordings, visitedRooms, locationNotes] = await Promise.all([
+    const [multibinds, recordings, visitedRooms, locationNotes, killRecords] = await Promise.all([
         options.multibinds
             ? getMultibindsSnapshot().catch(err => {
                 console.error("Failed to export multibinds", err);
@@ -363,6 +364,13 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
                 return [] as LocationNote[];
             })
             : Promise.resolve([] as LocationNote[]),
+        exportAllKillRecords().then(records => {
+            const selectedSet = new Set(selectedCharacters);
+            return records.filter(r => selectedSet.has(r.character));
+        }).catch(err => {
+            console.error("Failed to export kill records", err);
+            return [] as KillRecord[];
+        }),
     ]);
 
     const localStorageData = exportLocalStorage(selectedCharacters, options);
@@ -398,6 +406,7 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             recordings,
             visitedRooms,
             locationNotes,
+            killRecords,
         },
         device,
     };
@@ -498,6 +507,7 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
     await importRecordings(payload.indexedDB.recordings ?? []);
     await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
     await importNotes(payload.indexedDB.locationNotes ?? []);
+    await importAllKillRecords(payload.indexedDB.killRecords ?? []);
 
     // Import device info and settings
     if (payload.device?.sourceDevice) {
