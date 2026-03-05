@@ -781,14 +781,33 @@ export async function importCategory(
     try {
         const data = JSON.parse(jsonData);
 
+        // Track changed keys so we can notify storage listeners afterwards.
+        // Direct localStorage.setItem() bypasses TypedStorage listeners, so the UI
+        // would not pick up the changes without explicit notification.
+        const changedGlobalKeys: Array<{ key: string; oldRaw: string | null; newRaw: string }> = [];
+        const changedCharacterKeys: Array<{ storageKey: string; baseKey: string; oldRaw: string | null; newRaw: string }> = [];
+
+        const trackingSetItem = (key: string, value: string) => {
+            const oldRaw = localStorage.getItem(key);
+            localStorage.setItem(key, value);
+            // Determine if this is a character-scoped key (contains ':')
+            const colonIdx = key.lastIndexOf(':');
+            if (colonIdx > -1) {
+                const baseKey = key.slice(colonIdx + 1);
+                changedCharacterKeys.push({ storageKey: key, baseKey, oldRaw, newRaw: value });
+            } else {
+                changedGlobalKeys.push({ key, oldRaw, newRaw: value });
+            }
+        };
+
         switch (category) {
             case 'uiSettings': {
                 // Device-scoped settings bundle: uiSettings + layout + buttons
-                if (data.uiSettings) localStorage.setItem('uiSettings', data.uiSettings);
-                if (data.loggingEnabled) localStorage.setItem('loggingEnabled', data.loggingEnabled);
-                if (data.layoutManagerState) localStorage.setItem('layoutManagerState', data.layoutManagerState);
-                if (data.desktopButtonSettings) localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
-                if (data.mobileButtonSettings) localStorage.setItem('mobileButtonSettings', data.mobileButtonSettings);
+                if (data.uiSettings) trackingSetItem('uiSettings', data.uiSettings);
+                if (data.loggingEnabled) trackingSetItem('loggingEnabled', data.loggingEnabled);
+                if (data.layoutManagerState) trackingSetItem('layoutManagerState', data.layoutManagerState);
+                if (data.desktopButtonSettings) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
+                if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', data.mobileButtonSettings);
                 // Notify layout system of changes
                 if (data.layoutManagerState) {
                     eventBus.emit('layoutManagerStateChanged', { type: 'import' });
@@ -796,12 +815,12 @@ export async function importCategory(
                 break;
             }
             case 'binds': {
-                if (data.keymaps) localStorage.setItem('keymaps', data.keymaps);
-                if (data.binds) localStorage.setItem('binds', data.binds);
+                if (data.keymaps) trackingSetItem('keymaps', data.keymaps);
+                if (data.binds) trackingSetItem('binds', data.binds);
                 break;
             }
             case 'shortcuts': {
-                if (data.shortcuts) localStorage.setItem('shortcuts', data.shortcuts);
+                if (data.shortcuts) trackingSetItem('shortcuts', data.shortcuts);
                 break;
             }
             case 'characterSettings': {
@@ -822,25 +841,25 @@ export async function importCategory(
                                 const localState = localRaw ? JSON.parse(localRaw) : null;
                                 const merged = mergeProfessionStates(localState, cloudState);
                                 if (merged) {
-                                    localStorage.setItem(storageKey, JSON.stringify(merged));
+                                    trackingSetItem(storageKey, JSON.stringify(merged));
                                 }
                             } catch {
-                                localStorage.setItem(storageKey, raw);
+                                trackingSetItem(storageKey, raw);
                             }
                             return;
                         }
 
-                        localStorage.setItem(storageKey, raw);
+                        trackingSetItem(storageKey, raw);
                     });
                 });
                 break;
             }
             case 'triggers': {
-                if (data.triggers) localStorage.setItem('triggers', data.triggers);
+                if (data.triggers) trackingSetItem('triggers', data.triggers);
                 break;
             }
             case 'aliases': {
-                if (data.aliases) localStorage.setItem('aliases', data.aliases);
+                if (data.aliases) trackingSetItem('aliases', data.aliases);
                 break;
             }
             case 'multibinds': {
@@ -865,10 +884,10 @@ export async function importCategory(
                     } catch {
                         // Invalid incoming data
                     }
-                    localStorage.setItem('mobileButtonSettings', JSON.stringify(merged));
+                    trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
                 }
                 if (data.desktopButtonSettings) {
-                    localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
+                    trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
                 }
                 break;
             }
@@ -884,7 +903,7 @@ export async function importCategory(
                         }
                     }
                     merged.radial = data.radial;
-                    localStorage.setItem('mobileButtonSettings', JSON.stringify(merged));
+                    trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
                 }
                 break;
             }
@@ -909,14 +928,14 @@ export async function importCategory(
                             byChar[r.character][r.mob] = (byChar[r.character][r.mob] ?? 0) + r.count;
                         }
                         for (const [charName, totals] of Object.entries(byChar)) {
-                            localStorage.setItem(`${charName}:kill_counter`, JSON.stringify(totals));
+                            trackingSetItem(`${charName}:kill_counter`, JSON.stringify(totals));
                         }
                     }
                 } else {
                     // Old format: localStorage-based Record<string, string>
                     Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                         if (typeof raw !== 'string') return;
-                        localStorage.setItem(`${charName}:kill_counter`, raw);
+                        trackingSetItem(`${charName}:kill_counter`, raw);
                     });
                 }
                 break;
@@ -924,33 +943,60 @@ export async function importCategory(
             case 'improveCounts': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:improve_counter_lifetime`, raw);
+                    trackingSetItem(`${charName}:improve_counter_lifetime`, raw);
                 });
                 break;
             }
             case 'deposits': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:deposits`, raw);
+                    trackingSetItem(`${charName}:deposits`, raw);
                 });
                 break;
             }
             case 'containers': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:containers`, raw);
+                    trackingSetItem(`${charName}:containers`, raw);
                 });
                 break;
             }
             case 'peopleEdits': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:peopleLocalEvents`, raw);
+                    trackingSetItem(`${charName}:peopleLocalEvents`, raw);
                 });
                 break;
             }
             default:
                 return { success: false, error: `Unknown category: ${category}` };
+        }
+
+        // Notify storage listeners so the UI picks up the imported values
+        const globalKeySet = new Set(globalStorageKeys as readonly string[]);
+        for (const { key, oldRaw, newRaw } of changedGlobalKeys) {
+            if (!globalKeySet.has(key)) continue;
+            if (oldRaw === newRaw) continue;
+            let oldValue: any;
+            let newValue: any;
+            if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+            try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+            globalStorage.fireListeners(key as any, newValue, oldValue);
+        }
+
+        const currentChar = characterStorage.getCharacter();
+        if (currentChar) {
+            const charKeySet = new Set(characterStorageKeys as readonly string[]);
+            for (const { storageKey, baseKey, oldRaw, newRaw } of changedCharacterKeys) {
+                if (!charKeySet.has(baseKey)) continue;
+                if (oldRaw === newRaw) continue;
+                if (!storageKey.startsWith(currentChar + ':')) continue;
+                let oldValue: any;
+                let newValue: any;
+                if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+                try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+                characterStorage.fireListeners(baseKey as any, newValue, oldValue);
+            }
         }
 
         return { success: true };
