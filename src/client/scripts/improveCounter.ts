@@ -211,6 +211,7 @@ export default class ImproveCounter {
 
         characterStorage.onChange('improve_counter', (value) => {
             this.load(value ?? {});
+            this.initialized = false;
             this.loaded = true;
             if (this.pendingLevel !== undefined) {
                 const level = this.pendingLevel;

@@ -236,6 +236,32 @@ describe('improve counter', () => {
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);
   });
 
+  test('does not record false improvement when switching characters without reload', () => {
+    // Character A logs in and plays
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    client.println.mockClear();
+
+    // Simulate character switch: storage scope changes, triggering onChange
+    characterStorage.setCharacter('newchar');
+    // The reset event fires (from Client.ts when object_num changes)
+    client.dispatch('reset', undefined);
+    characterStorage.set('object_num', '99');
+
+    // Character B logs in with level 0
+    client.dispatch('gmcp.char.state', { improve: 0 });
+
+    // Should NOT have printed any "Wlasnie wbiles postepy" message
+    const improveCalls = client.println.mock.calls.filter(
+      (c: any[]) => c[0]?.text?.includes?.('Wlasnie wbiles postepy')
+    );
+    expect(improveCalls).toHaveLength(0);
+
+    // Lifetime for new character should be empty (no false entries)
+    showLifetime();
+    const printed = client.print.mock.calls[0][0]?.text;
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 0 postepow/);
+  });
+
   test('does not re-add improvements when reconnecting with same object number', () => {
     // simulate existing data: level 2 already recorded for object 1
     const c = new FakeClient();
