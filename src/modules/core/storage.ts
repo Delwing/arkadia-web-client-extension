@@ -7,6 +7,44 @@ import {
 
 let currentCharacter: string | null = localStorage.getItem('currentCharacter');
 
+/**
+ * Keys that were newly made character-scoped in the storage redesign.
+ * These need a one-time migration for users who already had currentCharacter set.
+ */
+const NEWLY_SCOPED_KEYS = [
+    'kill_counter_session',
+    'kill_counter_team',
+    'improve_counter',
+    'attack_mode',
+    'chat_history',
+    'contracts',
+] as const;
+
+const SCOPED_MIGRATION_FLAG = 'characterScopeMigrationV1';
+
+/**
+ * Migrate newly character-scoped keys for existing profiles.
+ * The first-character migration in setCharacter only runs when no character was ever set.
+ * This handles users who already had currentCharacter — their unscoped data for the
+ * newly scoped keys would otherwise become unreachable.
+ */
+export function migrateNewlyCharacterScopedKeys(): void {
+    if (localStorage.getItem(SCOPED_MIGRATION_FLAG)) return;
+
+    const character = localStorage.getItem('currentCharacter');
+    if (character) {
+        for (const key of NEWLY_SCOPED_KEYS) {
+            const raw = localStorage.getItem(key);
+            if (raw !== null && localStorage.getItem(`${character}:${key}`) === null) {
+                localStorage.setItem(`${character}:${key}`, raw);
+                localStorage.removeItem(key);
+            }
+        }
+    }
+
+    localStorage.setItem(SCOPED_MIGRATION_FLAG, '1');
+}
+
 const characterKeySet = new Set<string>(characterStorageKeys);
 
 // ---------------------------------------------------------------------------

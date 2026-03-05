@@ -49,7 +49,7 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {characterStorage, globalStorage} from "@modules/core/storage"
+import {characterStorage, globalStorage, migrateNewlyCharacterScopedKeys} from "@modules/core/storage"
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
@@ -65,7 +65,8 @@ import {CommandInputController} from "./commandInput/CommandInputController";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-// Run settings migrations before initializing the client
+// Run migrations before initializing the client
+migrateNewlyCharacterScopedKeys();
 runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();

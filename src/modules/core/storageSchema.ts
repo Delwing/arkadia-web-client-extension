@@ -94,6 +94,12 @@ export interface CharacterStorageKeyOptions {
 export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema, CharacterStorageKeyOptions>> = {
     settings: { notifyOnNull: true, defaultValue: undefined }, // defaultSettings applied at read time
     peopleLocalEvents: { notifyOnNull: true },
+    attack_mode: { notifyOnNull: true },
+    chat_history: { notifyOnNull: true },
+    contracts: { notifyOnNull: true },
+    improve_counter: { notifyOnNull: true },
+    kill_counter_session: { notifyOnNull: true },
+    kill_counter_team: { notifyOnNull: true },
 };
 
 /** All character-scoped storage keys as a const array for runtime use. */

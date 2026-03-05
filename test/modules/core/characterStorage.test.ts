@@ -1,4 +1,4 @@
-import { characterStorage } from '@modules/core/storage';
+import { characterStorage, migrateNewlyCharacterScopedKeys } from '@modules/core/storage';
 
 // We need a fresh CharacterTypedStorage per test, but the module-level
 // `currentCharacter` is shared. Use characterStorage.setCharacter('') to reset.
@@ -112,6 +112,21 @@ describe('CharacterTypedStorage', () => {
             expect(listener).toHaveBeenCalledWith(undefined, [{ type: 'event' }]);
         });
 
+        test('notifyOnNull: newly scoped keys fire onChange when new character has no data', () => {
+            characterStorage.setCharacter('Alice');
+            characterStorage.set('attack_mode', 'offensive' as any);
+            characterStorage.set('contracts', { entries: [] } as any);
+            const attackListener = jest.fn();
+            const contractsListener = jest.fn();
+            characterStorage.onChange('attack_mode', attackListener);
+            characterStorage.onChange('contracts', contractsListener);
+
+            characterStorage.setCharacter('Bob');
+            // Bob has no data for these keys, but they have notifyOnNull: true
+            expect(attackListener).toHaveBeenCalledWith(undefined, 'offensive');
+            expect(contractsListener).toHaveBeenCalledWith(undefined, { entries: [] });
+        });
+
         test('non-notifyOnNull keys do NOT fire onChange when new character has no data', () => {
             characterStorage.setCharacter('Alice');
             characterStorage.set('kill_counter', { wolf: 5 });
@@ -133,6 +148,62 @@ describe('CharacterTypedStorage', () => {
             characterStorage.setCharacter('Bob');
             // Same raw value in both Alice:mapperRoomId and Bob:mapperRoomId
             expect(listener).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('migrateNewlyCharacterScopedKeys', () => {
+        test('moves newly scoped keys to character prefix for existing profiles', () => {
+            localStorage.setItem('currentCharacter', 'Hero');
+            localStorage.setItem('attack_mode', JSON.stringify('offensive'));
+            localStorage.setItem('contracts', JSON.stringify({ entries: [] }));
+            localStorage.setItem('improve_counter', JSON.stringify({ sword: 3 }));
+
+            migrateNewlyCharacterScopedKeys();
+
+            expect(localStorage.getItem('Hero:attack_mode')).toBe(JSON.stringify('offensive'));
+            expect(localStorage.getItem('Hero:contracts')).toBe(JSON.stringify({ entries: [] }));
+            expect(localStorage.getItem('Hero:improve_counter')).toBe(JSON.stringify({ sword: 3 }));
+            // Unscoped keys removed
+            expect(localStorage.getItem('attack_mode')).toBeNull();
+            expect(localStorage.getItem('contracts')).toBeNull();
+            expect(localStorage.getItem('improve_counter')).toBeNull();
+        });
+
+        test('does not overwrite existing character-prefixed data', () => {
+            localStorage.setItem('currentCharacter', 'Hero');
+            localStorage.setItem('attack_mode', JSON.stringify('old'));
+            localStorage.setItem('Hero:attack_mode', JSON.stringify('current'));
+
+            migrateNewlyCharacterScopedKeys();
+
+            // Existing prefixed value preserved
+            expect(localStorage.getItem('Hero:attack_mode')).toBe(JSON.stringify('current'));
+            // Unscoped key left as-is since prefixed already exists
+            expect(localStorage.getItem('attack_mode')).toBe(JSON.stringify('old'));
+        });
+
+        test('does nothing when no currentCharacter is set', () => {
+            localStorage.setItem('attack_mode', JSON.stringify('offensive'));
+
+            migrateNewlyCharacterScopedKeys();
+
+            expect(localStorage.getItem('attack_mode')).toBe(JSON.stringify('offensive'));
+        });
+
+        test('runs only once (flag prevents re-run)', () => {
+            localStorage.setItem('currentCharacter', 'Hero');
+            localStorage.setItem('attack_mode', JSON.stringify('offensive'));
+
+            migrateNewlyCharacterScopedKeys();
+            expect(localStorage.getItem('attack_mode')).toBeNull();
+
+            // Add new unscoped data after migration
+            localStorage.setItem('contracts', JSON.stringify({ entries: [1] }));
+            migrateNewlyCharacterScopedKeys();
+
+            // Not migrated because flag was already set
+            expect(localStorage.getItem('contracts')).toBe(JSON.stringify({ entries: [1] }));
+            expect(localStorage.getItem('Hero:contracts')).toBeNull();
         });
     });
 
