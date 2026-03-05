@@ -55,6 +55,18 @@ async function simulateHerbBagScan(
     }
 }
 
+const PACKAGE_BOARD_TEXT = [
+    'Tablica zawiera liste adresatow przesylek, ktore mozesz tutaj pobrac:',
+    ' o============================================================================o',
+    ' |                Adresat badz                     Cena          Czas na      |',
+    ' |               urzad pocztowy                  zl/sr/md      dostarczenie   |',
+    ' o -------------------------------------------------------------------------- o',
+    ' |   1. Borgaf Kriegmann                          0/ 4/ 2        nieogr.      |',
+    ' o -------------------------------------------------------------------------- o',
+    ' |      Symbolem * oznaczono przesylki ciezkie.                               |',
+    ' o============================================================================o',
+].join('\n');
+
 test.describe('Character switch clears per-character data', () => {
     test('herbs are cleared when switching to character with no herbs', async ({page}) => {
         await page.goto('/');
@@ -228,5 +240,181 @@ test.describe('Character switch clears per-character data', () => {
 
         const output = await getRecentOutput(page, 5);
         expect(output, 'should show formatted container output for CharB').toContain('POJEMNIK');
+    });
+
+    test('package helper remains enabled after switching to character with no settings', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Login as PkgCharA with explicit settings where packageHelper is true
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'PkgCharA', object_num: 70008});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'PkgCharA'
+        );
+
+        await page.evaluate(() => {
+            localStorage.setItem('PkgCharA:settings', JSON.stringify({
+                packageHelper: true,
+            }));
+        });
+        await page.waitForTimeout(100);
+
+        // Switch to PkgCharB with NO stored settings
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'PkgCharB', object_num: 70009});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'PkgCharB'
+        );
+        await page.waitForTimeout(300);
+
+        // Verify PkgCharB has no settings stored
+        const charBSettings = await page.evaluate(() =>
+            localStorage.getItem('PkgCharB:settings')
+        );
+        expect(charBSettings, 'PkgCharB should have no stored settings').toBeNull();
+
+        // Send a package board - should be processed because packageHelper defaults to true
+        await pushText(page, PACKAGE_BOARD_TEXT);
+        await page.waitForTimeout(500);
+
+        // Package helper reformats the board and adds distance columns with "dystans:" label
+        const boardMessage = page
+            .locator('#main_text_output_msg_wrapper .output_msg')
+            .filter({hasText: 'Borgaf Kriegmann'})
+            .last();
+
+        await expect(boardMessage, 'should display the package board').toBeVisible({timeout: 5000});
+        await expect(
+            boardMessage,
+            'package helper should add distance column when defaultSettings apply (packageHelper: true)'
+        ).toContainText('dystans:');
+    });
+
+    test('short exits stay disabled after switching to character with no settings', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Login as ExitCharA with shortenExits explicitly enabled
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ExitCharA', object_num: 70010});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'ExitCharA'
+        );
+
+        await page.evaluate(() => {
+            localStorage.setItem('ExitCharA:settings', JSON.stringify({
+                shortenExits: true,
+            }));
+        });
+        await page.waitForTimeout(100);
+
+        // Switch to ExitCharB with NO stored settings
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ExitCharB', object_num: 70011});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'ExitCharB'
+        );
+        await page.waitForTimeout(300);
+
+        // Verify ExitCharB has no settings stored
+        const charBSettings = await page.evaluate(() =>
+            localStorage.getItem('ExitCharB:settings')
+        );
+        expect(charBSettings, 'ExitCharB should have no stored settings').toBeNull();
+
+        // Send an exit line - shortenExits defaults to false so it should NOT be shortened
+        await pushText(page, 'Jest tutaj 5 widocznych wyjsc: polnoc, poludnie, wschod, zachod i gora.');
+        await page.waitForTimeout(500);
+
+        const output = await getRecentOutput(page, 5);
+
+        // When shortenExits is off, the line is printed as-is
+        // When shortenExits is on, it becomes "-----: N S E W U"
+        expect(output, 'exit line should not be shortened when defaultSettings apply (shortenExits: false)').not.toContain('-----:');
+        expect(output, 'original exit text should remain visible').toContain('widocznych wyjsc');
+    });
+
+    test('collect coin settings correctly reset to defaults on character switch', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Login as CollectCharA with collectCopper explicitly disabled
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharA', object_num: 70012});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'CollectCharA'
+        );
+
+        await page.evaluate(() => {
+            localStorage.setItem('CollectCharA:settings', JSON.stringify({
+                collectCopper: false,
+                collectSilver: false,
+                collectGold: false,
+            }));
+        });
+        await page.waitForTimeout(100);
+
+        // Switch to CollectCharB with NO stored settings
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharB', object_num: 70013});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'CollectCharB'
+        );
+        await page.waitForTimeout(300);
+
+        // Verify CollectCharB has no settings stored
+        const charBSettings = await page.evaluate(() =>
+            localStorage.getItem('CollectCharB:settings')
+        );
+        expect(charBSettings, 'CollectCharB should have no stored settings').toBeNull();
+
+        // Open options modal and verify that collect coin checkboxes show defaults (all true)
+        await page.click('#menu-button');
+        await page.click('#options-button');
+        const optionsModal = page.locator('#options-modal');
+        await expect(optionsModal, 'should open options modal').toBeVisible();
+
+        await expect(
+            optionsModal.locator('#collectCopper'),
+            'collectCopper should default to checked when CharB has no stored settings'
+        ).toBeChecked();
+        await expect(
+            optionsModal.locator('#collectSilver'),
+            'collectSilver should default to checked when CharB has no stored settings'
+        ).toBeChecked();
+        await expect(
+            optionsModal.locator('#collectGold'),
+            'collectGold should default to checked when CharB has no stored settings'
+        ).toBeChecked();
+
+        // Close modal without saving using the X button
+        await optionsModal.locator('.btn-close').first().click();
+        await expect(optionsModal).not.toBeVisible();
+
+        // Switch back to CollectCharA and verify its stored (non-default) values are shown
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharA', object_num: 70012});
+        await page.waitForFunction(() =>
+            localStorage.getItem('currentCharacter') === 'CollectCharA'
+        );
+        await page.waitForTimeout(300);
+
+        await page.click('#menu-button');
+        await page.click('#options-button');
+        const optionsModalA = page.locator('#options-modal');
+        await expect(optionsModalA, 'should open options modal for CharA').toBeVisible();
+
+        await expect(
+            optionsModalA.locator('#collectCopper'),
+            'collectCopper should be unchecked for CharA (was explicitly set to false)'
+        ).not.toBeChecked();
+        await expect(
+            optionsModalA.locator('#collectSilver'),
+            'collectSilver should be unchecked for CharA (was explicitly set to false)'
+        ).not.toBeChecked();
+        await expect(
+            optionsModalA.locator('#collectGold'),
+            'collectGold should be unchecked for CharA (was explicitly set to false)'
+        ).not.toBeChecked();
+
+        await optionsModalA.locator('.btn-close').first().click();
+        await expect(optionsModalA).not.toBeVisible();
     });
 });
