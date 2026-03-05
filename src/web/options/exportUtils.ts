@@ -14,6 +14,7 @@ import {
     type SyncGroup,
 } from "@modules/device";
 import { characterStorageKeys, globalStorageKeys } from '@modules/core/storageSchema';
+import { globalStorage, characterStorage } from '@modules/core/storage';
 
 export interface ExportedLocalStorage {
     global: Record<string, string>;
@@ -404,10 +405,19 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
 
 export function applyLocalStorageImport(data: ExportedLocalStorage) {
     if (!data) return;
+
+    // Track changed keys so we can notify storage listeners afterwards.
+    // Direct localStorage.setItem() bypasses TypedStorage listeners, so the UI
+    // would not pick up the changes without explicit notification.
+    const changedGlobalKeys: Array<{ key: string; oldRaw: string | null; newRaw: string }> = [];
+    const changedCharacterKeys: Array<{ storageKey: string; baseKey: string; oldRaw: string | null; newRaw: string }> = [];
+
     Object.entries(data.global ?? {}).forEach(([key, raw]) => {
         if (typeof raw !== "string") return;
         if (isExcludedLocalStorageKey(key)) return;
+        const oldRaw = localStorage.getItem(key);
         localStorage.setItem(key, raw);
+        changedGlobalKeys.push({ key, oldRaw, newRaw: raw });
     });
     Object.entries(data.characters ?? {}).forEach(([character, entries]) => {
         if (!entries || typeof entries !== "object") return;
@@ -418,25 +428,59 @@ export function applyLocalStorageImport(data: ExportedLocalStorage) {
             const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
             if (isExcludedLocalStorageKey(baseKey)) return;
 
+            const oldRaw = localStorage.getItem(storageKey);
+
             // CRDT merge for profession data
             if (baseKey === 'profession') {
                 try {
                     const cloudState = JSON.parse(raw);
-                    const localRaw = localStorage.getItem(storageKey);
-                    const localState = localRaw ? JSON.parse(localRaw) : null;
+                    const localState = oldRaw ? JSON.parse(oldRaw) : null;
                     const merged = mergeProfessionStates(localState, cloudState);
                     if (merged) {
-                        localStorage.setItem(storageKey, JSON.stringify(merged));
+                        const newRaw = JSON.stringify(merged);
+                        localStorage.setItem(storageKey, newRaw);
+                        changedCharacterKeys.push({ storageKey, baseKey, oldRaw, newRaw });
                     }
                 } catch {
                     localStorage.setItem(storageKey, raw);
+                    changedCharacterKeys.push({ storageKey, baseKey, oldRaw, newRaw: raw });
                 }
                 return;
             }
 
             localStorage.setItem(storageKey, raw);
+            changedCharacterKeys.push({ storageKey, baseKey, oldRaw, newRaw: raw });
         });
     });
+
+    // Notify globalStorage listeners for changed global keys
+    const globalKeySet = new Set(globalStorageKeys as readonly string[]);
+    for (const { key, oldRaw, newRaw } of changedGlobalKeys) {
+        if (!globalKeySet.has(key)) continue;
+        if (oldRaw === newRaw) continue;
+        let oldValue: any;
+        let newValue: any;
+        if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+        try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+        globalStorage.fireListeners(key as any, newValue, oldValue);
+    }
+
+    // Notify characterStorage listeners for changed character keys of the current character
+    const currentChar = characterStorage.getCharacter();
+    if (currentChar) {
+        const charKeySet = new Set(characterStorageKeys as readonly string[]);
+        for (const { storageKey, baseKey, oldRaw, newRaw } of changedCharacterKeys) {
+            if (!charKeySet.has(baseKey)) continue;
+            if (oldRaw === newRaw) continue;
+            // Only fire for the current character's keys
+            if (!storageKey.startsWith(currentChar + ':')) continue;
+            let oldValue: any;
+            let newValue: any;
+            if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+            try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+            characterStorage.fireListeners(baseKey as any, newValue, oldValue);
+        }
+    }
 }
 
 export function validatePayload(input: unknown): input is ExportPayload {
