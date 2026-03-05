@@ -1,4 +1,4 @@
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { MacroType } from "./mobileButtonSettings";
 
@@ -149,10 +149,9 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
     return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig, holdEnabled, hold };
 }
 
-export async function loadSettings(): Promise<DesktopButtonsSettings> {
+export function loadSettings(): DesktopButtonsSettings {
     try {
-        const data = await storage.getItem('desktopButtonSettings');
-        const raw = data?.desktopButtonSettings;
+        const raw = globalStorage.get('desktopButtonSettings') as any;
         if (raw && typeof raw === 'object') {
             const locked = !!raw.locked;
             const buttons: DesktopButtonSetting[] = [];
@@ -173,7 +172,7 @@ export async function loadSettings(): Promise<DesktopButtonsSettings> {
 }
 
 export function saveSettings(settings: DesktopButtonsSettings) {
-    storage.setItem('desktopButtonSettings', settings);
+    globalStorage.set('desktopButtonSettings', settings);
 }
 
 export function hexToRgba(hex: string, alpha: number): string {

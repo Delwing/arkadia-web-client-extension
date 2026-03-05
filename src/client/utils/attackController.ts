@@ -1,12 +1,12 @@
 import Client from "../Client";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import { normalizeAttackCommand } from "./attackCommand";
 import { normalizeSupportCommand } from "./supportCommand";
 
 export type AttackMode = "A" | "AW" | "AWR";
 
 export function createAttackController(client: Client) {
-    const storedSettings = getItemSync("settings")?.settings;
+    const storedSettings = characterStorage.get("settings");
     let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
     let supportCommand = normalizeSupportCommand(storedSettings?.supportCommand);
     client.on("settings", (settings) => {
@@ -15,10 +15,10 @@ export function createAttackController(client: Client) {
         supportCommand = normalizeSupportCommand(detail?.supportCommand);
     });
 
-    let attackMode: AttackMode = getItemSync("attack_mode")?.attack_mode ?? "A";
+    let attackMode: AttackMode = characterStorage.get("attack_mode") ?? "A";
     client.on("attackMode", (mode) => {
         attackMode = mode as AttackMode;
-        setItemSync("attack_mode", attackMode);
+        characterStorage.set("attack_mode", attackMode);
     });
     client.sendEvent("attackMode", attackMode);
 

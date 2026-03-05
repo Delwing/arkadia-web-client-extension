@@ -3,7 +3,7 @@ import { Button, Form, Badge, Spinner } from "react-bootstrap";
 import { TiDelete } from "react-icons/ti";
 import { FiEdit2, FiExternalLink, FiUpload } from "react-icons/fi";
 import { Modal } from "bootstrap";
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
 import type { LoadedPlugin } from "@shared/types/Plugin";
 import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPluginIds, getAllStoredPlugins } from "@client/utils/pluginStorage";
@@ -55,11 +55,10 @@ function Scripts() {
     };
 
     useEffect(() => {
-        storage.getItem("scripts").then(res => {
-            if (res && Array.isArray(res.scripts)) {
-                setScripts(res.scripts);
-            }
-        });
+        const savedScripts = globalStorage.get("scripts");
+        if (Array.isArray(savedScripts)) {
+            setScripts(savedScripts);
+        }
 
         // Load stored scripts directly from IndexedDB instead of localStorage
         loadStoredScriptsFromDB();
@@ -116,7 +115,7 @@ function Scripts() {
 
     function save(list: string[]) {
         setScripts(list);
-        storage.setItem("scripts", list);
+        globalStorage.set("scripts", list);
     }
     function add() {
         const url = input.trim();
@@ -162,7 +161,7 @@ function Scripts() {
 
             // Trigger storage event to reload plugins
             const ids = await getAllStoredPluginIds();
-            storage.setItem("stored_scripts", ids);
+            globalStorage.set("stored_scripts", ids);
 
             // Reset form
             nameInput.value = "";
@@ -193,7 +192,7 @@ function Scripts() {
                 await loadStoredScriptsFromDB();
                 // Trigger storage event to reload plugins
                 const ids = await getAllStoredPluginIds();
-                storage.setItem("stored_scripts", ids);
+                globalStorage.set("stored_scripts", ids);
             } catch (err) {
                 console.error("Failed to delete plugin from IndexedDB:", err);
             }
@@ -282,7 +281,7 @@ function Scripts() {
 
                     // Trigger storage event to reload plugins
                     const ids = await getAllStoredPluginIds();
-                    storage.setItem("stored_scripts", ids);
+                    globalStorage.set("stored_scripts", ids);
 
                     // Trigger localStorage update for other tabs
                     localStorage.setItem('stored_scripts_updated', Date.now().toString());

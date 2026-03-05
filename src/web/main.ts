@@ -50,7 +50,7 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {getItemSync, setItemSync} from "@modules/core/storage"
+import {globalStorage} from "@modules/core/storage"
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
@@ -365,10 +365,11 @@ function onSplitDragEnd() {
     // Persist split view height to UI settings
     const height = splitBottom.clientHeight;
     if (height >= 60) {
-        const data = getItemSync('uiSettings');
-        const settings = data?.uiSettings ?? {};
-        settings.splitViewHeight = height;
-        setItemSync('uiSettings', settings);
+        const settings = globalStorage.get('uiSettings');
+        if (settings) {
+            settings.splitViewHeight = height;
+            globalStorage.set('uiSettings', settings);
+        }
     }
 }
 
@@ -675,7 +676,7 @@ Promise.all([mapDataPromise, colorsPromise])
         }
 
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        const savedAlgorithm = getItemSync('uiSettings')?.pathFindingAlgorithm;
+        const savedAlgorithm = globalStorage.get('uiSettings')?.pathFindingAlgorithm;
         if (savedAlgorithm && pathFinder.setAlgorithm) {
             pathFinder.setAlgorithm(savedAlgorithm);
         }
@@ -689,7 +690,7 @@ Promise.all([mapDataPromise, colorsPromise])
             if (!currentEmbedded) return;
 
             const result = client.Map.initialize(newMapData, colors);
-            const newSavedAlgorithm = getItemSync('uiSettings')?.pathFindingAlgorithm;
+            const newSavedAlgorithm = globalStorage.get('uiSettings')?.pathFindingAlgorithm;
             if (newSavedAlgorithm && result.pathFinder.setAlgorithm) {
                 result.pathFinder.setAlgorithm(newSavedAlgorithm);
             }
@@ -782,7 +783,7 @@ arkadiaClient.on('client.connect', () => {
     isDisconnecting = false;
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
-    const wakeLockSetting = getItemSync('uiSettings')?.uiSettings?.wakeLock;
+    const wakeLockSetting = globalStorage.get('uiSettings')?.wakeLock;
     if (wakeLockSetting !== false) {
         preventTabSleep();
     }
@@ -967,8 +968,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
-    const uiSettingsData = getItemSync('uiSettings');
-    let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
+    const uiSettingsData = globalStorage.get('uiSettings');
+    let clearInputOnSend = !!uiSettingsData?.clearInputOnSend;
     client.on('uiSettings', (payload) => {
         if (typeof payload?.clearInputOnSend === 'boolean') {
             clearInputOnSend = payload.clearInputOnSend;
@@ -1794,11 +1795,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize desktop buttons
     new DesktopButtons(client);
 
-    loadMobileButtonSettings().then(s => {
-        const inTeam = !!client.TeamManager.isInAnyTeam?.();
-        const isLeader = !!client.TeamManager.isLeader?.();
-        applyMobileButtonSettings(s, inTeam, isLeader);
-    });
+    const mobileSettings = loadMobileButtonSettings();
+    const inTeam = !!client.TeamManager.isInAnyTeam?.();
+    const isLeader = !!client.TeamManager.isLeader?.();
+    applyMobileButtonSettings(mobileSettings, inTeam, isLeader);
 
     initUiSettings();
 

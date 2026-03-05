@@ -3,7 +3,7 @@ import { initKillCounter } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
-import { setItemSync } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
@@ -41,7 +41,7 @@ describe('improve counter', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     localStorage.clear();
-    setItemSync('object_num', '1');
+    characterStorage.set('object_num','1');
     client = new FakeClient();
     const killCounter = initKillCounter((client as unknown) as any, []);
     client.dispatch('storage', { key: 'kill_counter', value: {} });
@@ -247,7 +247,7 @@ describe('improve counter', () => {
       key: 'improve_counter_lifetime',
       value: { entries: [{ date: '1970/1/1', count: 3 }] },
     });
-    setItemSync('object_num', '2');
+    characterStorage.set('object_num','2');
     client.dispatch('gmcp.char.state', { improve: 6 });
     showLifetime();
     const printed = client.print.mock.calls[0][0]?.text;
@@ -271,7 +271,7 @@ describe('improve counter', () => {
       value: { entries: [{ date: '1970/1/1', count: 2 }] },
     });
     // same object number reports same level again
-    setItemSync('object_num', '1');
+    characterStorage.set('object_num','1');
     // server replays improvements from 1 to 2 on reconnect
     c.dispatch('gmcp.char.state', { improve: 1 });
     c.dispatch('gmcp.char.state', { improve: 2 });

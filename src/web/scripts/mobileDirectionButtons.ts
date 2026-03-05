@@ -7,7 +7,7 @@ import {
     defaultFontColor,
     defaultBackground,
 } from "../mobileButtonSettings";
-import {getItemSync, setItemSync} from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
 import {
     executeButtonMacro,
@@ -126,14 +126,12 @@ export default class MobileDirectionButtons {
             if (btn) btn.dataset.direction = dir;
         });
 
-        loadMobileButtonSettings().then(settings => {
-            this.allSettings = settings;
-            this.dragLocked = !!settings.locked;
-            this.updateDragLock();
-            this.updateTeamMode();
-            this.setupEventHandlers();
-            this.applyActiveSettings();
-        });
+        this.allSettings = loadMobileButtonSettings();
+        this.dragLocked = !!this.allSettings.locked;
+        this.updateDragLock();
+        this.updateTeamMode();
+        this.setupEventHandlers();
+        this.applyActiveSettings();
         this.updateBracketRightButton();
         this.updateToggleButton();
         this.setupDraggable();
@@ -264,12 +262,11 @@ export default class MobileDirectionButtons {
                 const b = document.getElementById(id) as HTMLButtonElement | null;
                 if (b) this.applyConfigToButton(id, b);
             });
-            loadMobileButtonSettings().then(s => {
-                this.allSettings = s;
-                this.dragLocked = !!s.locked;
-                this.updateDragLock();
-                this.updateTeamMode();
-            });
+            const s = loadMobileButtonSettings();
+            this.allSettings = s;
+            this.dragLocked = !!s.locked;
+            this.updateDragLock();
+            this.updateTeamMode();
         });
 
         // Listen for bind settings changes
@@ -436,8 +433,7 @@ export default class MobileDirectionButtons {
         // Set initial position from storage if available
         this.container.style.removeProperty('right');
 
-        const savedData = getItemSync('mobileButtonsPosition');
-        const savedPosition = savedData?.mobileButtonsPosition;
+        const savedPosition = globalStorage.get('mobileButtonsPosition');
         if (savedPosition) {
             try {
                 this.savedPositions = this.normalizeSavedPositions(savedPosition);
@@ -583,7 +579,7 @@ export default class MobileDirectionButtons {
                 toStore[orientation] = value;
             }
         });
-        setItemSync('mobileButtonsPosition', toStore);
+        globalStorage.set('mobileButtonsPosition', toStore);
     }
 
     private updateDragLock() {

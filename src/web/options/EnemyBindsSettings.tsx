@@ -1,53 +1,43 @@
 import { useEffect, useState } from "react";
 import { Form } from "react-bootstrap";
-import storage, { getCurrentCharacter } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import { defaultSettings, Settings } from "./defaultSettings";
 
 function EnemyBindsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
     const [keepUnchanged, setKeepUnchanged] = useState(false);
     const [showMode, setShowMode] = useState<'always' | 'whenBound' | 'never'>('always');
     const [enabledSlots, setEnabledSlots] = useState<[boolean, boolean, boolean]>([true, true, true]);
-    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [locked, setLocked] = useState(!characterStorage.getCharacter());
 
     useEffect(() => {
-        const update = () => setLocked(!getCurrentCharacter());
-        storage.onChanged?.addListener(update);
-        window.addEventListener('storage', update);
-        return () => {
-            storage.onChanged?.removeListener?.(update);
-            window.removeEventListener('storage', update);
-        };
+        const update = () => setLocked(!characterStorage.getCharacter());
+        return characterStorage.onCharacterChange(update);
     }, []);
 
     useEffect(() => {
         const load = () => {
-            storage.getItem("settings").then(res => {
-                if (res && res.settings) {
-                    setKeepUnchanged(res.settings.enemyBindsKeepUnchanged ?? defaultSettings.enemyBindsKeepUnchanged);
-                    setShowMode(res.settings.enemyBindsShowMode ?? defaultSettings.enemyBindsShowMode);
-                    setEnabledSlots(res.settings.enemyBindsEnabledSlots ?? defaultSettings.enemyBindsEnabledSlots);
-                } else {
-                    setKeepUnchanged(defaultSettings.enemyBindsKeepUnchanged);
-                    setShowMode(defaultSettings.enemyBindsShowMode);
-                    setEnabledSlots(defaultSettings.enemyBindsEnabledSlots);
-                }
-            });
+            const settings = characterStorage.get("settings");
+            if (settings) {
+                setKeepUnchanged((settings as any).enemyBindsKeepUnchanged ?? defaultSettings.enemyBindsKeepUnchanged);
+                setShowMode((settings as any).enemyBindsShowMode ?? defaultSettings.enemyBindsShowMode);
+                setEnabledSlots((settings as any).enemyBindsEnabledSlots ?? defaultSettings.enemyBindsEnabledSlots);
+            } else {
+                setKeepUnchanged(defaultSettings.enemyBindsKeepUnchanged);
+                setShowMode(defaultSettings.enemyBindsShowMode);
+                setEnabledSlots(defaultSettings.enemyBindsEnabledSlots);
+            }
         };
 
         load();
 
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes.settings) {
-                const s = changes.settings.newValue || {};
-                setKeepUnchanged(s.enemyBindsKeepUnchanged ?? defaultSettings.enemyBindsKeepUnchanged);
-                setShowMode(s.enemyBindsShowMode ?? defaultSettings.enemyBindsShowMode);
-                setEnabledSlots(s.enemyBindsEnabledSlots ?? defaultSettings.enemyBindsEnabledSlots);
-            }
-        };
-
-        storage.onChanged?.addListener(listener);
+        const unsub = characterStorage.onChange('settings', (newValue) => {
+            const s = (newValue as any) || {};
+            setKeepUnchanged(s.enemyBindsKeepUnchanged ?? defaultSettings.enemyBindsKeepUnchanged);
+            setShowMode(s.enemyBindsShowMode ?? defaultSettings.enemyBindsShowMode);
+            setEnabledSlots(s.enemyBindsEnabledSlots ?? defaultSettings.enemyBindsEnabledSlots);
+        });
         return () => {
-            storage.onChanged?.removeListener?.(listener);
+            unsub();
         };
     }, []);
 

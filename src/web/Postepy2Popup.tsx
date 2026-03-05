@@ -12,7 +12,7 @@ import {
     formatCount,
     MergeMode,
 } from '../client/scripts/improveCounter';
-import { getCurrentCharacter } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 import type { ImproveDbResult, ImproveDbWorkerRequest, ImproveDbWorkerResponse } from '@modules/data/improveDbImport.shared';
 
 const POPUP_ID = 'popup:postepy2';
@@ -236,7 +236,7 @@ const Postepy2Popup: React.FC = () => {
                 setImportState({ phase: 'error', message: 'Baza nie zawiera zadnych danych.' });
                 return;
             }
-            const current = getCurrentCharacter()?.toLowerCase() ?? '';
+            const current = characterStorage.getCharacter()?.toLowerCase() ?? '';
             const preselected = parsed.characters.find(c => c.toLowerCase() === current)
                 ?? parsed.characters[0];
             setImportState({ phase: 'preview', parsed, selectedCharacter: preselected, mergeMode: 'max' });
@@ -287,7 +287,7 @@ const Postepy2Popup: React.FC = () => {
     const monthlyData = useMemo(() => aggregateMonthly(data), [data]);
     const yearlyData = useMemo(() => aggregateYearly(data), [data]);
 
-    const characterName = getCurrentCharacter();
+    const characterName = characterStorage.getCharacter();
 
     const handleTabClick = useCallback((tab: TabType) => {
         setActiveTab(tab);

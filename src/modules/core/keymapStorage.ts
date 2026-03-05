@@ -1,8 +1,6 @@
-import storage from './storage';
+import { globalStorage } from './storage';
 import type { BindSettings, Keymap, KeymapStore } from './keymapTypes';
 import {
-    KEYMAPS_STORAGE_KEY,
-    ACTIVE_KEYMAP_STORAGE_KEY,
     DEFAULT_KEYMAP_ID,
     DEFAULT_KEYMAP_NAME,
 } from './keymapTypes';
@@ -55,15 +53,10 @@ const defaultBinds: BindSettings = {
  * Performs migration from the legacy flat-binds format if necessary.
  */
 export function getKeymapStore(): KeymapStore {
-    const raw = localStorage.getItem(KEYMAPS_STORAGE_KEY);
-    if (raw) {
-        try {
-            const parsed = JSON.parse(raw);
-            if (parsed?.version === 1 && parsed.keymaps && typeof parsed.keymaps === 'object') {
-                return parsed as KeymapStore;
-            }
-        } catch {
-            // fall through to migration
+    const stored = globalStorage.get('keymaps');
+    if (stored) {
+        if (stored.version === 1 && stored.keymaps && typeof stored.keymaps === 'object') {
+            return stored;
         }
     }
 
@@ -76,7 +69,7 @@ export function getKeymapStore(): KeymapStore {
  * Falls back to the default keymap if none is set.
  */
 export function getActiveKeymapId(): string {
-    return localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY) || DEFAULT_KEYMAP_ID;
+    return globalStorage.get('active_keymap_id') || DEFAULT_KEYMAP_ID;
 }
 
 /**
@@ -136,14 +129,14 @@ export function getKeymapList(): Keymap[] {
  * Persist the full keymap store to localStorage.
  */
 export function saveKeymapStore(store: KeymapStore): void {
-    localStorage.setItem(KEYMAPS_STORAGE_KEY, JSON.stringify(store));
+    globalStorage.set('keymaps', store);
 }
 
 /**
  * Set the active keymap ID for this device.
  */
 export function setActiveKeymapId(id: string): void {
-    localStorage.setItem(ACTIVE_KEYMAP_STORAGE_KEY, id);
+    globalStorage.set('active_keymap_id', id);
 }
 
 /**
@@ -161,7 +154,7 @@ export function switchKeymap(keymapId: string): void {
     setActiveKeymapId(keymapId);
     // Write flat binds to the `binds` key – this triggers storage.onChanged
     // which propagates to Client.ts and all other runtime consumers.
-    storage.setItem('binds', keymap.binds);
+    globalStorage.set('binds', keymap.binds);
 }
 
 /**
@@ -179,7 +172,7 @@ export function saveKeymapBinds(keymapId: string, binds: BindSettings): void {
     saveKeymapStore(store);
 
     if (keymapId === getActiveKeymapId()) {
-        storage.setItem('binds', binds);
+        globalStorage.set('binds', binds);
     }
 }
 
@@ -272,7 +265,7 @@ function migrateLegacyBinds(): KeymapStore {
     saveKeymapStore(store);
 
     // Ensure active keymap is set
-    if (!localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY)) {
+    if (!globalStorage.get('active_keymap_id')) {
         setActiveKeymapId(keymap.id);
     }
 

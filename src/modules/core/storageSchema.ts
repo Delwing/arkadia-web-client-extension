@@ -72,6 +72,7 @@ export interface GlobalStorageSchema {
     mobileButtonsPosition: any; // TODO: type position data
     settingsMigrationsVersion: number;
     custom_sounds: CustomSound[];
+    last_world_rebirth: number;
 }
 
 /**
@@ -139,4 +140,5 @@ export const globalStorageKeys = [
     'mobileButtonsPosition',
     'settingsMigrationsVersion',
     'custom_sounds',
+    'last_world_rebirth',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];

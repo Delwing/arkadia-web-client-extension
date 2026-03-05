@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
-import {getCurrentCharacter, getItemSync} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 
@@ -306,7 +306,7 @@ export default class ImproveCounter {
             this.pendingLevel = level;
             return;
         }
-        const objStored = getItemSync("object_num")?.object_num;
+        const objStored = characterStorage.get("object_num");
         const objNum =
             typeof objStored === "string"
                 ? parseInt(objStored, 10)
@@ -724,7 +724,7 @@ export default class ImproveCounter {
         lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
         lines.push(pad());
 
-        const name = titleCase(getCurrentCharacter() || "");
+        const name = titleCase(characterStorage.getCharacter() || "");
         const nameLine = new AnsiAwareBuffer("POSTAC: ");
         nameLine.appendBuffer(colorString(name, NAME_COLOR));
         lines.push(pad(nameLine));

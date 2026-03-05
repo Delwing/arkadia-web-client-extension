@@ -89,17 +89,13 @@ export default class MobileCommandRadial {
     }
 
     private loadInitialSettings() {
-        loadSettings().then(settings => {
-            this.settings = settings;
-            this.updateActiveLayout();
-        }).catch(err => console.error('Failed to load mobile button settings for radial menu', err));
+        this.settings = loadSettings();
+        this.updateActiveLayout();
     }
 
     private reloadSettings() {
-        loadSettings().then(settings => {
-            this.settings = settings;
-            this.updateActiveLayout();
-        }).catch(err => console.error('Failed to reload mobile button settings for radial menu', err));
+        this.settings = loadSettings();
+        this.updateActiveLayout();
     }
 
     private isRadialEnabled(): boolean {

@@ -1,4 +1,4 @@
-import storage from "./storage";
+import { globalStorage } from "./storage";
 
 export const CUSTOM_SOUNDS_STORAGE_KEY = "custom_sounds";
 
@@ -53,12 +53,12 @@ function normalizeStoredSoundList(value: unknown): StoredCustomSound[] {
     return result;
 }
 
-async function readStoredSounds(): Promise<StoredCustomSound[]> {
-    const result = await storage.getItem(CUSTOM_SOUNDS_STORAGE_KEY);
-    if (!result) {
+function readStoredSounds(): StoredCustomSound[] {
+    const stored = globalStorage.get('custom_sounds');
+    if (!stored) {
         return [];
     }
-    return normalizeStoredSoundList((result as any)[CUSTOM_SOUNDS_STORAGE_KEY]);
+    return normalizeStoredSoundList(stored);
 }
 
 async function ensureDatabase(): Promise<IDBDatabase> {
@@ -162,7 +162,7 @@ function normalizeCustomSoundList(list: CustomSound[]): CustomSound[] {
 }
 
 export async function getCustomSounds(): Promise<CustomSound[]> {
-    const stored = await readStoredSounds();
+    const stored = readStoredSounds();
     const result: CustomSound[] = [];
     for (const sound of stored) {
         const data = (await getSoundData(sound.key)) ?? sound.data;
@@ -174,7 +174,7 @@ export async function getCustomSounds(): Promise<CustomSound[]> {
 }
 
 export async function getCustomSound(key: string): Promise<CustomSound | undefined> {
-    const stored = await readStoredSounds();
+    const stored = readStoredSounds();
     const index = stored.findIndex(sound => sound.key === key);
     if (index === -1) {
         return undefined;
@@ -189,7 +189,7 @@ export async function getCustomSound(key: string): Promise<CustomSound | undefin
 
 export async function saveCustomSounds(sounds: CustomSound[]): Promise<void> {
     const normalized = normalizeCustomSoundList(sounds);
-    const existing = await readStoredSounds();
+    const existing = readStoredSounds();
     const existingKeys = new Set(existing.map(sound => sound.key));
 
     const toStore: StoredCustomSound[] = [];
@@ -204,7 +204,7 @@ export async function saveCustomSounds(sounds: CustomSound[]): Promise<void> {
         }
     }
 
-    await storage.setItem(CUSTOM_SOUNDS_STORAGE_KEY, toStore);
+    globalStorage.set('custom_sounds', toStore as any);
 
     for (const key of existingKeys) {
         await deleteSoundData(key);

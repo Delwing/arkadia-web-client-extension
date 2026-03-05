@@ -1,4 +1,4 @@
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 
 export type MacroType =
@@ -304,10 +304,9 @@ function parseRadialSettings(raw: any): RadialSettings {
     return { enabled, commands };
 }
 
-export async function loadSettings(): Promise<Settings> {
+export function loadSettings(): Settings {
     try {
-        const data = await storage.getItem('mobileButtonSettings');
-        const raw = data?.mobileButtonSettings;
+        const raw = globalStorage.get('mobileButtonSettings') as any;
         if (raw) {
             const locked = !!raw.locked;
             const buttonSize = typeof raw.buttonSize === 'number' && raw.buttonSize > 0 ? raw.buttonSize : defaultButtonSize;
@@ -378,7 +377,7 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 export function saveSettings(settings: Settings) {
-    storage.setItem('mobileButtonSettings', settings);
+    globalStorage.set('mobileButtonSettings', settings);
 }
 
 export function extractAlpha(color: string): number {

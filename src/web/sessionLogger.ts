@@ -1,4 +1,4 @@
-import storage, { getItemSync } from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import type { CombatEntry } from "@client/scripts/combatWindow";
@@ -29,15 +29,13 @@ function clearDownloadedFlag() {
 }
 
 let loggingEnabled = true;
-const saved = getItemSync("loggingEnabled");
-if (saved && typeof saved.loggingEnabled === "boolean") {
-  loggingEnabled = saved.loggingEnabled;
+const savedLogging = globalStorage.get("loggingEnabled");
+if (typeof savedLogging === "boolean") {
+  loggingEnabled = savedLogging;
 }
 
-storage.onChanged?.addListener(changes => {
-  if (changes.loggingEnabled) {
-    loggingEnabled = !!changes.loggingEnabled.newValue;
-  }
+globalStorage.onChange('loggingEnabled', (newValue) => {
+  loggingEnabled = !!newValue;
 });
 
 async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {

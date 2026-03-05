@@ -4,7 +4,7 @@ import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/pe
 import type { PersonListEntry } from '../types/people';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import storage from '@modules/core/storage';
+import { globalStorage } from '@modules/core/storage';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
@@ -58,26 +58,23 @@ export default function initEnemyBinds(
     ensurePeopleLoaded().catch(() => undefined);
 
     // Load enemy binds keys from storage
-    storage.getItem('binds').then(res => {
-        if (res?.binds?.enemy && Array.isArray(res.binds.enemy) && res.binds.enemy.length === 3) {
-            enemyBindKeys = res.binds.enemy.map((bind: any) => ({
-                key: bind.key || 'F1',
-                ctrl: bind.ctrl,
-                alt: bind.alt,
-                shift: bind.shift,
-            }));
-        }
-        if (res?.binds?.enemyBlock && Array.isArray(res.binds.enemyBlock) && res.binds.enemyBlock.length === 3) {
-            enemyBlockBindKeys = res.binds.enemyBlock.map((bind: any) => ({
-                key: bind.key || 'F1',
-                ctrl: bind.ctrl,
-                alt: bind.alt,
-                shift: bind.shift,
-            }));
-        }
-    }).catch(() => {
-        // Use defaults on error
-    });
+    const binds = globalStorage.get('binds');
+    if (binds?.enemy && Array.isArray(binds.enemy) && binds.enemy.length === 3) {
+        enemyBindKeys = binds.enemy.map((bind: any) => ({
+            key: bind.key || 'F1',
+            ctrl: bind.ctrl,
+            alt: bind.alt,
+            shift: bind.shift,
+        }));
+    }
+    if (binds?.enemyBlock && Array.isArray(binds.enemyBlock) && binds.enemyBlock.length === 3) {
+        enemyBlockBindKeys = binds.enemyBlock.map((bind: any) => ({
+            key: bind.key || 'F1',
+            ctrl: bind.ctrl,
+            alt: bind.alt,
+            shift: bind.shift,
+        }));
+    }
 
     client.on('settings', (settings) => {
         const detail = (settings ?? {}) as {

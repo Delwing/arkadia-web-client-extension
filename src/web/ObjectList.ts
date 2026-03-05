@@ -1,5 +1,5 @@
 import Client from "@client/Client";
-import storage, {getItemSync, setItemSync} from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 import {createAttackController} from "@client/utils/attackController";
 import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
 import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
@@ -68,10 +68,8 @@ export default class ObjectList {
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
         eventBus.on('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
-        storage.onChanged?.addListener((changes) => {
-            if (changes.uiSettings) {
-                this.loadContextMenuCommands();
-            }
+        globalStorage.onChange('uiSettings', () => {
+            this.loadContextMenuCommands();
         });
         this.render();
     }
@@ -113,8 +111,8 @@ export default class ObjectList {
     }
 
     private loadContextMenuCommands() {
-        const data = getItemSync("uiSettings");
-        const commands = data?.uiSettings?.objectContextMenuCommands;
+        const uiSettings = globalStorage.get("uiSettings");
+        const commands = (uiSettings as any)?.objectContextMenuCommands;
         if (Array.isArray(commands) && commands.length > 0) {
             this.contextMenuCommands = commands.filter((c: unknown) => typeof c === 'string');
         } else {
@@ -135,8 +133,7 @@ export default class ObjectList {
     private setupDraggable() {
         if (!this.container) return;
 
-        const savedData = getItemSync("objectsListPosition");
-        const saved = savedData?.objectsListPosition;
+        const saved = globalStorage.get("objectsListPosition");
         if (saved) {
             try {
                 // eslint-disable-next-line prefer-const -- left and top are conditionally reassigned below
@@ -215,7 +212,7 @@ export default class ObjectList {
             left: rect.left,
             top: rect.top,
         };
-        setItemSync("objectsListPosition", position);
+        globalStorage.set("objectsListPosition", position);
         this.clampToViewport();
     };
 

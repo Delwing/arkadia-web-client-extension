@@ -4,7 +4,7 @@ import eventBus from "@modules/core/eventBus";
 import {createRoot, type Root} from "react-dom/client";
 import {createElement} from "react";
 import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
-import {CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds} from "@modules/core/customSounds";
+import {CustomSound, getCustomSounds, saveCustomSounds} from "@modules/core/customSounds";
 import {loadLayoutState, resetLayoutState, saveLayoutState} from "@web/layout";
 import {
     defaultFooterComponents,
@@ -14,7 +14,7 @@ import {
     type PathFindingAlgorithm,
     type UiSettings
 } from "./defaultUiSettings";
-import storage from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
@@ -345,10 +345,9 @@ function apply(settings: UiSettings) {
     }
 }
 
-async function load(): Promise<UiSettings> {
+function load(): UiSettings {
     try {
-        const uiData = await storage.getItem('uiSettings');
-        const raw = uiData?.uiSettings;
+        const raw = globalStorage.get('uiSettings');
         let parsed: any = {};
         if (raw) {
             parsed = raw as any;
@@ -500,7 +499,7 @@ async function load(): Promise<UiSettings> {
 }
 
 function save(settings: UiSettings) {
-    storage.setItem('uiSettings', settings);
+    globalStorage.set('uiSettings', settings);
 }
 
 export default async function initUiSettings() {
@@ -562,7 +561,7 @@ export default async function initUiSettings() {
     const objectContextMenuInput = modalEl.querySelector('#ui-object-context-menu-input') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
 
-    let current = await load();
+    let current = load();
     let customSounds: CustomSound[] = [];
     const customSoundsRef = { current: customSounds };
     let objectContextMenuCommands: string[] = [...current.objectContextMenuCommands];
@@ -1208,24 +1207,20 @@ export default async function initUiSettings() {
         customBeepFileInput.addEventListener('change', handleCustomBeepFileChange);
     }
 
-    const handleStorageChange = async (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-        if (CUSTOM_SOUNDS_STORAGE_KEY in changes) {
-            await loadCustomSounds();
-            if (customBeepSoundInput) {
-                customBeepSoundInput.value = current.customBeepSoundKey || '';
-            }
+    globalStorage.onChange('uiSettings', (newValue) => {
+        if (newValue) {
+            current = load();
+            populateFormInputs(current);
+            updateLabelRenderModeState();
+            updateCustomFontState();
         }
-        const uiSettingsChange = changes.uiSettings;
-        if (!uiSettingsChange || !uiSettingsChange.newValue) {
-            return;
+    });
+    globalStorage.onChange('custom_sounds', async () => {
+        await loadCustomSounds();
+        if (customBeepSoundInput) {
+            customBeepSoundInput.value = current.customBeepSoundKey || '';
         }
-        current = await load();
-        populateFormInputs(current);
-        updateLabelRenderModeState();
-        updateCustomFontState();
-    };
-
-    storage.onChanged?.addListener(handleStorageChange);
+    });
 
     function refreshExplorationStats() {
         const map = (globalThis as any).embedded;
@@ -1349,7 +1344,7 @@ export default async function initUiSettings() {
     }
 
     button.addEventListener('click', async () => {
-        current = await load();
+        current = load();
         populateFormInputs(current);
         updateLabelRenderModeState();
         updateCustomFontState();

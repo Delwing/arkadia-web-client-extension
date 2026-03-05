@@ -13,6 +13,7 @@ import {
     type ImportedDeviceEntry,
     type SyncGroup,
 } from "@modules/device";
+import { characterStorageKeys, globalStorageKeys } from '@modules/core/storageSchema';
 
 export interface ExportedLocalStorage {
     global: Record<string, string>;
@@ -76,20 +77,8 @@ export const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = 
     stored_scripts: "scripts",
 };
 
-// List of all known global keys that the application uses
-// Keys not in this list will be excluded from sync
-const KNOWN_GLOBAL_KEYS = new Set([
-    "uiSettings",
-    "binds",
-    "shortcuts",
-    "triggers",
-    "aliases",
-    "mobileButtonSettings",
-    "desktopButtonSettings",
-    "scripts",
-    "stored_scripts",
-    "loggingEnabled",
-]);
+// All known global keys derived from the storage schema
+const KNOWN_GLOBAL_KEYS: ReadonlySet<string> = new Set(globalStorageKeys);
 
 export interface ExportedDeviceInfo {
     sourceDevice: DeviceInfo;
@@ -127,29 +116,21 @@ const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
-const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
-    "firebase",
-    "arkadia",
-    "containers",
-    "deposits",
-    "improve_counter",
-    "kill_counter",
-    "object_num",
-    "Player"
-]);
+
+// Set of known character-scoped base keys from the storage schema
+const CHARACTER_BASE_KEYS: ReadonlySet<string> = new Set(characterStorageKeys);
 
 export function parseCharacterStorageKey(key: string): { name: string; baseKey: string } | null {
     if (!key) return null;
     if (key.includes("://")) return null;
     const firstColon = key.indexOf(":");
     if (firstColon <= 0) return null;
-    const prefix = key.slice(0, firstColon);
-    if (IGNORED_CHARACTER_KEY_PREFIXES.has(prefix)) {
-        return null;
-    }
-    const name = prefix.trim();
+    const name = key.slice(0, firstColon).trim();
     const baseKey = key.slice(firstColon + 1);
-    return name ? { name, baseKey } : null;
+    if (!name || !baseKey) return null;
+    // Only recognize as character-scoped if the base key is in the schema
+    if (!CHARACTER_BASE_KEYS.has(baseKey)) return null;
+    return { name, baseKey };
 }
 
 export function isExcludedLocalStorageKey(key: string) {

@@ -1,5 +1,12 @@
 import { useState, useCallback } from "react";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage, globalStorage } from "@modules/core/storage";
+import { characterStorageKeys } from "@modules/core/storageSchema";
+
+const characterKeySet = new Set<string>(characterStorageKeys);
+
+function getStorage(key: string): { get(k: any): any; set(k: any, v: any): void } {
+  return characterKeySet.has(key) ? characterStorage : globalStorage;
+}
 
 /**
  * Hook for localStorage with type safety and React state synchronization
@@ -17,8 +24,8 @@ export function useLocalStorage<T>(
 ): [T, (value: T) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = getItemSync(key);
-      return item?.[key] !== undefined ? item[key] : defaultValue;
+      const value = getStorage(key).get(key as any);
+      return value !== undefined ? value as T : defaultValue;
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
       return defaultValue;
@@ -29,7 +36,7 @@ export function useLocalStorage<T>(
     (value: T) => {
       try {
         setStoredValue(value);
-        setItemSync(key, value);
+        getStorage(key).set(key as any, value);
       } catch (error) {
         console.error(`Error setting localStorage key "${key}":`, error);
       }

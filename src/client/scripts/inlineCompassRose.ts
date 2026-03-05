@@ -3,7 +3,7 @@ import { createColorFormat } from "@modules/core/Colors";
 import { gmcp } from "../gmcp";
 import { getShortDir, longToShort } from "@shared/map";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");
 const DIM_GRAY = createColorFormat("#696969");
@@ -52,7 +52,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     }
 
     // Load initial value from storage so the box shows before game login
-    const initial = getItemSync('settings')?.settings;
+    const initial = characterStorage.get('settings');
     if (initial) {
         applySettingsValue(initial.inlineCompassRose);
     }
@@ -82,9 +82,9 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
 
     function persistMode(newMode: number) {
         setMode(newMode);
-        const stored = getItemSync('settings')?.settings ?? {};
+        const stored = characterStorage.get('settings') ?? {} as any;
         stored.inlineCompassRose = mode;
-        setItemSync('settings', stored);
+        characterStorage.set('settings', stored);
     }
 
     // --- /roza alias ---

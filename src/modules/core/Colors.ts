@@ -1,6 +1,6 @@
 import xtermArkadia from "@client/xtermArkadia";
 import xtermProper from "@client/xtermProper";
-import {getItemSync} from "./storage";
+import {globalStorage} from "./storage";
 import {AnsiAwareBuffer, FormatStateSnapshot, FormatColor, HexColor, RgbColor} from "@client/ansi/FormatState.ts";
 import mudletColors from "@client/colors.json";
 
@@ -16,11 +16,9 @@ export const colorCodes = {
 
 const palette = (() => {
     try {
-        const ui = getItemSync('uiSettings');
-        const raw = ui?.uiSettings;
-        if (raw) {
-            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            return parsed.xtermPalette === 'proper' ? 'proper' : 'arkadia';
+        const uiSettings = globalStorage.get('uiSettings');
+        if (uiSettings) {
+            return uiSettings.xtermPalette === 'proper' ? 'proper' : 'arkadia';
         }
     } catch {
     }

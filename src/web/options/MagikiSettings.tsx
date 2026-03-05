@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Form, Badge } from "react-bootstrap";
-import storage, { getCurrentCharacter } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
 import { subscribeToMagicTypes, subscribeToMagicKeys } from "@client/scripts/magicsLoader";
@@ -20,12 +20,11 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const char = getCurrentCharacter();
+        const char = characterStorage.getCharacter();
         if (!char) return;
 
-        const loadSettings = async () => {
-            const res = await storage.getItem("settings");
-            const settings = (res?.settings || {}) as BaseSettings;
+        const loadSettings = () => {
+            const settings = (characterStorage.get("settings") || {}) as BaseSettings;
             setFavoriteMagicTypes(settings.favoriteMagicTypes || []);
             setFavoriteMagics(settings.favoriteMagicKeys || []);
             setLoaded(true);
@@ -33,13 +32,9 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
 
         loadSettings();
 
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes.settings) {
-                loadSettings();
-            }
-        };
-
-        storage.onChanged?.addListener(listener);
+        const unsub = characterStorage.onChange('settings', () => {
+            loadSettings();
+        });
 
         const unsubscribeTypes = subscribeToMagicTypes((types) => {
             if (types) {
@@ -54,7 +49,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         });
 
         return () => {
-            storage.onChanged?.removeListener?.(listener);
+            unsub();
             unsubscribeTypes();
             unsubscribeMagics();
         };
@@ -98,16 +93,11 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         });
     }, [registerSave, favoriteMagicTypes, favoriteMagics, loaded]);
 
-    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [locked, setLocked] = useState(!characterStorage.getCharacter());
 
     useEffect(() => {
-        const update = () => setLocked(!getCurrentCharacter());
-        storage.onChanged?.addListener(update);
-        window.addEventListener('storage', update);
-        return () => {
-            storage.onChanged?.removeListener?.(update);
-            window.removeEventListener('storage', update);
-        };
+        const update = () => setLocked(!characterStorage.getCharacter());
+        return characterStorage.onCharacterChange(update);
     }, []);
 
     return (

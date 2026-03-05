@@ -1,4 +1,4 @@
-import storage, { getItemSync } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';
 
 describe('default settings loading', () => {
@@ -6,9 +6,13 @@ describe('default settings loading', () => {
     localStorage.clear();
   });
 
-  test('returns defaults when no settings stored', async () => {
-    const res = await storage.getItem('settings');
-    expect(res).toEqual({ settings: { ...defaultSettings } });
-    expect(getItemSync('settings')).toEqual({ settings: { ...defaultSettings } });
+  test('returns undefined when no settings stored (defaults applied at read-time by consumers)', () => {
+    expect(characterStorage.get('settings')).toBeUndefined();
+  });
+
+  test('returns stored settings when present', () => {
+    characterStorage.setCharacter('Alice');
+    characterStorage.set('settings', { ...defaultSettings, shortenExits: true } as any);
+    expect(characterStorage.get('settings')).toEqual({ ...defaultSettings, shortenExits: true });
   });
 });

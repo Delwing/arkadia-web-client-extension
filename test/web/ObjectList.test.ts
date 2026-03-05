@@ -1,12 +1,29 @@
 import ObjectList from '@web/ObjectList';
-import { getItemSync, setItemSync } from '@modules/core/storage';
+import { globalStorage } from '@modules/core/storage';
 import ObjectManager from '@client/ObjectManager';
 import { EventEmitter } from 'events';
 
-jest.mock('@modules/core/storage', () => ({
-  getItemSync: jest.fn(),
-  setItemSync: jest.fn(),
-}));
+jest.mock('@modules/core/storage', () => {
+  const listeners = new Map<string, Set<Function>>();
+  const typedStorage = {
+    get: jest.fn(),
+    set: jest.fn(),
+    onChange: jest.fn((key: string, listener: Function) => {
+      if (!listeners.has(key)) listeners.set(key, new Set());
+      listeners.get(key)!.add(listener);
+      return () => listeners.get(key)!.delete(listener);
+    }),
+    fireListeners: jest.fn(),
+    handleStorageEvent: jest.fn(),
+    getCharacter: jest.fn(() => null),
+    setCharacter: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    characterStorage: typedStorage,
+    globalStorage: typedStorage,
+  };
+});
 
 class MockClient {
   private emitter = new EventEmitter();
@@ -31,8 +48,8 @@ class MockClient {
 
 describe('ObjectList', () => {
   beforeEach(() => {
-    (getItemSync as jest.Mock).mockReset();
-    (setItemSync as jest.Mock).mockReset();
+    (globalStorage.get as jest.Mock).mockReset();
+    (globalStorage.set as jest.Mock).mockReset();
     document.body.innerHTML = '';
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
     Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
@@ -67,7 +84,10 @@ describe('ObjectList', () => {
   });
 
   test('converts stored right position to left', () => {
-    (getItemSync as jest.Mock).mockReturnValue({ objectsListPosition: { x: 100, y: 50 } });
+    (globalStorage.get as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'objectsListPosition') return { x: 100, y: 50 };
+      return undefined;
+    });
     Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
     document.body.innerHTML = '<div id="objects-list"></div>';
     const container = document.getElementById('objects-list') as any;
@@ -88,7 +108,7 @@ describe('ObjectList', () => {
   });
 
   test('saves left position on pointer up', () => {
-    (getItemSync as jest.Mock).mockReturnValue(undefined);
+    (globalStorage.get as jest.Mock).mockReturnValue(undefined);
     document.body.innerHTML = '<div id="objects-list"></div>';
     const container = document.getElementById('objects-list') as any;
     Object.defineProperty(container, 'offsetWidth', { value: 200, configurable: true });
@@ -114,7 +134,7 @@ describe('ObjectList', () => {
     } as unknown as PointerEvent;
     ol.onPointerDown(downEvent);
     ol.onPointerUp({ pointerId: 1 } as unknown as PointerEvent);
-    expect(setItemSync).toHaveBeenCalledWith('objectsListPosition', { left: 400, top: 60 });
+    expect(globalStorage.set).toHaveBeenCalledWith('objectsListPosition', { left: 400, top: 60 });
   });
 
   test('pointer down on object item does not start drag', () => {

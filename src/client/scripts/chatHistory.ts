@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { AnsiAwareBuffer, BufferSegment } from "../ansi/FormatState";
 import { createColorFormat } from "@modules/core/Colors";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 
 const HISTORY_LIMIT = 100;
@@ -105,7 +105,7 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     }
 
     function persistHistory() {
-        setItemSync(STORAGE_KEY, serializeHistory());
+        characterStorage.set(STORAGE_KEY, serializeHistory());
     }
 
     function resetHistory() {
@@ -115,9 +115,9 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     }
 
     function loadFromStorage() {
-        const stored = getItemSync(STORAGE_KEY);
-        if (stored?.[STORAGE_KEY]) {
-            loadHistory(stored[STORAGE_KEY]);
+        const stored = characterStorage.get(STORAGE_KEY);
+        if (stored) {
+            loadHistory(stored);
         }
     }
 

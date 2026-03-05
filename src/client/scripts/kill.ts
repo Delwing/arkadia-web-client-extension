@@ -2,7 +2,7 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
-import {getCurrentCharacter} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {
     recordKillToDB,
     getLifetimeTotals,
@@ -776,7 +776,7 @@ class KillCounter {
     private async migrateIfNeeded() {
         if (this.migrationDone) return;
         this.migrationDone = true;
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         try {
             await migrateFromLocalStorage(character);
@@ -787,7 +787,7 @@ class KillCounter {
     }
 
     private async persistKillToIDB(mob: string): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         const date = getTodayDate();
         try {
@@ -799,7 +799,7 @@ class KillCounter {
     }
 
     private async refreshLifetimeCache(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         try {
             const totals = await getLifetimeTotals(character);
@@ -812,7 +812,7 @@ class KillCounter {
     }
 
     private async syncTotalsFromIDB(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         try {
             const totals = await getLifetimeTotals(character);
@@ -828,7 +828,7 @@ class KillCounter {
     }
 
     async showLifetimeByDate(dateStr: string): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) {
             this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
             return;
@@ -850,7 +850,7 @@ class KillCounter {
     }
 
     async showGlobalStats(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) {
             this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
             return;
@@ -908,7 +908,7 @@ class KillCounter {
     }
 
     async showLifetime(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) {
             this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
             return;

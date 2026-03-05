@@ -1,4 +1,11 @@
-import storage, { setItemSync, getItemSync } from "@modules/core/storage";
+import { characterStorage, globalStorage } from "@modules/core/storage";
+import { characterStorageKeys } from "@modules/core/storageSchema";
+
+const characterKeySet = new Set<string>(characterStorageKeys);
+
+function getStorage(key: string): { get(k: any): any; set(k: any, v: any): void } {
+    return characterKeySet.has(key) ? characterStorage : globalStorage;
+}
 
 export default class MockPort {
     listeners: Array<(msg: any) => void> = [];
@@ -10,13 +17,17 @@ export default class MockPort {
     };
 
     constructor() {
-        storage.onChanged?.addListener(changes => {
-            Object.entries(changes).forEach(([key, {newValue}]) => {
-                this.dispatch({storage: {key, value: newValue}});
-                if (key === 'settings' || key === 'uiSettings' || key === 'binds') {
-                    this.dispatch({[key]: newValue});
-                }
-            });
+        characterStorage.onAnyChange((key, newValue) => {
+            this.dispatch({storage: {key, value: newValue}});
+            if (key === 'settings') {
+                this.dispatch({settings: newValue});
+            }
+        });
+        globalStorage.onAnyChange((key, newValue) => {
+            this.dispatch({storage: {key, value: newValue}});
+            if (key === 'uiSettings' || key === 'binds') {
+                this.dispatch({[key]: newValue});
+            }
         });
     }
 
@@ -26,7 +37,7 @@ export default class MockPort {
 
     postMessage(message: any) {
         if (message.type === 'SET_STORAGE') {
-            setItemSync(message.key, message.value);
+            getStorage(message.key).set(message.key as any, message.value);
             this.dispatch({storage: {key: message.key, value: message.value}});
             if (message.key === 'settings' || message.key === 'uiSettings' || message.key === 'binds') {
                 this.dispatch({[message.key]: message.value});
@@ -39,8 +50,7 @@ export default class MockPort {
     }
 
     private sendStorage(key: string) {
-        const data = getItemSync(key);
-        const value = data ? data[key] : {};
+        const value = getStorage(key).get(key as any) ?? {};
         this.dispatch({ storage: { key, value } });
         if (key === 'settings' || key === 'uiSettings' || key === 'binds') {
             this.dispatch({ [key]: value });

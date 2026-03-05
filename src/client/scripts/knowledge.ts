@@ -30,7 +30,7 @@ import {
     KNOWLEDGE_CATEGORY_ORDER,
     KnowledgeCategoryBaseName,
 } from '../knowledgeCategories';
-import {getCurrentCharacter} from '@modules/core/storage';
+import {characterStorage, globalStorage} from '@modules/core/storage';
 import {stripPolishCharacters} from '../stripPolishCharacters';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 import {
@@ -1047,7 +1047,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     }
 
     function getCharacterProgressKey(): string {
-        const current = getCurrentCharacter();
+        const current = characterStorage.getCharacter();
         if (!current) {
             return DEFAULT_KNOWLEDGE_CHARACTER_KEY;
         }
@@ -2073,9 +2073,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
     function readPersistedHintsSettings(): { showHints: boolean; hideCompleted: boolean } {
         try {
-            const raw = localStorage.getItem('layoutManagerState');
-            if (!raw) return {showHints: false, hideCompleted: false};
-            const state = JSON.parse(raw);
+            const state = globalStorage.get('layoutManagerState');
+            if (!state) return {showHints: false, hideCompleted: false};
             const settings = state?.popupPanels?.['popup:knowledgeDetails']?.settings;
             return {
                 showHints: settings?.showHints === true,

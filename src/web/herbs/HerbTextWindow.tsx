@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import type { HerbBagsState } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
 import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
@@ -15,11 +15,11 @@ const POPUP_ID = 'popup:herb-text';
 type HerbCounts = HerbBagsState | undefined;
 
 const getInitialCounts = (): HerbCounts => {
-    const stored = getItemSync("herb_counts");
+    const stored = characterStorage.get("herb_counts");
     if (!stored) {
         return undefined;
     }
-    return normalizeHerbBagsState(stored.herb_counts);
+    return normalizeHerbBagsState(stored);
 };
 
 const HerbTextWindow = () => {

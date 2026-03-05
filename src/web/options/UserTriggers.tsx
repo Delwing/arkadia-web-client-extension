@@ -1,8 +1,8 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit, TiFlash } from "react-icons/ti";
-import storage from "@modules/core/storage";
-import { CUSTOM_SOUNDS_STORAGE_KEY, CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
+import { globalStorage } from "@modules/core/storage";
+import { CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import {
     getRegisteredTriggerMacros,
     type PluginTriggerMacro,
@@ -151,23 +151,18 @@ function UserTriggers() {
 
     useEffect(() => {
         let active = true;
-        storage.getItem('triggers').then(res => {
+        const saved = globalStorage.get('triggers');
+        if (Array.isArray(saved)) {
+            setTriggers(normalizeTriggerList(saved));
+        }
+        const unsub = globalStorage.onChange('triggers', (newValue) => {
             if (!active) return;
-            if (res && Array.isArray(res.triggers)) {
-                setTriggers(normalizeTriggerList(res.triggers));
-            }
+            const value = Array.isArray(newValue) ? newValue : [];
+            setTriggers(normalizeTriggerList(value));
         });
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (!active) return;
-            if ('triggers' in changes) {
-                const value = Array.isArray(changes.triggers.newValue) ? changes.triggers.newValue : [];
-                setTriggers(normalizeTriggerList(value));
-            }
-        };
-        storage.onChanged?.addListener(listener);
         return () => {
             active = false;
-            storage.onChanged?.removeListener?.(listener);
+            unsub();
         };
     }, []);
 
@@ -178,20 +173,17 @@ function UserTriggers() {
                 setCustomSounds(list);
             }
         });
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
+        const unsub = globalStorage.onChange('custom_sounds', () => {
             if (!active) return;
-            if (CUSTOM_SOUNDS_STORAGE_KEY in changes) {
-                getCustomSounds().then(sounds => {
-                    if (active) {
-                        setCustomSounds(sounds);
-                    }
-                });
-            }
-        };
-        storage.onChanged?.addListener(listener);
+            getCustomSounds().then(sounds => {
+                if (active) {
+                    setCustomSounds(sounds);
+                }
+            });
+        });
         return () => {
             active = false;
-            storage.onChanged?.removeListener?.(listener);
+            unsub();
             pendingSoundResolver.current?.(undefined);
             pendingSoundResolver.current = null;
         };
@@ -253,7 +245,7 @@ function UserTriggers() {
     function saveList(list: UserTrigger[]) {
         const normalized = normalizeTriggerList(list);
         setTriggers(normalized);
-        storage.setItem('triggers', normalized);
+        globalStorage.set('triggers', normalized);
     }
 
     function openNew() {

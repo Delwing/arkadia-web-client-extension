@@ -1,5 +1,5 @@
 import type {Howl, Howler as HowlerType} from "howler";
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import { getCustomSound } from "@modules/core/customSounds";
 import type Client from "./Client";
 
@@ -93,7 +93,7 @@ export default class SoundManager {
     }
 
     async prepare(): Promise<void> {
-        const keys = await this.getKeysToPreload();
+        const keys = this.getKeysToPreload();
         await Promise.all(
             Array.from(keys).map(async key => {
                 const sound = await this.ensureSound(key);
@@ -120,17 +120,16 @@ export default class SoundManager {
         }
     }
 
-    private async getKeysToPreload(): Promise<Set<SoundKey>> {
+    private getKeysToPreload(): Set<SoundKey> {
         const keys = new Set<SoundKey>(["beep"]);
         try {
-            const uiSettingsResult = await storage.getItem("uiSettings");
-            const customBeepKey = (uiSettingsResult as any)?.uiSettings?.customBeepSoundKey;
+            const uiSettings = globalStorage.get("uiSettings");
+            const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
             if (typeof customBeepKey === "string" && customBeepKey) {
                 keys.add(customBeepKey);
             }
 
-            const result = await storage.getItem("triggers");
-            const triggers = Array.isArray((result as any)?.triggers) ? (result as any).triggers : [];
+            const triggers = globalStorage.get("triggers") ?? [];
             triggers.forEach((trigger: any) => {
                 trigger?.macros?.forEach((macro: any) => {
                     if (macro?.type === "beep") {
@@ -163,8 +162,8 @@ export default class SoundManager {
         const HowlConstructor = await this.loadHowler();
         switch (key) {
             case "beep": {
-                const uiSettingsResult = await storage.getItem("uiSettings");
-                const customBeepKey = (uiSettingsResult as any)?.uiSettings?.customBeepSoundKey;
+                const uiSettings = globalStorage.get("uiSettings");
+                const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
                 if (typeof customBeepKey === "string" && customBeepKey) {
                     return this.createCustomSound(HowlConstructor, customBeepKey);
                 }

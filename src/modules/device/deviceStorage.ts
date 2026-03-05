@@ -1,6 +1,7 @@
 import { getDeviceId } from '@modules/firebase/firebaseTypes';
 import type { DeviceInfo, ImportedDeviceEntry } from './deviceTypes';
 import { DEVICE_STORAGE_KEYS } from './deviceTypes';
+import { globalStorage } from '@modules/core/storage';
 
 /**
  * Detect browser name from user agent
@@ -258,8 +259,8 @@ export async function triggerSettingsReload(): Promise<void> {
     try {
         const eventBus = (await import('@modules/core/eventBus')).default;
         const { defaultUiSettings } = await import('@web/defaultUiSettings');
-        const raw = localStorage.getItem('uiSettings');
-        const uiSettings = raw ? { ...defaultUiSettings, ...JSON.parse(raw) } : defaultUiSettings;
+        const stored = globalStorage.get('uiSettings');
+        const uiSettings = stored ? { ...defaultUiSettings, ...stored } : defaultUiSettings;
 
         // Emit uiSettings event with relevant payload
         eventBus.emit('uiSettings', {
@@ -279,7 +280,7 @@ export async function triggerSettingsReload(): Promise<void> {
     // 3. Reload mobile button settings
     try {
         const { loadSettings, applySettings } = await import('@web/mobileButtonSettings');
-        const settings = await loadSettings();
+        const settings = loadSettings();
         applySettings(settings);
     } catch (err) {
         console.error('Failed to reload mobile button settings', err);
@@ -288,7 +289,7 @@ export async function triggerSettingsReload(): Promise<void> {
     // 4. Reload desktop button settings
     try {
         const { loadSettings, applySettings } = await import('@web/desktopButtonSettings');
-        const settings = await loadSettings();
+        const settings = loadSettings();
         applySettings(settings);
     } catch (err) {
         console.error('Failed to reload desktop button settings', err);

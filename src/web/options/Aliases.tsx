@@ -1,7 +1,7 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
 import { TiDelete, TiEdit } from "react-icons/ti";
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import { parseBlowtorch, Alias } from "./importBlowtorch";
 import { parseArkadia } from "./importArkadia";
 import AliasEditModal from "./AliasEditModal";
@@ -15,16 +15,15 @@ function Aliases() {
     const arkadiaInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        storage.getItem("aliases").then(res => {
-            if (res && Array.isArray(res.aliases)) {
-                setAliases(res.aliases);
-            }
-        });
+        const saved = globalStorage.get("aliases");
+        if (Array.isArray(saved)) {
+            setAliases(saved);
+        }
     }, []);
 
     function saveList(list: Alias[]) {
         setAliases(list);
-        storage.setItem("aliases", list);
+        globalStorage.set("aliases", list);
     }
 
     function openNew() {

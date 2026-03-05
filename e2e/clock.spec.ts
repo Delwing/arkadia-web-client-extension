@@ -198,8 +198,8 @@ test.describe('Clock System', () => {
         expect(text).not.toContain('±'); // Precision should be 0
     });
 
-    // TODO: Re-enable when storage restoring is enabled again
-    test.skip('clock persists across page reloads', async ({page}) => {
+    test
+    ('clock persists across page reloads', async ({page}) => {
         await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);

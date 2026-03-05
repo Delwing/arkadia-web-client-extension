@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {useClientEvent} from "../../hooks";
 import eventBus from "@modules/core/eventBus";
 import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
-import {getItemSync} from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 
 interface DisplayMultibind {
   index: number;
@@ -11,8 +11,7 @@ interface DisplayMultibind {
 }
 
 function getInitialKeepVisible(): boolean {
-  const data = getItemSync("uiSettings");
-  return data?.uiSettings?.keepMultibindsVisible === true;
+  return globalStorage.get("uiSettings")?.keepMultibindsVisible === true;
 }
 
 /**

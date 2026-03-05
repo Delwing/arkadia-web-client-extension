@@ -1,8 +1,6 @@
 import {MapReader, PathFinder} from "mudlet-map-renderer";
 import {getLongDir, getShortDir, longToShort} from "./directions";
-import {getItemSync, setItemSync} from "@modules/core/storage";
-
-const STORAGE_KEY = "mapperRoomId";
+import {characterStorage} from "@modules/core/storage";
 
 type Position = {
     x: number;
@@ -54,8 +52,8 @@ export interface MapHelperOptions {
 }
 
 const defaultStorage: MapStorage = {
-    getItem: getItemSync,
-    setItem: setItemSync,
+    getItem: () => characterStorage.get('mapperRoomId'),
+    setItem: (_key: string, value: any) => characterStorage.set('mapperRoomId', value),
 };
 
 // 20-color palette for trip planner segments - visually distinct colors
@@ -115,9 +113,8 @@ export default class MapHelper {
         this.client = client;
         this.storage = options.storage ?? defaultStorage;
 
-        const savedData = this.storage.getItem(STORAGE_KEY);
-        const saved = savedData ? savedData[STORAGE_KEY] ?? savedData : null;
-        if (saved) {
+        const saved = this.storage.getItem('mapperRoomId');
+        if (saved != null) {
             const parsed = parseInt(String(saved));
             if (!Number.isNaN(parsed)) {
                 this.savedRoomId = parsed;
@@ -144,11 +141,13 @@ export default class MapHelper {
         });
 
         this.client.on("gmcp.char.info", () => {
-            const value = getItemSync(STORAGE_KEY)
-            const parsed = parseInt(String(value.mapperRoomId));
-            if (!Number.isNaN(parsed)) {
-                this.savedRoomId = parsed;
-                this.setMapRoomById(this.savedRoomId, {silent: true});
+            const value = characterStorage.get('mapperRoomId');
+            if (value != null) {
+                const parsed = parseInt(String(value));
+                if (!Number.isNaN(parsed)) {
+                    this.savedRoomId = parsed;
+                    this.setMapRoomById(this.savedRoomId, {silent: true});
+                }
             }
         });
 
@@ -474,7 +473,7 @@ export default class MapHelper {
         }
         this.currentRoom = this.mapReader.getRoom(id);
         this.savedRoomId = id;
-        this.storage.setItem(STORAGE_KEY, id.toString());
+        this.storage.setItem('mapperRoomId', id);
         if (sendEvent) {
             const direction = this.lastMoveDirection;
             this.lastMoveDirection = null;

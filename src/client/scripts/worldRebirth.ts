@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {setItemSync} from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 
 function parseRebirthTime(rebirth: string): number | undefined {
     const m = rebirth.match(/\w+, (\d+) ([IVX]+) (\d{4}), (\d+):(\d{2}):(\d{2})/);
@@ -29,7 +29,7 @@ export default function initWorldRebirth(client: Client) {
         if (matches && matches[1]) {
             const ts = parseRebirthTime(matches[1]);
             if (ts !== undefined) {
-                setItemSync("last_world_rebirth", ts);
+                globalStorage.set("last_world_rebirth", ts);
                 client.sendEvent("systemRebirth", ts);
             }
         }

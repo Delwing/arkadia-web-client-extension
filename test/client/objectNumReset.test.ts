@@ -1,5 +1,5 @@
 import Client from '@client/Client';
-import { getItemSync } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 
 (globalThis as any).Input = { send: jest.fn() };
 (globalThis as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
@@ -69,7 +69,7 @@ describe('object_num persistence and reset event', () => {
     client.on('reset', () => { resets++; });
 
     client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 1 });
-    expect(getItemSync('object_num')?.object_num).toBe('1');
+    expect(characterStorage.get('object_num')).toBe('1');
     expect(resets).toBe(0);
 
     client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 1 });
@@ -77,6 +77,6 @@ describe('object_num persistence and reset event', () => {
 
     client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 2 });
     expect(resets).toBe(1);
-    expect(getItemSync('object_num')?.object_num).toBe('2');
+    expect(characterStorage.get('object_num')).toBe('2');
   });
 });

@@ -1,27 +1,26 @@
 import { characterStorage } from '@modules/core/storage';
-import { setCurrentCharacter, getCurrentCharacter } from '@modules/core/storage';
 
 // We need a fresh CharacterTypedStorage per test, but the module-level
-// `currentCharacter` is shared. Use setCurrentCharacter('') to reset.
+// `currentCharacter` is shared. Use characterStorage.setCharacter('') to reset.
 describe('CharacterTypedStorage', () => {
     beforeEach(() => {
         localStorage.clear();
-        // Reset character state: setCurrentCharacter with empty resets to null
-        setCurrentCharacter('');
+        // Reset character state: setCharacter with empty resets to null
+        characterStorage.setCharacter('');
     });
 
     describe('character prefix behavior', () => {
         test('get/set applies character prefix to localStorage key', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('settings', { foo: 1 } as any);
             expect(localStorage.getItem('Alice:settings')).toBe(JSON.stringify({ foo: 1 }));
             expect(characterStorage.get('settings')).toEqual({ foo: 1 });
         });
 
         test('different characters store to different prefixed keys', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('kill_counter', { wolf: 5 });
-            setCurrentCharacter('Bob');
+            characterStorage.setCharacter('Bob');
             characterStorage.set('kill_counter', { dragon: 3 });
             expect(localStorage.getItem('Alice:kill_counter')).toBe(JSON.stringify({ wolf: 5 }));
             expect(localStorage.getItem('Bob:kill_counter')).toBe(JSON.stringify({ dragon: 3 }));
@@ -40,15 +39,15 @@ describe('CharacterTypedStorage', () => {
             expect(characterStorage.getCharacter()).toBe('Hero');
         });
 
-        test('setCurrentCharacter delegates to characterStorage.setCharacter', () => {
-            setCurrentCharacter('Alice');
-            expect(getCurrentCharacter()).toBe('Alice');
+        test('setCharacter updates getCharacter and localStorage', () => {
+            characterStorage.setCharacter('Alice');
+            expect(characterStorage.getCharacter()).toBe('Alice');
             expect(localStorage.getItem('currentCharacter')).toBe('Alice');
         });
 
         test('setting empty string clears currentCharacter', () => {
-            setCurrentCharacter('Alice');
-            setCurrentCharacter('');
+            characterStorage.setCharacter('Alice');
+            characterStorage.setCharacter('');
             expect(localStorage.getItem('currentCharacter')).toBeNull();
         });
     });
@@ -68,19 +67,19 @@ describe('CharacterTypedStorage', () => {
             localStorage.setItem('currentCharacter', 'Alice');
             localStorage.setItem('settings', JSON.stringify({ old: true }));
             // Re-import/construct won't help since module is cached; use setCurrentCharacter
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             // After setting Alice again, unscoped 'settings' should still exist (no migration)
             // because currentCharacter was already set
             // Actually the module reads currentCharacter on load, so we need to simulate
             // that currentCharacter was already known.
-            setCurrentCharacter('Bob');
+            characterStorage.setCharacter('Bob');
             expect(localStorage.getItem('settings')).toBe(JSON.stringify({ old: true }));
         });
     });
 
     describe('onChange on character switch', () => {
         test('character switch fires onChange for character-scoped keys with data', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('settings', { x: 1 } as any);
             const listener = jest.fn();
             characterStorage.onChange('settings', listener);
@@ -92,7 +91,7 @@ describe('CharacterTypedStorage', () => {
         });
 
         test('notifyOnNull: settings fires onChange even when new character has no data', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('settings', { x: 1 } as any);
             const listener = jest.fn();
             characterStorage.onChange('settings', listener);
@@ -103,7 +102,7 @@ describe('CharacterTypedStorage', () => {
         });
 
         test('notifyOnNull: peopleLocalEvents fires onChange even when new value is null', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('peopleLocalEvents', [{ type: 'event' }] as any);
             const listener = jest.fn();
             characterStorage.onChange('peopleLocalEvents', listener);
@@ -114,7 +113,7 @@ describe('CharacterTypedStorage', () => {
         });
 
         test('non-notifyOnNull keys do NOT fire onChange when new character has no data', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('kill_counter', { wolf: 5 });
             const listener = jest.fn();
             characterStorage.onChange('kill_counter', listener);
@@ -125,7 +124,7 @@ describe('CharacterTypedStorage', () => {
         });
 
         test('character switch does not fire when old and new values are identical', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('mapperRoomId', 42);
             localStorage.setItem('Bob:mapperRoomId', JSON.stringify(42));
             const listener = jest.fn();
@@ -139,7 +138,7 @@ describe('CharacterTypedStorage', () => {
 
     describe('remove', () => {
         test('remove deletes the character-prefixed key', () => {
-            setCurrentCharacter('Alice');
+            characterStorage.setCharacter('Alice');
             characterStorage.set('lastLang', 'en');
             characterStorage.remove('lastLang');
             expect(localStorage.getItem('Alice:lastLang')).toBeNull();

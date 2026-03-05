@@ -22,7 +22,7 @@ import {
     createMarkAllyEvent,
     createSetColorEvent,
 } from './peopleLocalEvents';
-import storage from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 
 type MergedListener = (snapshot: PersonListEntry[] | undefined) => void;
 
@@ -57,12 +57,10 @@ function ensureRemoteSubscription() {
 }
 
 // Listen for storage changes (including character switches and cross-tab changes)
-if (typeof window !== 'undefined' && storage.onChanged) {
-    storage.onChanged.addListener((changes) => {
-        if ('peopleLocalEvents' in changes) {
-            localEventsSnapshot = loadLocalEvents();
-            recomputeMerged();
-        }
+if (typeof window !== 'undefined') {
+    characterStorage.onChange('peopleLocalEvents', () => {
+        localEventsSnapshot = loadLocalEvents();
+        recomputeMerged();
     });
 }
 

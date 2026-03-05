@@ -1,10 +1,9 @@
-import { globalStorage } from '@modules/core/storage';
-import { setCurrentCharacter } from '@modules/core/storage';
+import { globalStorage, characterStorage } from '@modules/core/storage';
 
 describe('GlobalTypedStorage', () => {
     beforeEach(() => {
         localStorage.clear();
-        setCurrentCharacter('');
+        characterStorage.setCharacter('');
     });
 
     test('get/set uses keys directly without prefix', () => {
@@ -23,7 +22,7 @@ describe('GlobalTypedStorage', () => {
     });
 
     test('global keys are not affected by character prefix', () => {
-        setCurrentCharacter('Alice');
+        characterStorage.setCharacter('Alice');
         globalStorage.set('loggingEnabled', true);
         // Should be stored as 'loggingEnabled', not 'Alice:loggingEnabled'
         expect(localStorage.getItem('loggingEnabled')).toBe('true');

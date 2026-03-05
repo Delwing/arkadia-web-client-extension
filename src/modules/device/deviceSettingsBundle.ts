@@ -1,4 +1,4 @@
-import storage from '@modules/core/storage';
+import { globalStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';
 import { loadLayoutState, saveLayoutState } from '@web/layout/utils/layoutStorage';
 import { defaultUiSettings, type UiSettings } from '@web/defaultUiSettings';
@@ -19,15 +19,10 @@ import { ACTIVE_KEYMAP_STORAGE_KEY } from '@modules/core/keymapTypes';
 /**
  * Load uiSettings from storage
  */
-async function loadUiSettings(): Promise<UiSettings> {
-    try {
-        const data = await storage.getItem('uiSettings');
-        const raw = data?.uiSettings;
-        if (raw && typeof raw === 'object') {
-            return { ...defaultUiSettings, ...raw };
-        }
-    } catch {
-        // ignore
+function loadUiSettings(): UiSettings {
+    const raw = globalStorage.get('uiSettings');
+    if (raw && typeof raw === 'object') {
+        return { ...defaultUiSettings, ...raw };
     }
     return { ...defaultUiSettings };
 }
@@ -36,21 +31,19 @@ async function loadUiSettings(): Promise<UiSettings> {
  * Save uiSettings to storage
  */
 function saveUiSettings(settings: UiSettings): void {
-    storage.setItem('uiSettings', settings);
+    globalStorage.set('uiSettings', settings);
 }
 
 /**
  * Export all device-scoped settings as a bundle
  */
-export async function exportDeviceSettings(): Promise<DeviceSettings> {
+export function exportDeviceSettings(): DeviceSettings {
     const deviceInfo = getDeviceInfo();
 
-    const [layoutManagerState, uiSettings, desktopButtonSettings, mobileButtonSettings] = await Promise.all([
-        Promise.resolve(loadLayoutState()),
-        loadUiSettings(),
-        loadDesktopButtonSettings(),
-        loadMobileButtonSettings(),
-    ]);
+    const uiSettings = loadUiSettings();
+    const layoutManagerState = loadLayoutState();
+    const desktopButtonSettings = loadDesktopButtonSettings();
+    const mobileButtonSettings = loadMobileButtonSettings();
 
     const activeKeymap = localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY) || undefined;
 
@@ -69,7 +62,7 @@ export async function exportDeviceSettings(): Promise<DeviceSettings> {
 /**
  * Import device settings bundle and apply to current device
  */
-export async function importDeviceSettings(settings: DeviceSettings): Promise<void> {
+export function importDeviceSettings(settings: DeviceSettings): void {
     // Apply layout manager state
     if (settings.layoutManagerState) {
         saveLayoutState(settings.layoutManagerState);
@@ -106,9 +99,9 @@ export async function importDeviceSettings(settings: DeviceSettings): Promise<vo
 /**
  * Create a device settings export object (for file export)
  */
-export async function createDeviceSettingsExport(): Promise<DeviceSettingsExport> {
+export function createDeviceSettingsExport(): DeviceSettingsExport {
     const deviceInfo = getDeviceInfo();
-    const settings = await exportDeviceSettings();
+    const settings = exportDeviceSettings();
 
     return {
         version: 1,
@@ -141,7 +134,7 @@ export function validateDeviceSettingsExport(data: unknown): data is DeviceSetti
 /**
  * Import device settings from an export object (from file import)
  */
-export async function importDeviceSettingsExport(exportData: DeviceSettingsExport): Promise<void> {
+export function importDeviceSettingsExport(exportData: DeviceSettingsExport): void {
     // Update the deviceId to current device (settings are now owned by this device)
     const deviceInfo = getDeviceInfo();
     const settings: DeviceSettings = {
@@ -150,14 +143,14 @@ export async function importDeviceSettingsExport(exportData: DeviceSettingsExpor
         updatedAt: new Date().toISOString(),
     };
 
-    await importDeviceSettings(settings);
+    importDeviceSettings(settings);
 }
 
 /**
  * Calculate SHA-256 checksum of device settings for change detection
  */
 export async function getDeviceSettingsChecksum(): Promise<string> {
-    const settings = await exportDeviceSettings();
+    const settings = exportDeviceSettings();
 
     // Create a stable string representation (exclude updatedAt for checksum)
     const { updatedAt: _, ...settingsForChecksum } = settings;
@@ -174,12 +167,12 @@ export async function getDeviceSettingsChecksum(): Promise<string> {
 /**
  * Get a partial device settings object with only specific parts
  */
-export async function exportPartialDeviceSettings(options: {
+export function exportPartialDeviceSettings(options: {
     layoutManagerState?: boolean;
     uiSettings?: boolean;
     desktopButtonSettings?: boolean;
     mobileButtonSettings?: boolean;
-}): Promise<Partial<DeviceSettings>> {
+}): Partial<DeviceSettings> {
     const deviceInfo = getDeviceInfo();
     const result: Partial<DeviceSettings> = {
         deviceId: deviceInfo.id,
@@ -192,15 +185,15 @@ export async function exportPartialDeviceSettings(options: {
     }
 
     if (options.uiSettings) {
-        result.uiSettings = await loadUiSettings();
+        result.uiSettings = loadUiSettings();
     }
 
     if (options.desktopButtonSettings) {
-        result.desktopButtonSettings = await loadDesktopButtonSettings();
+        result.desktopButtonSettings = loadDesktopButtonSettings();
     }
 
     if (options.mobileButtonSettings) {
-        result.mobileButtonSettings = await loadMobileButtonSettings();
+        result.mobileButtonSettings = loadMobileButtonSettings();
     }
 
     return result;

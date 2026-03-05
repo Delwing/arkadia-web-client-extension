@@ -1,6 +1,6 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
-import storage from "@modules/core/storage";
+import { characterStorage, globalStorage } from "@modules/core/storage";
 import {
     collectCharacters,
     buildExport,
@@ -53,10 +53,12 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
     useEffect(() => {
         refreshCharacters();
         const handleChange = () => refreshCharacters();
-        storage.onChanged?.addListener(handleChange);
+        const unsub1 = characterStorage.onAnyChange(handleChange);
+        const unsub2 = globalStorage.onAnyChange(handleChange);
         window.addEventListener("storage", handleChange);
         return () => {
-            storage.onChanged?.removeListener?.(handleChange);
+            unsub1();
+            unsub2();
             window.removeEventListener("storage", handleChange);
         };
     }, [refreshCharacters]);

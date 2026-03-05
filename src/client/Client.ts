@@ -6,7 +6,7 @@ import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/function
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
-import {getItemSync, setCurrentCharacter, setItemSync} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
@@ -268,7 +268,7 @@ export default class Client {
             }
         }
 
-        const initialSettings = getItemSync('settings')?.settings;
+        const initialSettings = characterStorage.get('settings');
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
         this.drawWeaponCommand = normalizeDrawWeaponCommand(initialSettings?.drawWeaponCommand);
 
@@ -293,7 +293,7 @@ export default class Client {
         this.on('gmcp.char.info', (info) => {
             const detail = info as any;
             if (detail?.name) {
-                setCurrentCharacter(detail.name);
+                characterStorage.setCharacter(detail.name);
                 if (this.port) {
                     ['settings', 'kill_counter', 'deposits', 'containers', 'herb_counts', 'mapperRoomId', 'binds', 'lastLang'].forEach(k => {
                         this.port!.postMessage({ type: 'GET_STORAGE', key: k });
@@ -302,11 +302,11 @@ export default class Client {
             }
             if (typeof detail?.object_num !== 'undefined') {
                 const newNum = String(detail.object_num);
-                const stored = getItemSync('object_num')?.object_num;
+                const stored = characterStorage.get('object_num');
                 if (typeof stored !== 'undefined' && String(stored) !== newNum) {
                     this.sendEvent('reset');
                 }
-                setItemSync('object_num', newNum);
+                characterStorage.set('object_num', newNum);
             }
         });
 
