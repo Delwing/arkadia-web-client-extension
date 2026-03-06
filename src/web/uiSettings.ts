@@ -543,6 +543,7 @@ export default async function initUiSettings() {
     const mapRoomShapeInput = modalEl.querySelector('#ui-map-room-shape') as HTMLSelectElement;
     const pathFindingAlgorithmInput = modalEl.querySelector('#ui-map-pathfinding-algorithm') as HTMLSelectElement;
     const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
+    const teamNumberingModeInput = modalEl.querySelector('#ui-team-numbering-mode') as HTMLSelectElement;
     const objectContextMenuContainer = modalEl.querySelector('#ui-object-context-menu-container') as HTMLDivElement;
     const objectContextMenuInput = modalEl.querySelector('#ui-object-context-menu-input') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
@@ -841,6 +842,7 @@ export default async function initUiSettings() {
         mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
         mapRoomShapeInput.value = settings.mapRoomShape;
         pathFindingAlgorithmInput.value = settings.pathFindingAlgorithm;
+        if (teamNumberingModeInput) teamNumberingModeInput.value = settings.teamNumberingMode;
         objectContextMenuCommands = [...settings.objectContextMenuCommands];
         renderObjectContextMenuCommands();
         footerComponentsConfig = [...settings.footerComponents];
@@ -1272,6 +1274,7 @@ export default async function initUiSettings() {
             pathFindingAlgorithm: (pathFindingAlgorithmInput.value === 'dijkstra' || pathFindingAlgorithmInput.value === 'astar')
                 ? pathFindingAlgorithmInput.value as PathFindingAlgorithm
                 : defaultUiSettings.pathFindingAlgorithm,
+            teamNumberingMode: (teamNumberingModeInput?.value === 'numbers' ? 'numbers' : 'letters') as 'letters' | 'numbers',
             objectContextMenuCommands: [...objectContextMenuCommands],
             footerComponents: [...footerComponentsConfig],
             commandEcho: commandEchoInput.checked,

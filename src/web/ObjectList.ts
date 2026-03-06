@@ -70,6 +70,7 @@ export default class ObjectList {
         eventBus.on('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
         globalStorage.onChange('uiSettings', () => {
             this.loadContextMenuCommands();
+            this.scheduleRender();
         });
         this.render();
     }
