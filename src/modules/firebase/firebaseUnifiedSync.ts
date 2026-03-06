@@ -228,6 +228,8 @@ export async function uploadCategories(
                 // Use dot notation key for updateDoc (will be interpreted as path)
                 if (isDeviceScoped) {
                     categoryUpdates[`deviceCategories.${deviceId}.${category}`] = payload;
+                    // Also write to legacy path for backward compat with old clients
+                    categoryUpdates[`categories.${category}`] = payload;
                 } else {
                     categoryUpdates[`categories.${category}`] = payload;
                 }
