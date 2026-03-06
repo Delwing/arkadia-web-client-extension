@@ -10,7 +10,6 @@ export const DEVICE_SCOPED_STORAGE_KEYS = new Set([
     'layoutManagerState',
     'uiSettings',
     'desktopButtonSettings',
-    'tripRoutes',
     'active_keymap_id',
 ]);
 
