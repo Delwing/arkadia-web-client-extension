@@ -12,7 +12,7 @@ import {
     getAllRecords,
     getDistinctDates,
 } from '../client/scripts/killLifetimeStorage';
-import {getCurrentCharacter} from '@modules/core/storage';
+import {characterStorage} from '@modules/core/storage';
 
 const POPUP_ID = 'popup:zabici2';
 
@@ -44,7 +44,7 @@ const Zabici2Popup: React.FC = () => {
     const [selectedYear, setSelectedYear] = usePopupSetting<string>(POPUP_ID, 'selectedYear', '');
 
     const loadAsyncData = useCallback(() => {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         getAllRecords(character).then(setAllRecords).catch(() => {});
         getDistinctDates(character).then(dates => {
@@ -57,7 +57,7 @@ const Zabici2Popup: React.FC = () => {
         }).catch(() => {});
     }, []);
 
-    const characterName = getCurrentCharacter();
+    const characterName = characterStorage.getCharacter();
 
     useEffect(() => {
         if (!isOpen) return;

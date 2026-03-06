@@ -7,7 +7,7 @@ import {
     type RoomClickEventDetail,
     LabelRenderMode
 } from "mudlet-map-renderer";
-import {getCurrentCharacter, getItemSync, setItemSync} from "@modules/core/storage";
+import {characterStorage, globalStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
 import { getClientInstance } from "@shared/runtime";
@@ -15,12 +15,11 @@ import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip"
 
 const MIN_ZOOM = 0.01;
 
-const STORAGE_KEY = 'mapperRoomId';
 const VISITED_DB_NAME = 'ArkadiaVisitedRoomsDB';
 const VISITED_STORE_NAME = 'visitedRooms';
 
 function getVisitedKey() {
-    const char = getCurrentCharacter();
+    const char = characterStorage.getCharacter();
     return char ? `${char}:${VISITED_STORE_NAME}` : VISITED_STORE_NAME;
 }
 
@@ -105,8 +104,7 @@ export class EmbeddedMap {
         let initialRoom = startId ?? 1;
         let mapPosition = 'top-overlay';
         try {
-            const data = getItemSync('uiSettings');
-            const parsed = data?.uiSettings as any;
+            const parsed = globalStorage.get('uiSettings') as any;
             if (parsed) {
                 if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
                     zoom = parsed.mapScale;
@@ -134,10 +132,9 @@ export class EmbeddedMap {
             // ignore malformed data
         }
         try {
-            const saved = getItemSync(STORAGE_KEY);
-            const savedId = saved ? parseInt(saved[STORAGE_KEY]) : NaN;
-            if (!isNaN(savedId)) {
-                initialRoom = savedId;
+            const savedId = characterStorage.get('mapperRoomId');
+            if (savedId !== undefined && !isNaN(Number(savedId))) {
+                initialRoom = Number(savedId);
             }
         } catch {
         }
@@ -157,8 +154,7 @@ export class EmbeddedMap {
 
         // Initialize map rendering settings from storage
         try {
-            const data = getItemSync('uiSettings');
-            const parsed = data?.uiSettings as any;
+            const parsed = globalStorage.get('uiSettings') as any;
             if (parsed) {
                 if (typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0) {
                     settings.roomSize = parsed.mapRoomSize;
@@ -205,7 +201,7 @@ export class EmbeddedMap {
             const id = ev.id;
             this.visited.add(id);
             this.reader.addVisitedRoom(id);
-            setItemSync(STORAGE_KEY, id.toString());
+            characterStorage.set('mapperRoomId', id);
             saveVisitedRooms(Array.from(this.visited));
             getClientInstance()?.Map?.checkDestinationReached(id);
             this.renderRoomById(id);
@@ -277,10 +273,9 @@ export class EmbeddedMap {
 
     private saveZoom() {
         try {
-            const data = getItemSync('uiSettings');
-            const parsed: any = data?.uiSettings ? {...data.uiSettings} : {};
+            const parsed: any = globalStorage.get('uiSettings') ?? {};
             parsed.mapScale = this.zoom;
-            setItemSync('uiSettings', parsed);
+            globalStorage.set('uiSettings', parsed);
         } catch {
         }
     }

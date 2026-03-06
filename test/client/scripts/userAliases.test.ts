@@ -1,5 +1,6 @@
 import initUserAliases from '@client/scripts/userAliases';
 import { FakeClient, initHerbClient, defaultHerbData } from '../helpers/herbClient';
+import { globalStorage, characterStorage } from '@modules/core/storage';
 
 class AliasClient extends FakeClient {
   executed: string[] = [];
@@ -55,7 +56,12 @@ class AliasClient extends FakeClient {
 }
 
 describe('user aliases', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   test('executes herb taking commands before final action', async () => {
+    characterStorage.setCharacter('TestChar');
     const client = new AliasClient();
     const herbData = {
       ...defaultHerbData,
@@ -75,15 +81,12 @@ describe('user aliases', () => {
     initHerbClient(client, { 1: { naparstnica: 1, deliona: 1 } }, herbData);
     initUserAliases((client as unknown) as any, client.aliases);
 
-    client.dispatch('storage', {
-      key: 'aliases',
-      value: [
-        {
-          pattern: '/zm1',
-          command: '/wezz naparstnica;/wezz deliona;ob delione;zjedz ziola',
-        },
-      ],
-    });
+    globalStorage.set('aliases', [
+      {
+        pattern: '/zm1',
+        command: '/wezz naparstnica;/wezz deliona;ob delione;zjedz ziola',
+      },
+    ] as any);
 
     const alias = client.aliases.find((entry) => entry.pattern.test('/zm1'));
     expect(alias).toBeTruthy();

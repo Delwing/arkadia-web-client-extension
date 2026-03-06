@@ -1,5 +1,7 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initFullHpTimer(client: Client) {
     const FULL_HP = 6;
@@ -28,13 +30,15 @@ export default function initFullHpTimer(client: Client) {
         }, 180000);
     }
 
-    client.on("settings", (payload) => {
-        const settings = (payload ?? {}) as { fullHpMessage?: boolean };
+    const applySettings = (payload: any) => {
+        const settings = (payload ?? defaultSettings) as { fullHpMessage?: boolean };
         enabled = !!settings.fullHpMessage;
         if (!enabled) {
             clearTimer();
         }
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     client.on("gmcp.char.state", (state) => {
         const hp = (state as { hp?: number })?.hp;

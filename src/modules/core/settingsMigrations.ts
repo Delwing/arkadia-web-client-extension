@@ -1,8 +1,6 @@
 import type { Settings, CollectOverride } from './defaultSettings';
-import storage from './storage';
+import { globalStorage } from './storage';
 import type { FooterComponentConfig } from '@web/defaultUiSettings';
-
-const MIGRATIONS_VERSION_KEY = 'settingsMigrationsVersion';
 
 interface Migration {
     version: number;
@@ -81,19 +79,15 @@ const migrations: Migration[] = [
  * Get the current migrations version from storage.
  */
 function getMigrationsVersion(): number {
-    const stored = localStorage.getItem(MIGRATIONS_VERSION_KEY);
-    if (stored === null) {
-        return 0;
-    }
-    const version = parseInt(stored, 10);
-    return isNaN(version) ? 0 : version;
+    const version = globalStorage.get('settingsMigrationsVersion');
+    return typeof version === 'number' && !isNaN(version) ? version : 0;
 }
 
 /**
  * Set the migrations version in storage.
  */
 function setMigrationsVersion(version: number): void {
-    localStorage.setItem(MIGRATIONS_VERSION_KEY, String(version));
+    globalStorage.set('settingsMigrationsVersion', version);
 }
 
 /**
@@ -214,7 +208,7 @@ export function runAllSettingsMigrations(): void {
  * This is migration version 3 that converts the old multiplier (default 1)
  * to explicit pixel values for buttonSize and buttonGap.
  */
-export async function migrateButtonSizeMultiplier(): Promise<void> {
+export function migrateButtonSizeMultiplier(): void {
     const currentVersion = getMigrationsVersion();
 
     // This is migration version 3
@@ -224,14 +218,13 @@ export async function migrateButtonSizeMultiplier(): Promise<void> {
 
     try {
         // Load uiSettings to get the multiplier
-        const uiData = await storage.getItem('uiSettings');
-        const multiplier = uiData?.uiSettings?.buttonSize;
+        const uiSettings = globalStorage.get('uiSettings');
+        const multiplier = (uiSettings as any)?.buttonSize;
 
         // Only migrate if multiplier exists and is different from default (1)
         if (typeof multiplier === 'number' && multiplier > 0 && multiplier !== 1) {
             // Load mobileButtonSettings
-            const mobileData = await storage.getItem('mobileButtonSettings');
-            const mobileSettings = mobileData?.mobileButtonSettings || {};
+            const mobileSettings: any = globalStorage.get('mobileButtonSettings') || {};
 
             // Only migrate if buttonSize/buttonGap not already set
             if (mobileSettings.buttonSize === undefined || mobileSettings.buttonGap === undefined) {
@@ -246,14 +239,14 @@ export async function migrateButtonSizeMultiplier(): Promise<void> {
                 }
 
                 // Save migrated mobileButtonSettings
-                await storage.setItem('mobileButtonSettings', mobileSettings);
+                globalStorage.set('mobileButtonSettings', mobileSettings);
                 console.log(`[SettingsMigrations] Migrated buttonSize multiplier ${multiplier} to buttonSize=${mobileSettings.buttonSize}px, buttonGap=${mobileSettings.buttonGap}px`);
             }
 
             // Remove buttonSize from uiSettings
-            if (uiData?.uiSettings) {
-                delete uiData.uiSettings.buttonSize;
-                await storage.setItem('uiSettings', uiData.uiSettings);
+            if (uiSettings) {
+                delete (uiSettings as any).buttonSize;
+                globalStorage.set('uiSettings', uiSettings);
                 console.log('[SettingsMigrations] Removed buttonSize multiplier from uiSettings');
             }
         }
@@ -276,16 +269,15 @@ export async function migrateFooterComponentVisibility(): Promise<void> {
     }
 
     try {
-        const uiData = await storage.getItem('uiSettings');
-        const uiSettings = uiData?.uiSettings;
+        const uiSettings = globalStorage.get('uiSettings');
 
         if (!uiSettings) {
             return;
         }
 
-        const showTransportLabel = uiSettings.showTransportLabel;
-        const showCombatTimer = uiSettings.showCombatTimer;
-        const showClockDisplay = uiSettings.showClockDisplay;
+        const showTransportLabel = (uiSettings as any).showTransportLabel;
+        const showCombatTimer = (uiSettings as any).showCombatTimer;
+        const showClockDisplay = (uiSettings as any).showClockDisplay;
 
         // Only migrate if any of the old settings are explicitly set to false
         const needsMigration =
@@ -305,7 +297,7 @@ export async function migrateFooterComponentVisibility(): Promise<void> {
         };
 
         // Get or create footerComponents
-        let footerComponents: FooterComponentConfig[] = uiSettings.footerComponents;
+        let footerComponents: FooterComponentConfig[] = (uiSettings as any).footerComponents;
         if (!Array.isArray(footerComponents)) {
             // Use default footer components if not present
             const { defaultFooterComponents } = await import('@web/defaultUiSettings');
@@ -324,14 +316,14 @@ export async function migrateFooterComponentVisibility(): Promise<void> {
 
         if (migrated) {
             // Save updated footerComponents
-            uiSettings.footerComponents = footerComponents;
+            (uiSettings as any).footerComponents = footerComponents;
 
             // Remove old settings
-            delete uiSettings.showTransportLabel;
-            delete uiSettings.showCombatTimer;
-            delete uiSettings.showClockDisplay;
+            delete (uiSettings as any).showTransportLabel;
+            delete (uiSettings as any).showCombatTimer;
+            delete (uiSettings as any).showClockDisplay;
 
-            await storage.setItem('uiSettings', uiSettings);
+            globalStorage.set('uiSettings', uiSettings);
             console.log('[SettingsMigrations] Migrated footer component visibility settings');
         }
     } catch (e) {

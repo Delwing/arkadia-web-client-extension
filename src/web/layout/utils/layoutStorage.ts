@@ -1,7 +1,6 @@
 import { LayoutState, DockState, DEFAULT_LAYOUT, migrateLegacyDockState } from '../types';
 import eventBus from '@modules/core/eventBus';
-
-const LAYOUT_STORAGE_KEY = 'layoutManagerState';
+import { globalStorage } from '@modules/core/storage';
 
 /**
  * Migrate a dock from legacy format (flat panels) to new format (slots).
@@ -39,10 +38,9 @@ function migrateDock(stored: unknown, defaultDock: DockState): DockState {
 
 export function loadLayoutState(): LayoutState {
   try {
-    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
-    if (raw) {
-      const stored = JSON.parse(raw);
-      if (stored && typeof stored === 'object') {
+    const stored = globalStorage.get('layoutManagerState');
+    if (stored) {
+      if (typeof stored === 'object') {
         return {
           ...DEFAULT_LAYOUT,
           ...stored,
@@ -78,7 +76,7 @@ export function loadLayoutState(): LayoutState {
 
 export function saveLayoutState(state: LayoutState): void {
   try {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state));
+    globalStorage.set('layoutManagerState', state);
   } catch (e) {
     console.error('Failed to save layout state:', e);
   }

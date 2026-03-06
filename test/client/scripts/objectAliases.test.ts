@@ -1,16 +1,28 @@
 import initObjectAliases from '@client/scripts/objectAliases';
 import { gmcp } from '@client/gmcp';
 
-jest.mock('@modules/core/storage', () => ({
-  getItemSync: jest.fn(() => ({})),
-  setItemSync: jest.fn(),
-}));
+jest.mock('@modules/core/storage', () => {
+  const typedStorage = {
+    get: jest.fn(() => undefined),
+    set: jest.fn(),
+    onChange: jest.fn(() => () => {}),
+    fireListeners: jest.fn(),
+    handleStorageEvent: jest.fn(),
+    getCharacter: jest.fn(() => null),
+    setCharacter: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    characterStorage: typedStorage,
+    globalStorage: typedStorage,
+  };
+});
 
 jest.mock('@modules/data/peopleLoader', () => ({
   subscribeMerged: jest.fn(),
   refresh: jest.fn(() => Promise.resolve()),
 }));
-import { setItemSync } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 
 class FakeClient {
   ObjectManager = {
@@ -54,6 +66,8 @@ describe('object aliases', () => {
   let setAttackMode: (mode: 'A' | 'AW' | 'AWR') => void;
 
   beforeEach(() => {
+    (characterStorage.onChange as jest.Mock).mockClear();
+    (characterStorage.get as jest.Mock).mockClear();
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     initObjectAliases((client as unknown) as any, aliases);
@@ -90,7 +104,7 @@ describe('object aliases', () => {
     (globalThis as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
 
-    (setItemSync as jest.Mock).mockClear();
+    (characterStorage.set as jest.Mock).mockClear();
 
     const attackModeCall = client.on.mock.calls.find(c => c[0] === 'attackMode');
     setAttackMode = attackModeCall && attackModeCall[1];
@@ -109,8 +123,8 @@ describe('object aliases', () => {
   });
 
   test('kill alias uses attack command from settings when provided', () => {
-    const settingsListenerCall = client.on.mock.calls.find(
-      call => call[0] === 'settings',
+    const settingsListenerCall = (characterStorage.onChange as jest.Mock).mock.calls.find(
+      (call: any[]) => call[0] === 'settings',
     );
     const settingsListener = settingsListenerCall && settingsListenerCall[1];
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
@@ -124,7 +138,7 @@ describe('object aliases', () => {
   test('kill alias in AW mode marks target', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     setAttackMode?.('AW');
-    expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AW');
+    expect(characterStorage.set).toHaveBeenLastCalledWith('attack_mode', 'AW');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku', false);
@@ -133,7 +147,7 @@ describe('object aliases', () => {
   test('kill alias in AWR mode orders attack', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
     setAttackMode?.('AWR');
-    expect(setItemSync).toHaveBeenLastCalledWith('attack_mode', 'AWR');
+    expect(characterStorage.set).toHaveBeenLastCalledWith('attack_mode', 'AWR');
     kill(['', '1'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'zabij ob_5');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wskaz ob_5 jako cel ataku', false);

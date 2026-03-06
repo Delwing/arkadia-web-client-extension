@@ -3,6 +3,8 @@ import {createColorFormat} from "@modules/core/Colors";
 import { subscribe as subscribeToPeopleStore, refresh as refreshPeopleStore } from '@modules/data/peopleStore';
 import type { PersonEntry } from '../types/people';
 import {AnsiAwareBuffer} from "../ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const RED = createColorFormat("#ff0000");
 
@@ -75,12 +77,16 @@ export default function initAttackBeep(client: Client) {
     };
 
     // Listen for settings changes
-    client.on('settings', (settings) => {
-        const detail = (settings ?? {}) as { enemyGuilds?: unknown };
+    const applySettings = (settings: any) => {
+        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown };
         if (Array.isArray(detail.enemyGuilds)) {
             enemyGuilds = [...detail.enemyGuilds];
         }
         ensurePeopleLoaded().catch(() => undefined);
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings);
     });
 
     [

@@ -13,6 +13,8 @@ import {
     type ImportedDeviceEntry,
     type SyncGroup,
 } from "@modules/device";
+import { characterStorageKeys, globalStorageKeys } from '@modules/core/storageSchema';
+import { globalStorage, characterStorage } from '@modules/core/storage';
 
 export interface ExportedLocalStorage {
     global: Record<string, string>;
@@ -76,20 +78,8 @@ export const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = 
     stored_scripts: "scripts",
 };
 
-// List of all known global keys that the application uses
-// Keys not in this list will be excluded from sync
-const KNOWN_GLOBAL_KEYS = new Set([
-    "uiSettings",
-    "binds",
-    "shortcuts",
-    "triggers",
-    "aliases",
-    "mobileButtonSettings",
-    "desktopButtonSettings",
-    "scripts",
-    "stored_scripts",
-    "loggingEnabled",
-]);
+// All known global keys derived from the storage schema
+const KNOWN_GLOBAL_KEYS: ReadonlySet<string> = new Set(globalStorageKeys);
 
 export interface ExportedDeviceInfo {
     sourceDevice: DeviceInfo;
@@ -112,6 +102,7 @@ export interface ExportPayload {
         recordings?: ExportedRecording[];
         visitedRooms: ExportedVisitedRoomsEntry[];
         locationNotes?: LocationNote[];
+        killRecords?: KillRecord[];
     };
     /** Device info and settings from the exporting device */
     device?: ExportedDeviceInfo;
@@ -127,29 +118,21 @@ const EXCLUDED_LOCAL_STORAGE_KEYS = new Set([
 ]);
 
 const EXCLUDED_LOCAL_STORAGE_PREFIXES = ["http://", "https://"];
-const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
-    "firebase",
-    "arkadia",
-    "containers",
-    "deposits",
-    "improve_counter",
-    "kill_counter",
-    "object_num",
-    "Player"
-]);
+
+// Set of known character-scoped base keys from the storage schema
+const CHARACTER_BASE_KEYS: ReadonlySet<string> = new Set(characterStorageKeys);
 
 export function parseCharacterStorageKey(key: string): { name: string; baseKey: string } | null {
     if (!key) return null;
     if (key.includes("://")) return null;
     const firstColon = key.indexOf(":");
     if (firstColon <= 0) return null;
-    const prefix = key.slice(0, firstColon);
-    if (IGNORED_CHARACTER_KEY_PREFIXES.has(prefix)) {
-        return null;
-    }
-    const name = prefix.trim();
+    const name = key.slice(0, firstColon).trim();
     const baseKey = key.slice(firstColon + 1);
-    return name ? { name, baseKey } : null;
+    if (!name || !baseKey) return null;
+    // Only recognize as character-scoped if the base key is in the schema
+    if (!CHARACTER_BASE_KEYS.has(baseKey)) return null;
+    return { name, baseKey };
 }
 
 export function isExcludedLocalStorageKey(key: string) {
@@ -362,7 +345,7 @@ export async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): 
 }
 
 export async function buildExport(selectedCharacters: string[], options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<ExportPayload> {
-    const [multibinds, recordings, visitedRooms, locationNotes] = await Promise.all([
+    const [multibinds, recordings, visitedRooms, locationNotes, killRecords] = await Promise.all([
         options.multibinds
             ? getMultibindsSnapshot().catch(err => {
                 console.error("Failed to export multibinds", err);
@@ -381,6 +364,13 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
                 return [] as LocationNote[];
             })
             : Promise.resolve([] as LocationNote[]),
+        exportAllKillRecords().then(records => {
+            const selectedSet = new Set(selectedCharacters);
+            return records.filter(r => selectedSet.has(r.character));
+        }).catch(err => {
+            console.error("Failed to export kill records", err);
+            return [] as KillRecord[];
+        }),
     ]);
 
     const localStorageData = exportLocalStorage(selectedCharacters, options);
@@ -416,6 +406,7 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             recordings,
             visitedRooms,
             locationNotes,
+            killRecords,
         },
         device,
     };
@@ -423,10 +414,19 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
 
 export function applyLocalStorageImport(data: ExportedLocalStorage) {
     if (!data) return;
+
+    // Track changed keys so we can notify storage listeners afterwards.
+    // Direct localStorage.setItem() bypasses TypedStorage listeners, so the UI
+    // would not pick up the changes without explicit notification.
+    const changedGlobalKeys: Array<{ key: string; oldRaw: string | null; newRaw: string }> = [];
+    const changedCharacterKeys: Array<{ storageKey: string; baseKey: string; oldRaw: string | null; newRaw: string }> = [];
+
     Object.entries(data.global ?? {}).forEach(([key, raw]) => {
         if (typeof raw !== "string") return;
         if (isExcludedLocalStorageKey(key)) return;
+        const oldRaw = localStorage.getItem(key);
         localStorage.setItem(key, raw);
+        changedGlobalKeys.push({ key, oldRaw, newRaw: raw });
     });
     Object.entries(data.characters ?? {}).forEach(([character, entries]) => {
         if (!entries || typeof entries !== "object") return;
@@ -437,25 +437,59 @@ export function applyLocalStorageImport(data: ExportedLocalStorage) {
             const baseKey = baseIdx > -1 ? storageKey.slice(baseIdx + 1) : storageKey;
             if (isExcludedLocalStorageKey(baseKey)) return;
 
+            const oldRaw = localStorage.getItem(storageKey);
+
             // CRDT merge for profession data
             if (baseKey === 'profession') {
                 try {
                     const cloudState = JSON.parse(raw);
-                    const localRaw = localStorage.getItem(storageKey);
-                    const localState = localRaw ? JSON.parse(localRaw) : null;
+                    const localState = oldRaw ? JSON.parse(oldRaw) : null;
                     const merged = mergeProfessionStates(localState, cloudState);
                     if (merged) {
-                        localStorage.setItem(storageKey, JSON.stringify(merged));
+                        const newRaw = JSON.stringify(merged);
+                        localStorage.setItem(storageKey, newRaw);
+                        changedCharacterKeys.push({ storageKey, baseKey, oldRaw, newRaw });
                     }
                 } catch {
                     localStorage.setItem(storageKey, raw);
+                    changedCharacterKeys.push({ storageKey, baseKey, oldRaw, newRaw: raw });
                 }
                 return;
             }
 
             localStorage.setItem(storageKey, raw);
+            changedCharacterKeys.push({ storageKey, baseKey, oldRaw, newRaw: raw });
         });
     });
+
+    // Notify globalStorage listeners for changed global keys
+    const globalKeySet = new Set(globalStorageKeys as readonly string[]);
+    for (const { key, oldRaw, newRaw } of changedGlobalKeys) {
+        if (!globalKeySet.has(key)) continue;
+        if (oldRaw === newRaw) continue;
+        let oldValue: any;
+        let newValue: any;
+        if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+        try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+        globalStorage.fireListeners(key as any, newValue, oldValue);
+    }
+
+    // Notify characterStorage listeners for changed character keys of the current character
+    const currentChar = characterStorage.getCharacter();
+    if (currentChar) {
+        const charKeySet = new Set(characterStorageKeys as readonly string[]);
+        for (const { storageKey, baseKey, oldRaw, newRaw } of changedCharacterKeys) {
+            if (!charKeySet.has(baseKey)) continue;
+            if (oldRaw === newRaw) continue;
+            // Only fire for the current character's keys
+            if (!storageKey.startsWith(currentChar + ':')) continue;
+            let oldValue: any;
+            let newValue: any;
+            if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+            try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+            characterStorage.fireListeners(baseKey as any, newValue, oldValue);
+        }
+    }
 }
 
 export function validatePayload(input: unknown): input is ExportPayload {
@@ -473,6 +507,7 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
     await importRecordings(payload.indexedDB.recordings ?? []);
     await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
     await importNotes(payload.indexedDB.locationNotes ?? []);
+    await importAllKillRecords(payload.indexedDB.killRecords ?? []);
 
     // Import device info and settings
     if (payload.device?.sourceDevice) {
@@ -756,14 +791,33 @@ export async function importCategory(
     try {
         const data = JSON.parse(jsonData);
 
+        // Track changed keys so we can notify storage listeners afterwards.
+        // Direct localStorage.setItem() bypasses TypedStorage listeners, so the UI
+        // would not pick up the changes without explicit notification.
+        const changedGlobalKeys: Array<{ key: string; oldRaw: string | null; newRaw: string }> = [];
+        const changedCharacterKeys: Array<{ storageKey: string; baseKey: string; oldRaw: string | null; newRaw: string }> = [];
+
+        const trackingSetItem = (key: string, value: string) => {
+            const oldRaw = localStorage.getItem(key);
+            localStorage.setItem(key, value);
+            // Determine if this is a character-scoped key (contains ':')
+            const colonIdx = key.lastIndexOf(':');
+            if (colonIdx > -1) {
+                const baseKey = key.slice(colonIdx + 1);
+                changedCharacterKeys.push({ storageKey: key, baseKey, oldRaw, newRaw: value });
+            } else {
+                changedGlobalKeys.push({ key, oldRaw, newRaw: value });
+            }
+        };
+
         switch (category) {
             case 'uiSettings': {
                 // Device-scoped settings bundle: uiSettings + layout + buttons
-                if (data.uiSettings) localStorage.setItem('uiSettings', data.uiSettings);
-                if (data.loggingEnabled) localStorage.setItem('loggingEnabled', data.loggingEnabled);
-                if (data.layoutManagerState) localStorage.setItem('layoutManagerState', data.layoutManagerState);
-                if (data.desktopButtonSettings) localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
-                if (data.mobileButtonSettings) localStorage.setItem('mobileButtonSettings', data.mobileButtonSettings);
+                if (data.uiSettings) trackingSetItem('uiSettings', data.uiSettings);
+                if (data.loggingEnabled) trackingSetItem('loggingEnabled', data.loggingEnabled);
+                if (data.layoutManagerState) trackingSetItem('layoutManagerState', data.layoutManagerState);
+                if (data.desktopButtonSettings) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
+                if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', data.mobileButtonSettings);
                 // Notify layout system of changes
                 if (data.layoutManagerState) {
                     eventBus.emit('layoutManagerStateChanged', { type: 'import' });
@@ -771,12 +825,12 @@ export async function importCategory(
                 break;
             }
             case 'binds': {
-                if (data.keymaps) localStorage.setItem('keymaps', data.keymaps);
-                if (data.binds) localStorage.setItem('binds', data.binds);
+                if (data.keymaps) trackingSetItem('keymaps', data.keymaps);
+                if (data.binds) trackingSetItem('binds', data.binds);
                 break;
             }
             case 'shortcuts': {
-                if (data.shortcuts) localStorage.setItem('shortcuts', data.shortcuts);
+                if (data.shortcuts) trackingSetItem('shortcuts', data.shortcuts);
                 break;
             }
             case 'characterSettings': {
@@ -797,25 +851,25 @@ export async function importCategory(
                                 const localState = localRaw ? JSON.parse(localRaw) : null;
                                 const merged = mergeProfessionStates(localState, cloudState);
                                 if (merged) {
-                                    localStorage.setItem(storageKey, JSON.stringify(merged));
+                                    trackingSetItem(storageKey, JSON.stringify(merged));
                                 }
                             } catch {
-                                localStorage.setItem(storageKey, raw);
+                                trackingSetItem(storageKey, raw);
                             }
                             return;
                         }
 
-                        localStorage.setItem(storageKey, raw);
+                        trackingSetItem(storageKey, raw);
                     });
                 });
                 break;
             }
             case 'triggers': {
-                if (data.triggers) localStorage.setItem('triggers', data.triggers);
+                if (data.triggers) trackingSetItem('triggers', data.triggers);
                 break;
             }
             case 'aliases': {
-                if (data.aliases) localStorage.setItem('aliases', data.aliases);
+                if (data.aliases) trackingSetItem('aliases', data.aliases);
                 break;
             }
             case 'multibinds': {
@@ -840,10 +894,10 @@ export async function importCategory(
                     } catch {
                         // Invalid incoming data
                     }
-                    localStorage.setItem('mobileButtonSettings', JSON.stringify(merged));
+                    trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
                 }
                 if (data.desktopButtonSettings) {
-                    localStorage.setItem('desktopButtonSettings', data.desktopButtonSettings);
+                    trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
                 }
                 break;
             }
@@ -859,7 +913,7 @@ export async function importCategory(
                         }
                     }
                     merged.radial = data.radial;
-                    localStorage.setItem('mobileButtonSettings', JSON.stringify(merged));
+                    trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
                 }
                 break;
             }
@@ -884,14 +938,14 @@ export async function importCategory(
                             byChar[r.character][r.mob] = (byChar[r.character][r.mob] ?? 0) + r.count;
                         }
                         for (const [charName, totals] of Object.entries(byChar)) {
-                            localStorage.setItem(`${charName}:kill_counter`, JSON.stringify(totals));
+                            trackingSetItem(`${charName}:kill_counter`, JSON.stringify(totals));
                         }
                     }
                 } else {
                     // Old format: localStorage-based Record<string, string>
                     Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                         if (typeof raw !== 'string') return;
-                        localStorage.setItem(`${charName}:kill_counter`, raw);
+                        trackingSetItem(`${charName}:kill_counter`, raw);
                     });
                 }
                 break;
@@ -899,33 +953,60 @@ export async function importCategory(
             case 'improveCounts': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:improve_counter_lifetime`, raw);
+                    trackingSetItem(`${charName}:improve_counter_lifetime`, raw);
                 });
                 break;
             }
             case 'deposits': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:deposits`, raw);
+                    trackingSetItem(`${charName}:deposits`, raw);
                 });
                 break;
             }
             case 'containers': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:containers`, raw);
+                    trackingSetItem(`${charName}:containers`, raw);
                 });
                 break;
             }
             case 'peopleEdits': {
                 Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
                     if (typeof raw !== 'string') return;
-                    localStorage.setItem(`${charName}:peopleLocalEvents`, raw);
+                    trackingSetItem(`${charName}:peopleLocalEvents`, raw);
                 });
                 break;
             }
             default:
                 return { success: false, error: `Unknown category: ${category}` };
+        }
+
+        // Notify storage listeners so the UI picks up the imported values
+        const globalKeySet = new Set(globalStorageKeys as readonly string[]);
+        for (const { key, oldRaw, newRaw } of changedGlobalKeys) {
+            if (!globalKeySet.has(key)) continue;
+            if (oldRaw === newRaw) continue;
+            let oldValue: any;
+            let newValue: any;
+            if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+            try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+            globalStorage.fireListeners(key as any, newValue, oldValue);
+        }
+
+        const currentChar = characterStorage.getCharacter();
+        if (currentChar) {
+            const charKeySet = new Set(characterStorageKeys as readonly string[]);
+            for (const { storageKey, baseKey, oldRaw, newRaw } of changedCharacterKeys) {
+                if (!charKeySet.has(baseKey)) continue;
+                if (oldRaw === newRaw) continue;
+                if (!storageKey.startsWith(currentChar + ':')) continue;
+                let oldValue: any;
+                let newValue: any;
+                if (oldRaw !== null) { try { oldValue = JSON.parse(oldRaw); } catch { oldValue = oldRaw; } }
+                try { newValue = JSON.parse(newRaw); } catch { newValue = newRaw; }
+                characterStorage.fireListeners(baseKey as any, newValue, oldValue);
+            }
         }
 
         return { success: true };

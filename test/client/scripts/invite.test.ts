@@ -1,15 +1,18 @@
 import Client from '@client/Client';
 import initInvite from '@client/scripts/invite';
 import { gmcp } from '@client/gmcp';
-import { refresh, subscribe } from '@modules/data/peopleStore';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
-jest.mock('@modules/data/peopleStore', () => ({
-    subscribe: jest.fn(),
+jest.mock('@modules/data/peopleLoader', () => ({
+    subscribeMerged: jest.fn(),
     refresh: jest.fn(),
 }));
 
-const subscribeMock = subscribe as jest.MockedFunction<typeof subscribe>;
+import { subscribeMerged, refresh } from '@modules/data/peopleLoader';
+
+const subscribeMergedMock = subscribeMerged as jest.MockedFunction<typeof subscribeMerged>;
 const refreshMock = refresh as jest.MockedFunction<typeof refresh>;
 
 const MOCK_PEOPLE = [
@@ -24,14 +27,13 @@ describe('Invite functionality', () => {
     let mockTriggers: any;
     let mockFunctionalBind: any;
     let mockPrintln: jest.Mock;
-    let mockOn: jest.Mock;
     let mockTeamManager: any;
     let mockSendCommand: jest.Mock;
     const subscribers: Array<(snapshot: typeof MOCK_PEOPLE | undefined) => void> = [];
 
     beforeEach(async () => {
         subscribers.length = 0;
-        subscribeMock.mockReset().mockImplementation((listener) => {
+        subscribeMergedMock.mockReset().mockImplementation((listener) => {
             subscribers.push(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
             return () => {
                 const index = subscribers.indexOf(listener as (snapshot: typeof MOCK_PEOPLE | undefined) => void);
@@ -53,7 +55,6 @@ describe('Invite functionality', () => {
         };
 
         mockPrintln = jest.fn();
-        mockOn = jest.fn();
         mockSendCommand = jest.fn();
 
         mockTeamManager = {
@@ -67,12 +68,13 @@ describe('Invite functionality', () => {
 
         gmcp.objects = { nums: [1, 2, 3, 15] };
 
+        characterStorage.setCharacter('TestChar');
+
         client = {
             Triggers: mockTriggers,
             FunctionalBind: mockFunctionalBind,
             println: mockPrintln,
             sendCommand: mockSendCommand,
-            on: mockOn,
             TeamManager: mockTeamManager
         } as any;
 
@@ -84,6 +86,7 @@ describe('Invite functionality', () => {
         jest.clearAllMocks();
         subscribers.length = 0;
         gmcp.objects = {};
+        localStorage.clear();
     });
 
     test('should register invite trigger', async () => {
@@ -97,11 +100,8 @@ describe('Invite functionality', () => {
     });
 
     test('should block invite from enemy guild member', async () => {
-        // Set up enemy guilds
-        const settingsHandler = mockOn.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ enemyGuilds: ['Templariusze'] });
+        // Set up enemy guilds via characterStorage
+        setTestSettings({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -120,11 +120,8 @@ describe('Invite functionality', () => {
     });
 
     test('should allow invite from non-enemy guild member and execute two commands', async () => {
-        // Set up enemy guilds
-        const settingsHandler = mockOn.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ enemyGuilds: ['Templariusze'] });
+        // Set up enemy guilds via characterStorage
+        setTestSettings({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -152,10 +149,7 @@ describe('Invite functionality', () => {
     });
 
     test('should use newest object id for inviter name', async () => {
-        const settingsHandler = mockOn.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ enemyGuilds: ['Templariusze'] });
+        setTestSettings({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -172,11 +166,8 @@ describe('Invite functionality', () => {
     });
 
     test('should allow invite from unknown person and fallback to old command', async () => {
-        // Set up enemy guilds
-        const settingsHandler = mockOn.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ enemyGuilds: ['Templariusze'] });
+        // Set up enemy guilds via characterStorage
+        setTestSettings({ enemyGuilds: ['Templariusze'] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 
@@ -195,10 +186,7 @@ describe('Invite functionality', () => {
 
     test('should allow all invites when no enemy guilds are set and fallback to old command', async () => {
         // Set up empty enemy guilds
-        const settingsHandler = mockOn.mock.calls.find(
-            call => call[0] === 'settings'
-        )[1];
-        settingsHandler({ detail: { enemyGuilds: [] } });
+        setTestSettings({ enemyGuilds: [] });
         const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
         await lastCall?.value;
 

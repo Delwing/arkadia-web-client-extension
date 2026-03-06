@@ -3,6 +3,7 @@ import Recorder from './Recorder';
 import Client, {ClientAdapter} from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
+import {globalStorage} from "@modules/core/storage";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
 import {getClientInstance} from "@shared/runtime";
@@ -70,7 +71,16 @@ class ArkadiaClient implements ClientAdapter {
         })
 
         // Listen for UI settings changes
-        this.on('uiSettings', (settings) => {
+        const initialUiSettings = globalStorage.get('uiSettings');
+        if (initialUiSettings) {
+            if (typeof initialUiSettings.autoLowercaseCommands === 'boolean') {
+                this.autoLowercaseCommands = initialUiSettings.autoLowercaseCommands;
+            }
+            if (typeof initialUiSettings.commandEcho === 'boolean') {
+                this.commandEcho = initialUiSettings.commandEcho;
+            }
+        }
+        globalStorage.onChange('uiSettings', (settings) => {
             if (typeof settings?.autoLowercaseCommands === 'boolean') {
                 this.autoLowercaseCommands = settings.autoLowercaseCommands;
             }

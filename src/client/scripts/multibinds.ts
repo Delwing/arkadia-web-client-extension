@@ -5,7 +5,7 @@ import {
     subscribe as subscribeMultibinds,
     type StoredMultibindRecord,
 } from "@web/dataStores/multibindStore";
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import { type Bind, bindMatches } from "@modules/core/keymapTypes";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
@@ -47,14 +47,13 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     let roomBind: Bind = { key: 'KeyP', alt: true };
     let drinkableBind: Bind = { key: 'KeyN', alt: true };
 
-    storage.getItem('binds').then(res => {
-        if (res?.binds?.roomBind) {
-            roomBind = res.binds.roomBind;
-        }
-        if (res?.binds?.drinkable) {
-            drinkableBind = res.binds.drinkable;
-        }
-    });
+    const storedBinds = globalStorage.get('binds');
+    if (storedBinds?.roomBind) {
+        roomBind = storedBinds.roomBind;
+    }
+    if (storedBinds?.drinkable) {
+        drinkableBind = storedBinds.drinkable;
+    }
 
     function runWhenReady(action: () => void) {
         if (isInitialized) {

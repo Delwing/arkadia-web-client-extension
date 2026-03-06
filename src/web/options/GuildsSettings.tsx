@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import storage, { getCurrentCharacter } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { Settings } from "./defaultSettings";
@@ -9,7 +9,7 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [allySelected, setAllySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
-    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [locked, setLocked] = useState(!characterStorage.getCharacter());
     const defaultColors = useMemo(() => {
         const map: Record<string, string> = {};
         guilds.forEach(g => {
@@ -19,47 +19,37 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
     }, []);
 
     useEffect(() => {
-        const update = () => setLocked(!getCurrentCharacter());
-        storage.onChanged?.addListener(update);
-        window.addEventListener('storage', update);
-        return () => {
-            storage.onChanged?.removeListener?.(update);
-            window.removeEventListener('storage', update);
-        };
+        const update = () => setLocked(!characterStorage.getCharacter());
+        return characterStorage.onCharacterChange(update);
     }, []);
 
     useEffect(() => {
         const load = () => {
-            storage.getItem("settings").then(res => {
-                if (res && res.settings) {
-                    setSelected(res.settings.guilds || []);
-                    setEnemySelected(res.settings.enemyGuilds || []);
-                    setAllySelected(res.settings.allyGuilds || []);
-                    setColors(res.settings.guildColors || {});
-                } else {
-                    setSelected([]);
-                    setEnemySelected([]);
-                    setAllySelected([]);
-                    setColors({});
-                }
-            });
+            const settings = characterStorage.get("settings");
+            if (settings) {
+                setSelected((settings as any).guilds || []);
+                setEnemySelected((settings as any).enemyGuilds || []);
+                setAllySelected((settings as any).allyGuilds || []);
+                setColors((settings as any).guildColors || {});
+            } else {
+                setSelected([]);
+                setEnemySelected([]);
+                setAllySelected([]);
+                setColors({});
+            }
         };
 
         load();
 
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes.settings) {
-                const s = changes.settings.newValue || {};
-                setSelected(s.guilds || []);
-                setEnemySelected(s.enemyGuilds || []);
-                setAllySelected(s.allyGuilds || []);
-                setColors(s.guildColors || {});
-            }
-        };
-
-        storage.onChanged?.addListener(listener);
+        const unsub = characterStorage.onChange('settings', (newValue) => {
+            const s = (newValue as any) || {};
+            setSelected(s.guilds || []);
+            setEnemySelected(s.enemyGuilds || []);
+            setAllySelected(s.allyGuilds || []);
+            setColors(s.guildColors || {});
+        });
         return () => {
-            storage.onChanged?.removeListener?.(listener);
+            unsub();
         };
     }, []);
 

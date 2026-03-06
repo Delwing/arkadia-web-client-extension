@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "../ansi/FormatState";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 
 const STORAGE_KEY = "language_max_levels";
 
@@ -40,12 +40,11 @@ function createGauge(current: number, max: number): string {
 }
 
 function getMaxLevels(): Record<string, number> {
-    const stored = getItemSync(STORAGE_KEY);
-    return stored?.[STORAGE_KEY] ?? {};
+    return characterStorage.get(STORAGE_KEY) ?? {};
 }
 
 function setMaxLevels(levels: Record<string, number>) {
-    setItemSync(STORAGE_KEY, levels);
+    characterStorage.set(STORAGE_KEY, levels);
 }
 
 export default function initLanguageSkills(

@@ -2,6 +2,7 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { EventEmitter } from 'events';
 import { initHerbClient, defaultHerbData } from './helpers/herbClient';
+import { characterStorage } from '@modules/core/storage';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -9,7 +10,6 @@ class FakeClient {
   sendCommand = jest.fn();
   print = jest.fn();
   println = jest.fn();
-  port = { postMessage: jest.fn() } as any;
   sendEvent = jest.fn((type: string, detail: any) => {
     this.dispatch(type, detail);
   });
@@ -33,11 +33,17 @@ describe('herb counter', () => {
   let start: () => void;
 
   beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
     start = aliases[0].callback as any;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   test('counts herbs from bags', async () => {
@@ -104,18 +110,11 @@ describe('herb counter', () => {
     const showEntry = aliases.find(({ pattern }) => pattern.test('/ziola_pokaz'));
     expect(showEntry).toBeTruthy();
     const show = showEntry!.callback as any;
-    const printedPromise = new Promise<AnsiAwareBuffer>((resolve) => {
-      // The herbCounter calls client.print(), not println
-      client.print.mockImplementationOnce((buffer: AnsiAwareBuffer) => {
-        resolve(buffer);
-      });
-    });
-    show();
-    client.dispatch('storage', { key: 'herb_counts', value: { 1: { deliona: 2 } } });
-    const printed = await printedPromise;
+    characterStorage.set('herb_counts', { 1: { herbs: { deliona: 2 } } });
+    await show();
 
     // Extract text from the AnsiAwareBuffer
-    const text = printed.text;
+    const text = client.print.mock.calls[0][0].text;
     expect(text).toMatch(/2/);
     expect(text).toMatch(/deliona/);
   }, 10000);
@@ -128,7 +127,6 @@ describe('herb counter', () => {
       const wearEntry = aliases.find(({ pattern }) => pattern.test('/woreczki_buduj'));
       expect(wearEntry).toBeTruthy();
       client.sendCommand.mockClear();
-      client.port.postMessage.mockClear();
       wearEntry?.callback();
       expect(client.sendCommand).toHaveBeenCalledWith('ocen wszystkie woreczki');
       // Woreczek 1: evaluation start line sets flag, then condition line uses it
@@ -139,16 +137,10 @@ describe('herb counter', () => {
       parse('Ten element ekwipunku wyglada na calkiem nowy.');
       jest.advanceTimersByTime(150);
       await Promise.resolve();
-      const setCalls = client.port.postMessage.mock.calls
-        .map(([arg]) => arg)
-        .filter(call => call?.type === 'SET_STORAGE');
-      expect(setCalls[setCalls.length - 1]).toEqual({
-        type: 'SET_STORAGE',
-        key: 'herb_counts',
-        value: {
-          1: { herbs: {}, condition: 3 },
-          2: { herbs: {}, condition: 5 }
-        }
+      const stored = characterStorage.get('herb_counts');
+      expect(stored).toEqual({
+        1: { herbs: {}, condition: 3 },
+        2: { herbs: {}, condition: 5 }
       });
     } finally {
       jest.useRealTimers();
@@ -175,14 +167,8 @@ describe('herb counter', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wloz zolty jasny kwiat do 2. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swoj woreczek');
-    const setCalls = client.port.postMessage.mock.calls
-      .map(([arg]) => arg)
-      .filter(call => call?.type === 'SET_STORAGE');
-    expect(setCalls).toContainEqual({
-      type: 'SET_STORAGE',
-      key: 'herb_counts',
-      value: { 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } }
-    });
+    const stored = characterStorage.get('herb_counts');
+    expect(stored).toEqual({ 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } });
   });
 
   test('herb manager put adds herbs to bag', async () => {
@@ -192,13 +178,7 @@ describe('herb counter', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wloz 2 zolte jasne kwiaty do 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
-    const setCalls = client.port.postMessage.mock.calls
-      .map(([arg]) => arg)
-      .filter(call => call?.type === 'SET_STORAGE');
-    expect(setCalls).toContainEqual({
-      type: 'SET_STORAGE',
-      key: 'herb_counts',
-      value: { 1: { herbs: { deliona: 2 } } }
-    });
+    const stored = characterStorage.get('herb_counts');
+    expect(stored).toEqual({ 1: { herbs: { deliona: 2 } } });
   });
 });

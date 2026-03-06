@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {Button, Form} from "react-bootstrap";
-import storage, {getCurrentCharacter, getItemSync, setItemSync} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
     DEFAULT_LUA_GAGS_COLORS,
@@ -38,7 +38,7 @@ function formatLabel(key: LuaGagLineType): string {
 }
 
 function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
-    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [locked, setLocked] = useState(!characterStorage.getCharacter());
     const [deleteLines, setDeleteLines] = useState<DeleteLineState>(() => ({
         ...DEFAULT_LUA_GAGS_DELETE_LINES,
     }));
@@ -50,51 +50,39 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
     }));
 
     useEffect(() => {
-        const update = () => setLocked(!getCurrentCharacter());
-        storage.onChanged?.addListener(update);
-        window.addEventListener("storage", update);
-        return () => {
-            storage.onChanged?.removeListener?.(update);
-            window.removeEventListener("storage", update);
-        };
+        const update = () => setLocked(!characterStorage.getCharacter());
+        return characterStorage.onCharacterChange(update);
     }, []);
 
     const loadFromStorage = useCallback(() => {
-        setDeleteLines(normalizeLuaGagsDeleteLines(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]));
-        setColors(normalizeLuaGagsColors(getItemSync(LUA_GAGS_COLORS_STORAGE_KEY)?.[LUA_GAGS_COLORS_STORAGE_KEY]));
-        setWalkaConfig(normalizeLuaGagsWalkaConfig(getItemSync(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY)?.[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]));
+        setDeleteLines(normalizeLuaGagsDeleteLines(characterStorage.get(LUA_GAGS_STORAGE_KEY as 'lua_gags_delete_lines')));
+        setColors(normalizeLuaGagsColors(characterStorage.get(LUA_GAGS_COLORS_STORAGE_KEY as 'lua_gags_colors')));
+        setWalkaConfig(normalizeLuaGagsWalkaConfig(characterStorage.get(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY as 'lua_gags_walka_config')));
     }, []);
 
     useEffect(() => {
         loadFromStorage();
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes[LUA_GAGS_STORAGE_KEY]) {
-                setDeleteLines(
-                    normalizeLuaGagsDeleteLines(changes[LUA_GAGS_STORAGE_KEY].newValue),
-                );
-            }
-            if (changes[LUA_GAGS_COLORS_STORAGE_KEY]) {
-                setColors(
-                    normalizeLuaGagsColors(changes[LUA_GAGS_COLORS_STORAGE_KEY].newValue),
-                );
-            }
-            if (changes[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]) {
-                setWalkaConfig(
-                    normalizeLuaGagsWalkaConfig(changes[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY].newValue),
-                );
-            }
-        };
-        storage.onChanged?.addListener(listener);
+        const unsub1 = characterStorage.onChange('lua_gags_delete_lines', (newValue) => {
+            setDeleteLines(normalizeLuaGagsDeleteLines(newValue));
+        });
+        const unsub2 = characterStorage.onChange('lua_gags_colors', (newValue) => {
+            setColors(normalizeLuaGagsColors(newValue));
+        });
+        const unsub3 = characterStorage.onChange('lua_gags_walka_config', (newValue) => {
+            setWalkaConfig(normalizeLuaGagsWalkaConfig(newValue));
+        });
         return () => {
-            storage.onChanged?.removeListener?.(listener);
+            unsub1();
+            unsub2();
+            unsub3();
         };
     }, [loadFromStorage]);
 
     useEffect(() => {
         registerSave((_sharedSettings: Settings) => {
-            setItemSync(LUA_GAGS_STORAGE_KEY, deleteLines);
-            setItemSync(LUA_GAGS_COLORS_STORAGE_KEY, colors);
-            setItemSync(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, walkaConfig);
+            characterStorage.set('lua_gags_delete_lines', deleteLines);
+            characterStorage.set('lua_gags_colors', colors);
+            characterStorage.set('lua_gags_walka_config', walkaConfig);
         });
     }, [registerSave, deleteLines, colors, walkaConfig]);
 

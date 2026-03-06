@@ -1,6 +1,8 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {FormatStateSnapshot} from "../ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const SLATE_BLUE = createColorFormat("#6a5acd");
 const ENEMY_RED = createColorFormat("#ff0000");
@@ -12,8 +14,8 @@ export default function initGuildPostfix(client: Client) {
     let guildColors: GuildColorMap = {};
     let enemyGuilds = new Set<string>();
 
-    client.on('settings', (payload) => {
-        const detail = (payload ?? {}) as { guildColors?: Record<string, string | undefined>; enemyGuilds?: string[] };
+    const applySettings = (payload: any) => {
+        const detail = (payload ?? defaultSettings) as { guildColors?: Record<string, string | undefined>; enemyGuilds?: string[] };
         const colors: Record<string, string | undefined> = detail.guildColors || {};
         const enemies: string[] = detail.enemyGuilds || [];
         guildColors = {};
@@ -23,7 +25,9 @@ export default function initGuildPostfix(client: Client) {
                 guildColors[g] = createColorFormat(hex);
             }
         });
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     function register(pattern: RegExp | string, guild: string) {
         client.Triggers.registerTrigger(pattern, (line) => {

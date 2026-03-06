@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import storage, { getCurrentCharacter } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
+import type { Settings } from "@modules/core/defaultSettings";
 import GeneralSettings from "./Settings";
 import GuildsSettings from "./GuildsSettings";
 import LuaGagsSettings from "./LuaGagsSettings";
@@ -19,8 +20,8 @@ function CharacterSettings() {
     } as const;
     const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0, enemyBinds: 0, magiki: 0 });
     const saveRefs = useRef<Record<Tab, (settings: any) => void>>({ general: () => {}, guild: () => {}, luaGags: () => {}, enemyBinds: () => {}, magiki: () => {} });
-    const [locked, setLocked] = useState(!getCurrentCharacter());
-    const [char, setChar] = useState<string | null>(getCurrentCharacter());
+    const [locked, setLocked] = useState(!characterStorage.getCharacter());
+    const [char, setChar] = useState<string | null>(characterStorage.getCharacter());
 
     const changeTab = useCallback((next: Tab) => {
         const current = scrollRefs[tab].current;
@@ -44,16 +45,11 @@ function CharacterSettings() {
 
     useEffect(() => {
         const update = () => {
-            const current = getCurrentCharacter();
+            const current = characterStorage.getCharacter();
             setLocked(!current);
             setChar(current);
         };
-        storage.onChanged?.addListener(update);
-        window.addEventListener("storage", update);
-        return () => {
-            storage.onChanged?.removeListener?.(update);
-            window.removeEventListener("storage", update);
-        };
+        return characterStorage.onCharacterChange(update);
     }, []);
 
     const registerGeneralSave = useCallback((fn: (settings: any) => void) => {
@@ -77,10 +73,9 @@ function CharacterSettings() {
     }, []);
 
     useEffect(() => {
-        const handler = async () => {
+        const handler = () => {
             // Read settings once at the start
-            const res = await storage.getItem("settings");
-            const currentSettings = res?.settings || {};
+            const currentSettings = characterStorage.get("settings") ?? {} as Settings;
 
             // Each save handler updates the shared settings object
             const updated = { ...currentSettings };
@@ -91,7 +86,7 @@ function CharacterSettings() {
             saveRefs.current.magiki(updated);
 
             // Write once at the end
-            await storage.setItem("settings", updated);
+            characterStorage.set("settings", updated);
             window.dispatchEvent(new Event("close-options"));
         };
         window.addEventListener("save-options", handler);

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
-import { getItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 
 const MODES = ["A", "AW", "AWR"] as const;
 type AttackMode = (typeof MODES)[number];
@@ -12,7 +12,7 @@ const MODE_DESCRIPTIONS: Record<AttackMode, string> = {
 };
 
 export default function initAttackModeAlias(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
-    let currentMode: AttackMode = getItemSync("attack_mode")?.attack_mode ?? "A";
+    let currentMode: AttackMode = characterStorage.get("attack_mode") ?? "A";
 
     client.on("attackMode", (mode) => {
         if (MODES.includes(mode as AttackMode)) {

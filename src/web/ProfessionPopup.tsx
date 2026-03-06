@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import eventBus from '@modules/core/eventBus';
-import { setItemSync } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 import {
     getState,
     setState,
@@ -62,8 +62,8 @@ const ProfessionPopup: React.FC = () => {
 
     // Reload on storage changes (e.g. character switch)
     useEffect(() => {
-        return eventBus.on('storage', (payload) => {
-            if (payload.key === 'profession' && wrapperProps.isOpen) loadState();
+        return characterStorage.onChange('profession', () => {
+            if (wrapperProps.isOpen) loadState();
         });
     }, [wrapperProps.isOpen, loadState]);
 
@@ -124,7 +124,7 @@ const ProfessionPopup: React.FC = () => {
     };
 
     const handleReset = () => {
-        setItemSync(STORAGE_KEY, null);
+        characterStorage.remove(STORAGE_KEY);
         setLocalState(null);
         eventBus.emit('profession.updated');
     };

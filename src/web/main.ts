@@ -23,7 +23,6 @@ import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
 
 import "@client/main.ts"
-import MockPort from "./MockPort.ts";
 import NoSleep from 'nosleep.js';
 import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
@@ -50,7 +49,7 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {getItemSync, setItemSync} from "@modules/core/storage"
+import {characterStorage, globalStorage, migrateNewlyCharacterScopedKeys} from "@modules/core/storage"
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
@@ -66,17 +65,17 @@ import {CommandInputController} from "./commandInput/CommandInputController";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
 
-// Run settings migrations before initializing the client
+// Run migrations before initializing the client
+migrateNewlyCharacterScopedKeys();
 runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();
 
 let mobileRadial: MobileCommandRadial | null = null;
 
-const client = new Client(arkadiaClient, new MockPort());
+const client = new Client(arkadiaClient);
 setClientInstance(client);
 registerScripts(client);
-client.connect(client.port, true);
 
 const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {
     if (typeof command !== 'string') {
@@ -209,7 +208,7 @@ const isDirectionMap = (value: unknown): value is Record<string, Partial<RawDire
     });
 };
 
-arkadiaClient.on('settings', (detail) => {
+characterStorage.onChange('settings', (detail) => {
     const payload = detail as { binds?: { directions?: unknown } } | undefined;
     const directions = payload?.binds?.directions;
     if (isDirectionMap(directions)) {
@@ -217,7 +216,7 @@ arkadiaClient.on('settings', (detail) => {
     }
 });
 
-client.on('binds', (detail) => {
+globalStorage.onChange('binds', (detail) => {
     const payload = detail as { directions?: unknown } | undefined;
     const directions = payload?.directions;
     if (isDirectionMap(directions)) {
@@ -365,10 +364,11 @@ function onSplitDragEnd() {
     // Persist split view height to UI settings
     const height = splitBottom.clientHeight;
     if (height >= 60) {
-        const data = getItemSync('uiSettings');
-        const settings = data?.uiSettings ?? {};
-        settings.splitViewHeight = height;
-        setItemSync('uiSettings', settings);
+        const settings = globalStorage.get('uiSettings');
+        if (settings) {
+            settings.splitViewHeight = height;
+            globalStorage.set('uiSettings', settings);
+        }
     }
 }
 
@@ -675,7 +675,7 @@ Promise.all([mapDataPromise, colorsPromise])
         }
 
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        const savedAlgorithm = getItemSync('uiSettings')?.pathFindingAlgorithm;
+        const savedAlgorithm = globalStorage.get('uiSettings')?.pathFindingAlgorithm;
         if (savedAlgorithm && pathFinder.setAlgorithm) {
             pathFinder.setAlgorithm(savedAlgorithm);
         }
@@ -689,7 +689,7 @@ Promise.all([mapDataPromise, colorsPromise])
             if (!currentEmbedded) return;
 
             const result = client.Map.initialize(newMapData, colors);
-            const newSavedAlgorithm = getItemSync('uiSettings')?.pathFindingAlgorithm;
+            const newSavedAlgorithm = globalStorage.get('uiSettings')?.pathFindingAlgorithm;
             if (newSavedAlgorithm && result.pathFinder.setAlgorithm) {
                 result.pathFinder.setAlgorithm(newSavedAlgorithm);
             }
@@ -782,7 +782,7 @@ arkadiaClient.on('client.connect', () => {
     isDisconnecting = false;
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
-    const wakeLockSetting = getItemSync('uiSettings')?.uiSettings?.wakeLock;
+    const wakeLockSetting = globalStorage.get('uiSettings')?.wakeLock;
     if (wakeLockSetting !== false) {
         preventTabSleep();
     }
@@ -967,9 +967,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
-    const uiSettingsData = getItemSync('uiSettings');
-    let clearInputOnSend = !!uiSettingsData?.uiSettings?.clearInputOnSend;
-    client.on('uiSettings', (payload) => {
+    const uiSettingsData = globalStorage.get('uiSettings');
+    let clearInputOnSend = !!uiSettingsData?.clearInputOnSend;
+    globalStorage.onChange('uiSettings', (payload) => {
         if (typeof payload?.clearInputOnSend === 'boolean') {
             clearInputOnSend = payload.clearInputOnSend;
         }
@@ -1794,11 +1794,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize desktop buttons
     new DesktopButtons(client);
 
-    loadMobileButtonSettings().then(s => {
-        const inTeam = !!client.TeamManager.isInAnyTeam?.();
-        const isLeader = !!client.TeamManager.isLeader?.();
-        applyMobileButtonSettings(s, inTeam, isLeader);
-    });
+    const mobileSettings = loadMobileButtonSettings();
+    const inTeam = !!client.TeamManager.isInAnyTeam?.();
+    const isLeader = !!client.TeamManager.isLeader?.();
+    applyMobileButtonSettings(mobileSettings, inTeam, isLeader);
 
     initUiSettings();
 

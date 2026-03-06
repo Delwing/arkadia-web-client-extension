@@ -8,6 +8,8 @@ import Triggers from '@client/Triggers';
 import { prettyPrintContainer } from '@client/scripts/prettyContainers';
 import { EventEmitter } from 'events';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from './helpers/testSettings';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -15,7 +17,6 @@ class FakeClient {
   Map = { currentRoom: { id: 1, name: 'Bank', userData: { bind: '/depozyt' } } } as any;
   println = jest.fn();
   print = jest.fn();
-  port = { postMessage: jest.fn() } as any;
   sendCommand = jest.fn();
   contentWidth = 80;
 
@@ -39,17 +40,23 @@ describe('deposits', () => {
   let reset: () => void;
 
   beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initDeposits((client as unknown) as any, aliases);
-    client.dispatch('storage', { key: 'deposits', value: {} });
+    characterStorage.set('deposits', {});
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     refresh = aliases[0].callback;
     show = aliases[1].callback;
     reset = aliases[2].callback;
     Object.keys(deposits).forEach(k => delete deposits[parseInt(k)]);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   test('refresh command sends query', () => {
@@ -131,12 +138,12 @@ describe('deposits', () => {
     reset();
 
     expect(deposits[1]).toBeUndefined();
-    expect(client.port.postMessage).toHaveBeenLastCalledWith({ type: 'SET_STORAGE', key: 'deposits', value: {} });
+    expect(characterStorage.get('deposits')).toEqual({});
     expect(client.println).toHaveBeenCalledWith('Zapisane depozyty zostaly usuniete.');
   });
 
   test('uses column setting for pretty print', () => {
-    client.dispatch('settings', { containerColumns: 3 });
+    setTestSettings({ containerColumns: 3 });
     parse('Twoj depozyt zawiera miecz.');
     expect(prettyPrintContainer).toHaveBeenCalledWith(expect.anything(), 3, 'DEPOZYT', 5, client.contentWidth);
   });
@@ -147,11 +154,8 @@ describe('deposits', () => {
       { count: 1, name: 'miecz' }
     ]);
 
-    client.dispatch('storage', {
-      key: 'deposits',
-      value: {
-        2: { name: 'Inny bank', items: [{ count: 3, name: 'klejnoty' }] }
-      }
+    characterStorage.set('deposits', {
+      2: { name: 'Inny bank', items: [{ count: 3, name: 'klejnoty' }] }
     });
 
     expect(deposits[1]).toBeUndefined();
@@ -165,10 +169,7 @@ describe('deposits', () => {
     parse('Twoj depozyt zawiera miecz.');
     const storedReference = deposits as Record<number, any>;
 
-    client.dispatch('storage', {
-      key: 'deposits',
-      value: storedReference,
-    });
+    characterStorage.set('deposits', storedReference);
 
     expect(deposits[1]).toEqual({
       name: 'Bank',

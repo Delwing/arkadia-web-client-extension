@@ -154,6 +154,44 @@ test.describe('AWR indicator', () => {
         await expect(attackModeIndicator, 'should hide when leadership removed').toHaveCSS('display', 'none');
     });
 
+    test('remains responsive after character switch with non-default attack mode', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Set up first character as team leader
+        await pushGmcp(page, 'char.info', {name: 'FirstChar', object_num: 100});
+        await pushGmcp(page, 'objects.data', {
+            '100': {desc: 'Player', team: true, team_leader: true},
+        });
+
+        const attackModeIndicator = page.locator('#attack-mode');
+        await expect(attackModeIndicator, 'should show default mode "A"').toContainText('Atk: A');
+
+        // Click to cycle to AW
+        await attackModeIndicator.click();
+        await expect(attackModeIndicator, 'should show mode "AW" after click').toContainText('Atk: AW');
+
+        // Switch to a different character — before the fix this caused an infinite
+        // synchronous loop between characterStorage.onChange and client.on handlers
+        await pushGmcp(page, 'char.info', {name: 'SecondChar', object_num: 200});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'SecondChar';
+        });
+
+        // Page should still be responsive (not hung in infinite loop)
+        const commandInput = page.locator('#message-input');
+        await expect(commandInput, 'should still be usable after character switch').toBeEnabled();
+
+        // Set up second char as leader and verify indicator resets to default
+        await pushGmcp(page, 'objects.data', {
+            '200': {desc: 'Player2', team: true, team_leader: true},
+        });
+
+        await expect(attackModeIndicator, 'should reset to "A" for new character').toContainText('Atk: A');
+    });
+
     test('persists attack mode changes to localStorage', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

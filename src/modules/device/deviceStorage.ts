@@ -1,6 +1,7 @@
 import { getDeviceId } from '@modules/firebase/firebaseTypes';
 import type { DeviceInfo, ImportedDeviceEntry } from './deviceTypes';
 import { DEVICE_STORAGE_KEYS } from './deviceTypes';
+import { globalStorage } from '@modules/core/storage';
 
 /**
  * Detect browser name from user agent
@@ -249,29 +250,20 @@ export async function triggerSettingsReload(): Promise<void> {
     try {
         const { invalidateLayoutCache } = await import('@web/layout');
         invalidateLayoutCache();
+        // Also emit with import type so popups re-evaluate auto-open state
+        const eventBus = (await import('@modules/core/eventBus')).default;
+        eventBus.emit('layoutManagerStateChanged', { type: 'import' });
     } catch {
         const eventBus = (await import('@modules/core/eventBus')).default;
-        eventBus.emit('layoutManagerStateChanged');
+        eventBus.emit('layoutManagerStateChanged', { type: 'import' });
     }
 
-    // 2. Reload and emit uiSettings (for mobile buttons visibility, etc.)
+    // 2. Reload and fire uiSettings listeners (for mobile buttons visibility, etc.)
     try {
-        const eventBus = (await import('@modules/core/eventBus')).default;
-        const { defaultUiSettings } = await import('@web/defaultUiSettings');
-        const raw = localStorage.getItem('uiSettings');
-        const uiSettings = raw ? { ...defaultUiSettings, ...JSON.parse(raw) } : defaultUiSettings;
-
-        // Emit uiSettings event with relevant payload
-        eventBus.emit('uiSettings', {
-            mobileDirectionButtons: uiSettings.showButtons,
-            hapticFeedback: uiSettings.hapticFeedback,
-            emojiLabels: uiSettings.emojiLabels,
-            xtermPalette: uiSettings.xtermPalette,
-            footerMode: uiSettings.footerMode,
-            fightTitleIcon: uiSettings.fightTitleIcon,
-            clearInputOnSend: uiSettings.clearInputOnSend,
-            autoLowercaseCommands: uiSettings.autoLowercaseCommands,
-        });
+        const stored = globalStorage.get('uiSettings');
+        if (stored) {
+            globalStorage.fireListeners('uiSettings', stored, stored);
+        }
     } catch (err) {
         console.error('Failed to reload uiSettings', err);
     }
@@ -279,7 +271,7 @@ export async function triggerSettingsReload(): Promise<void> {
     // 3. Reload mobile button settings
     try {
         const { loadSettings, applySettings } = await import('@web/mobileButtonSettings');
-        const settings = await loadSettings();
+        const settings = loadSettings();
         applySettings(settings);
     } catch (err) {
         console.error('Failed to reload mobile button settings', err);
@@ -288,7 +280,7 @@ export async function triggerSettingsReload(): Promise<void> {
     // 4. Reload desktop button settings
     try {
         const { loadSettings, applySettings } = await import('@web/desktopButtonSettings');
-        const settings = await loadSettings();
+        const settings = loadSettings();
         applySettings(settings);
     } catch (err) {
         console.error('Failed to reload desktop button settings', err);

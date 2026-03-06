@@ -4,9 +4,7 @@ import type {
     PersonListEntry,
     PeopleLocalEventsSnapshot,
 } from '@client/types/people';
-import { getItemSync, setItemSync } from '@modules/core/storage';
-
-const STORAGE_KEY = 'peopleLocalEvents';
+import { characterStorage } from '@modules/core/storage';
 
 export function makePersonKey(name: string, description: string): string {
     return `${name.toLowerCase()}|${description.toLowerCase()}`;
@@ -17,8 +15,7 @@ export function generateEventId(): string {
 }
 
 export function loadLocalEvents(): PeopleLocalEventsSnapshot {
-    const result = getItemSync(STORAGE_KEY);
-    const data = result?.[STORAGE_KEY];
+    const data = characterStorage.get('peopleLocalEvents');
     if (data && Array.isArray(data.events)) {
         return data as PeopleLocalEventsSnapshot;
     }
@@ -26,7 +23,7 @@ export function loadLocalEvents(): PeopleLocalEventsSnapshot {
 }
 
 export function saveLocalEvents(snapshot: PeopleLocalEventsSnapshot): void {
-    setItemSync(STORAGE_KEY, snapshot);
+    characterStorage.set('peopleLocalEvents', snapshot);
 }
 
 export function applyLocalEvents(

@@ -1,6 +1,7 @@
 import { initKillCounter, parseName, formatSessionTable, formatLifetimeTable, formatLifetimeByDateTable, formatGlobalStatsTable } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { characterStorage } from '@modules/core/storage';
 
 import { EventEmitter } from 'events';
 
@@ -10,7 +11,6 @@ class FakeClient {
   TeamManager = { isInTeam: jest.fn() };
   prefix = (line: string, prefix: string) => prefix + line;
   print = jest.fn();
-  port = { postMessage: jest.fn() } as any;
 
   on(event: string, cb: any) {
     this.emitter.on(event, cb);
@@ -31,10 +31,15 @@ describe('kill counter team kills', () => {
   let client: FakeClient;
 
   beforeEach(() => {
+    characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     initKillCounter((client as unknown) as any, []);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    characterStorage.set('kill_counter', {} as any);
+    characterStorage.set('kill_counter_session', {} as any);
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   const parse = (line: string) => {
@@ -66,7 +71,7 @@ describe('kill counter team kills', () => {
     let result = parse('> Eamon zabil smoka chaosu.');
     expect(result!.text).toContain('(0 / 1)');
 
-    client.dispatch('storage', { key: 'kill_counter', value: { 'smoka chaosu': 1 } });
+    characterStorage.set('kill_counter', { 'smoka chaosu': 1 } as any);
 
     result = parse('> Eamon zabil smoka chaosu.');
     expect(result!.text).toContain('(0 / 2)');
@@ -80,16 +85,21 @@ describe('kill counter scenario', () => {
   let aliases: { pattern: RegExp; callback: () => void }[];
 
   beforeEach(() => {
+    characterStorage.setCharacter('TestChar');
     aliases = [];
     client = new FakeClient();
     initKillCounter((client as unknown) as any, aliases);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    characterStorage.set('kill_counter', {} as any);
+    characterStorage.set('kill_counter_session', {} as any);
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     // alias[0] corresponds to the /zabici command which prints
     // the per-session kill table
     printSessionTable = aliases[0].callback;
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   test('player and team kills accumulate and print session table correctly', () => {

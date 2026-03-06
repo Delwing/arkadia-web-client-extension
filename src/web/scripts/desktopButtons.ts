@@ -54,10 +54,8 @@ export default class DesktopButtons {
         document.body.appendChild(this.container);
 
         // Load settings and render
-        loadDesktopButtonSettings().then(settings => {
-            this.settings = settings;
-            this.render();
-        });
+        this.settings = loadDesktopButtonSettings();
+        this.render();
 
         // Listen for settings changes from the options panel
         this.client.on('desktopButtonsSettings', (newSettings) => {

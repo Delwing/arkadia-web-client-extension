@@ -27,7 +27,7 @@ import type {Trigger, TriggerCallback, TriggerOptions, TriggerPattern} from "./T
 import {gmcp} from "./gmcp";
 import type {Settings} from "@modules/core/defaultSettings";
 import {defaultSettings} from "@modules/core/defaultSettings";
-import storage from "@modules/core/storage";
+import { characterStorage, globalStorage } from "@modules/core/storage";
 import type {UiSettings} from "@web/defaultUiSettings";
 import {defaultUiSettings} from "@web/defaultUiSettings";
 import {
@@ -3049,8 +3049,7 @@ export class PluginApiImpl implements PluginApi {
   private createSettingsApi(): SettingsApi {
     return {
       getCharacterSettings: async (): Promise<Settings> => {
-        const res = await storage.getItem("settings");
-        const stored = res?.settings;
+        const stored = characterStorage.get("settings");
         return { ...defaultSettings, ...stored };
       },
 
@@ -3060,8 +3059,7 @@ export class PluginApiImpl implements PluginApi {
       },
 
       getUiSettings: async (): Promise<UiSettings> => {
-        const res = await storage.getItem("uiSettings");
-        const stored = res?.uiSettings;
+        const stored = globalStorage.get("uiSettings");
         return { ...defaultUiSettings, ...stored };
       },
 

@@ -126,7 +126,7 @@ function MobileButtons() {
     const [copyFrom, setCopyFrom] = useState<Mode>('solo');
 
     useEffect(() => {
-        loadSettings().then(setSettings);
+        setSettings(loadSettings());
         setPluginMacros(getRegisteredButtonMacros());
 
         const handleMacrosChanged = () => {

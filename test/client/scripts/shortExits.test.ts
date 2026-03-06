@@ -1,11 +1,12 @@
 import initShortExits, { parseExitString, toShort } from '@client/scripts/shortExits';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
   println = jest.fn();
-  on = jest.fn();
 }
 
 describe('short exits trigger', () => {
@@ -13,14 +14,16 @@ describe('short exits trigger', () => {
   let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
+    characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     initShortExits(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
-    const handler = client.on.mock.calls.find(call => call[0] === 'settings')?.[1];
-    if (handler) {
-      handler({ shortenExits: true });
-    }
+    setTestSettings({ shortenExits: true });
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   test('parseExitString splits directions', () => {

@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {getCurrentCharacter} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {getFromIndexedDB, storeInIndexedDB, IndexedDBConfig} from "@client/utils/dataCache.ts";
 import {GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
 
@@ -204,7 +204,7 @@ export default function initDeliveryStats(
     let paymentTrigger: ReturnType<typeof client.Triggers.registerOneTimeTrigger> | undefined;
 
     async function load() {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         currentConfig = getDbConfig(character);
         const data = await getFromIndexedDB<DeliveryRecord[]>(currentConfig).catch(() => null);

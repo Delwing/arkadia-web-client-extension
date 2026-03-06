@@ -2,6 +2,8 @@ import Client from "../Client";
 import loadHerbs from "./herbsLoader";
 import {createColorFormat} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export const HERB_NAME_COLOR = createColorFormat("#ffffff");
 
@@ -9,15 +11,17 @@ export default async function initHerbDescriptions(client: Client) {
     const tag = "herbDescriptions";
     let preUseCommands: string[] = [];
     let postUseCommands: string[] = [];
-    client.on('settings', (settings) => {
-        const st = (settings ?? {}) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
+    const applySettings = (settings: any) => {
+        const st = (settings ?? defaultSettings) as { herbPreUseCommand?: string; herbPostUseCommand?: string };
         preUseCommands = typeof st.herbPreUseCommand === 'string'
             ? st.herbPreUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
         postUseCommands = typeof st.herbPostUseCommand === 'string'
             ? st.herbPostUseCommand.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
-    });
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
     try {
         const herbs = await loadHerbs();
         if (!herbs) return;

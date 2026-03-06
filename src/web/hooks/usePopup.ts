@@ -111,6 +111,19 @@ export function usePopup<K extends keyof ClientEvents = keyof ClientEvents>(
         }) as any);
     }, [options?.openEvent, options?.onOpen]);
 
+    // Listen for layout state imports (settings import from file/cloud/device)
+    // and re-evaluate auto-open state since the stored layout may have changed
+    useEffect(() => {
+        return eventBus.on('layoutManagerStateChanged', (data) => {
+            if (data && typeof data === 'object' && 'type' in data && data.type === 'import') {
+                if (shouldPopupAutoOpen(popupId)) {
+                    setIsOpen(true);
+                    setIsPinned(true);
+                }
+            }
+        });
+    }, [popupId]);
+
     const wrapperProps = {
         popupId,
         isOpen,

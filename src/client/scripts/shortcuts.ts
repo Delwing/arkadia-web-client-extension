@@ -2,6 +2,7 @@ import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import { globalStorage } from "@modules/core/storage";
 
 export interface ShortcutEntry {
     key: string;
@@ -31,21 +32,19 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
     }
 
     function persist() {
-        client.port?.postMessage({ type: "SET_STORAGE", key: STORAGE_KEY, value: Object.values(shortcuts) });
+        globalStorage.set(STORAGE_KEY, Object.values(shortcuts) as any);
     }
 
-    client.on("storage", ({ key, value }) => {
-        if (key === STORAGE_KEY) {
-            const valueArray = Array.isArray(value) ? value : [];
-            apply(valueArray);
-        }
-    });
+    const initialShortcuts = globalStorage.get(STORAGE_KEY);
+    if (initialShortcuts) {
+        const arr = Array.isArray(initialShortcuts) ? initialShortcuts : Object.values(initialShortcuts);
+        apply(arr);
+    }
 
-    client.on("port-connected", () => {
-        client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
+    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+        const arr = newValue ? (Array.isArray(newValue) ? newValue : Object.values(newValue)) : [];
+        apply(arr);
     });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: STORAGE_KEY });
 
     function printShortcuts() {
         const entries = Object.values(shortcuts);

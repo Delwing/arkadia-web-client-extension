@@ -1,7 +1,7 @@
 import {Trigger} from "@client/Triggers.ts";
 import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
-import {getItemSync, setItemSync} from "@modules/core/storage.ts";
+import {characterStorage} from "@modules/core/storage.ts";
 import {gmcp} from "@client/gmcp.ts";
 
 type Domain = "Empire" | "Ishtar";
@@ -245,7 +245,7 @@ class ClockDisplay {
     }
 
     public restoreActiveDomain(): void {
-        const saved = getItemSync("clock_active_domain")?.clock_active_domain;
+        const saved = characterStorage.get("clock_active_domain");
         if (saved === "Empire" || saved === "Ishtar") {
             this.activeDomain = saved;
             eventBus.emit("clock.domain.active", { domain: saved });
@@ -253,7 +253,7 @@ class ClockDisplay {
     }
 
     private saveActiveDomain(domain: Domain): void {
-        setItemSync("clock_active_domain", domain);
+        characterStorage.set("clock_active_domain", domain);
     }
 }
 

@@ -201,7 +201,7 @@ function MobileRadialCommands() {
     );
 
     useEffect(() => {
-        loadSettings().then(setSettings);
+        setSettings(loadSettings());
     }, []);
 
     const addRadialCommand = useCallback(() => {

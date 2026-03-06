@@ -3,7 +3,7 @@ import { initKillCounter } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
-import { setItemSync } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
@@ -41,15 +41,13 @@ describe('improve counter', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     localStorage.clear();
-    setItemSync('object_num', '1');
+    characterStorage.set('object_num','1');
     client = new FakeClient();
     const killCounter = initKillCounter((client as unknown) as any, []);
-    client.dispatch('storage', { key: 'kill_counter', value: {} });
-    client.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    characterStorage.set('kill_counter', {} as any);
+    characterStorage.set('kill_counter_session', {} as any);
     aliases = [];
     initImproveCounter((client as unknown) as any, killCounter, aliases);
-    client.dispatch('storage', { key: 'improve_counter', value: {} });
-    client.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     // aliases: /postepy(0), /postepy_popup(1), /postepy_reset(2), /postepy2(3), ...
@@ -170,7 +168,7 @@ describe('improve counter', () => {
   });
 
   test('adds initial improvement when not yet recorded', () => {
-    client.dispatch('storage', { key: 'improve_counter', value: { level: 0 } });
+    characterStorage.set('improve_counter', { level: 0 });
     client.dispatch('gmcp.char.state', { improve: 2 });
     showLifetime();
     const printed = client.print.mock.calls[0][0]?.text;
@@ -188,16 +186,12 @@ describe('improve counter', () => {
     jest.useFakeTimers();
     const c = new FakeClient();
     const kill = initKillCounter((c as unknown) as any, []);
-    c.dispatch('storage', { key: 'kill_counter', value: {} });
-    c.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    characterStorage.set('kill_counter', {} as any);
+    characterStorage.set('kill_counter_session', {} as any);
     const als: { pattern: RegExp; callback: any }[] = [];
+    characterStorage.set('improve_counter', { level: 2, lastObjNum: 1 });
     initImproveCounter((c as unknown) as any, kill, als);
-    c.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 2, lastObjNum: 1 },
-    });
     c.dispatch('gmcp.char.state', { improve: 4 });
-    c.dispatch('storage', { key: 'improve_counter_lifetime', value: {} });
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
     const printed = c.print.mock.calls[0][0]?.text;
@@ -218,14 +212,8 @@ describe('improve counter', () => {
   });
 
   test('counts offline improvements and new gains after login', () => {
-    client.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 2, lastObjNum: 1 },
-    });
-    client.dispatch('storage', {
-      key: 'improve_counter_lifetime',
-      value: { entries: [{ date: '1970/1/1', count: 2 }] },
-    });
+    characterStorage.set('improve_counter', { level: 2, lastObjNum: 1 });
+    characterStorage.set('improve_counter_lifetime', { entries: [{ date: '1970/1/1', count: 2 }] });
     client.dispatch('gmcp.char.state', { improve: 4 });
     showLifetime();
     let printed = client.print.mock.calls[0][0]?.text;
@@ -239,39 +227,56 @@ describe('improve counter', () => {
   });
 
   test('accumulates improvements across sessions with object numbers', () => {
-    client.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 3, lastObjNum: 1 },
-    });
-    client.dispatch('storage', {
-      key: 'improve_counter_lifetime',
-      value: { entries: [{ date: '1970/1/1', count: 3 }] },
-    });
-    setItemSync('object_num', '2');
+    characterStorage.set('improve_counter', { level: 3, lastObjNum: 1 });
+    characterStorage.set('improve_counter_lifetime', { entries: [{ date: '1970/1/1', count: 3 }] });
+    characterStorage.set('object_num','2');
     client.dispatch('gmcp.char.state', { improve: 6 });
     showLifetime();
     const printed = client.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 9 postepow/);
   });
 
+  test('does not record false improvement when switching characters without reload', () => {
+    // Character A logs in and plays
+    characterStorage.setCharacter('charA');
+    characterStorage.set('object_num', '1');
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    client.println.mockClear();
+    client.print.mockClear();
+
+    // Simulate character switch: storage scope changes, triggering onChange
+    characterStorage.setCharacter('charB');
+    // The reset event fires (from Client.ts when object_num changes)
+    client.dispatch('reset', undefined);
+    characterStorage.set('object_num', '99');
+
+    // Character B logs in with level 0
+    client.dispatch('gmcp.char.state', { improve: 0 });
+
+    // Should NOT have printed any "Wlasnie wbiles postepy" message
+    const improveCalls = client.println.mock.calls.filter(
+      (c: any[]) => c[0]?.text?.includes?.('Wlasnie wbiles postepy')
+    );
+    expect(improveCalls).toHaveLength(0);
+
+    // Lifetime for new character should be empty (no false entries)
+    showLifetime();
+    const printed = client.print.mock.calls[0][0]?.text;
+    expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 0 postepow/);
+  });
+
   test('does not re-add improvements when reconnecting with same object number', () => {
     // simulate existing data: level 2 already recorded for object 1
     const c = new FakeClient();
     const kill = initKillCounter((c as unknown) as any, []);
-    c.dispatch('storage', { key: 'kill_counter', value: {} });
-    c.dispatch('storage', { key: 'kill_counter_session', value: {} });
+    characterStorage.set('kill_counter', {} as any);
+    characterStorage.set('kill_counter_session', {} as any);
     const als: { pattern: RegExp; callback: any }[] = [];
+    characterStorage.set('improve_counter', { level: 2, lastObjNum: 1 });
+    characterStorage.set('improve_counter_lifetime', { entries: [{ date: '1970/1/1', count: 2 }] });
     initImproveCounter((c as unknown) as any, kill, als);
-    c.dispatch('storage', {
-      key: 'improve_counter',
-      value: { level: 2, lastObjNum: 1 },
-    });
-    c.dispatch('storage', {
-      key: 'improve_counter_lifetime',
-      value: { entries: [{ date: '1970/1/1', count: 2 }] },
-    });
     // same object number reports same level again
-    setItemSync('object_num', '1');
+    characterStorage.set('object_num','1');
     // server replays improvements from 1 to 2 on reconnect
     c.dispatch('gmcp.char.state', { improve: 1 });
     c.dispatch('gmcp.char.state', { improve: 2 });

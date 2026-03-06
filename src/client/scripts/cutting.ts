@@ -1,6 +1,8 @@
 import Client from "../Client";
 import { containerAction } from "./bagManager";
 import { polishWordToNumber } from "./polishNumberConverter";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 /**
  * Generate random delay to simulate human-like timing
@@ -42,8 +44,8 @@ export default function initCutting(
     let cuttingPostActions: string[] = [];
 
     // Listen for settings changes
-    client.on('settings', (settings) => {
-        const st = (settings ?? {}) as any;
+    const applySettings = (settings: any) => {
+        const st = (settings ?? defaultSettings) as any;
 
         // Parse pre-action commands (semicolon-separated)
         cuttingPreActions = typeof st.cuttingPreAction === 'string'
@@ -54,6 +56,10 @@ export default function initCutting(
         cuttingPostActions = typeof st.cuttingPostAction === 'string'
             ? st.cuttingPostAction.split(';').map((c: string) => c.trim()).filter(Boolean)
             : [];
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings);
     });
 
     /**

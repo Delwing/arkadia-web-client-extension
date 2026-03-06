@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type RefObject } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
 
@@ -1037,15 +1037,14 @@ export function LogBrowser() {
 
   // Load logging preference
   useEffect(() => {
-    storage.getItem("loggingEnabled").then(res => {
-      setLoggingEnabled(res?.loggingEnabled !== false);
-    });
+    const saved = globalStorage.get("loggingEnabled");
+    setLoggingEnabled(saved !== false);
   }, []);
 
   // Save logging preference
   const handleLoggingChange = useCallback((enabled: boolean) => {
     setLoggingEnabled(enabled);
-    storage.setItem("loggingEnabled", enabled);
+    globalStorage.set("loggingEnabled", enabled);
   }, []);
 
   // Reusable session loader

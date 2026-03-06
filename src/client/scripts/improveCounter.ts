@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
-import {getCurrentCharacter, getItemSync} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 
@@ -196,48 +196,43 @@ export default class ImproveCounter {
     private waitingForFirstCombat = false;
     private stateForm: number = 0;
     private optionsForm: number = 0;
-    private static readonly STORAGE_KEY = "improve_counter";
-    private static readonly LIFETIME_KEY = "improve_counter_lifetime";
-
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
         improveCounterInstance = this;
 
-        this.client.on("storage", ({key, value}) => {
-            if (key === ImproveCounter.STORAGE_KEY) {
-                this.load(value ?? {});
-                this.loaded = true;
-                if (this.pendingLevel !== undefined) {
-                    const level = this.pendingLevel;
-                    this.pendingLevel = undefined;
-                    this.handleLevel(level);
-                }
+        const initialData = characterStorage.get('improve_counter');
+        this.load(initialData ?? {});
+        this.loaded = true;
+
+        const initialLifetime = characterStorage.get('improve_counter_lifetime');
+        this.loadLifetime(initialLifetime ?? {});
+        this.lifetimeLoaded = true;
+
+        characterStorage.onChange('improve_counter', (value) => {
+            this.load(value ?? {});
+            this.initialized = false;
+            this.loaded = true;
+            if (this.pendingLevel !== undefined) {
+                const level = this.pendingLevel;
+                this.pendingLevel = undefined;
+                this.handleLevel(level);
             }
-            if (key === ImproveCounter.LIFETIME_KEY) {
-                this.loadLifetime(value ?? {});
-                this.lifetimeLoaded = true;
-                if (this.pendingLifetime.length) {
-                    for (const p of this.pendingLifetime) {
-                        this.addToLifetime(p.count, p.time, p.noForm);
-                    }
-                    this.pendingLifetime = [];
+        });
+        characterStorage.onChange('improve_counter_lifetime', (value) => {
+            this.loadLifetime(value ?? {});
+            this.lifetimeLoaded = true;
+            if (this.pendingLifetime.length) {
+                for (const p of this.pendingLifetime) {
+                    this.addToLifetime(p.count, p.time, p.noForm);
                 }
+                this.pendingLifetime = [];
             }
         });
 
         this.client.on("reset", () => this.reset());
 
         window.addEventListener("beforeunload", this.persist);
-
-        this.client.port?.postMessage({
-            type: "GET_STORAGE",
-            key: ImproveCounter.STORAGE_KEY,
-        });
-        this.client.port?.postMessage({
-            type: "GET_STORAGE",
-            key: ImproveCounter.LIFETIME_KEY,
-        });
 
         this.client.on("gmcp.char.state", (state) => {
             const s = state as { improve?: number; form?: number };
@@ -306,7 +301,7 @@ export default class ImproveCounter {
             this.pendingLevel = level;
             return;
         }
-        const objStored = getItemSync("object_num")?.object_num;
+        const objStored = characterStorage.get("object_num");
         const objNum =
             typeof objStored === "string"
                 ? parseInt(objStored, 10)
@@ -482,26 +477,18 @@ export default class ImproveCounter {
     }
 
     private persist = () => {
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: ImproveCounter.STORAGE_KEY,
-            value: {
-                entries: this.entries,
-                lastTime: this.lastTime,
-                lastKills: this.lastKills,
-                level: this.level,
-                lastObjNum: this.lastObjNum,
-                waitingForFirstCombat: this.waitingForFirstCombat,
-            },
+        characterStorage.set('improve_counter', {
+            entries: this.entries,
+            lastTime: this.lastTime,
+            lastKills: this.lastKills,
+            level: this.level,
+            lastObjNum: this.lastObjNum,
+            waitingForFirstCombat: this.waitingForFirstCombat,
         });
     };
 
     private persistLifetime = () => {
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: ImproveCounter.LIFETIME_KEY,
-            value: {entries: this.lifetime, enabled: this.lifetimeEnabled},
-        });
+        characterStorage.set('improve_counter_lifetime', {entries: this.lifetime, enabled: this.lifetimeEnabled});
     };
 
     addLifetime(count: number, id?: number) {
@@ -724,7 +711,7 @@ export default class ImproveCounter {
         lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
         lines.push(pad());
 
-        const name = titleCase(getCurrentCharacter() || "");
+        const name = titleCase(characterStorage.getCharacter() || "");
         const nameLine = new AnsiAwareBuffer("POSTAC: ");
         nameLine.appendBuffer(colorString(name, NAME_COLOR));
         lines.push(pad(nameLine));

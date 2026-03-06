@@ -61,7 +61,7 @@ function DesktopButtons() {
     const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
 
     useEffect(() => {
-        loadSettings().then(setSettings);
+        setSettings(loadSettings());
         setPluginMacros(getRegisteredButtonMacros());
 
         const handleMacrosChanged = () => {

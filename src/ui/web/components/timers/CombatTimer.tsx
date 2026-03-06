@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useClientEvent, useLocalStorage } from "../../hooks";
 import type { UiSettings } from "@web/uiSettings";
+import {globalStorage} from "@modules/core/storage";
 
 /**
  * CombatTimer component - displays combat timer
@@ -17,11 +18,13 @@ export const CombatTimer: React.FC = () => {
     setSeconds(newSeconds);
   });
 
-  useClientEvent<Partial<UiSettings>>("uiSettings", (newSettings) => {
-    if (newSettings && typeof newSettings.showCombatTimer === "boolean") {
-      setEnabled(newSettings.showCombatTimer);
-    }
-  });
+  useEffect(() => {
+    return globalStorage.onChange('uiSettings', (newSettings) => {
+      if (newSettings && typeof newSettings.showCombatTimer === "boolean") {
+        setEnabled(newSettings.showCombatTimer);
+      }
+    });
+  }, []);
 
   const isVisible = enabled && seconds != null && seconds > 0;
 

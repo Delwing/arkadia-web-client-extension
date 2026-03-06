@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
 import { TiDelete } from 'react-icons/ti';
-import storage from "@modules/core/storage";
+import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getClientInstance } from "@shared/runtime";
 import type { ClientEvents } from "@modules/core/eventBus";
@@ -20,10 +20,9 @@ function Shortcuts() {
     const [label, setLabel] = useState('');
 
     useEffect(() => {
-        storage.getItem('shortcuts').then(res => {
-            const arr = Array.isArray(res?.shortcuts) ? res.shortcuts : [];
-            setList(arr);
-        });
+        const saved = globalStorage.get('shortcuts') as any;
+        const arr = Array.isArray(saved) ? saved : [];
+        setList(arr);
     }, []);
 
     useEffect(() => {
@@ -36,7 +35,7 @@ function Shortcuts() {
 
     function saveList(newList: ShortcutEntry[]) {
         setList(newList);
-        storage.setItem('shortcuts', newList);
+        globalStorage.set('shortcuts', newList as any);
     }
 
     function add() {

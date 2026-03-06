@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import { mudletColorLine } from "@modules/core/Colors";
 import eventBus from "@modules/core/eventBus";
 
@@ -36,8 +36,7 @@ function normalize(state: StoredProfessionState): ProfessionState {
 }
 
 export function getState(): ProfessionState | null {
-    const stored = getItemSync(STORAGE_KEY);
-    const raw = stored?.[STORAGE_KEY] ?? null;
+    const raw = characterStorage.get(STORAGE_KEY) as unknown as StoredProfessionState | undefined ?? null;
     if (!raw) return null;
 
     const state = normalize(raw);
@@ -49,7 +48,7 @@ export function getState(): ProfessionState | null {
 }
 
 export function setState(state: ProfessionState): void {
-    setItemSync(STORAGE_KEY, state);
+    characterStorage.set(STORAGE_KEY, state as any);
 }
 
 export function getTimePoints(state: ProfessionState, time: number): number {

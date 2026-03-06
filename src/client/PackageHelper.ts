@@ -5,6 +5,8 @@ import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {containerAction} from "@client/scripts/bagManager";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 const tag = "packageHelper";
 const pickCommand = "wybierz paczke"
@@ -60,16 +62,19 @@ export default function initPackageHelper(client: Client) {
         list.forEach((item: { name: string | number; loc: number; }) => npc[item.name] = item.loc)
     })
 
-    client.on('settings', (event) => {
-        const detail = (event ?? {}) as { packageHelper?: boolean; packageInContainer?: boolean };
-        const setting = detail?.packageHelper
-        const shouldEnable = setting === undefined ? true : setting
+    const applySettings = (event: any) => {
+        const detail = (event ?? defaultSettings) as { packageHelper?: boolean; packageInContainer?: boolean };
+        const shouldEnable = !!detail.packageHelper;
         packageInContainer = detail?.packageInContainer ?? false;
         if (!enabled && shouldEnable) {
             init()
         } else if (enabled && !shouldEnable) {
             disable()
         }
+    }
+    applySettings(characterStorage.get('settings'))
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings)
     })
 
     function init() {
@@ -482,9 +487,8 @@ export default function initPackageHelper(client: Client) {
     }
 
     function disable() {
+        enabled = false;
         client.Triggers.removeByTag(tag)
         stopTimer()
     }
-
-    init()
 }

@@ -16,6 +16,7 @@ jest.mock('@client/main', () => ({
 
 import Client from '@client/Client';
 import { mudletColorLine } from '@modules/core/Colors';
+import { characterStorage } from '@modules/core/storage';
 import { Howl } from 'howler';
 
 jest.mock('@client/sounds', () => ({
@@ -72,17 +73,22 @@ jest.mock('@shared/map/MapHelper', () => {
 });
 
 beforeEach(() => {
+  localStorage.clear();
+  characterStorage.setCharacter('TestChar');
   document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
   (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
   (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn();
-  (global as any).portMock = { onMessage: { addListener: jest.fn() }, postMessage: jest.fn() };
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
+});
+
+afterEach(() => {
+  localStorage.clear();
 });
 
 test('requests notification permission on demand', () => {
   (global as any).Notification = { permission: 'default', requestPermission: jest.fn() };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   client.enableNotifications();
   expect((global as any).Notification.requestPermission).toHaveBeenCalledTimes(1);
   delete (global as any).Notification;
@@ -90,7 +96,7 @@ test('requests notification permission on demand', () => {
 
 test('does not request notification permission when already decided', () => {
   (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   client.enableNotifications();
   expect((global as any).Notification.requestPermission).not.toHaveBeenCalled();
   delete (global as any).Notification;
@@ -100,7 +106,7 @@ test('registers service worker if available', () => {
   (global as any).Notification = { permission: 'granted', requestPermission: jest.fn() };
   const original = (navigator as any).serviceWorker;
   (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   client.enableNotifications();
   expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('sw.js');
   const calledPath = (navigator as any).serviceWorker.register.mock.calls[0][0];
@@ -114,7 +120,7 @@ test('registers service worker using base path', () => {
   document.head.innerHTML = '<base href="/test/">';
   const original = (navigator as any).serviceWorker;
   (navigator as any).serviceWorker = { register: jest.fn().mockResolvedValue(undefined) };
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   client.enableNotifications();
   expect((navigator as any).serviceWorker.register).toHaveBeenCalledWith('sw.js');
   const calledPath = (navigator as any).serviceWorker.register.mock.calls[0][0];
@@ -124,24 +130,13 @@ test('registers service worker using base path', () => {
   delete (global as any).Notification;
 });
 
-test('port messages emit client events', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
-  const listener = (global as any).portMock.onMessage.addListener.mock.calls[0][0];
-  const handler = jest.fn();
-  client.on('npc', handler as any);
-  const detail = [{ name: 'Foo', loc: 1 }];
-  listener({ npc: detail });
-  expect(handler).toHaveBeenCalledWith(detail);
-  expect((globalThis as any).dispatchEvent).not.toHaveBeenCalled();
-});
-
 test('createEvent returns object with type and data', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   expect(client.createEvent('t', 123)).toEqual({ type: 't', data: 123 });
 });
 
 test('on allows removal', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   const handler = jest.fn();
   const remove = client.on('command', handler as any);
   client.emit('command', 'bar');
@@ -152,7 +147,7 @@ test('on allows removal', () => {
 });
 
 test('println uses print with newline', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   const spy = jest.spyOn(client, 'print').mockImplementation();
   client.println('hi');
   expect(spy).toHaveBeenNthCalledWith(1, '\n');
@@ -161,7 +156,7 @@ test('println uses print with newline', () => {
 });
 
 test('sendCommand dispatches event and splits commands', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('foo#bar');
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('foo#bar');
@@ -170,7 +165,7 @@ test('sendCommand dispatches event and splits commands', async () => {
 });
 
 test('sendCommand leaves casing unchanged by default', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   parseCommand.mockClear();
   await client.sendCommand('LOOK AROUND');
   expect(parseCommand).toHaveBeenCalledTimes(1);
@@ -179,7 +174,7 @@ test('sendCommand leaves casing unchanged by default', async () => {
 });
 
 test('sendCommand keeps casing for speech commands', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   const speechCommands = [
     "'SHOUT",
     'powiedz HELLO',
@@ -200,7 +195,7 @@ test('sendCommand keeps casing for speech commands', async () => {
 });
 
 test('sendCommand preserves casing when requested', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   parseCommand.mockClear();
   await client.sendCommand('UPPER CASE', true, { preserveCase: true });
   expect(parseCommand).toHaveBeenCalledTimes(1);
@@ -215,7 +210,7 @@ test('sendCommand preserves casing when requested', async () => {
 });
 
 test('sendCommand allows empty command', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('');
   expect(parseCommand).toHaveBeenCalledWith('');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', true, undefined);
@@ -223,7 +218,7 @@ test('sendCommand allows empty command', async () => {
 
 test('sendCommand splits commands returned by parseCommand', async () => {
   parseCommand.mockImplementationOnce(() => 'foo;bar');
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('e');
   expect(parseCommand).toHaveBeenCalledWith('e');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'foo', true, undefined);
@@ -232,7 +227,7 @@ test('sendCommand splits commands returned by parseCommand', async () => {
 
 test('sendCommand does not split # in direct user input', async () => {
   parseCommand.mockImplementationOnce((cmd: string) => cmd);
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('foo#bar', true, undefined, false, true);
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledTimes(1);
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('foo#bar', true, undefined);
@@ -240,7 +235,7 @@ test('sendCommand does not split # in direct user input', async () => {
 
 test('sendCommand splits # when user input is transformed by parseCommand', async () => {
   parseCommand.mockImplementationOnce(() => 'cmd1#cmd2');
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('s', true, undefined, false, true);
   expect(parseCommand).toHaveBeenCalledWith('s');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'cmd1', true, undefined);
@@ -249,7 +244,7 @@ test('sendCommand splits # when user input is transformed by parseCommand', asyn
 
 test('sendCommand prints echo commands locally', async () => {
   parseCommand.mockImplementationOnce((cmd: string) => cmd);
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   const printSpy = jest.spyOn(client, 'print').mockImplementation();
   await client.sendCommand('echo <red> text');
   expect(printSpy).toHaveBeenCalledWith(mudletColorLine('<red> text'));
@@ -257,7 +252,7 @@ test('sendCommand prints echo commands locally', async () => {
 });
 
 test('sound playback restarts when triggered twice', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   await client.prepareSounds();
   const sound = (Howl as jest.Mock).mock.results[0].value;
 
@@ -277,13 +272,13 @@ test('updateContentWidth measures characters per line', () => {
   Object.defineProperty(wrapper, 'clientWidth', { value: 100, configurable: true });
   const measure = document.getElementById('content-width-measure')!;
   (measure as any).getBoundingClientRect = jest.fn(() => ({ width: 10 }));
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   client.updateContentWidth();
   expect(client.contentWidth).toBe(10);
 });
 
 test('support sends commands to support leader', () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   jest.spyOn(client, 'sendCommand');
   jest.spyOn(client.TeamManager, 'getLeaderId').mockReturnValue(5);
   client.support();
@@ -292,7 +287,7 @@ test('support sends commands to support leader', () => {
 });
 
 test('sendCommand expands object shortcuts', async () => {
-  const client = new Client((global as any).clientAdapterMock as any, (global as any).portMock);
+  const client = new Client((global as any).clientAdapterMock as any);
   jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
     { num: 5, shortcut: '1' },
     { num: 7, shortcut: 'A' },

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
 import { FcGoogle } from "react-icons/fc";
-import storage from "@modules/core/storage";
+import { characterStorage, globalStorage } from "@modules/core/storage";
 import {
     type FirebaseAuthState,
     type SyncOptions,
@@ -384,26 +384,24 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
             }
         });
 
-        // Handler for local storage changes (from storage module)
+        // Handler for local storage changes
         // Filter out firebase internal keys to prevent sync loops between tabs
-        const handleLocalStorageChange = (changes: { [key: string]: { oldValue: any, newValue: any } }) => {
-            const changedKeys = Object.keys(changes);
-            const relevantKeys = changedKeys.filter(key => !IGNORED_STORAGE_KEYS.includes(key));
-            if (relevantKeys.length === 0) {
+        const handleStorageChange = (key: string) => {
+            if (IGNORED_STORAGE_KEYS.includes(key)) {
                 return;
             }
-
-            // Use debounce manager to handle hot vs cold sync
-            const result = syncDebounceManager.handleStorageChange(relevantKeys);
+            const result = syncDebounceManager.handleStorageChange([key]);
             if (result.shouldSync) {
                 setPendingAutoSync(true);
             }
         };
 
-        storage.onChanged?.addListener(handleLocalStorageChange);
+        const unsub1 = characterStorage.onAnyChange((key) => handleStorageChange(key));
+        const unsub2 = globalStorage.onAnyChange((key) => handleStorageChange(key));
 
         return () => {
-            storage.onChanged?.removeListener?.(handleLocalStorageChange);
+            unsub1();
+            unsub2();
             syncDebounceManager.destroy();
             setPendingAutoSync(false);
         };

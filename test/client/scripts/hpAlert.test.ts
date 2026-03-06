@@ -1,6 +1,8 @@
 import initHpAlert from '@client/scripts/hpAlert';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
+import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -19,10 +21,16 @@ describe('hp alert', () => {
   const color = createColorFormat('#ffa500');
 
   beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     initHpAlert((client as unknown) as any);
     jest.clearAllMocks();
-    client.sendEvent('settings', { lowHpAlert: 2 });
+    setTestSettings({ lowHpAlert: 2 });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   function send(hp: number) {
@@ -70,7 +78,7 @@ describe('hp alert', () => {
   });
 
   test('disabling alert prevents notifications', () => {
-    client.sendEvent('settings', { lowHpAlert: 0 });
+    setTestSettings({ lowHpAlert: 0 });
     send(3);
     send(1);
     expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
@@ -79,7 +87,7 @@ describe('hp alert', () => {
   });
 
   test('higher threshold expands alert range', () => {
-    client.sendEvent('settings', { lowHpAlert: 3 });
+    setTestSettings({ lowHpAlert: 3 });
     send(4);
     send(2);
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');

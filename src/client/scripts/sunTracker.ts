@@ -1,6 +1,8 @@
 import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {createColorFormat} from "@modules/core/Colors.ts";
+import {characterStorage} from "@modules/core/storage";
+import {defaultSettings} from "@modules/core/defaultSettings";
 
 type Domain = "Empire" | "Ishtar";
 type SunEventType = "sunrise" | "sunset";
@@ -236,8 +238,13 @@ export default function initSunTracker(client: Client) {
         client.print(bot);
     }
 
-    client.on("settings", (payload) => {
-        const settings = (payload ?? {}) as { sunTracker?: boolean };
+    const initialSettings = characterStorage.get('settings');
+    if (initialSettings) {
+        const settings = (initialSettings ?? defaultSettings) as { sunTracker?: boolean };
+        enabled = !!settings.sunTracker;
+    }
+    characterStorage.onChange('settings', (payload) => {
+        const settings = (payload ?? defaultSettings) as { sunTracker?: boolean };
         enabled = !!settings.sunTracker;
     });
 

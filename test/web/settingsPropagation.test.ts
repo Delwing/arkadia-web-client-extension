@@ -1,4 +1,4 @@
-import storage from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 import initShortExits from '@client/scripts/shortExits';
 import Triggers from '@client/Triggers';
 import { defaultSettings } from '@modules/core/defaultSettings';
@@ -20,9 +20,11 @@ class FakeClient {
 describe('settings propagation to scripts', () => {
   beforeEach(() => {
     localStorage.clear();
+    characterStorage.setCharacter('');
   });
 
-  test('shortenExits setting affects script', async () => {
+  test('shortenExits setting affects script', () => {
+    characterStorage.setCharacter('Test');
     const client = new FakeClient();
     initShortExits(client as any);
     const parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
@@ -30,14 +32,13 @@ describe('settings propagation to scripts', () => {
     const result1 = parse(line);
     expect(result1?.text).toBe(line);
 
-    storage.onChanged?.addListener(changes => {
-      if (changes.settings) {
-        client.dispatch('settings', changes.settings.newValue);
+    characterStorage.onAnyChange((key, newValue) => {
+      if (key === 'settings') {
+        client.dispatch('settings', newValue);
       }
     });
 
-    await storage.setItem('settings', { ...defaultSettings, shortenExits: true });
-    await new Promise(res => setTimeout(res, 0));
+    characterStorage.set('settings', { ...defaultSettings, shortenExits: true });
 
     const result2 = parse(line);
     expect(result2?.text).toBe('-----: N E');

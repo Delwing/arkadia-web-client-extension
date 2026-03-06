@@ -1,8 +1,7 @@
 import {useEffect, useState} from "react";
 import {useClientEvent} from "../../hooks";
 import eventBus from "@modules/core/eventBus";
-import type {UiSettingsEventPayload} from "@client/types/uiSettingsEvent";
-import {getItemSync} from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 
 interface DisplayMultibind {
   index: number;
@@ -11,8 +10,7 @@ interface DisplayMultibind {
 }
 
 function getInitialKeepVisible(): boolean {
-  const data = getItemSync("uiSettings");
-  return data?.uiSettings?.keepMultibindsVisible === true;
+  return globalStorage.get("uiSettings")?.keepMultibindsVisible === true;
 }
 
 /**
@@ -36,11 +34,13 @@ export const MultiBinds: React.FC = () => {
   });
 
   // Listen to uiSettings for keepMultibindsVisible setting
-  useClientEvent<UiSettingsEventPayload>("uiSettings", (payload) => {
-    if (typeof payload?.keepMultibindsVisible === "boolean") {
-      setKeepVisible(payload.keepMultibindsVisible);
-    }
-  });
+  useEffect(() => {
+    return globalStorage.onChange('uiSettings', (settings) => {
+      if (typeof settings?.keepMultibindsVisible === "boolean") {
+        setKeepVisible(settings.keepMultibindsVisible);
+      }
+    });
+  }, []);
 
   // Manage the "active" class on the container element
   useEffect(() => {

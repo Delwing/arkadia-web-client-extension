@@ -2,7 +2,7 @@ import "../style.css";
 import {useEffect, useState} from "react";
 import {Form, Button} from "react-bootstrap";
 import {FiHelpCircle} from "react-icons/fi";
-import storage, {getCurrentCharacter} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {defaultSettings} from "./defaultSettings";
 import type {Settings as BaseSettings} from "./defaultSettings";
 import {CollectOverridesModal} from "./CollectOverridesModal";
@@ -89,16 +89,11 @@ const LETTER_LINE_WIDTH_MAX = 120;
 function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
     const [settings, setSettings] = useState<FormSettings>({...defaultSettings});
 
-    const [locked, setLocked] = useState(!getCurrentCharacter());
+    const [locked, setLocked] = useState(!characterStorage.getCharacter());
 
     useEffect(() => {
-        const update = () => setLocked(!getCurrentCharacter());
-        storage.onChanged?.addListener(update);
-        window.addEventListener("storage", update);
-        return () => {
-            storage.onChanged?.removeListener?.(update);
-            window.removeEventListener("storage", update);
-        };
+        const update = () => setLocked(!characterStorage.getCharacter());
+        return characterStorage.onCharacterChange(update);
     }, []);
 
     const [extraInput, setExtraInput] = useState<string>('')
@@ -124,26 +119,21 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
 
     useEffect(() => {
         const load = () => {
-            storage.getItem("settings").then(res => {
-                const merged = normalizeSettingsValue(res?.settings);
-                if (typeof merged.lowHpAlert !== 'number') {
-                    merged.lowHpAlert = merged.lowHpAlert ? 2 : 0;
-                }
-                setSettings(merged);
-            });
+            const saved = characterStorage.get("settings");
+            const merged = normalizeSettingsValue(saved);
+            if (typeof merged.lowHpAlert !== 'number') {
+                merged.lowHpAlert = merged.lowHpAlert ? 2 : 0;
+            }
+            setSettings(merged);
         };
 
         load();
 
-        const listener = (changes: { [key: string]: { oldValue: any; newValue: any } }) => {
-            if (changes.settings) {
-                load();
-            }
-        };
-
-        storage.onChanged?.addListener(listener);
+        const unsub = characterStorage.onChange('settings', () => {
+            load();
+        });
         return () => {
-            storage.onChanged?.removeListener?.(listener);
+            unsub();
         };
     }, []);
 

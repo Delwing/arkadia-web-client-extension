@@ -215,6 +215,257 @@ test.describe('Session persistence across page reload', () => {
         });
     });
 
+    test.describe('Kill counter character switch', () => {
+        test('session kills are cleared when switching to a different character', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            // Login as CharA and kill some mobs
+            await pushGmcp(page, 'char.info', { name: 'KillCharA', object_num: 50001 });
+            await page.waitForTimeout(200);
+
+            await simulateKill(page, 'trolla');
+            await simulateKill(page, 'trolla');
+            await simulateKill(page, 'smoka chaosu');
+
+            await submitCommand(page, '/zabici');
+            await waitForOutputContaining(page, 'trolla');
+
+            // Switch to CharB
+            await pushGmcp(page, 'char.info', { name: 'KillCharB', object_num: 50002 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'KillCharB'
+            );
+            await page.waitForTimeout(200);
+
+            // CharB session should be empty
+            await submitCommand(page, '/zabici');
+            await waitForOutputContaining(page, 'DRUZYNA LACZNIE:');
+            await page.waitForTimeout(100);
+
+            // Only get the very last table (CharB's)
+            const output = await getRecentOutput(page, 2);
+            expect(output, 'should show zero total for CharB').toMatch(/LACZNIE:.*0/);
+            expect(output, 'should show zero team total for CharB').toMatch(/DRUZYNA LACZNIE:.*0/);
+        });
+
+        test('session kills restore when switching back to original character', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            // Login as CharA and kill mobs
+            await pushGmcp(page, 'char.info', { name: 'KillRestoreA', object_num: 50003 });
+            await page.waitForTimeout(200);
+
+            await simulateKill(page, 'goblina');
+            await simulateKill(page, 'goblina');
+
+            // Persist before switch
+            await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
+            await page.waitForTimeout(100);
+
+            // Switch to CharB
+            await pushGmcp(page, 'char.info', { name: 'KillRestoreB', object_num: 50004 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'KillRestoreB'
+            );
+            await page.waitForTimeout(200);
+
+            // Switch back to CharA
+            await pushGmcp(page, 'char.info', { name: 'KillRestoreA', object_num: 50003 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'KillRestoreA'
+            );
+            await page.waitForTimeout(200);
+
+            // CharA session kills should be restored
+            await submitCommand(page, '/zabici');
+            await waitForOutputContaining(page, 'goblina');
+
+            const output = await getRecentOutput(page, 10);
+            expect(output, 'should restore CharA kills after switching back').toMatch(/goblina.*2|2.*goblina/);
+        });
+
+        test('lifetime kills are isolated between characters', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            // Login as CharA and kill mobs
+            await pushGmcp(page, 'char.info', { name: 'LifeKillA', object_num: 50005 });
+            await page.waitForTimeout(200);
+
+            await simulateKill(page, 'trolla');
+            await simulateKill(page, 'smoka chaosu');
+            await page.waitForTimeout(200);
+
+            // Verify CharA lifetime shows kills
+            await submitCommand(page, '/zabici2');
+            await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
+
+            let output = await getRecentOutput(page, 15);
+            expect(output, 'should show CharA lifetime kills').toContain('POSTAC: Lifekilla');
+            expect(output, 'should show trolla in CharA lifetime').toContain('trolla');
+            expect(output, 'should show smoka chaosu in CharA lifetime').toContain('smoka chaosu');
+
+            // Switch to CharB
+            await pushGmcp(page, 'char.info', { name: 'LifeKillB', object_num: 50006 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'LifeKillB'
+            );
+            await page.waitForTimeout(200);
+
+            // CharB lifetime should be empty — only check the last table
+            await submitCommand(page, '/zabici2');
+            await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
+            await page.waitForTimeout(100);
+
+            output = await getRecentOutput(page, 2);
+            expect(output, 'should show CharB name').toContain('POSTAC: Lifekillb');
+            expect(output, 'should show 0 lifetime kills for CharB').toMatch(/WSZYSTKICH DO TEJ PORY:.*0/);
+        });
+    });
+
+    test.describe('Postepy character switch', () => {
+        test('session postepy are cleared when switching to a different character', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            // Login as CharA, enter combat and improve
+            await pushGmcp(page, 'char.info', { name: 'ImprCharA', object_num: 60001 });
+            await page.waitForTimeout(200);
+
+            await pushGmcp(page, 'objects.data', { '60001': { attack_num: 99999 } });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 0 });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 1 });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 2 });
+            await page.waitForTimeout(200);
+
+            await submitCommand(page, '/postepy');
+            await waitForOutputContaining(page, 'Postepy');
+
+            let output = await getRecentOutput(page, 20);
+            expect(output, 'should show CharA improvements').toMatch(/Dzisiaj:\s*[1-9]/);
+
+            // Switch to CharB
+            await pushGmcp(page, 'char.info', { name: 'ImprCharB', object_num: 60002 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'ImprCharB'
+            );
+            await page.waitForTimeout(200);
+
+            // CharB should have no session improvements
+            await submitCommand(page, '/postepy');
+            await waitForOutputContaining(page, 'Postepy');
+
+            output = await getRecentOutput(page, 20);
+            expect(output, 'should show Dzisiaj: 0 for CharB').toMatch(/Dzisiaj:\s*0/);
+        });
+
+        test('lifetime postepy are isolated between characters', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            // Login as CharA, enter combat and improve
+            await pushGmcp(page, 'char.info', { name: 'LifeImprA', object_num: 60003 });
+            await page.waitForTimeout(200);
+
+            await pushGmcp(page, 'objects.data', { '60003': { attack_num: 99999 } });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 0 });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 1 });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 2 });
+            await page.waitForTimeout(200);
+
+            // Verify CharA lifetime
+            await submitCommand(page, '/postepy2');
+            await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
+
+            let output = await getRecentOutput(page, 20);
+            expect(output, 'should show CharA name in lifetime').toContain('POSTAC');
+            expect(output, 'should show CharA lifetime improvements').toContain('postepow');
+
+            // Switch to CharB
+            await pushGmcp(page, 'char.info', { name: 'LifeImprB', object_num: 60004 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'LifeImprB'
+            );
+            await page.waitForTimeout(200);
+
+            // CharB lifetime should be empty
+            await submitCommand(page, '/postepy2');
+            await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
+
+            output = await getRecentOutput(page, 20);
+            expect(output, 'should show 0 lifetime for CharB').toMatch(/WSZYSTKICH DO TEJ PORY:.*0\s*postepow/);
+        });
+
+        test('no false improvement is recorded during character switch', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            // Login as CharA with improve level 3
+            await pushGmcp(page, 'char.info', { name: 'NoFalseA', object_num: 60005 });
+            await page.waitForTimeout(200);
+
+            await pushGmcp(page, 'objects.data', { '60005': { attack_num: 99999 } });
+            await page.waitForTimeout(100);
+            await pushGmcp(page, 'char.state', { improve: 3 });
+            await page.waitForTimeout(200);
+
+            // Note lifetime count
+            await submitCommand(page, '/postepy2');
+            await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
+            const beforeOutput = await getRecentOutput(page, 20);
+
+            // Switch to CharB with improve level 0
+            await pushGmcp(page, 'char.info', { name: 'NoFalseB', object_num: 60006 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'NoFalseB'
+            );
+            await page.waitForTimeout(200);
+
+            await pushGmcp(page, 'char.state', { improve: 0 });
+            await page.waitForTimeout(200);
+
+            // Switch back to CharA
+            await pushGmcp(page, 'char.info', { name: 'NoFalseA', object_num: 60005 });
+            await page.waitForFunction(() =>
+                localStorage.getItem('currentCharacter') === 'NoFalseA'
+            );
+            await page.waitForTimeout(200);
+
+            // Re-send CharA's improve level — should NOT record new improvements
+            await pushGmcp(page, 'char.state', { improve: 3 });
+            await page.waitForTimeout(200);
+
+            await submitCommand(page, '/postepy2');
+            await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
+            const afterOutput = await getRecentOutput(page, 20);
+
+            // Extract the lifetime totals from both outputs
+            const beforeMatch = beforeOutput.match(/WSZYSTKICH DO TEJ PORY:\s*(\d+)/);
+            const afterMatch = afterOutput.match(/WSZYSTKICH DO TEJ PORY:\s*(\d+)/);
+
+            expect(afterMatch, 'should find lifetime total after switch-back').not.toBeNull();
+            expect(beforeMatch, 'should find lifetime total before switch').not.toBeNull();
+            expect(
+                Number(afterMatch![1]),
+                'lifetime total should not increase from character switch round-trip'
+            ).toBe(Number(beforeMatch![1]));
+        });
+    });
+
     test.describe('Chat history', () => {
         test('chat history persists when objNum stays the same on page reload', async ({page}) => {
             await page.goto('/');

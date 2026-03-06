@@ -7,10 +7,29 @@ jest.mock("@web-ui/components/panels/PackageStatus", () => ({
 
 import mountStatusIndicators from "../../src/web/statusIndicators";
 
-jest.mock("@modules/core/storage", () => ({
-    getItemSync: jest.fn(() => ({})),
-}));
-import { getItemSync } from "@modules/core/storage";
+jest.mock("@modules/core/storage", () => {
+    const store: Record<string, any> = {};
+    const listeners = new Map<string, Set<Function>>();
+    const typedStorage = {
+        get: jest.fn((key: string) => store[key]),
+        set: jest.fn((key: string, value: any) => { store[key] = value; }),
+        onChange: jest.fn((key: string, listener: Function) => {
+            if (!listeners.has(key)) listeners.set(key, new Set());
+            listeners.get(key)!.add(listener);
+            return () => listeners.get(key)!.delete(listener);
+        }),
+        fireListeners: jest.fn(),
+        handleStorageEvent: jest.fn(),
+        getCharacter: jest.fn(() => null),
+        setCharacter: jest.fn(),
+    };
+    return {
+        __esModule: true,
+        characterStorage: typedStorage,
+        globalStorage: typedStorage,
+    };
+});
+import { characterStorage } from "@modules/core/storage";
 
 describe("AttackMode indicator", () => {
     let cleanup: ReturnType<typeof mountStatusIndicators> | undefined;
@@ -19,7 +38,10 @@ describe("AttackMode indicator", () => {
     beforeEach(() => {
         eventBus.clear();
         document.body.innerHTML = '<div id="status-indicators"></div>';
-        (getItemSync as jest.Mock).mockReturnValue({ attack_mode: "A" });
+        (characterStorage.get as jest.Mock).mockImplementation((key: string) => {
+            if (key === 'attack_mode') return 'A';
+            return undefined;
+        });
         act(() => {
             cleanup = mountStatusIndicators();
         });

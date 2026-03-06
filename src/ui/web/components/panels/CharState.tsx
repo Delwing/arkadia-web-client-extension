@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import {useClientEvent, useLocalStorage} from "../../hooks";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "@web/colors";
 import {UiSettings} from "@web/uiSettings.ts";
+import {globalStorage} from "@modules/core/storage";
 
 export interface CharStateData {
   hp: number;
@@ -127,14 +128,16 @@ export const CharState: React.FC = () => {
     setOptions((prev) => ({ ...prev, ...newOptions }));
   });
 
-  useClientEvent<any>("uiSettings", (detail) => {
-    if (detail && typeof detail.emojiLabels === "boolean") {
-      setUseEmoji(detail.emojiLabels);
-    }
-    if (detail && typeof detail.footerMode === "number") {
-      setMode(detail.footerMode);
-    }
-  });
+  useEffect(() => {
+    return globalStorage.onChange('uiSettings', (detail) => {
+      if (detail && typeof detail.emojiLabels === "boolean") {
+        setUseEmoji(detail.emojiLabels);
+      }
+      if (detail && typeof detail.footerMode === "number") {
+        setMode(detail.footerMode);
+      }
+    });
+  }, []);
 
   // Control visibility of text/bars containers based on mode
   useEffect(() => {

@@ -1,6 +1,6 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
 import type { HerbBagState, HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
@@ -145,11 +145,11 @@ const moveLocally = (
 };
 
 const getInitialCounts = (): HerbCounts => {
-    const stored = getItemSync("herb_counts");
+    const stored = characterStorage.get("herb_counts");
     if (!stored) {
         return undefined;
     }
-    return normalizeHerbBagsState(stored.herb_counts);
+    return normalizeHerbBagsState(stored);
 };
 
 const parseCommandList = (value: unknown): string[] => {
@@ -229,7 +229,7 @@ const HerbManager = () => {
     const [error, setError] = useState<string | null>(null);
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
-    const initialSettings = getItemSync("settings")?.settings as Record<string, unknown> | undefined;
+    const initialSettings = characterStorage.get("settings") as unknown as Record<string, unknown> | undefined;
     const preUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPreUseCommand));
     const postUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPostUseCommand));
 
@@ -280,7 +280,9 @@ const HerbManager = () => {
             preUseCommandsRef.current = pre;
             postUseCommandsRef.current = post;
         };
-        const unsubscribe = eventBus.on("settings", handleSettings as any);
+        const initial = characterStorage.get('settings');
+        if (initial) handleSettings(initial);
+        const unsubscribe = characterStorage.onChange("settings", handleSettings as any);
         return () => {
             unsubscribe();
         };

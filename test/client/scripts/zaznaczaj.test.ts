@@ -8,9 +8,9 @@ import type { ClientAdapter } from '@client/Client';
 describe('zaznaczaj', () => {
     let client: Client;
     let mockAdapter: jest.Mocked<ClientAdapter>;
-    let mockPort: any;
 
     beforeEach(() => {
+        localStorage.clear();
         mockAdapter = {
             send: jest.fn(),
             output: jest.fn(),
@@ -20,12 +20,11 @@ describe('zaznaczaj', () => {
             isCommandEchoEnabled: jest.fn(() => true),
         };
 
-        mockPort = {
-            postMessage: jest.fn(),
-            onMessage: { addListener: jest.fn() },
-        };
+        client = new Client(mockAdapter);
+    });
 
-        client = new Client(mockAdapter, mockPort);
+    afterEach(() => {
+        localStorage.clear();
     });
 
     it('should register /zaznaczaj alias', () => {

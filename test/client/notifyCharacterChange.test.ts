@@ -1,16 +1,24 @@
-import storage, { setCurrentCharacter } from '@modules/core/storage';
+import { characterStorage } from '@modules/core/storage';
 
 describe('notifyCharacterChange', () => {
   beforeEach(() => {
     localStorage.clear();
+    characterStorage.setCharacter('');
   });
 
-  test('does not dispatch empty settings on first login', () => {
-    const events: any[] = [];
-    const listener = (c: any) => events.push(c);
-    storage.onChanged?.addListener(listener);
-    setCurrentCharacter('Hero');
-    storage.onChanged?.removeListener?.(listener);
-    expect(events.length).toBe(0);
+  test('does not fire onChange for settings on first login when no data exists', () => {
+    const listener = jest.fn();
+    characterStorage.onChange('settings', listener);
+    characterStorage.setCharacter('Hero');
+    // No stored settings for Hero, but settings has notifyOnNull.
+    // Since oldRaw === newRaw === null, it should NOT fire (oldRaw === newRaw check).
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  test('onCharacterChange fires even on first login', () => {
+    const listener = jest.fn();
+    characterStorage.onCharacterChange(listener);
+    characterStorage.setCharacter('Hero');
+    expect(listener).toHaveBeenCalledWith('Hero');
   });
 });

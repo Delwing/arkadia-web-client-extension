@@ -1,7 +1,14 @@
 import { FakeClient, initHerbClient } from './helpers/herbClient';
+import { characterStorage } from '@modules/core/storage';
 
 beforeEach(() => {
+  localStorage.clear();
+  characterStorage.setCharacter('TestChar');
   jest.clearAllMocks();
+});
+
+afterEach(() => {
+  localStorage.clear();
 });
 
 describe('/zi alias', () => {

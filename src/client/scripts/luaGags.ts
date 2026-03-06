@@ -10,7 +10,7 @@ import {gmcp} from "../gmcp";
 import mudletColors from "../colors.json"
 import {LuaType} from "lua-in-js/dist/types/utils";
 import Client from "../Client";
-import {getItemSync} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
     DEFAULT_LUA_GAGS_WALKA_CONFIG,
@@ -28,8 +28,7 @@ import {
 const ERROR_COLOR = createColorFormat('#ff0000');
 
 function getGagColors(): Record<string, string> {
-    const stored = getItemSync(LUA_GAGS_COLORS_STORAGE_KEY);
-    return normalizeLuaGagsColors(stored?.[LUA_GAGS_COLORS_STORAGE_KEY]);
+    return normalizeLuaGagsColors(characterStorage.get(LUA_GAGS_COLORS_STORAGE_KEY));
 }
 
 function getGagColorCodes(): Record<string, FormatStateSnapshot> {
@@ -117,25 +116,16 @@ function getDeleteMode(type: string): LuaGagDeleteMode {
 }
 
 export default function registerLuaGagTriggers(client: Client) {
-    applyDeleteLinesConfig(getItemSync(LUA_GAGS_STORAGE_KEY)?.[LUA_GAGS_STORAGE_KEY]);
-    applyWalkaConfig(getItemSync(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY)?.[LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]);
+    applyDeleteLinesConfig(characterStorage.get(LUA_GAGS_STORAGE_KEY));
+    applyWalkaConfig(characterStorage.get(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY));
 
-    client.on("storage", ({ key, value }) => {
-        if (key === LUA_GAGS_STORAGE_KEY) {
-            applyDeleteLinesConfig(value);
-        }
-        if (key === LUA_GAGS_WALKA_CONFIG_STORAGE_KEY) {
-            applyWalkaConfig(value);
-        }
+    characterStorage.onChange(LUA_GAGS_STORAGE_KEY, (newValue) => {
+        applyDeleteLinesConfig(newValue);
     });
 
-    client.on("port-connected", () => {
-        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
-        client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_WALKA_CONFIG_STORAGE_KEY });
+    characterStorage.onChange(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, (newValue) => {
+        applyWalkaConfig(newValue);
     });
-
-    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_STORAGE_KEY });
-    client.port?.postMessage({ type: "GET_STORAGE", key: LUA_GAGS_WALKA_CONFIG_STORAGE_KEY });
 
     function toPattern(p: PatternObj) {
         if (p.type === 1) {

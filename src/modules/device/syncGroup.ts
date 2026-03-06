@@ -257,8 +257,11 @@ export function applySyncedSettings(syncedSettings: SyncedDeviceSettings): void 
 
         // Invalidate layout cache and notify LayoutContext to reload
         if (typeof window !== 'undefined') {
-            import('@web/layout').then(({ invalidateLayoutCache }) => {
+            import('@web/layout').then(async ({ invalidateLayoutCache }) => {
                 invalidateLayoutCache();
+                // Also emit with import type so popups re-evaluate auto-open state
+                const eventBus = (await import('@modules/core/eventBus')).default;
+                eventBus.emit('layoutManagerStateChanged', { type: 'import' });
             }).catch(async () => {
                 const eventBus = (await import('@modules/core/eventBus')).default;
                 eventBus.emit('layoutManagerStateChanged', { type: 'import' });

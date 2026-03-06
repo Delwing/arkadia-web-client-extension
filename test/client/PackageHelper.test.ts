@@ -9,9 +9,9 @@ import type { ClientAdapter } from '@client/Client';
 describe('PackageHelper with real Client', () => {
   let client: Client;
   let mockAdapter: jest.Mocked<ClientAdapter>;
-  let mockPort: any;
 
   beforeEach(() => {
+    localStorage.clear();
     // Mock ClientAdapter - the external boundary
     mockAdapter = {
       send: jest.fn(),
@@ -22,16 +22,8 @@ describe('PackageHelper with real Client', () => {
       isCommandEchoEnabled: jest.fn(() => true),
     };
 
-    // Mock port
-    mockPort = {
-      postMessage: jest.fn(),
-      onMessage: {
-        addListener: jest.fn(),
-      },
-    };
-
     // Create real Client instance
-    client = new Client(mockAdapter, mockPort);
+    client = new Client(mockAdapter);
 
     // Mock Map methods needed by PackageHelper
     client.Map.currentRoom = { id: 123 } as any;
@@ -42,6 +34,10 @@ describe('PackageHelper with real Client', () => {
 
     // Initialize PackageHelper with real client
     initPackageHelper(client);
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   test('label trigger colors recipient name in yellow', () => {

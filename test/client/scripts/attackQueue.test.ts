@@ -1,9 +1,21 @@
 import initAttackQueue from '@client/scripts/attackQueue';
 
-jest.mock('@modules/core/storage', () => ({
-  getItemSync: jest.fn(() => ({})),
-  setItemSync: jest.fn(),
-}));
+jest.mock('@modules/core/storage', () => {
+  const typedStorage = {
+    get: jest.fn(() => undefined),
+    set: jest.fn(),
+    onChange: jest.fn(() => () => {}),
+    fireListeners: jest.fn(),
+    handleStorageEvent: jest.fn(),
+    getCharacter: jest.fn(() => null),
+    setCharacter: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    characterStorage: typedStorage,
+    globalStorage: typedStorage,
+  };
+});
 
 jest.mock('@modules/data/peopleLoader', () => ({
   subscribeMerged: jest.fn(),
@@ -31,6 +43,8 @@ describe('attack queue aliases', () => {
   let aliases: { pattern: RegExp; callback: (matches: RegExpMatchArray) => void }[];
 
   beforeEach(() => {
+    const { characterStorage } = require('@modules/core/storage');
+    (characterStorage.onChange as jest.Mock).mockClear();
     client = new FakeClient();
     aliases = [];
     initAttackQueue((client as unknown) as any, aliases);
@@ -165,9 +179,10 @@ describe('attack queue aliases', () => {
   });
 
   test('kills next enemy using attack command from settings', () => {
+    const { characterStorage } = require('@modules/core/storage');
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
-    const settingsListenerCall = client.on.mock.calls.find(
-      call => call[0] === 'settings',
+    const settingsListenerCall = (characterStorage.onChange as jest.Mock).mock.calls.find(
+      (call: any[]) => call[0] === 'settings',
     );
     const settingsListener = settingsListenerCall && settingsListenerCall[1];
     client.TeamManager.peekEnemyFromQueue.mockReturnValue('44');

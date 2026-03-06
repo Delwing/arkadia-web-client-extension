@@ -2,7 +2,7 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
-import {getCurrentCharacter} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
 import {
     recordKillToDB,
     getLifetimeTotals,
@@ -576,17 +576,30 @@ class KillCounter {
         this.client = client;
         killCounterInstance = this;
 
-        this.client.on("storage", ({ key, value }) => {
-            if (key === STORAGE_KEY) {
-                this.loadTotals(isNumberRecord(value) ? value : {});
-                this.migrateIfNeeded();
-            }
-            if (key === SESSION_STORAGE_KEY) {
-                this.loadSession(isSessionRecord(value) ? value : {});
-            }
-            if (key === TEAM_KILLS_STORAGE_KEY) {
-                this.loadTeamKills(isTeamMemberKills(value) ? value : {});
-            }
+        // Load initial data from storage
+        const initialTotals = characterStorage.get(STORAGE_KEY);
+        if (initialTotals) {
+            this.loadTotals(isNumberRecord(initialTotals) ? initialTotals : {});
+            this.migrateIfNeeded();
+        }
+        const initialSession = characterStorage.get(SESSION_STORAGE_KEY);
+        if (initialSession) {
+            this.loadSession(isSessionRecord(initialSession) ? initialSession : {});
+        }
+        const initialTeam = characterStorage.get(TEAM_KILLS_STORAGE_KEY);
+        if (initialTeam) {
+            this.loadTeamKills(isTeamMemberKills(initialTeam) ? initialTeam : {});
+        }
+
+        characterStorage.onChange(STORAGE_KEY, (newValue) => {
+            this.loadTotals(isNumberRecord(newValue) ? newValue : {});
+            this.migrateIfNeeded();
+        });
+        characterStorage.onChange(SESSION_STORAGE_KEY, (newValue) => {
+            this.loadSession(isSessionRecord(newValue) ? newValue : {});
+        });
+        characterStorage.onChange(TEAM_KILLS_STORAGE_KEY, (newValue) => {
+            this.loadTeamKills(isTeamMemberKills(newValue) ? newValue : {});
         });
 
         this.client.on("reset", () => this.resetSession());
@@ -630,21 +643,18 @@ class KillCounter {
             }
         );
 
-        this.client.port?.postMessage({type: "GET_STORAGE", key: STORAGE_KEY});
-        this.client.port?.postMessage({type: "GET_STORAGE", key: SESSION_STORAGE_KEY});
-        this.client.port?.postMessage({type: "GET_STORAGE", key: TEAM_KILLS_STORAGE_KEY});
     }
 
     private loadTotals(totals: Record<string, number> = {}): void {
+        const newKills: KillCounts = {};
         Object.entries(totals).forEach(([name, total]) => {
-            const entry = this.kills[name] ?? {
-                mySession: 0,
-                myTotal: 0,
-                teamSession: 0,
+            newKills[name] = {
+                mySession: this.kills[name]?.mySession ?? 0,
+                myTotal: total,
+                teamSession: this.kills[name]?.teamSession ?? 0,
             };
-            entry.myTotal = total as number;
-            this.kills[name] = entry;
         });
+        this.kills = newKills;
     }
 
     private persistTotals = () => {
@@ -652,16 +662,16 @@ class KillCounter {
         Object.entries(this.kills).forEach(([name, entry]) => {
             totals[name] = entry.myTotal;
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: STORAGE_KEY,
-            value: totals,
-        });
+        characterStorage.set(STORAGE_KEY, totals);
     };
 
     private loadSession(
         session: Record<string, Partial<{ mySession: number; teamSession: number }>> = {}
     ): void {
+        for (const entry of Object.values(this.kills)) {
+            entry.mySession = 0;
+            entry.teamSession = 0;
+        }
         Object.entries(session).forEach(([name, data]) => {
             const entry = this.kills[name] ?? { mySession: 0, myTotal: 0, teamSession: 0 };
             entry.mySession = typeof data.mySession === "number" ? data.mySession : 0;
@@ -678,11 +688,7 @@ class KillCounter {
                 sessions[name] = {mySession: entry.mySession, teamSession: entry.teamSession};
             }
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: SESSION_STORAGE_KEY,
-            value: sessions,
-        });
+        characterStorage.set(SESSION_STORAGE_KEY, sessions);
     };
 
     private loadTeamKills(teamKills: TeamMemberKills = {}): void {
@@ -697,11 +703,7 @@ class KillCounter {
                 filtered[player] = mobs;
             }
         });
-        this.client.port?.postMessage({
-            type: "SET_STORAGE",
-            key: TEAM_KILLS_STORAGE_KEY,
-            value: filtered,
-        });
+        characterStorage.set(TEAM_KILLS_STORAGE_KEY, filtered);
     };
 
     private ensureEntry(name: string): KillEntry {
@@ -776,7 +778,7 @@ class KillCounter {
     private async migrateIfNeeded() {
         if (this.migrationDone) return;
         this.migrationDone = true;
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         try {
             await migrateFromLocalStorage(character);
@@ -787,7 +789,7 @@ class KillCounter {
     }
 
     private async persistKillToIDB(mob: string): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         const date = getTodayDate();
         try {
@@ -799,7 +801,7 @@ class KillCounter {
     }
 
     private async refreshLifetimeCache(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         try {
             const totals = await getLifetimeTotals(character);
@@ -812,7 +814,7 @@ class KillCounter {
     }
 
     private async syncTotalsFromIDB(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) return;
         try {
             const totals = await getLifetimeTotals(character);
@@ -828,7 +830,7 @@ class KillCounter {
     }
 
     async showLifetimeByDate(dateStr: string): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) {
             this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
             return;
@@ -850,7 +852,7 @@ class KillCounter {
     }
 
     async showGlobalStats(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) {
             this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
             return;
@@ -908,7 +910,7 @@ class KillCounter {
     }
 
     async showLifetime(): Promise<void> {
-        const character = getCurrentCharacter();
+        const character = characterStorage.getCharacter();
         if (!character) {
             this.client.print(new AnsiAwareBuffer("Brak aktywnej postaci.\n"));
             return;

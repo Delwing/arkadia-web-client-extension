@@ -3,6 +3,7 @@ module.exports = {
   roots: [
     '<rootDir>/test/client',
     '<rootDir>/test/web',
+    '<rootDir>/test/modules',
   ],
   setupFiles: ['<rootDir>/test/jest.setup.js'],
   transform: {

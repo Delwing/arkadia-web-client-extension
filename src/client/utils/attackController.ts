@@ -1,24 +1,33 @@
 import Client from "../Client";
-import { getItemSync, setItemSync } from "@modules/core/storage";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 import { normalizeAttackCommand } from "./attackCommand";
 import { normalizeSupportCommand } from "./supportCommand";
 
 export type AttackMode = "A" | "AW" | "AWR";
 
 export function createAttackController(client: Client) {
-    const storedSettings = getItemSync("settings")?.settings;
+    const storedSettings = characterStorage.get("settings");
     let attackCommand = normalizeAttackCommand(storedSettings?.attackCommand);
     let supportCommand = normalizeSupportCommand(storedSettings?.supportCommand);
-    client.on("settings", (settings) => {
-        const detail = (settings ?? {}) as { attackCommand?: string; supportCommand?: string };
+    characterStorage.onChange("settings", (settings) => {
+        const detail = (settings ?? defaultSettings) as { attackCommand?: string; supportCommand?: string };
         attackCommand = normalizeAttackCommand(detail?.attackCommand);
         supportCommand = normalizeSupportCommand(detail?.supportCommand);
     });
 
-    let attackMode: AttackMode = getItemSync("attack_mode")?.attack_mode ?? "A";
+    let attackMode: AttackMode = characterStorage.get("attack_mode") ?? "A";
     client.on("attackMode", (mode) => {
-        attackMode = mode as AttackMode;
-        setItemSync("attack_mode", attackMode);
+        const m = mode as AttackMode;
+        if (m === attackMode) return;
+        attackMode = m;
+        characterStorage.set("attack_mode", attackMode);
+    });
+    characterStorage.onChange("attack_mode", (mode) => {
+        const m = mode ?? "A";
+        if (m === attackMode) return;
+        attackMode = m;
+        client.sendEvent("attackMode", attackMode);
     });
     client.sendEvent("attackMode", attackMode);
 

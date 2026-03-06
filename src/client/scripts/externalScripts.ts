@@ -1,6 +1,7 @@
 import Client from "../Client";
-import { PluginManager } from "../PluginManager";
-import { getAllStoredPluginIds } from "../utils/pluginStorage";
+import {PluginManager} from "../PluginManager";
+import {getAllStoredPluginIds} from "../utils/pluginStorage";
+import {globalStorage} from "@modules/core/storage";
 
 const STORAGE_KEY = "scripts";
 const STORED_SCRIPTS_KEY = "stored_scripts";
@@ -31,8 +32,7 @@ export default function initExternalScripts(client: Client) {
     // Load stored plugins from IndexedDB on initialization
     const loadStoredPluginsFromDB = async () => {
         try {
-            const ids = await getAllStoredPluginIds();
-            knownStored = ids;
+            knownStored = await getAllStoredPluginIds();
             apply(known, knownStored);
         } catch (error) {
             console.error("Failed to load stored plugins from IndexedDB:", error);
@@ -47,11 +47,7 @@ export default function initExternalScripts(client: Client) {
         handled = true;
         if (!known.includes(param)) {
             known.push(param);
-            client.port?.postMessage({
-                type: "SET_STORAGE",
-                key: STORAGE_KEY,
-                value: known,
-            });
+            globalStorage.set(STORAGE_KEY, known);
             apply(known, knownStored);
         }
         const params = new URLSearchParams(window.location.search);
@@ -61,19 +57,23 @@ export default function initExternalScripts(client: Client) {
         window.location.replace(rest ? `${base}?${rest}` : base);
     };
 
-    client.on("storage", ({ key, value }) => {
-        if (key === STORAGE_KEY) {
-            known = Array.isArray(value) ? value : [];
-            apply(known, knownStored);
-        } else if (key === STORED_SCRIPTS_KEY) {
-            // Reload from IndexedDB when stored_scripts changes
-            loadStoredPluginsFromDB();
-        }
+    // Load initial scripts from storage
+    const initialScripts = globalStorage.get(STORAGE_KEY);
+    if (initialScripts) {
+        known = Array.isArray(initialScripts) ? initialScripts : [];
+        apply(known, knownStored);
+    }
+
+    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+        known = Array.isArray(newValue) ? newValue : [];
+        apply(known, knownStored);
     });
 
-    client.on("port-connected", () => {
-        checkParam();
-    })
+    globalStorage.onChange(STORED_SCRIPTS_KEY, () => {
+        loadStoredPluginsFromDB();
+    });
+
+    checkParam();
 
     // Load stored plugins from IndexedDB on initialization
     loadStoredPluginsFromDB();

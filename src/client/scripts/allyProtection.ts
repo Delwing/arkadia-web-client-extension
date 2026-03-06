@@ -1,8 +1,10 @@
 import Client from "../Client";
-import type { ObjectData } from "../ObjectManager";
-import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
-import type { PersonListEntry } from '../types/people';
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import type {ObjectData} from "../ObjectManager";
+import {refresh as refreshPeopleStore, subscribeMerged} from '@modules/data/peopleLoader';
+import type {PersonListEntry} from '../types/people';
+import {colorString, createColorFormat} from "@modules/core/Colors";
+import {characterStorage} from "@modules/core/storage";
+import {defaultSettings} from "@modules/core/defaultSettings";
 
 const ALLY_WARNING_COLOR = createColorFormat("#ffff00");
 
@@ -57,8 +59,8 @@ export default function initAllyProtection(client: Client) {
         allyCache.clear();
     }
 
-    client.on('settings', (settings) => {
-        const detail = (settings ?? {}) as { allyGuilds?: unknown };
+    const applySettings = (settings: any) => {
+        const detail = (settings ?? defaultSettings) as { allyGuilds?: unknown };
         if (Array.isArray(detail.allyGuilds)) {
             allyGuilds = [...detail.allyGuilds];
         } else {
@@ -66,6 +68,10 @@ export default function initAllyProtection(client: Client) {
         }
         rebuildAllySet();
         ensurePeopleLoaded().catch(() => undefined);
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', (settings) => {
+        applySettings(settings);
     });
 
     // Listen to object data and cache ally status on first encounter
@@ -105,8 +111,7 @@ export default function initAllyProtection(client: Client) {
     // Check on-demand if not in cache (fallback for race conditions)
     function checkAndCacheObject(objectNum: number): boolean {
         if (allyCache.has(objectNum)) {
-            const cached = allyCache.get(objectNum)!.isAlly;
-            return cached;
+            return allyCache.get(objectNum)!.isAlly;
         }
 
         // Not cached - check now
