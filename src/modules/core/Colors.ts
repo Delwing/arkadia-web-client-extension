@@ -48,7 +48,7 @@ export function colorStringInLine(
     if (matchIndex === -1) {
         return buffer;
     }
-    return buffer.color([matchIndex, matchIndex + string.length], formatting);
+    return buffer.applyFormat([matchIndex, matchIndex + string.length], formatting);
 }
 
 export function colorTokenInLine(
@@ -64,7 +64,7 @@ export function colorTokenInLine(
         return buffer;
     }
     const endIndex = matchIndex + string.length;
-    return buffer.color([matchIndex, endIndex], colorCode);
+    return buffer.applyFormat([matchIndex, endIndex], colorCode);
 }
 
 export function createColorFormat(hex: string | number[]): FormatStateSnapshot {
