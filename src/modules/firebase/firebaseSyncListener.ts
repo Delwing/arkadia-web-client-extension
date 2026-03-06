@@ -15,6 +15,7 @@ import { updateCache, updateCategorySyncTime } from './firebaseUnifiedSync';
 import type { UnifiedSyncData } from './firebaseUnifiedSync';
 import type { FirebaseSyncMetadataPayload } from '@shared/events/clientEvents';
 import eventBus from '@modules/core/eventBus';
+import { isCategoryDeviceScoped, shouldApplyDeviceSettings, getSyncGroup, getDeviceInfo } from '@modules/device';
 
 class FirebaseSyncListener {
     private lastKnownChecksums: Partial<Record<SyncCategory, string>> = {};
@@ -243,8 +244,20 @@ class FirebaseSyncListener {
             mergeCloudProfessionData(decryptedData);
         }
 
+        // Determine if device-scoped keys should be skipped for this category
+        let skipDeviceScoped = false;
+        if (isCategoryDeviceScoped(category)) {
+            const currentDevice = getDeviceInfo();
+            const currentSyncGroup = getSyncGroup();
+            skipDeviceScoped = !shouldApplyDeviceSettings({
+                sourceDeviceId: payload.deviceId,
+                currentDeviceId: currentDevice.id,
+                currentSyncGroup,
+            });
+        }
+
         const { importCategory } = await import('@web/options/exportUtils');
-        const result = await importCategory(category, decryptedData);
+        const result = await importCategory(category, decryptedData, { skipDeviceScoped });
 
         if (result.success) {
             updateCategorySyncTime(category, Date.now());

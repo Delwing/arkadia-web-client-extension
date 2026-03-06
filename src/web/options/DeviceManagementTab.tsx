@@ -28,6 +28,7 @@ import {
     getRegisteredDevices,
     registerDevice,
     copySettingsFromCloudDevice,
+    deleteEmptySyncGroup,
 } from "@modules/firebase";
 import SyncConflictModal from "./SyncConflictModal";
 
@@ -55,6 +56,7 @@ function DeviceManagementTab() {
     const [cloudDevices, setCloudDevices] = useState<DeviceInfo[]>([]);
     const [isLoadingCloudDevices, setIsLoadingCloudDevices] = useState(false);
     const [copyingFromDeviceId, setCopyingFromDeviceId] = useState<string | null>(null);
+    const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
 
     // Load device info and imported devices
     const refreshData = useCallback(() => {
@@ -383,6 +385,30 @@ function DeviceManagementTab() {
         }
     };
 
+    // Handle delete empty sync group
+    const handleDeleteEmptyGroup = async (group: SyncGroup) => {
+        if (!window.confirm(`Czy na pewno chcesz usunac pusta grupe "${group.name}"?`)) return;
+
+        setDeletingGroupId(group.id);
+        setError(null);
+        setStatus(null);
+
+        try {
+            const result = await deleteEmptySyncGroup(group.id);
+            if (result.success) {
+                setCloudSyncGroups(prev => prev.filter(g => g.id !== group.id));
+                setStatus(`Grupa "${group.name}" zostala usunieta.`);
+            } else {
+                setError(result.error || "Nie udalo sie usunac grupy.");
+            }
+        } catch (err) {
+            console.error("Failed to delete empty sync group", err);
+            setError("Wystapil blad podczas usuwania grupy.");
+        } finally {
+            setDeletingGroupId(null);
+        }
+    };
+
     // Check for sync updates on mount
     useEffect(() => {
         const checkUpdates = async () => {
@@ -510,21 +536,40 @@ function DeviceManagementTab() {
                                         <p className="text-muted small mb-2">
                                             Dolacz do tej grupy, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
                                         </p>
-                                        <Button
-                                            variant="success"
-                                            size="sm"
-                                            onClick={() => handleJoinCloudSyncGroup(group)}
-                                            disabled={joiningGroupId === group.id}
-                                        >
-                                            {joiningGroupId === group.id ? (
-                                                <>
-                                                    <Spinner size="sm" className="me-1" />
-                                                    Dolaczanie...
-                                                </>
-                                            ) : (
-                                                "Dolacz do grupy"
+                                        <div className="d-flex gap-2">
+                                            <Button
+                                                variant="success"
+                                                size="sm"
+                                                onClick={() => handleJoinCloudSyncGroup(group)}
+                                                disabled={joiningGroupId === group.id}
+                                            >
+                                                {joiningGroupId === group.id ? (
+                                                    <>
+                                                        <Spinner size="sm" className="me-1" />
+                                                        Dolaczanie...
+                                                    </>
+                                                ) : (
+                                                    "Dolacz do grupy"
+                                                )}
+                                            </Button>
+                                            {group.devices.length === 0 && (
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteEmptyGroup(group)}
+                                                    disabled={deletingGroupId === group.id}
+                                                >
+                                                    {deletingGroupId === group.id ? (
+                                                        <>
+                                                            <Spinner size="sm" className="me-1" />
+                                                            Usuwanie...
+                                                        </>
+                                                    ) : (
+                                                        "Usun grupe"
+                                                    )}
+                                                </Button>
                                             )}
-                                        </Button>
+                                        </div>
                                     </div>
                                 </Card.Body>
                             </Card>

@@ -62,3 +62,12 @@ export {
     applySyncedSettings,
     createLocalSyncGroup,
 } from './syncGroup';
+
+// Device scope rules
+export {
+    DEVICE_SCOPED_STORAGE_KEYS,
+    DEVICE_SCOPED_CATEGORIES,
+    shouldApplyDeviceSettings,
+    isCategoryDeviceScoped,
+} from './deviceScopeRules';
+export type { DeviceScopeContext } from './deviceScopeRules';

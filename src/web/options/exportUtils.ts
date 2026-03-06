@@ -9,6 +9,7 @@ import {
     saveImportedDevice,
     getSyncGroup,
     triggerSettingsReload,
+    shouldApplyDeviceSettings,
     type DeviceInfo,
     type ImportedDeviceEntry,
     type SyncGroup,
@@ -512,10 +513,15 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
     // Import device info and settings
     if (payload.device?.sourceDevice) {
         const currentDevice = getDeviceInfo();
-        const isSameDevice = payload.device.sourceDevice.id === currentDevice.id;
+        const currentSyncGroup = getSyncGroup();
+        const applyDeviceSettings = shouldApplyDeviceSettings({
+            sourceDeviceId: payload.device.sourceDevice.id,
+            currentDeviceId: currentDevice.id,
+            currentSyncGroup,
+        });
 
-        if (isSameDevice) {
-            // Same device (restoring own backup) - apply settings immediately
+        if (applyDeviceSettings) {
+            // Same device or same sync group - apply settings immediately
             const { settings } = payload.device;
             if (settings.layoutManagerState) {
                 localStorage.setItem('layoutManagerState', settings.layoutManagerState);
@@ -531,7 +537,7 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
             }
             await triggerSettingsReload();
         } else {
-            // Different device - save to imported devices list (user can copy settings later)
+            // Different device, no sync group match - save to imported devices list
             const importedEntry: ImportedDeviceEntry = {
                 deviceInfo: payload.device.sourceDevice,
                 settings: payload.device.settings,
@@ -786,7 +792,8 @@ export async function exportCategory(
 // Import a single category from JSON string
 export async function importCategory(
     category: SyncCategory,
-    jsonData: string
+    jsonData: string,
+    options?: { skipDeviceScoped?: boolean }
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const data = JSON.parse(jsonData);
@@ -813,13 +820,14 @@ export async function importCategory(
         switch (category) {
             case 'uiSettings': {
                 // Device-scoped settings bundle: uiSettings + layout + buttons
-                if (data.uiSettings) trackingSetItem('uiSettings', data.uiSettings);
+                const skipDevice = options?.skipDeviceScoped ?? false;
+                if (data.uiSettings && !skipDevice) trackingSetItem('uiSettings', data.uiSettings);
                 if (data.loggingEnabled) trackingSetItem('loggingEnabled', data.loggingEnabled);
-                if (data.layoutManagerState) trackingSetItem('layoutManagerState', data.layoutManagerState);
-                if (data.desktopButtonSettings) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
+                if (data.layoutManagerState && !skipDevice) trackingSetItem('layoutManagerState', data.layoutManagerState);
+                if (data.desktopButtonSettings && !skipDevice) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
                 if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', data.mobileButtonSettings);
                 // Notify layout system of changes
-                if (data.layoutManagerState) {
+                if (data.layoutManagerState && !skipDevice) {
                     eventBus.emit('layoutManagerStateChanged', { type: 'import' });
                 }
                 break;
@@ -896,7 +904,7 @@ export async function importCategory(
                     }
                     trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
                 }
-                if (data.desktopButtonSettings) {
+                if (data.desktopButtonSettings && !(options?.skipDeviceScoped)) {
                     trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
                 }
                 break;

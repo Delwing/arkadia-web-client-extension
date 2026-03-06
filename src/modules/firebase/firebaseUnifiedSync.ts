@@ -1249,6 +1249,59 @@ export async function copySettingsFromCloudGroup(groupId: string): Promise<{
     }
 }
 
+/**
+ * Delete an empty sync group from cloud.
+ * Only deletes if the group has no devices.
+ * If the current device was in this group, clears local sync state.
+ */
+export async function deleteEmptySyncGroup(groupId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
+        }
+
+        const { data: syncData, error } = await getFullSyncData(true);
+        if (error || !syncData) {
+            return { success: false, error: error || FIREBASE_ERRORS.SYNC_FAILED };
+        }
+
+        const group = syncData.groups?.[groupId];
+        if (!group) {
+            return { success: false, error: 'Grupa nie istnieje.' };
+        }
+
+        if (group.devices.length > 0) {
+            return { success: false, error: 'Grupa nie jest pusta. Najpierw usun wszystkie urzadzenia.' };
+        }
+
+        const { db } = await ensureFirebaseInitialized();
+        const { doc, updateDoc, deleteField, serverTimestamp } = await import('firebase/firestore');
+        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+
+        console.log(`[Firebase WRITE] deleteEmptySyncGroup: ${groupId}`);
+        await updateDoc(docRef, {
+            [`groups.${groupId}`]: deleteField(),
+            [`deviceSettings.${groupId}`]: deleteField(),
+            updatedAt: serverTimestamp(),
+        });
+
+        invalidateCache();
+
+        // If current device was in this group, clear local sync state
+        const state = getSyncState();
+        if (state?.group.id === groupId) {
+            clearSyncState();
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to delete empty sync group', err);
+        return { success: false, error: FIREBASE_ERRORS.SYNC_FAILED };
+    }
+}
+
 // ============================================================================
 // Cache Management
 // ============================================================================
