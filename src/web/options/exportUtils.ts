@@ -502,7 +502,12 @@ export function validatePayload(input: unknown): input is ExportPayload {
     return !(!payload.indexedDB || typeof payload.indexedDB !== "object");
 }
 
-export async function applyImportedData(payload: ExportPayload): Promise<void> {
+export interface ImportResult {
+    /** True if device settings were saved to imported list instead of applied */
+    deviceSettingsSavedToImportedList: boolean;
+}
+
+export async function applyImportedData(payload: ExportPayload): Promise<ImportResult> {
     applyLocalStorageImport(payload.localStorage);
     await replaceMultibinds(payload.indexedDB.multibinds ?? []);
     await importRecordings(payload.indexedDB.recordings ?? []);
@@ -514,13 +519,13 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
     if (payload.device?.sourceDevice) {
         const currentDevice = getDeviceInfo();
         const currentSyncGroup = getSyncGroup();
-        const applyDeviceSettings = shouldApplyDeviceSettings({
+        const applyDevSettings = shouldApplyDeviceSettings({
             sourceDeviceId: payload.device.sourceDevice.id,
             currentDeviceId: currentDevice.id,
             currentSyncGroup,
         });
 
-        if (applyDeviceSettings) {
+        if (applyDevSettings) {
             // Same device or same sync group - apply settings immediately
             const { settings } = payload.device;
             if (settings.layoutManagerState) {
@@ -536,6 +541,7 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
                 localStorage.setItem('mobileButtonSettings', settings.mobileButtonSettings);
             }
             await triggerSettingsReload();
+            return { deviceSettingsSavedToImportedList: false };
         } else {
             // Different device, no sync group match - save to imported devices list
             const importedEntry: ImportedDeviceEntry = {
@@ -545,8 +551,11 @@ export async function applyImportedData(payload: ExportPayload): Promise<void> {
                 syncGroup: payload.device.syncGroup,
             };
             saveImportedDevice(importedEntry);
+            return { deviceSettingsSavedToImportedList: true };
         }
     }
+
+    return { deviceSettingsSavedToImportedList: false };
 }
 
 // ============================================================================
@@ -1079,14 +1088,15 @@ export async function exportCategories(
 
 // Import multiple categories
 export async function importCategories(
-    categoryData: Partial<Record<SyncCategory, string>>
+    categoryData: Partial<Record<SyncCategory, string>>,
+    options?: { skipDeviceScoped?: boolean }
 ): Promise<{ success: boolean; errors: Partial<Record<SyncCategory, string>> }> {
     const errors: Partial<Record<SyncCategory, string>> = {};
 
     await Promise.all(
         (Object.entries(categoryData) as [SyncCategory, string][]).map(async ([category, data]) => {
             if (!data) return;
-            const result = await importCategory(category, data);
+            const result = await importCategory(category, data, options);
             if (!result.success && result.error) {
                 errors[category] = result.error;
             }

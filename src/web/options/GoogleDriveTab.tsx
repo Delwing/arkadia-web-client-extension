@@ -461,9 +461,13 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
             if (!validatePayload(parsed)) {
                 throw new Error("invalid");
             }
-            await applyImportedData(parsed as ExportPayload);
+            const result = await applyImportedData(parsed as ExportPayload);
             onImportComplete?.();
-            setDriveStatus(`Zaimportowano plik "${fileSummary.name}" z Google Drive. Niektore ustawienia moga wymagac odswiezenia strony.`);
+            let msg = `Zaimportowano plik "${fileSummary.name}" z Google Drive. Niektore ustawienia moga wymagac odswiezenia strony.`;
+            if (result.deviceSettingsSavedToImportedList) {
+                msg += " Ustawienia interfejsu z innego urzadzenia zostaly zapisane - mozesz je zastosowac w zakladce Urzadzenia.";
+            }
+            setDriveStatus(msg);
         } catch (err) {
             console.error("Failed to import backup from Google Drive", err);
             setDriveError("Nie udalo sie pobrac danych z Google Drive.");

@@ -127,8 +127,12 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
             if (!validatePayload(parsed)) {
                 throw new Error("invalid");
             }
-            await applyImportedData(parsed as ExportPayload);
-            setStatus("Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.");
+            const result = await applyImportedData(parsed as ExportPayload);
+            let msg = "Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.";
+            if (result.deviceSettingsSavedToImportedList) {
+                msg += " Ustawienia interfejsu z innego urzadzenia zostaly zapisane - mozesz je zastosowac w zakladce Urzadzenia.";
+            }
+            setStatus(msg);
             refreshCharacters();
         } catch (err) {
             console.error("Failed to import settings", err);
