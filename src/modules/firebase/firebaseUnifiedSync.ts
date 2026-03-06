@@ -36,6 +36,7 @@ import {
 } from './firebaseTypes';
 import {ensureFirebaseInitialized, getFirebaseAuth} from './firebaseConfig';
 import {calculateChecksum, decrypt, encrypt, isEncryptedData} from './firebaseCrypto';
+import { isCategoryDeviceScoped, getSyncGroup } from '@modules/device';
 
 // Single document path
 const USERS_COLLECTION = 'users';
@@ -49,9 +50,13 @@ export const SYNC_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 // ============================================================================
 
 export interface UnifiedSyncData {
-    // Categories (triggers, aliases, variables, uiSettings)
+    // Shared categories (triggers, aliases, shortcuts, characterSettings, etc.)
     categories?: {
         [K in SyncCategory]?: CategoryPayload;
+    };
+    // Per-device categories (uiSettings, buttons — device-scoped)
+    deviceCategories?: {
+        [deviceId: string]: { [K in SyncCategory]?: CategoryPayload };
     };
     // Device registry
     devices?: { [deviceId: string]: DeviceInfo };
@@ -178,6 +183,7 @@ export async function uploadCategories(
         const snapshot = await getDoc(docRef);
         const existingData = snapshot.exists() ? snapshot.data() as UnifiedSyncData : null;
         const existingCategories = existingData?.categories || {};
+        const existingDeviceCategories = existingData?.deviceCategories || {};
 
         // Build category payloads - use dot notation for updateDoc
         const categoryUpdates: { [key: string]: CategoryPayload } = {};
@@ -190,8 +196,13 @@ export async function uploadCategories(
                 const checksum = await calculateChecksum(data);
                 checksums[category] = checksum;
 
+                // Device-scoped categories go to deviceCategories.{deviceId}.{cat}
+                const isDeviceScoped = isCategoryDeviceScoped(category);
+                const cloudPayload = isDeviceScoped
+                    ? existingDeviceCategories[deviceId]?.[category]
+                    : existingCategories[category];
+
                 // Skip upload if checksum matches cloud data (no changes)
-                const cloudPayload = existingCategories[category];
                 if (cloudPayload && cloudPayload.checksum === checksum) {
                     continue;
                 }
@@ -205,8 +216,7 @@ export async function uploadCategories(
                     finalData = data;
                 }
 
-                // Use dot notation key for updateDoc (will be interpreted as path)
-                categoryUpdates[`categories.${category}`] = {
+                const payload: CategoryPayload = {
                     version: 1,
                     syncedAt: new Date().toISOString(),
                     deviceId,
@@ -214,6 +224,13 @@ export async function uploadCategories(
                     encrypted: options.encrypted,
                     data: finalData,
                 };
+
+                // Use dot notation key for updateDoc (will be interpreted as path)
+                if (isDeviceScoped) {
+                    categoryUpdates[`deviceCategories.${deviceId}.${category}`] = payload;
+                } else {
+                    categoryUpdates[`categories.${category}`] = payload;
+                }
 
                 timestamps[category] = now;
             } catch (err) {
@@ -232,24 +249,33 @@ export async function uploadCategories(
 
         if (snapshot.exists()) {
             // Use updateDoc - it interprets dots as paths
-            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories:`, Object.keys(categoryUpdates).map(k => k.replace('categories.', '')));
+            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories:`, Object.keys(categoryUpdates));
             await updateDoc(docRef, {
                 ...categoryUpdates,
                 updatedAt: serverTimestamp(),
             });
         } else {
             // Document doesn't exist - create with proper nested structure
-            const nestedCategories: { [key: string]: CategoryPayload } = {};
-            for (const key of Object.keys(categoryUpdates)) {
-                // Convert 'categories.triggers' to nested { categories: { triggers: ... } }
-                const category = key.replace('categories.', '');
-                nestedCategories[category] = categoryUpdates[key];
+            const nestedShared: { [key: string]: CategoryPayload } = {};
+            const nestedDevice: { [devId: string]: { [cat: string]: CategoryPayload } } = {};
+            for (const [key, payload] of Object.entries(categoryUpdates)) {
+                if (key.startsWith('deviceCategories.')) {
+                    // deviceCategories.{deviceId}.{category}
+                    const parts = key.split('.');
+                    const devId = parts[1];
+                    const cat = parts[2];
+                    if (!nestedDevice[devId]) nestedDevice[devId] = {};
+                    nestedDevice[devId][cat] = payload;
+                } else {
+                    const cat = key.replace('categories.', '');
+                    nestedShared[cat] = payload;
+                }
             }
-            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories:`, Object.keys(nestedCategories));
-            await setDoc(docRef, {
-                categories: nestedCategories,
-                updatedAt: serverTimestamp(),
-            });
+            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories`);
+            const docData: Record<string, unknown> = { updatedAt: serverTimestamp() };
+            if (Object.keys(nestedShared).length > 0) docData.categories = nestedShared;
+            if (Object.keys(nestedDevice).length > 0) docData.deviceCategories = nestedDevice;
+            await setDoc(docRef, docData);
         }
 
         invalidateCache();
@@ -273,6 +299,48 @@ export interface DownloadedCategoryMeta {
     deviceId: string;
     syncedAt: string;
     encrypted: boolean;
+}
+
+/**
+ * Find the best per-device payload for a device-scoped category.
+ * Checks own device first, then sync group members. Picks the most recent.
+ * Falls back to legacy categories.{cat} if deviceCategories is empty.
+ */
+function findDeviceCategoryPayload(
+    syncData: UnifiedSyncData,
+    category: SyncCategory,
+): CategoryPayload | undefined {
+    const deviceId = getDeviceId();
+    const currentSyncGroup = getSyncGroup();
+    const deviceCats = syncData.deviceCategories || {};
+
+    // Gather relevant device IDs: self + sync group members
+    const relevantIds = new Set<string>([deviceId]);
+    if (currentSyncGroup) {
+        for (const id of currentSyncGroup.devices) {
+            relevantIds.add(id);
+        }
+    }
+
+    // Find the most recently synced payload from relevant devices
+    let best: CategoryPayload | undefined;
+    for (const devId of relevantIds) {
+        const payload = deviceCats[devId]?.[category];
+        if (!payload) continue;
+        if (!best || payload.syncedAt > best.syncedAt) {
+            best = payload;
+        }
+    }
+
+    // Fallback: check legacy categories.{cat} (migration)
+    if (!best) {
+        const legacyPayload = syncData.categories?.[category];
+        if (legacyPayload) {
+            best = legacyPayload;
+        }
+    }
+
+    return best;
 }
 
 /**
@@ -300,7 +368,10 @@ export async function downloadCategories(
         const cloudCategories = syncData.categories || {};
 
         for (const category of categories) {
-            const payload = cloudCategories[category];
+            // For device-scoped categories, find per-device payload
+            const payload = isCategoryDeviceScoped(category)
+                ? findDeviceCategoryPayload(syncData, category)
+                : cloudCategories[category];
             if (!payload) continue;
 
             try {
@@ -380,7 +451,10 @@ export async function checkCategoriesConflicts(
             const localData = categoryData[category];
             if (!localData) continue;
 
-            const cloudPayload = cloudCategories[category];
+            // For device-scoped categories, compare against own per-device data
+            const cloudPayload = isCategoryDeviceScoped(category)
+                ? (syncData.deviceCategories?.[deviceId]?.[category] ?? cloudCategories[category])
+                : cloudCategories[category];
             if (!cloudPayload) continue;
 
             try {
@@ -489,7 +563,10 @@ export async function getAllCategoriesMetadata(): Promise<{
 
     const cloudCategories = syncData.categories || {};
     for (const category of SYNC_CATEGORIES) {
-        const payload = cloudCategories[category];
+        // For device-scoped categories, find the most relevant per-device payload
+        const payload = isCategoryDeviceScoped(category)
+            ? findDeviceCategoryPayload(syncData, category)
+            : cloudCategories[category];
         if (payload) {
             categories[category] = {
                 exists: true,
@@ -518,10 +595,18 @@ export async function deleteCategory(category: SyncCategory): Promise<{ success:
         const { doc, updateDoc, deleteField } = await import('firebase/firestore');
 
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
-        console.log(`[Firebase WRITE] deleteCategory: ${category}`);
-        await updateDoc(docRef, {
+        const deviceId = getDeviceId();
+
+        // Delete from both shared and per-device paths
+        const updates: Record<string, unknown> = {
             [`categories.${category}`]: deleteField(),
-        });
+        };
+        if (isCategoryDeviceScoped(category)) {
+            updates[`deviceCategories.${deviceId}.${category}`] = deleteField();
+        }
+
+        console.log(`[Firebase WRITE] deleteCategory: ${category}`);
+        await updateDoc(docRef, updates);
 
         invalidateCache();
 
@@ -552,10 +637,12 @@ export async function deleteAllCategories(): Promise<{ success: boolean; errors:
         const { db } = await ensureFirebaseInitialized();
         const { doc, updateDoc, deleteField } = await import('firebase/firestore');
 
+        const deviceId = getDeviceId();
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
         console.log(`[Firebase WRITE] deleteAllCategories`);
         await updateDoc(docRef, {
             categories: deleteField(),
+            [`deviceCategories.${deviceId}`]: deleteField(),
         });
 
         invalidateCache();

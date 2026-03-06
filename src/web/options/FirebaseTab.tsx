@@ -41,12 +41,6 @@ import {
 } from "@modules/firebase";
 import eventBus from "@modules/core/eventBus";
 import {
-    getDeviceInfo,
-    getSyncGroup,
-    isCategoryDeviceScoped,
-    shouldApplyDeviceSettings,
-} from "@modules/device";
-import {
     collectCharacters,
     exportCategories,
     importCategories,
@@ -502,27 +496,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 return;
             }
 
-            // Check if device-scoped settings should be skipped
-            // (they come from a foreign device not in our sync group)
-            let skipDeviceScoped = false;
-            const currentDevice = getDeviceInfo();
-            const currentSyncGroup = getSyncGroup();
-            for (const cat of Object.keys(result.data) as SyncCategory[]) {
-                if (isCategoryDeviceScoped(cat)) {
-                    const payload = result.payloads[cat];
-                    if (payload && !shouldApplyDeviceSettings({
-                        sourceDeviceId: payload.deviceId,
-                        currentDeviceId: currentDevice.id,
-                        currentSyncGroup,
-                    })) {
-                        skipDeviceScoped = true;
-                        break;
-                    }
-                }
-            }
-
             // Import downloaded categories
-            const importResult = await importCategories(result.data, { skipDeviceScoped });
+            // (downloadCategories already returns per-device data for device-scoped categories)
+            const importResult = await importCategories(result.data);
             if (!importResult.success) {
                 const firstError = Object.values(importResult.errors)[0];
                 setSyncError(firstError ?? 'Import nie powiodl sie.');
@@ -539,11 +515,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             setCategorySyncTimes(prev => ({ ...prev, ...newTimes }));
 
             onImportComplete?.();
-            let msg = 'Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.';
-            if (skipDeviceScoped) {
-                msg += ' Ustawienia interfejsu z innego urzadzenia zostaly pominiete - mozesz je zastosowac w zakladce Urzadzenia.';
-            }
-            setSyncStatus(msg);
+            setSyncStatus('Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.');
         } catch (err) {
             console.error('Download failed', err);
             setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
