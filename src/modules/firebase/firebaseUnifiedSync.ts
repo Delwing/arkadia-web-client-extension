@@ -48,7 +48,7 @@ export const SYNC_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 // Unified Document Structure
 // ============================================================================
 
-interface UnifiedSyncData {
+export interface UnifiedSyncData {
     // Categories (triggers, aliases, variables, uiSettings)
     categories?: {
         [K in SyncCategory]?: CategoryPayload;
@@ -80,6 +80,11 @@ function isCacheValid(): boolean {
 function invalidateCache(): void {
     cachedSyncData = null;
     cacheTimestamp = 0;
+}
+
+export function updateCache(data: UnifiedSyncData): void {
+    cachedSyncData = data;
+    cacheTimestamp = Date.now();
 }
 
 // ============================================================================
@@ -148,15 +153,16 @@ export function updateLastSyncCheckTime(): void {
 export async function uploadCategories(
     categoryData: Partial<Record<SyncCategory, string>>,
     options: { encrypted: boolean; passphrase?: string }
-): Promise<{ success: boolean; errors: Partial<Record<SyncCategory, string>>; timestamps: CategorySyncTimes }> {
+): Promise<{ success: boolean; errors: Partial<Record<SyncCategory, string>>; timestamps: CategorySyncTimes; checksums: Partial<Record<SyncCategory, string>> }> {
     const errors: Partial<Record<SyncCategory, string>> = {};
     const timestamps: CategorySyncTimes = {};
+    const checksums: Partial<Record<SyncCategory, string>> = {};
 
     try {
         const auth = getFirebaseAuth();
         const userId = auth?.currentUser?.uid;
         if (!userId) {
-            return { success: false, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED }, timestamps };
+            return { success: false, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED }, timestamps, checksums };
         }
 
         const { db } = await ensureFirebaseInitialized();
@@ -182,6 +188,7 @@ export async function uploadCategories(
 
             try {
                 const checksum = await calculateChecksum(data);
+                checksums[category] = checksum;
 
                 // Skip upload if checksum matches cloud data (no changes)
                 const cloudPayload = existingCategories[category];
@@ -218,7 +225,7 @@ export async function uploadCategories(
         // Skip write if no categories have changed
         if (Object.keys(categoryUpdates).length === 0) {
             console.log(`[Firebase] uploadCategories: no changes to upload`);
-            return { success: true, errors, timestamps };
+            return { success: true, errors, timestamps, checksums };
         }
 
         const changedCount = Object.keys(categoryUpdates).length;
@@ -254,11 +261,11 @@ export async function uploadCategories(
 
     } catch (err) {
         console.error('Failed to upload categories', err);
-        return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps };
+        return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps, checksums };
     }
 
     const success = Object.keys(errors).length === 0;
-    return { success, errors, timestamps };
+    return { success, errors, timestamps, checksums };
 }
 
 export interface DownloadedCategoryMeta {

@@ -71,6 +71,27 @@ runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();
 
+// Initialize Firebase real-time sync listener (skip on localhost)
+if (!(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    import('@modules/firebase').then(({ loadFirebaseConfig, initializeFirebase, onAuthStateChanged, syncListener }) => {
+        const config = loadFirebaseConfig();
+        if (!config) return;
+        initializeFirebase(config).then(() => {
+            onAuthStateChanged((authState) => {
+                if (authState.isAuthenticated && authState.userId) {
+                    syncListener.start(authState.userId);
+                } else {
+                    syncListener.stop();
+                }
+            });
+        }).catch(err => {
+            console.warn('[Firebase] Failed to initialize at startup:', err);
+        });
+    }).catch(() => {
+        // Firebase module not available
+    });
+}
+
 let mobileRadial: MobileCommandRadial | null = null;
 
 const client = new Client(arkadiaClient);

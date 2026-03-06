@@ -33,15 +33,13 @@ import {
     uploadCategories,
     downloadCategories,
     checkCategoriesConflicts,
-    checkConflictsLocally,
     getAllCategoriesMetadata,
     updateCategorySyncTime,
     deleteAllCategories,
-    canPerformSyncCheck,
-    updateLastSyncCheckTime,
     syncDebounceManager,
-    calculateChecksum,
+    syncListener,
 } from "@modules/firebase";
+import eventBus from "@modules/core/eventBus";
 import {
     collectCharacters,
     exportCategories,
@@ -66,7 +64,7 @@ interface FirebaseTabProps {
     isVisible?: boolean;  // Whether the tab is currently visible (for lazy loading)
 }
 
-function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
+function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     // Config state
     const [isConfigured, setIsConfigured] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
@@ -108,7 +106,6 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
 
     // Auto-sync
     const isSyncingRef = useRef(false);
-    const initialSyncAttemptedRef = useRef(false);
 
     // Auto-dismiss status/error messages
     useEffect(() => {
@@ -177,174 +174,54 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
         return () => unsubscribe();
     }, [isConfigured]);
 
-    // Helper to check if running on localhost
-    const isLocalhost = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    // Subscribe to real-time sync listener events
+    useEffect(() => {
+        if (!authState.isAuthenticated) return;
 
-    // Perform initial sync check - downloads all data and auto-applies if cloud is fresher
-    const performInitialSyncCheck = useCallback(async () => {
-        if (!authState.isAuthenticated || isLocalhost) return;
-        if (!canPerformSyncCheck()) return;
-        if (isSyncingRef.current) return;
-
-        // For encryption, we need passphrase - skip auto-apply but still load metadata
-        const canAutoApply = !encryptionEnabled || (encryptionEnabled && passphrase);
-
-        isSyncingRef.current = true;
-        try {
-            // Get enabled categories
-            const enabledCategories = SYNC_CATEGORIES.filter(cat => syncOptions[cat]);
-            if (enabledCategories.length === 0) return;
-
-            // Download all categories in one read
-            const result = await downloadCategories(
-                enabledCategories,
-                encryptionEnabled ? passphrase : undefined
-            );
-
-            // Update last sync check time
-            updateLastSyncCheckTime();
-
-            // Build metadata from downloaded data
-            const metadata: Partial<Record<SyncCategory, {
-                exists: boolean;
-                syncedAt?: string;
-                deviceId?: string;
-                encrypted?: boolean;
-            }>> = {};
-
-            // If download had errors requiring passphrase, fall back to metadata-only
-            if (!result.success && Object.values(result.errors).some(e => e === 'Nieprawidlowe haslo szyfrowania.')) {
-                const metadataResult = await getAllCategoriesMetadata();
-                if (!metadataResult.error) {
-                    setCloudMetadata(metadataResult.categories);
-                }
-                return;
-            }
-
-            // If download had other errors, display them
-            if (!result.success && Object.keys(result.errors).length > 0) {
-                const firstError = Object.values(result.errors)[0];
-                if (firstError) {
-                    setSyncError(firstError);
-                }
-            }
-
-            // Process downloaded data
-            for (const category of enabledCategories) {
-                if (result.data[category]) {
-                    metadata[category] = { exists: true, encrypted: encryptionEnabled };
-                }
-            }
+        const unsubMeta = eventBus.on('firebase.sync.metadata', (metadata) => {
             setCloudMetadata(metadata);
+        });
 
-            // If auto-sync is enabled and we can auto-apply, check for fresher cloud data
-            if (autoSyncEnabled && canAutoApply && Object.keys(result.data).length > 0) {
-                const allCharacters = collectCharacters();
-                const localData = await exportCategories(enabledCategories, allCharacters);
+        const unsubApplied = eventBus.on('firebase.sync.applied', ({ categories }) => {
+            const now = Date.now();
+            categories.forEach(cat => updateCategorySyncTime(cat, now));
+            setCategorySyncTimes(prev => {
+                const updated = { ...prev };
+                categories.forEach(cat => { updated[cat] = now; });
+                return updated;
+            });
+            onImportComplete?.();
+            setSyncStatus(`Automatycznie zsynchronizowano: ${categories.length} kat.`);
+        });
 
-                // Check for conflicts locally using downloaded payload metadata (no extra Firebase read!)
-                const conflicts = await checkConflictsLocally(localData, result.payloads);
+        const unsubConflict = eventBus.on('firebase.sync.conflict', ({ conflicts: newConflicts }) => {
+            setConflicts(newConflicts);
+            setShowConflictModal(true);
+        });
 
-                if (conflicts.length > 0) {
-                    // Show conflict modal for conflicting categories
-                    setConflicts(conflicts);
-                    setShowConflictModal(true);
-                } else {
-                    // No conflicts from different devices - but we should ONLY auto-apply
-                    // cloud data if checksums match (meaning local and cloud are identical).
-                    // If local differs from cloud (same device, pending sync didn't fire),
-                    // we keep local data to avoid losing unsaved changes.
-                    const categoriesToImport: SyncCategory[] = [];
-                    const cloudData: Partial<Record<SyncCategory, string>> = {};
-
-                    for (const category of Object.keys(result.data) as SyncCategory[]) {
-                        const cloudCategoryData = result.data[category];
-                        const localCategoryData = localData[category];
-                        const cloudMeta = result.payloads[category];
-
-                        if (!cloudCategoryData || !cloudMeta) continue;
-
-                        // Calculate local checksum and compare with cloud
-                        const localChecksum = localCategoryData
-                            ? await calculateChecksum(localCategoryData)
-                            : null;
-
-                        if (localChecksum === cloudMeta.checksum) {
-                            // Checksums match - safe to import (no-op, data is same)
-                            categoriesToImport.push(category);
-                            cloudData[category] = cloudCategoryData;
-                        } else {
-                            // Local differs from cloud - keep local, don't overwrite
-                            // This handles the case where local changes weren't synced yet
-                            console.log(`[Auto-sync] Keeping local data for ${category} (checksum differs from cloud)`);
-                        }
-                    }
-
-                    if (categoriesToImport.length > 0) {
-                        const importResult = await importCategories(cloudData);
-                        if (importResult.success) {
-                            // Update local sync times
-                            const now = Date.now();
-                            categoriesToImport.forEach(cat => {
-                                updateCategorySyncTime(cat, now);
-                            });
-                            onImportComplete?.();
-                        } else {
-                            // Display import errors
-                            const firstError = Object.values(importResult.errors)[0];
-                            if (firstError) {
-                                setSyncError(firstError);
-                            }
-                        }
-                    }
-                }
+        const unsubPending = eventBus.on('firebase.sync.pendingPassphrase', ({ categories }) => {
+            if (categories.length > 0) {
+                setSyncError('Dane w chmurze sa zaszyfrowane. Podaj haslo szyfrowania, aby je zastosowac.');
             }
-        } catch (err) {
-            console.error('Initial sync check failed', err);
-            setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
-        } finally {
-            isSyncingRef.current = false;
-        }
-    }, [authState.isAuthenticated, autoSyncEnabled, encryptionEnabled, passphrase, syncOptions, onImportComplete, isLocalhost]);
+        });
 
-    // Initial sync on auth (only if auto-sync enabled)
-    useEffect(() => {
-        if (!authState.isAuthenticated) return;
-        if (isLocalhost) return;
-        if (initialSyncAttemptedRef.current) return;
+        const unsubError = eventBus.on('firebase.sync.error', ({ message }) => {
+            setSyncError(message);
+        });
 
-        // Only perform initial sync if auto-sync is enabled
-        if (!autoSyncEnabled) return;
-
-        initialSyncAttemptedRef.current = true;
-        performInitialSyncCheck();
-    }, [authState.isAuthenticated, autoSyncEnabled, performInitialSyncCheck, isLocalhost]);
-
-    // Load data when tab becomes visible (for non-auto-sync case)
-    useEffect(() => {
-        if (!authState.isAuthenticated) return;
-        if (isLocalhost) return;
-        if (!isVisible) return;
-        if (autoSyncEnabled) return; // Already handled by initial sync
-
-        // Skip if we already have metadata cached
-        if (Object.keys(cloudMetadata).length > 0) return;
-
-        // Only load if rate limit allows
-        if (!canPerformSyncCheck()) return;
-
-        // Load metadata only (not auto-apply) when tab opens without auto-sync
-        const loadMetadataOnly = async () => {
-            const result = await getAllCategoriesMetadata();
-            updateLastSyncCheckTime();
-            if (!result.error) {
-                setCloudMetadata(result.categories);
-            }
+        return () => {
+            unsubMeta();
+            unsubApplied();
+            unsubConflict();
+            unsubPending();
+            unsubError();
         };
+    }, [authState.isAuthenticated, onImportComplete]);
 
-        loadMetadataOnly();
-    }, [authState.isAuthenticated, isVisible, autoSyncEnabled, isLocalhost, cloudMetadata]);
+    // Sync passphrase to the listener service
+    useEffect(() => {
+        syncListener.setPassphrase(encryptionEnabled ? passphrase || null : null);
+    }, [encryptionEnabled, passphrase]);
 
     // Save sync options when they change
     useEffect(() => {
@@ -562,6 +439,7 @@ function FirebaseTab({ onImportComplete, isVisible = true }: FirebaseTabProps) {
             }
 
             setCategorySyncTimes(prev => ({ ...prev, ...uploadResult.timestamps }));
+            syncListener.notifyLocalUpload(uploadResult.checksums);
             if (!isAutoSync) {
                 setSyncStatus('Synchronizacja zakonczona sukcesem.');
             }

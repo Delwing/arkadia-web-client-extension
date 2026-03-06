@@ -10,6 +10,14 @@ import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
 import type {LootPopupPayload} from "@client/scripts/lootParser.ts";
+import type {SyncCategory, CategoryConflictInfo} from "@modules/firebase/firebaseTypes";
+
+export type FirebaseSyncMetadataPayload = Partial<Record<SyncCategory, {
+    exists: boolean;
+    syncedAt?: string;
+    deviceId?: string;
+    encrypted?: boolean;
+}>>;
 
 export type SendCommandEvent = {
     command: string;
@@ -305,6 +313,13 @@ export interface KnownEvents {
     "profession.updated": void;
     "sunTracker.popup.open": void;
     "sunTracker.updated": void;
+    // Firebase real-time sync listener events
+    "firebase.sync.metadata": FirebaseSyncMetadataPayload;
+    "firebase.sync.applied": { categories: SyncCategory[] };
+    "firebase.sync.conflict": { conflicts: CategoryConflictInfo[] };
+    "firebase.sync.pendingPassphrase": { categories: SyncCategory[] };
+    "firebase.sync.error": { message: string };
+    "firebase.listener.status": { active: boolean };
 }
 
 export interface WalkerState {
