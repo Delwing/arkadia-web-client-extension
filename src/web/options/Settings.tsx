@@ -170,8 +170,14 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                     onChange={e => onChangeSetting(s => s.inlineCompassRose = Number(e.target.value))}
                                 >
                                     <option value={0}>Wyl.</option>
-                                    <option value={1}>Inline</option>
-                                    <option value={2}>Ramka</option>
+                                    <optgroup label="Inline">
+                                        <option value={1}>Domyslna</option>
+                                        <option value={3}>ASCII</option>
+                                    </optgroup>
+                                    <optgroup label="Ramka">
+                                        <option value={2}>Domyslna</option>
+                                        <option value={4}>ASCII</option>
+                                    </optgroup>
                                 </Form.Select>
                             </Form.Group>
                             <Form.Check
