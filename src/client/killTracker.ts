@@ -11,6 +11,10 @@ const bodyLessTypes = [
     'szkielet',
     'kosciotrup',
     'zywiolak',
+    'zywiolak ziemi',
+    'zywiolak ognia',
+    'zywiolak wody',
+    'zywiolak powietrza',
     'szkielet trolla',
     'szkielet smoka',
     'zmora'
