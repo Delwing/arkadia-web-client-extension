@@ -9167,6 +9167,21 @@ body.mobile-command-radial-active {
   /* empty cell placeholder between u and d column */
 }
 
+.compass-rose-ascii {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: #696969;
+}
+
+.compass-rose-ascii .cr-clickable {
+  color: #00ff7f;
+}
+
+.compass-rose-ascii .cr-ascii-dim {
+  color: #696969;
+}
+
 /* Deposits Popup */
 .deposits-popup-body {
   display: flex;
