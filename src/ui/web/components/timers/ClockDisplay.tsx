@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useClientEvent } from "../../hooks";
 import eventBus from "@modules/core/eventBus";
 
@@ -29,15 +29,18 @@ const SEASON_COLORS = [
  */
 export const ClockDisplay: React.FC = () => {
     const [clockData, setClockData] = useState<ClockData | null>(null);
-    const [activeDomain, setActiveDomain] = useState<"Empire" | "Ishtar" | null>(null);
 
     // Use ref to avoid closure issues in event handlers
     const activeDomainRef = useRef<"Empire" | "Ishtar" | null>(null);
 
     // Listen for active domain changes
     useClientEvent<{ domain: "Empire" | "Ishtar" }>("clock.domain.active", (data) => {
+        const prev = activeDomainRef.current;
         activeDomainRef.current = data.domain;
-        setActiveDomain(data.domain);
+        // Clear clock data when switching between domains to avoid stale display
+        if (prev && prev !== data.domain) {
+            setClockData(null);
+        }
     });
 
     // Listen for clock updates from all domains
@@ -48,19 +51,8 @@ export const ClockDisplay: React.FC = () => {
         }
     });
 
-    // When active domain changes, clear the display briefly
-    useEffect(() => {
-        if (!activeDomain) {
-            setClockData(null);
-            return;
-        }
-        setClockData(null);
-    }, [activeDomain]);
-
     const handleClick = useCallback(() => {
-        if (clockData) {
-            eventBus.emit("clock.popup.open", { domain: clockData.domain });
-        }
+        eventBus.emit("clock.popup.open", { domain: clockData?.domain ?? activeDomainRef.current ?? undefined });
     }, [clockData]);
 
     // Manage container attributes that React cannot control (cursor, title, onclick)

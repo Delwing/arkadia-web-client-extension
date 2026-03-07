@@ -763,6 +763,12 @@ export class ClockManager {
     }
 
     public setTime(domain: Domain, hour: number, minutes?: number, dayOfYear?: number): void {
+        // Re-emit current active domain so UI components receive it
+        // (they may have missed the initial event due to mount timing)
+        const currentDomain = this.display.getActiveDomain();
+        if (currentDomain) {
+            this.display.setActiveDomain(currentDomain);
+        }
         if (domain === "Empire") {
             this.empireClock.setTime(hour, minutes, dayOfYear);
         } else {
