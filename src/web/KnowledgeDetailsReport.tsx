@@ -125,6 +125,7 @@ const KnowledgeDetailsReport: React.FC = () => {
   const [showHints, setShowHints] = usePopupSetting(POPUP_ID, 'showHints', false);
   const [activeTab, setActiveTab] = usePopupSetting<'categories' | 'areas'>(POPUP_ID, 'activeTab', 'categories');
   const [selectedArea, setSelectedArea] = usePopupSetting(POPUP_ID, 'selectedArea', '');
+  const [filter, setFilter] = usePopupSetting(POPUP_ID, 'filter', '');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleReport = useCallback((detail: KnowledgeDetailsReportPayload | null | undefined) => {
@@ -326,9 +327,17 @@ const KnowledgeDetailsReport: React.FC = () => {
                 return null;
               }
 
-              const filteredEntries = hideCompleted
-                ? summary.entries.filter((entry) => entry.status !== 'known')
-                : summary.entries;
+              const filterLower = filter.toLowerCase();
+              const filteredEntries = summary.entries.filter((entry) => {
+                if (hideCompleted && entry.status === 'known') return false;
+                if (!filterLower) return true;
+                if (entry.name.toLowerCase().includes(filterLower)) return true;
+                if (showHints) {
+                  if (entry.lokalizacja && entry.lokalizacja.toLowerCase().includes(filterLower)) return true;
+                  if (entry.note && entry.note.toLowerCase().includes(filterLower)) return true;
+                }
+                return false;
+              });
 
               const hasEntries = filteredEntries.length > 0;
               const hasUnknown = summary.unknown.length > 0;
@@ -394,7 +403,7 @@ const KnowledgeDetailsReport: React.FC = () => {
         </section>
       );
     });
-  }, [data, hideCompleted, showHints, handleLeadToEntry, renderEntry]);
+  }, [data, hideCompleted, showHints, filter, handleLeadToEntry, renderEntry]);
 
   const areaSections = useMemo<AreaSection[]>(() => {
     if (!data) {
@@ -404,6 +413,7 @@ const KnowledgeDetailsReport: React.FC = () => {
     // Flat deduplicated entries per area, each tracking which categories it belongs to
     const areaEntryMap = new Map<string, Map<string, AreaSectionEntry>>();
     const areaSeenEntries = new Map<string, Map<string, boolean>>();
+    const filterLower = filter.toLowerCase();
 
     for (const category of data.categories) {
       for (const { key, showDetails } of TYPE_CONFIG) {
@@ -413,6 +423,12 @@ const KnowledgeDetailsReport: React.FC = () => {
 
         for (const entry of summary.entries) {
           if (hideCompleted && entry.status === 'known') continue;
+          if (filterLower) {
+            const matchesName = entry.name.toLowerCase().includes(filterLower);
+            const matchesLokalizacja = showHints && entry.lokalizacja && entry.lokalizacja.toLowerCase().includes(filterLower);
+            const matchesNote = showHints && entry.note && entry.note.toLowerCase().includes(filterLower);
+            if (!matchesName && !matchesLokalizacja && !matchesNote) continue;
+          }
 
           let areaName = 'Inne';
           if (entry.id != null) {
@@ -497,7 +513,7 @@ const KnowledgeDetailsReport: React.FC = () => {
     });
 
     return sections;
-  }, [data, hideCompleted]);
+  }, [data, hideCompleted, filter, showHints]);
 
   const filteredAreaSections = useMemo(() => {
     if (!selectedArea) return areaSections;
@@ -623,11 +639,33 @@ const KnowledgeDetailsReport: React.FC = () => {
     ? `Raport wiedzy ${overallProgress.known}/${overallProgress.total} (${overallProgress.percentage}%)`
     : 'Raport wiedzy';
 
+  const headerActions = (
+    <div className="knowledge-details-filter">
+      <input
+        type="text"
+        className="knowledge-details-filter-input"
+        placeholder="Filtruj..."
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
+      {filter && (
+        <button
+          type="button"
+          className="knowledge-details-filter-clear"
+          onClick={() => setFilter('')}
+        >
+          &times;
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <DockablePopupWrapper
       {...wrapperProps}
       popupType="knowledgeDetails"
       title={titleWithProgress}
+      headerActions={headerActions}
       minWidth={500}
       minHeight={350}
       initialWidth={960}

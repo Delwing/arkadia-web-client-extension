@@ -896,6 +896,14 @@
     "note": "Czarnobrody wychudzony krasnolud (Bardul GP) \"zapytaj bardula o niewole\" ten NPC spawnuje sie w roznych lokacjach na zamku."
   },
   {
+    "Rodzaj": "Wiedza o Chaosie i jego tworach",
+    "Wiedza": "Widziales spaczone wizje odbijane w posadzce w jednej z komnat zamku Drachenfels",
+    "id": 27145,
+    "Domena": "Imperium",
+    "lokalizacja": "Zamek Drachenfels",
+    "note": "Czarny pulsujacy krysztal \"ob krysztal\" krysztal zmienia lokalizacje w zamku i ma ich kilka.cuchnacy niski golem \"ob golema\" oraz \"przejrzyj sie w posadzce\""
+  },
+  {
     "Rodzaj": "Wiedza o goblinoidach",
     "Wiedza": "Ogladales goblinski oltarz",
     "id": 6988,
@@ -3333,7 +3341,7 @@
     "id": 336,
     "Domena": "Ishtar",
     "lokalizacja": "Wyzima - Miasta Ishtar",
-    "note": "Szmaragdowooka wychudzona kobieta handluje flakonikami i rozdzkami. \"zapytaj kobiete o esencje\" \"zapytaj kobiete o hamadriady\""
+    "note": "Szmaragdowooka wychudzona kobieta handluje flakonikami i rozdzkami. \"zapytaj kobiete o rozdzke\" \"zapytaj kobiete o hamadriade\""
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3429,7 +3437,7 @@
     "id": 27145,
     "Domena": "Imperium",
     "lokalizacja": "Zamek Drachenfels",
-    "note": "Czarny pulsujacy krysztal \"ob krysztal\" krysztal zmienia lokalizacje w zamku i ma ich kilka."
+    "note": "Czarny pulsujacy krysztal \"ob krysztal\" krysztal zmienia lokalizacje w zamku i ma ich kilka. \"ob golema\" \"przejrzyj sie w posadzce\""
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3722,7 +3730,7 @@
   {
     "Rodzaj": "Wiedza o nieumarlych",
     "Wiedza": "Przeczytales inskrypcje o utraconej milosci z krypty cmentarza pod Parravon",
-    "id": 12504,
+    "id": 12503,
     "Domena": "Imperium",
     "lokalizacja": "Parravon - Cmentarz",
     "note": "\"ob plyte;ob napis\""
@@ -4606,6 +4614,14 @@
     "Domena": "Imperium",
     "lokalizacja": "Event - Regiony Imperium i Bretonni",
     "note": "\"przedstaw sie\" \"zapytaj jorna o esencje zycia\" . Jenna w Wiezy Magow w Nuln wie czy wogole aktualnie gdzies chodzi i jesli tak powie ci po jakim regionie go szukac aktualnie. \"zapytaj jenne o jorna\""
+  },
+  {
+    "Rodzaj": "Wiedza o nieumarlych",
+    "Wiedza": "Widziales golema ze zwlok, straznika krysztalu w zamku Drachenfels",
+    "id": 27145,
+    "Domena": "Imperium",
+    "lokalizacja": "Zamek Drachenfels",
+    "note": "Czarny pulsujacy krysztal \"ob krysztal\" krysztal zmienia lokalizacje w zamku i ma ich kilka.cuchnacy niski golem \"ob golema\" oraz \"przejrzyj sie w posadzce\""
   },
   {
     "Rodzaj": "Wiedza o pajakach i pajakowatych",
@@ -5989,7 +6005,7 @@
     "id": 336,
     "Domena": "Ishtar",
     "lokalizacja": "Wyzima - Miasta Ishtar",
-    "note": "Szmaragdowooka wychudzona kobieta handluje flakonikami i rozdzkami. \"zapytaj kobiete o esencje\" \"zapytaj kobiete o hamadriady\""
+    "note": "Szmaragdowooka wychudzona kobieta handluje flakonikami i rozdzkami. \"zapytaj kobiete o rozdzke\" \"zapytaj kobiete o hamadriade\""
   },
   {
     "Rodzaj": "Wiedza o starszych rasach",
@@ -6954,10 +6970,10 @@
   {
     "Rodzaj": "Wiedza o szczuroludziach",
     "Wiedza": "Poznales skutecznosc skavenskiej magii i alchemii",
-    "id": null,
+    "id": 7389,
     "Domena": "Imperium",
-    "lokalizacja": "------------- Obecnie Wiedza Niedostepna do Zdobycia -------------------------",
-    "note": "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+    "lokalizacja": "Event - Szary Prorok - Kanaly w Nuln/Kopalnia pod Varn/Tunel pod Gorami Czarnymi",
+    "note": "Bystry zakapturzony skaven (Skitzskrot NPC).Posiada kilka wiedz.\"przedstaw sie\" \"ob skavena\". Gdy w trakcie walki rzuci buteleczke i zniknie w klebach dymu dostaniesz wpis wiedzy.Po walce \"wez pochwe z ciala\" \"ob pochwe\""
   },
   {
     "Rodzaj": "Wiedza o szczuroludziach",
@@ -6978,10 +6994,10 @@
   {
     "Rodzaj": "Wiedza o szczuroludziach",
     "Wiedza": "Spotkales skavena Skitzskrota",
-    "id": null,
+    "id": 7389,
     "Domena": "Imperium",
-    "lokalizacja": "------------- Obecnie Wiedza Niedostepna do Zdobycia -------------------------",
-    "note": "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+    "lokalizacja": "Event - Szary Prorok - Kanaly w Nuln/Kopalnia pod Varn/Tunel pod Gorami Czarnymi",
+    "note": "Bystry zakapturzony skaven (Skitzskrot NPC).Posiada kilka wiedz.\"przedstaw sie\" \"ob skavena\". Gdy w trakcie walki rzuci buteleczke i zniknie w klebach dymu dostaniesz wpis wiedzy.Po walce \"wez pochwe z ciala\" \"ob pochwe\""
   },
   {
     "Rodzaj": "Wiedza o szczuroludziach",
@@ -7074,10 +7090,10 @@
   {
     "Rodzaj": "Wiedza o szczuroludziach",
     "Wiedza": "Widziales pochwe z wizerunkiem Rogatego Szczura",
-    "id": null,
+    "id": 7389,
     "Domena": "Imperium",
-    "lokalizacja": "------------- Obecnie NPC Niedostepny  -------------------------",
-    "note": "Npce jest na ten czas wylaczony. cuchnaca skavenska pochwa. Ale mozna gdzies trafic w swiecie od kogos moze do obejrzenia."
+    "lokalizacja": "Event - Szary Prorok - Kanaly w Nuln/Kopalnia pod Varn/Tunel pod Gorami Czarnymi",
+    "note": "Bystry zakapturzony skaven (Skitzskrot NPC).Posiada kilka wiedz.\"przedstaw sie\" \"ob skavena\". Gdy w trakcie walki rzuci buteleczke i zniknie w klebach dymu dostaniesz wpis wiedzy.Po walce \"wez pochwe z ciala\" \"ob pochwe\""
   },
   {
     "Rodzaj": "Wiedza o szczuroludziach",

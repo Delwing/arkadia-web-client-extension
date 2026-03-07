@@ -326,6 +326,7 @@ const defaultContainerPatterns: RegExp[] = [
     /^Dostrzegasz na (?:nim|niej) jeszcze (?<content>.*)\.$/,
     /^Drewniany okuty (?<container>stelaz) zawiera (?<content>.*)\.$/,
     /^Dwukonny czerwony (?<container>powoz) porzucony na poboczu zawiera (?<content>.*)\.$/,
+    /".* (?<container>sekretarzyk) zawiera (?<content>.*)\.$/
 ];
 
 const weapons = ["darda", "dardy", "multon", "kord", "puginal", "gladius", "topor", "berdysz", "siekier", "czekan",
@@ -338,7 +339,7 @@ const weapons = ["darda", "dardy", "multon", "kord", "puginal", "gladius", "topo
     "saif", "koncerz", "kij", "espadon", "claymor", "cinquend", "szpad", "karabel", "jatagan", "baselard", "katar",
     "bastard", "kafar", "kindzal", "harpun", "kotwic", "kadzielnic", "lancet", "ostrz", "berl", "chepesz",
     "spis( |$|y|e|a)", "talwar", "dluto", "pejcz", "kanczug", "parazonium", "lancuch", "kropacz", "piernacz", "estok",
-    "bosak", "fink[aei]", "parazoni", "tulich", "navaj", "smocz.+ pazur"]
+    "bosak", "fink[aei]", "parazoni", "tulich", "navaj", "smocz.+ pazur", "chalkochidon"]
 const shields = ["tarcz", "puklerz", "pawez", "luskow. pancern. skorup. zolwia"]
 const torso = ["brygantyn", "napiersnik", "kirys", "kolczug", "karacen", "kaftan", "tunik", "zbroj", "bajdan[ay]",
     "anim[eay]", "kozus", "kurt", "kamizel", "becht", "pancerz", "zbro. plytow", "polpancerz", "nabrzusznik", "bajdan",
