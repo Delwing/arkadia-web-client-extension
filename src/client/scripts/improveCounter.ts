@@ -292,6 +292,7 @@ export default class ImproveCounter {
 
     reset() {
         this.entries = [];
+        this.level = 0;
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
         this.waitingForFirstCombat = true;
@@ -350,6 +351,10 @@ export default class ImproveCounter {
                     const state = STATES[l] ?? String(l);
                     this.recordInitial(state);
                 }
+                this.level = level;
+            } else if (level !== this.level) {
+                // Level decreased since stored value (e.g., improvements absorbed between sessions)
+                // Reset to current level so new improvements get recorded
                 this.level = level;
             }
             if (objNum !== undefined) {
