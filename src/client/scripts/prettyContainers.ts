@@ -326,7 +326,7 @@ const defaultContainerPatterns: RegExp[] = [
     /^Dostrzegasz na (?:nim|niej) jeszcze (?<content>.*)\.$/,
     /^Drewniany okuty (?<container>stelaz) zawiera (?<content>.*)\.$/,
     /^Dwukonny czerwony (?<container>powoz) porzucony na poboczu zawiera (?<content>.*)\.$/,
-    /".* (?<container>sekretarzyk) zawiera (?<content>.*)\.$/
+    /.* (?<container>sekretarzyk) zawiera (?<content>.*)\.$/
 ];
 
 const weapons = ["darda", "dardy", "multon", "kord", "puginal", "gladius", "topor", "berdysz", "siekier", "czekan",
@@ -355,7 +355,7 @@ const wear = ["futro", "kubraczek", "koszul", "sukni", "sukien", "plaszcz", "pel
     "wams", "oficer[ek]", "bigwant", "calun", "kapuz", "bluzk", "gorset", "kabat", "szal", "tiar", "tocz[ek]", "peruk",
     "kolpak", "opask", "wian[ek]"]
 const jewelery = ["pierscien(?!iowa)", "naszyjnik", "bransolet", "spink", "talizman", "amulet", "kolczyk", "lancuszki",
-    "koral", "wisior", "medalion", "lancusz", "brosz", "szarf", "koli[iae]", "sygnet", "obracze?k", "potrojn. sznur.+",
+    "koral.*?(?! tablicz)", "wisior", "medalion", "lancusz", "brosz", "szarf", "koli[iae]", "sygnet", "obracze?k", "potrojn. sznur.+",
     "cwiek( |$|i|ow)(?!ana)", "serduszk", "grzebyk"]
 const gems = ["obsydia(ny|now|n)", "labrado(ry|row|r)", "oliwi(ny|now|n)", "gaga(ty|tow|t)", "fluory(ty|tow|t)",
     "burszty(ny|now|n)", "ametys(ty|tow|t)", "kwar(ce|cow|c)", "rubi(ny|now|n)", "piry(ty|tow|t)", "serpenty(ny|now|n)",
