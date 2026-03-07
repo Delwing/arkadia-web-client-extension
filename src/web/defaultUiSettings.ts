@@ -75,6 +75,8 @@ export interface UiSettings {
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
     teamNumberingMode: 'letters' | 'numbers';
+    drinkableAsFunctionalBind: boolean;
+    locationBindAsFunctionalBind: boolean;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -119,4 +121,6 @@ export const defaultUiSettings: UiSettings = {
     commandEcho: true,
     outputBottomPadding: 0,
     teamNumberingMode: 'letters',
+    drinkableAsFunctionalBind: true,
+    locationBindAsFunctionalBind: true,
 };
