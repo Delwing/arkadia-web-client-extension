@@ -196,6 +196,7 @@ export default class ImproveCounter {
     private waitingForFirstCombat = false;
     private stateForm: number = 0;
     private optionsForm: number = 0;
+    private selfPersisting = false;
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
@@ -210,6 +211,7 @@ export default class ImproveCounter {
         this.lifetimeLoaded = true;
 
         characterStorage.onChange('improve_counter', (value) => {
+            if (this.selfPersisting) return;
             this.load(value ?? {});
             this.initialized = false;
             this.loaded = true;
@@ -220,6 +222,7 @@ export default class ImproveCounter {
             }
         });
         characterStorage.onChange('improve_counter_lifetime', (value) => {
+            if (this.selfPersisting) return;
             this.loadLifetime(value ?? {});
             this.lifetimeLoaded = true;
             if (this.pendingLifetime.length) {
@@ -477,6 +480,7 @@ export default class ImproveCounter {
     }
 
     private persist = () => {
+        this.selfPersisting = true;
         characterStorage.set('improve_counter', {
             entries: this.entries,
             lastTime: this.lastTime,
@@ -485,10 +489,13 @@ export default class ImproveCounter {
             lastObjNum: this.lastObjNum,
             waitingForFirstCombat: this.waitingForFirstCombat,
         });
+        this.selfPersisting = false;
     };
 
     private persistLifetime = () => {
+        this.selfPersisting = true;
         characterStorage.set('improve_counter_lifetime', {entries: this.lifetime, enabled: this.lifetimeEnabled});
+        this.selfPersisting = false;
     };
 
     addLifetime(count: number, id?: number) {
