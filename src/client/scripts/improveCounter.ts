@@ -347,9 +347,19 @@ export default class ImproveCounter {
                 }
                 this.level = level;
             } else if (level > this.level) {
-                for (let l = this.level + 1; l <= level; l++) {
-                    const state = STATES[l] ?? String(l);
-                    this.recordInitial(state);
+                if (!isFreshLogin) {
+                    // Same session (same obj_num), reconnected after page reload
+                    // Track as real improvements
+                    for (let l = this.level + 1; l <= level; l++) {
+                        const state = STATES[l] ?? String(l);
+                        this.record(state);
+                    }
+                } else {
+                    // Different session - silently catch up
+                    for (let l = this.level + 1; l <= level; l++) {
+                        const state = STATES[l] ?? String(l);
+                        this.recordInitial(state);
+                    }
                 }
                 this.level = level;
             } else if (isFreshLogin && level < this.level) {
