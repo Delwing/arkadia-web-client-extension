@@ -130,6 +130,7 @@ import initDobOp from './scripts/dobOp'
 import initLabyrinth from './scripts/labyrinth'
 import initLabyrinthMapper from './scripts/rindeLabyrinthMapper'
 import initRaonLabyrinthMapper from './scripts/raonLabyrinthMapper'
+import initDataRefresh from './scripts/dataRefresh'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -289,5 +290,6 @@ export function registerScripts(client: Client) {
     initLootParser(client)
     initOstatnio(client, aliases)
     initDobOp(client, aliases)
+    initDataRefresh(client, aliases)
 
 }
