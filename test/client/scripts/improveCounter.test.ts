@@ -189,6 +189,7 @@ describe('improve counter', () => {
     characterStorage.set('kill_counter', {} as any);
     characterStorage.set('kill_counter_session', {} as any);
     const als: { pattern: RegExp; callback: any }[] = [];
+    characterStorage.remove('object_num');
     characterStorage.set('improve_counter', { level: 2, lastObjNum: 1 });
     initImproveCounter((c as unknown) as any, kill, als);
     c.dispatch('gmcp.char.state', { improve: 4 });
