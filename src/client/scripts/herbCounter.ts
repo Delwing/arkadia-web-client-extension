@@ -139,6 +139,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const contentRegex1 = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W srodku dostrzegasz (?<content>.*)\.$/;
     const contentRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W srodku dostrzegasz (?<content>[a-zA-Z0-9, -]+)\.$/;
     const emptyRegex = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W jego srodku nic jednak nie ma\.$/;
+    const emptyRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W jego srodku nic jednak nie ma\.$/;
     // Detects start of woreczek evaluation (to filter out plecak etc.)
     const woreczekEvalStartRegex = /^Oceniasz starannie[^.]*woreczek/i;
     const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
@@ -469,14 +470,17 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return line
     });
 
-    client.Triggers.registerTrigger(emptyRegex, (triggerLine) => {
+    function handleEmptyBag(triggerLine: AnsiAwareBuffer) {
         if (!awaiting) return triggerLine;
         currentBag += 1;
         bagTotals[currentBag] = {herbs: {}};
         left -= 1;
         if (left <= 0) finish();
         return triggerLine;
-    });
+    }
+
+    client.Triggers.registerTrigger(emptyRegex, handleEmptyBag);
+    client.Triggers.registerTrigger(emptyRegex2, handleEmptyBag);
 
     // Track when a woreczek evaluation starts (only during /woreczki_buduj)
     client.Triggers.registerTrigger(woreczekEvalStartRegex, (line) => {
