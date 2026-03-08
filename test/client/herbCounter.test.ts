@@ -104,6 +104,18 @@ describe('herb counter', () => {
     });
   });
 
+  test('handles empty bag with Uwaznie ogladasz format', async () => {
+    await start();
+    parse('Doliczyles sie dwoch sztuk.');
+    parse('Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz zolty jasny kwiat.');
+    parse('Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.');
+    expect(client.print).toHaveBeenCalled();
+    const printed = client.print.mock.calls[0][0].text;
+    expect(printed).toMatch(/1/);
+    expect(printed).toMatch(/deliona/);
+    expect(printed).toMatch(/2\.\s+\(pusty\)/);
+  });
+
   test('prints summary from storage', async () => {
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
