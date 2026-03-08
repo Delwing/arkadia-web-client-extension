@@ -292,7 +292,7 @@ export default class ImproveCounter {
 
     reset() {
         this.entries = [];
-        this.level = 0;
+        this.level = -1;
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
         this.waitingForFirstCombat = true;
@@ -352,7 +352,7 @@ export default class ImproveCounter {
                     this.recordInitial(state);
                 }
                 this.level = level;
-            } else if (level !== this.level) {
+            } else if (isFreshLogin && level < this.level) {
                 // Level decreased since stored value (e.g., improvements absorbed between sessions)
                 // Reset to current level so new improvements get recorded
                 this.level = level;
