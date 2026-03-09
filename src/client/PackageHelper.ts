@@ -445,7 +445,7 @@ export default function initPackageHelper(client: Client) {
                             containerAction(client, "other", "take", "pocztowa paczke");
                         }
                         client.sendCommand('oddaj paczke');
-                    }, false, true);
+                    }, false);
                 }, {once: true});
             }
         }

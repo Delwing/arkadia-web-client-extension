@@ -9,13 +9,13 @@ const POWOZ_LABEL = POWOZ_CMDS.join(";");
 const BRYCZKA_CMDS = ["wem", "usiadz na bryczce", "wlm"];
 const BRYCZKA_LABEL = BRYCZKA_CMDS.join(";");
 
-function bindBus(client: Client, commands: string[], label: string, beep: boolean, locationBound = true) {
+function bindBus(client: Client, commands: string[], label: string, beep: boolean) {
     if (beep) {
         client.sendEvent("sound:play", {key: "beep"});
     }
     client.FunctionalBind.set(label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));
-    }, false, locationBound);
+    }, false);
 }
 
 export default function initBuses(client: Client) {
@@ -42,7 +42,7 @@ export default function initBuses(client: Client) {
     };
 
     const exitPowoz = (line: any) => {
-        bindBus(client, ["wyjscie"], "wyjscie", true, false);
+        bindBus(client, ["wyjscie"], "wyjscie", true);
         return line;
     };
     const boardBryczka = (line: any) => {
@@ -50,7 +50,7 @@ export default function initBuses(client: Client) {
         return line;
     };
     const exitBryczka = (line: any) => {
-        bindBus(client, ["wstan"], "wstan", false, false);
+        bindBus(client, ["wstan"], "wstan", false);
         return line;
     };
 

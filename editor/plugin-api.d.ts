@@ -454,7 +454,7 @@ interface ColorsApi {
  * Function Bind API - Manage keyboard bindings
  */
 interface BindApi {
-  set(printable: string | null, callback?: () => void, clearAfterUse?: boolean, locationBound?: boolean): void;
+  set(printable: string | null, callback?: () => void, clearAfterUse?: boolean): void;
 
   clear(): void;
 
