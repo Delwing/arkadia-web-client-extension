@@ -67,6 +67,7 @@ export class FunctionalBind {
     private currentPrintable: string | null = null;
     private printedInMessage = false;
     private isLocationBound = false;
+    private boundLocationId: number | null = null;
     private key: string;
     private label: string;
     private ctrl: boolean;
@@ -88,11 +89,25 @@ export class FunctionalBind {
         })
 
         this.client.on(LINE_START_EVENT, () => this.newMessage());
-        this.client.on('enterLocation', () => this.onLocationChange());
+        this.client.on('enterLocation', (detail) => {
+            const payload = detail as { id?: number };
+            const newId = typeof payload?.id === 'number' ? payload.id : null;
+            this.onLocationChange(newId);
+        });
     }
 
-    private onLocationChange() {
+    private onLocationChange(newLocationId: number | null) {
         if (this.isLocationBound) {
+            if (this.boundLocationId === null) {
+                // Bind was set before room was resolved (e.g. transport trigger
+                // from room description arriving before gmcp.room.info).
+                // Adopt the incoming location so the bind clears on the *next* move.
+                this.boundLocationId = newLocationId;
+                return;
+            }
+            if (newLocationId === this.boundLocationId) {
+                return;
+            }
             this.clear();
         }
     }
@@ -103,6 +118,7 @@ export class FunctionalBind {
 
     set(printable: string | null, callback?: () => void, clearAfterUse: boolean = false, locationBound: boolean = false) {
         this.isLocationBound = locationBound;
+        this.boundLocationId = locationBound ? (this.client.Map?.currentRoom?.id ?? null) : null;
         if (callback) {
             this.functionalBind = () => {
                 callback();
@@ -141,6 +157,7 @@ export class FunctionalBind {
         this.currentPrintable = null;
         this.printedInMessage = false;
         this.isLocationBound = false;
+        this.boundLocationId = null;
     }
 
     updateOptions(options: FunctionalBindOptions = {}) {
