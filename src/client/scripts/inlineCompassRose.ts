@@ -262,10 +262,10 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     function showInlineCompassRoseAscii() {
         const lines: AnsiAwareBuffer[] = [
             buildLine("      ", printExitAscii("nw"), " ", printExitAscii("n"), " ", printExitAscii("ne"), "    ", printExitAscii("u")),
-            buildLine("       ", hasExit("nw") ? "\\" : " ", hasExit("n") ? "|" : " ", hasExit("ne") ? "/" : " ", "    ", hasExit("u") ? "|" : ""),
+            buildLine("       ", hasExit("nw") ? "\\" : " ", hasExit("n") ? "|" : " ", hasExit("ne") ? "/" : " ", "     ", hasExit("u") ? "|" : ""),
             buildLine("      ", printExitAscii("w"), hasExit("w") ? "-" : " "),
             buildLine(hasExit("e") ? "-" : " ", printExitAscii("e"), "    ", hasExit("d") || hasExit("u") ? "o" : ""),
-            buildLine("       ", hasExit("sw") ? "/" : " ", hasExit("s") ? "|" : " ", hasExit("se") ? "\\" : " ", "    ", hasExit("d") ? "|" : ""),
+            buildLine("       ", hasExit("sw") ? "/" : " ", hasExit("s") ? "|" : " ", hasExit("se") ? "\\" : " ", "     ", hasExit("d") ? "|" : ""),
             buildLine("      ", printExitAscii("sw"), " ", printExitAscii("s"), " ", printExitAscii("se"), "    ", printExitAscii("d")),
         ];
 
