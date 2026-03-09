@@ -497,6 +497,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             }
 
             // Import downloaded categories
+            // (downloadCategories already returns per-device data for device-scoped categories)
             const importResult = await importCategories(result.data);
             if (!importResult.success) {
                 const firstError = Object.values(importResult.errors)[0];

@@ -36,6 +36,7 @@ import {
 } from './firebaseTypes';
 import {ensureFirebaseInitialized, getFirebaseAuth} from './firebaseConfig';
 import {calculateChecksum, decrypt, encrypt, isEncryptedData} from './firebaseCrypto';
+import { isCategoryDeviceScoped, getSyncGroup } from '@modules/device';
 
 // Single document path
 const USERS_COLLECTION = 'users';
@@ -49,9 +50,13 @@ export const SYNC_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 // ============================================================================
 
 export interface UnifiedSyncData {
-    // Categories (triggers, aliases, variables, uiSettings)
+    // Shared categories (triggers, aliases, shortcuts, characterSettings, etc.)
     categories?: {
         [K in SyncCategory]?: CategoryPayload;
+    };
+    // Per-device categories (uiSettings, buttons — device-scoped)
+    deviceCategories?: {
+        [deviceId: string]: { [K in SyncCategory]?: CategoryPayload };
     };
     // Device registry
     devices?: { [deviceId: string]: DeviceInfo };
@@ -178,6 +183,7 @@ export async function uploadCategories(
         const snapshot = await getDoc(docRef);
         const existingData = snapshot.exists() ? snapshot.data() as UnifiedSyncData : null;
         const existingCategories = existingData?.categories || {};
+        const existingDeviceCategories = existingData?.deviceCategories || {};
 
         // Build category payloads - use dot notation for updateDoc
         const categoryUpdates: { [key: string]: CategoryPayload } = {};
@@ -190,8 +196,13 @@ export async function uploadCategories(
                 const checksum = await calculateChecksum(data);
                 checksums[category] = checksum;
 
+                // Device-scoped categories go to deviceCategories.{deviceId}.{cat}
+                const isDeviceScoped = isCategoryDeviceScoped(category);
+                const cloudPayload = isDeviceScoped
+                    ? existingDeviceCategories[deviceId]?.[category]
+                    : existingCategories[category];
+
                 // Skip upload if checksum matches cloud data (no changes)
-                const cloudPayload = existingCategories[category];
                 if (cloudPayload && cloudPayload.checksum === checksum) {
                     continue;
                 }
@@ -205,8 +216,7 @@ export async function uploadCategories(
                     finalData = data;
                 }
 
-                // Use dot notation key for updateDoc (will be interpreted as path)
-                categoryUpdates[`categories.${category}`] = {
+                const payload: CategoryPayload = {
                     version: 1,
                     syncedAt: new Date().toISOString(),
                     deviceId,
@@ -214,6 +224,15 @@ export async function uploadCategories(
                     encrypted: options.encrypted,
                     data: finalData,
                 };
+
+                // Use dot notation key for updateDoc (will be interpreted as path)
+                if (isDeviceScoped) {
+                    categoryUpdates[`deviceCategories.${deviceId}.${category}`] = payload;
+                    // Also write to legacy path for backward compat with old clients
+                    categoryUpdates[`categories.${category}`] = payload;
+                } else {
+                    categoryUpdates[`categories.${category}`] = payload;
+                }
 
                 timestamps[category] = now;
             } catch (err) {
@@ -232,24 +251,33 @@ export async function uploadCategories(
 
         if (snapshot.exists()) {
             // Use updateDoc - it interprets dots as paths
-            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories:`, Object.keys(categoryUpdates).map(k => k.replace('categories.', '')));
+            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories:`, Object.keys(categoryUpdates));
             await updateDoc(docRef, {
                 ...categoryUpdates,
                 updatedAt: serverTimestamp(),
             });
         } else {
             // Document doesn't exist - create with proper nested structure
-            const nestedCategories: { [key: string]: CategoryPayload } = {};
-            for (const key of Object.keys(categoryUpdates)) {
-                // Convert 'categories.triggers' to nested { categories: { triggers: ... } }
-                const category = key.replace('categories.', '');
-                nestedCategories[category] = categoryUpdates[key];
+            const nestedShared: { [key: string]: CategoryPayload } = {};
+            const nestedDevice: { [devId: string]: { [cat: string]: CategoryPayload } } = {};
+            for (const [key, payload] of Object.entries(categoryUpdates)) {
+                if (key.startsWith('deviceCategories.')) {
+                    // deviceCategories.{deviceId}.{category}
+                    const parts = key.split('.');
+                    const devId = parts[1];
+                    const cat = parts[2];
+                    if (!nestedDevice[devId]) nestedDevice[devId] = {};
+                    nestedDevice[devId][cat] = payload;
+                } else {
+                    const cat = key.replace('categories.', '');
+                    nestedShared[cat] = payload;
+                }
             }
-            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories:`, Object.keys(nestedCategories));
-            await setDoc(docRef, {
-                categories: nestedCategories,
-                updatedAt: serverTimestamp(),
-            });
+            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories`);
+            const docData: Record<string, unknown> = { updatedAt: serverTimestamp() };
+            if (Object.keys(nestedShared).length > 0) docData.categories = nestedShared;
+            if (Object.keys(nestedDevice).length > 0) docData.deviceCategories = nestedDevice;
+            await setDoc(docRef, docData);
         }
 
         invalidateCache();
@@ -273,6 +301,48 @@ export interface DownloadedCategoryMeta {
     deviceId: string;
     syncedAt: string;
     encrypted: boolean;
+}
+
+/**
+ * Find the best per-device payload for a device-scoped category.
+ * Checks own device first, then sync group members. Picks the most recent.
+ * Falls back to legacy categories.{cat} if deviceCategories is empty.
+ */
+function findDeviceCategoryPayload(
+    syncData: UnifiedSyncData,
+    category: SyncCategory,
+): CategoryPayload | undefined {
+    const deviceId = getDeviceId();
+    const currentSyncGroup = getSyncGroup();
+    const deviceCats = syncData.deviceCategories || {};
+
+    // Gather relevant device IDs: self + sync group members
+    const relevantIds = new Set<string>([deviceId]);
+    if (currentSyncGroup) {
+        for (const id of currentSyncGroup.devices) {
+            relevantIds.add(id);
+        }
+    }
+
+    // Find the most recently synced payload from relevant devices
+    let best: CategoryPayload | undefined;
+    for (const devId of relevantIds) {
+        const payload = deviceCats[devId]?.[category];
+        if (!payload) continue;
+        if (!best || payload.syncedAt > best.syncedAt) {
+            best = payload;
+        }
+    }
+
+    // Fallback: check legacy categories.{cat} (migration)
+    if (!best) {
+        const legacyPayload = syncData.categories?.[category];
+        if (legacyPayload) {
+            best = legacyPayload;
+        }
+    }
+
+    return best;
 }
 
 /**
@@ -300,7 +370,10 @@ export async function downloadCategories(
         const cloudCategories = syncData.categories || {};
 
         for (const category of categories) {
-            const payload = cloudCategories[category];
+            // For device-scoped categories, find per-device payload
+            const payload = isCategoryDeviceScoped(category)
+                ? findDeviceCategoryPayload(syncData, category)
+                : cloudCategories[category];
             if (!payload) continue;
 
             try {
@@ -380,7 +453,10 @@ export async function checkCategoriesConflicts(
             const localData = categoryData[category];
             if (!localData) continue;
 
-            const cloudPayload = cloudCategories[category];
+            // For device-scoped categories, compare against own per-device data
+            const cloudPayload = isCategoryDeviceScoped(category)
+                ? (syncData.deviceCategories?.[deviceId]?.[category] ?? cloudCategories[category])
+                : cloudCategories[category];
             if (!cloudPayload) continue;
 
             try {
@@ -489,7 +565,10 @@ export async function getAllCategoriesMetadata(): Promise<{
 
     const cloudCategories = syncData.categories || {};
     for (const category of SYNC_CATEGORIES) {
-        const payload = cloudCategories[category];
+        // For device-scoped categories, find the most relevant per-device payload
+        const payload = isCategoryDeviceScoped(category)
+            ? findDeviceCategoryPayload(syncData, category)
+            : cloudCategories[category];
         if (payload) {
             categories[category] = {
                 exists: true,
@@ -518,10 +597,18 @@ export async function deleteCategory(category: SyncCategory): Promise<{ success:
         const { doc, updateDoc, deleteField } = await import('firebase/firestore');
 
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
-        console.log(`[Firebase WRITE] deleteCategory: ${category}`);
-        await updateDoc(docRef, {
+        const deviceId = getDeviceId();
+
+        // Delete from both shared and per-device paths
+        const updates: Record<string, unknown> = {
             [`categories.${category}`]: deleteField(),
-        });
+        };
+        if (isCategoryDeviceScoped(category)) {
+            updates[`deviceCategories.${deviceId}.${category}`] = deleteField();
+        }
+
+        console.log(`[Firebase WRITE] deleteCategory: ${category}`);
+        await updateDoc(docRef, updates);
 
         invalidateCache();
 
@@ -552,10 +639,12 @@ export async function deleteAllCategories(): Promise<{ success: boolean; errors:
         const { db } = await ensureFirebaseInitialized();
         const { doc, updateDoc, deleteField } = await import('firebase/firestore');
 
+        const deviceId = getDeviceId();
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
         console.log(`[Firebase WRITE] deleteAllCategories`);
         await updateDoc(docRef, {
             categories: deleteField(),
+            [`deviceCategories.${deviceId}`]: deleteField(),
         });
 
         invalidateCache();
@@ -700,7 +789,150 @@ export async function unregisterDevice(deviceId: string): Promise<{ success: boo
 
 // ============================================================================
 // Sync Groups (device settings sharing)
+// New collection: users/{userId}/syncGroups/{groupId}
+// With on-access migration from old syncData.groups/deviceSettings fields.
 // ============================================================================
+
+const SYNC_GROUPS_SUBCOLLECTION = 'syncGroups';
+
+interface SyncGroupDocument {
+    group: SyncGroup;
+    settings?: SyncedDeviceSettings;
+}
+
+/**
+ * Read a sync group from the new collection.
+ * Falls back to old syncData.groups field if not found.
+ * On fallback hit, copies data to new collection (on-access migration).
+ */
+async function readSyncGroupDoc(
+    userId: string,
+    groupId: string,
+): Promise<{ group: SyncGroup | null; settings: SyncedDeviceSettings | null }> {
+    const { db } = await ensureFirebaseInitialized();
+    const { doc, getDoc, setDoc } = await import('firebase/firestore');
+
+    // Try new collection first
+    const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, groupId);
+    const groupSnapshot = await getDoc(groupDocRef);
+
+    if (groupSnapshot.exists()) {
+        const data = groupSnapshot.data() as SyncGroupDocument;
+        return { group: data.group, settings: data.settings ?? null };
+    }
+
+    // Fallback to old syncData fields
+    const { data: syncData } = await getFullSyncData();
+    const legacyGroup = syncData?.groups?.[groupId]
+        ?? (syncData?.group?.id === groupId ? syncData.group : null);
+
+    if (!legacyGroup) {
+        return { group: null, settings: null };
+    }
+
+    // Get legacy settings
+    let legacySettings: SyncedDeviceSettings | null = syncData?.deviceSettings?.[groupId] ?? null;
+    if (!legacySettings && syncData?.deviceSettings) {
+        const legacy = syncData.deviceSettings as unknown as SyncedDeviceSettings;
+        if ('groupId' in syncData.deviceSettings && legacy.groupId === groupId) {
+            legacySettings = legacy;
+        }
+    }
+
+    // On-access migration: copy to new collection (don't delete old)
+    console.log(`[Firebase MIGRATE] Copying group ${groupId} to syncGroups collection`);
+    const migratedDoc: SyncGroupDocument = {
+        group: legacyGroup,
+        ...(legacySettings ? { settings: legacySettings } : {}),
+    };
+    try {
+        await setDoc(groupDocRef, migratedDoc);
+    } catch (err) {
+        console.warn('[Firebase MIGRATE] Failed to copy group to new collection', err);
+    }
+
+    return { group: legacyGroup, settings: legacySettings };
+}
+
+/**
+ * Read all sync groups from both new collection and legacy fields.
+ * Migrates any legacy-only groups on access.
+ */
+async function readAllSyncGroupDocs(userId: string): Promise<SyncGroupDocument[]> {
+    const { db } = await ensureFirebaseInitialized();
+    const { collection, getDocs, doc, setDoc } = await import('firebase/firestore');
+
+    const results: SyncGroupDocument[] = [];
+    const seenIds = new Set<string>();
+
+    // Read from new collection
+    const collRef = collection(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION);
+    const snapshot = await getDocs(collRef);
+    snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as SyncGroupDocument;
+        if (data.group?.id) {
+            results.push(data);
+            seenIds.add(data.group.id);
+        }
+    });
+
+    // Also check legacy fields for groups not yet migrated
+    const { data: syncData } = await getFullSyncData();
+
+    const legacyGroups: SyncGroup[] = [];
+    if (syncData?.groups) {
+        for (const g of Object.values(syncData.groups)) {
+            if (!seenIds.has(g.id)) legacyGroups.push(g);
+        }
+    }
+    if (syncData?.group && !seenIds.has(syncData.group.id)) {
+        legacyGroups.push(syncData.group);
+    }
+
+    // Migrate any legacy groups found
+    for (const legacyGroup of legacyGroups) {
+        let legacySettings: SyncedDeviceSettings | null = syncData?.deviceSettings?.[legacyGroup.id] ?? null;
+        if (!legacySettings && syncData?.deviceSettings) {
+            const legacy = syncData.deviceSettings as unknown as SyncedDeviceSettings;
+            if ('groupId' in syncData.deviceSettings && legacy.groupId === legacyGroup.id) {
+                legacySettings = legacy;
+            }
+        }
+
+        const migratedDoc: SyncGroupDocument = {
+            group: legacyGroup,
+            ...(legacySettings ? { settings: legacySettings } : {}),
+        };
+
+        results.push(migratedDoc);
+        seenIds.add(legacyGroup.id);
+
+        // On-access migration
+        console.log(`[Firebase MIGRATE] Copying group ${legacyGroup.id} to syncGroups collection`);
+        try {
+            const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, legacyGroup.id);
+            await setDoc(groupDocRef, migratedDoc);
+        } catch (err) {
+            console.warn('[Firebase MIGRATE] Failed to copy group to new collection', err);
+        }
+    }
+
+    return results;
+}
+
+/**
+ * Write a sync group document to the new collection.
+ */
+async function writeSyncGroupDoc(
+    userId: string,
+    groupId: string,
+    data: SyncGroupDocument,
+): Promise<void> {
+    const { db } = await ensureFirebaseInitialized();
+    const { doc, setDoc } = await import('firebase/firestore');
+    const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, groupId);
+    await setDoc(groupDocRef, data);
+}
 
 /**
  * Create a new sync group
@@ -729,7 +961,7 @@ export async function createSyncGroup(name: string): Promise<{
             updatedAt: now,
         };
 
-        const deviceSettings: SyncedDeviceSettings = {
+        const settings: SyncedDeviceSettings = {
             groupId: group.id,
             version: 1,
             updatedAt: now,
@@ -738,29 +970,9 @@ export async function createSyncGroup(name: string): Promise<{
             settings: getRawDeviceSettings(),
         };
 
-        // Store in groups[groupId] and deviceSettings[groupId]
-        const { db } = await ensureFirebaseInitialized();
-        const { doc, updateDoc, setDoc, getDoc, serverTimestamp } = await import('firebase/firestore');
-        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+        console.log(`[Firebase WRITE] createSyncGroup: ${group.name}`);
+        await writeSyncGroupDoc(userId, group.id, { group, settings });
 
-        const snapshot = await getDoc(docRef);
-        if (snapshot.exists()) {
-            console.log(`[Firebase WRITE] createSyncGroup (updateDoc): ${group.name}`);
-            await updateDoc(docRef, {
-                [`groups.${group.id}`]: group,
-                [`deviceSettings.${group.id}`]: deviceSettings,
-                updatedAt: serverTimestamp(),
-            });
-        } else {
-            console.log(`[Firebase WRITE] createSyncGroup (setDoc): ${group.name}`);
-            await setDoc(docRef, {
-                groups: { [group.id]: group },
-                deviceSettings: { [group.id]: deviceSettings },
-                updatedAt: serverTimestamp(),
-            });
-        }
-
-        invalidateCache();
         setSyncState({ group, version: 1 });
         return { success: true, group };
     } catch (err) {
@@ -784,13 +996,7 @@ export async function joinSyncGroup(groupId: string): Promise<{
             return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        const { data: syncData, error } = await getFullSyncData(true); // Force refresh
-        if (error || !syncData) {
-            return { success: false, error: error || FIREBASE_ERRORS.SYNC_FAILED };
-        }
-
-        // Look for group in groups collection (new structure)
-        const existingGroup = syncData.groups?.[groupId] ?? (syncData.group?.id === groupId ? syncData.group : null);
+        const { group: existingGroup, settings: groupSettings } = await readSyncGroupDoc(userId, groupId);
         if (!existingGroup) {
             return { success: false, error: 'Grupa synchronizacji nie istnieje.' };
         }
@@ -803,28 +1009,14 @@ export async function joinSyncGroup(groupId: string): Promise<{
             group.devices.push(deviceInfo.id);
             group.updatedAt = new Date().toISOString();
 
-            // Update in groups collection
-            const { db } = await ensureFirebaseInitialized();
-            const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-            const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
-            console.log(`[Firebase WRITE] joinSyncGroup (updateDoc): ${group.name}`);
-            await updateDoc(docRef, {
-                [`groups.${group.id}`]: group,
-                updatedAt: serverTimestamp(),
+            console.log(`[Firebase WRITE] joinSyncGroup: adding device ${deviceInfo.id}`);
+            await writeSyncGroupDoc(userId, group.id, {
+                group,
+                ...(groupSettings ? { settings: groupSettings } : {}),
             });
-            invalidateCache();
         }
 
-        // Apply settings from the correct group
-        // Check new structure first, then legacy format (single object with groupId property)
-        let groupSettings: SyncedDeviceSettings | null = syncData.deviceSettings?.[groupId] ?? null;
-        if (!groupSettings && syncData.deviceSettings) {
-            const legacy = syncData.deviceSettings as unknown as SyncedDeviceSettings;
-            if ('groupId' in syncData.deviceSettings && legacy.groupId === groupId) {
-                groupSettings = legacy;
-            }
-        }
-
+        // Apply settings from the group
         if (groupSettings) {
             applySyncedSettings(groupSettings);
         }
@@ -847,47 +1039,35 @@ export async function leaveSyncGroupCloud(): Promise<{ success: boolean; error?:
             return { success: true };
         }
 
-        const groupId = state.group.id;
-        const { data: syncData, error } = await getFullSyncData(true);
-        if (error) {
-            return { success: false, error };
-        }
-
         const auth = getFirebaseAuth();
         const userId = auth?.currentUser?.uid;
         if (!userId) {
             return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        const { db } = await ensureFirebaseInitialized();
-        const { doc, updateDoc, serverTimestamp, deleteField } = await import('firebase/firestore');
-        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+        const groupId = state.group.id;
+        const { group: existingGroup, settings: groupSettings } = await readSyncGroupDoc(userId, groupId);
 
-        // Find the group in the new structure or legacy structure
-        const existingGroup = syncData?.groups?.[groupId] ?? syncData?.group;
         if (existingGroup) {
             const deviceInfo = getDeviceInfo();
             const group = { ...existingGroup };
             group.devices = group.devices.filter(id => id !== deviceInfo.id);
 
             if (group.devices.length === 0) {
-                // Last device leaving - delete the group and its settings
-                console.log(`[Firebase WRITE] leaveSyncGroupCloud: clearing group (last device)`);
-                await updateDoc(docRef, {
-                    [`groups.${groupId}`]: deleteField(),
-                    [`deviceSettings.${groupId}`]: deleteField(),
-                    updatedAt: serverTimestamp(),
-                });
+                // Last device leaving - delete the group document
+                const { db } = await ensureFirebaseInitialized();
+                const { doc, deleteDoc } = await import('firebase/firestore');
+                const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, groupId);
+                console.log(`[Firebase DELETE] leaveSyncGroupCloud: deleting empty group`);
+                await deleteDoc(groupDocRef);
             } else {
-                // Other devices still in group - just remove this device
+                // Other devices still in group - just update without this device
                 console.log(`[Firebase WRITE] leaveSyncGroupCloud: removing device from group`);
-                await updateDoc(docRef, {
-                    [`groups.${groupId}`]: group,
-                    updatedAt: serverTimestamp(),
+                await writeSyncGroupDoc(userId, groupId, {
+                    group,
+                    ...(groupSettings ? { settings: groupSettings } : {}),
                 });
             }
-
-            invalidateCache();
         }
 
         clearSyncState();
@@ -920,7 +1100,7 @@ export async function uploadSyncedSettings(): Promise<{ success: boolean; error?
         const newVersion = state.version + 1;
         const now = new Date().toISOString();
 
-        const deviceSettings: SyncedDeviceSettings = {
+        const settings: SyncedDeviceSettings = {
             groupId,
             version: newVersion,
             updatedAt: now,
@@ -929,18 +1109,15 @@ export async function uploadSyncedSettings(): Promise<{ success: boolean; error?
             settings: getRawDeviceSettings(),
         };
 
-        // Store in deviceSettings[groupId]
-        const { db } = await ensureFirebaseInitialized();
-        const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+        // Read current group to preserve group data
+        const { group } = await readSyncGroupDoc(userId, groupId);
+        if (!group) {
+            return { success: false, error: 'Grupa synchronizacji nie istnieje w chmurze.' };
+        }
 
         console.log(`[Firebase WRITE] uploadSyncedSettings: group ${groupId}`);
-        await updateDoc(docRef, {
-            [`deviceSettings.${groupId}`]: deviceSettings,
-            updatedAt: serverTimestamp(),
-        });
+        await writeSyncGroupDoc(userId, groupId, { group, settings });
 
-        invalidateCache();
         setSyncState({ ...state, version: newVersion });
         return { success: true };
     } catch (err) {
@@ -963,21 +1140,14 @@ export async function checkForSyncUpdates(): Promise<{
             return { hasUpdate: false };
         }
 
-        const groupId = state.group.id;
-        const { data: syncData, error } = await getFullSyncData(true); // Force refresh for sync check
-        if (error || !syncData) {
-            return { hasUpdate: false, error };
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { hasUpdate: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        // Get settings for this specific group
-        // Check new structure first, then legacy format (single object with groupId property)
-        let groupSettings: SyncedDeviceSettings | null = syncData.deviceSettings?.[groupId] ?? null;
-        if (!groupSettings && syncData.deviceSettings) {
-            const legacy = syncData.deviceSettings as unknown as SyncedDeviceSettings;
-            if ('groupId' in syncData.deviceSettings && legacy.groupId === groupId) {
-                groupSettings = legacy;
-            }
-        }
+        const groupId = state.group.id;
+        const { settings: groupSettings } = await readSyncGroupDoc(userId, groupId);
 
         if (!groupSettings) {
             return { hasUpdate: false };
@@ -1088,31 +1258,25 @@ export async function getRemoteDeviceName(deviceId: string): Promise<string> {
 }
 
 /**
- * Get all sync groups from cloud
- * This is useful to check what sync groups exist and let user join one
+ * Get all sync groups from cloud (reads new collection + migrates legacy)
  */
 export async function getCloudSyncGroups(): Promise<{
     groups: SyncGroup[];
     error?: string;
 }> {
-    const { data: syncData, error } = await getFullSyncData();
-    if (error) {
-        return { groups: [], error };
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { groups: [], error: FIREBASE_ERRORS.AUTH_FAILED };
+        }
+
+        const docs = await readAllSyncGroupDocs(userId);
+        return { groups: docs.map(d => d.group) };
+    } catch (err) {
+        console.error('Failed to get cloud sync groups', err);
+        return { groups: [], error: FIREBASE_ERRORS.SYNC_FAILED };
     }
-
-    const groups: SyncGroup[] = [];
-
-    // Get groups from new structure
-    if (syncData?.groups) {
-        groups.push(...Object.values(syncData.groups));
-    }
-
-    // Also check legacy structure for migration
-    if (syncData?.group && !groups.find(g => g.id === syncData.group?.id)) {
-        groups.push(syncData.group);
-    }
-
-    return { groups };
 }
 
 /**
@@ -1137,13 +1301,19 @@ export async function getCloudGroupSettings(groupId: string): Promise<{
     settings: SyncedDeviceSettings | null;
     error?: string;
 }> {
-    const { data: syncData, error } = await getFullSyncData();
-    if (error || !syncData) {
-        return { settings: null, error };
-    }
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { settings: null, error: FIREBASE_ERRORS.AUTH_FAILED };
+        }
 
-    const groupSettings = syncData.deviceSettings?.[groupId] ?? null;
-    return { settings: groupSettings };
+        const { settings } = await readSyncGroupDoc(userId, groupId);
+        return { settings };
+    } catch (err) {
+        console.error('Failed to get cloud group settings', err);
+        return { settings: null, error: FIREBASE_ERRORS.SYNC_FAILED };
+    }
 }
 
 /**
@@ -1172,6 +1342,12 @@ export async function copySettingsFromCloudDevice(deviceId: string): Promise<{
     error?: string;
 }> {
     try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
+        }
+
         const { data: syncData, error: syncError } = await getFullSyncData();
         if (syncError || !syncData) {
             return { success: false, error: syncError || FIREBASE_ERRORS.SYNC_FAILED };
@@ -1180,12 +1356,13 @@ export async function copySettingsFromCloudDevice(deviceId: string): Promise<{
         // First try per-device settings
         let settings = syncData.perDeviceSettings?.[deviceId] ?? null;
 
-        // Fallback: if device is in a group, use group settings
-        if (!settings && syncData.groups) {
-            for (const group of Object.values(syncData.groups)) {
-                if (group.devices.includes(deviceId)) {
-                    settings = syncData.deviceSettings?.[group.id] ?? null;
-                    if (settings) break;
+        // Fallback: if device is in a group, use group settings from new collection
+        if (!settings) {
+            const allGroups = await readAllSyncGroupDocs(userId);
+            for (const groupDoc of allGroups) {
+                if (groupDoc.group.devices.includes(deviceId) && groupDoc.settings) {
+                    settings = groupDoc.settings;
+                    break;
                 }
             }
         }
@@ -1202,7 +1379,6 @@ export async function copySettingsFromCloudDevice(deviceId: string): Promise<{
         if (state) {
             const uploadResult = await uploadSyncedSettings();
             if (!uploadResult.success) {
-                // Settings were applied locally but failed to upload
                 console.warn('Settings applied locally but failed to sync to group:', uploadResult.error);
             }
         }
@@ -1237,7 +1413,6 @@ export async function copySettingsFromCloudGroup(groupId: string): Promise<{
         if (state) {
             const uploadResult = await uploadSyncedSettings();
             if (!uploadResult.success) {
-                // Settings were applied locally but failed to upload
                 console.warn('Settings applied locally but failed to sync to group:', uploadResult.error);
             }
         }
@@ -1245,6 +1420,48 @@ export async function copySettingsFromCloudGroup(groupId: string): Promise<{
         return { success: true };
     } catch (err) {
         console.error('Failed to copy settings from cloud group', err);
+        return { success: false, error: FIREBASE_ERRORS.SYNC_FAILED };
+    }
+}
+
+/**
+ * Delete an empty sync group from cloud.
+ * Only deletes if the group has no devices.
+ * If the current device was in this group, clears local sync state.
+ */
+export async function deleteEmptySyncGroup(groupId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const auth = getFirebaseAuth();
+        const userId = auth?.currentUser?.uid;
+        if (!userId) {
+            return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
+        }
+
+        const { group } = await readSyncGroupDoc(userId, groupId);
+        if (!group) {
+            return { success: false, error: 'Grupa nie istnieje.' };
+        }
+
+        if (group.devices.length > 0) {
+            return { success: false, error: 'Grupa nie jest pusta. Najpierw usun wszystkie urzadzenia.' };
+        }
+
+        const { db } = await ensureFirebaseInitialized();
+        const { doc, deleteDoc } = await import('firebase/firestore');
+        const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, groupId);
+
+        console.log(`[Firebase DELETE] deleteEmptySyncGroup: ${groupId}`);
+        await deleteDoc(groupDocRef);
+
+        // If current device was in this group, clear local sync state
+        const state = getSyncState();
+        if (state?.group.id === groupId) {
+            clearSyncState();
+        }
+
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to delete empty sync group', err);
         return { success: false, error: FIREBASE_ERRORS.SYNC_FAILED };
     }
 }

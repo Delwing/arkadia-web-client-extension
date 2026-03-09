@@ -106,6 +106,7 @@ export {
     getCloudDeviceSettings,
     copySettingsFromCloudGroup,
     copySettingsFromCloudDevice,
+    deleteEmptySyncGroup,
 } from './firebaseUnifiedSync';
 
 export type { DownloadedCategoryMeta } from './firebaseUnifiedSync';
