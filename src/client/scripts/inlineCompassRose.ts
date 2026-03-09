@@ -263,8 +263,8 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         const lines: AnsiAwareBuffer[] = [
             buildLine("      ", printExitAscii("nw"), "  ", printExitAscii("n"), "  ", printExitAscii("ne"), "    ", printExitAscii("u")),
             buildLine("       ", hasExit("nw") ? "\\" : " ", " ", hasExit("n") ? "|" : " ", " ", hasExit("ne") ? "/" : " ", "     ", hasExit("u") ? "|" : ""),
-            buildLine("      ", printExitAscii("w"), " ", hasExit("w") ? "-" : " "),
-            buildLine(hasExit("e") ? "-" : " ", " ", printExitAscii("e"), "    ", hasExit("d") || hasExit("u") ? "o" : ""),
+            buildLine("      ", printExitAscii("w"), hasExit("w") ? "-" : " "),
+            buildLine(hasExit("e") ? "-" : " ", printExitAscii("e"), "    ", hasExit("d") || hasExit("u") ? "o" : ""),
             buildLine("       ", hasExit("sw") ? "/" : " ", " ", hasExit("s") ? "|" : " ", " ", hasExit("se") ? "\\" : " ", "     ", hasExit("d") ? "|" : ""),
             buildLine("      ", printExitAscii("sw"), "  ", printExitAscii("s"), "  ", printExitAscii("se"), "    ", printExitAscii("d")),
         ];
@@ -392,7 +392,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         pre.innerHTML = [
             `${o('nw')}  ${o('n')}  ${o('ne')}   ${o('u')}`,
             ` ${c('nw', '\\')} ${c('n', '|')} ${c('ne', '/')}    ${c('u', '|')}`,
-            `${o('w')} ${c('w', '-')}<span class="cr-ascii-dim">O</span>${c('e', '-')} ${o('e')}   ${udPivot}`,
+            `${o('w')}${c('w', '-')}<span class="cr-ascii-dim">O</span>${c('e', '-')}${o('e')}   ${udPivot}`,
             ` ${c('sw', '/')} ${c('s', '|')} ${c('se', '\\')}    ${c('d', '|')}`,
             `${o('sw')}  ${o('s')}  ${o('se')}   ${o('d')}`,
         ].join('\n');
