@@ -146,8 +146,9 @@ export class EmbeddedMap {
         settings.transparentLabels = transparentLabels;
         settings.labelRenderMode = labelRenderMode;
         settings.playerMarker.dash = [0.05, 0.05]
-        settings.gridColor = 'rgba(255, 255, 255, 0.25)';
+        settings.gridColor = 'rgba(255, 255, 255, 0.2)';
         settings.gridEnabled = getBuiltInPanelSetting('map', 'showGrid', false);
+        settings.areaName = false
         if (mapPosition.includes('overlay')) {
             settings.backgroundColor = 'transparent';
         }

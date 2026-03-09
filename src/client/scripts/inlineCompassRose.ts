@@ -1,10 +1,10 @@
 import Client from "../Client";
-import { createColorFormat } from "@modules/core/Colors";
-import { gmcp } from "../gmcp";
-import { getShortDir, longToShort } from "@shared/map";
-import { AnsiAwareBuffer } from "../ansi/FormatState";
-import { characterStorage } from "@modules/core/storage";
-import { defaultSettings } from "@modules/core/defaultSettings";
+import {createColorFormat} from "@modules/core/Colors";
+import {gmcp} from "../gmcp";
+import {getShortDir, longToShort} from "@shared/map";
+import {AnsiAwareBuffer} from "../ansi/FormatState";
+import {characterStorage} from "@modules/core/storage";
+import {defaultSettings} from "@modules/core/defaultSettings";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");
 const DIM_GRAY = createColorFormat("#696969");
@@ -254,7 +254,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         if (!hasExit(short)) {
             return new AnsiAwareBuffer(" ");
         }
-        const buffer = new AnsiAwareBuffer("o");
+        const buffer = new AnsiAwareBuffer("O");
         buffer.color([0, 1], SPRING_GREEN);
         return buffer;
     }
@@ -381,7 +381,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         pre.style.display = '';
 
         const o = (dir: string) => hasExit(dir)
-            ? `<span class="cr-clickable" data-dir="${dir}">o</span>`
+            ? `<span class="cr-clickable" data-dir="${dir}">O</span>`
             : ' ';
         const c = (dir: string, ch: string) => hasExit(dir) ? ch : ' '.repeat(ch.length);
 
@@ -389,15 +389,13 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             ? '<span class="cr-ascii-dim">o</span>'
             : ' ';
 
-        const html = [
+        pre.innerHTML = [
             `${o('nw')}  ${o('n')}  ${o('ne')}   ${o('u')}`,
             ` ${c('nw', '\\')} ${c('n', '|')} ${c('ne', '/')}    ${c('u', '|')}`,
             `${o('w')}${c('w', '--')}<span class="cr-ascii-dim">X</span>${c('e', '--')}${o('e')}   ${udPivot}`,
             ` ${c('sw', '/')} ${c('s', '|')} ${c('se', '\\')}    ${c('d', '|')}`,
             `${o('sw')}  ${o('s')}  ${o('se')}   ${o('d')}`,
         ].join('\n');
-
-        pre.innerHTML = html;
 
         // Update special exits
         const specialContainer = boxContainer.querySelector('.compass-rose-special-exits');

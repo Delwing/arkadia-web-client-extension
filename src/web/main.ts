@@ -23,6 +23,7 @@ import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
 
 import "@client/main.ts"
+import {getActiveKeymapId, switchKeymap} from "@modules/core/keymapStorage";
 import NoSleep from 'nosleep.js';
 import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
@@ -93,6 +94,11 @@ if (!(window.location.hostname === 'localhost' || window.location.hostname === '
 }
 
 let mobileRadial: MobileCommandRadial | null = null;
+
+// Populate the flat 'binds' storage key from the active keymap so that
+// Client picks up keybinds on first read (fixes binds not working until
+// the user opens Bindowanie and clicks Zapisz).
+switchKeymap(getActiveKeymapId());
 
 const client = new Client(arkadiaClient);
 setClientInstance(client);

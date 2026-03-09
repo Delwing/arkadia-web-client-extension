@@ -101,6 +101,76 @@ function getSessionYear(name: string): number | null {
   return null;
 }
 
+/** Collect only CSS rules relevant to log HTML output. */
+function collectLogStyles(): string {
+  const logContainer = document.getElementById("logs-preview");
+  if (!logContainer) return "";
+
+  // Collect all class names actually used in the log preview
+  const usedClasses = new Set<string>();
+  for (const el of logContainer.querySelectorAll("[class]")) {
+    for (const cls of el.classList) usedClasses.add(cls);
+  }
+  // Also include ansi animation classes that may appear in log content
+  usedClasses.add("ansi-slow-blink");
+  usedClasses.add("ansi-rapid-blink");
+  usedClasses.add("ansi-dim");
+
+  function isRelevantRule(rule: CSSRule): boolean {
+    if (rule instanceof CSSKeyframesRule) {
+      const name = rule.name;
+      return name.startsWith("ansi-");
+    }
+    if (rule instanceof CSSStyleRule) {
+      const sel = rule.selectorText;
+      // Match rules that reference #logs-preview or any used class
+      if (sel.includes("#logs-preview")) return true;
+      if (sel === ":root" || sel === "body" || sel === "html" || sel === "html, body") return true;
+      for (const cls of usedClasses) {
+        if (sel.includes(`.${cls}`)) return true;
+      }
+      return false;
+    }
+    if (rule instanceof CSSMediaRule) {
+      const inner: string[] = [];
+      for (const child of Array.from(rule.cssRules)) {
+        if (isRelevantRule(child)) inner.push(child.cssText);
+      }
+      if (inner.length > 0) return true;
+    }
+    return false;
+  }
+
+  function extractRuleCss(rule: CSSRule): string {
+    if (rule instanceof CSSMediaRule) {
+      const inner: string[] = [];
+      for (const child of Array.from(rule.cssRules)) {
+        if (isRelevantRule(child)) inner.push(child.cssText);
+      }
+      if (inner.length > 0) {
+        return `@media ${rule.conditionText} { ${inner.join("\n")} }`;
+      }
+      return "";
+    }
+    return rule.cssText;
+  }
+
+  const parts: string[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules)) {
+        if (isRelevantRule(rule)) {
+          const css = extractRuleCss(rule);
+          if (css) parts.push(css);
+        }
+      }
+    } catch {
+      // Skip cross-origin stylesheets
+    }
+  }
+  return parts.join("\n");
+}
+
 function splitLines(html: string): string[] {
   const lines: string[] = [];
   const stack: { open: string; close: string }[] = [];
@@ -372,16 +442,7 @@ async function getSessionSummary(db: IDBDatabase, storeName: string): Promise<Se
 // --- LogManager component ---
 
 function collectInlineStyles(): string {
-  const parts: string[] = [];
-  for (const sheet of Array.from(document.styleSheets)) {
-    try {
-      const rules = Array.from(sheet.cssRules);
-      parts.push(rules.map(r => r.cssText).join("\n"));
-    } catch {
-      // skip cross-origin
-    }
-  }
-  return parts.join("\n");
+  return collectLogStyles();
 }
 
 function LogManager({
@@ -1396,22 +1457,10 @@ export function LogBrowser() {
           entries.push(lineHtml);
         }
       }
-      const inlineStyles: string[] = [];
-      const linkTags: string[] = [];
-      for (const sheet of Array.from(document.styleSheets)) {
-        try {
-          const rules = Array.from(sheet.cssRules);
-          inlineStyles.push(rules.map(r => r.cssText).join("\n"));
-        } catch {
-          const href = (sheet as CSSStyleSheet).href;
-          if (href) {
-            linkTags.push(`<link rel="stylesheet" href="${href}">`);
-          }
-        }
-      }
-      inlineStyles.push("html, body { overflow: auto; } #logs-preview { height: auto; }");
+      const styles = collectLogStyles();
+      const allStyles = styles + "\nhtml, body { overflow: auto; } #logs-preview { height: auto; }";
 
-      const head = `<meta charset="UTF-8">\n${linkTags.join("\n")}\n<style>${inlineStyles.join("\n")}</style>`;
+      const head = `<meta charset="UTF-8">\n<style>${allStyles}</style>`;
       const html = `<!doctype html><html lang="en"><head>${head}</head><body><div id="logs-preview">${entries.join("\n")}</div></body></html>`;
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
@@ -1427,16 +1476,7 @@ export function LogBrowser() {
   const handleDownloadAll = useCallback(() => {
     if (isExporting) return;
 
-    // Collect inline styles from current page
-    const inlineStyles: string[] = [];
-    for (const sheet of Array.from(document.styleSheets)) {
-      try {
-        const rules = Array.from(sheet.cssRules);
-        inlineStyles.push(rules.map(r => r.cssText).join("\n"));
-      } catch {
-        // Skip cross-origin stylesheets
-      }
-    }
+    const styles = collectLogStyles();
 
     setIsExporting(true);
     setExportProgress(null);
@@ -1493,7 +1533,7 @@ export function LogBrowser() {
 
     worker.postMessage({
       type: "export",
-      inlineStyles: inlineStyles.join("\n"),
+      inlineStyles: styles,
     });
   }, [isExporting]);
 

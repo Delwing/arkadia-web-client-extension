@@ -424,6 +424,12 @@ function load(): UiSettings {
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
+            const drinkableAsFunctionalBind = typeof parsed.drinkableAsFunctionalBind === 'boolean'
+                ? parsed.drinkableAsFunctionalBind
+                : defaultUiSettings.drinkableAsFunctionalBind;
+            const locationBindAsFunctionalBind = typeof parsed.locationBindAsFunctionalBind === 'boolean'
+                ? parsed.locationBindAsFunctionalBind
+                : defaultUiSettings.locationBindAsFunctionalBind;
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
@@ -472,6 +478,8 @@ function load(): UiSettings {
                 objectContextMenuCommands,
                 footerComponents,
                 keepMultibindsVisible,
+                drinkableAsFunctionalBind,
+                locationBindAsFunctionalBind,
                 wakeLock,
                 commandEcho,
                 outputBottomPadding,
@@ -520,6 +528,8 @@ export default async function initUiSettings() {
     const customFontFamilyInput = modalEl.querySelector('#ui-custom-font-family') as HTMLInputElement;
     const autoLowercaseCommandsInput = modalEl.querySelector('#ui-auto-lowercase-commands') as HTMLInputElement;
     const keepMultibindsVisibleInput = modalEl.querySelector('#ui-keep-multibinds-visible') as HTMLInputElement;
+    const drinkableAsFunctionalBindInput = modalEl.querySelector('#ui-drinkable-as-functional-bind') as HTMLInputElement;
+    const locationBindAsFunctionalBindInput = modalEl.querySelector('#ui-location-bind-as-functional-bind') as HTMLInputElement;
     const wakeLockInput = modalEl.querySelector('#ui-wake-lock') as HTMLInputElement;
     const commandEchoInput = modalEl.querySelector('#ui-command-echo') as HTMLInputElement;
     const outputBottomPaddingInput = modalEl.querySelector('#ui-output-bottom-padding') as HTMLInputElement;
@@ -543,6 +553,7 @@ export default async function initUiSettings() {
     const mapRoomShapeInput = modalEl.querySelector('#ui-map-room-shape') as HTMLSelectElement;
     const pathFindingAlgorithmInput = modalEl.querySelector('#ui-map-pathfinding-algorithm') as HTMLSelectElement;
     const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
+    const teamNumberingModeInput = modalEl.querySelector('#ui-team-numbering-mode') as HTMLSelectElement;
     const objectContextMenuContainer = modalEl.querySelector('#ui-object-context-menu-container') as HTMLDivElement;
     const objectContextMenuInput = modalEl.querySelector('#ui-object-context-menu-input') as HTMLInputElement;
     const saveBtn = modalEl.querySelector('#ui-settings-save') as HTMLButtonElement;
@@ -818,6 +829,8 @@ export default async function initUiSettings() {
         customFontFamilyInput.value = settings.customFontFamily;
         autoLowercaseCommandsInput.checked = settings.autoLowercaseCommands;
         keepMultibindsVisibleInput.checked = settings.keepMultibindsVisible;
+        drinkableAsFunctionalBindInput.checked = settings.drinkableAsFunctionalBind;
+        locationBindAsFunctionalBindInput.checked = settings.locationBindAsFunctionalBind;
         wakeLockInput.checked = settings.wakeLock;
         commandEchoInput.checked = settings.commandEcho;
         outputBottomPaddingInput.value = String(settings.outputBottomPadding);
@@ -841,6 +854,7 @@ export default async function initUiSettings() {
         mapPlayerMarkerDashEnabledInput.checked = settings.mapPlayerMarkerDashEnabled;
         mapRoomShapeInput.value = settings.mapRoomShape;
         pathFindingAlgorithmInput.value = settings.pathFindingAlgorithm;
+        if (teamNumberingModeInput) teamNumberingModeInput.value = settings.teamNumberingMode;
         objectContextMenuCommands = [...settings.objectContextMenuCommands];
         renderObjectContextMenuCommands();
         footerComponentsConfig = [...settings.footerComponents];
@@ -1255,6 +1269,8 @@ export default async function initUiSettings() {
             customFontFamily: customFontFamilyInput.value.trim(),
             autoLowercaseCommands: autoLowercaseCommandsInput.checked,
             keepMultibindsVisible: keepMultibindsVisibleInput.checked,
+            drinkableAsFunctionalBind: drinkableAsFunctionalBindInput.checked,
+            locationBindAsFunctionalBind: locationBindAsFunctionalBindInput.checked,
             wakeLock: wakeLockInput.checked,
             customBeepSoundKey: customBeepSoundInput?.value || undefined,
             mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultUiSettings.mapRoomSize,
@@ -1272,6 +1288,7 @@ export default async function initUiSettings() {
             pathFindingAlgorithm: (pathFindingAlgorithmInput.value === 'dijkstra' || pathFindingAlgorithmInput.value === 'astar')
                 ? pathFindingAlgorithmInput.value as PathFindingAlgorithm
                 : defaultUiSettings.pathFindingAlgorithm,
+            teamNumberingMode: (teamNumberingModeInput?.value === 'numbers' ? 'numbers' : 'letters') as 'letters' | 'numbers',
             objectContextMenuCommands: [...objectContextMenuCommands],
             footerComponents: [...footerComponentsConfig],
             commandEcho: commandEchoInput.checked,

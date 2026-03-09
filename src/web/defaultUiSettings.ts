@@ -74,6 +74,9 @@ export interface UiSettings {
     splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
+    teamNumberingMode: 'letters' | 'numbers';
+    drinkableAsFunctionalBind: boolean;
+    locationBindAsFunctionalBind: boolean;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -117,4 +120,7 @@ export const defaultUiSettings: UiSettings = {
     wakeLock: true,
     commandEcho: true,
     outputBottomPadding: 0,
+    teamNumberingMode: 'letters',
+    drinkableAsFunctionalBind: true,
+    locationBindAsFunctionalBind: true,
 };

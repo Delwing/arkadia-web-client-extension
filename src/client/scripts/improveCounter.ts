@@ -196,6 +196,7 @@ export default class ImproveCounter {
     private waitingForFirstCombat = false;
     private stateForm: number = 0;
     private optionsForm: number = 0;
+    private selfPersisting = false;
     constructor(client: Client, killCounter: any) {
         this.client = client;
         this.killCounter = killCounter;
@@ -210,6 +211,7 @@ export default class ImproveCounter {
         this.lifetimeLoaded = true;
 
         characterStorage.onChange('improve_counter', (value) => {
+            if (this.selfPersisting) return;
             this.load(value ?? {});
             this.initialized = false;
             this.loaded = true;
@@ -220,6 +222,7 @@ export default class ImproveCounter {
             }
         });
         characterStorage.onChange('improve_counter_lifetime', (value) => {
+            if (this.selfPersisting) return;
             this.loadLifetime(value ?? {});
             this.lifetimeLoaded = true;
             if (this.pendingLifetime.length) {
@@ -289,6 +292,7 @@ export default class ImproveCounter {
 
     reset() {
         this.entries = [];
+        this.level = -1;
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
         this.waitingForFirstCombat = true;
@@ -343,10 +347,24 @@ export default class ImproveCounter {
                 }
                 this.level = level;
             } else if (level > this.level) {
-                for (let l = this.level + 1; l <= level; l++) {
-                    const state = STATES[l] ?? String(l);
-                    this.recordInitial(state);
+                if (!isFreshLogin) {
+                    // Same session (same obj_num), reconnected after page reload
+                    // Track as real improvements
+                    for (let l = this.level + 1; l <= level; l++) {
+                        const state = STATES[l] ?? String(l);
+                        this.record(state);
+                    }
+                } else {
+                    // Different session - silently catch up
+                    for (let l = this.level + 1; l <= level; l++) {
+                        const state = STATES[l] ?? String(l);
+                        this.recordInitial(state);
+                    }
                 }
+                this.level = level;
+            } else if (isFreshLogin && level < this.level) {
+                // Level decreased since stored value (e.g., improvements absorbed between sessions)
+                // Reset to current level so new improvements get recorded
                 this.level = level;
             }
             if (objNum !== undefined) {
@@ -477,6 +495,7 @@ export default class ImproveCounter {
     }
 
     private persist = () => {
+        this.selfPersisting = true;
         characterStorage.set('improve_counter', {
             entries: this.entries,
             lastTime: this.lastTime,
@@ -485,10 +504,13 @@ export default class ImproveCounter {
             lastObjNum: this.lastObjNum,
             waitingForFirstCombat: this.waitingForFirstCombat,
         });
+        this.selfPersisting = false;
     };
 
     private persistLifetime = () => {
+        this.selfPersisting = true;
         characterStorage.set('improve_counter_lifetime', {entries: this.lifetime, enabled: this.lifetimeEnabled});
+        this.selfPersisting = false;
     };
 
     addLifetime(count: number, id?: number) {

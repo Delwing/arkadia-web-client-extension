@@ -620,6 +620,14 @@
                                     <label class="form-check-label" for="ui-keep-multibinds-visible">Zawsze pokazuj pasek multibindów</label>
                                 </div>
                                 <div class="form-check">
+                                    <input id="ui-drinkable-as-functional-bind" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-drinkable-as-functional-bind">Bind picia na bind funkcyjny</label>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-location-bind-as-functional-bind" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-location-bind-as-functional-bind">Bind lokacyjny na bind funkcyjny</label>
+                                </div>
+                                <div class="form-check">
                                     <input id="ui-wake-lock" type="checkbox" class="form-check-input" />
                                     <label class="form-check-label" for="ui-wake-lock">Blokada usypiania ekranu (Wake Lock)</label>
                                 </div>
@@ -630,6 +638,13 @@
                                 <div>
                                     <label class="form-label" for="ui-output-bottom-padding">Dolny padding okna (px)</label>
                                     <input id="ui-output-bottom-padding" type="number" step="1" min="0" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-team-numbering-mode">Numerowanie druzyny na liscie obiektow</label>
+                                    <select id="ui-team-numbering-mode" class="form-select">
+                                        <option value="letters">Litery (A, B, C...)</option>
+                                        <option value="numbers">Numery (1, 2, 3...)</option>
+                                    </select>
                                 </div>
                                 <div class="mt-2">
                                     <label class="form-label mb-1">Menu kontekstowe obiektów (PPM)</label>

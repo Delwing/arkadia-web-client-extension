@@ -1,5 +1,6 @@
 import Client from "./Client";
 import toTitleCase from "./utils/toTitleCase";
+import {globalStorage} from "@modules/core/storage";
 
 export interface ObjectData {
     desc?: string;
@@ -153,19 +154,36 @@ export default class ObjectManager {
             ordered.push(o);
         });
 
-        let restIndex = 1;
-        let nonCombatIndex = inCombat ? 50 : 1;
-        ordered.forEach(o => {
-            if (o.__category === 'player') {
-                o.shortcut = '@';
-            } else if (o.__category === 'team') {
-                // Shortcut already assigned and sorted above
-            } else if (o.__category === 'rest-noncombat') {
-                o.shortcut = String(nonCombatIndex++);
-            } else {
-                o.shortcut = String(restIndex++);
-            }
-        });
+        const teamNumberingMode = globalStorage.get("uiSettings")?.teamNumberingMode ?? 'letters';
+
+        if (teamNumberingMode === 'numbers') {
+            let index = 1;
+            let nonCombatIndex = 50;
+            ordered.forEach(o => {
+                if (o.__category === 'player') {
+                    o.shortcut = '@';
+                } else if (o.__category === 'rest-noncombat') {
+                    o.shortcut = String(inCombat ? nonCombatIndex++ : index++);
+                } else {
+                    // Both team and rest (enemies) get sequential numbers
+                    o.shortcut = String(index++);
+                }
+            });
+        } else {
+            let restIndex = 1;
+            let nonCombatIndex = inCombat ? 50 : 1;
+            ordered.forEach(o => {
+                if (o.__category === 'player') {
+                    o.shortcut = '@';
+                } else if (o.__category === 'team') {
+                    // Shortcut already assigned and sorted above
+                } else if (o.__category === 'rest-noncombat') {
+                    o.shortcut = String(nonCombatIndex++);
+                } else {
+                    o.shortcut = String(restIndex++);
+                }
+            });
+        }
 
         return ordered;
     }
