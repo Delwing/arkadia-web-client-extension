@@ -194,7 +194,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             buildLine("       ", printExit("sw"), "  ", printExit("s"), "  ", printExit("se"), "    ", printExit("d")),
         ];
 
-        const centerX = new AnsiAwareBuffer("X");
+        const centerX = new AnsiAwareBuffer("0");
         centerX.color([0, 1], DIM_GRAY);
         lines[2].appendBuffer(centerX);
         lines[2].appendBuffer(lines[3]);
@@ -269,7 +269,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             buildLine("      ", printExitAscii("sw"), "  ", printExitAscii("s"), "  ", printExitAscii("se"), "    ", printExitAscii("d")),
         ];
 
-        const centerX = new AnsiAwareBuffer("X");
+        const centerX = new AnsiAwareBuffer("0");
         centerX.color([0, 1], DIM_GRAY);
         lines[2].appendBuffer(centerX);
         lines[2].appendBuffer(lines[3]);
@@ -392,7 +392,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         pre.innerHTML = [
             `${o('nw')}  ${o('n')}  ${o('ne')}   ${o('u')}`,
             ` ${c('nw', '\\')}${c('n', '|')}${c('ne', '/')}       ${c('u', '|')}`,
-            `${o('w')}${c('w', '-')}<span class="cr-ascii-dim">X</span>${c('e', '-')}${o('e')}     ${udPivot}`,
+            `${o('w')}${c('w', '-')}<span class="cr-ascii-dim">0</span>${c('e', '-')}${o('e')}     ${udPivot}`,
             ` ${c('sw', '/')}${c('s', '|')}${c('se', '\\')}       ${c('d', '|')}`,
             `${o('sw')}  ${o('s')}  ${o('se')}   ${o('d')}`,
         ].join('\n');
