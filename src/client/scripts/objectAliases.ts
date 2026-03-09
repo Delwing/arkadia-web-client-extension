@@ -4,6 +4,10 @@ import {gmcp} from "../gmcp";
 import { createAttackController } from "../utils/attackController";
 import eventBus from "@modules/core/eventBus";
 import initAllyProtection from "./allyProtection";
+import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
+import type { PersonListEntry } from '../types/people';
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initObjectAliases(
     client: Client,
@@ -70,6 +74,54 @@ export default function initObjectAliases(
 
     const attackController = createAttackController(client);
     const allyProtection = initAllyProtection(client);
+
+    let enemyGuilds: string[] = [];
+    let peopleCache: PersonListEntry[] = [];
+
+    subscribeMerged(snapshot => {
+        peopleCache = snapshot ?? [];
+    });
+    refreshPeopleStore().catch(() => undefined);
+
+    const applyEnemySettings = (settings: any) => {
+        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown };
+        if (Array.isArray(detail.enemyGuilds)) {
+            enemyGuilds = [...detail.enemyGuilds];
+        }
+    };
+    applyEnemySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applyEnemySettings);
+
+    function isEnemyByName(name: string): boolean {
+        const person = peopleCache.find(p => p.name === name);
+        if (!person) return false;
+        if (person.isAlly) return false;
+        if (person.isEnemy) return true;
+        return enemyGuilds.includes(person.guild);
+    }
+
+    const INTRODUCED_NAME = /^[A-Z][a-z]+$/;
+    const ZAP_COLOR = createColorFormat("#00ff7f");
+
+    function inviteAll() {
+        const objects = client.ObjectManager.getObjectsOnLocation();
+        const targets = objects.filter(o =>
+            o.__category === 'rest-noncombat' &&
+            o.desc &&
+            INTRODUCED_NAME.test(o.desc) &&
+            !isEnemyByName(o.desc)
+        );
+
+        if (targets.length === 0) {
+            client.print(colorString('Nie ma kogo zaprosic.', ZAP_COLOR));
+            return;
+        }
+
+        for (const t of targets) {
+            client.sendCommand(`zapros ob_${t.num}`);
+        }
+        client.print(colorString(`Zapraszam: ${targets.map(t => t.desc).join(', ')}`, ZAP_COLOR));
+    }
 
     const attackById = (id: number, command?: string) => {
         // Check if target is an ally (cached on first encounter - just a Map lookup)
@@ -166,6 +218,10 @@ export default function initObjectAliases(
                     }
                 }
             }
+        });
+        aliases.push({
+            pattern: /\/zap 0$/,
+            callback: () => inviteAll()
         });
         aliases.push({
             pattern: /\/zap ([0-9]+)$/,
