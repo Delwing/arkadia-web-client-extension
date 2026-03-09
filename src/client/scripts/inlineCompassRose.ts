@@ -189,7 +189,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             buildLine("       ", printExit("nw"), "  ", printExit("n"), "  ", printExit("ne"), "    ", printExit("u")),
             buildLine("         ", hasExit("nw") ? "\\" : " ", " ", hasExit("n") ? "|" : " ", " ", hasExit("ne") ? "/" : " ", "      ", hasExit("u") ? "|" : ""),
             buildLine("       ", printExit("w"), hasExit("w") ? "---" : "   "),
-            buildLine(hasExit("e") ? "---" : "   ", printExit("e"), "    ", hasExit("d") || hasExit("u") ? "o" : ""),
+            buildLine(hasExit("e") ? "---" : "   ", printExit("e"), "    ", hasExit("d") || hasExit("u") ? "O" : ""),
             buildLine("         ", hasExit("sw") ? "/" : " ", " ", hasExit("s") ? "|" : " ", " ", hasExit("se") ? "\\" : " ", "      ", hasExit("d") ? "|" : ""),
             buildLine("       ", printExit("sw"), "  ", printExit("s"), "  ", printExit("se"), "    ", printExit("d")),
         ];
@@ -264,7 +264,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             buildLine("      ", printExitAscii("nw"), " ", printExitAscii("n"), " ", printExitAscii("ne"), "    ", printExitAscii("u")),
             buildLine("       ", hasExit("nw") ? "\\" : " ", hasExit("n") ? "|" : " ", hasExit("ne") ? "/" : " ", "     ", hasExit("u") ? "|" : ""),
             buildLine("      ", printExitAscii("w"), hasExit("w") ? "-" : " "),
-            buildLine(hasExit("e") ? "-" : " ", printExitAscii("e"), "    ", hasExit("d") || hasExit("u") ? "o" : ""),
+            buildLine(hasExit("e") ? "-" : " ", printExitAscii("e"), "    ", hasExit("d") || hasExit("u") ? "O" : ""),
             buildLine("       ", hasExit("sw") ? "/" : " ", hasExit("s") ? "|" : " ", hasExit("se") ? "\\" : " ", "     ", hasExit("d") ? "|" : ""),
             buildLine("      ", printExitAscii("sw"), " ", printExitAscii("s"), " ", printExitAscii("se"), "    ", printExitAscii("d")),
         ];
@@ -386,7 +386,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         const c = (dir: string, ch: string) => hasExit(dir) ? ch : ' '.repeat(ch.length);
 
         const udPivot = (hasExit('u') || hasExit('d'))
-            ? '<span class="cr-ascii-dim">o</span>'
+            ? '<span class="cr-ascii-dim">O</span>'
             : ' ';
 
         pre.innerHTML = [
