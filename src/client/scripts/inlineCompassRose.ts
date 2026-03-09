@@ -194,7 +194,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             buildLine("       ", printExit("sw"), "  ", printExit("s"), "  ", printExit("se"), "    ", printExit("d")),
         ];
 
-        const centerX = new AnsiAwareBuffer("0");
+        const centerX = new AnsiAwareBuffer("X");
         centerX.color([0, 1], DIM_GRAY);
         lines[2].appendBuffer(centerX);
         lines[2].appendBuffer(lines[3]);
