@@ -7,12 +7,20 @@ import type { LootPopupPayload, LootItem } from '@client/scripts/lootParser';
 interface BodyEntry {
     description: string;
     items: LootItem[];
+    stertyIndex?: number;
 }
 
 interface SpecialItem {
     item: LootItem;
     bodyIndex: number;
     itemIndex: number;
+}
+
+function lootCommand(itemName: string, body: BodyEntry): string {
+    if (body.stertyIndex != null) {
+        return `wez ${itemName} z ${body.stertyIndex}. sterty`;
+    }
+    return `wez ${itemName} z ciala ${body.description}`;
 }
 
 const POPUP_ID = 'popup:loot';
@@ -25,10 +33,10 @@ const LootPopup: React.FC = () => {
             const existing = prev.findIndex(b => b.description === data.description);
             if (existing >= 0) {
                 const updated = [...prev];
-                updated[existing] = { description: data.description, items: data.items };
+                updated[existing] = { description: data.description, items: data.items, stertyIndex: data.stertyIndex };
                 return updated;
             }
-            return [...prev, { description: data.description, items: data.items }];
+            return [...prev, { description: data.description, items: data.items, stertyIndex: data.stertyIndex }];
         });
     }, []);
 
@@ -80,7 +88,7 @@ const LootPopup: React.FC = () => {
         const item = body.items[itemIndex];
         if (!item) return;
 
-        eventBus.emit('sendCommand', { command: `wez ${item.fullName} z ciala ${body.description}` });
+        eventBus.emit('sendCommand', { command: lootCommand(item.fullName, body) });
 
         setBodies(prev => {
             const updated = [...prev];
@@ -122,7 +130,7 @@ const LootPopup: React.FC = () => {
                                             type="button"
                                             className="loot-popup__item"
                                             onClick={() => handleItemClick(si.bodyIndex, si.itemIndex)}
-                                            title={`wez ${si.item.fullName} z ciala ${bodies[si.bodyIndex]?.description}`}
+                                            title={bodies[si.bodyIndex] ? lootCommand(si.item.fullName, bodies[si.bodyIndex]) : ''}
                                             style={si.item.color ? { color: si.item.color } : undefined}
                                         >
                                             {si.item.fullName}
@@ -146,7 +154,7 @@ const LootPopup: React.FC = () => {
                                                     type="button"
                                                     className="loot-popup__item"
                                                     onClick={() => handleItemClick(bodyIndex, itemIndex)}
-                                                    title={`wez ${item.fullName} z ciala ${body.description}`}
+                                                    title={lootCommand(item.fullName, body)}
                                                     style={item.color ? { color: item.color } : undefined}
                                                 >
                                                     {item.fullName}
