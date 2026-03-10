@@ -11,6 +11,7 @@ import {
     createGmcpStream,
     createTelnetOptionParser,
     encodeGmcp,
+    MccpHandler,
     stripTelnetSequences,
 } from "@shared/socket";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
@@ -34,6 +35,7 @@ class ArkadiaClient implements ClientAdapter {
     private messageBuffer: { text: string, type: string }[] = []
     private readonly gmcpStream: (data: string) => void;
     private readonly telnetOptionHandler: (optionData: string) => string;
+    private readonly mccpHandler: MccpHandler;
     private recorder: Recorder;
     private autoRecorder: Recorder | null = null;
     private readonly activeRecorders = new Set<Recorder>();
@@ -63,6 +65,7 @@ class ArkadiaClient implements ClientAdapter {
             },
         });
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
+        this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.recorder = this.createRecorder(false);
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -124,12 +127,14 @@ class ArkadiaClient implements ClientAdapter {
                 try {
                     if (event.data.length === 0) return;
                     const decodedData = atob(event.data);
-                    this.recordIncoming(decodedData);
+                    // Decompress MCCP data before any other processing
+                    const data = this.mccpHandler.processData(decodedData);
+                    this.recordIncoming(data);
                     try {
-                        this.processIncomingData(decodedData);
+                        this.processIncomingData(data);
                     } catch (processingError) {
                         console.error('Error during trigger processing:', processingError);
-                        console.error('Line was recorded but not processed:', decodedData.substring(0, 100));
+                        console.error('Line was recorded but not processed:', data.substring(0, 100));
                     }
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
@@ -144,6 +149,7 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
+                this.mccpHandler.reset();
 
                 void this.stopAutoRecording(true);
             };
@@ -221,6 +227,21 @@ class ArkadiaClient implements ClientAdapter {
         } catch (error) {
             console.error('Error sending message:', error);
             this.emit('error', error);
+        }
+    }
+
+    /**
+     * Send raw telnet data (no \r\n suffix, just base64 encode and send).
+     * Used for telnet option negotiation responses like MCCP.
+     */
+    private sendRaw(data: string): void {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        try {
+            this.socket.send(btoa(data));
+        } catch (error) {
+            console.error('Error sending raw data:', error);
         }
     }
 
