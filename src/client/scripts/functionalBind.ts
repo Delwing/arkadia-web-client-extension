@@ -2,7 +2,7 @@ import Client from "../Client";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import {bindMatches} from "@modules/core/keymapTypes";
 import type {FunctionalBindCategory} from "./functionalBindCategories";
-import {CATEGORY_LABELS, CATEGORY_PRIORITIES, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCategories";
+import {CATEGORY_LABELS, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCategories";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -200,19 +200,16 @@ export class FunctionalBind {
  */
 export class FunctionalBindManager {
     private categories: Map<FunctionalBindCategory, FunctionalBind> = new Map();
-    /** Categories sorted by priority descending (highest first). */
-    private sortedCategories: FunctionalBindCategory[];
+    /** Tracks the order in which categories were last set. Higher = more recent. */
+    private setOrder: Map<FunctionalBindCategory, number> = new Map();
+    private setCounter = 0;
 
     constructor(client: Client) {
         // Create one FunctionalBind per category
         for (const cat of FUNCTIONAL_BIND_CATEGORIES) {
             this.categories.set(cat, new FunctionalBind(client));
+            this.setOrder.set(cat, 0);
         }
-
-        // Sort by descending priority for dispatch
-        this.sortedCategories = [...FUNCTIONAL_BIND_CATEGORIES].sort(
-            (a, b) => CATEGORY_PRIORITIES[b] - CATEGORY_PRIORITIES[a]
-        );
 
         // Single keydown listener for all functional binds
         window.addEventListener('keydown', (ev) => {
@@ -221,9 +218,11 @@ export class FunctionalBindManager {
     }
 
     private handleKeyDown(ev: KeyboardEvent) {
-        // Find the highest-priority active bind whose key matches
-        for (const cat of this.sortedCategories) {
-            const bind = this.categories.get(cat)!;
+        // Collect active categories whose key matches, then pick the most recently set one
+        let bestOrder = -1;
+        let bestBind: FunctionalBind | null = null;
+
+        for (const [cat, bind] of this.categories) {
             if (!bind.isActive()) continue;
 
             const matches = bindMatches(ev, {
@@ -233,10 +232,17 @@ export class FunctionalBindManager {
                 shift: bind.getShift(),
             });
             if (matches) {
-                bind.execute();
-                ev.preventDefault();
-                return;
+                const order = this.setOrder.get(cat) ?? 0;
+                if (order > bestOrder) {
+                    bestOrder = order;
+                    bestBind = bind;
+                }
             }
+        }
+
+        if (bestBind) {
+            bestBind.execute();
+            ev.preventDefault();
         }
     }
 
@@ -278,11 +284,15 @@ export class FunctionalBindManager {
     /** Set a functional bind for a specific category. */
     setCategory(category: FunctionalBindCategory, printable: string | null, callback?: () => void, clearAfterUse?: boolean): void {
         this.categories.get(category)?.set(printable, callback, clearAfterUse ?? false);
+        if (printable !== null) {
+            this.setOrder.set(category, ++this.setCounter);
+        }
     }
 
     /** Clear a specific category's bind. */
     clearCategory(category: FunctionalBindCategory): void {
         this.categories.get(category)?.clear();
+        this.setOrder.set(category, 0);
     }
 
     /** Get the FunctionalBind instance for a category. */
