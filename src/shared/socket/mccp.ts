@@ -11,10 +11,21 @@ interface InflateInternal extends pako.Inflate {
     options: { chunkSize: number };
 }
 
+export interface MccpStats {
+    active: boolean;
+    compressedBytes: number;
+    decompressedBytes: number;
+    ratio: number; // e.g. 0.45 means compressed to 45% of original
+    savedBytes: number;
+}
+
 export class MccpHandler {
     private compressing = false;
     private inflator: pako.Inflate | null = null;
     private readonly sendRaw: (data: string) => void;
+
+    private _compressedBytes = 0;
+    private _decompressedBytes = 0;
 
     constructor(sendRaw: (data: string) => void) {
         this.sendRaw = sendRaw;
@@ -22,6 +33,19 @@ export class MccpHandler {
 
     isActive(): boolean {
         return this.compressing;
+    }
+
+    getStats(): MccpStats {
+        const ratio = this._decompressedBytes > 0
+            ? this._compressedBytes / this._decompressedBytes
+            : 1;
+        return {
+            active: this.compressing,
+            compressedBytes: this._compressedBytes,
+            decompressedBytes: this._decompressedBytes,
+            ratio,
+            savedBytes: this._decompressedBytes - this._compressedBytes,
+        };
     }
 
     /**
@@ -67,6 +91,8 @@ export class MccpHandler {
     reset(): void {
         this.compressing = false;
         this.inflator = null;
+        this._compressedBytes = 0;
+        this._decompressedBytes = 0;
     }
 
     private startCompression(): void {
@@ -109,7 +135,10 @@ export class MccpHandler {
             return data;
         }
 
-        return bytesToString(output);
+        const result = bytesToString(output);
+        this._compressedBytes += bytes.length;
+        this._decompressedBytes += result.length;
+        return result;
     }
 }
 

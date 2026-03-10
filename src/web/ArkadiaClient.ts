@@ -45,6 +45,11 @@ class ArkadiaClient implements ClientAdapter {
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
+        eventBus.on("ping", () => {
+            if (this.mccpHandler.isActive()) {
+                eventBus.emit("mccp.stats", this.mccpHandler.getStats());
+            }
+        });
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
                 if (path === "char.info" && !this.receivedFirstGmcp) {
@@ -150,6 +155,7 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
                 this.mccpHandler.reset();
+                eventBus.emit("mccp.stats", null);
 
                 void this.stopAutoRecording(true);
             };

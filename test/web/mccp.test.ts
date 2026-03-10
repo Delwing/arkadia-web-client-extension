@@ -164,4 +164,50 @@ describe('MccpHandler', () => {
         expect(handler.isActive()).toBe(true);
         expect(result).toContain('compressed text');
     });
+
+    it('should track compression statistics', () => {
+        handler.processData(IAC_SB_COMPRESS2_SE);
+
+        const compressor = createStreamingCompressor();
+        const original = 'Hello from the server!\r\n';
+        const compressed = compressor.push(original);
+
+        handler.processData(compressed);
+
+        const stats = handler.getStats();
+        expect(stats.active).toBe(true);
+        expect(stats.compressedBytes).toBe(compressed.length);
+        expect(stats.decompressedBytes).toBe(original.length);
+        expect(stats.savedBytes).toBe(original.length - compressed.length);
+        expect(stats.ratio).toBeCloseTo(compressed.length / original.length, 2);
+    });
+
+    it('should accumulate stats across multiple messages', () => {
+        handler.processData(IAC_SB_COMPRESS2_SE);
+
+        const compressor = createStreamingCompressor();
+        const msg1 = 'First message\r\n';
+        const msg2 = 'Second message\r\n';
+        handler.processData(compressor.push(msg1));
+        handler.processData(compressor.push(msg2));
+
+        const stats = handler.getStats();
+        expect(stats.decompressedBytes).toBe(msg1.length + msg2.length);
+        expect(stats.compressedBytes).toBeGreaterThan(0);
+    });
+
+    it('should reset stats on reset()', () => {
+        handler.processData(IAC_SB_COMPRESS2_SE);
+
+        const compressor = createStreamingCompressor();
+        handler.processData(compressor.push('some data'));
+        expect(handler.getStats().compressedBytes).toBeGreaterThan(0);
+
+        handler.reset();
+
+        const stats = handler.getStats();
+        expect(stats.compressedBytes).toBe(0);
+        expect(stats.decompressedBytes).toBe(0);
+        expect(stats.active).toBe(false);
+    });
 });
