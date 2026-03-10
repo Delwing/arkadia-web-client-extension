@@ -2,7 +2,7 @@ import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
 import {isDirection} from "@shared/map/directions";
 import {Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
-import {formatLabel, FunctionalBind, LINE_START_EVENT,} from "./scripts/functionalBind";
+import {formatLabel, FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
@@ -71,7 +71,7 @@ export interface ClientAdapter {
 export default class Client {
     clientAdapter: ClientAdapter;
     Colors = Colors;
-    FunctionalBind = new FunctionalBind(this);
+    FunctionalBind = new FunctionalBindManager(this);
     public Triggers = new Triggers(this);
     public Map = new MapHelper({
         on: this.on.bind(this),
@@ -217,6 +217,27 @@ export default class Client {
                     shift: bind.shift,
                     label: formatLabel(bind)
                 })
+            }
+            // Per-category bind overrides (gates, transport) – fall back to main
+            const gatesBind = b?.mainGates || bind;
+            if (gatesBind) {
+                this.FunctionalBind.updateOptions({
+                    key: gatesBind.key,
+                    ctrl: gatesBind.ctrl,
+                    alt: gatesBind.alt,
+                    shift: gatesBind.shift,
+                    label: formatLabel(gatesBind)
+                }, 'gates')
+            }
+            const transportBind = b?.mainTransport || bind;
+            if (transportBind) {
+                this.FunctionalBind.updateOptions({
+                    key: transportBind.key,
+                    ctrl: transportBind.ctrl,
+                    alt: transportBind.alt,
+                    shift: transportBind.shift,
+                    label: formatLabel(transportBind)
+                }, 'transport')
             }
             const lamp = b?.lamp
             if (lamp) {

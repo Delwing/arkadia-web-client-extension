@@ -1,6 +1,8 @@
 import Client from "../Client";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import {bindMatches} from "@modules/core/keymapTypes";
+import type {FunctionalBindCategory} from "./functionalBindCategories";
+import {CATEGORY_LABELS, CATEGORY_PRIORITIES, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCategories";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -59,6 +61,11 @@ function createBindMessage(label: string, printable: string, callback: () => voi
     return buffer;
 }
 
+/**
+ * A single functional bind slot. Holds the current printable command and callback.
+ * Does NOT own a keydown listener – the FunctionalBindManager dispatches to the
+ * appropriate slot based on priority.
+ */
 export class FunctionalBind {
 
     private client: Client;
@@ -79,12 +86,6 @@ export class FunctionalBind {
         this.ctrl = !!options.ctrl;
         this.alt = !!options.alt;
         this.shift = !!options.shift;
-        window.addEventListener('keydown', (ev) => {
-            if (bindMatches(ev, { key: this.key, ctrl: this.ctrl, alt: this.alt, shift: this.shift })) {
-                this.functionalBind();
-                ev.preventDefault();
-            }
-        })
 
         this.client.on(LINE_START_EVENT, () => this.newMessage());
     }
@@ -133,6 +134,16 @@ export class FunctionalBind {
         this.printedInMessage = false;
     }
 
+    /** Execute the current bind action. Called by FunctionalBindManager on keydown. */
+    execute() {
+        this.functionalBind();
+    }
+
+    /** Whether this slot has an active (non-null) printable set. */
+    isActive(): boolean {
+        return this.currentPrintable !== null;
+    }
+
     updateOptions(options: FunctionalBindOptions = {}) {
         if (options.key) {
             this.key = options.key;
@@ -147,8 +158,137 @@ export class FunctionalBind {
         if (options.shift !== undefined) this.shift = !!options.shift;
     }
 
+    getKey(): string {
+        return this.key;
+    }
+
+    getCtrl(): boolean {
+        return this.ctrl;
+    }
+
+    getAlt(): boolean {
+        return this.alt;
+    }
+
+    getShift(): boolean {
+        return this.shift;
+    }
+
     getLabel() {
         return this.label;
     }
 
+}
+
+/**
+ * Manages multiple FunctionalBind instances, one per category.
+ *
+ * When a key is pressed, the manager finds the highest-priority active bind
+ * whose key matches and executes it. Lower-priority binds are preserved and
+ * will surface when higher-priority ones are cleared.
+ *
+ * Backward-compatible: `set(printable, callback, clearAfterUse)` targets the
+ * 'default' category. Use `setCategory(category, ...)` to target a specific one.
+ */
+export class FunctionalBindManager {
+    private categories: Map<FunctionalBindCategory, FunctionalBind> = new Map();
+    /** Categories sorted by priority descending (highest first). */
+    private sortedCategories: FunctionalBindCategory[];
+
+    constructor(client: Client) {
+        // Create one FunctionalBind per category
+        for (const cat of FUNCTIONAL_BIND_CATEGORIES) {
+            this.categories.set(cat, new FunctionalBind(client));
+        }
+
+        // Sort by descending priority for dispatch
+        this.sortedCategories = [...FUNCTIONAL_BIND_CATEGORIES].sort(
+            (a, b) => CATEGORY_PRIORITIES[b] - CATEGORY_PRIORITIES[a]
+        );
+
+        // Single keydown listener for all functional binds
+        window.addEventListener('keydown', (ev) => {
+            this.handleKeyDown(ev);
+        });
+    }
+
+    private handleKeyDown(ev: KeyboardEvent) {
+        // Find the highest-priority active bind whose key matches
+        for (const cat of this.sortedCategories) {
+            const bind = this.categories.get(cat)!;
+            if (!bind.isActive()) continue;
+
+            const matches = bindMatches(ev, {
+                key: bind.getKey(),
+                ctrl: bind.getCtrl(),
+                alt: bind.getAlt(),
+                shift: bind.getShift(),
+            });
+            if (matches) {
+                bind.execute();
+                ev.preventDefault();
+                return;
+            }
+        }
+    }
+
+    // ===== Backward-compatible API (targets 'default' category) =====
+
+    /** Set the default functional bind. Backward-compatible with old callers. */
+    set(printable: string | null, callback?: () => void, clearAfterUse?: boolean): void {
+        this.setCategory('default', printable, callback, clearAfterUse);
+    }
+
+    /** Clear the default functional bind. */
+    clear(): void {
+        this.clearCategory('default');
+    }
+
+    /** Reset message-print tracking on all categories. */
+    newMessage(): void {
+        for (const bind of this.categories.values()) {
+            bind.newMessage();
+        }
+    }
+
+    /** Get the label for the default category's bind key. */
+    getLabel(): string {
+        return this.categories.get('default')!.getLabel();
+    }
+
+    /**
+     * Update key options for a category.
+     * When called without category, updates the 'default' category.
+     */
+    updateOptions(options: FunctionalBindOptions, category?: FunctionalBindCategory): void {
+        const cat = category ?? 'default';
+        this.categories.get(cat)?.updateOptions(options);
+    }
+
+    // ===== Category-aware API =====
+
+    /** Set a functional bind for a specific category. */
+    setCategory(category: FunctionalBindCategory, printable: string | null, callback?: () => void, clearAfterUse?: boolean): void {
+        this.categories.get(category)?.set(printable, callback, clearAfterUse ?? false);
+    }
+
+    /** Clear a specific category's bind. */
+    clearCategory(category: FunctionalBindCategory): void {
+        this.categories.get(category)?.clear();
+    }
+
+    /** Get the FunctionalBind instance for a category. */
+    getCategory(category: FunctionalBindCategory): FunctionalBind | undefined {
+        return this.categories.get(category);
+    }
+
+    /** Get the label for a specific category's bind key. */
+    getCategoryLabel(category: FunctionalBindCategory): string {
+        return this.categories.get(category)?.getLabel() ?? '';
+    }
+
+    /** Get the human-readable name for a category. */
+    getCategoryName(category: FunctionalBindCategory): string {
+        return CATEGORY_LABELS[category];
+    }
 }

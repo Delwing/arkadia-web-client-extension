@@ -4,17 +4,27 @@ import { formatLabel } from "./functionalBind";
 export default function initBinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     function printBinds() {
         const main = client.FunctionalBind.getLabel();
+        const gatesLabel = client.FunctionalBind.getCategoryLabel('gates');
+        const transportLabel = client.FunctionalBind.getCategoryLabel('transport');
         const lamp = formatLabel(client.lampBind);
         const attack = formatLabel(client.attackBind);
         const support = formatLabel(client.supportBind);
         const moveMode = formatLabel(client.moveModeBind);
         const lines = [
             `Domy\u015Blny: ${main}`,
+        ];
+        if (gatesLabel !== main) {
+            lines.push(`Wrota: ${gatesLabel}`);
+        }
+        if (transportLabel !== main) {
+            lines.push(`Transport: ${transportLabel}`);
+        }
+        lines.push(
             `Atakuj: ${attack}`,
             `Nape\u0142nij lamp\u0119: ${lamp}`,
             `Wesprzyj: ${support}`,
             `Tryb ruchu: ${moveMode}`,
-        ];
+        );
         (client.customBinds || []).forEach(cb => {
             lines.push(`${cb.command}: ${formatLabel(cb)}`);
         });

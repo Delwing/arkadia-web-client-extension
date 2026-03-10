@@ -7,7 +7,7 @@ type TransportTimerCallback = (payload: TransportTimerPayload | null) => void;
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
+  FunctionalBind = { set: jest.fn(), setCategory: jest.fn(), clear: jest.fn(), clearCategory: jest.fn(), newMessage: jest.fn() };
   sendEvent = jest.fn();
   sendCommand = jest.fn();
   private transportTimerCallback: TransportTimerCallback | null = null;
@@ -40,8 +40,9 @@ describe('ships triggers', () => {
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label, callback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
     callback();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'wem');
@@ -53,8 +54,9 @@ describe('ships triggers', () => {
   test('galeon boarding trigger binds command without beep', () => {
     parse('Wielki trojmasztowy galeon.', 'room.contents.object');
     expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
   });
 
@@ -62,8 +64,9 @@ describe('ships triggers', () => {
     client.sendEvent.mockClear();
     parse('Tajemniczy okret', 'room.contents.object');
     expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label, callback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
     callback();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'wem');
@@ -74,13 +77,14 @@ describe('ships triggers', () => {
 
   test('disembark trigger sends command and event when on ship', () => {
     parse('Tratwa przybija do brzegu.');
-    const [, boardCallback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    const [, , boardCallback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
     boardCallback();
-    client.FunctionalBind.set.mockClear();
+    client.FunctionalBind.setCategory.mockClear();
     client.sendCommand.mockClear();
     client.sendEvent.mockClear();
     parse('Marynarze sprawnie cumuja');
-    const [label, callback] = client.FunctionalBind.set.mock.calls.pop()!;
+    const [category, label, callback] = client.FunctionalBind.setCategory.mock.calls.pop()!;
+    expect(category).toBe('transport');
     expect(label).toBe('zejdz ze statku');
     callback();
     expect(client.sendCommand).toHaveBeenCalledTimes(1);
@@ -90,18 +94,18 @@ describe('ships triggers', () => {
 
   test('disembark message starting with Jakis binds only when on ship', () => {
     parse('Tratwa przybija do brzegu.');
-    const [, boardCallback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    const [, , boardCallback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
     boardCallback();
-    client.FunctionalBind.set.mockClear();
+    client.FunctionalBind.setCategory.mockClear();
     client.sendCommand.mockClear();
     client.sendEvent.mockClear();
     parse('Jakis mezczyzna krzyczy na galeonie: Doplynelismy do przystani w Urbimo! Mozna wysiadac!');
-    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+    expect(client.FunctionalBind.setCategory).not.toHaveBeenCalled();
   });
 
   test('schodzi z galeonu line does not bind', () => {
     parse('Wysoki kruczowlosy mezczyzna schodzi z galeonu na brzeg.');
-    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+    expect(client.FunctionalBind.setCategory).not.toHaveBeenCalled();
   });
 
   test('boarding command does NOT bind when on ship', () => {
@@ -109,15 +113,16 @@ describe('ships triggers', () => {
     client.emitTransportTimer({ label: 'Tratwa', remaining: 30, total: 60 });
     parse('Tratwa przybija do brzegu.');
     // Should not bind the board commands when already on board
-    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+    expect(client.FunctionalBind.setCategory).not.toHaveBeenCalled();
   });
 
   test('boarding command binds when not on ship', () => {
     // Not on board
     client.emitTransportTimer(null);
     parse('Tratwa przybija do brzegu.');
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
   });
 
@@ -126,8 +131,9 @@ describe('ships triggers', () => {
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;kup bilet;wsiadz na statek;wlm');
   });
 });

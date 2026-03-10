@@ -53,11 +53,17 @@ jest.mock('@client/Triggers', () => {
 });
 jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@client/scripts/functionalBind', () => ({
-  FunctionalBind: jest.fn().mockImplementation(() => ({
+  FunctionalBindManager: jest.fn().mockImplementation(() => ({
     set: jest.fn(),
+    setCategory: jest.fn(),
     clear: jest.fn(),
+    clearCategory: jest.fn(),
     newMessage: jest.fn(),
+    getLabel: jest.fn(() => ']'),
+    getCategoryLabel: jest.fn(() => ']'),
+    updateOptions: jest.fn(),
   })),
+  formatLabel: jest.fn((opts: any) => opts.key || ''),
 }));
 
 

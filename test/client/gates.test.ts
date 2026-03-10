@@ -4,7 +4,7 @@ import initGates from '@client/scripts/gates';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
+  FunctionalBind = { set: jest.fn(), setCategory: jest.fn(), clear: jest.fn(), clearCategory: jest.fn(), newMessage: jest.fn() };
   on = jest.fn();
   sendCommand = jest.fn();
 }
@@ -22,14 +22,16 @@ describe('gates triggers', () => {
   });
 
   test('binding is set and callback sends command', () => {
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const initCb = (client.FunctionalBind.set as jest.Mock).mock.calls[0][1];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledWith('gates', null, expect.any(Function));
+    const initCb = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0][2];
     initCb();
     expect(client.sendCommand).toHaveBeenCalledWith('uderz we wrota');
 
     parse('Probujesz otworzyc masywne wrota.');
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(2);
-    const [label, cb] = (client.FunctionalBind.set as jest.Mock).mock.calls[1];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(2);
+    const [category, label, cb] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[1];
+    expect(category).toBe('gates');
     expect(label).toBe('uderz we wrota');
     cb();
     expect(client.sendCommand).toHaveBeenCalledTimes(2);
@@ -37,6 +39,6 @@ describe('gates triggers', () => {
 
   test('niewielka furtka pattern', () => {
     parse('Probujesz otworzyc niewielka furtke.');
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(2);
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(2);
   });
 });
