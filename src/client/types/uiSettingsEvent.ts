@@ -11,7 +11,6 @@ export type UiSettingsEventPayload = {
     autoLowercaseCommands?: boolean;
     keepMultibindsVisible?: boolean;
     drinkableAsFunctionalBind?: boolean;
-    locationBindAsFunctionalBind?: boolean;
     wakeLock?: boolean;
     commandEcho?: boolean;
 } & Record<string, unknown>;

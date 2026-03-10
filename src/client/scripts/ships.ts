@@ -10,13 +10,13 @@ const BOARD_CMDS = [
 ];
 const BOARD_LABEL = BOARD_CMDS.join(";");
 
-function bindShip(client: Client, commands: string[], label: string, beep: boolean, locationBound = true) {
+function bindShip(client: Client, commands: string[], label: string, beep: boolean) {
     if (beep) {
         client.sendEvent("sound:play", { key: "beep" });
     }
     client.FunctionalBind.set(label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));
-    }, false, locationBound);
+    }, false);
 }
 
 export default function initShips(client: Client) {
@@ -34,7 +34,7 @@ export default function initShips(client: Client) {
         return line;
     };
     const disembark = (line: any) => {
-        bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true, false);
+        bindShip(client, ["zejdz ze statku"], "zejdz ze statku", true);
         client.sendEvent("refreshPositionWhenAble");
         return line;
     };

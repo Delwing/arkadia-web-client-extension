@@ -309,10 +309,8 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         const uiSettings = globalStorage.get('uiSettings');
         const room = client.Map.currentRoom as any;
         if (room) {
-            if (uiSettings?.locationBindAsFunctionalBind && room.userData?.bind) {
-                client.FunctionalBind.set(room.userData.bind, undefined, false, true);
-            } else if (uiSettings?.drinkableAsFunctionalBind && room.userData?.drinkable) {
-                client.FunctionalBind.set("napij sie do syta wody", undefined, false, true);
+            if (uiSettings?.drinkableAsFunctionalBind && room.userData?.drinkable) {
+                client.FunctionalBind.set("napij sie do syta wody", undefined, false);
             }
         }
     });
