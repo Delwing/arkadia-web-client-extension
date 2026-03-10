@@ -15,8 +15,7 @@ import {
   PackageStatus,
   ClockDisplay,
   MailStatus,
-  WeaponState,
-  CompressionStats
+  WeaponState
 } from "./components";
 
 type MountResult = {
@@ -46,7 +45,6 @@ export const mountMigratedComponents = (): MountResult => {
     { id: "multi-binds", Component: MultiBinds },
     { id: "mail-status", Component: MailStatus },
     { id: "weapon-state", Component: WeaponState },
-    { id: "compression-stats", Component: CompressionStats },
   ];
 
   componentConfigs.forEach(({ id, Component }) => {

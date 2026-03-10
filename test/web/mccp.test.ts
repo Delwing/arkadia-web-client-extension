@@ -194,6 +194,10 @@ describe('MccpHandler', () => {
         const stats = handler.getStats();
         expect(stats.decompressedBytes).toBe(msg1.length + msg2.length);
         expect(stats.compressedBytes).toBeGreaterThan(0);
+        expect(stats.decompressCallCount).toBe(2);
+        expect(stats.totalDecompressTimeMs).toBeGreaterThanOrEqual(0);
+        expect(stats.avgDecompressTimeUs).toBeGreaterThanOrEqual(0);
+        expect(stats.maxDecompressTimeUs).toBeGreaterThanOrEqual(0);
     });
 
     it('should reset stats on reset()', () => {
@@ -209,5 +213,9 @@ describe('MccpHandler', () => {
         expect(stats.compressedBytes).toBe(0);
         expect(stats.decompressedBytes).toBe(0);
         expect(stats.active).toBe(false);
+        expect(stats.totalDecompressTimeMs).toBe(0);
+        expect(stats.decompressCallCount).toBe(0);
+        expect(stats.avgDecompressTimeUs).toBe(0);
+        expect(stats.maxDecompressTimeUs).toBe(0);
     });
 });

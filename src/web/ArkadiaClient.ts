@@ -27,6 +27,11 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
 
 class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
@@ -47,7 +52,16 @@ class ArkadiaClient implements ClientAdapter {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         eventBus.on("ping", () => {
             if (this.mccpHandler.isActive()) {
-                eventBus.emit("mccp.stats", this.mccpHandler.getStats());
+                const stats = this.mccpHandler.getStats();
+                eventBus.emit("mccp.stats", stats);
+                console.debug(
+                    `[MCCP] ratio: ${Math.round(stats.ratio * 100)}%` +
+                    ` | saved: ${formatBytes(stats.savedBytes)}` +
+                    ` | avg decompress: ${stats.avgDecompressTimeUs}µs` +
+                    ` | max: ${stats.maxDecompressTimeUs}µs` +
+                    ` | calls: ${stats.decompressCallCount}` +
+                    ` | total CPU: ${stats.totalDecompressTimeMs.toFixed(1)}ms`
+                );
             }
         });
         this.gmcpStream = createGmcpStream({
