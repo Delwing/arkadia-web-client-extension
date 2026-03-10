@@ -5,7 +5,10 @@
  * share the same key, only the highest-priority active bind fires. Lower-priority
  * binds are preserved and restored when higher-priority ones clear.
  *
- * Priority order (highest first): default > transport > gates
+ * Priority order (highest first): gates > transport > default
+ *
+ * Gates and transport are contextual overrides that take precedence over
+ * the default bind when active. When they are cleared, the default surfaces.
  */
 
 export type FunctionalBindCategory = 'gates' | 'transport' | 'default';
@@ -13,9 +16,9 @@ export type FunctionalBindCategory = 'gates' | 'transport' | 'default';
 export const FUNCTIONAL_BIND_CATEGORIES: FunctionalBindCategory[] = ['gates', 'transport', 'default'];
 
 export const CATEGORY_PRIORITIES: Record<FunctionalBindCategory, number> = {
-    gates: 0,
+    gates: 2,
     transport: 1,
-    default: 2,
+    default: 0,
 };
 
 export const CATEGORY_LABELS: Record<FunctionalBindCategory, string> = {
