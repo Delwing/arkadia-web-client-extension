@@ -145,6 +145,7 @@ export class FunctionalBind {
     }
 
     updateOptions(options: FunctionalBindOptions = {}) {
+        const oldLabel = this.label;
         if (options.key) {
             this.key = options.key;
         }
@@ -156,6 +157,13 @@ export class FunctionalBind {
         if (options.ctrl !== undefined) this.ctrl = !!options.ctrl;
         if (options.alt !== undefined) this.alt = !!options.alt;
         if (options.shift !== undefined) this.shift = !!options.shift;
+
+        // When the label changes, invalidate the cached printable so the next
+        // set() call reprints the bind message with the updated label.
+        if (this.label !== oldLabel) {
+            this.currentPrintable = null;
+            this.printedInMessage = false;
+        }
     }
 
     getKey(): string {
