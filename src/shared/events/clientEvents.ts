@@ -155,7 +155,6 @@ export interface KnownEvents {
     "zaskTimer": { seconds: number; ok: boolean } | null;
     "moveModeChanged": number;
     "ping": number | null;
-    "mccp.stats": { active: boolean; compressedBytes: number; decompressedBytes: number; ratio: number; savedBytes: number; totalDecompressTimeMs: number; decompressCallCount: number; avgDecompressTimeUs: number; maxDecompressTimeUs: number } | null;
     "transportTimer": TransportTimerPayload | null;
     "combatTimer": number | null;
     "worldDestructionTimer": number | null;

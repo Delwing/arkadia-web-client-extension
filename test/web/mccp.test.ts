@@ -165,57 +165,25 @@ describe('MccpHandler', () => {
         expect(result).toContain('compressed text');
     });
 
-    it('should track compression statistics', () => {
-        handler.processData(IAC_SB_COMPRESS2_SE);
+    it('should not negotiate when disabled', () => {
+        handler.enabled = false;
 
-        const compressor = createStreamingCompressor();
-        const original = 'Hello from the server!\r\n';
-        const compressed = compressor.push(original);
-
-        handler.processData(compressed);
-
-        const stats = handler.getStats();
-        expect(stats.active).toBe(true);
-        expect(stats.compressedBytes).toBe(compressed.length);
-        expect(stats.decompressedBytes).toBe(original.length);
-        expect(stats.savedBytes).toBe(original.length - compressed.length);
-        expect(stats.ratio).toBeCloseTo(compressed.length / original.length, 2);
+        handler.processData(`Welcome\r\n${IAC_WILL_COMPRESS2}`);
+        expect(sentData).toEqual([]);
+        expect(handler.isActive()).toBe(false);
     });
 
-    it('should accumulate stats across multiple messages', () => {
-        handler.processData(IAC_SB_COMPRESS2_SE);
-
-        const compressor = createStreamingCompressor();
-        const msg1 = 'First message\r\n';
-        const msg2 = 'Second message\r\n';
-        handler.processData(compressor.push(msg1));
-        handler.processData(compressor.push(msg2));
-
-        const stats = handler.getStats();
-        expect(stats.decompressedBytes).toBe(msg1.length + msg2.length);
-        expect(stats.compressedBytes).toBeGreaterThan(0);
-        expect(stats.decompressCallCount).toBe(2);
-        expect(stats.totalDecompressTimeMs).toBeGreaterThanOrEqual(0);
-        expect(stats.avgDecompressTimeUs).toBeGreaterThanOrEqual(0);
-        expect(stats.maxDecompressTimeUs).toBeGreaterThanOrEqual(0);
+    it('should be enabled by default', () => {
+        expect(handler.enabled).toBe(true);
     });
 
-    it('should reset stats on reset()', () => {
-        handler.processData(IAC_SB_COMPRESS2_SE);
+    it('should pass through MCCP sequences when disabled', () => {
+        handler.enabled = false;
 
-        const compressor = createStreamingCompressor();
-        handler.processData(compressor.push('some data'));
-        expect(handler.getStats().compressedBytes).toBeGreaterThan(0);
+        const data = `prefix${IAC_SB_COMPRESS2_SE}trailing`;
+        const result = handler.processData(data);
 
-        handler.reset();
-
-        const stats = handler.getStats();
-        expect(stats.compressedBytes).toBe(0);
-        expect(stats.decompressedBytes).toBe(0);
-        expect(stats.active).toBe(false);
-        expect(stats.totalDecompressTimeMs).toBe(0);
-        expect(stats.decompressCallCount).toBe(0);
-        expect(stats.avgDecompressTimeUs).toBe(0);
-        expect(stats.maxDecompressTimeUs).toBe(0);
+        expect(result).toBe(data);
+        expect(handler.isActive()).toBe(false);
     });
 });

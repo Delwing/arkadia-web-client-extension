@@ -26,12 +26,7 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
-
-function formatBytes(bytes: number): string {
-    if (bytes < 1024) return `${bytes}B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
+const MCCP_STORAGE_KEY = 'mccpEnabled';
 
 class ArkadiaClient implements ClientAdapter {
     private socket!: WebSocket;
@@ -50,20 +45,6 @@ class ArkadiaClient implements ClientAdapter {
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
-        eventBus.on("ping", () => {
-            if (this.mccpHandler.isActive()) {
-                const stats = this.mccpHandler.getStats();
-                eventBus.emit("mccp.stats", stats);
-                console.debug(
-                    `[MCCP] ratio: ${Math.round(stats.ratio * 100)}%` +
-                    ` | saved: ${formatBytes(stats.savedBytes)}` +
-                    ` | avg decompress: ${stats.avgDecompressTimeUs}µs` +
-                    ` | max: ${stats.maxDecompressTimeUs}µs` +
-                    ` | calls: ${stats.decompressCallCount}` +
-                    ` | total CPU: ${stats.totalDecompressTimeMs.toFixed(1)}ms`
-                );
-            }
-        });
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
                 if (path === "char.info" && !this.receivedFirstGmcp) {
@@ -85,6 +66,7 @@ class ArkadiaClient implements ClientAdapter {
         });
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
+        this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
         this.recorder = this.createRecorder(false);
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -134,6 +116,15 @@ class ArkadiaClient implements ClientAdapter {
         eventBus.emit(event, ...args);
     }
 
+    setMccpEnabled(enabled: boolean): void {
+        this.mccpHandler.enabled = enabled;
+        localStorage.setItem(MCCP_STORAGE_KEY, String(enabled));
+    }
+
+    isMccpEnabled(): boolean {
+        return this.mccpHandler.enabled;
+    }
+
     /**
      * Connect to the WebSocket server
      */
@@ -169,7 +160,6 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
                 this.mccpHandler.reset();
-                eventBus.emit("mccp.stats", null);
 
                 void this.stopAutoRecording(true);
             };

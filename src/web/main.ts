@@ -1766,6 +1766,14 @@ document.addEventListener('DOMContentLoaded', () => {
     connectButton?.addEventListener('click', handleConnect);
     connectButtonInline?.addEventListener('click', handleConnect);
 
+    const mccpCheckbox = document.getElementById('mccp-enabled') as HTMLInputElement | null;
+    if (mccpCheckbox) {
+        mccpCheckbox.checked = arkadiaClient.isMccpEnabled();
+        mccpCheckbox.addEventListener('change', () => {
+            arkadiaClient.setMccpEnabled(mccpCheckbox.checked);
+        });
+    }
+
     if (authClose) {
         authClose.addEventListener('click', () => {
             authClosed = true;

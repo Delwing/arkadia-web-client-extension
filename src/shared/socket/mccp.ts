@@ -11,28 +11,11 @@ interface InflateInternal extends pako.Inflate {
     options: { chunkSize: number };
 }
 
-export interface MccpStats {
-    active: boolean;
-    compressedBytes: number;
-    decompressedBytes: number;
-    ratio: number;
-    savedBytes: number;
-    totalDecompressTimeMs: number;
-    decompressCallCount: number;
-    avgDecompressTimeUs: number;
-    maxDecompressTimeUs: number;
-}
-
 export class MccpHandler {
     private compressing = false;
     private inflator: pako.Inflate | null = null;
     private readonly sendRaw: (data: string) => void;
-
-    private _compressedBytes = 0;
-    private _decompressedBytes = 0;
-    private _totalDecompressTimeMs = 0;
-    private _decompressCallCount = 0;
-    private _maxDecompressTimeUs = 0;
+    private _enabled = true;
 
     constructor(sendRaw: (data: string) => void) {
         this.sendRaw = sendRaw;
@@ -42,24 +25,12 @@ export class MccpHandler {
         return this.compressing;
     }
 
-    getStats(): MccpStats {
-        const ratio = this._decompressedBytes > 0
-            ? this._compressedBytes / this._decompressedBytes
-            : 1;
-        const avgUs = this._decompressCallCount > 0
-            ? (this._totalDecompressTimeMs / this._decompressCallCount) * 1000
-            : 0;
-        return {
-            active: this.compressing,
-            compressedBytes: this._compressedBytes,
-            decompressedBytes: this._decompressedBytes,
-            ratio,
-            savedBytes: this._decompressedBytes - this._compressedBytes,
-            totalDecompressTimeMs: this._totalDecompressTimeMs,
-            decompressCallCount: this._decompressCallCount,
-            avgDecompressTimeUs: Math.round(avgUs),
-            maxDecompressTimeUs: Math.round(this._maxDecompressTimeUs),
-        };
+    get enabled(): boolean {
+        return this._enabled;
+    }
+
+    set enabled(value: boolean) {
+        this._enabled = value;
     }
 
     /**
@@ -70,6 +41,10 @@ export class MccpHandler {
     processData(data: string): string {
         if (this.compressing) {
             return this.decompress(data);
+        }
+
+        if (!this._enabled) {
+            return data;
         }
 
         // Check for IAC WILL COMPRESS2 - respond with IAC DO COMPRESS2
@@ -105,11 +80,6 @@ export class MccpHandler {
     reset(): void {
         this.compressing = false;
         this.inflator = null;
-        this._compressedBytes = 0;
-        this._decompressedBytes = 0;
-        this._totalDecompressTimeMs = 0;
-        this._decompressCallCount = 0;
-        this._maxDecompressTimeUs = 0;
     }
 
     private startCompression(): void {
@@ -121,8 +91,6 @@ export class MccpHandler {
         if (!this.inflator) {
             return data;
         }
-
-        const t0 = performance.now();
 
         const bytes = stringToBytes(data);
         const output: Uint8Array[] = [];
@@ -147,9 +115,6 @@ export class MccpHandler {
 
         this.inflator.onData = origOnData;
 
-        const elapsed = performance.now() - t0;
-        const elapsedUs = elapsed * 1000;
-
         if (this.inflator.err) {
             console.error('MCCP decompression error:', this.inflator.msg);
             this.compressing = false;
@@ -157,15 +122,7 @@ export class MccpHandler {
             return data;
         }
 
-        const result = bytesToString(output);
-        this._compressedBytes += bytes.length;
-        this._decompressedBytes += result.length;
-        this._totalDecompressTimeMs += elapsed;
-        this._decompressCallCount++;
-        if (elapsedUs > this._maxDecompressTimeUs) {
-            this._maxDecompressTimeUs = elapsedUs;
-        }
-        return result;
+        return bytesToString(output);
     }
 }
 
