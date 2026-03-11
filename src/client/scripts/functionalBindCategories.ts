@@ -19,7 +19,7 @@ export const FUNCTIONAL_BIND_CATEGORIES: FunctionalBindCategory[] = ['gates', 't
 export const CATEGORY_LABELS: Record<FunctionalBindCategory, string> = {
     gates: 'Wrota',
     transport: 'Transport',
-    loot: 'Zbieranie',
+    loot: 'Zbieranie z cial',
     default: 'Domyślny',
 };
 

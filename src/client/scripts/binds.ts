@@ -21,7 +21,7 @@ export default function initBinds(client: Client, aliases?: { pattern: RegExp; c
             lines.push(`Transport: ${transportLabel}`);
         }
         if (lootLabel !== main) {
-            lines.push(`Zbieranie: ${lootLabel}`);
+            lines.push(`Zbieranie z cial: ${lootLabel}`);
         }
         lines.push(
             `Atakuj: ${attack}`,

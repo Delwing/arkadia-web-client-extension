@@ -774,7 +774,7 @@ function Binds() {
                             </td>
                         </tr>
                         <tr>
-                            <td className="w-32 ps-4 text-muted">└ Zbieranie</td>
+                            <td className="w-32 ps-4 text-muted">└ Zbieranie z cial</td>
                             <td>
                                 <div className="d-flex gap-1 align-items-center">
                                     <Form.Control
