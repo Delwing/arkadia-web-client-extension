@@ -218,6 +218,20 @@ export class FunctionalBindManager {
     }
 
     private handleKeyDown(ev: KeyboardEvent) {
+        // Don't fire binds when a modal is open (e.g., bind capture in settings)
+        // unless the focused element is the main command input behind the modal.
+        const active = document.activeElement as HTMLElement | null;
+        const modalOpen = document.querySelector('.modal.show');
+        if (modalOpen && (!active || active.id !== 'message-input')) {
+            return;
+        }
+        // Don't fire binds when typing in an input/textarea (other than the command input)
+        if (active &&
+            active.id !== 'message-input' &&
+            (active.matches('input, textarea') || active.isContentEditable)) {
+            return;
+        }
+
         // Collect active categories whose key matches, then pick the most recently set one
         let bestOrder = -1;
         let bestBind: FunctionalBind | null = null;
