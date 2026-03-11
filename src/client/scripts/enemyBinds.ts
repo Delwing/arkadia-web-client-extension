@@ -58,24 +58,28 @@ export default function initEnemyBinds(
 
     ensurePeopleLoaded().catch(() => undefined);
 
-    // Load enemy binds keys from storage
-    const binds = globalStorage.get('binds');
-    if (binds?.enemy && Array.isArray(binds.enemy) && binds.enemy.length === 3) {
-        enemyBindKeys = binds.enemy.map((bind: any) => ({
-            key: bind.key || 'F1',
-            ctrl: bind.ctrl,
-            alt: bind.alt,
-            shift: bind.shift,
-        }));
+    // Load enemy binds keys from storage and listen for changes
+    function applyEnemyBindKeys(b: any) {
+        if (b?.enemy && Array.isArray(b.enemy) && b.enemy.length === 3) {
+            enemyBindKeys = b.enemy.map((bind: any) => ({
+                key: bind.key || 'F1',
+                ctrl: bind.ctrl,
+                alt: bind.alt,
+                shift: bind.shift,
+            }));
+        }
+        if (b?.enemyBlock && Array.isArray(b.enemyBlock) && b.enemyBlock.length === 3) {
+            enemyBlockBindKeys = b.enemyBlock.map((bind: any) => ({
+                key: bind.key || 'F1',
+                ctrl: bind.ctrl,
+                alt: bind.alt,
+                shift: bind.shift,
+            }));
+        }
     }
-    if (binds?.enemyBlock && Array.isArray(binds.enemyBlock) && binds.enemyBlock.length === 3) {
-        enemyBlockBindKeys = binds.enemyBlock.map((bind: any) => ({
-            key: bind.key || 'F1',
-            ctrl: bind.ctrl,
-            alt: bind.alt,
-            shift: bind.shift,
-        }));
-    }
+
+    applyEnemyBindKeys(globalStorage.get('binds'));
+    globalStorage.onChange('binds', applyEnemyBindKeys);
 
     const applySettings = (settings: any) => {
         const detail = (settings ?? defaultSettings) as {
