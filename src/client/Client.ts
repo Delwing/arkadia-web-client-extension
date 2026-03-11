@@ -82,6 +82,7 @@ export default class Client {
             this.suppressMapMoveEvent = value;
         },
         functionalBind: this.FunctionalBind,
+        shouldSetDrinkableBind: () => globalStorage.get('uiSettings')?.drinkableAsFunctionalBind !== false,
     });
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);

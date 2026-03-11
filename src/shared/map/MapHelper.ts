@@ -39,6 +39,8 @@ export interface MapHelperClient {
     setSuppressMapMoveEvent(value: boolean): void;
 
     functionalBind?: MapFunctionalBind;
+
+    shouldSetDrinkableBind?(): boolean;
 }
 
 export interface MapStorage {
@@ -524,6 +526,11 @@ export default class MapHelper {
                     this.client.functionalBind?.set(
                         room.userData?.bind,
                         () => this.client.sendCommand(room.userData?.bind)
+                    );
+                } else if (room?.userData?.drinkable && this.client.shouldSetDrinkableBind?.() !== false) {
+                    this.client.functionalBind?.set(
+                        "napij sie do syta wody",
+                        () => this.client.sendCommand("napij sie do syta wody")
                     );
                 }
             },
