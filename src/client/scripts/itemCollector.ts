@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { containerAction, getContainer, ContainerType } from "./bagManager";
 import { type CollectOverride, defaultSettings } from "@modules/core/defaultSettings";
-import { getBodyExtras, clearBodyExtras } from "./lootParser";
+import { getBodyExtras, getBodyStertyMap, clearBodyExtras } from "./lootParser";
 import { characterStorage } from "@modules/core/storage";
 
 type KillerType = "ME" | "TEAM" | "OTHER";
@@ -144,7 +144,10 @@ export default class ItemCollector {
         }
     }
 
-    private formatBodyTarget(index?: number) {
+    private formatBodyTarget(index?: number, stertyIndex?: number) {
+        if (stertyIndex != null) {
+            return `${stertyIndex}. sterty`;
+        }
         return index != null ? `${index}. ciala` : "ciala";
     }
 
@@ -372,6 +375,7 @@ export default class ItemCollector {
         const aggregated: CollectionResult = { money: false, gems: false, extras: [] };
         let collectedAny = false;
         const isBothMode = this.collectionTiming === CollectionTiming.Both;
+        const stertyMap = getBodyStertyMap();
 
         // Iterate backwards through kills to match body numbering
         for (let i = this.kills.length - 1; i >= 0; i--) {
@@ -394,7 +398,8 @@ export default class ItemCollector {
                 continue;
             }
 
-            const target = this.formatBodyTarget(currentBodyIndex);
+            const stertyIndex = stertyMap.get(currentBodyIndex);
+            const target = this.formatBodyTarget(currentBodyIndex, stertyIndex);
             const result = this.collectBody(target, record.enemyDesc, currentBodyIndex);
             aggregated.money = aggregated.money || result.money;
             aggregated.gems = aggregated.gems || result.gems;

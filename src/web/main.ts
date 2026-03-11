@@ -882,7 +882,12 @@ const CONSTANT_DIRECTION_BINDS: DirectionBinding[] = [
     {direction: 'zerknij', code: 'Numpad5'},
 ];
 
-let directionBindings: DirectionBinding[] = buildDirectionBindings();
+// Build initial direction bindings from stored binds (if any) so that
+// custom direction keys work immediately after reload without re-saving.
+const storedBindsForDirs = globalStorage.get('binds');
+let directionBindings: DirectionBinding[] = buildDirectionBindings(
+    (storedBindsForDirs as any)?.directions ?? undefined
+);
 
 function buildDirectionBindings(dirs?: Record<string, Partial<RawDirectionBind> | undefined>): DirectionBinding[] {
     const resolved: DirectionBinding[] = Object.entries(DEFAULT_DIRECTION_BINDS).map(([direction, fallback]) => {
@@ -1765,6 +1770,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     connectButton?.addEventListener('click', handleConnect);
     connectButtonInline?.addEventListener('click', handleConnect);
+
+    const mccpCheckbox = document.getElementById('mccp-enabled') as HTMLInputElement | null;
+    if (mccpCheckbox) {
+        mccpCheckbox.checked = arkadiaClient.isMccpEnabled();
+        mccpCheckbox.addEventListener('change', () => {
+            arkadiaClient.setMccpEnabled(mccpCheckbox.checked);
+        });
+    }
 
     if (authClose) {
         authClose.addEventListener('click', () => {

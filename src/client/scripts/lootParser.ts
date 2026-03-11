@@ -8,6 +8,7 @@ export type LootPopupPayload = {
     description: string;
     items: LootItem[];
     bodyNumber?: number;
+    stertyIndex?: number;
 };
 
 export type LootItem = ContainerItem & {
@@ -26,12 +27,20 @@ export function setLootPopupMode(enabled: boolean) {
 // bodyIndex matches the `N. ciala` numbering used by itemCollector
 const bodyExtras = new Map<number | null, string[]>();
 
+// Tracks which body numbers are "smetne pozostalosci" (sterty) and their sterty index
+const bodyStertyMap = new Map<number | null, number>();
+
 export function getBodyExtras(): ReadonlyMap<number | null, string[]> {
     return bodyExtras;
 }
 
+export function getBodyStertyMap(): ReadonlyMap<number | null, number> {
+    return bodyStertyMap;
+}
+
 export function clearBodyExtras() {
     bodyExtras.clear();
+    bodyStertyMap.clear();
 }
 
 /** Split raw items text into original parts, mirroring parseItems splitting logic */
@@ -57,10 +66,13 @@ export default function initLootParser(client: Client) {
     const tag = 'lootParser';
 
     const bodyPattern = /^Jest to martwe cialo (?<description>.+)\.$/;
+    const remainsPattern = /^Sa to smetne pozostalosci po jakim(?:s|ejs) (?<description>.+)\.$/;
     const itemsPattern = /^Zauwazasz przy (?:nim|niej) (?<items>.+)\.$/;
 
     let pendingDescription: string | null = null;
     let pendingBodyNumber: number | null = null;
+    let pendingStertyIndex: number | null = null;
+    let stertyCounter = 0;
 
     // Track body number from ob commands: "ob cialo" → null, "ob 2. cialo" → 2
     const obCialoPattern = /^ob\s+(?:(\d+)\.\s+)?cialo$/i;
@@ -77,6 +89,20 @@ export default function initLootParser(client: Client) {
         (line, matches) => {
             if (matches?.groups?.description) {
                 pendingDescription = matches.groups.description;
+                pendingStertyIndex = null;
+            }
+            return line;
+        },
+        tag,
+    );
+
+    client.Triggers.registerTrigger(
+        remainsPattern,
+        (line, matches) => {
+            if (matches?.groups?.description) {
+                stertyCounter++;
+                pendingDescription = matches.groups.description;
+                pendingStertyIndex = stertyCounter;
             }
             return line;
         },
@@ -89,9 +115,16 @@ export default function initLootParser(client: Client) {
             if (matches?.groups?.items && pendingDescription) {
                 const description = pendingDescription;
                 const bodyNumber = pendingBodyNumber;
+                const stertyIndex = pendingStertyIndex;
                 const items = enrichItems(matches.groups.items);
                 pendingDescription = null;
                 pendingBodyNumber = null;
+                pendingStertyIndex = null;
+
+                // Track sterty mapping for itemCollector
+                if (stertyIndex != null) {
+                    bodyStertyMap.set(bodyNumber, stertyIndex);
+                }
 
                 // Track special items (magics/keys) per body for itemCollector
                 const specialItems = items.filter(item => item.special);
@@ -106,7 +139,12 @@ export default function initLootParser(client: Client) {
                 }
 
                 if (popupMode) {
-                    client.sendEvent('loot.popup.open', { description, items, bodyNumber: bodyNumber ?? undefined });
+                    client.sendEvent('loot.popup.open', {
+                        description,
+                        items,
+                        bodyNumber: bodyNumber ?? undefined,
+                        stertyIndex: stertyIndex ?? undefined,
+                    });
                     return line;
                 }
 
@@ -130,7 +168,9 @@ export default function initLootParser(client: Client) {
 
                 // Then make items clickable (createLink preserves existing color)
                 for (const item of items) {
-                    const command = `wez ${item.fullName} z ciala ${description}`;
+                    const command = stertyIndex != null
+                        ? `wez ${item.fullName} z ${stertyIndex}. sterty`
+                        : `wez ${item.fullName} z ciala ${description}`;
                     buffer.createLinksForText(item.fullName, {
                         onClick: () => client.sendCommand(command),
                         title: command,
@@ -147,6 +187,7 @@ export default function initLootParser(client: Client) {
     client.on('enterLocation', () => {
         popupMode = false;
         bodyExtras.clear();
+        stertyCounter = 0;
         client.sendEvent('loot.cleared');
     });
 
