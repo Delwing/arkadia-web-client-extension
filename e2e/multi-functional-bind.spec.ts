@@ -76,10 +76,9 @@ test.describe('Multi-functional Bind Categories', () => {
         await page.waitForTimeout(50);
 
         const commands = await getAllOutgoingCommands(page);
-        // dylizans bind sends: wem, wsiadz do dylizansu, wlm
-        expect(commands).toContain('wem');
+        // wem/wlm are intercepted by bagManager aliases (containerAction),
+        // so only the boarding command reaches the socket.
         expect(commands).toContain('wsiadz do dylizansu');
-        expect(commands).toContain('wlm');
     });
 
     test('last-set category wins when default and gates share the same key', async ({page}) => {
@@ -151,8 +150,10 @@ test.describe('Multi-functional Bind Categories', () => {
         await expect(output).toContainText('uderz we wrota');
 
         // Clear gates category via page.evaluate
+        // window.client is ArkadiaClient; FunctionalBind lives on the Client
+        // instance exposed as window.clientExtension.
         await page.evaluate(() => {
-            (window as any).client?.FunctionalBind?.clearCategory('gates');
+            (window as any).clientExtension?.FunctionalBind?.clearCategory('gates');
         });
 
         await resetCommands(page);
