@@ -305,6 +305,7 @@ function mergeBindSettings(raw: any): BindSettings {
         main: raw.main || defaultBinds.main,
         mainGates: raw.mainGates && typeof raw.mainGates === 'object' ? raw.mainGates : undefined,
         mainTransport: raw.mainTransport && typeof raw.mainTransport === 'object' ? raw.mainTransport : undefined,
+        mainLoot: raw.mainLoot && typeof raw.mainLoot === 'object' ? raw.mainLoot : undefined,
         lamp: raw.lamp || defaultBinds.lamp,
         attack: raw.attack || defaultBinds.attack,
         support: raw.support || defaultBinds.support,

@@ -9,9 +9,9 @@
  * category fires. When it is cleared, earlier categories surface.
  */
 
-export type FunctionalBindCategory = 'gates' | 'transport' | 'default';
+export type FunctionalBindCategory = 'gates' | 'transport' | 'loot' | 'default';
 
-export const FUNCTIONAL_BIND_CATEGORIES: FunctionalBindCategory[] = ['gates', 'transport', 'default'];
+export const FUNCTIONAL_BIND_CATEGORIES: FunctionalBindCategory[] = ['gates', 'transport', 'loot', 'default'];
 
 /** Static priorities are no longer used for dispatch order.
  *  The FunctionalBindManager uses a dynamic "last set wins" approach instead. */
@@ -19,6 +19,7 @@ export const FUNCTIONAL_BIND_CATEGORIES: FunctionalBindCategory[] = ['gates', 't
 export const CATEGORY_LABELS: Record<FunctionalBindCategory, string> = {
     gates: 'Wrota',
     transport: 'Transport',
+    loot: 'Zbieranie',
     default: 'Domyślny',
 };
 
@@ -26,5 +27,6 @@ export const CATEGORY_LABELS: Record<FunctionalBindCategory, string> = {
 export const CATEGORY_BIND_KEYS: Record<FunctionalBindCategory, string> = {
     gates: 'mainGates',
     transport: 'mainTransport',
+    loot: 'mainLoot',
     default: 'main',
 };

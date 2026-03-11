@@ -390,13 +390,13 @@ function Binds() {
         setBinds(prev => ({ ...prev, [name]: { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } }));
     }
 
-    function handleCaptureOptional(name: 'mainGates' | 'mainTransport', ev: React.KeyboardEvent) {
+    function handleCaptureOptional(name: 'mainGates' | 'mainTransport' | 'mainLoot', ev: React.KeyboardEvent) {
         ev.preventDefault();
         const { code, ctrlKey, altKey, shiftKey } = ev;
         setBinds(prev => ({ ...prev, [name]: { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } }));
     }
 
-    function handleClearOptional(name: 'mainGates' | 'mainTransport') {
+    function handleClearOptional(name: 'mainGates' | 'mainTransport' | 'mainLoot') {
         setBinds(prev => {
             const next = { ...prev };
             delete next[name];
@@ -534,6 +534,7 @@ function Binds() {
         const restored = { ...structuredClone(defaultBinds), custom: binds.custom };
         delete restored.mainGates;
         delete restored.mainTransport;
+        delete restored.mainLoot;
         setBinds(restored);
         setShowRestoreConfirm(false);
     }
@@ -768,6 +769,24 @@ function Binds() {
                                     />
                                     {binds.mainTransport && (
                                         <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainTransport')} title="Przywróć domyślny">✕</Button>
+                                    )}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32 ps-4 text-muted">└ Zbieranie</td>
+                            <td>
+                                <div className="d-flex gap-1 align-items-center">
+                                    <Form.Control
+                                        type="text"
+                                        readOnly
+                                        size="sm"
+                                        placeholder={label(binds.main)}
+                                        value={binds.mainLoot ? label(binds.mainLoot) : ''}
+                                        onKeyDown={ev => handleCaptureOptional('mainLoot', ev)}
+                                    />
+                                    {binds.mainLoot && (
+                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainLoot')} title="Przywróć domyślny">✕</Button>
                                     )}
                                 </div>
                             </td>

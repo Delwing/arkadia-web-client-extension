@@ -239,6 +239,16 @@ export default class Client {
                     label: formatLabel(transportBind)
                 }, 'transport')
             }
+            const lootBind = b?.mainLoot || bind;
+            if (lootBind) {
+                this.FunctionalBind.updateOptions({
+                    key: lootBind.key,
+                    ctrl: lootBind.ctrl,
+                    alt: lootBind.alt,
+                    shift: lootBind.shift,
+                    label: formatLabel(lootBind)
+                }, 'loot')
+            }
             const lamp = b?.lamp
             if (lamp) {
                 this.lampBind = { ...lamp }

@@ -44,6 +44,8 @@ export interface BindSettings {
     mainGates?: Bind;
     /** Optional separate key for transport functional bind. When undefined, inherits from `main`. */
     mainTransport?: Bind;
+    /** Optional separate key for loot functional bind. When undefined, inherits from `main`. */
+    mainLoot?: Bind;
     lamp: Bind;
     attack: Bind;
     support: Bind;

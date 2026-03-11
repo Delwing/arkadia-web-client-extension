@@ -6,6 +6,7 @@ export default function initBinds(client: Client, aliases?: { pattern: RegExp; c
         const main = client.FunctionalBind.getLabel();
         const gatesLabel = client.FunctionalBind.getCategoryLabel('gates');
         const transportLabel = client.FunctionalBind.getCategoryLabel('transport');
+        const lootLabel = client.FunctionalBind.getCategoryLabel('loot');
         const lamp = formatLabel(client.lampBind);
         const attack = formatLabel(client.attackBind);
         const support = formatLabel(client.supportBind);
@@ -18,6 +19,9 @@ export default function initBinds(client: Client, aliases?: { pattern: RegExp; c
         }
         if (transportLabel !== main) {
             lines.push(`Transport: ${transportLabel}`);
+        }
+        if (lootLabel !== main) {
+            lines.push(`Zbieranie: ${lootLabel}`);
         }
         lines.push(
             `Atakuj: ${attack}`,
