@@ -4,7 +4,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
+  FunctionalBind = { set: jest.fn(), setCategory: jest.fn(), clear: jest.fn(), clearCategory: jest.fn(), newMessage: jest.fn() };
   sendEvent = jest.fn();
   sendCommand = jest.fn();
 }
@@ -26,8 +26,9 @@ describe('buses triggers', () => {
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
     expect(beepCalls).toHaveLength(1);
     expect(beepCalls[0][1]).toEqual({ key: 'beep' });
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label, callback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wyjscie');
     callback();
     expect(client.sendCommand).toHaveBeenCalledWith('wyjscie');
@@ -36,8 +37,9 @@ describe('buses triggers', () => {
   test('boarding trigger binds commands', () => {
     parse('dylizans powoli zatrzymuje sie.');
     expect(client.sendEvent).toHaveBeenCalledWith('sound:play', expect.anything());
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label, callback] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label, callback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;wsiadz do dylizansu;wlm');
     callback();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'wem');
@@ -47,13 +49,14 @@ describe('buses triggers', () => {
 
   test('woz z plandeka triggers once', () => {
     parse('Kupiecki stojacy woz z plandeka', 'room.contents.object');
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
   });
 
   test('bryczka boarding triggers', () => {
     parse('siada w malej bryczce.');
-    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-    const [label] = (client.FunctionalBind.set as jest.Mock).mock.calls[0];
+    expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
+    const [category, label] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
+    expect(category).toBe('transport');
     expect(label).toBe('wem;usiadz na bryczce;wlm');
   });
 });

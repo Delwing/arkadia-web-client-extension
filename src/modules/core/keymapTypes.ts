@@ -40,6 +40,12 @@ export interface DirectionBinds {
 
 export interface BindSettings {
     main: Bind;
+    /** Optional separate key for gates functional bind. When undefined, inherits from `main`. */
+    mainGates?: Bind;
+    /** Optional separate key for transport functional bind. When undefined, inherits from `main`. */
+    mainTransport?: Bind;
+    /** Optional separate key for loot functional bind. When undefined, inherits from `main`. */
+    mainLoot?: Bind;
     lamp: Bind;
     attack: Bind;
     support: Bind;

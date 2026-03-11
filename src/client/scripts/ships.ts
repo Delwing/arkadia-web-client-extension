@@ -14,7 +14,7 @@ function bindShip(client: Client, commands: string[], label: string, beep: boole
     if (beep) {
         client.sendEvent("sound:play", { key: "beep" });
     }
-    client.FunctionalBind.set(label, () => {
+    client.FunctionalBind.setCategory('transport', label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));
     }, false);
 }

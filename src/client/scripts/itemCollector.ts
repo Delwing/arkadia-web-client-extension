@@ -278,7 +278,7 @@ export default class ItemCollector {
     private resetKills() {
         this.kills = [];
         if (this.bindActive) {
-            this.client.FunctionalBind.clear();
+            this.client.FunctionalBind.clearCategory('loot');
             this.bindActive = false;
         }
     }
@@ -303,7 +303,7 @@ export default class ItemCollector {
             if (!this.shouldCollectAnythingForEnemy(lastKill.enemyDesc)) {
                 return;
             }
-            this.client.FunctionalBind.set("wez z ciala", () => this.collectLastBody());
+            this.client.FunctionalBind.setCategory('loot', "wez z ciala", () => this.collectLastBody());
             this.bindActive = true;
         }
     }
@@ -335,7 +335,7 @@ export default class ItemCollector {
             record.collected = true;
 
             // Clear bind after collection
-            this.client.FunctionalBind.clear();
+            this.client.FunctionalBind.clearCategory('loot');
             this.bindActive = false;
             return;
         }
@@ -361,7 +361,7 @@ export default class ItemCollector {
         });
 
         if (hasBodies) {
-            this.client.FunctionalBind.set("wez z ciala", () => this.collectAllBodies());
+            this.client.FunctionalBind.setCategory('loot', "wez z ciala", () => this.collectAllBodies());
             this.bindActive = true;
         }
     }
@@ -417,7 +417,7 @@ export default class ItemCollector {
         clearBodyExtras();
 
         // Clear bind after collection
-        this.client.FunctionalBind.clear();
+        this.client.FunctionalBind.clearCategory('loot');
         this.bindActive = false;
     }
 }

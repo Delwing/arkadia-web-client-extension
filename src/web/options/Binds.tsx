@@ -390,6 +390,20 @@ function Binds() {
         setBinds(prev => ({ ...prev, [name]: { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } }));
     }
 
+    function handleCaptureOptional(name: 'mainGates' | 'mainTransport' | 'mainLoot', ev: React.KeyboardEvent) {
+        ev.preventDefault();
+        const { code, ctrlKey, altKey, shiftKey } = ev;
+        setBinds(prev => ({ ...prev, [name]: { key: code, ctrl: ctrlKey, alt: altKey, shift: shiftKey } }));
+    }
+
+    function handleClearOptional(name: 'mainGates' | 'mainTransport' | 'mainLoot') {
+        setBinds(prev => {
+            const next = { ...prev };
+            delete next[name];
+            return next;
+        });
+    }
+
     function handleCaptureDir(dir: keyof DirectionBinds, ev: React.KeyboardEvent) {
         ev.preventDefault();
         const { code, ctrlKey, altKey, shiftKey } = ev;
@@ -517,7 +531,11 @@ function Binds() {
     }
 
     function handleRestoreDefaults() {
-        setBinds({ ...structuredClone(defaultBinds), custom: binds.custom });
+        const restored = { ...structuredClone(defaultBinds), custom: binds.custom };
+        delete restored.mainGates;
+        delete restored.mainTransport;
+        delete restored.mainLoot;
+        setBinds(restored);
         setShowRestoreConfirm(false);
     }
 
@@ -708,7 +726,7 @@ function Binds() {
                 <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
                     <tbody className="align-middle">
                         <tr>
-                            <td className="w-32">Domyślny</td>
+                            <td className="w-32">Funkcyjny</td>
                             <td>
                                 <Form.Control
                                     type="text"
@@ -717,6 +735,60 @@ function Binds() {
                                     value={label(binds.main)}
                                     onKeyDown={ev => handleCapture('main', ev)}
                                 />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32 ps-4 text-muted">└ Wrota</td>
+                            <td>
+                                <div className="d-flex gap-1 align-items-center">
+                                    <Form.Control
+                                        type="text"
+                                        readOnly
+                                        size="sm"
+                                        placeholder={label(binds.main)}
+                                        value={binds.mainGates ? label(binds.mainGates) : ''}
+                                        onKeyDown={ev => handleCaptureOptional('mainGates', ev)}
+                                    />
+                                    {binds.mainGates && (
+                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainGates')} title="Przywróć domyślny">✕</Button>
+                                    )}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32 ps-4 text-muted">└ Transport</td>
+                            <td>
+                                <div className="d-flex gap-1 align-items-center">
+                                    <Form.Control
+                                        type="text"
+                                        readOnly
+                                        size="sm"
+                                        placeholder={label(binds.main)}
+                                        value={binds.mainTransport ? label(binds.mainTransport) : ''}
+                                        onKeyDown={ev => handleCaptureOptional('mainTransport', ev)}
+                                    />
+                                    {binds.mainTransport && (
+                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainTransport')} title="Przywróć domyślny">✕</Button>
+                                    )}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32 ps-4 text-muted">└ Zbieranie z cial</td>
+                            <td>
+                                <div className="d-flex gap-1 align-items-center">
+                                    <Form.Control
+                                        type="text"
+                                        readOnly
+                                        size="sm"
+                                        placeholder={label(binds.main)}
+                                        value={binds.mainLoot ? label(binds.mainLoot) : ''}
+                                        onKeyDown={ev => handleCaptureOptional('mainLoot', ev)}
+                                    />
+                                    {binds.mainLoot && (
+                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainLoot')} title="Przywróć domyślny">✕</Button>
+                                    )}
+                                </div>
                             </td>
                         </tr>
                         <tr>
