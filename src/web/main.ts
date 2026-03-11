@@ -882,7 +882,12 @@ const CONSTANT_DIRECTION_BINDS: DirectionBinding[] = [
     {direction: 'zerknij', code: 'Numpad5'},
 ];
 
-let directionBindings: DirectionBinding[] = buildDirectionBindings();
+// Build initial direction bindings from stored binds (if any) so that
+// custom direction keys work immediately after reload without re-saving.
+const storedBindsForDirs = globalStorage.get('binds');
+let directionBindings: DirectionBinding[] = buildDirectionBindings(
+    (storedBindsForDirs as any)?.directions ?? undefined
+);
 
 function buildDirectionBindings(dirs?: Record<string, Partial<RawDirectionBind> | undefined>): DirectionBinding[] {
     const resolved: DirectionBinding[] = Object.entries(DEFAULT_DIRECTION_BINDS).map(([direction, fallback]) => {

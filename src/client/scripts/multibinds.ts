@@ -43,17 +43,21 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     let isInitialized = false;
     const pendingActions: (() => void)[] = [];
 
-    // Load configured binds
+    // Load configured binds and listen for changes
     let roomBind: Bind = { key: 'KeyP', alt: true };
     let drinkableBind: Bind = { key: 'KeyN', alt: true };
 
-    const storedBinds = globalStorage.get('binds');
-    if (storedBinds?.roomBind) {
-        roomBind = storedBinds.roomBind;
+    function applyMultibindKeys(b: any) {
+        if (b?.roomBind) {
+            roomBind = b.roomBind;
+        }
+        if (b?.drinkable) {
+            drinkableBind = b.drinkable;
+        }
     }
-    if (storedBinds?.drinkable) {
-        drinkableBind = storedBinds.drinkable;
-    }
+
+    applyMultibindKeys(globalStorage.get('binds'));
+    globalStorage.onChange('binds', applyMultibindKeys);
 
     function runWhenReady(action: () => void) {
         if (isInitialized) {
