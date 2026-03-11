@@ -725,7 +725,7 @@ function Binds() {
                 <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
                     <tbody className="align-middle">
                         <tr>
-                            <td className="w-32">Domyślny</td>
+                            <td className="w-32">Funkcyjny</td>
                             <td>
                                 <Form.Control
                                     type="text"
@@ -737,7 +737,7 @@ function Binds() {
                             </td>
                         </tr>
                         <tr>
-                            <td className="w-32">Wrota</td>
+                            <td className="w-32 ps-4 text-muted">└ Wrota</td>
                             <td>
                                 <div className="d-flex gap-1 align-items-center">
                                     <Form.Control
@@ -755,7 +755,7 @@ function Binds() {
                             </td>
                         </tr>
                         <tr>
-                            <td className="w-32">Transport</td>
+                            <td className="w-32 ps-4 text-muted">└ Transport</td>
                             <td>
                                 <div className="d-flex gap-1 align-items-center">
                                     <Form.Control
