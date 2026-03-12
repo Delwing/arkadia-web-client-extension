@@ -195,8 +195,7 @@ export default class People {
 
     private buildNameHighlight(line: AnsiAwareBuffer, token: string, index: number, colorCode: FormatStateSnapshot) {
         const end = index + token.length
-        const original = line.text.substring(index, end)
-        return line.replace([index, end], original, colorCode)
+        return line.applyFormat([index, end], colorCode)
     }
 
     private buildDescHighlight(
