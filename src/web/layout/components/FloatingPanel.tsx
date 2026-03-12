@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useRef, useEffect } from 'react';
+import { ReactNode, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { FloatingPanelState, PANEL_CONFIGS } from '../types';
 import { useLayoutManager } from '@web/layout';
 import { useDockablePanel } from '@web/layout';
@@ -28,6 +28,7 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
   const title = builtInState?.title ?? popupInfo?.config.title ?? config?.title ?? panel.id;
   const isLocked = isPopup ? (popupInfo?.isLocked ?? false) : (builtInState?.isLocked ?? false);
 
+  const panelRef = useRef<HTMLDivElement>(null);
   const resizeDir = useRef<ResizeDirection>(null);
   const startPos = useRef({ x: 0, y: 0 });
   const startBounds = useRef({ x: 0, y: 0, width: 0, height: 0 });
@@ -91,7 +92,9 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
       if (isLocked) return;
       resizeDir.current = direction;
       startPos.current = { x: e.clientX, y: e.clientY };
-      startBounds.current = { x: panel.x, y: panel.y, width: panel.width, height: panel.height };
+      // For auto-height panels, capture the actual rendered height from the DOM
+      const actualHeight = panel.height ?? panelRef.current?.getBoundingClientRect().height ?? 100;
+      startBounds.current = { x: panel.x, y: panel.y, width: panel.width, height: actualHeight };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
       e.preventDefault();
       e.stopPropagation();
@@ -147,8 +150,27 @@ export function FloatingPanel({ panel, children }: FloatingPanelProps) {
 
   const isAutoHeight = panel.height === undefined;
 
+  // Constrain auto-height panels to fit above the input area, centered vertically
+  useLayoutEffect(() => {
+    if (panel.height !== undefined || !panelRef.current) return;
+    const inputArea = document.getElementById('input-area');
+    const bottomLimit = inputArea ? inputArea.getBoundingClientRect().top : window.innerHeight;
+    const margin = 50;
+    const availableH = bottomLimit - 2 * margin;
+    const actualH = panelRef.current.offsetHeight;
+
+    if (actualH > availableH) {
+      // Too tall: cap height and center
+      updateFloatingPanel(panel.id, { height: availableH, y: margin });
+    } else if (panel.y + actualH > bottomLimit - margin) {
+      // Overflows bottom: center in available space
+      updateFloatingPanel(panel.id, { y: Math.max(margin, (bottomLimit - actualH) / 2) });
+    }
+  });
+
   return (
     <div
+      ref={panelRef}
       className={`managed-panel floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}${isLocked ? ' managed-panel--locked floating-panel--locked' : ''}`}
       style={{
         left: panel.x,
