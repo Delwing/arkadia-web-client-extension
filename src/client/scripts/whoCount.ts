@@ -59,22 +59,64 @@ export default function initWhoCount(client: Client) {
 
     /**
      * Parse names from the kto response body.
-     * Each person entry starts at a non-space character.
-     * Lines starting with spaces are continuations of the previous entry.
-     * The name is the first word, with leading/trailing * stripped.
+     * Supports two formats:
+     * - Long format (kto / kto l): each person on a separate line with descriptions and commas
+     * - Short format (kto k): names in columns separated by 2+ spaces, no commas
+     * Leading/trailing * is stripped from names.
      */
     function parseKtoNames(body: string): string[] {
         const names: string[] = [];
         const lines = body.split('\n');
-        for (const line of lines) {
-            if (line.length === 0 || line.startsWith(' ')) continue;
-            const firstWord = line.split(/\s/)[0];
-            const name = firstWord.replace(/^\*|\*$/g, '');
-            if (name.length > 0) {
-                names.push(name);
+
+        // Detect format: long format has commas (descriptions), short format doesn't
+        const isShortFormat = !body.includes(',');
+
+        if (isShortFormat) {
+            // Short/column format: names separated by 2+ spaces
+            for (const l of lines) {
+                const trimmed = l.trim();
+                if (trimmed.length === 0) continue;
+                const parts = trimmed.split(/\s{2,}/);
+                for (const part of parts) {
+                    const name = part.trim().replace(/^\*|\*$/g, '');
+                    if (name.length > 0) {
+                        names.push(name);
+                    }
+                }
+            }
+        } else {
+            // Long format: each person starts on a non-indented line
+            for (const l of lines) {
+                if (l.length === 0 || l.startsWith(' ')) continue;
+                const firstWord = l.split(/\s/)[0];
+                const name = firstWord.replace(/^\*|\*$/g, '');
+                if (name.length > 0) {
+                    names.push(name);
+                }
             }
         }
+
         return names;
+    }
+
+    /**
+     * Find position of a name in the buffer text (after bodyStart), respecting word boundaries.
+     * Returns the insert position (before * if present), or -1 if not found.
+     */
+    function findNamePosition(text: string, name: string, bodyStart: number): number {
+        let idx = text.indexOf(name, bodyStart);
+        while (idx >= 0) {
+            const before = idx > 0 ? text[idx - 1] : '\n';
+            const afterIdx = idx + name.length;
+            const after = afterIdx < text.length ? text[afterIdx] : ' ';
+            const beforeOk = before === ' ' || before === '\n' || before === '*';
+            const afterOk = after === ' ' || after === '\n' || after === '*' || after === ',' || afterIdx >= text.length;
+            if (beforeOk && afterOk) {
+                return before === '*' ? idx - 1 : idx;
+            }
+            idx = text.indexOf(name, idx + 1);
+        }
+        return -1;
     }
 
     // Single-line trigger for the count display (header line)
@@ -129,29 +171,20 @@ export default function initWhoCount(client: Client) {
             const newNames = currentNames.filter(n => !previousSet.has(n));
 
             // Insert green "+" before each new name, process in reverse to preserve positions
-            const positions: { index: number; name: string }[] = [];
+            const headerEnd = line.text.indexOf('\n');
+            if (headerEnd < 0) return line;
+            const positions: number[] = [];
             for (const name of newNames) {
-                // Find the name in the buffer text (after the header line)
-                const headerEnd = line.text.indexOf('\n');
-                if (headerEnd < 0) continue;
-                let searchFrom = headerEnd;
-                let idx = line.text.indexOf(name, searchFrom);
-                // Handle *Name or Name* variants
-                while (idx >= 0) {
-                    const before = idx > 0 ? line.text[idx - 1] : '\n';
-                    // Verify it's at the start of a person entry (preceded by newline or *)
-                    if (before === '\n' || before === '*') {
-                        positions.push({ index: before === '*' ? idx - 1 : idx, name });
-                        break;
-                    }
-                    idx = line.text.indexOf(name, idx + 1);
+                const pos = findNamePosition(line.text, name, headerEnd);
+                if (pos >= 0) {
+                    positions.push(pos);
                 }
             }
 
             // Sort by position descending to insert from end to start
-            positions.sort((a, b) => b.index - a.index);
-            for (const { index } of positions) {
-                line.insert(index, '+', GREEN);
+            positions.sort((a, b) => b - a);
+            for (const pos of positions) {
+                line.insert(pos, '+', GREEN);
             }
         }
 
