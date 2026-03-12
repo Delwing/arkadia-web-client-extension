@@ -320,9 +320,11 @@ function apply(settings: UiSettings) {
         mapSettings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
         mapSettings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
         mapSettings.roomShape = settings.mapRoomShape;
-        mapSettings.backgroundColor = settings.mapPosition.includes('overlay')
+        mapSettings.lineColor = settings.mapLineColor;
+        const isLayoutManagerEnabled = loadLayoutState().enabled;
+        mapSettings.backgroundColor = (settings.mapPosition.includes('overlay') && !isLayoutManagerEnabled)
             ? 'transparent'
-            : '#000000';
+            : settings.mapBackgroundColor;
         embedded.renderer?.updateBackground?.();
     }
     const pathFinder = embedded?.pathFinder;
@@ -567,6 +569,10 @@ export default async function initUiSettings() {
     const mapPlayerMarkerSizeFactorInput = modalEl.querySelector('#ui-map-player-marker-size-factor') as HTMLInputElement;
     const mapPlayerMarkerSizeFactorValue = modalEl.querySelector('#ui-map-player-marker-size-factor-value') as HTMLSpanElement;
     const mapPlayerMarkerDashEnabledInput = modalEl.querySelector('#ui-map-player-marker-dash-enabled') as HTMLInputElement;
+    const mapBackgroundColorInput = modalEl.querySelector('#ui-map-background-color') as HTMLInputElement;
+    const mapBackgroundColorResetBtn = modalEl.querySelector('#ui-map-background-color-reset') as HTMLButtonElement | null;
+    const mapLineColorInput = modalEl.querySelector('#ui-map-line-color') as HTMLInputElement;
+    const mapLineColorResetBtn = modalEl.querySelector('#ui-map-line-color-reset') as HTMLButtonElement | null;
     const mapRoomShapeInput = modalEl.querySelector('#ui-map-room-shape') as HTMLSelectElement;
     const pathFindingAlgorithmInput = modalEl.querySelector('#ui-map-pathfinding-algorithm') as HTMLSelectElement;
     const mapPreviewCanvas = modalEl.querySelector('#ui-map-preview-canvas') as HTMLCanvasElement;
@@ -860,6 +866,8 @@ export default async function initUiSettings() {
         mapRoomSizeValue.textContent = String(settings.mapRoomSize);
         mapLineWidthInput.value = String(settings.mapLineWidth);
         mapLineWidthValue.textContent = String(settings.mapLineWidth);
+        mapBackgroundColorInput.value = settings.mapBackgroundColor;
+        mapLineColorInput.value = settings.mapLineColor;
         mapPlayerMarkerStrokeColorInput.value = settings.mapPlayerMarkerStrokeColor;
         mapPlayerMarkerFillColorInput.value = settings.mapPlayerMarkerFillColor;
         mapPlayerMarkerStrokeAlphaInput.value = String(settings.mapPlayerMarkerStrokeAlpha);
@@ -1160,6 +1168,40 @@ export default async function initUiSettings() {
         drawPreview();
     });
 
+    mapBackgroundColorInput.addEventListener('input', () => {
+        const s = getMapSettings();
+        if (s) {
+            const isOverlayWithoutLayout = mapPositionInput.value.includes('overlay') && !loadLayoutState().enabled;
+            s.backgroundColor = isOverlayWithoutLayout ? 'transparent' : mapBackgroundColorInput.value;
+            (globalThis as any).embedded?.renderer?.updateBackground?.();
+        }
+        refreshEmbeddedMap();
+    });
+
+    mapBackgroundColorResetBtn?.addEventListener('click', () => {
+        mapBackgroundColorInput.value = defaultUiSettings.mapBackgroundColor;
+        const s = getMapSettings();
+        if (s) {
+            const isOverlayWithoutLayout = mapPositionInput.value.includes('overlay') && !loadLayoutState().enabled;
+            s.backgroundColor = isOverlayWithoutLayout ? 'transparent' : defaultUiSettings.mapBackgroundColor;
+            (globalThis as any).embedded?.renderer?.updateBackground?.();
+        }
+        refreshEmbeddedMap();
+    });
+
+    mapLineColorInput.addEventListener('input', () => {
+        const s = getMapSettings();
+        if (s) s.lineColor = mapLineColorInput.value;
+        refreshEmbeddedMap();
+    });
+
+    mapLineColorResetBtn?.addEventListener('click', () => {
+        mapLineColorInput.value = defaultUiSettings.mapLineColor;
+        const s = getMapSettings();
+        if (s) s.lineColor = defaultUiSettings.mapLineColor;
+        refreshEmbeddedMap();
+    });
+
     mapPlayerMarkerStrokeAlphaInput.addEventListener('input', () => {
         mapPlayerMarkerStrokeAlphaValue.textContent = mapPlayerMarkerStrokeAlphaInput.value;
         const s = getMapSettings();
@@ -1311,6 +1353,12 @@ export default async function initUiSettings() {
             mapRoomShape: (mapRoomShapeInput.value === 'rectangle' || mapRoomShapeInput.value === 'circle' || mapRoomShapeInput.value === 'roundedRectangle')
                 ? mapRoomShapeInput.value as MapRoomShape
                 : defaultUiSettings.mapRoomShape,
+            mapBackgroundColor: /^#[0-9a-f]{6}$/i.test(mapBackgroundColorInput.value)
+                ? mapBackgroundColorInput.value
+                : defaultUiSettings.mapBackgroundColor,
+            mapLineColor: /^#[0-9a-f]{6}$/i.test(mapLineColorInput.value)
+                ? mapLineColorInput.value
+                : defaultUiSettings.mapLineColor,
             pathFindingAlgorithm: (pathFindingAlgorithmInput.value === 'dijkstra' || pathFindingAlgorithmInput.value === 'astar')
                 ? pathFindingAlgorithmInput.value as PathFindingAlgorithm
                 : defaultUiSettings.pathFindingAlgorithm,

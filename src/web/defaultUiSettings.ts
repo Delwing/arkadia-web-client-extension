@@ -64,6 +64,8 @@ export interface UiSettings {
     mapPlayerMarkerSizeFactor: number;
     mapPlayerMarkerDashEnabled: boolean;
     mapRoomShape: MapRoomShape;
+    mapBackgroundColor: string;
+    mapLineColor: string;
     pathFindingAlgorithm: PathFindingAlgorithm;
     objectContextMenuCommands: string[];
     footerComponents: FooterComponentConfig[];
@@ -114,6 +116,8 @@ export const defaultUiSettings: UiSettings = {
     mapPlayerMarkerSizeFactor: 1.7,
     mapPlayerMarkerDashEnabled: true,
     mapRoomShape: 'rectangle',
+    mapBackgroundColor: '#000000',
+    mapLineColor: '#e1ffe1',
     pathFindingAlgorithm: 'dijkstra',
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
     footerComponents: defaultFooterComponents,

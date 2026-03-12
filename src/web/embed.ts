@@ -9,7 +9,7 @@ import {
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
-import {getBuiltInPanelSetting} from "./layout/utils/layoutStorage";
+import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 import { getClientInstance } from "@shared/runtime";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
 
@@ -146,11 +146,21 @@ export class EmbeddedMap {
         settings.transparentLabels = transparentLabels;
         settings.labelRenderMode = labelRenderMode;
         settings.playerMarker.dash = [0.05, 0.05]
-        settings.gridColor = 'rgba(255, 255, 255, 0.2)';
+        settings.gridColor = 'rgba(255, 255, 255, 0.07)';
         settings.gridEnabled = getBuiltInPanelSetting('map', 'showGrid', false);
         settings.areaName = false
-        if (mapPosition.includes('overlay')) {
+        const isLayoutManagerEnabled = loadLayoutState().enabled;
+        if (mapPosition.includes('overlay') && !isLayoutManagerEnabled) {
             settings.backgroundColor = 'transparent';
+        } else {
+            try {
+                const parsed = globalStorage.get('uiSettings') as any;
+                if (parsed && typeof parsed.mapBackgroundColor === 'string') {
+                    settings.backgroundColor = parsed.mapBackgroundColor;
+                }
+            } catch {
+                // ignore
+            }
         }
 
         // Initialize map rendering settings from storage
@@ -186,6 +196,9 @@ export class EmbeddedMap {
                 }
                 if (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle') {
                     settings.roomShape = parsed.mapRoomShape;
+                }
+                if (typeof parsed.mapLineColor === 'string') {
+                    settings.lineColor = parsed.mapLineColor;
                 }
             }
         } catch {
