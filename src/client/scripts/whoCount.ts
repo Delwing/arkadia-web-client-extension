@@ -109,8 +109,8 @@ export default function initWhoCount(client: Client) {
         if (!ch) return false;
         if (ch >= 'a' && ch <= 'z') return true;
         if (ch >= 'A' && ch <= 'Z') return true;
-        if (ch >= '0' && ch <= '9') return true;
-        return false;
+        return ch >= '0' && ch <= '9';
+
     }
 
     /**
@@ -198,7 +198,7 @@ export default function initWhoCount(client: Client) {
             // Sort by position descending to insert from end to start
             positions.sort((a, b) => b - a);
             for (const pos of positions) {
-                line.insert(pos, '+', GREEN);
+                line.insert(pos, '+ ', GREEN);
             }
         }
 
