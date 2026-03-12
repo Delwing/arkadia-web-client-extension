@@ -507,6 +507,35 @@ export default class MapHelper {
         return check(dx, delta.x) && check(dy, delta.y) && check(dz, delta.z);
     }
 
+    static parseBind(bindStr: string): { command: string; delay: number | null }[] {
+        const result: { command: string; delay: number | null }[] = [];
+        const parts = bindStr.split(/[#;]/);
+        for (const part of parts) {
+            const segments = part.split('*');
+            const command = segments[0];
+            if (!command) continue;
+            const delay = segments.length >= 2 ? parseFloat(segments[1]) : null;
+            result.push({command, delay: delay != null && !isNaN(delay) ? delay : null});
+        }
+        return result;
+    }
+
+    static getBindPrintable(bindStr: string): string {
+        const parts = bindStr.split(/[#;]/);
+        return parts.map(part => part.split('*')[0]).filter(Boolean).join(';');
+    }
+
+    executeBind(bindStr: string) {
+        const commands = MapHelper.parseBind(bindStr);
+        for (const cmd of commands) {
+            if (cmd.delay != null && cmd.delay > 0) {
+                setTimeout(() => this.client.sendCommand(cmd.command), cmd.delay * 1000);
+            } else {
+                this.client.sendCommand(cmd.command);
+            }
+        }
+    }
+
     handleNewLocation({room}: { room: MapData.Room }) {
         const abortController = new AbortController();
         this.pendingBindAbort = abortController;
@@ -523,9 +552,11 @@ export default class MapHelper {
                     return;
                 }
                 if (room?.userData?.bind) {
+                    const bindStr = room.userData.bind;
+                    const printable = MapHelper.getBindPrintable(bindStr);
                     this.client.functionalBind?.set(
-                        room.userData?.bind,
-                        () => this.client.sendCommand(room.userData?.bind)
+                        printable,
+                        () => this.executeBind(bindStr)
                     );
                 } else if (room?.userData?.drinkable && this.client.shouldSetDrinkableBind?.() !== false) {
                     this.client.functionalBind?.set(

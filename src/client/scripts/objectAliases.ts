@@ -120,7 +120,6 @@ export default function initObjectAliases(
         for (const t of targets) {
             client.sendCommand(`zapros ob_${t.num}`);
         }
-        client.print(colorString(`Zapraszam: ${targets.map(t => t.desc).join(', ')}`, ZAP_COLOR));
     }
 
     const attackById = (id: number, command?: string) => {

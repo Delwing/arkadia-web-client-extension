@@ -7,6 +7,7 @@ import {
 } from "@web/dataStores/multibindStore";
 import { globalStorage } from "@modules/core/storage";
 import { type Bind, bindMatches } from "@modules/core/keymapTypes";
+import MapHelper from "@shared/map/MapHelper";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -155,7 +156,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
                 if (room?.userData?.bind) {
                     additionalBinds.push({
                         index: MAX_BINDS + 1,
-                        action: room.userData.bind,
+                        action: MapHelper.getBindPrintable(room.userData.bind),
                         label: bindLabel(roomBind)
                     });
                 }
@@ -342,7 +343,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         // userData.bind
         if (bindMatches(ev, roomBind)) {
             if (room?.userData?.bind) {
-                client.sendCommand(room.userData.bind);
+                client.Map.executeBind(room.userData.bind);
                 ev.preventDefault();
             }
             return;
