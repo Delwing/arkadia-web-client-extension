@@ -43,6 +43,7 @@ export default defineConfig({
                 client: resolve('index.html'),
                 editor: resolve('editor/index.html'),
                 viewer: resolve('viewer/index.html'),
+                'log-viewer': resolve('log-viewer/index.html'),
             },
             output: {
                 manualChunks: (id) => {

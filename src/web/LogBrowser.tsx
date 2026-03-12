@@ -4,18 +4,18 @@ import { globalStorage } from "@modules/core/storage";
 import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
 
-interface LogEntry {
+export interface LogEntry {
   text: string;
   type?: string;
   timestamp: number;
 }
 
-interface ParsedLogLine {
+export interface ParsedLogLine {
   html: string;
   text: string;
 }
 
-interface ParsedLogGroup {
+export interface ParsedLogGroup {
   timestamp: number;
   time: string;
   dateTime: string;
@@ -23,7 +23,7 @@ interface ParsedLogGroup {
   lines: ParsedLogLine[];
 }
 
-interface FlatLogLine {
+export interface FlatLogLine {
   groupIndex: number;
   lineIndex: number;
   time: string;
@@ -33,7 +33,7 @@ interface FlatLogLine {
   timestamp: number;
 }
 
-interface SessionInfo {
+export interface SessionInfo {
   name: string;
   label: string;
 }
@@ -60,7 +60,7 @@ interface SearchSessionGroup {
   totalMatches: number;
 }
 
-function formatTime(ts: number): string {
+export function formatTime(ts: number): string {
   const d = new Date(ts);
   const h = String(d.getHours()).padStart(2, "0");
   const m = String(d.getMinutes()).padStart(2, "0");
@@ -69,7 +69,7 @@ function formatTime(ts: number): string {
   return `${h}:${m}:${s}.${ms}`;
 }
 
-function formatDateTime(ts: number): string {
+export function formatDateTime(ts: number): string {
   const d = new Date(ts);
   const y = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, "0");
@@ -77,7 +77,7 @@ function formatDateTime(ts: number): string {
   return `${y}-${mo}-${da} ${formatTime(ts)}`;
 }
 
-function formatSessionLabel(name: string): string {
+export function formatSessionLabel(name: string): string {
   if (name.startsWith("session_")) {
     const ts = parseInt(name.slice("session_".length), 10);
     if (!Number.isNaN(ts)) {
@@ -93,7 +93,7 @@ function formatSessionLabel(name: string): string {
   return name;
 }
 
-function getSessionYear(name: string): number | null {
+export function getSessionYear(name: string): number | null {
   if (name.startsWith("session_")) {
     const ts = parseInt(name.slice("session_".length), 10);
     if (!Number.isNaN(ts)) return new Date(ts).getFullYear();
@@ -210,7 +210,7 @@ function normalizeFlags(flags: string): string {
   return Array.from(new Set(parts)).join("");
 }
 
-function parseSearchQuery(query: string): { regex: RegExp | null; error?: string } {
+export function parseSearchQuery(query: string): { regex: RegExp | null; error?: string } {
   const trimmed = query.trim();
   if (!trimmed) {
     return { regex: null };
@@ -240,7 +240,7 @@ function parseSearchQuery(query: string): { regex: RegExp | null; error?: string
 
 const textParser = document.createElement("div");
 
-function parseLogEntries(entries: LogEntry[]): ParsedLogGroup[] {
+export function parseLogEntries(entries: LogEntry[]): ParsedLogGroup[] {
   const groups: ParsedLogGroup[] = [];
   for (const entry of entries) {
     const lines: ParsedLogLine[] = [];
@@ -262,7 +262,7 @@ function parseLogEntries(entries: LogEntry[]): ParsedLogGroup[] {
   return groups;
 }
 
-function flattenLogGroups(groups: ParsedLogGroup[]): FlatLogLine[] {
+export function flattenLogGroups(groups: ParsedLogGroup[]): FlatLogLine[] {
   const flat: FlatLogLine[] = [];
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
     const group = groups[groupIndex];
@@ -282,7 +282,7 @@ function flattenLogGroups(groups: ParsedLogGroup[]): FlatLogLine[] {
   return flat;
 }
 
-async function openDb(): Promise<IDBDatabase | null> {
+export async function openDb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
     try {
       const request = indexedDB.open("ArkadiaMessagesDB");
@@ -298,7 +298,7 @@ async function openDb(): Promise<IDBDatabase | null> {
   });
 }
 
-async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
+export async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
   return new Promise(resolve => {
     let tx: IDBTransaction;
     try {
@@ -317,7 +317,7 @@ async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<Lo
   });
 }
 
-async function getSessionData(db: IDBDatabase, storeName: string): Promise<ParsedLogGroup[]> {
+export async function getSessionData(db: IDBDatabase, storeName: string): Promise<ParsedLogGroup[]> {
   const logs = await getRawSessionData(db, storeName);
   return parseLogEntries(logs);
 }
@@ -905,7 +905,7 @@ function LogManager({
   );
 }
 
-function LogLine({ line, isHighlighted }: { line: FlatLogLine; isHighlighted: boolean }) {
+export function LogLine({ line, isHighlighted }: { line: FlatLogLine; isHighlighted: boolean }) {
   const classes = ["output_msg"];
   if (line.type) classes.push(line.type);
   if (isHighlighted) classes.push("logs-preview-highlight");
@@ -1688,6 +1688,19 @@ export function LogBrowser() {
             disabled={!currentSession || isDeleting || isExporting}
           >
             {isDeleting ? "Usuwanie..." : "Usun"}
+          </button>
+          <button
+            className="btn btn-primary"
+            style={{ whiteSpace: "nowrap" }}
+            disabled={!currentSession}
+            onClick={() => {
+              const url = new URL("log-viewer/index.html", window.location.href);
+              if (currentSession) url.searchParams.set("session", currentSession);
+              window.open(url.toString(), "_blank");
+            }}
+            title="Otworz log w nowej karcie"
+          >
+            {`Otw\u00F3rz w nowej karcie`}
           </button>
         </div>
 
