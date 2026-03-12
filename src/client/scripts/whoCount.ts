@@ -10,7 +10,7 @@ import type { FormatStateSnapshot } from "@client/ansi/FormatState";
 const TAG = 'who-count';
 const GREEN = createColorFormat('#00ff00');
 const RED = createColorFormat('#ff0000');
-const DEFAULT_NAME_COLOR = createColorFormat('#ffff5f');
+const DEFAULT_NAME_COLOR = createColorFormat('#ffffff');
 
 export default function initWhoCount(client: Client) {
     let lastCount: number | null = null;
@@ -30,6 +30,12 @@ export default function initWhoCount(client: Client) {
     };
     applySettings(characterStorage.get('settings'));
     characterStorage.onChange('settings', applySettings);
+
+    // Reset state on character switch
+    client.on("reset", () => {
+        lastCount = null;
+        previousNames = [];
+    });
 
     /**
      * Look up a name in the people database and return an appropriate color.
