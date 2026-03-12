@@ -1,5 +1,6 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
+import {polishWordToNumber} from "./polishNumberConverter";
 
 export default function initPrzybywajaCount(client: Client) {
     const HIGHLIGHT = createColorFormat('#ccb3ff');
@@ -11,7 +12,12 @@ export default function initPrzybywajaCount(client: Client) {
             .split(/,| i /)
             .map(name => name.trim())
             .filter(name => name.length > 0);
-        const count = names.length;
+        let count = 0;
+        for (const name of names) {
+            const firstWord = name.split(/\s+/)[0].toLowerCase();
+            const num = polishWordToNumber(firstWord);
+            count += num > 1 ? num : 1;
+        }
         return line.insert(0, `[${count}] `, {})
     }, 'przybywaja-count');
 }
