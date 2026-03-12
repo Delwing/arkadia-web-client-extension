@@ -89,7 +89,7 @@ export default function initWhoCount(client: Client) {
             for (const l of lines) {
                 if (l.length === 0 || l.startsWith(' ')) continue;
                 const firstWord = l.split(/\s/)[0];
-                const name = firstWord.replace(/^\*|\*$/g, '');
+                const name = firstWord.replace(/^\*|\*$/g, '').replace(/,+$/, '');
                 if (name.length > 0) {
                     names.push(name);
                 }
