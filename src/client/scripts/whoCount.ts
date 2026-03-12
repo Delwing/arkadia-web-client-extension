@@ -99,19 +99,27 @@ export default function initWhoCount(client: Client) {
         return names;
     }
 
+    function isWordChar(ch: string | undefined): boolean {
+        if (!ch) return false;
+        if (ch >= 'a' && ch <= 'z') return true;
+        if (ch >= 'A' && ch <= 'Z') return true;
+        if (ch >= '0' && ch <= '9') return true;
+        return false;
+    }
+
     /**
      * Find position of a name in the buffer text (after bodyStart), respecting word boundaries.
+     * Both the character before and after must be non-word characters to prevent
+     * matching a shorter name inside a longer one (e.g. "Ana" inside "Anarion").
      * Returns the insert position (before * if present), or -1 if not found.
      */
     function findNamePosition(text: string, name: string, bodyStart: number): number {
         let idx = text.indexOf(name, bodyStart);
         while (idx >= 0) {
-            const before = idx > 0 ? text[idx - 1] : '\n';
+            const before = idx > 0 ? text[idx - 1] : undefined;
             const afterIdx = idx + name.length;
-            const after = afterIdx < text.length ? text[afterIdx] : ' ';
-            const beforeOk = before === ' ' || before === '\n' || before === '*';
-            const afterOk = after === ' ' || after === '\n' || after === '*' || after === ',' || afterIdx >= text.length;
-            if (beforeOk && afterOk) {
+            const after = afterIdx < text.length ? text[afterIdx] : undefined;
+            if (!isWordChar(before) && !isWordChar(after)) {
                 return before === '*' ? idx - 1 : idx;
             }
             idx = text.indexOf(name, idx + 1);
