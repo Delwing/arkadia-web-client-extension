@@ -1,10 +1,13 @@
 import {areOutputTimestampsVisible} from "@shared/dom/outputMessageHandler";
 
+type UnderlineStyle = 'solid' | 'dotted';
+
 interface StyledSpan {
     text: string;
     color: string;
     backgroundColor?: string;
     bold: boolean;
+    underline?: UnderlineStyle;
 }
 
 const BLOCK_ELEMENTS = new Set([
@@ -17,11 +20,11 @@ const TIMESTAMP_COLOR = 'darkorange';
 function extractStyledText(node: Node, defaultColor: string, includeTimestamps: boolean): StyledSpan[] {
     const spans: StyledSpan[] = [];
 
-    function walk(n: Node, inheritedColor: string, inheritedBgColor: string | undefined, inheritedBold: boolean) {
+    function walk(n: Node, inheritedColor: string, inheritedBgColor: string | undefined, inheritedBold: boolean, inheritedUnderline: UnderlineStyle | undefined) {
         if (n.nodeType === Node.TEXT_NODE) {
             const text = n.textContent || '';
             if (text) {
-                spans.push({ text, color: inheritedColor, backgroundColor: inheritedBgColor, bold: inheritedBold });
+                spans.push({ text, color: inheritedColor, backgroundColor: inheritedBgColor, bold: inheritedBold, underline: inheritedUnderline });
             }
             return;
         }
@@ -55,9 +58,13 @@ function extractStyledText(node: Node, defaultColor: string, includeTimestamps: 
 
             const computedStyle = window.getComputedStyle(el);
             const bold = inheritedBold || computedStyle.fontWeight === 'bold' || parseInt(computedStyle.fontWeight) >= 700;
+            let underline = inheritedUnderline;
+            if (!underline && computedStyle.textDecorationLine.includes('underline')) {
+                underline = computedStyle.textDecorationStyle === 'dotted' ? 'dotted' : 'solid';
+            }
 
             for (const child of n.childNodes) {
-                walk(child, color, bgColor, bold);
+                walk(child, color, bgColor, bold, underline);
             }
 
             if (isBlock && spans.length > 0) {
@@ -69,7 +76,7 @@ function extractStyledText(node: Node, defaultColor: string, includeTimestamps: 
         }
     }
 
-    walk(node, defaultColor, undefined, false);
+    walk(node, defaultColor, undefined, false, undefined);
     return spans;
 }
 
@@ -220,7 +227,7 @@ export async function copyOutputAsImage(): Promise<void> {
                 currentLine = [];
             }
             if (parts[i]) {
-                currentLine.push({ text: parts[i], color: span.color, backgroundColor: span.backgroundColor, bold: span.bold });
+                currentLine.push({ text: parts[i], color: span.color, backgroundColor: span.backgroundColor, bold: span.bold, underline: span.underline });
             }
         }
     }
@@ -284,7 +291,7 @@ export async function copyOutputAsImage(): Promise<void> {
                 if (currentX + textWidth <= containerWidth) {
                     // Text fits on current line
                     if (remainingText.length > 0) {
-                        wrappedLine.push({ text: remainingText, color: span.color, backgroundColor: span.backgroundColor, bold: span.bold });
+                        wrappedLine.push({ text: remainingText, color: span.color, backgroundColor: span.backgroundColor, bold: span.bold, underline: span.underline });
                     }
                     currentX += textWidth;
                     remainingText = '';
@@ -317,7 +324,7 @@ export async function copyOutputAsImage(): Promise<void> {
                     // Add the fitting part to current line
                     const fittingPart = remainingText.substring(0, fitChars);
                     if (fittingPart.length > 0) {
-                        wrappedLine.push({ text: fittingPart, color: span.color, backgroundColor: span.backgroundColor, bold: span.bold });
+                        wrappedLine.push({ text: fittingPart, color: span.color, backgroundColor: span.backgroundColor, bold: span.bold, underline: span.underline });
                     }
                     remainingText = remainingText.substring(fitChars);
 
@@ -385,6 +392,21 @@ export async function copyOutputAsImage(): Promise<void> {
 
             ctx.fillStyle = span.color;
             ctx.fillText(span.text, x, y);
+
+            if (span.underline) {
+                ctx.strokeStyle = span.color;
+                ctx.lineWidth = 1;
+                const underlineY = y + fontSize + 1;
+                ctx.beginPath();
+                if (span.underline === 'dotted') {
+                    ctx.setLineDash([2, 2]);
+                }
+                ctx.moveTo(x, underlineY);
+                ctx.lineTo(x + textWidth, underlineY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
             x += textWidth;
 
             // After rendering the timestamp on first line with prepended timestamp, add the offset

@@ -31,11 +31,14 @@ function getOutputWindowStyles(): { backgroundColor: string; fontFamily: string;
     };
 }
 
+type UnderlineStyle = 'solid' | 'dotted';
+
 interface StyledSegment {
     text: string;
     color: string;
     backgroundColor?: string;
     bold: boolean;
+    underline?: UnderlineStyle;
 }
 
 function colorToHex(color: FormatColor): string {
@@ -98,7 +101,14 @@ export async function bufferToImage(
             bold = !!state.bold;
         }
 
-        styledSegments.push({text: segment.text, color, backgroundColor: bgColor, bold});
+        let underline: UnderlineStyle | undefined;
+        if (state?.hyperlink) {
+            underline = 'dotted';
+        } else if (state?.underline) {
+            underline = 'solid';
+        }
+
+        styledSegments.push({text: segment.text, color, backgroundColor: bgColor, bold, underline});
     }
 
     // Split into lines
@@ -113,7 +123,7 @@ export async function bufferToImage(
                 currentLine = [];
             }
             if (parts[i]) {
-                currentLine.push({text: parts[i], color: segment.color, backgroundColor: segment.backgroundColor, bold: segment.bold});
+                currentLine.push({text: parts[i], color: segment.color, backgroundColor: segment.backgroundColor, bold: segment.bold, underline: segment.underline});
             }
         }
     }
@@ -166,6 +176,21 @@ export async function bufferToImage(
 
             ctx.fillStyle = segment.color;
             ctx.fillText(segment.text, x, y);
+
+            if (segment.underline) {
+                ctx.strokeStyle = segment.color;
+                ctx.lineWidth = 1;
+                const underlineY = y + fontSize + 1;
+                ctx.beginPath();
+                if (segment.underline === 'dotted') {
+                    ctx.setLineDash([2, 2]);
+                }
+                ctx.moveTo(x, underlineY);
+                ctx.lineTo(x + textWidth, underlineY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
             x += textWidth;
         }
     }
