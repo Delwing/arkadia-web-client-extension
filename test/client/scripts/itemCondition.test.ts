@@ -57,6 +57,20 @@ describe('itemCondition trigger', () => {
     expect(result?.text).toBe('Zauwazasz, ze miecz jest juz w zlym stanie. [4/7]');
   });
 
+  test('standalone clothing wear pattern colors and suffixes condition', () => {
+    const result = parse('Zauwazasz, ze kosciana maska z ludzkiej czaszki jest juz w bardzo zlym stanie.');
+    expect(result?.text).toBe(
+      'Zauwazasz, ze kosciana maska z ludzkiej czaszki jest juz w bardzo zlym stanie. [3/7]'
+    );
+  });
+
+  test('standalone clothing wear pattern without juz', () => {
+    const result = parse('Zauwazasz, ze kosciana maska z ludzkiej czaszki jest w zlym stanie.');
+    expect(result?.text).toBe(
+      'Zauwazasz, ze kosciana maska z ludzkiej czaszki jest w zlym stanie. [4/7]'
+    );
+  });
+
   test('does not trigger without preceding inspection action', () => {
     const result = parse('Twoj miecz jest w znakomitym stanie.');
     expect(result?.text).toBe('Twoj miecz jest w znakomitym stanie.');

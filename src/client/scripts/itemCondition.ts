@@ -42,6 +42,8 @@ export function processItemCondition(buffer: AnsiAwareBuffer, phrase: string): A
             const matchIndex = text.indexOf(searchText);
             if (matchIndex === -1) return buffer;
 
+            const afterText = text.substring(matchIndex + searchText.length, matchIndex + searchText.length + 2);
+            if (afterText === ' [') return buffer;
             buffer.color([matchIndex, matchIndex + phrase.length], colorCode);
             buffer.insert(matchIndex + searchText.length, ` ${condition.replacement}`, colorCode);
             return buffer;
@@ -83,4 +85,12 @@ export default function initItemCondition(client: Client) {
         const phrase = matches[1];
         return processItemCondition(line, phrase);
     }, tag));
+
+    // Standalone clothing wear pattern — fires without a preceding inspection action
+    const clothingWearPattern = /^Zauwazasz, ze .+ jest (?:juz )?(.+)\.$/;
+    client.Triggers.registerTrigger(clothingWearPattern, (line, matches) => {
+        if (!matches || !matches[1]) return line;
+        const phrase = matches[1];
+        return processItemCondition(line, phrase);
+    }, tag);
 }
