@@ -182,7 +182,8 @@ export default function LogViewerApp() {
     <div className="log-viewer-root">
       <div className="log-viewer-toolbar">
         <select
-          className="log-viewer-select"
+          className="form-select form-select-sm"
+          style={{ width: "auto", minWidth: "10rem" }}
           value={currentSession ?? ""}
           onChange={(e) => setCurrentSession(e.target.value)}
         >
@@ -203,13 +204,13 @@ export default function LogViewerApp() {
 
         <div className="log-viewer-search-group">
           <input
-            className="log-viewer-search"
+            className="form-control form-control-sm"
             placeholder="Szukaj..."
             value={searchQuery}
             onChange={(e) => handleSearchInput(e.target.value)}
             onKeyDown={handleSearchKeyDown}
           />
-          <button className="log-viewer-btn" onClick={runSearch}>Szukaj</button>
+          <button className="btn btn-primary btn-sm" onClick={runSearch}>Szukaj</button>
           {matchCount !== null && (
             <>
               <span className="log-viewer-match-info">
@@ -218,14 +219,14 @@ export default function LogViewerApp() {
               {matchCount > 0 && (
                 <>
                   <button
-                    className="log-viewer-btn log-viewer-btn-sm"
+                    className="btn btn-secondary btn-sm"
                     disabled={currentMatchIdx <= 0}
                     onClick={() => goToMatch(currentMatchIdx - 1)}
                   >
                     &uarr;
                   </button>
                   <button
-                    className="log-viewer-btn log-viewer-btn-sm"
+                    className="btn btn-secondary btn-sm"
                     disabled={currentMatchIdx >= matchCount - 1}
                     onClick={() => goToMatch(currentMatchIdx + 1)}
                   >
