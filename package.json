@@ -13,7 +13,7 @@
     "generate:plugin-types": "node scripts/generate-plugin-types.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "jest --runInBand",
+    "test": "jest",
     "test:e2e": "playwright test",
     "serve:examples": "node examples/server.cjs"
   },
