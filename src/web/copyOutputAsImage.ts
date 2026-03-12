@@ -210,10 +210,25 @@ export async function copyOutputAsImage(): Promise<void> {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
 
-    // Get container width for wrapping (matching the display in content area)
-    // Subtract padding and a small buffer for measurement differences between canvas and browser
+    // Create DOM measurement element for accurate text width matching browser rendering
+    // (canvas measureText differs from browser layout, causing wrapping mismatches)
+    const measureSpan = document.createElement('span');
+    measureSpan.style.position = 'absolute';
+    measureSpan.style.visibility = 'hidden';
+    measureSpan.style.whiteSpace = 'pre';
+    measureSpan.style.font = font;
+    document.body.appendChild(measureSpan);
+
+    const domMeasureText = (text: string, bold: boolean): number => {
+        measureSpan.style.font = bold ? boldFont : font;
+        measureSpan.textContent = text;
+        return measureSpan.getBoundingClientRect().width;
+    };
+
+    // Get container width for wrapping from actual content element for accuracy
     const wrapperPadding = computedStyle ? parseFloat(computedStyle.paddingLeft) + parseFloat(computedStyle.paddingRight) : 16;
-    const containerWidth = outputWrapper ? outputWrapper.clientWidth - wrapperPadding - 1 : 800;
+    const contentEl = outputWrapper?.querySelector('.output_msg_content') as HTMLElement | null;
+    const containerWidth = (contentEl?.clientWidth || (outputWrapper ? outputWrapper.clientWidth - wrapperPadding : 800)) - 8;
 
     // Split spans into lines (by newlines only first, then wrap)
     const logicalLines: StyledSpan[][] = [];
@@ -236,16 +251,15 @@ export async function copyOutputAsImage(): Promise<void> {
     }
 
     // Calculate first line pixel offset (only if multiple lines and first line has prepended timestamp)
-    ctx.font = font;
     // Only apply offset if we prepended a timestamp (meaning selection started mid-content)
     const firstLinePixelOffset = (logicalLines.length > 1 && firstLineHasPrependedTimestamp)
-        ? ctx.measureText(' '.repeat(firstLineCharOffset)).width
+        ? domMeasureText(' '.repeat(firstLineCharOffset), false)
         : 0;
 
     // Check if we have any timestamps - if so, lines without timestamps need to be indented
     const hasAnyTimestamp = logicalLines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
     // Timestamp format is "HH:MM:SS.mmm " (13 chars including space)
-    const timestampIndent = hasAnyTimestamp ? ctx.measureText(' '.repeat(13)).width : 0;
+    const timestampIndent = hasAnyTimestamp ? domMeasureText(' '.repeat(13), false) : 0;
 
     // Wrap lines to fit container width
     const lines: StyledSpan[][] = [];
@@ -267,15 +281,13 @@ export async function copyOutputAsImage(): Promise<void> {
         // For first line with prepended timestamp, add timestamp width + firstLinePixelOffset
         let currentX = initialOffset;
         if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp && logicalLine.length > 0 && logicalLine[0].color === TIMESTAMP_COLOR) {
-            ctx.font = font;
-            currentX += ctx.measureText(logicalLine[0].text).width + firstLinePixelOffset;
+            currentX += domMeasureText(logicalLine[0].text, false) + firstLinePixelOffset;
         }
 
         let wrappedLine: StyledSpan[] = [];
 
         for (let spanIndex = 0; spanIndex < logicalLine.length; spanIndex++) {
             const span = logicalLine[spanIndex];
-            ctx.font = span.bold ? boldFont : font;
 
             // Skip timestamp processing for first span if it's already accounted for
             if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp && spanIndex === 0 && span.color === TIMESTAMP_COLOR) {
@@ -286,7 +298,7 @@ export async function copyOutputAsImage(): Promise<void> {
             let remainingText = span.text;
 
             while (remainingText.length > 0) {
-                const textWidth = ctx.measureText(remainingText).width;
+                const textWidth = domMeasureText(remainingText, span.bold);
 
                 if (currentX + textWidth <= containerWidth) {
                     // Text fits on current line
@@ -296,19 +308,29 @@ export async function copyOutputAsImage(): Promise<void> {
                     currentX += textWidth;
                     remainingText = '';
                 } else {
-                    // Need to wrap - find how many characters fit
-                    let fitChars = 0;
-                    for (let i = 1; i <= remainingText.length; i++) {
-                        const partWidth = ctx.measureText(remainingText.substring(0, i)).width;
-                        if (currentX + partWidth > containerWidth) {
-                            break;
+                    // Need to wrap - binary search for how many characters fit
+                    let lo = 1, hi = remainingText.length, fitChars = 0;
+                    while (lo <= hi) {
+                        const mid = (lo + hi) >> 1;
+                        const partWidth = domMeasureText(remainingText.substring(0, mid), span.bold);
+                        if (currentX + partWidth <= containerWidth) {
+                            fitChars = mid;
+                            lo = mid + 1;
+                        } else {
+                            hi = mid - 1;
                         }
-                        fitChars = i;
                     }
 
                     if (fitChars === 0) {
                         // Can't fit even one character, force at least one to avoid infinite loop
                         fitChars = 1;
+                    }
+
+                    // CSS pre-wrap: trailing spaces at a line break "hang" past the edge
+                    // (they don't count toward line width). Include them so the break
+                    // happens after "word, " not before it.
+                    while (fitChars < remainingText.length && remainingText[fitChars] === ' ') {
+                        fitChars++;
                     }
 
                     // Try to break at word boundary (last space within fitting chars)
@@ -318,8 +340,16 @@ export async function copyOutputAsImage(): Promise<void> {
                     if (lastSpaceIndex > 0) {
                         // Break at the space - include the space at end of this line
                         fitChars = lastSpaceIndex + 1;
+                    } else if (wrappedLine.length > 0) {
+                        // No space found in this span - rather than breaking mid-word,
+                        // push current line and try this text on a fresh line.
+                        // This handles breaks between styled spans (e.g., ", " followed by a name)
+                        lines.push(wrappedLine);
+                        wrappedLine = [];
+                        currentX = hasAnyTimestamp ? timestampIndent : 0;
+                        continue;
                     }
-                    // If no space found, we break mid-word (fallback for very long words)
+                    // If line is empty and no space, break mid-word (very long words)
 
                     // Add the fitting part to current line
                     const fittingPart = remainingText.substring(0, fitChars);
@@ -347,6 +377,8 @@ export async function copyOutputAsImage(): Promise<void> {
             lines.push([]);
         }
     }
+
+    document.body.removeChild(measureSpan);
 
     // Measure actual width of each line (including offsets)
     const maxLineWidth = containerWidth; // Use container width as the max width
