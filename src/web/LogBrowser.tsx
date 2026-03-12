@@ -1690,7 +1690,7 @@ export function LogBrowser() {
             {isDeleting ? "Usuwanie..." : "Usun"}
           </button>
           <button
-            className="btn btn-outline-primary"
+            className="btn btn-primary"
             style={{ whiteSpace: "nowrap" }}
             disabled={!currentSession}
             onClick={() => {
@@ -1700,7 +1700,7 @@ export function LogBrowser() {
             }}
             title="Otworz log w nowej karcie"
           >
-            Nowa karta
+            {`Otw\u00F3rz w nowej karcie`}
           </button>
         </div>
 
