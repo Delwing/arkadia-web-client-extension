@@ -188,6 +188,14 @@ export default class ObjectManager {
         return ordered;
     }
 
+    public resolveObjectIds(command: string): string {
+        return command.replace(/ob_(\d+)/g, (match, numStr) => {
+            const num = parseInt(numStr);
+            const obj = this.data[num];
+            return obj?.desc ? `&lt;${obj.desc}&gt;` : match;
+        });
+    }
+
     public hasEnemiesOnLocation() {
         return this.getObjectsOnLocation().filter(item => item.__category == "rest").length > 0;
     }

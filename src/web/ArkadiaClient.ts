@@ -209,11 +209,17 @@ class ArkadiaClient implements ClientAdapter {
     /**
      * Send a message through the WebSocket
      */
+    private echoMessage(message: string): void {
+        const client = getClientInstance<Client>();
+        const display = client ? client.ObjectManager.resolveObjectIds(message) : message;
+        this.output("→ " + display, 'command');
+    }
+
     send(message: string, echo: boolean = true, options?: CommandOptions): void {
         const shouldEcho = echo && this.commandEcho;
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             if (shouldEcho && message) {
-                this.output("→ " + message, 'command');
+                this.echoMessage(message);
             }
             return;
         }
@@ -232,7 +238,7 @@ class ArkadiaClient implements ClientAdapter {
             this.socket.send(btoa(message + "\r\n"));
             // Only echo commands if requested and we've received the first GMCP event
             if (shouldEcho && this.receivedFirstGmcp && message) {
-                this.output("→ " + message, 'command');
+                this.echoMessage(message);
             }
         } catch (error) {
             console.error('Error sending message:', error);
