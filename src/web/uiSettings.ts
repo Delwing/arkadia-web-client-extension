@@ -19,6 +19,13 @@ import {globalStorage} from "@modules/core/storage";
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
 
+function hexAlphaToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -261,6 +268,7 @@ function apply(settings: UiSettings) {
             objects.style.removeProperty('font-family');
         }
         objects.style.fontSize = settings.objectsFontSize + 'rem';
+        objects.style.backgroundColor = hexAlphaToRgba(settings.objectListBackgroundColor, settings.objectListBackgroundAlpha);
     }
     const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
     if (iframeContainer) {
@@ -363,6 +371,14 @@ function load(): UiSettings {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultUiSettings.outputBackground;
+            const objectListBackgroundColor = typeof parsed.objectListBackgroundColor === 'string'
+                && /^#[0-9a-f]{6}$/i.test(parsed.objectListBackgroundColor.trim())
+                    ? parsed.objectListBackgroundColor.trim()
+                    : defaultUiSettings.objectListBackgroundColor;
+            const objectListBackgroundAlpha = typeof parsed.objectListBackgroundAlpha === 'number'
+                && parsed.objectListBackgroundAlpha >= 0 && parsed.objectListBackgroundAlpha <= 1
+                    ? parsed.objectListBackgroundAlpha
+                    : defaultUiSettings.objectListBackgroundAlpha;
             const fontFamily = isUiFontSelection(parsed.fontFamily)
                 ? parsed.fontFamily
                 : defaultUiSettings.fontFamily;
@@ -480,6 +496,8 @@ function load(): UiSettings {
                 commandEcho,
                 outputBottomPadding,
                 splitViewHeight,
+                objectListBackgroundColor,
+                objectListBackgroundAlpha,
             };
         }
     } catch {
@@ -517,6 +535,10 @@ export default async function initUiSettings() {
     const transparentLabelsInput = modalEl.querySelector('#ui-transparent-labels') as HTMLInputElement;
     const outputBackgroundInput = modalEl.querySelector('#ui-output-background') as HTMLInputElement;
     const outputBackgroundReset = modalEl.querySelector('#ui-output-background-reset') as HTMLButtonElement | null;
+    const objectListBgColorInput = modalEl.querySelector('#ui-objectlist-bg-color') as HTMLInputElement;
+    const objectListBgAlphaInput = modalEl.querySelector('#ui-objectlist-bg-alpha') as HTMLInputElement;
+    const objectListBgAlphaValue = modalEl.querySelector('#ui-objectlist-bg-alpha-value') as HTMLElement;
+    const objectListBgResetBtn = modalEl.querySelector('#ui-objectlist-bg-reset') as HTMLButtonElement | null;
     const clearInputOnSendInput = modalEl.querySelector('#ui-clear-input') as HTMLInputElement;
     const fontFamilyInput = modalEl.querySelector('#ui-font-family') as HTMLSelectElement;
     const customFontSettings = modalEl.querySelector('#ui-custom-font-settings') as HTMLElement | null;
@@ -818,6 +840,9 @@ export default async function initUiSettings() {
         labelRenderModeInput.value = settings.labelRenderMode;
         transparentLabelsInput.checked = settings.transparentLabels;
         outputBackgroundInput.value = settings.outputBackground;
+        objectListBgColorInput.value = settings.objectListBackgroundColor;
+        objectListBgAlphaInput.value = String(settings.objectListBackgroundAlpha);
+        objectListBgAlphaValue.textContent = String(settings.objectListBackgroundAlpha);
         clearInputOnSendInput.checked = settings.clearInputOnSend;
         fontFamilyInput.value = settings.fontFamily;
         customFontUrlInput.value = settings.customFontUrl;
@@ -957,6 +982,14 @@ export default async function initUiSettings() {
     }
     outputBackgroundReset?.addEventListener('click', () => {
         outputBackgroundInput.value = defaultUiSettings.outputBackground;
+    });
+    objectListBgResetBtn?.addEventListener('click', () => {
+        objectListBgColorInput.value = defaultUiSettings.objectListBackgroundColor;
+        objectListBgAlphaInput.value = String(defaultUiSettings.objectListBackgroundAlpha);
+        objectListBgAlphaValue.textContent = String(defaultUiSettings.objectListBackgroundAlpha);
+    });
+    objectListBgAlphaInput?.addEventListener('input', () => {
+        objectListBgAlphaValue.textContent = objectListBgAlphaInput.value;
     });
     apply(current);
 
@@ -1287,6 +1320,13 @@ export default async function initUiSettings() {
             commandEcho: commandEchoInput.checked,
             outputBottomPadding: Math.max(0, parseInt(outputBottomPaddingInput.value) || 0),
             splitViewHeight: current.splitViewHeight,
+            objectListBackgroundColor: /^#[0-9a-f]{6}$/i.test(objectListBgColorInput.value)
+                ? objectListBgColorInput.value
+                : defaultUiSettings.objectListBackgroundColor,
+            objectListBackgroundAlpha: (() => {
+                const v = parseFloat(objectListBgAlphaInput.value);
+                return !isNaN(v) && v >= 0 && v <= 1 ? v : defaultUiSettings.objectListBackgroundAlpha;
+            })(),
         };
     }
 

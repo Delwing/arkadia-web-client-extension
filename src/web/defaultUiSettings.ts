@@ -76,6 +76,8 @@ export interface UiSettings {
     showTransportLabel?: boolean;
     teamNumberingMode: 'letters' | 'numbers';
     drinkableAsFunctionalBind: boolean;
+    objectListBackgroundColor: string;
+    objectListBackgroundAlpha: number;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -121,4 +123,6 @@ export const defaultUiSettings: UiSettings = {
     outputBottomPadding: 0,
     teamNumberingMode: 'letters',
     drinkableAsFunctionalBind: true,
+    objectListBackgroundColor: '#000000',
+    objectListBackgroundAlpha: 0.4,
 };

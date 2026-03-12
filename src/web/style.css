@@ -2371,7 +2371,6 @@ h1 {
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.6rem;
-  background-color: rgba(0, 0, 0, 0.4);
   border: 0.1vh solid silver;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
