@@ -63,6 +63,7 @@ import initSeasonPrint from './scripts/seasonPrint'
 import initWorldRebirth from './scripts/worldRebirth'
 import initDajeCiHighlight from './scripts/dajeCiHighlight'
 import initPrzybywajaCount from './scripts/przybywajaCount'
+import initWhoCount from './scripts/whoCount'
 import initPriceEvaluation from './scripts/priceEvaluation'
 import initStoneValue from './scripts/stoneValue'
 import initSelfEvaluation from './scripts/selfEvaluation'
@@ -249,6 +250,7 @@ export function registerScripts(client: Client) {
     initWorldRebirth(client)
     initDajeCiHighlight(client)
     initPrzybywajaCount(client)
+    initWhoCount(client)
     initGuildPostfix(client)
     initLanguage(client, aliases)
     initShortcuts(client, aliases)
