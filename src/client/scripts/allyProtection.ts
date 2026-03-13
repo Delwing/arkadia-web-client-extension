@@ -78,7 +78,8 @@ export default function initAllyProtection(client: Client) {
     client.on('gmcp.objects.data', (data) => {
         if (!data || allyDescriptions.size === 0) return;
 
-        for (const [num, obj] of data.entries() as IterableIterator<[number, ObjectData]>) {
+        for (const [numStr, obj] of Object.entries(data as unknown as Record<string, ObjectData>)) {
+            const num = Number(numStr);
             if (obj.desc && !allyCache.has(num)) {
                 const lowerName = obj.desc.toLowerCase();
                 // First time seeing this object - check and cache
