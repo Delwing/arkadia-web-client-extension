@@ -102,8 +102,8 @@ test.describe('HP alert', () => {
         // Start with low HP
         await pushGmcp(page, 'char.state', {hp: 2});
 
-        // Wait a bit
-        await page.waitForTimeout(100);
+        // wait briefly — proving no alert appears when HP is set (not decreased)
+        await page.waitForTimeout(200);
 
         // Get initial output content
         const initialContent = await output.textContent();
@@ -111,8 +111,8 @@ test.describe('HP alert', () => {
         // Increase HP
         await pushGmcp(page, 'char.state', {hp: 4});
 
-        // Wait a bit
-        await page.waitForTimeout(100);
+        // wait briefly — proving no alert appears on HP increase
+        await page.waitForTimeout(200);
 
         // Get final output content
         const finalContent = await output.textContent();
@@ -143,8 +143,8 @@ test.describe('HP alert', () => {
         // Drop HP significantly
         await pushGmcp(page, 'char.state', {hp: 1});
 
-        // Wait a bit
-        await page.waitForTimeout(100);
+        // wait briefly — proving no alert appears when disabled
+        await page.waitForTimeout(200);
 
         // Get final content
         const finalContent = await output.textContent();
@@ -206,11 +206,9 @@ test.describe('HP alert', () => {
         for (const level of hpLevels) {
             // Reset to high HP
             await pushGmcp(page, 'char.state', {hp: 6});
-            await page.waitForTimeout(50);
 
             // Drop to test HP
             await pushGmcp(page, 'char.state', {hp: level.hp});
-            await page.waitForTimeout(50);
 
             // Check for expected message
             await expect(output, `should display correct message for HP ${level.hp}`).toContainText(level.message);

@@ -1,50 +1,13 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
-
-async function waitForOutputContaining(page: import('@playwright/test').Page, text: string, timeout = 3000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 10); i--) {
-                const msg = messages[i];
-                const textContent = msg.textContent || '';
-                if (textContent.includes(searchText)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        text,
-        {timeout},
-    );
-}
-
-async function getRecentOutput(page: import('@playwright/test').Page, count = 5): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 test.describe('Container management', () => {
     test('should set a container type and display it via /pojemniki', async ({page}) => {
@@ -53,7 +16,7 @@ test.describe('Container management', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'ContainerTester', object_num: 50001});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ContainerTester');
 
         // Set a specific container for money type by submitting alias commands
         // The /pojemnik alias triggers inventory scan and UI; instead we use the
@@ -77,7 +40,7 @@ test.describe('Container management', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'ContainerPersist', object_num: 50002});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ContainerPersist');
 
         // Verify default config first
         await submitCommand(page, '/pojemniki');
@@ -89,7 +52,6 @@ test.describe('Container management', () => {
 
         // Trigger beforeunload to persist state
         await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
-        await page.waitForTimeout(100);
 
         // Reload and re-login
         await page.reload();
@@ -97,7 +59,7 @@ test.describe('Container management', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'ContainerPersist', object_num: 50002});
-        await page.waitForTimeout(300);
+        await waitForCharacter(page, 'ContainerPersist');
 
         // Verify config persisted
         await submitCommand(page, '/pojemniki');
@@ -114,11 +76,10 @@ test.describe('Container management', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'ContainerCmd', object_num: 50003});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ContainerCmd');
 
         // Use the /wdp alias to put an item into the "other" container
         await submitCommand(page, '/wdp miecz');
-        await page.waitForTimeout(100);
 
         // Verify commands were sent to the game (open bag, put item, close bag)
         const commands = await page.evaluate(() => {

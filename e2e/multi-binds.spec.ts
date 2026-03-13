@@ -15,9 +15,6 @@ test.describe('Multi-binds display', () => {
         // Create a multibind using the /mbind command
         await submitCommand(page, '/mbind 1 atak orka');
 
-        // Wait for the bind to be processed
-        await page.waitForTimeout(200);
-
         // Container should have active class
         await expect(multiBinds, 'should be active when binds are present').toHaveClass(/active/);
 
@@ -36,13 +33,11 @@ test.describe('Multi-binds display', () => {
 
         // Create a bind
         await submitCommand(page, '/mbind 1 test command');
-        await page.waitForTimeout(200);
 
         await expect(multiBinds, 'should be active').toHaveClass(/active/);
 
         // Remove the bind
         await submitCommand(page, '/mbind- 1');
-        await page.waitForTimeout(200);
 
         // Container should not be active anymore
         await expect(multiBinds, 'should not be active after removing all binds').not.toHaveClass(/active/);

@@ -112,7 +112,6 @@ test.describe('Mapper room persistence', () => {
 
         // Now send char.info which triggers reading saved mapperRoomId
         await pushGmcp(page, 'char.info', {name: 'MapTester', object_num: 70001});
-        await page.waitForTimeout(200);
 
         // Room should still be #2 from saved state
         await expect(locationLabel, 'should maintain room #2 after char.info').toContainText('#2');

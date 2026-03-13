@@ -7,6 +7,7 @@ import {
     pushText,
     GMCP_PATHS,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -294,13 +295,10 @@ test.describe('Lua gags line processing', () => {
         // Using combat.avatar type for "my" hits
         await pushText(page, 'Lekko ranisz Orka mieczem.', {type: 'combat.avatar'});
 
-        // Wait a bit for processing
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'Orka');
 
-        // Should have a prefix added (format is [value/totalValue])
-        // The exact prefix depends on the lua script, but it should contain brackets
-        const textContent = await output.textContent();
         // Check that the line contains the original text (it wasn't deleted)
+        const textContent = await output.textContent();
         expect(textContent).toContain('Orka');
     });
 
@@ -346,7 +344,7 @@ test.describe('Lua gags line processing', () => {
         // Send a dodge message
         await pushText(page, 'Uchylasz sie przed ciosem Orka.', {type: 'combat.avatar'});
 
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'Uchylasz sie');
 
         // Line should be kept without prefix
         const textContent = await output.textContent();
@@ -376,7 +374,7 @@ test.describe('Lua gags line processing', () => {
         // Send combat message - using a pattern that will trigger moje_ciosy
         await pushText(page, 'Lekko ranisz Orka mieczem.', {type: 'combat.avatar'});
 
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Orka');
 
         // At minimum, the line should be displayed
         const textContent = await output.textContent();

@@ -75,7 +75,6 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
         .toBe('wybierz paczke 1');
 
     await pushText(page, 'Uprzejmy urzednik przekazuje ci jakas paczke.');
-    await page.waitForTimeout(50);
 
     await expect(locationLabel, 'should mark delivery destination on map label').toContainText('→ #4');
     await expect(locationLabel, 'should indicate distance to delivery destination').toContainText('(3)');

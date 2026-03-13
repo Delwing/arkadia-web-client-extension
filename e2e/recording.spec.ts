@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 
 test.describe('Recording and Playback', () => {
     test('should record messages and save recording', async ({page}) => {
@@ -20,7 +20,7 @@ test.describe('Recording and Playback', () => {
         await pushText(page, 'Test message 1');
         await pushText(page, 'Test message 2');
         await pushText(page, 'Test message 3');
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Test message 3');
 
         // Stop recording
         await page.evaluate(() => {
@@ -56,7 +56,7 @@ test.describe('Recording and Playback', () => {
 
         await expect(page.locator('#recording-button')).toBeVisible();
 
-        // Send messages with delays
+        // Send messages with real delays — recording captures timestamps between messages
         for (let i = 1; i <= 5; i++) {
             await pushText(page, `Timed message ${i}`);
             await page.waitForTimeout(300);
@@ -84,15 +84,12 @@ test.describe('Recording and Playback', () => {
 
         // Test pause button
         await page.click('#playback-pause');
-        await page.waitForTimeout(200);
 
         // Test resume by clicking pause again
         await page.click('#playback-pause');
-        await page.waitForTimeout(200);
 
         // Test speed control (using slider)
         await page.locator('#playback-speed-slider').fill('0.7');
-        await page.waitForTimeout(200);
 
         // Stop playback
         await page.click('#playback-stop');
@@ -115,13 +112,13 @@ test.describe('Recording and Playback', () => {
             window.client.startRecording(name);
         }, recordingName);
 
-        // Send messages
+        // Send messages with real delays so recording captures timing data
         await pushText(page, 'Step message 1');
         await page.waitForTimeout(100);
         await pushText(page, 'Step message 2');
         await page.waitForTimeout(100);
         await pushText(page, 'Step message 3');
-        await page.waitForTimeout(100);
+        await waitForOutputContaining(page, 'Step message 3');
 
         // Stop recording
         await page.evaluate(() => {
@@ -140,19 +137,15 @@ test.describe('Recording and Playback', () => {
 
         // Pause immediately
         await page.click('#playback-pause');
-        await page.waitForTimeout(200);
 
         // Test step forward
         await page.click('#playback-step');
-        await page.waitForTimeout(200);
 
         // Test step back
         await page.click('#playback-step-back');
-        await page.waitForTimeout(200);
 
         // Step forward again
         await page.click('#playback-step');
-        await page.waitForTimeout(200);
 
         // Stop playback
         await page.click('#playback-stop');
@@ -185,7 +178,7 @@ test.describe('Recording and Playback', () => {
 
         // Send a test message
         await pushText(page, 'UI test message');
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'UI test message');
 
         // Stop recording by clicking the button
         await page.click('#recording-button');

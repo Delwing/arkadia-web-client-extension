@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 
 const OUTPUT_SELECTOR = '#main_text_output_msg_wrapper';
 const CONTEXT_MENU_SELECTOR = '#context-menu';
@@ -74,7 +74,11 @@ test.describe('Context menu', () => {
 
         const wiedzaButton = menu.locator('button', {hasText: 'Wiedza'}).first();
         await wiedzaButton.click();
-        await page.waitForTimeout(200);
+
+        await expect.poll(
+            async () => await page.evaluate(() => (window as any).__capturedCommands ?? []),
+            {message: 'should capture /wiedza command'},
+        ).toContain('/wiedza');
 
         const commands = await page.evaluate(() => (window as any).__capturedCommands ?? []);
         expect(commands).toContain('/wiedza');
@@ -96,7 +100,13 @@ test.describe('Context menu', () => {
 
         const timestampButton = menu.locator('button', {hasText: 'znaczniki czasu'}).first();
         await timestampButton.click();
-        await page.waitForTimeout(100);
+
+        // Wait for class change after toggle
+        await page.waitForFunction(([sel, initial]) => {
+            const el = document.querySelector(sel);
+            const has = el?.classList.contains('output-show-timestamps') ?? false;
+            return has !== initial;
+        }, [OUTPUT_SELECTOR, initialHasTimestamps] as [string, boolean]);
 
         const afterToggle = await page.evaluate((sel) => {
             const el = document.querySelector(sel);
@@ -122,7 +132,8 @@ test.describe('Context menu', () => {
 
         const link = page.locator('#test-link');
         await link.click({button: 'right'});
-        await page.waitForTimeout(100);
+        // Short wait to confirm custom menu does not appear (negative assertion)
+        await page.waitForTimeout(200);
 
         const hasShow = await page.evaluate((sel) => {
             const el = document.querySelector(sel);
@@ -134,11 +145,11 @@ test.describe('Context menu', () => {
 
     test('narrow viewport does NOT show custom context menu', async ({page}) => {
         await page.setViewportSize({width: 600, height: 800});
-        await page.waitForTimeout(100);
 
         const output = page.locator(OUTPUT_SELECTOR);
         await output.click({button: 'right'});
-        await page.waitForTimeout(100);
+        // Short wait to confirm custom menu does not appear on narrow viewport (negative assertion)
+        await page.waitForTimeout(200);
 
         const hasShow = await page.evaluate((sel) => {
             const el = document.querySelector(sel);
@@ -162,7 +173,7 @@ test.describe('Context menu', () => {
 
     test('with selection, Kopiuj jako obraz and Zapisz jako HTML appear', async ({page}) => {
         await pushText(page, 'Some selectable text here\n');
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'Some selectable text here');
 
         // Select text and then dispatch contextmenu event in one evaluate
         // to avoid the selection being cleared by Playwright's click

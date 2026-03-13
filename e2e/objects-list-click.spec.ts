@@ -1,11 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {
-    ensureGameSocket,
-    getLastOutgoingCommand,
-    GMCP_PATHS,
-    pushGmcp,
-    waitForCommandInput,
-} from './support/mocks';
+import {ensureGameSocket, getLastOutgoingCommand, GMCP_PATHS, pushGmcp, waitForCommandInput,} from './support/mocks';
 
 test.describe('Objects list clicking', () => {
     test('clicking object number attacks the target', async ({page}) => {
@@ -59,7 +53,7 @@ test.describe('Objects list clicking', () => {
         // Verify shield command was sent with shortcut
         await expect
             .poll(async () => {
-                const commands = await page.evaluate(() => {
+                return await page.evaluate(() => {
                     const sockets: any[] = (window as any).__mockSockets ?? [];
                     for (let i = sockets.length - 1; i >= 0; i--) {
                         const cmds: unknown = sockets[i]?.commands;
@@ -69,7 +63,6 @@ test.describe('Objects list clicking', () => {
                     }
                     return [];
                 });
-                return commands;
             }, {
                 message: 'should send shield command when clicking enemy description',
             })
@@ -99,7 +92,7 @@ test.describe('Objects list clicking', () => {
         // Verify shield command was sent with shortcut
         await expect
             .poll(async () => {
-                const commands = await page.evaluate(() => {
+                return await page.evaluate(() => {
                     const sockets: any[] = (window as any).__mockSockets ?? [];
                     for (let i = sockets.length - 1; i >= 0; i--) {
                         const cmds: unknown = sockets[i]?.commands;
@@ -109,7 +102,6 @@ test.describe('Objects list clicking', () => {
                     }
                     return [];
                 });
-                return commands;
             }, {
                 message: 'should send shield command when clicking teammate description',
             })
@@ -147,7 +139,7 @@ test.describe('Objects list clicking', () => {
 
         await expect
             .poll(async () => {
-                const commands = await page.evaluate(() => {
+                return await page.evaluate(() => {
                     const sockets: any[] = (window as any).__mockSockets ?? [];
                     for (let i = sockets.length - 1; i >= 0; i--) {
                         const cmds: unknown = sockets[i]?.commands;
@@ -157,7 +149,6 @@ test.describe('Objects list clicking', () => {
                     }
                     return [];
                 });
-                return commands;
             }, {
                 message: 'should shield against second object',
             })
@@ -174,9 +165,6 @@ test.describe('Objects list clicking', () => {
             '100': {desc: 'Hero', team: true, team_leader: true},
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100]);
-
-        // Wait for objects list to update
-        await page.waitForTimeout(200);
 
         // Verify no clickable elements for player object
         const playerNum = page.locator('#objects-list .object-num[data-object-id="100"]');
@@ -251,7 +239,7 @@ test.describe('Objects list clicking', () => {
         // Click the teammate number
         await teammateNum.click();
 
-        // Wait a bit to ensure no command was sent
+        // Short wait to confirm no command was sent for teammate (negative assertion)
         await page.waitForTimeout(200);
 
         // Verify no new command was sent

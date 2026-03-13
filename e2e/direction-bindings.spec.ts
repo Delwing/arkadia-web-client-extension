@@ -5,7 +5,6 @@ import type {Page} from '@playwright/test';
 async function pressNumpadKey(page: Page, code: string): Promise<void> {
     await page.keyboard.down(code);
     await page.keyboard.up(code);
-    await page.waitForTimeout(50);
 }
 
 async function resetCommands(page: Page): Promise<void> {
@@ -76,7 +75,8 @@ test.describe('Direction key bindings', () => {
         await page.waitForSelector('.modal.show', {timeout: 5000});
 
         await pressNumpadKey(page, 'Numpad8');
-        await page.waitForTimeout(100);
+        // Short wait to confirm no command was sent while modal is open (negative assertion)
+        await page.waitForTimeout(200);
 
         const lastCommand = await getLastOutgoingCommand(page);
         expect(lastCommand).toBeNull();
@@ -98,7 +98,8 @@ test.describe('Direction key bindings', () => {
         });
 
         await pressNumpadKey(page, 'Numpad8');
-        await page.waitForTimeout(100);
+        // Short wait to confirm no command was sent with other input focused (negative assertion)
+        await page.waitForTimeout(200);
 
         const lastCommand = await getLastOutgoingCommand(page);
         expect(lastCommand).toBeNull();

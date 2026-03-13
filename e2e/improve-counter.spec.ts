@@ -2,66 +2,27 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
-
-async function waitForOutputContaining(page: Page, text: string, timeout: number = 5000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 20); i--) {
-                const msg = messages[i];
-                const textContent = msg.textContent || '';
-                if (textContent.includes(searchText)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        text,
-        {timeout}
-    );
-}
-
-async function getRecentOutput(page: Page, count: number = 15): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 async function loginWithChar(page: Page, name: string, objectNum: number) {
     await pushGmcp(page, 'char.info', {name, object_num: objectNum});
-    await page.waitForTimeout(200);
+    await waitForCharacter(page, name);
 }
 
 async function enterCombat(page: Page, objectNum: number) {
     await pushGmcp(page, 'objects.data', {
         [objectNum]: {attack_num: 99999},
     });
-    await page.waitForTimeout(100);
 }
 
 async function sendImprove(page: Page, level: number) {
     await pushGmcp(page, 'char.state', {improve: level});
-    await page.waitForTimeout(100);
 }
 
 test.describe('Improve counter', () => {
@@ -110,7 +71,6 @@ test.describe('Improve counter', () => {
         await sendImprove(page, 1);
         await sendImprove(page, 2);
         await sendImprove(page, 3);
-        await page.waitForTimeout(200);
 
         // Check lifetime table
         await submitCommand(page, '/postepy2');
@@ -134,7 +94,6 @@ test.describe('Improve counter', () => {
         await sendImprove(page, 0);
         await sendImprove(page, 1);
         await sendImprove(page, 2);
-        await page.waitForTimeout(200);
 
         // Verify postepy are recorded before reload
         await submitCommand(page, '/postepy');
@@ -153,7 +112,6 @@ test.describe('Improve counter', () => {
 
         // Re-send current improve level (game would send this on reconnect)
         await sendImprove(page, 2);
-        await page.waitForTimeout(200);
 
         // Verify session data persisted
         await submitCommand(page, '/postepy');
@@ -175,7 +133,6 @@ test.describe('Improve counter', () => {
         await sendImprove(page, 0);
         await sendImprove(page, 1);
         await sendImprove(page, 2);
-        await page.waitForTimeout(200);
 
         // Verify improvements were recorded
         await submitCommand(page, '/postepy');
@@ -186,7 +143,7 @@ test.describe('Improve counter', () => {
 
         // Simulate character death/respawn with DIFFERENT object_num
         await pushGmcp(page, 'char.info', {name: 'ResetHero', object_num: 44445});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ResetHero');
 
         // Verify session counter is reset (Dzisiaj: 0)
         await submitCommand(page, '/postepy');

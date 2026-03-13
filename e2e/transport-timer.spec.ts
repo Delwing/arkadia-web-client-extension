@@ -24,15 +24,11 @@ test.describe('Transport timer', () => {
             },
         });
 
-        //Wait a bit for the location to be processed
-        await page.waitForTimeout(50);
-
         // Initially, timer should be empty
         await expect(transportTimer, 'should be empty initially').toBeEmpty();
 
         // Simulate boarding the Ancelmus ship
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
 
         // Timer shows destination immediately for unambiguous routes (only one destination from 6429)
@@ -40,7 +36,6 @@ test.describe('Transport timer', () => {
 
         // Simulate ship departure - countdown starts now
         await pushText(page, 'Galera odbija od brzegu.');
-        await page.waitForTimeout(100);
 
         // Timer should still show the destination with countdown
         await expect(transportTimer, 'should display timer with countdown after departure').toContainText('Tr:');
@@ -76,16 +71,13 @@ test.describe('Transport timer', () => {
 
         // Board the ship
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
 
         // Disambiguate destination (from 6621 there are two possible routes)
         await pushText(page, 'Ancelmus krzyczy: Nastepnym portem bedzie wschodnie nabrzeze w Nuln!');
-        await page.waitForTimeout(50);
 
         // Ship departs
         await pushText(page, 'Galera odbija od brzegu.');
-        await page.waitForTimeout(100);
 
         // Should show timer with Nuln as destination
         await expect(transportTimer, 'should display timer with destination').toContainText('Tr:');
@@ -115,7 +107,6 @@ test.describe('Transport timer', () => {
 
         // Start journey
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
 
@@ -200,7 +191,6 @@ test.describe('Transport timer', () => {
 
         // Board the ship
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
 
         // Use set pattern to clarify destination is Kreutzhofen
@@ -214,6 +204,8 @@ test.describe('Transport timer', () => {
     });
 
     test('shows correct arrival time for transport journey', async ({page}) => {
+        await page.clock.install();
+
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -236,17 +228,16 @@ test.describe('Transport timer', () => {
 
         // Start journey
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
+        await page.clock.runFor(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Timer should show with correct total time (43 seconds for this route)
-        const timerText = await transportTimer.textContent();
-        expect(timerText, 'should show timer with destination').toContain('Kraina Zgromadzenia');
+        await expect(transportTimer, 'should show timer with destination').toContainText('Kraina Zgromadzenia');
 
-        // Should be counting down (less than 43 seconds remaining)
-        await page.waitForTimeout(1000);
+        // Advance clock and verify countdown is progressing
+        await page.clock.runFor(1000);
         const timerTextAfterWait = await transportTimer.textContent();
         expect(timerTextAfterWait, 'should show countdown').toMatch(/\d+:\d{2}/);
     });
@@ -274,7 +265,6 @@ test.describe('Transport timer', () => {
 
         // Start journey
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
 
@@ -289,6 +279,8 @@ test.describe('Transport timer', () => {
     });
 
     test('uses learned shorter duration on subsequent journeys', async ({page}) => {
+        await page.clock.install();
+
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -307,20 +299,20 @@ test.describe('Transport timer', () => {
 
         // First journey - board and depart
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
+        await page.clock.runFor(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
 
-        // Wait real time for 5 seconds to simulate a shorter journey
-        await page.waitForTimeout(5000);
+        // Advance fake clock 5 seconds to simulate a shorter journey
+        await page.clock.runFor(5000);
 
         // Simulate arrival after ~5 seconds (shorter than config 43s)
         await pushText(page, 'Czarnowlosy barczysty mezczyzna krzyczy: Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!');
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Exit and go back for second journey
         await pushText(page, 'Schodzisz z galery.');
-        await page.waitForTimeout(50);
+        await page.clock.runFor(50);
 
         // Return to original location
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
@@ -333,10 +325,10 @@ test.describe('Transport timer', () => {
 
         // Start second journey
         await submitCommand(page, 'wejdz na statek');
-        await page.waitForTimeout(50);
+        await page.clock.runFor(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
-        await page.waitForTimeout(100);
+        await page.clock.runFor(100);
 
         // Timer should now use the learned shorter duration (~5s instead of config 43s)
         const timerText = await transportTimer.textContent();

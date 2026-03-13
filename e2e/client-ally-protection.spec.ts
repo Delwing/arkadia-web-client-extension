@@ -5,6 +5,8 @@ import {
     pushGmcp,
     primeCharInfo,
     GMCP_PATHS,
+    getCommandLog,
+    resetCommandLog,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
 
@@ -25,16 +27,6 @@ const ALLY_NAME = 'Aldous';
 const NON_ALLY_NAME = 'Berenika';
 
 
-async function resetCommandLog(page: Page): Promise<void> {
-    await page.evaluate(() => {
-        (window as any).__resetCommandLog?.();
-    });
-}
-
-async function getCommandLog(page: Page): Promise<string[]> {
-    return page.evaluate(() => [...((window as any).__mockCommandLog ?? [])]);
-}
-
 /**
  * Press Ctrl+1 (attackBind) once.
  * The #message-input must have focus so keydown reaches the window listener.
@@ -45,7 +37,6 @@ async function pressAttackBind(page: Page): Promise<void> {
     await page.keyboard.down('Digit1');
     await page.keyboard.up('Digit1');
     await page.keyboard.up('Control');
-    await page.waitForTimeout(100);
 }
 
 /**
@@ -57,7 +48,6 @@ async function pressSupportBind(page: Page): Promise<void> {
     await page.keyboard.down('KeyQ');
     await page.keyboard.up('KeyQ');
     await page.keyboard.up('Control');
-    await page.waitForTimeout(100);
 }
 
 /**
@@ -87,7 +77,19 @@ async function setAllyGuilds(
         [charName, allyGuilds] as [string, string[]],
     );
     // Allow onChange to propagate and rebuildAllySet to run
-    await page.waitForTimeout(300);
+    await page.waitForFunction(
+        ([name, guilds]) => {
+            const key = `${name}:settings`;
+            const raw = localStorage.getItem(key);
+            if (!raw) return false;
+            try {
+                const parsed = JSON.parse(raw);
+                return JSON.stringify(parsed.allyGuilds) === JSON.stringify(guilds);
+            } catch { return false; }
+        },
+        [charName, allyGuilds] as [string, string[]],
+        {timeout: 5000},
+    );
 }
 
 /**
@@ -159,8 +161,8 @@ async function gotoAndWaitForPeopleDB(page: Page): Promise<void> {
 
     // The Worker still needs to: parse the ArrayBuffer via sql.js (WASM), then
     // postMessage back. DataStore then writes to IndexedDB. subscribeMerged fires.
-    // allyProtection rebuilds ally descriptions. We use a generous wait that
-    // covers the full async chain on any CI machine.
+    // allyProtection rebuilds ally descriptions. No observable signal exists for
+    // the full pipeline, so we wait for the response + a generous settle time.
     await page.waitForTimeout(3000);
 }
 
@@ -198,8 +200,8 @@ test.describe('Ally protection system', () => {
         await expect(output).toContainText(ALLY_NAME);
         await expect(output).toContainText('CKN');
 
-        // No attack command must have been sent
-        await page.waitForTimeout(300);
+        // wait briefly to confirm no command was dispatched
+        await page.waitForTimeout(200);
         const log = await getCommandLog(page);
         expect(log, 'no command should be sent on first press against ally').toHaveLength(0);
     });
@@ -239,7 +241,8 @@ test.describe('Ally protection system', () => {
         await pressAttackBind(page);
         await expect(output).toContainText('[UWAGA]');
 
-        // Wait past the 5s confirmation window
+        // Wait past the 5s confirmation window using real wait since
+        // page.clock cannot be installed after page.goto in beforeEach
         await page.waitForTimeout(5500);
 
         // Second press after timeout — must show the warning again, not confirm
@@ -247,8 +250,8 @@ test.describe('Ally protection system', () => {
         await pressAttackBind(page);
         await expect(output).toContainText('[UWAGA]');
 
-        // Still no command sent
-        await page.waitForTimeout(300);
+        // wait briefly to confirm no command was dispatched
+        await page.waitForTimeout(200);
         const log = await getCommandLog(page);
         expect(log, 'no attack command should be sent after timeout').toHaveLength(0);
     });
@@ -257,7 +260,6 @@ test.describe('Ally protection system', () => {
         // Set up ally as attack target; also register a team leader so support()
         // sends `wesprzyj` AND `wesprzyj ob_<leaderId>`
         await setAttackTarget(page, ALLY_OBJECT_NUM, ALLY_NAME, {leaderId: ALLY_LEADER_NUM});
-        await page.waitForTimeout(200);
 
         const output = page.locator('#main_text_output_msg_wrapper');
         await resetCommandLog(page);
@@ -267,8 +269,8 @@ test.describe('Ally protection system', () => {
         await expect(output).toContainText('[UWAGA]');
         await expect(output).toContainText(ALLY_NAME);
 
-        // No command sent on first press
-        await page.waitForTimeout(300);
+        // wait briefly to confirm no command was dispatched
+        await page.waitForTimeout(200);
         const logAfterFirst = await getCommandLog(page);
         expect(logAfterFirst, 'no support command sent on first press against ally').toHaveLength(0);
 
@@ -304,7 +306,6 @@ test.describe('Ally protection system', () => {
             exits: {},
             area: 'Test',
         });
-        await page.waitForTimeout(200);
 
         // Re-push objects data so the ally cache can be rebuilt for the new room
         await setAttackTarget(page, ALLY_OBJECT_NUM, ALLY_NAME);
@@ -314,8 +315,8 @@ test.describe('Ally protection system', () => {
         await pressAttackBind(page);
         await expect(output).toContainText('[UWAGA]');
 
-        // Still no command sent
-        await page.waitForTimeout(300);
+        // wait briefly to confirm no command was dispatched
+        await page.waitForTimeout(200);
         const log = await getCommandLog(page);
         expect(log, 'no attack command after room-change reset of pending').toHaveLength(0);
     });

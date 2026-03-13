@@ -1,52 +1,14 @@
 import {expect, test} from './support/fixtures';
-import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     pushText,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
-
-async function waitForOutputContaining(page: Page, text: string, timeout: number = 5000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 20); i--) {
-                const msg = messages[i];
-                const textContent = msg.textContent || '';
-                if (textContent.includes(searchText)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        text,
-        {timeout}
-    );
-}
-
-async function getRecentOutput(page: Page, count: number = 10): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 test.describe('Introduced (zapamietani/przedstawieni)', () => {
     test('parses zapamietani response and shows count prefix', async ({page}) => {
@@ -55,15 +17,13 @@ test.describe('Introduced (zapamietani/przedstawieni)', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'TestChar');
 
         // Send the "zapamietani" game command to register the trigger
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
 
         // Push the game response that the trigger is listening for
         await pushText(page, 'Zapamietane przez ciebie imiona to Adas, Bodas i Codas.');
-        await page.waitForTimeout(200);
 
         // The script should add a [3] count prefix to the output
         await waitForOutputContaining(page, '[3]');
@@ -80,15 +40,13 @@ test.describe('Introduced (zapamietani/przedstawieni)', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'TestChar');
 
         // Send the "przedstawieni" game command to register the trigger
         await submitCommand(page, 'przedstawieni');
-        await page.waitForTimeout(50);
 
         // Push the game response
         await pushText(page, 'Osoby, ktore zostaly ci ostatnio przedstawione, to Edwin, Grzegorz i Hubert.');
-        await page.waitForTimeout(200);
 
         // The script should add a [3] count prefix
         await waitForOutputContaining(page, '[3]');
@@ -105,13 +63,11 @@ test.describe('Introduced (zapamietani/przedstawieni)', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'RemovalChar', object_num: 55555});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'RemovalChar');
 
         // First pass: send 3 remembered names
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
         await pushText(page, 'Zapamietane przez ciebie imiona to Adas, Bodas i Codas.');
-        await page.waitForTimeout(200);
 
         await waitForOutputContaining(page, '[3]');
 
@@ -121,13 +77,11 @@ test.describe('Introduced (zapamietani/przedstawieni)', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'RemovalChar', object_num: 55555});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'RemovalChar');
 
         // Second pass: send only 2 names (Bodas removed)
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
         await pushText(page, 'Zapamietane przez ciebie imiona to Adas i Codas.');
-        await page.waitForTimeout(300);
 
         // The script should detect that Bodas was removed and show a message
         await waitForOutputContaining(page, 'Osoby usuniete z zapamietanych');
@@ -143,13 +97,11 @@ test.describe('Introduced (zapamietani/przedstawieni)', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'PersistChar', object_num: 66666});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'PersistChar');
 
         // Send zapamietani with 3 names
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
         await pushText(page, 'Zapamietane przez ciebie imiona to Adas, Bodas i Codas.');
-        await page.waitForTimeout(200);
 
         await waitForOutputContaining(page, '[3]');
 
@@ -159,13 +111,11 @@ test.describe('Introduced (zapamietani/przedstawieni)', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'PersistChar', object_num: 66666});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'PersistChar');
 
         // Send the same names again - should NOT show deletion message
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
         await pushText(page, 'Zapamietane przez ciebie imiona to Adas, Bodas i Codas.');
-        await page.waitForTimeout(300);
 
         await waitForOutputContaining(page, '[3]');
 

@@ -194,9 +194,6 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'SecondChar';
         });
 
-        // Give it a moment for the settings change event to propagate
-        await page.waitForTimeout(100);
-
         // Verify active settings changed to SecondChar's settings
         const currentSettings = await page.evaluate(() => {
             const key = 'SecondChar:settings';
@@ -244,9 +241,6 @@ test.describe('Character settings', () => {
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'FirstChar';
         });
-
-        // Wait for settings to propagate
-        await page.waitForTimeout(100);
 
         // Verify settings switched back to FirstChar (formatted with first letter uppercase, rest lowercase)
         modal = await openOptions(page);
@@ -316,8 +310,6 @@ test.describe('Character settings', () => {
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'AliceChar';
         });
-
-        await page.waitForTimeout(100);
 
         modal = await openOptions(page);
         await expect(

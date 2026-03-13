@@ -38,9 +38,6 @@ test.describe('@shortcut command expansion', () => {
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 101]);
 
-        // Give ObjectManager time to process the GMCP updates
-        await page.waitForTimeout(100);
-
         await page.evaluate(() => (window as any).__resetCommandLog?.());
         await submitCommand(page, 'zabij @1');
 
@@ -63,8 +60,6 @@ test.describe('@shortcut command expansion', () => {
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [200, 201, 202]);
 
-        await page.waitForTimeout(100);
-
         await page.evaluate(() => (window as any).__resetCommandLog?.());
         await submitCommand(page, 'obejrzyj @A');
 
@@ -85,8 +80,6 @@ test.describe('@shortcut command expansion', () => {
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [300]);
 
-        await page.waitForTimeout(100);
-
         await page.evaluate(() => (window as any).__resetCommandLog?.());
         await submitCommand(page, 'obejrzyj @@');
 
@@ -106,8 +99,6 @@ test.describe('@shortcut command expansion', () => {
             '401': {desc: 'Goblin', attack_num: 1},
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [400, 401]);
-
-        await page.waitForTimeout(100);
 
         await page.evaluate(() => (window as any).__resetCommandLog?.());
         await submitCommand(page, 'test @xyz');
@@ -130,8 +121,6 @@ test.describe('@shortcut command expansion', () => {
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [500, 501, 502]);
 
-        await page.waitForTimeout(100);
-
         await page.evaluate(() => (window as any).__resetCommandLog?.());
         await submitCommand(page, 'porownaj @1 z @2');
 
@@ -153,8 +142,6 @@ test.describe('@shortcut command expansion', () => {
             '602': {desc: 'Ally Fighter', team: true},
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [600, 601, 602]);
-
-        await page.waitForTimeout(100);
 
         await page.evaluate(() => (window as any).__resetCommandLog?.());
         await submitCommand(page, 'obejrzyj @a');

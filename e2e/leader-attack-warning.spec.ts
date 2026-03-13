@@ -67,8 +67,6 @@ test.describe('Leader attack warning', () => {
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
-        // Get initial content
-        await page.waitForTimeout(100);
         await output.textContent();
 
         // Set up a scenario where player and leader attack the same target
@@ -81,7 +79,8 @@ test.describe('Leader attack warning', () => {
             '20': {living: true, attack_target: true, desc: 'Target'},
         });
 
-        await page.waitForTimeout(100);
+        // Short wait to confirm no warning appears (negative assertion)
+        await page.waitForTimeout(200);
 
         // Should NOT show warning
         await expect(output, 'should not show warning when attacks match').not.toContainText('Zaatakuj cel ataku');
@@ -211,8 +210,10 @@ test.describe('Leader attack warning', () => {
             await pushGmcp(page, 'objects.data', {
                 '10': {attack_num: 20},
             });
-            await page.waitForTimeout(100);
         }
+
+        // Short wait to confirm throttling prevented additional warnings (negative assertion)
+        await page.waitForTimeout(200);
 
         const afterRapidContent = await output.textContent();
         const afterRapidCount = (afterRapidContent || '').split('Zaatakuj cel ataku').length - 1;

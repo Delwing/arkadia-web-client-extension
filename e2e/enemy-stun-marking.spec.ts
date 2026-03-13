@@ -98,6 +98,8 @@ test.describe('Enemy stun marking', () => {
     });
 
     test('stun marking expires after timeout', async ({page}) => {
+        await page.clock.install();
+
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -121,8 +123,8 @@ test.describe('Enemy stun marking', () => {
             return await objectDesc.evaluate(hasStunHighlight);
         }, {message: 'should have stun highlight'}).toBe(true);
 
-        // Wait for the stun to expire (15s timeout)
-        await page.waitForTimeout(16000);
+        // Advance fake clock past the 15s stun timeout
+        await page.clock.runFor(16000);
 
         // Trigger a re-render by sending new objects data
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {

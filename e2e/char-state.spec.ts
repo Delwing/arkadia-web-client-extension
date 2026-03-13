@@ -57,9 +57,6 @@ test.describe('Character state', () => {
             improve: 5,
         });
 
-        // Wait for state to render
-        await page.waitForTimeout(100);
-
         // Verify stats are displayed
         await expect(charStateText, 'should be visible').toBeVisible();
         await expect(charStateText, 'should display HP').toContainText('HP');
@@ -83,8 +80,6 @@ test.describe('Character state', () => {
             stuffed: 3, // default value
             encumbrance: 0, // default value
         });
-
-        await page.waitForTimeout(100);
 
         // Verify only non-default values are displayed
         await expect(charStateText, 'should display HP').toContainText('HP');
@@ -165,8 +160,6 @@ test.describe('Character state', () => {
             stuffed: 0, // min value, opposite of default (3)
         });
 
-        await page.waitForTimeout(100);
-
         // Check that extreme values are highlighted
         const html = await charStateText.innerHTML();
         expect(html, 'should highlight extreme values with tomato color').toContain('tomato');
@@ -183,8 +176,6 @@ test.describe('Character state', () => {
         await pushGmcp(page, 'char.state', {
             hp: 5,
         });
-
-        await page.waitForTimeout(100);
 
         // Verify HP is transformed
         await expect(charStateText, 'should transform HP value').toContainText('[6/7]');
@@ -207,8 +198,6 @@ test.describe('Character state', () => {
             hp: 5,
             form: 0,
         });
-
-        await page.waitForTimeout(100);
 
         // Verify form is not displayed
         await expect(charStateText, 'should not display form when disabled').not.toContainText('FOR');

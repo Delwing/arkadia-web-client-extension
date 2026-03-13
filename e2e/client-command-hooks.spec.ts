@@ -1,10 +1,12 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getCommandLog,
     waitForCommandInput,
     submitCommand,
     getLastOutgoingCommand,
     primeCharInfo,
+    resetCommandLog,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -54,16 +56,6 @@ async function removePlugin(page): Promise<void> {
     await expect(modal).not.toBeVisible();
 }
 
-async function resetCommandLog(page): Promise<void> {
-    await page.evaluate(() => {
-        (window as any).__resetCommandLog?.();
-    });
-}
-
-async function getCommandLog(page): Promise<string[]> {
-    return page.evaluate(() => [...((window as any).__mockCommandLog ?? [])]);
-}
-
 const SINGLE_HOOK_PLUGIN_BODY = `
 export async function init(api) {
     api.commandHooks.register((command) => {
@@ -99,7 +91,8 @@ test.describe('Command hooks via plugin API', () => {
 
         await resetCommandLog(page);
         await submitCommand(page, 'secret');
-        await page.waitForTimeout(300);
+        // Short wait to confirm no command was sent (negative assertion)
+        await page.waitForTimeout(200);
 
         const log = await getCommandLog(page);
         expect(log.length, 'no command should have been sent to server').toBe(0);

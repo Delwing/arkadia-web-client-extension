@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 async function login(page: Page): Promise<void> {
@@ -7,7 +7,7 @@ async function login(page: Page): Promise<void> {
     await waitForCommandInput(page);
     await ensureGameSocket(page);
     await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-    await page.waitForTimeout(100);
+    await waitForCharacter(page, 'TestChar');
 }
 
 async function openLogsModal(page: Page): Promise<void> {
@@ -39,19 +39,23 @@ test.describe('Logging toggle', () => {
 
         // Toggle it
         await loggingToggle.click();
-        await page.waitForTimeout(100);
 
         // Verify the state changed
-        const afterFirstToggle = await loggingToggle.isChecked();
-        expect(afterFirstToggle).toBe(!initialChecked);
+        if (initialChecked) {
+            await expect(loggingToggle).not.toBeChecked();
+        } else {
+            await expect(loggingToggle).toBeChecked();
+        }
 
         // Toggle it back
         await loggingToggle.click();
-        await page.waitForTimeout(100);
 
         // Verify it returned to original state
-        const afterSecondToggle = await loggingToggle.isChecked();
-        expect(afterSecondToggle).toBe(initialChecked);
+        if (initialChecked) {
+            await expect(loggingToggle).toBeChecked();
+        } else {
+            await expect(loggingToggle).not.toBeChecked();
+        }
 
         await closeLogsModal(page);
     });
@@ -76,7 +80,6 @@ test.describe('Logging toggle', () => {
         const isChecked = await loggingToggle.isChecked();
         if (!isChecked) {
             await loggingToggle.click();
-            await page.waitForTimeout(100);
         }
         await expect(loggingToggle).toBeChecked();
 
@@ -86,7 +89,6 @@ test.describe('Logging toggle', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(200);
 
         // Re-open logs modal
         await openLogsModal(page);
@@ -107,7 +109,6 @@ test.describe('Logging toggle', () => {
         const isChecked = await loggingToggle.isChecked();
         if (isChecked) {
             await loggingToggle.click();
-            await page.waitForTimeout(100);
         }
         await expect(loggingToggle).not.toBeChecked();
 
@@ -117,7 +118,6 @@ test.describe('Logging toggle', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(200);
 
         // Re-open logs modal
         await openLogsModal(page);

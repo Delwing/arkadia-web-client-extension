@@ -2,6 +2,10 @@ import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, submitCommand, waitForCommandInput, getLastOutgoingCommand} from './support/mocks';
 
 test.describe('Stone value counter', () => {
+    test.beforeEach(async ({page}) => {
+        await page.clock.install();
+    });
+
     test('executes /ocenkamienie alias and displays total with colored currency', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
@@ -24,8 +28,8 @@ test.describe('Stone value counter', () => {
         await pushText(page, 'Wydaje ci sie, ze sa warte okolo 480 miedziaków.');
         await pushText(page, 'Sa tu 3 sztuki warte 720 miedziaków.');
 
-        // Wait for the timeout (700ms) to allow the summary to appear
-        await page.waitForTimeout(800);
+        // Advance fake clock past the 700ms internal summary timeout
+        await page.clock.runFor(800);
 
         // Check that the total is displayed
         await expect(output, 'should display total stone value message').toContainText('Laczna wartosc kamieni:');
@@ -62,7 +66,8 @@ test.describe('Stone value counter', () => {
         await pushText(page, 'Wydaje ci sie, ze sa warte okolo 240 miedziaków.');
         await pushText(page, 'Wydaje ci sie, ze jest warte okolo 14 miedziaków.');
 
-        await page.waitForTimeout(800);
+        // Advance fake clock past the 700ms internal summary timeout
+        await page.clock.runFor(800);
 
         await expect(output, 'should display total with mithril').toContainText('1 mth');
         await expect(output, 'should display total with gold').toContainText('1 zl');
@@ -75,7 +80,7 @@ test.describe('Stone value counter', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const output = page.locator('#main_text_output_msg_wrapper');2
+        const output = page.locator('#main_text_output_msg_wrapper');
 
         await submitCommand(page, '/ocenkamienie');
 
@@ -87,7 +92,8 @@ test.describe('Stone value counter', () => {
 
         // Don't push any stone value responses
 
-        await page.waitForTimeout(800);
+        // Advance fake clock past the 700ms internal summary timeout
+        await page.clock.runFor(800);
 
         // The content might change slightly, but there should be no "Laczna wartosc kamieni" message
         await expect(output, 'should not display total when no stones found').not.toContainText('Laczna wartosc kamieni');
@@ -123,7 +129,8 @@ test.describe('Stone value counter', () => {
         await pushText(page, 'Wydaje ci sie, ze sa warte okolo 200 miedziaków.');
         await pushText(page, 'Sa tu 5 sztuki warte 300 miedziaków.');
 
-        await page.waitForTimeout(800);
+        // Advance fake clock past the 700ms internal summary timeout
+        await page.clock.runFor(800);
 
         // Total: 100 + 200 + 300 = 600 = 2 zl + 2 sr
         await expect(output, 'should display correct sum from different patterns').toContainText('Laczna wartosc kamieni:');
@@ -148,7 +155,8 @@ test.describe('Stone value counter', () => {
         // Test the pattern with numeric count: "Wydaje ci sie, ze jest tu 340 sztuk wartych 910000 miedziakow."
         await pushText(page, 'Wydaje ci sie, ze jest tu 340 sztuk wartych 910000 miedziakow.');
 
-        await page.waitForTimeout(800);
+        // Advance fake clock past the 700ms internal summary timeout
+        await page.clock.runFor(800);
 
         // 910000 miedziaków = 37 mth + 11 zl + 1 sr + 8 mdz
         await expect(output, 'should display total from numeric count pattern').toContainText('Laczna wartosc kamieni:');

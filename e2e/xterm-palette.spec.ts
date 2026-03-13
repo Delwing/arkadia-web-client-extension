@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
 const UI_SETTINGS_BUTTON = '#ui-settings-button';
@@ -125,9 +125,6 @@ test.describe('Xterm palette switching', () => {
         // Ensure we're using arkadia palette (default)
         await setPalette(page, 'arkadia');
 
-        // Wait for palette to be applied
-        await page.waitForTimeout(200);
-
         // Send text with xterm extended color code (ESC[38;5;1m) - palette index 1
         // This uses the xterm palette (not the fixed ANSI colors)
         // Arkadia index 1 (palette index 0 in xterm is index 0, palette index 1 is index 0 in the array after offset +1)
@@ -147,14 +144,11 @@ test.describe('Xterm palette switching', () => {
         // Now switch to proper palette
         await setPalette(page, 'proper');
 
-        // Wait for palette change to be applied
-        await page.waitForTimeout(200);
-
         // Send same xterm color index
         // Proper index 0: #000000 = rgb(0, 0, 0) - black
         await pushText(page, '\x1b[38;5;1mProper Color 1\x1b[0m');
 
-        await expect(output, 'should display colored text in proper').toContainText('Proper Color 1');
+        await waitForOutputContaining(page, 'Proper Color 1');
 
         // Check the color of the rendered text in proper palette
         const properColoredText = output.locator('span').filter({hasText: 'Proper Color 1'}).last();

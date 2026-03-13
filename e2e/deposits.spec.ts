@@ -8,7 +8,9 @@ import {
     pushText,
     submitCommand,
     waitForCommandInput,
+    getLastOutgoingCommand,
     waitForMapReady,
+    waitForOutputContaining,
 } from './support/mocks';
 
 async function getStoredDeposits(page: Page, character: string) {
@@ -21,7 +23,6 @@ async function getStoredDeposits(page: Page, character: string) {
 
 async function navigateToBankById(page: Page, bankId: number) {
     await submitCommand(page, `/ustaw ${bankId}`);
-    await page.waitForTimeout(50);
 }
 
 async function waitForDepositStorage(page: Page, character: string, bankId: number, timeout: number = 2000) {
@@ -36,27 +37,6 @@ async function waitForDepositStorage(page: Page, character: string, bankId: numb
             return false;
         }
     }, [character, bankId], { timeout });
-}
-
-async function waitForOutputContaining(page: Page, text: string, timeout: number = 3000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 5); i--) {
-                const msg = messages[i];
-                const textContent = msg.textContent || '';
-                if (textContent.includes(searchText)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        text,
-        { timeout }
-    );
 }
 
 async function getAllRecentOutput(page: Page, count: number = 3): Promise<string> {
@@ -213,7 +193,7 @@ test.describe('Deposits', () => {
 
         // Update deposit - add more items
         await pushText(page, 'Twoj depozyt zawiera miecz, dwa topory, piec monet.');
-        await page.waitForTimeout(200); // Wait for storage update
+        await waitForOutputContaining(page, 'dwa topory');
 
         deposits = await getStoredDeposits(page, 'UpdateHero');
         expect(deposits['300'].items, 'should update deposit with new items').toEqual([
@@ -224,14 +204,14 @@ test.describe('Deposits', () => {
 
         // Update to empty
         await pushText(page, 'Twoj depozyt jest pusty.');
-        await page.waitForTimeout(200); // Wait for storage update
+        await waitForOutputContaining(page, 'jest pusty');
 
         deposits = await getStoredDeposits(page, 'UpdateHero');
         expect(deposits['300'].items, 'should update to empty deposit').toEqual([]);
 
         // Update to no deposit
         await pushText(page, 'Nie posiadasz wykupionego depozytu.');
-        await page.waitForTimeout(200); // Wait for storage update
+        await waitForOutputContaining(page, 'Nie posiadasz');
 
         deposits = await getStoredDeposits(page, 'UpdateHero');
         expect(deposits['300'].items, 'should update to no deposit').toBeNull();
@@ -261,7 +241,6 @@ test.describe('Deposits', () => {
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'Bob';
         });
-        await page.waitForTimeout(200);
 
         // Bob's deposits
         await navigateToBankById(page, 400);
@@ -286,7 +265,6 @@ test.describe('Deposits', () => {
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'Alice';
         });
-        await page.waitForTimeout(200);
 
         // Check that Alice sees her deposits when using /depozyty
         await submitCommand(page, '/depozyty');
@@ -371,17 +349,12 @@ test.describe('Deposits', () => {
 
         // Submit /depozyt alias
         await submitCommand(page, '/depozyt');
-        await page.waitForTimeout(100);
 
         // Check that it sent the proper command
-        const lastCommand = await page.evaluate(() => {
-            const sockets: any[] = (window as any).__mockSockets ?? [];
-            const socket = sockets.find((s: any) => s?.url?.includes('arkadia.rpg.pl')) || sockets[sockets.length - 1];
-            const commands = socket?.commands || [];
-            return commands[commands.length - 1] || null;
-        });
-
-        expect(lastCommand, 'should send przejrzyj depozyt command').toBe('przejrzyj depozyt');
+        await expect.poll(
+            () => getLastOutgoingCommand(page),
+            {timeout: 3000}
+        ).toBe('przejrzyj depozyt');
     });
 
     test('shows message when no deposits are saved', async ({page}) => {

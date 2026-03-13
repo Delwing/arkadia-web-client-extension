@@ -130,9 +130,6 @@ test.describe('Mail status', () => {
         // Click the mail status
         await mailStatus.click();
 
-        // Wait a bit for the command to be sent
-        await page.waitForTimeout(100);
-
         // Check the command was sent
         const command = await getLastOutgoingCommand(page);
         expect(command, 'should send wyslij zwierze command').toBe('wyslij zwierze');
