@@ -154,13 +154,12 @@ test.describe('No weapon alert', () => {
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
-        // Get initial content
-        await page.waitForTimeout(100);
         const initialContent = await output.textContent();
 
         // Simulate normal weapon attack (should not trigger alert)
         await pushText(page, 'Probujesz trafic Orka mieczem.');
-        await page.waitForTimeout(100);
+        // Short wait to confirm no alert appears for weapon attack (negative assertion)
+        await page.waitForTimeout(200);
 
         // Content should not contain the alert
         await expect(output, 'should not show alert for weapon attack').not.toContainText('Walczysz bez broni');

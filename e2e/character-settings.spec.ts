@@ -194,9 +194,6 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'SecondChar';
         });
 
-        // Give it a moment for the settings change event to propagate
-        await page.waitForTimeout(100);
-
         // Verify active settings changed to SecondChar's settings
         const currentSettings = await page.evaluate(() => {
             const key = 'SecondChar:settings';
@@ -245,9 +242,6 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'FirstChar';
         });
 
-        // Wait for settings to propagate
-        await page.waitForTimeout(100);
-
         // Verify settings switched back to FirstChar (formatted with first letter uppercase, rest lowercase)
         modal = await openOptions(page);
         await expect(
@@ -266,6 +260,154 @@ test.describe('Character settings', () => {
             modal.locator('#lowHpAlert'),
             'lowHpAlert should be 3 for FirstChar'
         ).toHaveValue('3');
+    });
+
+    test('compassBackExits setting persists after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'CompassHero'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'CompassHero';
+        });
+
+        const modal = await openOptions(page);
+        await modal.locator('#compassBackExits').check();
+        await saveOptions(page);
+
+        const settings = await getStoredSettings(page, 'CompassHero');
+        expect(settings.compassBackExits, 'compassBackExits should be true').toBe(true);
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'CompassHero';
+        });
+
+        const reloadedModal = await openOptions(page);
+        await expect(
+            reloadedModal.locator('#compassBackExits'),
+            'compassBackExits should be checked after reload'
+        ).toBeChecked();
+    });
+
+    test('packageInContainer setting persists after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'PackageHero'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'PackageHero';
+        });
+
+        const modal = await openOptions(page);
+        await modal.locator('#packageInContainer').check();
+        await saveOptions(page);
+
+        const settings = await getStoredSettings(page, 'PackageHero');
+        expect(settings.packageInContainer, 'packageInContainer should be true').toBe(true);
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'PackageHero';
+        });
+
+        const reloadedModal = await openOptions(page);
+        await expect(
+            reloadedModal.locator('#packageInContainer'),
+            'packageInContainer should be checked after reload'
+        ).toBeChecked();
+    });
+
+    test('dob commands persist after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'DobHero'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'DobHero';
+        });
+
+        const modal = await openOptions(page);
+        await modal.locator('label:has-text("Komenda /dob 1:")').locator('..').locator('input').fill('dobadz miecz');
+        await modal.locator('label:has-text("Komenda /dob 2:")').locator('..').locator('input').fill('dobadz tarcze');
+        await modal.locator('label:has-text("Komenda /dob 3:")').locator('..').locator('input').fill('dobadz sztylet');
+        await saveOptions(page);
+
+        const settings = await getStoredSettings(page, 'DobHero');
+        expect(settings.dobCommand1, 'dobCommand1 should be saved').toBe('dobadz miecz');
+        expect(settings.dobCommand2, 'dobCommand2 should be saved').toBe('dobadz tarcze');
+        expect(settings.dobCommand3, 'dobCommand3 should be saved').toBe('dobadz sztylet');
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'DobHero';
+        });
+
+        const reloadedModal = await openOptions(page);
+        await expect(
+            reloadedModal.locator('label:has-text("Komenda /dob 1:")').locator('..').locator('input'),
+            'dobCommand1 should persist after reload'
+        ).toHaveValue('dobadz miecz');
+        await expect(
+            reloadedModal.locator('label:has-text("Komenda /dob 2:")').locator('..').locator('input'),
+            'dobCommand2 should persist after reload'
+        ).toHaveValue('dobadz tarcze');
+        await expect(
+            reloadedModal.locator('label:has-text("Komenda /dob 3:")').locator('..').locator('input'),
+            'dobCommand3 should persist after reload'
+        ).toHaveValue('dobadz sztylet');
+    });
+
+    test('op commands persist after reload', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'OpHero'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'OpHero';
+        });
+
+        const modal = await openOptions(page);
+        await modal.locator('label:has-text("Komenda /op 1:")').locator('..').locator('input').fill('opusc miecz');
+        await modal.locator('label:has-text("Komenda /op 2:")').locator('..').locator('input').fill('opusc tarcze');
+        await modal.locator('label:has-text("Komenda /op 3:")').locator('..').locator('input').fill('opusc sztylet');
+        await saveOptions(page);
+
+        const settings = await getStoredSettings(page, 'OpHero');
+        expect(settings.opCommand1, 'opCommand1 should be saved').toBe('opusc miecz');
+        expect(settings.opCommand2, 'opCommand2 should be saved').toBe('opusc tarcze');
+        expect(settings.opCommand3, 'opCommand3 should be saved').toBe('opusc sztylet');
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'OpHero';
+        });
+
+        const reloadedModal = await openOptions(page);
+        await expect(
+            reloadedModal.locator('label:has-text("Komenda /op 1:")').locator('..').locator('input'),
+            'opCommand1 should persist after reload'
+        ).toHaveValue('opusc miecz');
+        await expect(
+            reloadedModal.locator('label:has-text("Komenda /op 2:")').locator('..').locator('input'),
+            'opCommand2 should persist after reload'
+        ).toHaveValue('opusc tarcze');
+        await expect(
+            reloadedModal.locator('label:has-text("Komenda /op 3:")').locator('..').locator('input'),
+            'opCommand3 should persist after reload'
+        ).toHaveValue('opusc sztylet');
     });
 
     test('settings are isolated between characters', async ({page}) => {
@@ -316,8 +458,6 @@ test.describe('Character settings', () => {
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'AliceChar';
         });
-
-        await page.waitForTimeout(100);
 
         modal = await openOptions(page);
         await expect(

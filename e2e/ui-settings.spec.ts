@@ -70,7 +70,6 @@ test.describe('UI settings', () => {
         // Toggle footer component visibility (transport-timer and combat-timer)
         // Wait for the footer components React component to render
         await modal.locator('#ui-footer-components-settings').waitFor({state: 'visible'});
-        await page.waitForTimeout(100); // Give React time to render
         const transportSwitch = modal.locator('#fc-transport-timer');
         const combatSwitch = modal.locator('#fc-combat-timer');
         if (await transportSwitch.isChecked()) {

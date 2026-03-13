@@ -228,6 +228,7 @@ test.describe('Clock System', () => {
     });
 
     test('sunrise before first czas sets precision 0', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -239,11 +240,11 @@ test.describe('Clock System', () => {
 
         // Establish nighttime baseline
         await pushGmcp(page, 'room.time', { daylight: false });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
 
         // Sunrise transition
         await pushGmcp(page, 'room.time', { daylight: true });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
 
         // Clock still not initialized — shows placeholder
         await expect(clockDisplay).toContainText('--:--');
@@ -256,6 +257,7 @@ test.describe('Clock System', () => {
     });
 
     test('sunset before first czas sets precision 0', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -267,11 +269,11 @@ test.describe('Clock System', () => {
 
         // Establish daytime baseline
         await pushGmcp(page, 'room.time', { daylight: true });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
 
         // Sunset transition
         await pushGmcp(page, 'room.time', { daylight: false });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
 
         // czas fires — should initialize with precision 0
         await pushText(page, 'Jest w przyblizeniu piata wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -281,6 +283,7 @@ test.describe('Clock System', () => {
     });
 
     test('no transition before first czas uses normal precision 60', async ({page}) => {
+        await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -290,7 +293,7 @@ test.describe('Clock System', () => {
         // Set domain but no daylight transition
         await pushGmcp(page, 'room.info', { map: { domain: 'Imperium' } });
         await pushGmcp(page, 'room.time', { daylight: true });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
 
         // czas without any transition — normal precision
         await pushText(page, 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');

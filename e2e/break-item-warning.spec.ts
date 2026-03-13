@@ -15,9 +15,6 @@ test.describe('Break item warning', () => {
         // Trigger break item warning with exact game text pattern
         await pushText(page, 'Twoj lekki miecz peka!');
 
-        // Wait for the warning to appear
-        await page.waitForTimeout(200);
-
         // Warning should be visible
         await expect(warning, 'should be visible when item breaks').toBeVisible();
 
@@ -37,8 +34,6 @@ test.describe('Break item warning', () => {
 
         // Trigger armor break with different pattern
         await pushText(page, 'Twoja lekka zbroja rozpada sie!');
-
-        await page.waitForTimeout(200);
 
         await expect(warning, 'should be visible for armor break').toBeVisible();
     });

@@ -1,59 +1,22 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     pushText,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
-
-async function waitForOutputContaining(page: Page, text: string, timeout: number = 3000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 10); i--) {
-                const msg = messages[i];
-                const textContent = msg.textContent || '';
-                if (textContent.includes(searchText)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        text,
-        {timeout}
-    );
-}
-
-async function getRecentOutput(page: Page, count: number = 5): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 async function login(page: Page) {
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
     await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-    await page.waitForTimeout(100);
+    await waitForCharacter(page, 'TestChar');
 }
 
 test.describe('Profession tracking', () => {
@@ -63,11 +26,10 @@ test.describe('Profession tracking', () => {
         // Initialize profession tracking with /staz 0
         await submitCommand(page, '/staz 0');
         await waitForOutputContaining(page, 'Rozpoczeto trening zawodu');
-        await page.waitForTimeout(100);
 
         // Send profession bonus text from the game
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'wysoka forma');
 
         // Check progress with /staz command
         await submitCommand(page, '/staz');
@@ -86,11 +48,10 @@ test.describe('Profession tracking', () => {
         // Initialize profession tracking
         await submitCommand(page, '/staz 0');
         await waitForOutputContaining(page, 'Rozpoczeto trening zawodu');
-        await page.waitForTimeout(100);
 
         // Send first bonus text
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'wysoka forma');
 
         // Record the output after first bonus
         await submitCommand(page, '/staz');
@@ -104,11 +65,9 @@ test.describe('Profession tracking', () => {
 
         // Send second bonus text
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
 
         // Send third bonus text
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
 
         // Check progress again
         await submitCommand(page, '/staz');
@@ -129,13 +88,10 @@ test.describe('Profession tracking', () => {
         // Initialize profession tracking
         await submitCommand(page, '/staz 0');
         await waitForOutputContaining(page, 'Rozpoczeto trening zawodu');
-        await page.waitForTimeout(100);
 
         // Send bonus texts
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
 
         // Check progress before reload
         await submitCommand(page, '/staz');
@@ -152,7 +108,7 @@ test.describe('Profession tracking', () => {
 
         // Re-login with the same character
         await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'TestChar');
 
         // Check progress after reload
         await submitCommand(page, '/staz');

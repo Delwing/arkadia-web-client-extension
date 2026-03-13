@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 const OUTPUT_SELECTOR = '#main_text_output_msg_wrapper';
@@ -9,25 +9,35 @@ const STICKY_AREA_SELECTOR = '#sticky-area';
 async function pushManyLines(page: Page, count: number): Promise<void> {
     const lines = Array.from({length: count}, (_, i) => `Line ${i + 1}`).join('\n') + '\n';
     await pushText(page, lines);
-    // Wait for content rendering and suppress timer to expire
-    await page.waitForTimeout(600);
+    await waitForOutputContaining(page, `Line ${count}`);
 }
 
 async function scrollOutputToTop(page: Page): Promise<void> {
+    // Wait for any suppress timer to expire (content push triggers 500ms suppress via ResizeObserver)
+    await page.waitForTimeout(600);
     await page.evaluate((sel) => {
         const el = document.querySelector(sel) as HTMLElement;
         if (el) el.scrollTop = 0;
     }, OUTPUT_SELECTOR);
-    // Wait long enough for the scroll handler to fire and suppress timer to clear
-    await page.waitForTimeout(400);
+    // Wait for scroll handler to fire and split view to activate (removes split-hidden)
+    await page.waitForFunction(() => {
+        const splitBottom = document.querySelector('#split-bottom');
+        return splitBottom ? !splitBottom.classList.contains('split-hidden') : false;
+    }, {timeout: 5000});
 }
 
 async function scrollOutputToBottom(page: Page): Promise<void> {
+    // Wait for any suppress timer to expire (split view activation triggers 150ms suppress)
+    await page.waitForTimeout(200);
     await page.evaluate((sel) => {
         const el = document.querySelector(sel) as HTMLElement;
         if (el) el.scrollTop = el.scrollHeight;
     }, OUTPUT_SELECTOR);
-    await page.waitForTimeout(400);
+    // Wait for scroll handler to fire and split view to react (adds split-hidden)
+    await page.waitForFunction(() => {
+        const splitBottom = document.querySelector('#split-bottom');
+        return splitBottom ? splitBottom.classList.contains('split-hidden') : false;
+    }, {timeout: 5000});
 }
 
 async function hasSplitHidden(page: Page): Promise<boolean> {
@@ -50,7 +60,10 @@ test.describe('Split view', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
         // Wait for suppressSplitViewUntil timer to expire after initial content push
-        await page.waitForTimeout(800);
+        await page.waitForFunction(() => {
+            const el = document.querySelector('#split-bottom');
+            return el?.classList.contains('split-hidden') ?? false;
+        }, {timeout: 5000});
     });
 
     test('split-bottom starts with split-hidden class', async ({page}) => {
@@ -97,7 +110,7 @@ test.describe('Split view', () => {
         expect(await hasSplitHidden(page)).toBe(false);
 
         await pushText(page, 'New message after split\n');
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'New message after split');
 
         // Split view should still be active since we're scrolled up
         expect(await hasSplitHidden(page)).toBe(false);

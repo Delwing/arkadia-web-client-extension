@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, submitCommand, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, submitCommand, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 async function login(page: Page): Promise<void> {
@@ -7,7 +7,7 @@ async function login(page: Page): Promise<void> {
     await waitForCommandInput(page);
     await ensureGameSocket(page);
     await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-    await page.waitForTimeout(100);
+    await waitForCharacter(page, 'TestChar');
 }
 
 async function openUiSettingsModal(page: Page): Promise<void> {
@@ -29,11 +29,10 @@ async function enableLayoutManager(page: Page): Promise<void> {
     const isChecked = await layoutToggle.isChecked();
     if (!isChecked) {
         await layoutToggle.click();
-        await page.waitForTimeout(100);
     }
 
     await closeUiSettingsModal(page);
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => document.body.classList.contains('layout-manager-enabled'));
 }
 
 async function disableLayoutManager(page: Page): Promise<void> {
@@ -43,11 +42,10 @@ async function disableLayoutManager(page: Page): Promise<void> {
     const isChecked = await layoutToggle.isChecked();
     if (isChecked) {
         await layoutToggle.click();
-        await page.waitForTimeout(100);
     }
 
     await closeUiSettingsModal(page);
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => !document.body.classList.contains('layout-manager-enabled'));
 }
 
 test.describe('Layout persistence', () => {
@@ -66,7 +64,6 @@ test.describe('Layout persistence', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(500);
 
         // Verify layout manager is still enabled after reload
         await expect(page.locator('body.layout-manager-enabled')).toBeAttached();
@@ -91,7 +88,6 @@ test.describe('Layout persistence', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(500);
 
         // Verify layout manager is still disabled after reload
         await expect(page.locator('body.layout-manager-enabled')).not.toBeAttached();
@@ -119,7 +115,6 @@ test.describe('Layout persistence', () => {
         const isChecked = await objectListToggle.isChecked();
         if (isChecked) {
             await objectListToggle.click();
-            await page.waitForTimeout(100);
         }
 
         await closeUiSettingsModal(page);
@@ -128,7 +123,6 @@ test.describe('Layout persistence', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(500);
 
         // Open UI settings again
         await openUiSettingsModal(page);
@@ -139,7 +133,6 @@ test.describe('Layout persistence', () => {
 
         // Re-enable it for cleanliness
         await objectListAfter.click();
-        await page.waitForTimeout(100);
 
         await closeUiSettingsModal(page);
     });
@@ -154,7 +147,6 @@ test.describe('Layout persistence', () => {
         const resetBtn = page.locator('#ui-layout-manager-reset');
         await expect(resetBtn).toBeVisible();
         await resetBtn.click();
-        await page.waitForTimeout(300);
 
         await closeUiSettingsModal(page);
 
@@ -165,7 +157,6 @@ test.describe('Layout persistence', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(500);
 
         await expect(page.locator('body.layout-manager-enabled')).toBeAttached();
     });
@@ -175,7 +166,6 @@ test.describe('Layout persistence', () => {
 
         // Open deposits popup window via slash command
         await submitCommand(page, '/depozytyw');
-        await page.waitForTimeout(500);
 
         // The popup should be visible in the layout system
         const depositsContent = page.locator('.deposits-popup__content');

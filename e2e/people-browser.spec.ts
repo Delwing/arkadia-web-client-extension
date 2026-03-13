@@ -3,6 +3,7 @@ import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
     primeCharInfo,
+    waitForCharacter,
     waitForCommandInput,
     waitForMapReady,
 } from './support/mocks';
@@ -462,7 +463,7 @@ test.describe('PeopleLocalEvents character switch', () => {
 
         // Switch to PeopleCharB
         await primeCharInfo(page, {name: 'PeopleCharB'});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'PeopleCharB');
 
         // Check "Tylko lokalne" - should be empty for CharB
         await popup.locator('label', {hasText: 'Tylko lokalne'}).locator('input').check();
@@ -485,7 +486,7 @@ test.describe('PeopleLocalEvents character switch', () => {
 
         // Switch back to PeopleCharA
         await primeCharInfo(page, {name: 'PeopleCharA'});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'PeopleCharA');
 
         // Verify CharA's local person is restored
         await expect(popup, 'should restore 6 people when switching back to CharA').toContainText('Baza postaci (6)');

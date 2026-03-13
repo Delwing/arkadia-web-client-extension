@@ -1,38 +1,22 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     pushText,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
-
-async function getRecentOutput(page: Page, count: number = 10): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 async function login(page: Page) {
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
     await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-    await page.waitForTimeout(100);
+    await waitForCharacter(page, 'TestChar');
 }
 
 const LANGUAGE_RESPONSE = [
@@ -56,19 +40,17 @@ test.describe('Language skills', () => {
         // First, send "jezyki maksymalne" to capture max levels.
         // The script hooks onto the bare "jezyki maksymalne" alias.
         await submitCommand(page, 'jezyki maksymalne');
-        await page.waitForTimeout(200);
 
         // Push the max language response from the game
         await pushText(page, MAX_LANGUAGE_RESPONSE);
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Elficki');
 
         // Now send the regular "jezyki" command to capture current levels
         await submitCommand(page, 'jezyki');
-        await page.waitForTimeout(200);
 
         // Push the language response from the game
         await pushText(page, LANGUAGE_RESPONSE);
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Orkowy');
 
         // Verify the output contains the language gauge display
         // The script adds color-coded gauge bars like [###---] next to each language
@@ -89,9 +71,8 @@ test.describe('Language skills', () => {
 
         // Capture max levels via "jezyki maksymalne"
         await submitCommand(page, 'jezyki maksymalne');
-        await page.waitForTimeout(200);
         await pushText(page, MAX_LANGUAGE_RESPONSE);
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Elficki');
 
         // Reload the page
         await page.reload();
@@ -100,13 +81,12 @@ test.describe('Language skills', () => {
 
         // Re-login with the same character
         await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'TestChar');
 
         // Now send regular jezyki command - it should use the persisted max levels for gauge display
         await submitCommand(page, 'jezyki');
-        await page.waitForTimeout(200);
         await pushText(page, LANGUAGE_RESPONSE);
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Orkowy');
 
         // The gauge display should reflect persisted max levels
         const output = await getRecentOutput(page, 15);
@@ -126,15 +106,13 @@ test.describe('Language skills', () => {
 
         // First capture max levels
         await submitCommand(page, 'jezyki maksymalne');
-        await page.waitForTimeout(200);
         await pushText(page, MAX_LANGUAGE_RESPONSE);
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Elficki');
 
         // Then capture current levels
         await submitCommand(page, 'jezyki');
-        await page.waitForTimeout(200);
         await pushText(page, LANGUAGE_RESPONSE);
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Orkowy');
 
         const output = await getRecentOutput(page, 15);
 

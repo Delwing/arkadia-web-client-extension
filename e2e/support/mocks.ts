@@ -810,3 +810,67 @@ export async function queueMultibindResponse(page: Page, response: MultibindWork
 export async function getMultibindRequests(page: Page): Promise<any[]> {
     return await page.evaluate(() => (window as any).__getMultibindRequests?.() ?? []);
 }
+
+export async function waitForOutputContaining(page: Page, text: string, timeout: number = 5000): Promise<void> {
+    await page.waitForFunction(
+        (searchText) => {
+            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
+            if (!wrapper) return false;
+
+            const messages = wrapper.querySelectorAll('.output_msg');
+            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 20); i--) {
+                const msg = messages[i];
+                const textContent = msg.textContent || '';
+                if (textContent.includes(searchText)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        text,
+        {timeout}
+    );
+}
+
+export async function getRecentOutput(page: Page, count: number = 10): Promise<string> {
+    return await page.evaluate((numMessages) => {
+        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
+        if (!wrapper) return '';
+
+        const messages = wrapper.querySelectorAll('.output_msg');
+        if (messages.length === 0) return '';
+
+        const result: string[] = [];
+        const startIdx = Math.max(0, messages.length - numMessages);
+
+        for (let i = startIdx; i < messages.length; i++) {
+            result.push(messages[i].textContent?.trim() || '');
+        }
+
+        return result.join('\n');
+    }, count);
+}
+
+export async function waitForCharacter(page: Page, name: string, timeout: number = 5000): Promise<void> {
+    await page.waitForFunction(
+        (charName) => localStorage.getItem('currentCharacter') === charName,
+        name,
+        {timeout}
+    );
+}
+
+export async function getCommandLog(page: Page): Promise<string[]> {
+    return await page.evaluate(() => {
+        const log: unknown = (window as any).__mockCommandLog;
+        return Array.isArray(log) ? log.slice() : [];
+    });
+}
+
+export async function resetCommandLog(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        const globalScope: any = window;
+        if (typeof globalScope.__resetCommandLog === 'function') {
+            globalScope.__resetCommandLog();
+        }
+    });
+}

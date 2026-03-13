@@ -1,29 +1,14 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     pushText,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
-async function getRecentOutput(page: import('@playwright/test').Page, count = 10): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 /**
  * Simulates the herb counting flow:
@@ -38,13 +23,12 @@ async function simulateHerbBagScan(
 ) {
     // Trigger herb counting via the /ziola_buduj alias
     await submitCommand(page, '/ziola_buduj');
-    await page.waitForTimeout(200);
 
     // Game responds: how many bags the character has
     const bagCount = bags.length;
     const countWord = bagCount === 1 ? 'jednej' : bagCount === 2 ? 'dwoch' : 'trzech';
     await pushText(page, `Doliczyles sie ${countWord} sztuki.`);
-    await page.waitForTimeout(200);
+    await waitForOutputContaining(page, 'Doliczyles sie');
 
     // Game responds for each bag with its contents
     for (const bag of bags) {
@@ -59,7 +43,7 @@ async function simulateHerbBagScan(
                 `Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W jego srodku nic jednak nie ma.`,
             );
         }
-        await page.waitForTimeout(100);
+        await waitForOutputContaining(page, 'woreczka');
     }
 }
 
@@ -70,7 +54,7 @@ test.describe('Herb bag tracking', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'HerbTester', object_num: 60001});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbTester');
 
         // Simulate scanning 2 herb bags
         await simulateHerbBagScan(page, [
@@ -78,13 +62,10 @@ test.describe('Herb bag tracking', () => {
             {content: 'piec dlugich korzonkow'},
         ]);
 
-        // Wait for the herb summary to appear in the output
-        await page.waitForTimeout(500);
-
-        // The herb counter should have printed a summary after finishing
         // Now use /ziola_pokaz to display the stored summary
         await submitCommand(page, '/ziola_pokaz');
-        await page.waitForTimeout(500);
+        // Wait for herb summary output — allow processing time
+        await page.waitForTimeout(500); // herb summary rendering has no single predictable text
 
         const output = await getRecentOutput(page, 20);
         // The output should contain the parsed herb data
@@ -98,17 +79,15 @@ test.describe('Herb bag tracking', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'HerbPopup', object_num: 60002});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbPopup');
 
         // Simulate scanning herbs first so there is data
         await simulateHerbBagScan(page, [
             {content: 'trzy jasnozielone lodygi'},
         ]);
-        await page.waitForTimeout(500);
 
         // Open the herb manager popup
         await submitCommand(page, '/ziola');
-        await page.waitForTimeout(300);
 
         // The herb manager popup should be visible
         const herbPopup = page.locator('.herb-window');
@@ -125,14 +104,13 @@ test.describe('Herb bag tracking', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'HerbPersist', object_num: 60003});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbPersist');
 
         // Simulate scanning herbs
         await simulateHerbBagScan(page, [
             {content: 'trzy jasnozielone lodygi'},
             {content: ''},
         ]);
-        await page.waitForTimeout(500);
 
         // Reload the page
         await page.reload();
@@ -140,11 +118,10 @@ test.describe('Herb bag tracking', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'HerbPersist', object_num: 60003});
-        await page.waitForTimeout(300);
+        await waitForCharacter(page, 'HerbPersist');
 
         // Open the herb popup - it should show persisted data (or empty state message)
         await submitCommand(page, '/ziola');
-        await page.waitForTimeout(300);
 
         const herbPopup = page.locator('.herb-window');
         await expect(herbPopup, 'should show herb manager popup after reload').toBeVisible({timeout: 5000});
@@ -160,11 +137,10 @@ test.describe('Herb bag tracking', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.info', {name: 'HerbEmpty', object_num: 60004});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbEmpty');
 
         // Open herb popup without scanning any herbs first
         await submitCommand(page, '/ziola');
-        await page.waitForTimeout(300);
 
         const herbPopup = page.locator('.herb-window');
         await expect(herbPopup, 'should show herb manager popup').toBeVisible({timeout: 5000});

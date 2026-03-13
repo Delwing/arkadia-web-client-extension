@@ -4,6 +4,7 @@ import {
     ensureGameSocket,
     submitCommand,
     getLastOutgoingCommand,
+    waitForCharacter,
     waitForCommandInput,
     pushGmcp,
     GMCP_PATHS,
@@ -48,9 +49,7 @@ test.describe('Auto lowercase commands', () => {
 
         // Trigger receivedFirstGmcp by sending char.info
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
-
-        // Wait for UI settings to be loaded
-        await page.waitForTimeout(500);
+        await waitForCharacter(page, 'Tester');
 
         // Verify the setting is OFF by default and submit command without closing modal
         const storedSettings = await page.evaluate(() => {

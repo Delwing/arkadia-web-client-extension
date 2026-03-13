@@ -3,8 +3,10 @@ import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
     waitForCommandInput,
+    waitForCharacter,
     pushGmcp,
     pushText,
+    waitForOutputContaining,
     GMCP_PATHS,
 } from './support/mocks';
 
@@ -24,14 +26,12 @@ async function pressTab(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('Tab');
-    await page.waitForTimeout(50);
 }
 
 async function pressShiftTab(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('Shift+Tab');
-    await page.waitForTimeout(50);
 }
 
 test.describe('Tab completion — output buffer based', () => {
@@ -40,13 +40,13 @@ test.describe('Tab completion — output buffer based', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'Tester');
     });
 
     test('Tab completes last word from output text', async ({page}) => {
         // Push text to output buffer
         await pushText(page, 'Widzisz tutaj poteznego wojownika i mlodego druida.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'poteznego');
 
         await setInputValue(page, 'zabij pote');
         await pressTab(page);
@@ -57,7 +57,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('Tab cycles through multiple matches', async ({page}) => {
         await pushText(page, 'Na polce stoi wielka ksiazka i wielki miecz.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'wielki');
 
         await setInputValue(page, 'wiel');
         await pressTab(page);
@@ -74,7 +74,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('Shift+Tab cycles backward', async ({page}) => {
         await pushText(page, 'Siedziba alpha beta gamma.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'Siedziba');
 
         await setInputValue(page, 'Siedzi');
         // Tab forward
@@ -91,7 +91,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('case-insensitive matching', async ({page}) => {
         await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'poteznego');
 
         // Type with uppercase prefix — should match lowercase "poteznego" from output
         await setInputValue(page, 'zabij Pote');
@@ -105,7 +105,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('no matches leaves input unchanged', async ({page}) => {
         await pushText(page, 'zwykly tekst\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'zwykly');
 
         await setInputValue(page, 'xyzxyz');
         await pressTab(page);
@@ -115,7 +115,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('Tab state resets when typing a new character', async ({page}) => {
         await pushText(page, 'wojownik i druid stoja obok.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'wojownik');
 
         await setInputValue(page, 'woj');
         await pressTab(page);
@@ -131,7 +131,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('Tab wraps around matches', async ({page}) => {
         await pushText(page, 'raz dwa trzy raz_b raz_c\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'raz_c');
 
         await setInputValue(page, 'ra');
         // Cycle through all matches
@@ -149,7 +149,7 @@ test.describe('Tab completion — output buffer based', () => {
     test('plugin suggestions appear before output words', async ({page}) => {
         // Push output with a matching word
         await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'poteznego');
 
         // Register a plugin suggestion that also matches
         await page.evaluate(() => {
@@ -170,9 +170,9 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('newer output lines are suggested before older ones', async ({page}) => {
         await pushText(page, 'Widzisz starego maga.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'starego');
         await pushText(page, 'Widzisz stalowego golema.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'stalowego');
 
         await setInputValue(page, 'sta');
         await pressTab(page);
@@ -188,7 +188,7 @@ test.describe('Tab completion — output buffer based', () => {
 
     test('only completes the last word, preserving prefix', async ({page}) => {
         await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
-        await page.waitForTimeout(50);
+        await waitForOutputContaining(page, 'poteznego');
 
         await setInputValue(page, 'zabij pote');
         await pressTab(page);

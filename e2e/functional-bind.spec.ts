@@ -61,7 +61,6 @@ test.describe('Functional Bind', () => {
 
         // Press the default bind key (BracketRight = ']')
         await page.keyboard.press('BracketRight');
-        await page.waitForTimeout(50);
 
         // Verify the command was sent
         const lastCommand = await getLastOutgoingCommand(page);

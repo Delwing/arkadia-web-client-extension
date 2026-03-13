@@ -208,8 +208,6 @@ test.describe('Character combat settings', () => {
             return localStorage.getItem('currentCharacter') === 'WarriorChar';
         });
 
-        await page.waitForTimeout(100);
-
         modal = await openOptions(page);
         await expect(
             modal.locator('input[placeholder="zabij"]'),
@@ -254,8 +252,6 @@ test.describe('Character combat settings', () => {
         await page.waitForFunction(() => {
             return localStorage.getItem('currentCharacter') === 'SecondFighter';
         });
-
-        await page.waitForTimeout(100);
 
         // Open options and verify UI shows SecondFighter's settings
         modal = await openOptions(page);

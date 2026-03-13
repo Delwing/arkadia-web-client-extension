@@ -2,60 +2,23 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    getRecentOutput,
     pushGmcp,
     pushText,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
 
 async function sendChatMessage(page: Page, message: string) {
     await pushText(page, message, { type: 'comm' });
-    await page.waitForTimeout(100);
-}
-
-async function waitForOutputContaining(page: Page, text: string, timeout: number = 3000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 10); i--) {
-                const msg = messages[i];
-                const textContent = msg.textContent || '';
-                if (textContent.includes(searchText)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        text,
-        { timeout }
-    );
-}
-
-async function getRecentOutput(page: Page, count: number = 5): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
+    await waitForOutputContaining(page, message.substring(0, 20));
 }
 
 async function simulateKill(page: Page, mobName: string) {
     await pushText(page, `Zabiles ${mobName}.`);
-    await page.waitForTimeout(100);
+    await waitForOutputContaining(page, `Zabiles ${mobName}`);
 }
 
 test.describe('Session persistence across page reload', () => {
@@ -67,7 +30,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Login with character - first set the object_num
             await pushGmcp(page, 'char.info', { name: 'KillTester', object_num: 12345 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillTester');
 
             // Kill some mobs
             await simulateKill(page, 'trolla');
@@ -89,7 +52,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Login again with SAME object_num - should NOT trigger reset
             await pushGmcp(page, 'char.info', { name: 'KillTester', object_num: 12345 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillTester');
 
             // Verify session kills are preserved
             await submitCommand(page, '/zabici');
@@ -107,7 +70,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Login with character
             await pushGmcp(page, 'char.info', { name: 'DeathTester', object_num: 11111 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'DeathTester');
 
             // Kill some mobs
             await simulateKill(page, 'goblina');
@@ -120,13 +83,12 @@ test.describe('Session persistence across page reload', () => {
             // Simulate character death and respawn - SAME name but DIFFERENT object_num
             // This happens when character dies and respawns in the game
             await pushGmcp(page, 'char.info', { name: 'DeathTester', object_num: 11112 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'DeathTester');
 
             // Verify session kills are cleared (character died/respawned)
             await submitCommand(page, '/zabici');
             // Wait for the new table to appear with LACZNIE: 0
             await waitForOutputContaining(page, 'LACZNIE:');
-            await page.waitForTimeout(100);
 
             // Get just the last few lines to see the final table
             const output = await getRecentOutput(page, 5);
@@ -144,13 +106,11 @@ test.describe('Session persistence across page reload', () => {
 
             // Login with character
             await pushGmcp(page, 'char.info', { name: 'PostepyTester', object_num: 33333 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'PostepyTester');
 
             // Simulate some improvements
             await pushGmcp(page, 'char.state', { improve: 2 });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 3 });
-            await page.waitForTimeout(100);
 
             // Verify postepy are recorded
             await submitCommand(page, '/postepy');
@@ -166,11 +126,10 @@ test.describe('Session persistence across page reload', () => {
 
             // Login again with SAME object_num
             await pushGmcp(page, 'char.info', { name: 'PostepyTester', object_num: 33333 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'PostepyTester');
 
             // Re-send current improve level
             await pushGmcp(page, 'char.state', { improve: 3 });
-            await page.waitForTimeout(100);
 
             // Verify session postepy are preserved
             await submitCommand(page, '/postepy');
@@ -187,13 +146,11 @@ test.describe('Session persistence across page reload', () => {
 
             // Login with character
             await pushGmcp(page, 'char.info', { name: 'PostepyDeath', object_num: 44444 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'PostepyDeath');
 
             // Simulate some improvements
             await pushGmcp(page, 'char.state', { improve: 2 });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 3 });
-            await page.waitForTimeout(100);
 
             // Verify postepy are recorded
             await submitCommand(page, '/postepy');
@@ -204,7 +161,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Simulate character death and respawn - SAME name but DIFFERENT object_num
             await pushGmcp(page, 'char.info', { name: 'PostepyDeath', object_num: 44445 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'PostepyDeath');
 
             // Verify session postepy are cleared (character died/respawned)
             await submitCommand(page, '/postepy');
@@ -223,7 +180,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Login as CharA and kill some mobs
             await pushGmcp(page, 'char.info', { name: 'KillCharA', object_num: 50001 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillCharA');
 
             await simulateKill(page, 'trolla');
             await simulateKill(page, 'trolla');
@@ -234,15 +191,11 @@ test.describe('Session persistence across page reload', () => {
 
             // Switch to CharB
             await pushGmcp(page, 'char.info', { name: 'KillCharB', object_num: 50002 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'KillCharB'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillCharB');
 
             // CharB session should be empty
             await submitCommand(page, '/zabici');
             await waitForOutputContaining(page, 'DRUZYNA LACZNIE:');
-            await page.waitForTimeout(100);
 
             // Only get the very last table (CharB's)
             const output = await getRecentOutput(page, 2);
@@ -257,28 +210,21 @@ test.describe('Session persistence across page reload', () => {
 
             // Login as CharA and kill mobs
             await pushGmcp(page, 'char.info', { name: 'KillRestoreA', object_num: 50003 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillRestoreA');
 
             await simulateKill(page, 'goblina');
             await simulateKill(page, 'goblina');
 
             // Persist before switch
             await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
-            await page.waitForTimeout(100);
 
             // Switch to CharB
             await pushGmcp(page, 'char.info', { name: 'KillRestoreB', object_num: 50004 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'KillRestoreB'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillRestoreB');
 
             // Switch back to CharA
             await pushGmcp(page, 'char.info', { name: 'KillRestoreA', object_num: 50003 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'KillRestoreA'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'KillRestoreA');
 
             // CharA session kills should be restored
             await submitCommand(page, '/zabici');
@@ -295,11 +241,10 @@ test.describe('Session persistence across page reload', () => {
 
             // Login as CharA and kill mobs
             await pushGmcp(page, 'char.info', { name: 'LifeKillA', object_num: 50005 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'LifeKillA');
 
             await simulateKill(page, 'trolla');
             await simulateKill(page, 'smoka chaosu');
-            await page.waitForTimeout(200);
 
             // Verify CharA lifetime shows kills
             await submitCommand(page, '/zabici2');
@@ -312,15 +257,11 @@ test.describe('Session persistence across page reload', () => {
 
             // Switch to CharB
             await pushGmcp(page, 'char.info', { name: 'LifeKillB', object_num: 50006 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'LifeKillB'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'LifeKillB');
 
             // CharB lifetime should be empty — only check the last table
             await submitCommand(page, '/zabici2');
             await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
-            await page.waitForTimeout(100);
 
             output = await getRecentOutput(page, 2);
             expect(output, 'should show CharB name').toContain('POSTAC: Lifekillb');
@@ -336,16 +277,12 @@ test.describe('Session persistence across page reload', () => {
 
             // Login as CharA, enter combat and improve
             await pushGmcp(page, 'char.info', { name: 'ImprCharA', object_num: 60001 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'ImprCharA');
 
             await pushGmcp(page, 'objects.data', { '60001': { attack_num: 99999 } });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 0 });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 1 });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 2 });
-            await page.waitForTimeout(200);
 
             await submitCommand(page, '/postepy');
             await waitForOutputContaining(page, 'Postepy');
@@ -355,10 +292,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Switch to CharB
             await pushGmcp(page, 'char.info', { name: 'ImprCharB', object_num: 60002 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'ImprCharB'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'ImprCharB');
 
             // CharB should have no session improvements
             await submitCommand(page, '/postepy');
@@ -375,16 +309,12 @@ test.describe('Session persistence across page reload', () => {
 
             // Login as CharA, enter combat and improve
             await pushGmcp(page, 'char.info', { name: 'LifeImprA', object_num: 60003 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'LifeImprA');
 
             await pushGmcp(page, 'objects.data', { '60003': { attack_num: 99999 } });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 0 });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 1 });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 2 });
-            await page.waitForTimeout(200);
 
             // Verify CharA lifetime
             await submitCommand(page, '/postepy2');
@@ -396,10 +326,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Switch to CharB
             await pushGmcp(page, 'char.info', { name: 'LifeImprB', object_num: 60004 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'LifeImprB'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'LifeImprB');
 
             // CharB lifetime should be empty
             await submitCommand(page, '/postepy2');
@@ -416,12 +343,10 @@ test.describe('Session persistence across page reload', () => {
 
             // Login as CharA with improve level 3
             await pushGmcp(page, 'char.info', { name: 'NoFalseA', object_num: 60005 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'NoFalseA');
 
             await pushGmcp(page, 'objects.data', { '60005': { attack_num: 99999 } });
-            await page.waitForTimeout(100);
             await pushGmcp(page, 'char.state', { improve: 3 });
-            await page.waitForTimeout(200);
 
             // Note lifetime count
             await submitCommand(page, '/postepy2');
@@ -430,24 +355,16 @@ test.describe('Session persistence across page reload', () => {
 
             // Switch to CharB with improve level 0
             await pushGmcp(page, 'char.info', { name: 'NoFalseB', object_num: 60006 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'NoFalseB'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'NoFalseB');
 
             await pushGmcp(page, 'char.state', { improve: 0 });
-            await page.waitForTimeout(200);
 
             // Switch back to CharA
             await pushGmcp(page, 'char.info', { name: 'NoFalseA', object_num: 60005 });
-            await page.waitForFunction(() =>
-                localStorage.getItem('currentCharacter') === 'NoFalseA'
-            );
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'NoFalseA');
 
             // Re-send CharA's improve level — should NOT record new improvements
             await pushGmcp(page, 'char.state', { improve: 3 });
-            await page.waitForTimeout(200);
 
             await submitCommand(page, '/postepy2');
             await waitForOutputContaining(page, 'WSZYSTKICH DO TEJ PORY');
@@ -474,7 +391,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Login with character
             await pushGmcp(page, 'char.info', { name: 'ChatTester', object_num: 66666 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'ChatTester');
 
             // Simulate some chat messages
             await sendChatMessage(page, 'Ktos mowi: Pierwsza wiadomosc');
@@ -490,7 +407,6 @@ test.describe('Session persistence across page reload', () => {
 
             // Trigger beforeunload to persist chat history before reload
             await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
-            await page.waitForTimeout(100);
 
             // Reload page
             await page.reload();
@@ -499,11 +415,11 @@ test.describe('Session persistence across page reload', () => {
 
             // Login again with SAME object_num
             await pushGmcp(page, 'char.info', { name: 'ChatTester', object_num: 66666 });
-            await page.waitForTimeout(300);
+            await waitForCharacter(page, 'ChatTester');
 
             // Verify chat history is preserved
             await submitCommand(page, '/chat');
-            await page.waitForTimeout(500);
+            await waitForOutputContaining(page, 'Pierwsza');
 
             output = await getRecentOutput(page, 15);
             expect(output, 'should still show first message after reload').toContain('Pierwsza wiadomosc');
@@ -517,7 +433,7 @@ test.describe('Session persistence across page reload', () => {
 
             // Login with character
             await pushGmcp(page, 'char.info', { name: 'ChatDeath', object_num: 77777 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'ChatDeath');
 
             // Simulate some chat messages
             await sendChatMessage(page, 'Ktos mowi: Stara wiadomosc');
@@ -528,13 +444,12 @@ test.describe('Session persistence across page reload', () => {
 
             // Simulate character death and respawn - SAME name but DIFFERENT object_num
             await pushGmcp(page, 'char.info', { name: 'ChatDeath', object_num: 77778 });
-            await page.waitForTimeout(200);
+            await waitForCharacter(page, 'ChatDeath');
 
             // Verify chat history is cleared (character died/respawned)
             await submitCommand(page, '/chat');
             // Wait for the "no messages" message to appear
             await waitForOutputContaining(page, 'Brak zapisanych');
-            await page.waitForTimeout(100);
 
             // Get just the last few lines
             const output = await getRecentOutput(page, 3);

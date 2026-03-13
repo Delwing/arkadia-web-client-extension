@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 const OUTPUT_SELECTOR = '#main_text_output_msg_wrapper';
@@ -7,7 +7,7 @@ const OUTPUT_SELECTOR = '#main_text_output_msg_wrapper';
 async function pushManyLines(page: Page, count: number): Promise<void> {
     const lines = Array.from({length: count}, (_, i) => `Line ${i + 1}`).join('\n') + '\n';
     await pushText(page, lines);
-    await page.waitForTimeout(200);
+    await waitForOutputContaining(page, `Line ${count}`);
 }
 
 async function isScrolledToBottom(page: Page): Promise<boolean> {
@@ -23,7 +23,10 @@ async function scrollOutputToTop(page: Page): Promise<void> {
         const el = document.querySelector(sel) as HTMLElement;
         if (el) el.scrollTop = 0;
     }, OUTPUT_SELECTOR);
-    await page.waitForTimeout(300);
+    await page.waitForFunction((sel) => {
+        const el = document.querySelector(sel) as HTMLElement;
+        return el ? el.scrollTop === 0 : false;
+    }, OUTPUT_SELECTOR);
 }
 
 test.describe('Double-click scroll to bottom', () => {
@@ -45,7 +48,12 @@ test.describe('Double-click scroll to bottom', () => {
         const cy = box!.y + box!.height / 2;
         await page.mouse.click(cx, cy);
         await page.mouse.click(cx, cy);
-        await page.waitForTimeout(500);
+
+        await page.waitForFunction((sel) => {
+            const el = document.querySelector(sel) as HTMLElement;
+            if (!el) return false;
+            return el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+        }, OUTPUT_SELECTOR);
 
         expect(await isScrolledToBottom(page)).toBe(true);
     });
@@ -63,7 +71,8 @@ test.describe('Double-click scroll to bottom', () => {
                 el.dispatchEvent(new MouseEvent('click', {bubbles: true, button: 0}));
             }
         }, OUTPUT_SELECTOR);
-        await page.waitForTimeout(500);
+        // Short wait to confirm single click does not scroll (negative assertion)
+        await page.waitForTimeout(200);
 
         expect(await isScrolledToBottom(page)).toBe(false);
     });
@@ -75,7 +84,8 @@ test.describe('Double-click scroll to bottom', () => {
 
         const output = page.locator(OUTPUT_SELECTOR);
         await output.dblclick();
-        await page.waitForTimeout(500);
+        // Short wait to confirm double-click at bottom doesn't break state (negative assertion)
+        await page.waitForTimeout(200);
 
         expect(await isScrolledToBottom(page)).toBe(true);
     });

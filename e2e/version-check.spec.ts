@@ -51,9 +51,6 @@ test.describe('Version check', () => {
         const commitInfo = page.locator('#commit-info');
         await commitInfo.waitFor({state: 'visible', timeout: 5000});
 
-        // Wait a bit for the fetch to complete and warning to appear
-        await page.waitForTimeout(500);
-
         // Check that the warning div appears
         const warningDiv = commitInfo.locator('div').filter({hasText: 'Nowa wersja dostępna'});
         await expect(warningDiv, 'should show new version warning').toBeVisible();
@@ -75,8 +72,8 @@ test.describe('Version check', () => {
         // Verify commit info shows SHA and date
         await expect(commitInfo, 'should show commit info').not.toBeEmpty();
 
-        // Wait a bit for any potential warning to appear
-        await page.waitForTimeout(500);
+        // Short wait to confirm no warning appears when version is current (negative assertion)
+        await page.waitForTimeout(200);
 
         // Check that NO warning div appears
         const warningDiv = commitInfo.locator('div').filter({hasText: 'Nowa wersja dostępna'});
@@ -105,15 +102,12 @@ test.describe('Version check', () => {
         // Verify commit info still shows (just SHA and date, no warning)
         await expect(commitInfo, 'should show commit info').not.toBeEmpty();
 
-        // Wait a bit to ensure no warning appears
-        await page.waitForTimeout(500);
+        // Short wait to confirm no warning appears on rate limit (negative assertion)
+        await page.waitForTimeout(200);
 
         // Check that NO warning appears (rate limit is handled silently)
         const warningDiv = commitInfo.locator('div').filter({hasText: 'Nowa wersja dostępna'});
         await expect(warningDiv, 'should not show warning on rate limit').toHaveCount(0);
-
-        // Wait a bit for console messages to be captured
-        await page.waitForTimeout(500);
 
         // Verify the warning was logged to console
         const hasRateLimitWarning = consoleWarnings.some(

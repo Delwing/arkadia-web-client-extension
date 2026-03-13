@@ -44,6 +44,18 @@ async function sendChatMessage(page: Page, message: string): Promise<void> {
     await pushText(page, message, {type: 'comm'});
 }
 
+async function waitForChatMessages(page: Page, minCount: number): Promise<void> {
+    await page.waitForFunction(
+        (count) => {
+            const container = document.querySelector('.chat-popup__messages');
+            if (!container) return false;
+            return container.querySelectorAll('.chat-popup__message').length >= count;
+        },
+        minCount,
+        {timeout: 5000}
+    );
+}
+
 test.describe('Chat popup scroll', () => {
     test('scrolls to bottom when new messages arrive', async ({page}) => {
         await prepareClient(page);
@@ -58,7 +70,7 @@ test.describe('Chat popup scroll', () => {
         }
 
         // Wait for messages to render
-        await page.waitForTimeout(100);
+        await waitForChatMessages(page, 20);
 
         // Verify messages appeared
         const messageCount = await messagesContainer.locator('.chat-popup__message').count();
@@ -72,7 +84,7 @@ test.describe('Chat popup scroll', () => {
 
         // Send one more message and verify it scrolls to bottom again
         await sendChatMessage(page, 'Final message after scroll check');
-        await page.waitForTimeout(100);
+        await waitForChatMessages(page, 21);
 
         const isStillAtBottom = await messagesContainer.evaluate((el) => {
             return el.scrollHeight - el.scrollTop - el.clientHeight < 5;
@@ -91,17 +103,19 @@ test.describe('Chat popup scroll', () => {
         for (let i = 1; i <= 20; i++) {
             await sendChatMessage(page, `Message ${i}`);
         }
-        await page.waitForTimeout(100);
+        await waitForChatMessages(page, 20);
 
         // Scroll up manually
         await messagesContainer.evaluate((el) => {
             el.scrollTop = 0;
         });
-        await page.waitForTimeout(50);
+        // Short wait for scroll event to register "scrolled away" state
+        await page.waitForTimeout(200);
 
         // Send a new message
         await sendChatMessage(page, 'New message while scrolled up');
-        await page.waitForTimeout(100);
+        // Short wait — verifying scroll position did NOT change
+        await page.waitForTimeout(200);
 
         // Verify it did NOT scroll to bottom (user scrolled up)
         const scrollTop = await messagesContainer.evaluate((el) => el.scrollTop);
@@ -119,23 +133,25 @@ test.describe('Chat popup scroll', () => {
         for (let i = 1; i <= 20; i++) {
             await sendChatMessage(page, `Message ${i}`);
         }
-        await page.waitForTimeout(100);
+        await waitForChatMessages(page, 20);
 
         // Scroll up
         await messagesContainer.evaluate((el) => {
             el.scrollTop = 0;
         });
-        await page.waitForTimeout(50);
+        // Short wait for scroll event to register state
+        await page.waitForTimeout(200);
 
         // Scroll back to bottom
         await messagesContainer.evaluate((el) => {
             el.scrollTop = el.scrollHeight;
         });
-        await page.waitForTimeout(50);
+        // Short wait for scroll event to register state
+        await page.waitForTimeout(200);
 
         // Send new message
         await sendChatMessage(page, 'Message after scrolling back to bottom');
-        await page.waitForTimeout(100);
+        await waitForChatMessages(page, 21);
 
         // Verify auto-scroll resumed
         const isAtBottom = await messagesContainer.evaluate((el) => {
@@ -158,7 +174,7 @@ test.describe('Chat popup scroll', () => {
         }
 
         // Wait for messages to render - managed layout needs more time
-        await page.waitForTimeout(200);
+        await waitForChatMessages(page, 20);
 
         // Verify messages appeared
         const messageCount = await messagesContainer.locator('.chat-popup__message').count();
@@ -172,7 +188,7 @@ test.describe('Chat popup scroll', () => {
 
         // Send more messages and verify it keeps scrolling
         await sendChatMessage(page, 'Another message in managed layout');
-        await page.waitForTimeout(100);
+        await waitForChatMessages(page, 21);
 
         const isStillAtBottom = await messagesContainer.evaluate((el) => {
             return el.scrollHeight - el.scrollTop - el.clientHeight < 5;

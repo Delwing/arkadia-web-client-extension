@@ -5,6 +5,7 @@ import {
     submitCommand,
     waitForCommandInput,
     pushGmcp,
+    waitForCharacter,
     GMCP_PATHS,
 } from './support/mocks';
 
@@ -26,21 +27,18 @@ async function pressArrowUp(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('ArrowUp');
-    await page.waitForTimeout(50);
 }
 
 async function pressArrowDown(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('ArrowDown');
-    await page.waitForTimeout(50);
 }
 
 async function pressEscape(page: Page): Promise<void> {
     const input = page.locator(MESSAGE_INPUT);
     await input.focus();
     await input.press('Escape');
-    await page.waitForTimeout(50);
 }
 
 async function getSelection(page: Page) {
@@ -61,7 +59,7 @@ test.describe('Command history — Mudlet-style', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'Tester');
     });
 
     // ── Full browse mode (input empty or all selected) ────────────────
@@ -193,15 +191,12 @@ test.describe('Command history — Mudlet-style', () => {
         await submitCommand(page, 'cmd3');
 
         await page.click(HISTORY_UP_BUTTON);
-        await page.waitForTimeout(100);
         expect(await getInputValue(page)).toBe('cmd3');
 
         await page.click(HISTORY_UP_BUTTON);
-        await page.waitForTimeout(100);
         expect(await getInputValue(page)).toBe('cmd2');
 
         await page.click(HISTORY_DOWN_BUTTON);
-        await page.waitForTimeout(100);
         expect(await getInputValue(page)).toBe('cmd3');
     });
 
@@ -216,7 +211,6 @@ test.describe('Command history — Mudlet-style', () => {
         const input = page.locator(MESSAGE_INPUT);
         await input.fill('test');
         await input.press('Enter');
-        await page.waitForTimeout(50);
 
         await input.fill('');
         await pressArrowUp(page);
@@ -262,7 +256,7 @@ test.describe('Command history — Mudlet-style', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Tester', object_num: 12345});
-        await page.waitForTimeout(100);
+        await waitForCharacter(page, 'Tester');
 
         await pressArrowUp(page);
         expect(await getInputValue(page)).toBe('persisted2');
@@ -286,7 +280,6 @@ test.describe('Command history — Mudlet-style', () => {
         // ArrowUp is intercepted (not moving cursor within textarea).
         // Since "line1\nline2" doesn't match any history prefix, content stays unchanged.
         await input.press('ArrowUp');
-        await page.waitForTimeout(50);
         const value = await getInputValue(page);
         expect(value).toContain('line1');
         expect(value).toContain('line2');
@@ -299,7 +292,6 @@ test.describe('Command history — Mudlet-style', () => {
         await input.press('Shift+Enter');
         await input.type('second line');
         await input.press('Enter');
-        await page.waitForTimeout(50);
 
         // Press up to retrieve — should get the full multiline entry
         await pressArrowUp(page);

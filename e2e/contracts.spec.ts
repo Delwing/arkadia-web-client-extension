@@ -5,8 +5,10 @@ import {
     pushGmcp,
     pushText,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
     waitForMapReady,
+    waitForOutputContaining,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
 
@@ -15,7 +17,7 @@ async function login(page: Page) {
     await waitForCommandInput(page);
     await ensureGameSocket(page);
     await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-    await page.waitForTimeout(100);
+    await waitForCharacter(page, 'TestChar');
 }
 
 // Use real mock map coordinates so client.Map.currentRoom gets set.
@@ -32,14 +34,14 @@ async function setRoom(page: Page, mapX: number, mapY: number, expectedRoomName:
 
 async function sendContractDialog(page: Page, npcDesc: string, count: string, item: string, quality: string | null, deadlineDays: string) {
     await pushText(page, `Pytasz ${npcDesc} o zlecenie.`);
-    await page.waitForTimeout(100);
+    await waitForOutputContaining(page, `Pytasz ${npcDesc} o zlecenie`);
 
     const qualityPart = quality ? `, przynajmniej ${quality} jakosci` : '';
     await pushText(page, `Gruby ${npcDesc} do ciebie: Tak, mam pewne pilne zamowienie na miecze. Potrzebuje ${count} sztuk ${item}${qualityPart}.`);
-    await page.waitForTimeout(100);
+    await waitForOutputContaining(page, `Potrzebuje ${count} sztuk`);
 
     await pushText(page, `Gruby ${npcDesc} do ciebie: Na realizacje zamowienia mam ${deadlineDays} dni, pozniej zapewne bede potrzebowac czego innego.`);
-    await page.waitForTimeout(200);
+    await waitForOutputContaining(page, `${deadlineDays} dni`);
 }
 
 test.describe('Contracts', () => {
@@ -53,7 +55,6 @@ test.describe('Contracts', () => {
         await sendContractDialog(page, 'kowala', 'trzy', 'mieczy', 'dobrej', 'dwa');
 
         await submitCommand(page, '/zlecenia');
-        await page.waitForTimeout(300);
 
         const contractsWindow = page.locator('.contracts-window');
         await expect(contractsWindow).toBeVisible({timeout: 3000});
@@ -76,7 +77,6 @@ test.describe('Contracts', () => {
         await sendContractDialog(page, 'kowala', 'pieciu', 'tarcz', 'sredniej', 'siedem');
 
         await submitCommand(page, '/zlecenia');
-        await page.waitForTimeout(300);
 
         const contractsWindow = page.locator('.contracts-window');
         await expect(contractsWindow).toBeVisible({timeout: 3000});
@@ -95,24 +95,21 @@ test.describe('Contracts', () => {
         await sendContractDialog(page, 'kowala', 'trzy', 'mieczy', 'dobrej', 'dziesiec');
 
         await submitCommand(page, '/zlecenia');
-        await page.waitForTimeout(300);
 
         const contractsWindow = page.locator('.contracts-window');
         await expect(contractsWindow).toBeVisible({timeout: 3000});
         await expect(contractsWindow).toContainText('Rynek');
 
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(100);
 
         await page.reload();
         await waitForCommandInput(page);
         await ensureGameSocket(page);
         await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'TestChar');
         await waitForMapReady(page);
 
         await submitCommand(page, '/zlecenia');
-        await page.waitForTimeout(300);
 
         const contractsWindowAfter = page.locator('.contracts-window');
         await expect(contractsWindowAfter).toBeVisible({timeout: 3000});
@@ -129,23 +126,20 @@ test.describe('Contracts', () => {
         await sendContractDialog(page, 'kowala', 'trzy', 'mieczy', 'dobrej', 'piec');
 
         await submitCommand(page, '/zlecenia');
-        await page.waitForTimeout(300);
 
         const contractsWindow = page.locator('.contracts-window');
         await expect(contractsWindow).toBeVisible({timeout: 3000});
         await expect(contractsWindow).toContainText('Zlecenia (1)');
 
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(100);
 
         // Still at Rynek — NPC says no contract
         await pushText(page, 'Pytasz kowala o zlecenie.');
-        await page.waitForTimeout(100);
+        await waitForOutputContaining(page, 'Pytasz kowala o zlecenie');
         await pushText(page, 'Gruby kowal do ciebie: Nie, w tej chwili niczego mi nie trzeba. Zajrzyj moze za jakis czas.');
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'niczego mi nie trzeba');
 
         await submitCommand(page, '/zlecenia');
-        await page.waitForTimeout(300);
 
         const contractsWindowAfter = page.locator('.contracts-window');
         await expect(contractsWindowAfter).toBeVisible({timeout: 3000});

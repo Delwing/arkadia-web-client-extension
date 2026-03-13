@@ -1,44 +1,27 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getRecentOutput,
     primeCharInfo,
     pushGmcp,
     pushText,
     GMCP_PATHS,
     submitCommand,
+    waitForCharacter,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
-
-async function getRecentOutput(page: import('@playwright/test').Page, count = 10): Promise<string> {
-    return await page.evaluate((numMessages) => {
-        const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-        if (!wrapper) return '';
-
-        const messages = wrapper.querySelectorAll('.output_msg');
-        if (messages.length === 0) return '';
-
-        const result: string[] = [];
-        const startIdx = Math.max(0, messages.length - numMessages);
-
-        for (let i = startIdx; i < messages.length; i++) {
-            result.push(messages[i].textContent?.trim() || '');
-        }
-
-        return result.join('\n');
-    }, count);
-}
 
 async function simulateHerbBagScan(
     page: import('@playwright/test').Page,
     bags: { content: string }[],
 ) {
     await submitCommand(page, '/ziola_buduj');
-    await page.waitForTimeout(200);
 
     const bagCount = bags.length;
     const countWord = bagCount === 1 ? 'jednej' : bagCount === 2 ? 'dwoch' : 'trzech';
     await pushText(page, `Doliczyles sie ${countWord} sztuki.`);
-    await page.waitForTimeout(200);
+    await waitForOutputContaining(page, countWord);
 
     for (const bag of bags) {
         if (bag.content) {
@@ -46,13 +29,14 @@ async function simulateHerbBagScan(
                 page,
                 `Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W srodku dostrzegasz ${bag.content}.`,
             );
+            await waitForOutputContaining(page, bag.content.substring(0, 20));
         } else {
             await pushText(
                 page,
                 `Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego woreczka. W jego srodku nic jednak nie ma.`,
             );
+            await waitForOutputContaining(page, 'nic jednak nie ma');
         }
-        await page.waitForTimeout(100);
     }
 }
 
@@ -76,16 +60,14 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as CharA and scan herbs
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'HerbCharA', object_num: 70001});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'HerbCharA'
-        );
+        await waitForCharacter(page, 'HerbCharA');
 
         await simulateHerbBagScan(page, [
             {content: 'trzy jasnozielone lodygi i dwie male jagody'},
         ]);
-        await page.waitForTimeout(500);
 
         // Verify herbs are stored for CharA
+        await page.waitForFunction(() => localStorage.getItem('HerbCharA:herb_counts') !== null);
         const charAHerbs = await page.evaluate(() =>
             localStorage.getItem('HerbCharA:herb_counts')
         );
@@ -93,7 +75,6 @@ test.describe('Character switch clears per-character data', () => {
 
         // Open herb popup and verify herbs are shown
         await submitCommand(page, '/ziola');
-        await page.waitForTimeout(300);
         const herbPopup = page.locator('.herb-window');
         await expect(herbPopup, 'should show herb manager for CharA').toBeVisible({timeout: 5000});
 
@@ -105,14 +86,11 @@ test.describe('Character switch clears per-character data', () => {
 
         // Close the popup
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(200);
+        await expect(herbPopup).not.toBeVisible();
 
         // Switch to CharB (no herbs scanned)
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'HerbCharB', object_num: 70002});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'HerbCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbCharB');
 
         // Verify CharB has no stored herb data
         const charBHerbs = await page.evaluate(() =>
@@ -122,7 +100,6 @@ test.describe('Character switch clears per-character data', () => {
 
         // Open herb popup for CharB - should show empty state
         await submitCommand(page, '/ziola');
-        await page.waitForTimeout(300);
         const herbPopupB = page.locator('.herb-window');
         await expect(herbPopupB, 'should show herb manager for CharB').toBeVisible({timeout: 5000});
 
@@ -138,32 +115,23 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as CharA and scan herbs
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'HerbRestoreA', object_num: 70003});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'HerbRestoreA'
-        );
+        await waitForCharacter(page, 'HerbRestoreA');
 
         await simulateHerbBagScan(page, [
             {content: 'trzy jasnozielone lodygi'},
         ]);
-        await page.waitForTimeout(500);
+        await page.waitForFunction(() => localStorage.getItem('HerbRestoreA:herb_counts') !== null);
 
         // Switch to CharB (no herbs)
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'HerbRestoreB', object_num: 70004});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'HerbRestoreB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbRestoreB');
 
         // Switch back to CharA
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'HerbRestoreA', object_num: 70003});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'HerbRestoreA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'HerbRestoreA');
 
         // Open herb popup - should show CharA's herbs
         await submitCommand(page, '/ziola');
-        await page.waitForTimeout(300);
         const herbPopup = page.locator('.herb-window');
         await expect(herbPopup, 'should show herb manager for CharA').toBeVisible({timeout: 5000});
 
@@ -179,9 +147,7 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as a fresh character with NO stored settings
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'FreshContChar', object_num: 70005});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'FreshContChar'
-        );
+        await waitForCharacter(page, 'FreshContChar');
 
         // Verify no settings stored for this character
         const settings = await page.evaluate(() =>
@@ -193,7 +159,7 @@ test.describe('Character switch clears per-character data', () => {
         await pushText(page,
             'Otwarty skorzany plecak zawiera sztylet, miecz i tarcze.'
         );
-        await page.waitForTimeout(500);
+        await waitForOutputContaining(page, 'POJEMNIK');
 
         const output = await getRecentOutput(page, 5);
         // Pretty containers reformats the output into a table with POJEMNIK header
@@ -207,9 +173,7 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as CharA with explicit settings
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ContCharA', object_num: 70006});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ContCharA'
-        );
+        await waitForCharacter(page, 'ContCharA');
 
         // Store settings for CharA with prettyContainers enabled
         await page.evaluate(() => {
@@ -218,14 +182,10 @@ test.describe('Character switch clears per-character data', () => {
                 containerColumns: 2,
             }));
         });
-        await page.waitForTimeout(100);
 
         // Switch to CharB with NO stored settings
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ContCharB', object_num: 70007});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ContCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ContCharB');
 
         // Verify CharB has no settings
         const charBSettings = await page.evaluate(() =>
@@ -237,7 +197,7 @@ test.describe('Character switch clears per-character data', () => {
         await pushText(page,
             'Otwarty skorzany plecak zawiera sztylet, miecz i tarcze.'
         );
-        await page.waitForTimeout(500);
+        await waitForOutputContaining(page, 'POJEMNIK');
 
         const output = await getRecentOutput(page, 5);
         expect(output, 'should show formatted container output for CharB').toContain('POJEMNIK');
@@ -250,23 +210,17 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as PkgCharA with explicit settings where packageHelper is true
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'PkgCharA', object_num: 70008});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'PkgCharA'
-        );
+        await waitForCharacter(page, 'PkgCharA');
 
         await page.evaluate(() => {
             localStorage.setItem('PkgCharA:settings', JSON.stringify({
                 packageHelper: true,
             }));
         });
-        await page.waitForTimeout(100);
 
         // Switch to PkgCharB with NO stored settings
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'PkgCharB', object_num: 70009});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'PkgCharB'
-        );
-        await page.waitForTimeout(300);
+        await waitForCharacter(page, 'PkgCharB');
 
         // Verify PkgCharB has no settings stored
         const charBSettings = await page.evaluate(() =>
@@ -276,7 +230,6 @@ test.describe('Character switch clears per-character data', () => {
 
         // Send a package board - should be processed because packageHelper defaults to true
         await pushText(page, PACKAGE_BOARD_TEXT);
-        await page.waitForTimeout(500);
 
         // Package helper reformats the board and adds distance columns with "dystans:" label
         const boardMessage = page
@@ -298,23 +251,17 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as ExitCharA with shortenExits explicitly enabled
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ExitCharA', object_num: 70010});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ExitCharA'
-        );
+        await waitForCharacter(page, 'ExitCharA');
 
         await page.evaluate(() => {
             localStorage.setItem('ExitCharA:settings', JSON.stringify({
                 shortenExits: true,
             }));
         });
-        await page.waitForTimeout(100);
 
         // Switch to ExitCharB with NO stored settings
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ExitCharB', object_num: 70011});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ExitCharB'
-        );
-        await page.waitForTimeout(300);
+        await waitForCharacter(page, 'ExitCharB');
 
         // Verify ExitCharB has no settings stored
         const charBSettings = await page.evaluate(() =>
@@ -324,7 +271,7 @@ test.describe('Character switch clears per-character data', () => {
 
         // Send an exit line - shortenExits defaults to false so it should NOT be shortened
         await pushText(page, 'Jest tutaj 5 widocznych wyjsc: polnoc, poludnie, wschod, zachod i gora.');
-        await page.waitForTimeout(500);
+        await waitForOutputContaining(page, 'widocznych wyjsc');
 
         const output = await getRecentOutput(page, 5);
 
@@ -341,9 +288,7 @@ test.describe('Character switch clears per-character data', () => {
 
         // Login as CollectCharA with collectCopper explicitly disabled
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharA', object_num: 70012});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'CollectCharA'
-        );
+        await waitForCharacter(page, 'CollectCharA');
 
         await page.evaluate(() => {
             localStorage.setItem('CollectCharA:settings', JSON.stringify({
@@ -352,14 +297,10 @@ test.describe('Character switch clears per-character data', () => {
                 collectGold: false,
             }));
         });
-        await page.waitForTimeout(100);
 
         // Switch to CollectCharB with NO stored settings
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharB', object_num: 70013});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'CollectCharB'
-        );
-        await page.waitForTimeout(300);
+        await waitForCharacter(page, 'CollectCharB');
 
         // Verify CollectCharB has no settings stored
         const charBSettings = await page.evaluate(() =>
@@ -392,10 +333,7 @@ test.describe('Character switch clears per-character data', () => {
 
         // Switch back to CollectCharA and verify its stored (non-default) values are shown
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharA', object_num: 70012});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'CollectCharA'
-        );
-        await page.waitForTimeout(300);
+        await waitForCharacter(page, 'CollectCharA');
 
         await page.click('#menu-button');
         await page.click('#options-button');
@@ -420,22 +358,6 @@ test.describe('Character switch clears per-character data', () => {
     });
 });
 
-async function waitForOutputContaining(page: import('@playwright/test').Page, text: string, timeout = 3000) {
-    await page.waitForFunction(
-        (searchText) => {
-            const wrapper = document.querySelector('#main_text_output_msg_wrapper');
-            if (!wrapper) return false;
-            const messages = wrapper.querySelectorAll('.output_msg');
-            for (let i = messages.length - 1; i >= Math.max(0, messages.length - 10); i--) {
-                if (messages[i].textContent?.includes(searchText)) return true;
-            }
-            return false;
-        },
-        text,
-        {timeout}
-    );
-}
-
 test.describe('Profession character switch', () => {
     test('profession state is isolated between characters', async ({page}) => {
         await page.goto('/');
@@ -444,16 +366,14 @@ test.describe('Profession character switch', () => {
 
         // Login as ProfCharA and initialize profession tracking
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ProfCharA', object_num: 80001});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ProfCharA'
-        );
+        await waitForCharacter(page, 'ProfCharA');
 
         await submitCommand(page, '/staz 0');
         await waitForOutputContaining(page, 'Rozpoczeto trening zawodu');
 
         // Send bonus text
         await pushText(page, 'Twoja wysoka forma pozwala ci nieznacznie przyspieszyc nauke zawodu.');
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'wysoka forma');
 
         // Verify CharA has profession data
         const charAProfession = await page.evaluate(() =>
@@ -463,10 +383,7 @@ test.describe('Profession character switch', () => {
 
         // Switch to ProfCharB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ProfCharB', object_num: 80002});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ProfCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ProfCharB');
 
         // ProfCharB should have no profession data
         const charBProfession = await page.evaluate(() =>
@@ -480,10 +397,7 @@ test.describe('Profession character switch', () => {
 
         // Switch back to ProfCharA — data should be restored
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ProfCharA', object_num: 80001});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ProfCharA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ProfCharA');
 
         await submitCommand(page, '/staz');
         await waitForOutputContaining(page, 'Zawod ukonczony w');
@@ -501,12 +415,9 @@ test.describe('Introduced character switch', () => {
 
         // Login as IntroCharA and set remembered names
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'IntroCharA', object_num: 80003});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'IntroCharA'
-        );
+        await waitForCharacter(page, 'IntroCharA');
 
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
         await pushText(page, 'Zapamietane przez ciebie imiona to Adas, Bodas i Codas.');
         await waitForOutputContaining(page, '[3]');
 
@@ -519,10 +430,7 @@ test.describe('Introduced character switch', () => {
 
         // Switch to IntroCharB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'IntroCharB', object_num: 80004});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'IntroCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'IntroCharB');
 
         // IntroCharB should have no remembered names
         const charBRemembered = await page.evaluate(() =>
@@ -532,7 +440,6 @@ test.describe('Introduced character switch', () => {
 
         // When IntroCharB runs zapamietani with different names, no deletion message should appear
         await submitCommand(page, 'zapamietani');
-        await page.waitForTimeout(50);
         await pushText(page, 'Zapamietane przez ciebie imiona to Xander i Yara.');
         await waitForOutputContaining(page, '[2]');
 
@@ -541,10 +448,7 @@ test.describe('Introduced character switch', () => {
 
         // Switch back to IntroCharA
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'IntroCharA', object_num: 80003});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'IntroCharA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'IntroCharA');
 
         // Verify IntroCharA's names are preserved
         const charARememberedAfter = await page.evaluate(() =>
@@ -564,14 +468,11 @@ test.describe('Language max levels character switch', () => {
 
         // Login as LangCharA and capture max levels
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangCharA', object_num: 80005});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'LangCharA'
-        );
+        await waitForCharacter(page, 'LangCharA');
 
         await submitCommand(page, 'jezyki maksymalne');
-        await page.waitForTimeout(200);
         await pushText(page, 'Krasnoludzki: bardzo dobra\nElficki: doskonala');
-        await page.waitForTimeout(300);
+        await page.waitForFunction(() => localStorage.getItem('LangCharA:language_max_levels') !== null);
 
         // Verify CharA has max levels stored
         const charALevels = await page.evaluate(() =>
@@ -583,10 +484,7 @@ test.describe('Language max levels character switch', () => {
 
         // Switch to LangCharB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangCharB', object_num: 80006});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'LangCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'LangCharB');
 
         // LangCharB should have no max levels
         const charBLevels = await page.evaluate(() =>
@@ -596,9 +494,8 @@ test.describe('Language max levels character switch', () => {
 
         // When LangCharB runs jezyki, gauges should use default max (10)
         await submitCommand(page, 'jezyki');
-        await page.waitForTimeout(200);
         await pushText(page, 'Krasnoludzki: dobra');
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Krasnoludzki');
 
         const output = await getRecentOutput(page, 5);
         // dobra = 6, with max 10 → [######----]
@@ -606,15 +503,11 @@ test.describe('Language max levels character switch', () => {
 
         // Switch back to LangCharA — max levels should be restored
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangCharA', object_num: 80005});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'LangCharA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'LangCharA');
 
         await submitCommand(page, 'jezyki');
-        await page.waitForTimeout(200);
         await pushText(page, 'Krasnoludzki: dobra');
-        await page.waitForTimeout(300);
+        await waitForOutputContaining(page, 'Krasnoludzki');
 
         const outputA = await getRecentOutput(page, 5);
         // dobra = 6, with max 7 (bardzo dobra) → [######-]
@@ -630,19 +523,17 @@ test.describe('Chat history character switch', () => {
 
         // Login as ChatCharA and send chat messages
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ChatCharA', object_num: 80007});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ChatCharA'
-        );
+        await waitForCharacter(page, 'ChatCharA');
 
         await pushText(page, 'Mowisz Hej from ChatCharA!', {type: 'comm'});
         await pushText(page, 'Ktos mowi Witaj ChatCharA!', {type: 'comm'});
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'Witaj ChatCharA');
 
         // Persist chat history by triggering beforeunload
         await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
-        await page.waitForTimeout(100);
 
         // Verify ChatCharA has stored chat data
+        await page.waitForFunction(() => localStorage.getItem('ChatCharA:chat_history') !== null);
         const charAChat = await page.evaluate(() =>
             localStorage.getItem('ChatCharA:chat_history')
         );
@@ -651,10 +542,7 @@ test.describe('Chat history character switch', () => {
 
         // Switch to ChatCharB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ChatCharB', object_num: 80008});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ChatCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ChatCharB');
 
         // ChatCharB should have no stored chat data
         const charBChat = await page.evaluate(() =>
@@ -670,12 +558,10 @@ test.describe('Chat history character switch', () => {
 
         // Login as ChatRestoreA and generate chat
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ChatRestoreA', object_num: 80009});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ChatRestoreA'
-        );
+        await waitForCharacter(page, 'ChatRestoreA');
 
         await pushText(page, 'Mowisz Wiadomosc od ChatRestoreA', {type: 'comm'});
-        await page.waitForTimeout(200);
+        await waitForOutputContaining(page, 'Wiadomosc od ChatRestoreA');
 
         // Persist and reload to ensure storage is set
         await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
@@ -685,10 +571,7 @@ test.describe('Chat history character switch', () => {
 
         // Login as ChatRestoreA again — should load from storage
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ChatRestoreA', object_num: 80009});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ChatRestoreA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ChatRestoreA');
 
         // Chat should show restored messages
         await submitCommand(page, '/chat');
@@ -704,13 +587,11 @@ test.describe('LastLang character switch', () => {
 
         // Login as LangSetA and set a language
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangSetA', object_num: 80011});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'LangSetA'
-        );
+        await waitForCharacter(page, 'LangSetA');
 
         // Set language via justaw (the alias hooks into characterStorage)
         await submitCommand(page, 'justaw krasnoludzki');
-        await page.waitForTimeout(200);
+        await page.waitForFunction(() => localStorage.getItem('LangSetA:lastLang') !== null);
 
         // Verify storage
         const charALang = await page.evaluate(() =>
@@ -720,10 +601,7 @@ test.describe('LastLang character switch', () => {
 
         // Switch to LangSetB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangSetB', object_num: 80012});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'LangSetB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'LangSetB');
 
         // LangSetB should have no lastLang
         const charBLang = await page.evaluate(() =>
@@ -733,10 +611,7 @@ test.describe('LastLang character switch', () => {
 
         // Switch back to LangSetA — lastLang should be preserved
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangSetA', object_num: 80011});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'LangSetA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'LangSetA');
 
         const charALangAfter = await page.evaluate(() =>
             localStorage.getItem('LangSetA:lastLang')
@@ -762,9 +637,7 @@ test.describe('Clock domain character switch', () => {
 
         // Login as ClockCharA
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ClockCharA', object_num: 80013});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ClockCharA'
-        );
+        await waitForCharacter(page, 'ClockCharA');
 
         // Set Empire time — this sets active domain to Empire
         await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
@@ -779,10 +652,7 @@ test.describe('Clock domain character switch', () => {
 
         // Switch to ClockCharB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ClockCharB', object_num: 80014});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ClockCharB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ClockCharB');
 
         // ClockCharB should have no stored domain
         const charBDomain = await page.evaluate(() =>
@@ -792,10 +662,7 @@ test.describe('Clock domain character switch', () => {
 
         // Switch back to ClockCharA
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ClockCharA', object_num: 80013});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'ClockCharA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'ClockCharA');
 
         const charADomainAfter = await page.evaluate(() =>
             localStorage.getItem('ClockCharA:clock_active_domain')
@@ -810,10 +677,7 @@ test.describe('Lua gags colors character switch', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
         await primeCharInfo(page, {name: 'GagColorA'});
-
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'GagColorA'
-        );
+        await waitForCharacter(page, 'GagColorA');
 
         // Open Walka tab and change a color
         await page.click('#menu-button');
@@ -837,10 +701,7 @@ test.describe('Lua gags colors character switch', () => {
 
         // Switch to GagColorB
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'GagColorB'});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'GagColorB'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'GagColorB');
 
         // GagColorB should have no stored colors
         const charBColors = await page.evaluate(() =>
@@ -865,10 +726,7 @@ test.describe('Lua gags colors character switch', () => {
 
         // Switch back to GagColorA
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'GagColorA'});
-        await page.waitForFunction(() =>
-            localStorage.getItem('currentCharacter') === 'GagColorA'
-        );
-        await page.waitForTimeout(200);
+        await waitForCharacter(page, 'GagColorA');
 
         // Verify GagColorA's colors are preserved
         const charAColorsAfter = await page.evaluate(() => {

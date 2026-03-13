@@ -155,9 +155,6 @@ test.describe('Letter composer', () => {
         // Click preview button
         await composer.locator('button:has-text("Podglad")').click();
 
-        // Wait for potential event processing
-        await page.waitForTimeout(200);
-
         // Composer should still be open after preview
         await expect(composer, 'composer should remain open after preview').toBeVisible();
     });

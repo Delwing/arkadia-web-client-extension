@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 async function openBindsModal(page: Page): Promise<void> {
@@ -20,7 +20,7 @@ async function login(page: Page): Promise<void> {
     await waitForCommandInput(page);
     await ensureGameSocket(page);
     await pushGmcp(page, 'char.info', {name: 'TestChar', object_num: 12345});
-    await page.waitForTimeout(100);
+    await waitForCharacter(page, 'TestChar');
 }
 
 test.describe('Keymaps management', () => {
@@ -61,7 +61,6 @@ test.describe('Keymaps management', () => {
 
         // Click "Nowa mapa" button to create a new keymap
         await page.locator('#binds-modal button:has-text("Nowa mapa")').click();
-        await page.waitForTimeout(200);
 
         // Creating a new keymap enters rename mode (select is replaced by an input).
         // Finish rename first so the select reappears.
@@ -70,7 +69,6 @@ test.describe('Keymaps management', () => {
 
         if (isRenameVisible) {
             await renameInput.press('Enter');
-            await page.waitForTimeout(200);
         }
 
         // Wait for the select to be visible again after rename finishes
@@ -90,15 +88,16 @@ test.describe('Keymaps management', () => {
 
         // Create a second keymap first
         await page.locator('#binds-modal button:has-text("Nowa mapa")').click();
-        await page.waitForTimeout(200);
 
         // If rename input appeared, finish it
         const renameInput = page.locator('#binds-modal input[type="text"]').first();
         const isRenameVisible = await renameInput.isVisible().catch(() => false);
         if (isRenameVisible) {
             await renameInput.press('Enter');
-            await page.waitForTimeout(100);
         }
+
+        // Wait for select to reappear
+        await keymapSelect.waitFor({state: 'visible', timeout: 3000});
 
         // Get the current selected keymap value
         const currentValue = await keymapSelect.inputValue();
@@ -121,11 +120,9 @@ test.describe('Keymaps management', () => {
 
         // Switch to the other keymap
         await keymapSelect.selectOption(otherValue!);
-        await page.waitForTimeout(200);
 
         // Verify the selection changed
-        const newValue = await keymapSelect.inputValue();
-        expect(newValue).toBe(otherValue);
+        await expect(keymapSelect).toHaveValue(otherValue!);
 
         await closeBindsModal(page);
     });
@@ -135,17 +132,16 @@ test.describe('Keymaps management', () => {
 
         // Create a second keymap
         await page.locator('#binds-modal button:has-text("Nowa mapa")').click();
-        await page.waitForTimeout(200);
 
         // Finish rename if input appears
         const renameInput = page.locator('#binds-modal input[type="text"]').first();
         const isRenameVisible = await renameInput.isVisible().catch(() => false);
         if (isRenameVisible) {
             await renameInput.press('Enter');
-            await page.waitForTimeout(100);
         }
 
         const keymapSelect = page.locator('#binds-modal .form-select').first();
+        await keymapSelect.waitFor({state: 'visible', timeout: 3000});
 
         // Get all option values and find the non-default one
         const options = keymapSelect.locator('option');
@@ -162,7 +158,6 @@ test.describe('Keymaps management', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(200);
 
         // Open binds modal again
         await openBindsModal(page);
@@ -186,7 +181,6 @@ test.describe('Keymaps management', () => {
 
         // Create a new keymap to rename (avoid renaming the default)
         await page.locator('#binds-modal button:has-text("Nowa mapa")').click();
-        await page.waitForTimeout(200);
 
         // If rename input appeared automatically, set the name now
         let renameInput = page.locator('#binds-modal input[type="text"][autocorrect="off"]');
@@ -196,11 +190,9 @@ test.describe('Keymaps management', () => {
             // Clear and type new name directly
             await renameInput.fill('TestKeymap');
             await renameInput.press('Enter');
-            await page.waitForTimeout(200);
         } else {
-            // Click the "Zmień nazwę" (Rename) button
-            await page.locator('#binds-modal button:has-text("Zmień nazwę")').click();
-            await page.waitForTimeout(100);
+            // Click the "Zmien nazwe" (Rename) button
+            await page.locator('#binds-modal button:has-text("Zmien nazwe")').click();
 
             renameInput = page.locator('#binds-modal input[type="text"][autocorrect="off"]');
             isRenameVisible = await renameInput.isVisible().catch(() => false);
@@ -208,9 +200,11 @@ test.describe('Keymaps management', () => {
             if (isRenameVisible) {
                 await renameInput.fill('TestKeymap');
                 await renameInput.press('Enter');
-                await page.waitForTimeout(200);
             }
         }
+
+        // Wait for select to reappear after rename
+        await keymapSelect.waitFor({state: 'visible', timeout: 3000});
 
         // After rename, the select should show the new name
         const updatedOptions = keymapSelect.locator('option');
@@ -228,7 +222,6 @@ test.describe('Keymaps management', () => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        await page.waitForTimeout(200);
 
         await openBindsModal(page);
 

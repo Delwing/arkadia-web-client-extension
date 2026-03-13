@@ -33,14 +33,12 @@ test.describe('Release guard timer', () => {
 
         // Click anywhere to turn OFF
         await releaseGuardTimer.click();
-        await page.waitForTimeout(100);
 
         // Should change to OFF state (dimgray)
         await expect(puscSpan, 'Pusc should be dimgray after click').toHaveCSS('color', 'rgb(105, 105, 105)'); // dimgray
 
         // Click again to toggle back ON
         await releaseGuardTimer.click();
-        await page.waitForTimeout(100);
 
         // Should return to ON state (white)
         await expect(puscSpan, 'Pusc should be white again').toHaveCSS('color', 'rgb(255, 255, 255)');
@@ -58,7 +56,6 @@ test.describe('Release guard timer', () => {
 
         // Click to change state
         await releaseGuardTimer.click();
-        await page.waitForTimeout(100);
 
         // Should still be visible
         await expect(releaseGuardTimer, 'should remain visible after toggle').toBeVisible();

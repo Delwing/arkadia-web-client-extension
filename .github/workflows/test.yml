@@ -14,15 +14,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: yarn
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-dependencies-${{ hashFiles('package.json', 'yarn.lock') }}
@@ -38,7 +38,7 @@ jobs:
         run: cp plugin-types/dist/*.tgz dist/
       - name: Upload dist artifact
         if: github.ref == 'refs/heads/master'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
@@ -84,22 +84,27 @@ jobs:
         shardIndex: [1, 2, 3, 4, 5]
         shardTotal: [5]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: yarn
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-dependencies-${{ hashFiles('package.json', 'yarn.lock') }}
           restore-keys: |
             key: ${{ runner.os }}-dependencies-
       - name: Cache Playwright browsers
+<<<<<<< test-reporting
         uses: actions/cache@v4
+=======
+        if: matrix.install_browsers == true
+        uses: actions/cache@v5
+>>>>>>> master
         with:
           path: .cache/ms-playwright
           key: ${{ runner.os }}-playwright-browsers
@@ -188,12 +193,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download dist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist
       - name: Setup Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
