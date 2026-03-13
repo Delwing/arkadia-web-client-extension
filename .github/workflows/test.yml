@@ -142,14 +142,14 @@ jobs:
           merge-multiple: true
       - name: Merge Playwright reports
         if: steps.download-blob-reports.outcome == 'success'
-        continue-on-error: true
+        env:
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: results.xml
         run: npx playwright merge-reports --reporter=html,junit ./all-blob-reports
-      - name: Rename merged JUnit report
+      - name: Move merged JUnit report
         if: steps.download-blob-reports.outcome == 'success'
-        continue-on-error: true
         run: |
           mkdir -p test-results
-          [ -f results.xml ] && mv results.xml test-results/e2e-junit.xml
+          mv results.xml test-results/e2e-junit.xml
       - name: Upload Playwright HTML report
         if: steps.download-blob-reports.outcome == 'success'
         uses: actions/upload-artifact@v4
@@ -164,24 +164,15 @@ jobs:
         with:
           name: unit-test-results
           path: test-results/unit
-      - name: Check for report files
-        id: check-reports
-        run: |
-          if [ -f test-results/unit/junit.xml ]; then
-            echo "jest=true" >> $GITHUB_OUTPUT
-          fi
-          if [ -f test-results/e2e-junit.xml ]; then
-            echo "playwright=true" >> $GITHUB_OUTPUT
-          fi
       - name: Jest test report
-        if: always() && steps.check-reports.outputs.jest == 'true'
+        if: always()
         uses: dorny/test-reporter@v1
         with:
           name: Jest Tests
           path: test-results/unit/junit.xml
           reporter: jest-junit
       - name: Playwright test report
-        if: always() && steps.check-reports.outputs.playwright == 'true'
+        if: always()
         uses: dorny/test-reporter@v1
         with:
           name: Playwright Tests
