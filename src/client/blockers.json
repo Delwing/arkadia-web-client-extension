@@ -280,6 +280,10 @@
     "type": "2"
   },
   {
+    "pattern": "nie pozwoli ci zblizyc sie do drzwi.",
+    "type": "0"
+  },
+  {
     "pattern": "do ciebie: Nikt z bronia nie wejdzie na teren Uniwersytetu. Prosze zostawic ja na stojaku.",
     "type": "0"
   },
