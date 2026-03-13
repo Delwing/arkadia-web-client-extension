@@ -36,8 +36,7 @@ export default function initHpAlert(client: Client) {
     characterStorage.onChange('settings', applySettings);
 
     client.on('gmcp.char.state', (state) => {
-        const detail = state as { hp?: number };
-        let hp = detail?.hp;
+        let hp = state?.hp;
         if (typeof hp !== 'number') return;
         hp++;
         if (alertLevel <= 0) {

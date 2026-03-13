@@ -321,12 +321,11 @@ export default class Client {
         });
 
         this.on('gmcp.char.info', (info) => {
-            const detail = info as any;
-            if (detail?.name) {
-                characterStorage.setCharacter(detail.name);
+            if (info?.name) {
+                characterStorage.setCharacter(info.name);
             }
-            if (typeof detail?.object_num !== 'undefined') {
-                const newNum = String(detail.object_num);
+            if (typeof info?.object_num !== 'undefined') {
+                const newNum = String(info.object_num);
                 const stored = characterStorage.get('object_num');
                 if (typeof stored !== 'undefined' && String(stored) !== newNum) {
                     this.sendEvent('reset');
@@ -336,8 +335,7 @@ export default class Client {
         });
 
         this.on('gmcp.char.colors', (data) => {
-            const detail = data as any;
-            this.defaultColor = detail?.text ?? 255;
+            this.defaultColor = data?.text ?? 255;
         });
 
         this.on('output-sent', () => {

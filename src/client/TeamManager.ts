@@ -1,4 +1,5 @@
 import Client from "./Client";
+import type {GmcpRoomInfo} from "@shared/events";
 
 interface ObjectData {
     attack_num: boolean | number
@@ -40,9 +41,8 @@ export default class TeamManager {
             this.handleObjectsNums(detail);
         });
         this.client.on('gmcp.char.info', info => {
-            const detail = info as { object_num?: number };
-            if (detail?.object_num !== undefined) {
-                this.playerNum = detail.object_num;
+            if (info?.object_num !== undefined) {
+                this.playerNum = info.object_num;
             }
         });
         this.client.on('gmcp.room.info', detail => {
@@ -153,7 +153,7 @@ export default class TeamManager {
         }
     }
 
-    private handleRoomInfo(detail: any) {
+    private handleRoomInfo(detail: GmcpRoomInfo) {
         const signature = typeof detail === 'object' && detail !== null
             ? String(detail?.num ?? detail?.id ?? detail?.hash ?? JSON.stringify(detail))
             : String(detail ?? '');

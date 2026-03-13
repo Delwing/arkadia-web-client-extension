@@ -11,6 +11,7 @@ import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
 import type {LootPopupPayload} from "@client/scripts/lootParser.ts";
 import type {SyncCategory, CategoryConflictInfo} from "@modules/firebase/firebaseTypes";
+import type {GmcpCharInfo, GmcpCharState, GmcpCharOptions, GmcpCharColors, GmcpRoomInfo, GmcpRoomTime, GmcpMsgType} from "./gmcpTypes";
 
 export type FirebaseSyncMetadataPayload = Partial<Record<SyncCategory, {
     exists: boolean;
@@ -347,8 +348,20 @@ export interface ObjectData {
     editing?: boolean
 }
 
-export type ClientEvents = KnownEvents & {
+type GmcpMsgEvents = {
+    [K in GmcpMsgType as `gmcp_msg.${K}`]: AnsiAwareBuffer;
+};
+
+export type ClientEvents = KnownEvents & GmcpMsgEvents & {
     "gmcp.objects.data": Map<number, ObjectData>
+    "gmcp.objects.nums": [number[]];
+    "gmcp.char.info": GmcpCharInfo;
+    "gmcp.char.state": GmcpCharState;
+    "gmcp.char.options": GmcpCharOptions;
+    "gmcp.char.colors": GmcpCharColors;
+    "gmcp.room.info": GmcpRoomInfo;
+    "gmcp.room.time": GmcpRoomTime;
+    "gmcp.core.ping": void;
     [key: `gmcp.${string}`]: unknown;
     [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
 };

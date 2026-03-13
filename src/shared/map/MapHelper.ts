@@ -128,8 +128,7 @@ export default class MapHelper {
 
         this.client.on("gmcp.room.info", (eventDetail) => {
             this.setBlockable(false);
-            const detail = eventDetail as { map?: any };
-            this.gmcpPosition = detail?.map;
+            this.gmcpPosition = eventDetail?.map;
             if (this.refreshPosition) {
                 this.setMapPosition(this.gmcpPosition);
                 this.refreshPosition = false;

@@ -1,5 +1,6 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
 import FightTitle from "./FightTitle.ts";
+import type {GmcpCharState} from "@shared/events";
 
 export default class HpTitle {
   private client: typeof ArkadiaClient;
@@ -10,7 +11,7 @@ export default class HpTitle {
     this.client = client;
     this.fightTitle = fightTitle;
     this.originalTitle = fightTitle.getOriginalTitle();
-    this.client.on("gmcp.char.state", (state: any) => this.handleState(state));
+    this.client.on("gmcp.char.state", (state) => this.handleState(state));
     this.client.on("client.disconnect", () => this.reset());
   }
 
@@ -18,7 +19,7 @@ export default class HpTitle {
     this.fightTitle.setBaseTitle(this.originalTitle);
   }
 
-  private handleState(state: any) {
+  private handleState(state: GmcpCharState) {
     if (typeof state?.hp !== "number") return;
     const hpValue = state.hp + 1;
     const hpMax = 7;

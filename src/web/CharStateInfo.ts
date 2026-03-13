@@ -1,13 +1,14 @@
 import ArkadiaClient from "./ArkadiaClient.ts";
+import type {GmcpCharState} from "@shared/events";
 
 export default class CharStateInfo {
   private container: HTMLElement | null;
   constructor(client: typeof ArkadiaClient) {
     this.container = document.getElementById("state-info");
-    client.on("gmcp.char.state", (state: any) => this.update(state));
+    client.on("gmcp.char.state", (state) => this.update(state));
   }
 
-  private update(state: any) {
+  private update(state: GmcpCharState) {
     if (!this.container) return;
     const text = typeof state?.state === "string" ? state.state : "";
     if (text) {

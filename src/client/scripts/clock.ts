@@ -212,7 +212,7 @@ class ClockDisplay {
     private snapshots: Partial<Record<Domain, ClockSnapshot>> = {};
 
     constructor() {
-        eventBus.on("gmcp.room.info", (payload: any) => {
+        eventBus.on("gmcp.room.info", (payload) => {
             if (payload?.map?.domain) {
                 if (payload.map.domain === "Imperium") {
                     this.setActiveDomain("Empire");
@@ -334,7 +334,7 @@ export class ArkadiaTime {
         });
         this.triggers.push(guessTrigger);
 
-        eventBus.on("gmcp.room.time", (payload: any) => {
+        eventBus.on("gmcp.room.time", (payload) => {
             if (this.display.activeDomain !== this.domain) {
                 return;
             }

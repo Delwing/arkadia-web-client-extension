@@ -12,9 +12,8 @@ export default function initPausers(client: Client) {
     let active = false;
 
     client.on('gmcp.char.info', (info) => {
-        const detail = info as { object_num?: unknown };
-        if (detail?.object_num !== undefined) {
-            playerId = String(detail.object_num);
+        if (info?.object_num !== undefined) {
+            playerId = String(info.object_num);
         }
     });
 

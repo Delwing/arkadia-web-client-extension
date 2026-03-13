@@ -41,7 +41,7 @@ export default function initFullHpTimer(client: Client) {
     characterStorage.onChange('settings', applySettings);
 
     client.on("gmcp.char.state", (state) => {
-        const hp = (state as { hp?: number })?.hp;
+        const hp = state?.hp;
         if (typeof hp !== "number") {
             previousHp = null;
             return;
@@ -57,9 +57,8 @@ export default function initFullHpTimer(client: Client) {
     });
 
     client.on("gmcp.char.info", (info) => {
-        const detail = info as { object_num?: number };
-        if (detail && typeof detail.object_num !== "undefined") {
-            playerNum = detail.object_num;
+        if (info && typeof info.object_num !== "undefined") {
+            playerNum = info.object_num;
         }
     });
 

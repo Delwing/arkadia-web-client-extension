@@ -7,7 +7,7 @@ export default function initIdleFullHp(client: Client) {
     const idleTimer = createIdleTimer(client);
 
     client.on('gmcp.char.state', (state) => {
-        const hp = (state as { hp?: number })?.hp;
+        const hp = state?.hp;
         if (typeof hp !== 'number') return;
         if (hp === FULL_HP && prevHp < FULL_HP && idleTimer.isIdle()) {
             client.notify('Masz pelne zycie');

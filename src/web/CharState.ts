@@ -182,7 +182,7 @@ export default class CharState {
       (state: Partial<CharStateData>) => this.update(state),
     );
 
-    this.client.on('gmcp.char.options', (options: any) => {
+    this.client.on('gmcp.char.options', (options) => {
       this.options = { ...this.options, ...options };
       this.update({});
     });

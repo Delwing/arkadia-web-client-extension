@@ -9,9 +9,8 @@ export default function initCombatState(client: Client) {
     let playerNum: number | undefined;
 
     client.on('gmcp.char.info', info => {
-        const detail = (info ?? {}) as { object_num?: number };
-        const newPlayerNum = typeof detail.object_num !== 'undefined'
-            ? detail.object_num
+        const newPlayerNum = typeof info?.object_num !== 'undefined'
+            ? info.object_num
             : undefined;
         if (newPlayerNum !== playerNum) {
             playerNum = newPlayerNum;

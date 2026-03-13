@@ -140,10 +140,7 @@ export default class MobileDirectionButtons {
         this.setupKeyboardHandlers();
 
         this.client.on('gmcp.room.info', (detail) => {
-            const rawExits = Array.isArray((detail as { exits?: unknown })?.exits)
-                ? (detail as { exits: unknown[] }).exits
-                : [];
-            const exits = rawExits.filter((exit): exit is string => typeof exit === 'string');
+            const exits = Array.isArray(detail?.exits) ? detail.exits : [];
             this.highlightExits(exits);
         });
 

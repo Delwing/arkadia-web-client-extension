@@ -1,6 +1,7 @@
 import Client from "./Client";
 import toTitleCase from "./utils/toTitleCase";
 import {globalStorage} from "@modules/core/storage";
+import type {GmcpCharInfo, GmcpCharState} from "@shared/events";
 
 export interface ObjectData {
     desc?: string;
@@ -60,7 +61,7 @@ export default class ObjectManager {
         this.client.emit('parsedObjects');
     }
 
-    private handleCharInfo(detail: any) {
+    private handleCharInfo(detail: GmcpCharInfo) {
         if (detail && typeof detail.object_num !== 'undefined') {
             this.playerNum = detail.object_num;
             const data = this.getOrCreateData(this.playerNum);
@@ -70,7 +71,7 @@ export default class ObjectManager {
         }
     }
 
-    private handleCharState(detail: any) {
+    private handleCharState(detail: GmcpCharState) {
         if (this.playerNum && detail && typeof detail.hp !== 'undefined') {
             const data = this.getOrCreateData(this.playerNum);
             data.hp = detail.hp;

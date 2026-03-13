@@ -79,9 +79,8 @@ export default function initCommandPreserveCaseMode(client: Client) {
     });
 
     client.on('gmcp.char.info', (info) => {
-        const detail = info as { object_num?: number };
-        if (typeof detail?.object_num !== 'undefined') {
-            playerNum = detail.object_num;
+        if (typeof info?.object_num !== 'undefined') {
+            playerNum = info.object_num;
         }
     });
 

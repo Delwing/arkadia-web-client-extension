@@ -238,19 +238,17 @@ export default class ImproveCounter {
         window.addEventListener("beforeunload", this.persist);
 
         this.client.on("gmcp.char.state", (state) => {
-            const s = state as { improve?: number; form?: number };
-            if (typeof s.form === "number") {
-                this.stateForm = s.form;
+            if (typeof state.form === "number") {
+                this.stateForm = state.form;
             }
-            if (typeof s.improve === "number") {
-                this.handleLevel(s.improve);
+            if (typeof state.improve === "number") {
+                this.handleLevel(state.improve);
             }
         });
 
         this.client.on("gmcp.char.options", (options) => {
-            const o = options as { form?: number };
-            if (typeof o.form === "number") {
-                this.optionsForm = o.form;
+            if (typeof options.form === "number") {
+                this.optionsForm = options.form;
             }
         });
 

@@ -79,8 +79,7 @@ export default function initMoveMode(client: Client) {
         }
     });
 
-    client.on('gmcp.char.info', detail => {
-        const info = detail as { object_num?: number };
+    client.on('gmcp.char.info', info => {
         if (info && typeof info.object_num !== 'undefined') {
             playerNum = info.object_num;
         }

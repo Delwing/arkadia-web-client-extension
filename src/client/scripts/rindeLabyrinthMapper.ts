@@ -463,7 +463,7 @@ export default function initLabyrinthMapper(client: Client, aliases: { pattern: 
     });
 
     // Room transitions via gmcp.room.info: start capture or deactivate
-    client.on("gmcp.room.info", (value: any) => {
+    client.on("gmcp.room.info", (value) => {
         if (!isActive) return;
 
         // Rooms with map position data are not in the labyrinth — deactivate
