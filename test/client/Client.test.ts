@@ -92,6 +92,8 @@ afterEach(() => {
   localStorage.clear();
 });
 
+describe('Client', () => {
+
 test('requests notification permission on demand', () => {
   (global as any).Notification = { permission: 'default', requestPermission: jest.fn() };
   const client = new Client((global as any).clientAdapterMock as any);
@@ -309,3 +311,5 @@ test('sendCommand expands object shortcuts', async () => {
   await client.sendCommand('help @@');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', true, undefined);
 });
+
+}); // describe('Client')
