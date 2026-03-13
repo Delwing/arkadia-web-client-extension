@@ -9,6 +9,7 @@ vite.config.js
 .DS_Store
 package-lock.json
 playwright-report/
+blob-report/
 test-results/
 .claude
 /data

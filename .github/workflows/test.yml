@@ -8,6 +8,7 @@ on:
 permissions:
   pages: write
   id-token: write
+  checks: write
 
 jobs:
   build:
@@ -43,31 +44,44 @@ jobs:
           path: dist/
           retention-days: 1
 
-  test:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-dependencies-${{ hashFiles('package.json', 'yarn.lock') }}
+          restore-keys: |
+            key: ${{ runner.os }}-dependencies-
+      - name: Run unit tests
+        env:
+          CI: '1'
+        run: yarn test
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: test-results/junit.xml
+          retention-days: 7
+
+  e2e-test:
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BROWSERS_PATH: .cache/ms-playwright
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Run unit tests
-            command: yarn test
-          - name: Run e2e tests (shard 1/5)
-            command: yarn test:e2e --reporter=line --shard=1/5
-            install_browsers: true
-          - name: Run e2e tests (shard 2/5)
-            command: yarn test:e2e --reporter=line --shard=2/5
-            install_browsers: true
-          - name: Run e2e tests (shard 3/5)
-            command: yarn test:e2e --reporter=line --shard=3/5
-            install_browsers: true
-          - name: Run e2e tests (shard 4/5)
-            command: yarn test:e2e --reporter=line --shard=4/5
-            install_browsers: true
-          - name: Run e2e tests (shard 5/5)
-            command: yarn test:e2e --reporter=line --shard=5/5
-            install_browsers: true
+        shardIndex: [1, 2, 3, 4, 5]
+        shardTotal: [5]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -84,7 +98,6 @@ jobs:
           restore-keys: |
             key: ${{ runner.os }}-dependencies-
       - name: Cache Playwright browsers
-        if: matrix.install_browsers == true
         uses: actions/cache@v4
         with:
           path: .cache/ms-playwright
@@ -92,16 +105,72 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Install Playwright browsers
-        if: matrix.install_browsers == true
         run: yarn playwright install --with-deps chromium
-      - name: ${{ matrix.name }}
+      - name: Run e2e tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         env:
           CI: '1'
-        run: ${{ matrix.command }}
+        run: yarn test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 7
+
+  test-report:
+    if: always()
+    needs: [unit-test, e2e-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Download all blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+      - name: Merge Playwright reports
+        run: npx playwright merge-reports --reporter=html,junit ./all-blob-reports
+      - name: Rename merged JUnit report
+        run: |
+          mkdir -p test-results
+          mv results.xml test-results/e2e-junit.xml
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - name: Download unit test results
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-test-results
+          path: test-results/unit
+      - name: Jest test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Jest Tests
+          path: test-results/unit/junit.xml
+          reporter: jest-junit
+      - name: Playwright test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Playwright Tests
+          path: test-results/e2e-junit.xml
+          reporter: jest-junit
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs: [build, test]
+    needs: [build, unit-test, e2e-test]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
