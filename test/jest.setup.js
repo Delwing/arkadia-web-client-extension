@@ -2,6 +2,24 @@ require('fake-indexeddb/auto');
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+// TextEncoder/TextDecoder are needed by firebaseCrypto and other modules
+if (typeof globalThis.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  globalThis.TextEncoder = TextEncoder;
+  globalThis.TextDecoder = TextDecoder;
+}
+
+// crypto.subtle is needed by firebaseCrypto (available in Node 15+)
+// jsdom provides its own crypto without subtle, so we must override it
+const { webcrypto } = require('crypto');
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: webcrypto,
+    writable: true,
+    configurable: true,
+  });
+}
+
 class LocalStorageMock {
   constructor() {
     this.store = {};
