@@ -47,6 +47,8 @@ type HerbPillStyle = React.CSSProperties & {
 
 const herbStyleCache = new Map<string, HerbPillStyle>();
 
+const stripMudletColors = (text: string): string => text.replace(/<[a-zA-Z_]+>/g, '');
+
 const getConditionVariant = (value: number): "good" | "warn" | "bad" => {
     if (value >= 4) {
         return "good";
@@ -244,6 +246,7 @@ const HerbManager = () => {
 
     const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
     const [isCompact, setIsCompact] = usePopupSetting(POPUP_ID, 'isCompact', false);
+    const [showEffects, setShowEffects] = usePopupSetting(POPUP_ID, 'showEffects', false);
 
     // Wrap close to also hide context menu
     const wrappedOnClose = useCallback(() => {
@@ -267,6 +270,12 @@ const HerbManager = () => {
         }
         return herbsDataPromiseRef.current;
     }, []);
+
+    useEffect(() => {
+        if (showEffects) {
+            void ensureHerbsData();
+        }
+    }, [showEffects, ensureHerbsData]);
 
     // Check if popup is managed by layout to determine overlay visibility
     const layoutContext = useLayoutManagerOptional();
@@ -495,16 +504,26 @@ const HerbManager = () => {
         return undefined; // Use CSS default
     }, [bags.length]);
 
-    // Header action toggle for compact mode
+    // Header action toggles for compact mode and effects visibility
     const headerActions = (
-        <button
-            type="button"
-            className={`herb-window__toggle${isCompact ? ' herb-window__toggle--active' : ''}`}
-            onClick={() => setIsCompact(!isCompact)}
-            title={isCompact ? 'Widok normalny' : 'Widok kompaktowy'}
-        >
-            Kompaktowy
-        </button>
+        <>
+            <button
+                type="button"
+                className={`herb-window__toggle${showEffects ? ' herb-window__toggle--active' : ''}`}
+                onClick={() => setShowEffects(!showEffects)}
+                title={showEffects ? 'Ukryj efekty' : 'Pokaż efekty ziół'}
+            >
+                Efekty
+            </button>
+            <button
+                type="button"
+                className={`herb-window__toggle${isCompact ? ' herb-window__toggle--active' : ''}`}
+                onClick={() => setIsCompact(!isCompact)}
+                title={isCompact ? 'Widok normalny' : 'Widok kompaktowy'}
+            >
+                Kompaktowy
+            </button>
+        </>
     );
 
     const handleBackdropClick = () => {
@@ -587,22 +606,56 @@ const HerbManager = () => {
                                             {bag.items.length === 0 ? (
                                                 <div className="herb-bag-empty">Pusty woreczek</div>
                                             ) : (
-                                                bag.items.map(stack => (
-                                                    <button
-                                                        key={stack.instanceId}
-                                                        type="button"
-                                                        className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}`}
-                                                        style={getHerbStyle(stack.herbId)}
-                                                        draggable={!busy}
-                                                        onDragStart={handleDragStart(bag.bagNumber, stack)}
-                                                        onDragEnd={handleDragEnd}
-                                                        onClick={handleSplit(bag.bagNumber, stack)}
-                                                        onContextMenu={handleContextMenu(stack)}
-                                                    >
-                                                        <span className="herb-pill-count">{stack.count} ×</span>
-                                                        <span className="herb-pill-label">{stack.herbId}</span>
-                                                    </button>
-                                                ))
+                                                bag.items.map(stack => {
+                                                    const effects = showEffects
+                                                        ? (herbsDataRef.current?.herb_id_to_use[stack.herbId] ?? [])
+                                                        : [];
+                                                    return (
+                                                        <button
+                                                            key={stack.instanceId}
+                                                            type="button"
+                                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}${showEffects ? " herb-pill--with-effects" : ""}`}
+                                                            style={getHerbStyle(stack.herbId)}
+                                                            draggable={!busy}
+                                                            onDragStart={handleDragStart(bag.bagNumber, stack)}
+                                                            onDragEnd={handleDragEnd}
+                                                            onClick={handleSplit(bag.bagNumber, stack)}
+                                                            onContextMenu={handleContextMenu(stack)}
+                                                        >
+                                                            {effects.length > 0 ? (
+                                                                <span className="herb-pill-row">
+                                                                    <span className="herb-pill-count">{stack.count} ×</span>
+                                                                    <span className="herb-pill-label">{stack.herbId}</span>
+                                                                </span>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="herb-pill-count">{stack.count} ×</span>
+                                                                    <span className="herb-pill-label">{stack.herbId}</span>
+                                                                </>
+                                                            )}
+                                                            {effects.length > 0 && (() => {
+                                                                const grouped = Array.from(effects.reduce((map, use) => {
+                                                                    const stripped = stripMudletColors(use.effect).trim();
+                                                                    if (!stripped || stripped === '--' || stripped === '---' || stripped === 'tr') return map;
+                                                                    const list = map.get(use.action) ?? [];
+                                                                    list.push(stripped);
+                                                                    map.set(use.action, list);
+                                                                    return map;
+                                                                }, new Map<string, string[]>()));
+                                                                if (grouped.length === 0) return null;
+                                                                return (
+                                                                    <span className="herb-pill-effects">
+                                                                        {grouped.map(([action, effs]) => (
+                                                                            <span key={action} className="herb-pill-effect">
+                                                                                {effs.join(', ')}
+                                                                            </span>
+                                                                        ))}
+                                                                    </span>
+                                                                );
+                                                            })()}
+                                                        </button>
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     </div>
