@@ -1,5 +1,9 @@
 module.exports = {
   testEnvironment: 'jsdom',
+  reporters: [
+    'default',
+    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
+  ],
   roots: [
     '<rootDir>/test/client',
     '<rootDir>/test/web',
