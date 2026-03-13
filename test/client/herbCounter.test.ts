@@ -193,4 +193,125 @@ describe('herb counter', () => {
     const stored = characterStorage.get('herb_counts');
     expect(stored).toEqual({ 1: { herbs: { deliona: 2 } } });
   });
+
+  test('ziola_przepakuj sends all 7 repack commands in order', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_przepakuj 1 2'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    entry!.callback(entry!.pattern.exec('/ziola_przepakuj 1 2')!);
+    expect(client.sendCommand).toHaveBeenCalledTimes(7);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez ziola z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'otworz 2. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'wloz ziola do 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'otworz 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'wloz ziola do 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(7, 'zamknij otwarte woreczki');
+  });
+
+  test('ziola_przepakuj rejects same bag, prints error, sends no commands', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_przepakuj 1 1'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    entry!.callback(entry!.pattern.exec('/ziola_przepakuj 1 1')!);
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.println).toHaveBeenCalledWith('Woreczek zrodlowy i docelowy sa takie same.');
+  });
+
+  test('ziola_daj with count takes herbs from pouch and gives to team member', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } }, defaultHerbData, aliases);
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(42) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo deliona 2'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo deliona 2')!);
+    expect(client.sendCommand).toHaveBeenCalledWith('otworz 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenCalledWith('wez 2 zolte jasne kwiaty z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenCalledWith('zamknij 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
+  });
+
+  test('ziola_daj with count prints error for unknown team member', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } }, defaultHerbData, aliases);
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(undefined) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Unknown deliona 1'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    await entry!.callback(entry!.pattern.exec('/ziola_daj Unknown deliona 1')!);
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.println).toHaveBeenCalledWith('Nie znaleziono czlonka druzyny: Unknown');
+  });
+
+  test('ziola_daj with count prints error for unknown herb', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(42) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo nieznana 1'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo nieznana 1')!);
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.println).toHaveBeenCalledWith('Nieznane ziolo: nieznana');
+  });
+
+  test('ziola_daj single herb takes 1 herb and gives to team member', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 1: { deliona: 2 } }, defaultHerbData, aliases);
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(42) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo deliona'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo deliona')!);
+    expect(client.sendCommand).toHaveBeenCalledWith('otworz 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenCalledWith('wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenCalledWith('zamknij 1. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
+  });
+
+  test('ziola_odloz_woreczek sends 3 commands for empty bag', () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 2: {} }, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_odloz_woreczek 2'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    entry!.callback(entry!.pattern.exec('/ziola_odloz_woreczek 2')!);
+    expect(client.sendCommand).toHaveBeenCalledTimes(3);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'odbezpiecz 2. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'odtrocz 2. swoj woreczek');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'odloz 2. swoj woreczek');
+  });
+
+  test('ziola_odloz_woreczek warns when bag has herbs and requires confirmation', () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } }, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_odloz_woreczek 1'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    client.println.mockClear();
+    // First call warns
+    entry!.callback(entry!.pattern.exec('/ziola_odloz_woreczek 1')!);
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.println).toHaveBeenCalledWith('Woreczek 1 zawiera ziola. Powtorz komende aby potwierdzic.');
+    // Second call proceeds
+    entry!.callback(entry!.pattern.exec('/ziola_odloz_woreczek 1')!);
+    expect(client.sendCommand).toHaveBeenCalledTimes(3);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'odbezpiecz 1. swoj woreczek');
+  });
+
+  test('ziola_odloz_woreczek removes bag from storage after putting down', () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 1: { deliona: 2 }, 2: {} }, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_odloz_woreczek 2'));
+    expect(entry).toBeTruthy();
+    entry!.callback(entry!.pattern.exec('/ziola_odloz_woreczek 2')!);
+    const stored = characterStorage.get('herb_counts');
+    expect(stored).not.toHaveProperty('2');
+    expect(stored).toHaveProperty('1');
+  });
 });

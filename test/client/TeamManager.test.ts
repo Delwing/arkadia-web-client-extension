@@ -268,4 +268,27 @@ describe('TeamManager', () => {
     expect(avatarCallback).toHaveBeenCalled();
   });
 
+  test('getTeamMemberObjectId resolves name to object id', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.getTeamMemberObjectId('Pablo')).toBe(42);
+  });
+
+  test('getTeamMemberObjectId is case insensitive', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.getTeamMemberObjectId('pablo')).toBe(42);
+    expect(manager.getTeamMemberObjectId('PABLO')).toBe(42);
+    expect(manager.getTeamMemberObjectId('PaBlO')).toBe(42);
+  });
+
+  test('getTeamMemberObjectId returns undefined for unknown name', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.getTeamMemberObjectId('Vesper')).toBeUndefined();
+  });
+
 });

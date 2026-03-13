@@ -329,6 +329,16 @@ export default class TeamManager {
         return this.accumulatedObjectsData
     }
 
+    getTeamMemberObjectId(name: string): number | undefined {
+        const lowerName = name.toLowerCase();
+        for (const [id, desc] of this.teamMemberDescriptions.entries()) {
+            if (desc.toLowerCase() === lowerName) {
+                return id;
+            }
+        }
+        return undefined;
+    }
+
     getAttackTargetId() {
         return this.attackTargetId;
     }

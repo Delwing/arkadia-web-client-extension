@@ -645,33 +645,131 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             pattern: /^\/wezz ([a-zA-Z_]+)$/,
             callback: (m: RegExpMatchArray) => take(m[1].toLowerCase(), 1)
         });
+        const useHerb = async (m: RegExpMatchArray) => {
+            const action = m[1];
+            const herb = m[2].toLowerCase();
+            await take(herb, 1);
+            const biernik = herbs?.herb_id_to_odmiana[herb]?.biernik || herb;
+            preUseCommands.forEach(cmd => client.sendCommand(cmd));
+            client.sendCommand(`${action} ${biernik}`);
+            postUseCommands.forEach(cmd => client.sendCommand(cmd));
+        };
+
+        const useHerbAmount = async (m: RegExpMatchArray) => {
+            const action = m[1];
+            const herb = m[2].toLowerCase();
+            let amount = polishWordToNumber(m[3]);
+            if (isNaN(amount)) {
+                amount = 1;
+            }
+            await take(herb, amount);
+            const biernik = getHerbCase(herb, amount, herbs);
+            preUseCommands.forEach(cmd => client.sendCommand(cmd));
+            client.sendCommand(`${action} ${amount} ${biernik}`);
+            postUseCommands.forEach(cmd => client.sendCommand(cmd));
+        };
+
+        aliases.push({pattern: /^\/zi (\w+) (\w+)$/, callback: useHerb});
+        aliases.push({pattern: /^\/zi (\w+) (\w+) (\d+)$/, callback: useHerbAmount});
+        aliases.push({pattern: /^\/z_(\w+) (\w+)$/, callback: useHerb});
+        aliases.push({pattern: /^\/z_(\w+) (\w+) (\d+)$/, callback: useHerbAmount});
+
         aliases.push({
-            pattern: /^\/zi (\w+) (\w+)$/,
-            callback: async (m: RegExpMatchArray) => {
-                const action = m[1];
-                const herb = m[2].toLowerCase();
-                await take(herb, 1);
-                const biernik = herbs?.herb_id_to_odmiana[herb]?.biernik || herb;
-                preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                client.sendCommand(`${action} ${biernik}`);
-                postUseCommands.forEach(cmd => client.sendCommand(cmd));
+            pattern: /^\/ziola_przepakuj ([0-9]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const from = m[1];
+                const to = m[2];
+                if (from === to) {
+                    client.println('Woreczek zrodlowy i docelowy sa takie same.');
+                    return;
+                }
+                client.sendCommand(`otworz ${from}. swoj woreczek`);
+                client.sendCommand(`wez ziola z ${from}. swojego woreczka`);
+                client.sendCommand(`otworz ${to}. swoj woreczek`);
+                client.sendCommand(`wloz ziola do ${to}. swojego woreczka`);
+                client.sendCommand(`otworz ${from}. swoj woreczek`);
+                client.sendCommand(`wloz ziola do ${from}. swojego woreczka`);
+                client.sendCommand('zamknij otwarte woreczki');
             }
         });
 
         aliases.push({
-            pattern: /^\/zi (\w+) (\w+) (\d+)$/,
+            pattern: /^\/ziola_daj ([a-zA-Z]+) ([a-z_]+) ([0-9]+)$/,
             callback: async (m: RegExpMatchArray) => {
-                const action = m[1];
+                const name = m[1];
                 const herb = m[2].toLowerCase();
-                let amount = polishWordToNumber(m[3]);
-                if (isNaN(amount)) {
-                    amount = 1;
+                const count = parseInt(m[3], 10);
+                if (count <= 0) {
+                    client.println('Ilosc musi byc wieksza od zera.');
+                    return;
                 }
-                await take(herb, amount);
-                const biernik = getHerbCase(herb, amount, herbs);
-                preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                client.sendCommand(`${action} ${amount} ${biernik}`);
-                postUseCommands.forEach(cmd => client.sendCommand(cmd));
+                await ensureData();
+                if (herbs && !herbs.herb_id_to_odmiana[herb]) {
+                    client.println(`Nieznane ziolo: ${herb}`);
+                    return;
+                }
+                const objectId = client.TeamManager.getTeamMemberObjectId(name);
+                if (objectId === undefined) {
+                    client.println(`Nie znaleziono czlonka druzyny: ${name}`);
+                    return;
+                }
+                const taken = await take(herb, count);
+                if (taken === 0) {
+                    client.println(`Brak ziola: ${herb}`);
+                    return;
+                }
+                client.sendCommand(`daj ziola ob_${objectId}`);
+            }
+        });
+
+        aliases.push({
+            pattern: /^\/ziola_daj ([a-zA-Z]+) ([a-z_]+)$/,
+            callback: async (m: RegExpMatchArray) => {
+                const name = m[1];
+                const herb = m[2].toLowerCase();
+                await ensureData();
+                if (herbs && !herbs.herb_id_to_odmiana[herb]) {
+                    client.println(`Nieznane ziolo: ${herb}`);
+                    return;
+                }
+                const objectId = client.TeamManager.getTeamMemberObjectId(name);
+                if (objectId === undefined) {
+                    client.println(`Nie znaleziono czlonka druzyny: ${name}`);
+                    return;
+                }
+                const taken = await take(herb, 1);
+                if (taken === 0) {
+                    client.println(`Brak ziola: ${herb}`);
+                    return;
+                }
+                client.sendCommand(`daj ziola ob_${objectId}`);
+            }
+        });
+
+        let pendingPutDown: { bag: number; time: number } | null = null;
+        aliases.push({
+            pattern: /^\/ziola_odloz_woreczek ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const bagNum = parseInt(m[1], 10);
+                const bag = storedBags[bagNum];
+                const hasHerbs = bag && Object.values(bag.herbs ?? {}).some(c => c > 0);
+                if (hasHerbs) {
+                    const now = Date.now();
+                    if (pendingPutDown && pendingPutDown.bag === bagNum && now - pendingPutDown.time < 10000) {
+                        pendingPutDown = null;
+                    } else {
+                        pendingPutDown = {bag: bagNum, time: now};
+                        client.println(`Woreczek ${bagNum} zawiera ziola. Powtorz komende aby potwierdzic.`);
+                        return;
+                    }
+                }
+                client.sendCommand(`odbezpiecz ${bagNum}. swoj woreczek`);
+                client.sendCommand(`odtrocz ${bagNum}. swoj woreczek`);
+                client.sendCommand(`odloz ${bagNum}. swoj woreczek`);
+                if (storedBags[bagNum]) {
+                    delete storedBags[bagNum];
+                    persistBags();
+                }
             }
         });
     }
