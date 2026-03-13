@@ -225,6 +225,11 @@ export default function initSunTracker(client: Client) {
         const mid = new AnsiAwareBuffer(`\u2551${inner}\u2551`).colorWords(`\u2551${inner}\u2551`, color);
         const bot = new AnsiAwareBuffer(`\u255A${border}\u255D`).colorWords(`\u255A${border}\u255D`, color);
 
+        const iconStart = mid.text.indexOf(icon);
+        if (iconStart !== -1) {
+            mid.color([iconStart, iconStart + icon.length], { ...color, cssClass: "fixed-ch-2" });
+        }
+
         const clickStart = mid.text.indexOf("[czas]");
         if (clickStart !== -1) {
             mid.createLink([clickStart, clickStart + 6], {
@@ -277,6 +282,15 @@ export default function initSunTracker(client: Client) {
         pattern: /^\/slonce$/,
         callback: () => {
             client.sendEvent("sunTracker.popup.open");
+        }
+    });
+
+    // TEMP: test alias for sun/moon box alignment
+    client.aliases.push({
+        pattern: /^\/testbox$/,
+        callback: () => {
+            printSunMessage("sunrise");
+            printSunMessage("sunset");
         }
     });
 }

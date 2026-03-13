@@ -49,6 +49,7 @@ export interface FormatStateSnapshot {
     rapidBlink?: boolean;
     dim?: DimEffect;
     hyperlink?: FormatHyperlink;
+    cssClass?: string;
 }
 
 export type TextRange = [start: number, end: number];
@@ -105,7 +106,8 @@ function hasVisualFormatting(state?: FormatStateSnapshot): boolean {
         state.strikethrough ||
         state.slowBlink ||
         state.rapidBlink ||
-        state.dim
+        state.dim ||
+        state.cssClass
     );
 }
 
@@ -138,6 +140,7 @@ function cloneState(state?: FormatStateSnapshot): FormatStateSnapshot | undefine
         rapidBlink: state.rapidBlink,
         dim: state.dim ? {...state.dim} : undefined,
         hyperlink: state.hyperlink ? {...state.hyperlink} : undefined,
+        cssClass: state.cssClass,
     };
 }
 
@@ -155,7 +158,8 @@ function statesEqual(a?: FormatStateSnapshot, b?: FormatStateSnapshot): boolean 
         !!a.slowBlink === !!b.slowBlink &&
         !!a.rapidBlink === !!b.rapidBlink &&
         dimEffectsEqual(a.dim, b.dim) &&
-        hyperlinksEqual(a.hyperlink, b.hyperlink)
+        hyperlinksEqual(a.hyperlink, b.hyperlink) &&
+        a.cssClass === b.cssClass
     );
 }
 
@@ -915,8 +919,11 @@ export class AnsiAwareBuffer {
                 element.style.cssText = styles.join("; ");
             }
 
-            // Apply blink and dim CSS classes
+            // Apply blink, dim, and custom CSS classes
             const classes: string[] = [];
+            if (state.cssClass) {
+                classes.push(state.cssClass);
+            }
             if (state.slowBlink) {
                 classes.push('ansi-slow-blink');
             }

@@ -5665,6 +5665,13 @@ body.mobile-command-radial-active {
   animation: ansi-dim var(--dim-duration, 1000ms) var(--dim-easing, ease-in-out) infinite;
 }
 
+/* Force ambiguous-width Unicode icons to exact monospace column width */
+.fixed-ch-2 {
+  display: inline-block;
+  width: 2ch;
+  text-align: center;
+}
+
 /* Clock Window - size overrides */
 .clock-window {
   --fw-width: 480px;
