@@ -146,7 +146,7 @@ export class EmbeddedMap {
         settings.transparentLabels = transparentLabels;
         settings.labelRenderMode = labelRenderMode;
         settings.playerMarker.dash = [0.05, 0.05]
-        settings.gridColor = 'rgba(255, 255, 255, 0.07)';
+        settings.gridColor = 'rgba(255, 255, 255, 0.1)';
         settings.gridEnabled = getBuiltInPanelSetting('map', 'showGrid', false);
         settings.areaName = false
         const isLayoutManagerEnabled = loadLayoutState().enabled;
