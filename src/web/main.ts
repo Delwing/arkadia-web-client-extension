@@ -1780,9 +1780,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (authClose) {
-        authClose.addEventListener('click', () => {
+        const closeAuthOverlay = () => {
             authClosed = true;
             updateConnectButtons();
+        };
+        authClose.addEventListener('click', closeAuthOverlay);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !authClosed && !isConnected && !playbackMode) {
+                closeAuthOverlay();
+            }
         });
     }
 
