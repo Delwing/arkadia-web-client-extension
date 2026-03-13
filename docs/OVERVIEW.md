@@ -13,6 +13,7 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 | **Ziola** | Licznik i zarzadzanie ziolami |
 | **Bindowanie** | Bindy |
 | **Skroty** | Zapisane lokacje na mapie |
+| **Synchronizacja** | Synchronizacja ustawien przez Firebase |
 | **Inne** | Pozostale aliasy i funkcje |
 
 ## Wlasne aliasy
