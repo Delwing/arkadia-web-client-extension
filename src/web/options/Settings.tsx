@@ -142,24 +142,8 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
             <fieldset disabled={locked} className="p-0 border-0 m-0">
                 <div className="character-settings-layout">
                     <section className="character-settings-section">
-                        <h5 className="character-settings-section-title">Pozostałe opcje</h5>
+                        <h5 className="character-settings-section-title">Wyjścia</h5>
                         <div className="d-flex flex-wrap gap-3 align-items-center">
-                            <Form.Check
-                                type="checkbox"
-                                id="packageHelper"
-                                label="Asystent paczek"
-                                checked={settings.packageHelper}
-                                onChange={e => onChangeSetting(s => s.packageHelper = e.target.checked)}
-                                className="me-2"
-                            />
-                            <Form.Check
-                                type="checkbox"
-                                id="packageInContainer"
-                                label="Paczka do pojemnika"
-                                checked={settings.packageInContainer}
-                                onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
-                                className="me-2"
-                            />
                             <Form.Group className="d-flex align-items-center me-2">
                                 <Form.Label className="me-1 mb-0" htmlFor="inlineCompassRose">Roza wiatrow:</Form.Label>
                                 <Form.Select
@@ -182,10 +166,39 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             </Form.Group>
                             <Form.Check
                                 type="checkbox"
+                                id="compassBackExits"
+                                label="Powrót na czerwono"
+                                checked={settings.compassBackExits}
+                                onChange={e => onChangeSetting(s => s.compassBackExits = e.target.checked)}
+                                className="me-2"
+                            />
+                            <Form.Check
+                                type="checkbox"
                                 id="shortenExits"
                                 label="Skrócone wyjścia"
                                 checked={settings.shortenExits}
                                 onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
+                                className="me-2"
+                            />
+                        </div>
+                    </section>
+                    <section className="character-settings-section">
+                        <h5 className="character-settings-section-title">Pozostałe opcje</h5>
+                        <div className="d-flex flex-wrap gap-3 align-items-center">
+                            <Form.Check
+                                type="checkbox"
+                                id="packageHelper"
+                                label="Asystent paczek"
+                                checked={settings.packageHelper}
+                                onChange={e => onChangeSetting(s => s.packageHelper = e.target.checked)}
+                                className="me-2"
+                            />
+                            <Form.Check
+                                type="checkbox"
+                                id="packageInContainer"
+                                label="Paczka do pojemnika"
+                                checked={settings.packageInContainer}
+                                onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
                                 className="me-2"
                             />
                             <Form.Check

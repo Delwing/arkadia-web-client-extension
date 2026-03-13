@@ -8,6 +8,7 @@ import {defaultSettings} from "@modules/core/defaultSettings";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");
 const DIM_GRAY = createColorFormat("#696969");
+const RED = createColorFormat("#ff0000");
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
 
@@ -16,6 +17,9 @@ type Alias = { pattern: RegExp; callback: Function };
 export default function initInlineCompassRose(client: Client, aliases?: Alias[]) {
     let exits = new Set<string>();
     let specialExits: string[] = [];
+    let backDirs = new Set<string>(); // standard directions leading to previous location
+    let backSpecialExits = new Set<string>(); // special exits leading to previous location
+    let colorBackExits = false;
     let mode = 0; // 0=off, 1=inline, 2=box, 3=inline-ascii, 4=box-ascii
     let unsubscribeExits: (() => void) | undefined;
 
@@ -30,6 +34,30 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             client.sendCommand(dir);
         } else if (target.dataset.exit) {
             client.sendCommand(target.dataset.exit);
+        }
+    });
+
+    // Compute which exits lead back to the previous location
+    client.on("enterLocation", () => {
+        backDirs = new Set<string>();
+        backSpecialExits = new Set<string>();
+        const history = client.Map.locationHistory;
+        if (history.length < 2) return;
+        const prevId = history[history.length - 2];
+        const room = client.Map.currentRoom;
+        if (!room) return;
+        for (const [dir, id] of Object.entries(room.exits ?? {})) {
+            if (id === prevId) {
+                const short = getShortDir(dir);
+                if (VALID_SHORT_DIRS.has(short)) {
+                    backDirs.add(short);
+                }
+            }
+        }
+        for (const [exit, id] of Object.entries(room.specialExits ?? {})) {
+            if (id === prevId) {
+                backSpecialExits.add(exit);
+            }
         }
     });
 
@@ -49,22 +77,23 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         }
     };
 
-    function applySettingsValue(value: unknown) {
+    function applySettings(detail: any) {
         // Backward compat: boolean true → 1
+        let value = detail?.inlineCompassRose;
         if (value === true) value = 1;
         if (value === false) value = 0;
         setMode(typeof value === 'number' ? value : 0);
+        colorBackExits = !!detail?.compassBackExits;
     }
 
     // Load initial value from storage so the box shows before game login
     const initial = characterStorage.get('settings');
     if (initial) {
-        applySettingsValue(initial.inlineCompassRose);
+        applySettings(initial);
     }
 
     characterStorage.onChange('settings', (payload) => {
-        const detail = (payload ?? defaultSettings) as { inlineCompassRose?: number | boolean };
-        applySettingsValue(detail.inlineCompassRose);
+        applySettings(payload ?? defaultSettings);
     });
 
     function setMode(newMode: number) {
@@ -168,7 +197,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             return new AnsiAwareBuffer(" ".repeat(short.length));
         }
         const buffer = new AnsiAwareBuffer(short.toUpperCase());
-        buffer.color([0, buffer.length], SPRING_GREEN);
+        buffer.color([0, buffer.length], colorBackExits && backDirs.has(short) ? RED : SPRING_GREEN);
         return buffer;
     }
 
@@ -220,9 +249,10 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
                     }
 
                     if (exitIndex < specialExits.length) {
-                        const specialExit = specialExits[exitIndex].toUpperCase();
-                        const exitBuffer = new AnsiAwareBuffer(specialExit.padEnd(columnWidth));
-                        exitBuffer.color([0, specialExit.length], SPRING_GREEN);
+                        const specialExit = specialExits[exitIndex];
+                        const exitLabel = specialExit.toUpperCase();
+                        const exitBuffer = new AnsiAwareBuffer(exitLabel.padEnd(columnWidth));
+                        exitBuffer.color([0, exitLabel.length], colorBackExits && backSpecialExits.has(specialExit) ? RED : SPRING_GREEN);
                         lines[lineIdx].append("    ");
                         lines[lineIdx].appendBuffer(exitBuffer);
                         exitIndex++;
@@ -255,7 +285,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             return new AnsiAwareBuffer(" ");
         }
         const buffer = new AnsiAwareBuffer("O");
-        buffer.color([0, 1], SPRING_GREEN);
+        buffer.color([0, 1], colorBackExits && backDirs.has(short) ? RED : SPRING_GREEN);
         return buffer;
     }
 
@@ -295,9 +325,10 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
                     }
 
                     if (exitIndex < specialExits.length) {
-                        const specialExit = specialExits[exitIndex].toUpperCase();
-                        const exitBuffer = new AnsiAwareBuffer(specialExit.padEnd(columnWidth));
-                        exitBuffer.color([0, specialExit.length], SPRING_GREEN);
+                        const specialExit = specialExits[exitIndex];
+                        const exitLabel = specialExit.toUpperCase();
+                        const exitBuffer = new AnsiAwareBuffer(exitLabel.padEnd(columnWidth));
+                        exitBuffer.color([0, exitLabel.length], colorBackExits && backSpecialExits.has(specialExit) ? RED : SPRING_GREEN);
                         lines[lineIdx].append("    ");
                         lines[lineIdx].appendBuffer(exitBuffer);
                         exitIndex++;
@@ -344,6 +375,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
                 const active = hasExit(dir);
                 el.classList.toggle('active', active);
                 el.classList.toggle('cr-clickable', active);
+                el.classList.toggle('cr-back', colorBackExits && active && backDirs.has(dir));
             }
         });
 
@@ -353,7 +385,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             specialContainer.innerHTML = '';
             specialExits.forEach(exit => {
                 const span = document.createElement('span');
-                span.className = 'cr-special cr-clickable';
+                span.className = 'cr-special cr-clickable' + (colorBackExits && backSpecialExits.has(exit) ? ' cr-back' : '');
                 span.dataset.exit = exit;
                 span.textContent = exit.toUpperCase();
                 specialContainer.appendChild(span);
@@ -381,7 +413,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         pre.style.display = '';
 
         const o = (dir: string) => hasExit(dir)
-            ? `<span class="cr-clickable" data-dir="${dir}">O</span>`
+            ? `<span class="cr-clickable${colorBackExits && backDirs.has(dir) ? ' cr-back' : ''}" data-dir="${dir}">O</span>`
             : ' ';
         const c = (dir: string, ch: string) => hasExit(dir) ? ch : ' '.repeat(ch.length);
 
@@ -403,7 +435,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
             specialContainer.innerHTML = '';
             specialExits.forEach(exit => {
                 const span = document.createElement('span');
-                span.className = 'cr-special cr-clickable';
+                span.className = 'cr-special cr-clickable' + (colorBackExits && backSpecialExits.has(exit) ? ' cr-back' : '');
                 span.dataset.exit = exit;
                 span.textContent = exit.toUpperCase();
                 specialContainer.appendChild(span);

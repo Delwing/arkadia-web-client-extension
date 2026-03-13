@@ -9228,6 +9228,12 @@ body.mobile-command-radial-active {
   color: #696969;
 }
 
+.compass-rose-grid .cr-dir.cr-back,
+.compass-rose-ascii .cr-back,
+.compass-rose-special-exits .cr-back {
+  color: #ff0000;
+}
+
 /* Deposits Popup */
 .deposits-popup-body {
   display: flex;

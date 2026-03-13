@@ -15,6 +15,7 @@ export interface Settings {
     packageHelper: boolean;
     packageInContainer: boolean;
     inlineCompassRose: number;
+    compassBackExits: boolean;
     shortenExits: boolean;
     prettyContainers: boolean;
     containerColumns: number;
@@ -62,6 +63,7 @@ export const defaultSettings: Settings = {
     packageHelper: true,
     packageInContainer: false,
     inlineCompassRose: 0,
+    compassBackExits: false,
     shortenExits: false,
     prettyContainers: true,
     containerColumns: 2,
