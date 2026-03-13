@@ -8,7 +8,9 @@ export default defineConfig({
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? '100%' : undefined,
-    reporter: [['list'], ['html', { open: 'never' }]],
+    reporter: process.env.CI
+        ? [['blob'], ['junit', { outputFile: 'test-results/e2e-junit.xml' }]]
+        : [['list'], ['html', { open: 'never' }]],
     globalTimeout: 10 * 60 * 1000,
     use: {
         baseURL: `http://127.0.0.1:${PORT}`,
