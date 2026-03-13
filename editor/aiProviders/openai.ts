@@ -67,6 +67,23 @@ const tools = [
         required: ['topic']
       }
     }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_file',
+      description: 'Read the content of a plugin file. Use this to read files you need to understand or modify.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'The file path from the plugin files listing (e.g., "index.ts", "utils/helpers.ts")'
+          }
+        },
+        required: ['path']
+      }
+    }
   }
 ];
 
@@ -145,6 +162,21 @@ export async function callOpenAI(
               role: 'tool',
               tool_call_id: toolCall.id,
               content: docs
+            });
+          } else if (toolCall.function.name === 'get_file') {
+            const args = JSON.parse(toolCall.function.arguments);
+            const fileContent = request.context.pluginFiles?.[args.path];
+
+            onProgress?.({
+              type: 'tool_call',
+              message: `Reading file: "${args.path}"`,
+              step: continuationCount + 1
+            });
+
+            messages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: fileContent ?? `File not found: "${args.path}". Available files: ${Object.keys(request.context.pluginFiles || {}).join(', ')}`
             });
           }
         }
@@ -272,18 +304,21 @@ function buildPrompt(request: AgentRequest): string {
     prompt += `\n\nSelected text:\n\`\`\`\n${request.context.selectedText}\n\`\`\``;
   }
 
-  if (request.context.currentFile && request.context.currentFileContent) {
-    prompt += `\n\nCurrent file (${request.context.currentFile}):\n\`\`\`\n${request.context.currentFileContent}\n\`\`\``;
-  }
-
-  if (request.context.pluginFiles && Object.keys(request.context.pluginFiles).length > 0) {
-    prompt += '\n\nPlugin files:';
-    for (const [path, content] of Object.entries(request.context.pluginFiles)) {
-      prompt += `\n\n${path}:\n\`\`\`\n${content}\n\`\`\``;
+  if (request.context.cursorPosition) {
+    prompt += `\n\nCursor position: Line ${request.context.cursorPosition.line}, Column ${request.context.cursorPosition.column}`;
+    if (request.context.currentFile) {
+      prompt += ` in ${request.context.currentFile}`;
     }
   }
 
-  // Note: pluginApiDocs is no longer included here - AI will use get_api_docs tool instead
+  if (request.context.pluginFiles && Object.keys(request.context.pluginFiles).length > 0) {
+    const entries = Object.entries(request.context.pluginFiles);
+    prompt += `\n\nPlugin files (${entries.length} files):`;
+    for (const [path, content] of entries) {
+      prompt += `\n  - ${path} (${content.length} chars)`;
+    }
+    prompt += '\n\nUse the get_file tool to read file contents when needed.';
+  }
 
   return prompt;
 }

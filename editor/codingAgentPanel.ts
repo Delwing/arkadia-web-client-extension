@@ -733,10 +733,6 @@ export class CodingAgentPanel {
     const settings = getAgentSettings();
 
     // Build context info
-    const currentFileContent = context.currentFilePath && context.plugin.files[context.currentFilePath]
-      ? context.plugin.files[context.currentFilePath].content
-      : undefined;
-
     const pluginFiles = Object.fromEntries(
       Object.entries(context.plugin.files).map(([path, file]) => [path, file.content])
     );
@@ -748,8 +744,7 @@ export class CodingAgentPanel {
     let contextPreview = '';
 
     if (context.currentFilePath) {
-      contextPreview += `Current File: ${context.currentFilePath}\n`;
-      contextPreview += `File Content (${currentFileContent?.length || 0} chars):\n${currentFileContent ? currentFileContent.substring(0, 500) + (currentFileContent.length > 500 ? '...' : '') : 'N/A'}\n\n`;
+      contextPreview += `Current File: ${context.currentFilePath} (content available on-demand via get_file tool)\n\n`;
     }
 
     if (selectedText) {
@@ -760,13 +755,14 @@ export class CodingAgentPanel {
       contextPreview += `Cursor Position: Line ${cursorPosition.line}, Column ${cursorPosition.column}\n\n`;
     }
 
-    contextPreview += `Plugin Files (${Object.keys(pluginFiles).length} files):\n`;
-    let totalPluginSize = 0;
+    contextPreview += `Plugin Files (${Object.keys(pluginFiles).length} files) - listing only, content on-demand via get_file tool:\n`;
+    let pluginListingSize = 0;
     for (const [path, content] of Object.entries(pluginFiles)) {
-      totalPluginSize += content.length;
-      contextPreview += `  - ${path} (${content.length} chars)\n`;
+      const line = `  - ${path} (${content.length} chars)\n`;
+      pluginListingSize += line.length;
+      contextPreview += line;
     }
-    contextPreview += `Total Plugin Content: ${totalPluginSize} chars\n\n`;
+    contextPreview += `Listing size: ${pluginListingSize} chars (file contents fetched on-demand)\n\n`;
 
     contextPreview += `PluginApi Documentation: On-demand via get_api_docs tool\n`;
 
@@ -779,11 +775,10 @@ export class CodingAgentPanel {
       historyPreview += `[${msg.role}] ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}\n\n`;
     }
 
-    // Calculate total size (docs are now on-demand, not included upfront)
+    // Calculate total size (file contents and docs are on-demand, not included upfront)
     const totalChars = settings.systemPrompt.length + prompt.length +
-                      totalPluginSize +
+                      pluginListingSize +
                       totalHistorySize +
-                      (currentFileContent?.length || 0) +
                       (selectedText?.length || 0);
     const estimatedTokens = Math.ceil(totalChars / 4);
 
@@ -819,20 +814,17 @@ export class CodingAgentPanel {
       return;
     }
 
-    const currentFileContent = context.currentFilePath && context.plugin.files[context.currentFilePath]
-      ? context.plugin.files[context.currentFilePath].content
-      : '';
-
-    const pluginFilesSize = Object.values(context.plugin.files)
-      .reduce((sum, file) => sum + file.content.length, 0);
+    // File listing size (just names + sizes, not full content)
+    const pluginListingSize = Object.entries(context.plugin.files)
+      .reduce((sum, [path, file]) => sum + `  - ${path} (${file.content.length} chars)\n`.length, 0);
 
     const selectedText = this.getSelectedText(context.editor) || '';
     const historySize = this.messages.reduce((sum, msg) => sum + msg.content.length, 0);
 
-    // Docs are now on-demand via get_api_docs tool, not included upfront
+    // File contents and docs are on-demand via tools, not included upfront
     const totalChars = settings.systemPrompt.length + prompt.length +
-                      pluginFilesSize +
-                      historySize + currentFileContent.length + selectedText.length;
+                      pluginListingSize +
+                      historySize + selectedText.length;
 
     const estimatedTokens = Math.ceil(totalChars / 4);
 
