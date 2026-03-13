@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "serve:examples": "node examples/server.cjs"
   },

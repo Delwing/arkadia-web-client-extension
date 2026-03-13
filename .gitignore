@@ -10,5 +10,6 @@ vite.config.js
 package-lock.json
 playwright-report/
 test-results/
+coverage/
 .claude
 /data

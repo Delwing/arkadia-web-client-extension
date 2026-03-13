@@ -22,4 +22,8 @@ module.exports = {
     '^@web-ui/(.*)$': '<rootDir>/src/ui/web/$1',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
   },
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/main.ts',
+  ],
 }
