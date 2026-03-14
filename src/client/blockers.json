@@ -1,6 +1,6 @@
 [
   {
-    "pattern": "^[ >]*Jestes tak zmeczon(y|a), ze nie mozesz dalej podazac w tym kierunku\\.$",
+    "pattern": "^[ >]*Jestes tak zmeczon(y|a), ze nie mozesz (dalej podazac|isc) w tym kierunku\\.$",
     "type": "1"
   },
   {
