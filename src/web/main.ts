@@ -17,6 +17,7 @@ import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import initSessionLogger from "./sessionLogger";
+import initLogFileSaver from "./logFileSaver";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
@@ -65,6 +66,7 @@ import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./data
 import {CommandInputController} from "./commandInput/CommandInputController";
 
 initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
+initLogFileSaver(arkadiaClient).catch(err => console.error('File saver init failed', err));
 
 // Run migrations before initializing the client
 migrateNewlyCharacterScopedKeys();

@@ -65,6 +65,7 @@ export interface GlobalStorageSchema {
     scripts: string[];
     stored_scripts: string[];
     loggingEnabled: boolean;
+    logFileSaveEnabled: boolean;
     keymaps: KeymapStore;
     active_keymap_id: string;
     currentCharacter: string;
@@ -152,6 +153,7 @@ export const globalStorageKeys = [
     'scripts',
     'stored_scripts',
     'loggingEnabled',
+    'logFileSaveEnabled',
     'keymaps',
     'active_keymap_id',
     'currentCharacter',

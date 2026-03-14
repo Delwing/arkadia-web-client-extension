@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { globalStorage } from "@modules/core/storage";
 import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
+import { isFileSaveSupported, isFileSaveActive, enableFileSave, disableFileSave, getDirectoryName, onStatusChange } from "./logFileSaver";
 
 export interface LogEntry {
   text: string;
@@ -1037,6 +1038,9 @@ export function LogBrowser() {
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number; sessionName: string } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
+  const [fileSaveEnabled, setFileSaveEnabled] = useState(isFileSaveActive());
+  const [fileSaveDirName, setFileSaveDirName] = useState(getDirectoryName());
+
   const dbRef = useRef<IDBDatabase | null>(null);
   const exportWorkerRef = useRef<Worker | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
@@ -1048,6 +1052,28 @@ export function LogBrowser() {
     estimateSize: () => 20,
     overscan: 50,
   });
+
+  // Listen to file saver status changes
+  useEffect(() => {
+    return onStatusChange((active, dirName) => {
+      setFileSaveEnabled(active);
+      setFileSaveDirName(dirName);
+    });
+  }, []);
+
+  const handleFileSaveToggle = useCallback(async (enabled: boolean) => {
+    if (enabled) {
+      const result = await enableFileSave();
+      if (result) {
+        setFileSaveEnabled(true);
+        setFileSaveDirName(result.dirName);
+      }
+    } else {
+      disableFileSave();
+      setFileSaveEnabled(false);
+      setFileSaveDirName(null);
+    }
+  }, []);
 
   // Listen to modal events (modal is created in initLogBrowser, not here)
   useEffect(() => {
@@ -1638,6 +1664,24 @@ export function LogBrowser() {
           />
           <label className="form-check-label" htmlFor="logs-enabled">Zapisuj logi</label>
         </div>
+
+        {isFileSaveSupported() && (
+          <div className="d-flex align-items-center gap-2">
+            <div className="form-check form-switch mb-0">
+              <input
+                id="logs-file-save"
+                className="form-check-input"
+                type="checkbox"
+                checked={fileSaveEnabled}
+                onChange={(e) => handleFileSaveToggle(e.target.checked)}
+              />
+              <label className="form-check-label" htmlFor="logs-file-save">Zapisuj na dysk</label>
+            </div>
+            {fileSaveEnabled && fileSaveDirName && (
+              <span className="text-muted small">Folder: {fileSaveDirName}</span>
+            )}
+          </div>
+        )}
 
         <div className="d-flex gap-2">
           <select
