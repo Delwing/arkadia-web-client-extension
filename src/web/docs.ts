@@ -1,4 +1,4 @@
-import { marked } from "marked";
+import { marked, type MarkedExtension } from "marked";
 import Modal from "bootstrap/js/dist/modal";
 import overviewMd from "../../docs/OVERVIEW.md?raw";
 import combatMd from "../../docs/COMBAT.md?raw";
@@ -11,6 +11,26 @@ import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
 import aliasesMd from "../../docs/ALIASES.md?raw";
 import synchronizacjaMd from "../../docs/SYNCHRONIZACJA.md?raw";
 import { objectListDocHtml, objectListDocInit } from "./objectListDoc";
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/<[^>]*>/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .trim();
+}
+
+const renderer: MarkedExtension = {
+  renderer: {
+    heading({ text, depth }) {
+      const id = slugify(text);
+      return `<h${depth} id="${id}">${text}</h${depth}>\n`;
+    },
+  },
+};
+
+marked.use(renderer);
 
 interface DocDef {
   key: string;
@@ -139,6 +159,18 @@ function initDocs() {
   ) as HTMLElement[];
 
   let currentDoc = docs[0].key;
+
+  content.addEventListener("click", (e) => {
+    const link = (e.target as HTMLElement).closest("a");
+    if (!link) return;
+    const href = link.getAttribute("href");
+    if (!href || !href.startsWith("#")) return;
+    e.preventDefault();
+    const target = content.querySelector(href);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth" });
+    }
+  });
 
   async function showDoc(key: string, clearSearch = true) {
     const doc = docs.find((d) => d.key === key);
