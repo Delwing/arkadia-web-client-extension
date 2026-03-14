@@ -15,6 +15,9 @@ import {
 // Custom fixture that doesn't include GitHub mocks by default
 const test = base.extend({
     context: async ({context}, use) => {
+        // Block Google Analytics network requests
+        await context.route(/googletagmanager\.com|google-analytics\.com/, route => route.abort());
+
         // Disable Google Analytics and Firebase in tests
         await context.addInitScript(() => {
             // @ts-expect-error for disabling GA
