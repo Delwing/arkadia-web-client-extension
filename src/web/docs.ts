@@ -9,6 +9,7 @@ import herbsMd from "../../docs/HERBS.md?raw";
 import bindsMd from "../../docs/BINDS.md?raw";
 import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
 import aliasesMd from "../../docs/ALIASES.md?raw";
+import synchronizacjaMd from "../../docs/SYNCHRONIZACJA.md?raw";
 import { objectListDocHtml, objectListDocInit } from "./objectListDoc";
 
 interface DocDef {
@@ -28,7 +29,8 @@ const docs: DocDef[] = [
   { key: "herbs", title: "Ziola", md: herbsMd },
   { key: "binds", title: "Bindowanie", md: bindsMd },
   { key: "shortcuts", title: "Skroty lokacji", md: shortcutsMd },
-  { key: "aliases", title: "Inne", md: aliasesMd }
+  { key: "aliases", title: "Inne", md: aliasesMd },
+  { key: "sync", title: "Synchronizacja", md: synchronizacjaMd }
 ];
 
 interface SearchResult {
