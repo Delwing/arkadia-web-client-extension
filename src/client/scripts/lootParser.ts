@@ -23,6 +23,44 @@ export function setLootPopupMode(enabled: boolean) {
     popupMode = enabled;
 }
 
+export type GroundItem = {
+    name: string;
+    color?: string;
+};
+
+// Room contents state parsed from room.contents.object GMCP messages
+export interface RoomContentsState {
+    bodies: number;
+    sterta: number;
+    groundItems: GroundItem[];
+}
+
+let roomContents: RoomContentsState = { bodies: 0, sterta: 0, groundItems: [] };
+
+export function getRoomContents(): Readonly<RoomContentsState> {
+    return roomContents;
+}
+
+function parseRoomContentsObject(text: string) {
+    const parts = splitRawParts(text);
+    let bodies = 0;
+    let sterta = 0;
+    const groundItems: GroundItem[] = [];
+    for (const part of parts) {
+        const lower = part.toLowerCase();
+        if (lower.startsWith('cialo ')) {
+            bodies++;
+        } else if (lower.startsWith('sterta szczatkow')) {
+            sterta++;
+        } else {
+            // First item in the list is Titlecased by the MUD, normalize to lowercase
+            const name = part[0].toLowerCase() + part.slice(1);
+            groundItems.push({ name, color: getItemCssColor(name) });
+        }
+    }
+    roomContents = { bodies, sterta, groundItems };
+}
+
 // Per-body special item extras (bodyIndex → fullName[])
 // bodyIndex matches the `N. ciala` numbering used by itemCollector
 const bodyExtras = new Map<number | null, string[]>();
@@ -184,10 +222,24 @@ export default function initLootParser(client: Client) {
         tag,
     );
 
+    // Parse room.contents.object to track bodies, sterta, and ground items
+    client.Triggers.registerTrigger(
+        (_line, _matches, type) => type === 'room.contents.object' ? ([] as unknown as RegExpMatchArray) : undefined,
+        (line) => {
+            const text = line instanceof AnsiAwareBuffer ? line.text : String(line);
+            if (text.trim()) {
+                parseRoomContentsObject(text);
+            }
+            return line;
+        },
+        tag,
+    );
+
     client.on('enterLocation', () => {
         popupMode = false;
         bodyExtras.clear();
         stertyCounter = 0;
+        roomContents = { bodies: 0, sterta: 0, groundItems: [] };
         client.sendEvent('loot.cleared');
     });
 

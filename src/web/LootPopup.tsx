@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import type { LootPopupPayload, LootItem } from '@client/scripts/lootParser';
+import type { LootPopupPayload, LootItem, GroundItem } from '@client/scripts/lootParser';
 
 interface BodyEntry {
     description: string;
@@ -27,6 +27,7 @@ const POPUP_ID = 'popup:loot';
 
 const LootPopup: React.FC = () => {
     const [bodies, setBodies] = useState<BodyEntry[]>([]);
+    const [groundItems, setGroundItems] = useState<GroundItem[]>([]);
 
     const handleOpen = useCallback((data: LootPopupPayload) => {
         setBodies(prev => {
@@ -40,7 +41,7 @@ const LootPopup: React.FC = () => {
         });
     }, []);
 
-    const { wrapperProps, close, isOpen } = usePopup<'loot.popup.open'>(POPUP_ID, {
+    const { wrapperProps, close, open, isOpen } = usePopup<'loot.popup.open'>(POPUP_ID, {
         openEvent: 'loot.popup.open',
         onOpen: handleOpen,
     });
@@ -53,10 +54,19 @@ const LootPopup: React.FC = () => {
         wasOpenRef.current = isOpen;
     }, [isOpen]);
 
+    // Listen for ground items and open popup
+    useEffect(() => {
+        return eventBus.on('loot.ground.open', (data) => {
+            setGroundItems(data.items);
+            open();
+        });
+    }, [open]);
+
     // Clear all loot data on room change
     useEffect(() => {
         return eventBus.on('loot.cleared', () => {
             setBodies([]);
+            setGroundItems([]);
             close();
         });
     }, [close]);
@@ -103,6 +113,18 @@ const LootPopup: React.FC = () => {
         });
     }, [bodies]);
 
+    // Ground item click handler - hidden for now
+    // const handleGroundItemClick = useCallback((itemIndex: number) => {
+    //     const item = groundItems[itemIndex];
+    //     if (item == null) return;
+    //     eventBus.emit('sendCommand', { command: `wez ${item.name}` });
+    //     setGroundItems(prev => {
+    //         const updated = [...prev];
+    //         updated.splice(itemIndex, 1);
+    //         return updated;
+    //     });
+    // }, [groundItems]);
+
     return (
         <DockablePopupWrapper
             {...wrapperProps}
@@ -116,7 +138,7 @@ const LootPopup: React.FC = () => {
             bodyClassName="loot-popup-body"
         >
             <div className="loot-popup__content">
-                {bodies.length === 0 ? (
+                {bodies.length === 0 && groundItems.length === 0 ? (
                     <div className="loot-popup__empty">Brak przedmiotow.</div>
                 ) : (
                     <>
@@ -165,6 +187,27 @@ const LootPopup: React.FC = () => {
                                 </div>
                             );
                         })}
+                        {/* Ground items section - hidden for now
+                        {groundItems.length > 0 && (
+                            <div className="loot-popup__section loot-popup__section--ground">
+                                <div className="loot-popup__section-header loot-popup__section-header--ground">Na ziemi</div>
+                                <div className="loot-popup__items">
+                                    {groundItems.map((item, itemIndex) => (
+                                        <button
+                                            key={`ground-${itemIndex}-${item.name}`}
+                                            type="button"
+                                            className="loot-popup__item"
+                                            onClick={() => handleGroundItemClick(itemIndex)}
+                                            title={`wez ${item.name}`}
+                                            style={item.color ? { color: item.color } : undefined}
+                                        >
+                                            {item.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        */}
                     </>
                 )}
             </div>

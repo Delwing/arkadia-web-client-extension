@@ -9,7 +9,7 @@ import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
-import type {LootPopupPayload} from "@client/scripts/lootParser.ts";
+import type {LootPopupPayload, GroundItem} from "@client/scripts/lootParser.ts";
 import type {SyncCategory, CategoryConflictInfo} from "@modules/firebase/firebaseTypes";
 import type {GmcpCharInfo, GmcpCharState, GmcpCharOptions, GmcpCharColors, GmcpRoomInfo, GmcpRoomTime, GmcpMsgType} from "./gmcpTypes";
 
@@ -310,6 +310,7 @@ export interface KnownEvents {
     "loot.popup.open": LootPopupPayload;
     "loot.popup.closed": void;
     "loot.cleared": void;
+    "loot.ground.open": { items: GroundItem[] };
     "profession.popup.open": void;
     "profession.updated": void;
     "sunTracker.popup.open": void;
