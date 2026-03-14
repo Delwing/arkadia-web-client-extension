@@ -280,10 +280,6 @@
     "type": "2"
   },
   {
-    "pattern": "nie pozwoli ci zblizyc sie do drzwi.",
-    "type": "0"
-  },
-  {
     "pattern": "do ciebie: Nikt z bronia nie wejdzie na teren Uniwersytetu. Prosze zostawic ja na stojaku.",
     "type": "0"
   },
@@ -677,10 +673,6 @@
   },
   {
     "pattern": "Nie mozesz sie tam udac, gdyz musisz najpierw zejsc z wozu",
-    "type": "2"
-  },
-  {
-    "pattern": "Nie ma takiej komendy. Wpisz",
     "type": "2"
   },
   {
