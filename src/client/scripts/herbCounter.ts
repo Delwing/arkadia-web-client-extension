@@ -671,8 +671,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
         aliases.push({pattern: /^\/zi (\w+) (\w+)$/, callback: useHerb});
         aliases.push({pattern: /^\/zi (\w+) (\w+) (\d+)$/, callback: useHerbAmount});
-        aliases.push({pattern: /^\/z_(\w+) (\w+)$/, callback: useHerb});
-        aliases.push({pattern: /^\/z_(\w+) (\w+) (\d+)$/, callback: useHerbAmount});
+        aliases.push({pattern: /^\/z_(?!id\b)(\w+) (\w+)$/, callback: useHerb});
+        aliases.push({pattern: /^\/z_(?!id\b)(\w+) (\w+) (\d+)$/, callback: useHerbAmount});
 
         aliases.push({
             pattern: /^\/ziola_przepakuj ([0-9]+) ([0-9]+)$/,
