@@ -176,6 +176,18 @@ const KnowledgeDetailsReport: React.FC = () => {
     }
   }, [showHints, hideCompleted]);
 
+  // Sync hideCompleted when changed externally (e.g. from map dropdown)
+  useEffect(() => {
+    const handler = (detail: unknown) => {
+      const payload = detail as { enabled: boolean; hideCompleted: boolean } | undefined;
+      if (payload) {
+        setHideCompleted(payload.hideCompleted);
+      }
+    };
+    eventBus.on('knowledgeHints', handler);
+    return () => { eventBus.off('knowledgeHints', handler); };
+  }, [setHideCompleted]);
+
   const handleBuildKnowledge = useCallback(() => {
     eventBus.emit('sendCommand', { command: '/wiedza_buduj' });
   }, []);

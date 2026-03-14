@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
+import { getPopupSetting, setPopupSetting } from '../../layout/utils/layoutStorage';
 
 interface MapHeaderMenuProps {
   className?: string;
@@ -22,6 +23,12 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [labelVisible, setLabelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
   const [alwaysShowNote, setAlwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
   const [showGrid, setShowGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
+  const [hintsEnabled, setHintsEnabled] = useState(() =>
+    getPopupSetting('popup:knowledgeDetails', 'showHints', false)
+  );
+  const [showCompleted, setShowCompleted] = useState(() =>
+    !getPopupSetting('popup:knowledgeDetails', 'hideCompleted', false)
+  );
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -46,14 +53,27 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     eventBus.emit('mapShowGrid', showGrid);
   }, [showGrid, getEmbedded]);
 
+  // Keep hintsEnabled and showCompleted in sync with KnowledgeDetailsReport
+  useEffect(() => {
+    const handler = (detail: unknown) => {
+      const payload = detail as { enabled: boolean; hideCompleted: boolean } | undefined;
+      setHintsEnabled(payload?.enabled ?? false);
+      if (payload) {
+        setShowCompleted(!payload.hideCompleted);
+      }
+    };
+    eventBus.on('knowledgeHints', handler);
+    return () => { eventBus.off('knowledgeHints', handler); };
+  }, []);
+
   const calculateDropdownPosition = useCallback(() => {
     if (toggleRef.current) {
       const rect = toggleRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       // Calculate available space below the button with some padding
       const availableSpace = viewportHeight - rect.bottom - 16;
-      // Ensure at least some minimum height (100px) and cap at 300px
-      const maxHeight = Math.max(100, Math.min(300, availableSpace));
+      // Ensure at least some minimum height (100px) and cap at 360px
+      const maxHeight = Math.max(100, Math.min(360, availableSpace));
       setDropdownStyle({
         position: 'fixed',
         top: rect.bottom + 4,
@@ -250,6 +270,15 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     setShowGrid((prev) => !prev);
     closeMenu();
   }, [setShowGrid, closeMenu]);
+
+  const handleToggleShowCompleted = useCallback(() => {
+    const newShowCompleted = !showCompleted;
+    setShowCompleted(newShowCompleted);
+    const hideCompleted = !newShowCompleted;
+    setPopupSetting('popup:knowledgeDetails', 'hideCompleted', hideCompleted);
+    eventBus.emit('knowledgeHints', { enabled: true, hideCompleted });
+    closeMenu();
+  }, [showCompleted, closeMenu]);
 
   const handleCopyAsImage = useCallback(async () => {
     const mapContainer = document.getElementById('map');
@@ -448,6 +477,16 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
                 <span className={`map-header-menu__checkbox${showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
                 Siatka
               </button>
+              {hintsEnabled && (
+                <button
+                  type="button"
+                  className="map-header-menu__item map-header-menu__item--checkbox"
+                  onClick={handleToggleShowCompleted}
+                >
+                  <span className={`map-header-menu__checkbox${showCompleted ? ' map-header-menu__checkbox--checked' : ''}`} />
+                  Wiedza: pokaz ukonczone
+                </button>
+              )}
             </>
           )}
         </div>
