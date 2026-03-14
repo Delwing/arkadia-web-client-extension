@@ -6,6 +6,8 @@ const ESC = "\u001b";
 export interface FormatHyperlink {
     onClick?: (ev: MouseEvent) => void;
     onContextMenu?: (ev: MouseEvent) => void;  // right click
+    onMouseEnter?: (ev: MouseEvent) => void;
+    onMouseLeave?: (ev: MouseEvent) => void;
     title?: string;
 }
 
@@ -905,6 +907,18 @@ export class AnsiAwareBuffer {
                         state.hyperlink!.onContextMenu!(e);
                     });
                 }
+
+                if (state.hyperlink.onMouseEnter) {
+                    element.addEventListener('mouseenter', (e) => {
+                        state.hyperlink!.onMouseEnter!(e);
+                    });
+                }
+
+                if (state.hyperlink.onMouseLeave) {
+                    element.addEventListener('mouseleave', (e) => {
+                        state.hyperlink!.onMouseLeave!(e);
+                    });
+                }
             }
 
             // Apply dim effect CSS custom properties
@@ -1228,6 +1242,8 @@ export class AnsiAwareBuffer {
         options: {
             onClick?: (ev: MouseEvent) => void;
             onContextMenu?: (ev: MouseEvent) => void;
+            onMouseEnter?: (ev: MouseEvent) => void;
+            onMouseLeave?: (ev: MouseEvent) => void;
             title?: string;
         }
     ): this {
@@ -1239,6 +1255,8 @@ export class AnsiAwareBuffer {
         const hyperlink: FormatHyperlink = {
             onClick: options.onClick,
             onContextMenu: options.onContextMenu,
+            onMouseEnter: options.onMouseEnter,
+            onMouseLeave: options.onMouseLeave,
             title: options.title,
         };
 
@@ -1267,6 +1285,8 @@ export class AnsiAwareBuffer {
         options: {
             onClick?: (ev: MouseEvent) => void;
             onContextMenu?: (ev: MouseEvent) => void;
+            onMouseEnter?: (ev: MouseEvent) => void;
+            onMouseLeave?: (ev: MouseEvent) => void;
             title?: string;
         },
         searchOptions: { caseInsensitive?: boolean } = {}

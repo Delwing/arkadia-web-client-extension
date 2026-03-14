@@ -5628,6 +5628,50 @@ body.mobile-command-radial-active {
   word-break: break-word;
 }
 
+.hover-tooltip {
+  position: absolute;
+  display: none;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  z-index: 1050;
+  max-width: 400px;
+  font-size: 0.75rem;
+  color: #ddd;
+  pointer-events: none;
+}
+
+.hover-tooltip.show {
+  display: block;
+}
+
+.hover-tooltip__header {
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.hover-tooltip__entry {
+  display: flex;
+  gap: 0.3rem;
+  align-items: baseline;
+}
+
+.hover-tooltip__entry + .hover-tooltip__entry {
+  margin-top: 0.15rem;
+}
+
+.hover-tooltip__label {
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hover-tooltip__content {
+  word-break: break-word;
+}
+
 /* ANSI blink animations */
 /* Slow blink: < 150 per minute (1 blink per second) */
 @keyframes ansi-slow-blink {

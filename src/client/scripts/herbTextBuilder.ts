@@ -2,6 +2,7 @@ import type { HerbBagsState } from "../types/herbs";
 import type { HerbsData, HerbUse } from "./herbsLoader";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import { createColorFormat, mudletColorLine } from "@modules/core/Colors";
+import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
 
 const WHITE = createColorFormat('#ffffff');
 
@@ -106,6 +107,12 @@ export function buildHerbTextBuffer(
                 onContextMenu: (ev) => {
                     ev.preventDefault();
                     onHerbContextMenu(row.herbId, ev);
+                },
+                onMouseEnter: (ev) => {
+                    showHerbTooltip(row.herbId, row.actions, ev.pageX, ev.pageY);
+                },
+                onMouseLeave: () => {
+                    hideHerbTooltip();
                 },
                 title: `Prawy klik dla opcji: ${row.herbId}`
             });
