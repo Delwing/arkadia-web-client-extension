@@ -2,10 +2,13 @@ import { globalStorage } from "@modules/core/storage";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import type { CombatEntry } from "@client/scripts/combatWindow";
+import { currentSessionName } from "./sessionLogger";
+import { formatSessionFileName } from "./logBrowserUtils";
 
 const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?}|\{clickClose}/g;
 const FLUSH_INTERVAL_MS = 3000;
 const DIR_HANDLE_STORE = "fileSaveDir";
+const SAVED_TO_DISK_STORE = "savedToDisk";
 
 type StatusCallback = (active: boolean, dirName: string | null) => void;
 
@@ -17,6 +20,7 @@ let flushTimer: number | null = null;
 let active = false;
 let pendingResume = false;
 let headerWritten = false;
+let sessionMarked = false;
 let statusListeners: StatusCallback[] = [];
 let stylesCollected = false;
 let cachedStyles = "";
@@ -77,6 +81,12 @@ interface SessionClient {
 
 export default async function initLogFileSaver(client: SessionClient) {
     if (!isFileSaveSupported()) return;
+
+    // Ensure meta DB is upgraded to latest version early
+    try {
+        const db = await openMetaDb();
+        db.close();
+    } catch { /* ignore */ }
 
     // Listen to client messages
     client.on("message", (text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
@@ -173,6 +183,7 @@ function notifyListeners() {
 async function startSaving() {
     active = true;
     headerWritten = false;
+    sessionMarked = false;
     fileHandle = null;
     fileOffset = 0;
     buffer = [];
@@ -208,17 +219,6 @@ function formatDateTime(ts: number): string {
     const s = String(d.getSeconds()).padStart(2, "0");
     const ms = String(d.getMilliseconds()).padStart(3, "0");
     return `${y}-${mo}-${da} ${h}:${m}:${s}.${ms}`;
-}
-
-function formatFileTimestamp(ts: number): string {
-    const d = new Date(ts);
-    const y = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
-    const s = String(d.getSeconds()).padStart(2, "0");
-    return `${y}-${mo}-${da}_${h}-${m}-${s}`;
 }
 
 function splitLines(html: string): string[] {
@@ -306,7 +306,7 @@ async function ensureFile(): Promise<boolean> {
     if (!dirHandle) return false;
 
     if (!fileHandle) {
-        const fileName = `logi_${formatFileTimestamp(Date.now())}.html`;
+        const fileName = `${formatSessionFileName(currentSessionName)}.html`;
         try {
             fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
         } catch (err) {
@@ -351,6 +351,11 @@ async function flush() {
         await writable.write(content);
         await writable.close();
         fileOffset += new Blob([content]).size;
+
+        if (!sessionMarked) {
+            sessionMarked = true;
+            markSessionSavedToDisk(currentSessionName);
+        }
     } catch (err) {
         console.error("[LogFileSaver] Failed to write entries:", err);
         // Put entries back in buffer for retry
@@ -381,7 +386,7 @@ function flushSync() {
 
 function openMetaDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open("ArkadiaLogsMetaDB", 2);
+        const req = indexedDB.open("ArkadiaLogsMetaDB", 3);
         req.onupgradeneeded = () => {
             const db = req.result;
             if (!db.objectStoreNames.contains("downloaded")) {
@@ -389,6 +394,9 @@ function openMetaDb(): Promise<IDBDatabase> {
             }
             if (!db.objectStoreNames.contains(DIR_HANDLE_STORE)) {
                 db.createObjectStore(DIR_HANDLE_STORE);
+            }
+            if (!db.objectStoreNames.contains(SAVED_TO_DISK_STORE)) {
+                db.createObjectStore(SAVED_TO_DISK_STORE);
             }
         };
         req.onsuccess = () => resolve(req.result);
@@ -423,5 +431,34 @@ async function loadDirHandle(): Promise<FileSystemDirectoryHandle | null> {
         });
     } catch {
         return null;
+    }
+}
+
+async function markSessionSavedToDisk(sessionName: string): Promise<void> {
+    try {
+        const db = await openMetaDb();
+        return new Promise((resolve) => {
+            const tx = db.transaction(SAVED_TO_DISK_STORE, "readwrite");
+            tx.objectStore(SAVED_TO_DISK_STORE).put({ savedAt: Date.now() }, sessionName);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => { db.close(); console.error("[LogFileSaver] Failed to mark session:", tx.error); resolve(); };
+        });
+    } catch (err) {
+        console.error("[LogFileSaver] Failed to mark session saved to disk:", err);
+    }
+}
+
+export async function getSavedToDiskSessions(): Promise<Set<string>> {
+    try {
+        const db = await openMetaDb();
+        return new Promise((resolve) => {
+            const tx = db.transaction(SAVED_TO_DISK_STORE, "readonly");
+            const req = tx.objectStore(SAVED_TO_DISK_STORE).getAllKeys();
+            req.onsuccess = () => resolve(new Set(req.result as string[]));
+            req.onerror = () => resolve(new Set());
+            tx.oncomplete = () => db.close();
+        });
+    } catch {
+        return new Set();
     }
 }

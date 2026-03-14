@@ -7,10 +7,10 @@ import {
   getSessionData,
   flattenLogGroups,
   parseSearchQuery,
-  LogLine,
   type SessionInfo,
   type FlatLogLine,
-} from "../src/web/LogBrowser";
+} from "../src/web/logBrowserUtils";
+import { LogLine } from "../src/web/LogBrowser";
 
 export default function LogViewerApp() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);

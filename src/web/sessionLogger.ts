@@ -5,16 +5,11 @@ import type { CombatEntry } from "@client/scripts/combatWindow";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
+export { storeName as currentSessionName };
 const CLICK_TAG_REG = /\{clickOpen:\d+(?::[^}]+)?}|\{clickClose}/g;
 
 function clearDownloadedFlag() {
-  const req = indexedDB.open("ArkadiaLogsMetaDB", 1);
-  req.onupgradeneeded = () => {
-    const db = req.result;
-    if (!db.objectStoreNames.contains("downloaded")) {
-      db.createObjectStore("downloaded");
-    }
-  };
+  const req = indexedDB.open("ArkadiaLogsMetaDB");
   req.onsuccess = () => {
     const db = req.result;
     if (db.objectStoreNames.contains("downloaded")) {
