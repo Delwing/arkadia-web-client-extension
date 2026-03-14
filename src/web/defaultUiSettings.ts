@@ -80,6 +80,8 @@ export interface UiSettings {
     drinkableAsFunctionalBind: boolean;
     objectListBackgroundColor: string;
     objectListBackgroundAlpha: number;
+    alwaysVisibleBars: string[];
+    barOrder: string[];
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -129,4 +131,6 @@ export const defaultUiSettings: UiSettings = {
     drinkableAsFunctionalBind: true,
     objectListBackgroundColor: '#000000',
     objectListBackgroundAlpha: 0.4,
+    alwaysVisibleBars: [],
+    barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
 };

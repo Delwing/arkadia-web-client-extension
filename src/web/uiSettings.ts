@@ -528,6 +528,8 @@ export default async function initUiSettings() {
     const showButtonsInput = modalEl.querySelector('#ui-show-buttons') as HTMLInputElement;
     const hapticFeedbackInput = modalEl.querySelector('#ui-haptic-feedback') as HTMLInputElement;
     const emojiLabelsInput = modalEl.querySelector('#ui-emoji-labels') as HTMLInputElement;
+    let barOrderConfig: string[] = [];
+    let alwaysVisibleBarsConfig: string[] = [];
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
@@ -886,10 +888,14 @@ export default async function initUiSettings() {
         renderObjectContextMenuCommands();
         footerComponentsConfig = [...settings.footerComponents];
         renderFooterComponentSettings();
+        barOrderConfig = [...(settings.barOrder || defaultUiSettings.barOrder)];
+        alwaysVisibleBarsConfig = [...(settings.alwaysVisibleBars || [])];
+        renderBarOrderSettings();
     };
 
-    // Will be defined later after the component is set up
+    // Will be defined later after the components are set up
     let renderFooterComponentSettings = () => {};
+    let renderBarOrderSettings = () => {};
 
     populateFormInputs(current);
 
@@ -1276,6 +1282,27 @@ export default async function initUiSettings() {
         customBeepFileInput.addEventListener('change', handleCustomBeepFileChange);
     }
 
+    // Mount Bar Order Settings React component
+    const barOrderContainer = modalEl.querySelector('#ui-bar-order-settings') as HTMLElement | null;
+    let barOrderRoot: Root | null = null;
+    renderBarOrderSettings = () => {
+        if (!barOrderContainer) return;
+        import("./options/BarOrderSettings").then(({ default: BarOrderSettings }) => {
+            if (!barOrderRoot) {
+                barOrderRoot = createRoot(barOrderContainer);
+            }
+            barOrderRoot.render(createElement(BarOrderSettings, {
+                barOrder: barOrderConfig,
+                alwaysVisibleBars: alwaysVisibleBarsConfig,
+                onChange: (newOrder: string[], newAlwaysVisible: string[]) => {
+                    barOrderConfig = newOrder;
+                    alwaysVisibleBarsConfig = newAlwaysVisible;
+                },
+            }));
+        });
+    };
+    renderBarOrderSettings();
+
     globalStorage.onChange('uiSettings', (newValue) => {
         if (newValue) {
             current = load();
@@ -1375,6 +1402,8 @@ export default async function initUiSettings() {
                 const v = parseFloat(objectListBgAlphaInput.value);
                 return !isNaN(v) && v >= 0 && v <= 1 ? v : defaultUiSettings.objectListBackgroundAlpha;
             })(),
+            alwaysVisibleBars: [...alwaysVisibleBarsConfig],
+            barOrder: [...barOrderConfig],
         };
     }
 

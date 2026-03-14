@@ -78,6 +78,8 @@ export default class CharState {
   private state: Partial<CharStateData> = {};
   private options: { form?: number } = {};
   private mode = 0;
+  private alwaysVisibleBars: string[] = [];
+  private barOrder: (keyof CharStateData)[] = Object.keys(DEFAULT_CONFIG) as (keyof CharStateData)[];
   private labelElements: Record<keyof CharStateData, HTMLSpanElement> =
     {} as any;
 
@@ -123,6 +125,14 @@ export default class CharState {
         const attr = this.container!.getAttribute(`data-label-${key}`);
         if (attr) this.config[key].label = attr;
       });
+    }
+
+    const storedSettings = globalStorage.get('uiSettings');
+    if (storedSettings && Array.isArray(storedSettings.alwaysVisibleBars)) {
+      this.alwaysVisibleBars = storedSettings.alwaysVisibleBars;
+    }
+    if (storedSettings && Array.isArray(storedSettings.barOrder) && storedSettings.barOrder.length > 0) {
+      this.barOrder = storedSettings.barOrder as (keyof CharStateData)[];
     }
 
     if (this.text) {
@@ -175,6 +185,14 @@ export default class CharState {
       if (detail && typeof detail.footerMode === 'number') {
         this.applyMode(detail.footerMode);
       }
+      if (detail && Array.isArray(detail.alwaysVisibleBars)) {
+        this.alwaysVisibleBars = detail.alwaysVisibleBars;
+        this.update({});
+      }
+      if (detail && Array.isArray(detail.barOrder) && detail.barOrder.length > 0) {
+        this.barOrder = detail.barOrder as (keyof CharStateData)[];
+        this.update({});
+      }
     });
 
     this.client.on(
@@ -193,7 +211,8 @@ export default class CharState {
 
     this.state = { ...this.state, ...partialState };
 
-    const entries = (Object.keys(this.config) as (keyof CharStateData)[])
+    const entries = this.barOrder
+      .filter((key) => this.config[key])
       .filter((key) => {
         if (
           key === 'form' &&
@@ -202,10 +221,11 @@ export default class CharState {
         ) {
           return false;
         }
+        if (this.state[key] === undefined) return false;
+        if (this.alwaysVisibleBars.includes(key)) return true;
         return (
-          this.state[key] !== undefined &&
-          (this.config[key].default === undefined ||
-            this.state[key] !== this.config[key].default)
+          this.config[key].default === undefined ||
+          this.state[key] !== this.config[key].default
         );
       });
 

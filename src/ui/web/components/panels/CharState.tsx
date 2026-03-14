@@ -96,6 +96,12 @@ export const CharState: React.FC = () => {
   const [useEmoji, setUseEmoji] = useState(() => {
     return uiSettings.emojiLabels || false;
   });
+  const [alwaysVisibleBarsState, setAlwaysVisibleBarsState] = useState<string[]>(() => {
+    return uiSettings.alwaysVisibleBars || [];
+  });
+  const [barOrderState, setBarOrderState] = useState<string[]>(() => {
+    return (uiSettings.barOrder && uiSettings.barOrder.length > 0) ? uiSettings.barOrder : [];
+  });
   const [config, setConfig] = useState<Record<keyof CharStateData, CharStateConfig>>(
       { ...DEFAULT_CONFIG }
   );
@@ -136,6 +142,12 @@ export const CharState: React.FC = () => {
       if (detail && typeof detail.footerMode === "number") {
         setMode(detail.footerMode);
       }
+      if (detail && Array.isArray(detail.alwaysVisibleBars)) {
+        setAlwaysVisibleBarsState(detail.alwaysVisibleBars);
+      }
+      if (detail && Array.isArray(detail.barOrder) && detail.barOrder.length > 0) {
+        setBarOrderState(detail.barOrder);
+      }
     });
   }, []);
 
@@ -152,14 +164,21 @@ export const CharState: React.FC = () => {
     }
   }, [mode, textContainer, barsContainer]);
 
+  const alwaysVisibleBars: string[] = alwaysVisibleBarsState;
+  const defaultOrder = Object.keys(DEFAULT_CONFIG) as (keyof CharStateData)[];
+  const barOrder: (keyof CharStateData)[] = barOrderState.length > 0
+      ? barOrderState as (keyof CharStateData)[]
+      : defaultOrder;
+
   // Filter entries that should be displayed
-  const visibleEntries = (Object.keys(config) as (keyof CharStateData)[]).filter((key) => {
+  const visibleEntries = barOrder.filter((key) => !!(config as any)[key]).filter((key) => {
     if (key === "form" && state[key] === 0 && options.form === 0) {
       return false;
     }
+    if (state[key] === undefined) return false;
+    if (alwaysVisibleBars.includes(key)) return true;
     return (
-        state[key] !== undefined &&
-        (config[key].default === undefined || state[key] !== config[key].default)
+        config[key].default === undefined || state[key] !== config[key].default
     );
   });
 

@@ -391,6 +391,91 @@
                 </div>
                 <div class="modal-body overflow-auto" style="min-height: 0;">
                     <div class="ui-settings-layout">
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Wygląd</h6>
+                            <div class="ui-settings-stack">
+                                <div>
+                                    <label class="form-label" for="ui-font-family">Czcionka okna wyjścia i listy obiektów</label>
+                                    <select id="ui-font-family" class="form-select">
+                                        <option value="default">Domyślna (systemowa monospace)</option>
+                                        <option value="fira-code">Fira Code</option>
+                                        <option value="jetbrains-mono">JetBrains Mono</option>
+                                        <option value="cascadia-mono">Cascadia Mono</option>
+                                        <option value="custom">Własna (link)</option>
+                                    </select>
+                                </div>
+                                <div id="ui-custom-font-settings" class="d-flex flex-column gap-2 d-none">
+                                    <div>
+                                        <label class="form-label" for="ui-custom-font-url">Adres arkusza czcionki</label>
+                                        <input id="ui-custom-font-url" type="url" class="form-control" placeholder="https://..." />
+                                        <div class="form-text">Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts).</div>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="ui-custom-font-family">Nazwa rodziny czcionki</label>
+                                        <input id="ui-custom-font-family" type="text" class="form-control" placeholder="np. Roboto" />
+                                        <div class="form-text">Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku).</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-content-font">Rozmiar czcionki treści (rem)</label>
+                                    <input id="ui-content-font" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-objects-font">Rozmiar czcionki listy obiektów (rem)</label>
+                                    <input id="ui-objects-font" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-objectlist-bg-color">Kolor tła listy obiektów</label>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <input id="ui-objectlist-bg-color" type="color" class="form-control form-control-color" />
+                                        <label for="ui-objectlist-bg-alpha" class="form-label mb-0">Przezroczystość:</label>
+                                        <input id="ui-objectlist-bg-alpha" type="range" min="0" max="1" step="0.01" class="form-range" style="flex: 1 1 120px" />
+                                        <span id="ui-objectlist-bg-alpha-value" class="text-muted small" style="min-width: 2.5rem"></span>
+                                        <button id="ui-objectlist-bg-reset" type="button" class="btn btn-outline-secondary btn-sm">
+                                            Przywróć domyślny
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-output-background">Kolor tła okna głównego</label>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <input id="ui-output-background" type="color" class="form-control form-control-color" />
+                                        <button id="ui-output-background-reset" type="button" class="btn btn-outline-secondary btn-sm">
+                                            Przywróć domyślny
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="ui-xterm-palette">Paleta kolorów</label>
+                                    <select id="ui-xterm-palette" class="form-select">
+                                        <option value="arkadia">Arkadia</option>
+                                        <option value="proper">XTerm</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="ui-settings-section">
+                            <h6 class="ui-settings-section-title">Stan postaci</h6>
+                            <div class="ui-settings-stack">
+                                <div>
+                                    <label class="form-label" for="ui-footer-mode">Tryb stopki</label>
+                                    <select id="ui-footer-mode" class="form-select">
+                                        <option value="0">Liczbowy</option>
+                                        <option value="1">Pasek</option>
+                                        <option value="2">Pasek jednolity</option>
+                                        <option value="3">Pasek graficzny</option>
+                                    </select>
+                                </div>
+                                <div class="form-check">
+                                    <input id="ui-emoji-labels" type="checkbox" class="form-check-input" />
+                                    <label class="form-check-label" for="ui-emoji-labels">Etykiety emoji</label>
+                                </div>
+                                <div>
+                                    <label class="form-label mb-1">Kolejnosc i widocznosc paskow</label>
+                                    <div id="ui-bar-order-settings"></div>
+                                </div>
+                            </div>
+                        </section>
                         <section class="ui-settings-section ui-settings-section--map">
                             <div class="ui-settings-section-header">
                                 <h6 class="ui-settings-section-title">Mapa</h6>
@@ -556,82 +641,6 @@
                                     <input id="ui-custom-beep-file" type="file" accept="audio/*" style="display: none;" />
                                 </div>
                                 <button type="button" class="btn btn-secondary btn-sm align-self-start" id="ui-manage-sounds-button">Zarządzaj dźwiękami</button>
-                            </div>
-                        </section>
-                        <section class="ui-settings-section">
-                            <h6 class="ui-settings-section-title">Wygląd</h6>
-                            <div class="ui-settings-stack">
-                                <div>
-                                    <label class="form-label" for="ui-font-family">Czcionka okna wyjścia i listy obiektów</label>
-                                    <select id="ui-font-family" class="form-select">
-                                        <option value="default">Domyślna (systemowa monospace)</option>
-                                        <option value="fira-code">Fira Code</option>
-                                        <option value="jetbrains-mono">JetBrains Mono</option>
-                                        <option value="cascadia-mono">Cascadia Mono</option>
-                                        <option value="custom">Własna (link)</option>
-                                    </select>
-                                </div>
-                                <div id="ui-custom-font-settings" class="d-flex flex-column gap-2 d-none">
-                                    <div>
-                                        <label class="form-label" for="ui-custom-font-url">Adres arkusza czcionki</label>
-                                        <input id="ui-custom-font-url" type="url" class="form-control" placeholder="https://..." />
-                                        <div class="form-text">Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts).</div>
-                                    </div>
-                                    <div>
-                                        <label class="form-label" for="ui-custom-font-family">Nazwa rodziny czcionki</label>
-                                        <input id="ui-custom-font-family" type="text" class="form-control" placeholder="np. Roboto" />
-                                        <div class="form-text">Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku).</div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="form-label" for="ui-content-font">Rozmiar czcionki treści (rem)</label>
-                                    <input id="ui-content-font" type="number" step="0.1" class="form-control" />
-                                </div>
-                                <div>
-                                    <label class="form-label" for="ui-objects-font">Rozmiar czcionki listy obiektów (rem)</label>
-                                    <input id="ui-objects-font" type="number" step="0.1" class="form-control" />
-                                </div>
-                                <div>
-                                    <label class="form-label" for="ui-objectlist-bg-color">Kolor tła listy obiektów</label>
-                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                        <input id="ui-objectlist-bg-color" type="color" class="form-control form-control-color" />
-                                        <label for="ui-objectlist-bg-alpha" class="form-label mb-0">Przezroczystość:</label>
-                                        <input id="ui-objectlist-bg-alpha" type="range" min="0" max="1" step="0.01" class="form-range" style="flex: 1 1 120px" />
-                                        <span id="ui-objectlist-bg-alpha-value" class="text-muted small" style="min-width: 2.5rem"></span>
-                                        <button id="ui-objectlist-bg-reset" type="button" class="btn btn-outline-secondary btn-sm">
-                                            Przywróć domyślny
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="form-label" for="ui-output-background">Kolor tła okna głównego</label>
-                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                        <input id="ui-output-background" type="color" class="form-control form-control-color" />
-                                        <button id="ui-output-background-reset" type="button" class="btn btn-outline-secondary btn-sm">
-                                            Przywróć domyślny
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="form-label" for="ui-footer-mode">Tryb stopki</label>
-                                    <select id="ui-footer-mode" class="form-select">
-                                        <option value="0">Liczbowy</option>
-                                        <option value="1">Pasek</option>
-                                        <option value="2">Pasek jednolity</option>
-                                        <option value="3">Pasek graficzny</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" for="ui-xterm-palette">Paleta kolorów</label>
-                                    <select id="ui-xterm-palette" class="form-select">
-                                        <option value="arkadia">Arkadia</option>
-                                        <option value="proper">XTerm</option>
-                                    </select>
-                                </div>
-                                <div class="form-check">
-                                    <input id="ui-emoji-labels" type="checkbox" class="form-check-input" />
-                                    <label class="form-check-label" for="ui-emoji-labels">Etykiety emoji w stanie postaci</label>
-                                </div>
                             </div>
                         </section>
                         <section class="ui-settings-section">
