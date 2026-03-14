@@ -66,7 +66,6 @@ export default async function initHerbDescriptions(client: Client) {
                         onMouseLeave: () => {
                             hideHerbTooltip();
                         },
-                        title: `Prawy klik dla opcji: ${id}`
                     });
 
                     return line;

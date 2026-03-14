@@ -114,7 +114,6 @@ export function buildHerbTextBuffer(
                 onMouseLeave: () => {
                     hideHerbTooltip();
                 },
-                title: `Prawy klik dla opcji: ${row.herbId}`
             });
         }
 
