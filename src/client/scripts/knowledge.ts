@@ -38,6 +38,7 @@ import {
     removeAllPluginNotes,
 } from '@modules/core/pluginLocationNotesRegistry';
 import knowledgeData from '../knowledge.json';
+import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
 
 interface KnowledgeJsonEntry {
     Rodzaj: string;
@@ -1002,8 +1003,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 continue;
             }
 
-            const variants = [book.mianownik, book.dopelniacz, book.biernik].filter(
-                (v) => v && v.trim().length > 0,
+            const variants = [
+                book.mianownik, book.dopelniacz, book.biernik,
+                book.mnoga_mianownik, book.mnoga_dopelniacz, book.mnoga_biernik,
+            ].filter(
+                (v): v is string => !!v && v.trim().length > 0,
             );
 
             for (const variant of variants) {
@@ -1026,7 +1030,6 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         for (const [token, categories] of bookVariants.entries()) {
-            const tooltip = categories.join(', ');
             client.Triggers.registerTokenTrigger(
                 token,
                 (line, matches) => {
@@ -1036,7 +1039,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
 
                     line.createLinksForText(tokenText, {
-                        title: tooltip,
+                        onMouseEnter: (ev) => showBookTooltip(categories, ev.pageX, ev.pageY),
+                        onMouseLeave: () => hideBookTooltip(),
                     });
 
                     return line;

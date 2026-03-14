@@ -11,6 +11,9 @@ export interface KnowledgeBookEntry {
   mianownik: string;
   dopelniacz: string;
   biernik: string;
+  mnoga_mianownik?: string;
+  mnoga_dopelniacz?: string;
+  mnoga_biernik?: string;
   categories: string[];
 }
 

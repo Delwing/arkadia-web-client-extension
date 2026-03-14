@@ -3,6 +3,8 @@ import {createColorFormat} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
+import {getKnowledgeStore, KnowledgeBookEntry} from "@modules/data/dataStores/knowledgeStore";
+import { showBookTooltip, hideBookTooltip } from "@web/bookTooltip";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {
     MITHRIL_COLOR,
@@ -477,6 +479,10 @@ export function addTransformDefinition(definition: TransformDefinition): void {
 
 let plugLinks = false;
 
+// Book filter for pretty containers (populated after async load)
+let bookFilter: ((name: string) => boolean) | null = null;
+const bookCategoryLookup = new Map<string, string[]>();
+
 
 function isFavoriteMagic(itemName: string): boolean {
     if ((favoriteMagicTypes.length === 0 && favoriteMagicKeys.length === 0) || !magicsData) return false;
@@ -575,6 +581,66 @@ async function loadMagicAndKeysFilter(client: Client) {
             keyRegexp(item.name) || magicRegexp(item.name);
     } catch (e) {
         console.error('Failed to load magic keys or magics:', e);
+    }
+
+    try {
+        const knowledgeStore = getKnowledgeStore();
+        const knowledgeSnapshot = await knowledgeStore.getSnapshot();
+
+        function registerBooks(books: Record<string, KnowledgeBookEntry> | undefined) {
+            bookCategoryLookup.clear();
+            if (!books) return;
+
+            const allVariants = new Set<string>();
+
+            for (const book of Object.values(books)) {
+                const categories = book.categories;
+                if (!categories || categories.length === 0) continue;
+
+                const variants = [
+                    book.mianownik, book.dopelniacz, book.biernik,
+                    book.mnoga_mianownik, book.mnoga_dopelniacz, book.mnoga_biernik,
+                ].filter((v): v is string => !!v && v.trim().length > 0);
+
+                for (const variant of variants) {
+                    const lower = variant.trim().toLowerCase();
+                    allVariants.add(lower);
+                    const existing = bookCategoryLookup.get(lower);
+                    if (existing) {
+                        for (const cat of categories) {
+                            if (!existing.includes(cat)) existing.push(cat);
+                        }
+                    } else {
+                        bookCategoryLookup.set(lower, [...categories]);
+                    }
+                }
+            }
+
+            bookFilter = (name: string) => bookCategoryLookup.has(name.trim().toLowerCase());
+        }
+
+        registerBooks(knowledgeSnapshot?.data.books);
+
+        // Remove old book group/transform and re-add on updates
+        knowledgeStore.subscribe((snapshot) => {
+            registerBooks(snapshot?.data.books);
+        });
+
+        defs.push({ name: "ksiazki", filter: (item: string) => bookFilter?.(item) ?? false });
+        defaultTransforms.push({
+            transform: (buffer, item, group) => {
+                if (group !== 'ksiazki') return buffer;
+                const categories = bookCategoryLookup.get(item.name.trim().toLowerCase());
+                if (!categories) return buffer;
+                buffer.createLink([0, buffer.length], {
+                    onMouseEnter: (ev) => showBookTooltip(categories, ev.pageX, ev.pageY),
+                    onMouseLeave: () => hideBookTooltip(),
+                });
+                return buffer;
+            },
+        });
+    } catch (e) {
+        console.error('Failed to load book data for containers:', e);
     }
 }
 
