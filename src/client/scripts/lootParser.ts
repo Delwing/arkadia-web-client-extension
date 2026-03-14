@@ -104,20 +104,39 @@ export default function initLootParser(client: Client) {
     const tag = 'lootParser';
 
     const bodyPattern = /^Jest to martwe cialo (?<description>.+)\.$/;
-    const remainsPattern = /^Sa to smetne pozostalosci po jakim(?:s|ejs) (?<description>.+)\.$/;
+    const remainsPattern = /^Sa to smetne pozostalosci po jaki(?:ms|ejs) (?<description>.+)\.$/;
     const itemsPattern = /^Zauwazasz przy (?:nim|niej) (?<items>.+)\.$/;
 
     let pendingDescription: string | null = null;
-    let pendingBodyNumber: number | null = null;
+    const pendingBodyNumbers: (number | null)[] = [];
     let pendingStertyIndex: number | null = null;
     let stertyCounter = 0;
 
+    // Flush a pending body/remains that had no "Zauwazasz" items line.
+    // Shifts the body number queue to keep it in sync and optionally emits empty entry.
+    function flushPendingEmpty() {
+        if (pendingDescription) {
+            const bodyNumber = pendingBodyNumbers.shift() ?? null;
+            if (popupMode) {
+                client.sendEvent('loot.popup.open', {
+                    description: pendingDescription,
+                    items: [],
+                    bodyNumber: bodyNumber ?? undefined,
+                    stertyIndex: pendingStertyIndex ?? undefined,
+                });
+            }
+            pendingDescription = null;
+            pendingStertyIndex = null;
+        }
+    }
+
     // Track body number from ob commands: "ob cialo" → null, "ob 2. cialo" → 2
+    // Uses a queue since multiple commands may be sent before responses arrive
     const obCialoPattern = /^ob\s+(?:(\d+)\.\s+)?cialo$/i;
     client.registerCommandHook('lootParser.trackBody', (command) => {
         const match = command.match(obCialoPattern);
         if (match) {
-            pendingBodyNumber = match[1] ? parseInt(match[1], 10) : null;
+            pendingBodyNumbers.push(match[1] ? parseInt(match[1], 10) : null);
         }
         return undefined; // don't modify the command
     });
@@ -126,6 +145,7 @@ export default function initLootParser(client: Client) {
         bodyPattern,
         (line, matches) => {
             if (matches?.groups?.description) {
+                flushPendingEmpty();
                 pendingDescription = matches.groups.description;
                 pendingStertyIndex = null;
             }
@@ -138,8 +158,10 @@ export default function initLootParser(client: Client) {
         remainsPattern,
         (line, matches) => {
             if (matches?.groups?.description) {
+                flushPendingEmpty();
                 stertyCounter++;
-                pendingDescription = matches.groups.description;
+                const suffix = matches[0].includes('jakiejs') ? 'jakiejs' : 'jakims';
+                pendingDescription = `smetne pozostalosci po ${suffix} ${matches.groups.description}`;
                 pendingStertyIndex = stertyCounter;
             }
             return line;
@@ -152,11 +174,10 @@ export default function initLootParser(client: Client) {
         (line, matches) => {
             if (matches?.groups?.items && pendingDescription) {
                 const description = pendingDescription;
-                const bodyNumber = pendingBodyNumber;
+                const bodyNumber = pendingBodyNumbers.shift() ?? null;
                 const stertyIndex = pendingStertyIndex;
                 const items = enrichItems(matches.groups.items);
                 pendingDescription = null;
-                pendingBodyNumber = null;
                 pendingStertyIndex = null;
 
                 // Track sterty mapping for itemCollector
@@ -238,6 +259,7 @@ export default function initLootParser(client: Client) {
     client.on('enterLocation', () => {
         popupMode = false;
         bodyExtras.clear();
+        pendingBodyNumbers.length = 0;
         stertyCounter = 0;
         roomContents = { bodies: 0, sterta: 0, groundItems: [] };
         client.sendEvent('loot.cleared');

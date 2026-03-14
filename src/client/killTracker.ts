@@ -73,17 +73,14 @@ export default function initKillTracker(client: Client) {
         pattern: /^\/loot$/,
         callback: () => {
             const rc = getRoomContents();
-            const totalBodies = Math.max(bodyCount, rc.bodies);
-            if (totalBodies === 0 && rc.sterta === 0 && rc.groundItems.length === 0) {
+            const totalBodies = Math.max(bodyCount, rc.bodies + rc.sterta);
+            if (totalBodies === 0 && rc.groundItems.length === 0) {
                 client.print('Brak cial do przeszukania.');
                 return;
             }
             setLootPopupMode(true);
             for (let i = 1; i <= totalBodies; i++) {
                 client.sendCommand(`ob ${i}. cialo`);
-            }
-            for (let i = 1; i <= rc.sterta; i++) {
-                client.sendCommand(`ob ${i}. sterte`);
             }
             if (rc.groundItems.length > 0) {
                 client.sendEvent('loot.ground.open', { items: rc.groundItems });
