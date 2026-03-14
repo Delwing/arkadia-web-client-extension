@@ -292,7 +292,7 @@ function buildEntryHtml(text: string, type: string | undefined, timestamp: numbe
     for (const part of parts) {
         const classes = ["output_msg"];
         if (type) classes.push(type);
-        lines.push(`<div class="${classes.join(" ")}"><div class="output_msg_text" style="white-space:pre-wrap"><span class="log-time">${time}</span><span>${part}</span></div></div>`);
+        lines.push(`<div class="${classes.join(" ")}"><div class="output_msg_text"><span class="log-time">${time}</span><span>${part}</span></div></div>`);
     }
     return lines.join("\n") + "\n";
 }

@@ -99,7 +99,7 @@ function generateHtml(logs: LogEntry[], sessionName: string, inlineStyles: strin
         for (const part of parts) {
             const classes = ['output_msg'];
             if (l.type) classes.push(l.type);
-            const lineHtml = `<div class="${classes.join(' ')}"><div class="output_msg_text" style="white-space:pre-wrap"><span class="log-time">${time}</span><span>${part}</span></div></div>`;
+            const lineHtml = `<div class="${classes.join(' ')}"><div class="output_msg_text"><span class="log-time">${time}</span><span>${part}</span></div></div>`;
             entries.push(lineHtml);
         }
     }

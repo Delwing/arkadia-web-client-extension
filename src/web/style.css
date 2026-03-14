@@ -5407,6 +5407,10 @@ body.mobile-command-radial-active {
     padding: 0;
 }
 
+.output_msg_text {
+  white-space: pre-wrap;
+}
+
 #main_text_output_msg_wrapper .output_msg_text,
 #sticky-area .output_msg_text {
   display: flex;
@@ -5416,7 +5420,6 @@ body.mobile-command-radial-active {
 
 #main_text_output_msg_wrapper .output_msg_text .output_msg_content,
 #sticky-area .output_msg_text .output_msg_content {
-  white-space: pre-wrap;
   flex: 1 1 auto;
 }
 
