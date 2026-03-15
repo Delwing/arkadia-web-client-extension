@@ -228,7 +228,7 @@ body {
 .floating-window:focus,
 .floating-window:focus-visible {
   outline: none;
-  border-color: var(--surface-border);
+  border-color: var(--popup-border);
   box-shadow: 0 1.5rem 3rem #00000080;
 }
 
@@ -4355,7 +4355,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
     transform: translateX(-50%);
     width: 2.5rem;
     height: 0.25rem;
-    background-color: var(--surface-border);
+    background-color: var(--popup-border);
     border-radius: 2px;
   }
 
@@ -4381,8 +4381,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 /* Config sections */
 .mobile-button-config-section {
-  background-color: var(--surface-raised);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
   padding: 0.75rem;
   display: flex;
@@ -4447,7 +4447,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 /* Hold section styling */
 .mobile-button-config-hold-section {
-  border-top: 1px solid var(--surface-border);
+  border-top: 1px solid var(--popup-border);
   padding-top: 1rem;
   margin-top: 0.5rem;
 }
@@ -4457,8 +4457,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background-color: var(--surface-raised);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
   margin-bottom: 0.75rem;
 }
@@ -4531,8 +4531,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   gap: 0.5rem;
   margin-bottom: 1rem;
   padding: 0.75rem;
-  background-color: var(--surface-raised);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
   align-items: center;
   justify-content: center;
@@ -4587,8 +4587,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Enhanced mode toggles - segmented control pattern */
 .mobile-buttons-mode-toggle {
   display: inline-flex;
-  background-color: var(--surface-raised);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
   padding: 0.25rem;
   gap: 0;
@@ -4629,8 +4629,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--surface-raised);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
@@ -4696,8 +4696,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 /* Enhanced grid preview styling */
 .mobile-direction-buttons.preview {
-  border: 2px dashed var(--surface-border);
-  background-color: var(--surface-raised);
+  border: 2px dashed var(--popup-border);
+  background-color: var(--popup-control-bg);
   padding: 5px;
   border-radius: 5px;
 }
@@ -5265,9 +5265,9 @@ body.mobile-command-radial-active {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
-  background-color: var(--surface-raised);
+  background-color: var(--popup-control-bg);
 }
 
 .alias-card-body {
@@ -5349,7 +5349,7 @@ body.mobile-command-radial-active {
   gap: 0.25rem;
   margin-left: 0.75rem;
   padding-left: 0.75rem;
-  border-left: 2px solid var(--surface-border);
+  border-left: 2px solid var(--popup-border);
 }
 
 .alias-override-entry {

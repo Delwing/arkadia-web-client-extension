@@ -143,7 +143,7 @@ function SortableRadialItem({ cmd, disabled, onUpdate, onRemove }: SortableRadia
         <div
             ref={setNodeRef}
             className="border rounded p-2 d-flex flex-column flex-lg-row gap-2"
-            style={{ ...style, background: 'var(--surface-raised)' }}
+            style={{ ...style, background: 'var(--popup-control-bg)' }}
         >
             <div className="d-flex align-items-center">
                 <span

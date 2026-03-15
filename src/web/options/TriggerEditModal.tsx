@@ -57,7 +57,7 @@ function FlagsPicker({ value, onChange }: { value: string; onChange: (flags: str
                         top: '100%',
                         right: 0,
                         zIndex: 10,
-                        backgroundColor: 'var(--surface-raised)',
+                        backgroundColor: 'var(--popup-control-bg)',
                         minWidth: '14rem',
                     }}
                 >
