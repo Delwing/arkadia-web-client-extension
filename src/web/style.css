@@ -159,6 +159,7 @@
 /* ===== COLOR THEMES ===== */
 
 /* Fantasy - mystical purples and enchanted golds */
+/* Purple = accent/resting controls, Gold = borders/hover/active states */
 .theme-fantasy {
   --bs-primary: var(--popup-accent);
   --bs-primary-rgb: 184, 138, 237;
@@ -171,17 +172,20 @@
   --popup-text-faint: rgba(232, 223, 245, 0.3);
   --popup-text-medium: rgba(232, 223, 245, 0.6);
   --popup-text-bright: rgba(232, 223, 245, 0.8);
-  --popup-hover-bg: rgba(160, 120, 220, 0.08);
+  /* Gold-tinted hover and active states */
+  --popup-hover-bg: rgba(200, 160, 40, 0.08);
   --popup-subtle-bg: rgba(160, 120, 220, 0.04);
   --popup-control-bg: rgba(160, 120, 220, 0.1);
-  --popup-control-hover-bg: rgba(160, 120, 220, 0.16);
-  --popup-control-active-bg: rgba(160, 120, 220, 0.2);
-  --popup-control-pressed-bg: rgba(160, 120, 220, 0.25);
-  --popup-border: rgba(160, 120, 220, 0.15);
-  --popup-border-subtle: rgba(160, 120, 220, 0.1);
-  --popup-border-control: rgba(160, 120, 220, 0.18);
-  --popup-border-strong: rgba(160, 120, 220, 0.22);
-  --popup-border-stronger: rgba(160, 120, 220, 0.3);
+  --popup-control-hover-bg: rgba(200, 160, 40, 0.12);
+  --popup-control-active-bg: rgba(200, 160, 40, 0.18);
+  --popup-control-pressed-bg: rgba(200, 160, 40, 0.22);
+  /* Gold-tinted borders */
+  --popup-border: rgba(200, 160, 40, 0.14);
+  --popup-border-subtle: rgba(200, 160, 40, 0.08);
+  --popup-border-control: rgba(200, 160, 40, 0.18);
+  --popup-border-strong: rgba(200, 160, 40, 0.22);
+  --popup-border-stronger: rgba(200, 160, 40, 0.3);
+  /* Purple accent */
   --popup-accent: #b88aed;
   --popup-accent-bg: rgba(184, 138, 237, 0.2);
   --popup-accent-hover-bg: rgba(184, 138, 237, 0.3);
@@ -232,10 +236,11 @@
   --popup-data-spring-green: #30e890;
   --popup-input-bg: #201530;
   --popup-input-text: #e8dff5;
-  --popup-input-focus-border: rgba(184, 138, 237, 0.5);
+  --popup-input-focus-border: rgba(212, 160, 23, 0.45);
 }
 
 /* Forest - earthy greens and warm browns */
+/* Green = accent/resting controls, Amber/brown = borders/hover/active states */
 .theme-forest {
   --bs-primary: var(--popup-accent);
   --bs-primary-rgb: 92, 184, 92;
@@ -248,17 +253,20 @@
   --popup-text-faint: rgba(216, 232, 208, 0.3);
   --popup-text-medium: rgba(216, 232, 208, 0.6);
   --popup-text-bright: rgba(216, 232, 208, 0.8);
-  --popup-hover-bg: rgba(80, 160, 80, 0.08);
+  /* Amber-tinted hover and active states */
+  --popup-hover-bg: rgba(180, 130, 40, 0.08);
   --popup-subtle-bg: rgba(80, 160, 80, 0.04);
   --popup-control-bg: rgba(80, 160, 80, 0.1);
-  --popup-control-hover-bg: rgba(80, 160, 80, 0.16);
-  --popup-control-active-bg: rgba(80, 160, 80, 0.2);
-  --popup-control-pressed-bg: rgba(80, 160, 80, 0.25);
-  --popup-border: rgba(80, 160, 80, 0.15);
-  --popup-border-subtle: rgba(80, 160, 80, 0.1);
-  --popup-border-control: rgba(80, 160, 80, 0.18);
-  --popup-border-strong: rgba(80, 160, 80, 0.22);
-  --popup-border-stronger: rgba(80, 160, 80, 0.3);
+  --popup-control-hover-bg: rgba(180, 130, 40, 0.12);
+  --popup-control-active-bg: rgba(180, 130, 40, 0.18);
+  --popup-control-pressed-bg: rgba(180, 130, 40, 0.22);
+  /* Amber/brown-tinted borders */
+  --popup-border: rgba(180, 130, 40, 0.14);
+  --popup-border-subtle: rgba(180, 130, 40, 0.08);
+  --popup-border-control: rgba(180, 130, 40, 0.18);
+  --popup-border-strong: rgba(180, 130, 40, 0.22);
+  --popup-border-stronger: rgba(180, 130, 40, 0.3);
+  /* Green accent */
   --popup-accent: #5cb85c;
   --popup-accent-bg: rgba(92, 184, 92, 0.2);
   --popup-accent-hover-bg: rgba(92, 184, 92, 0.3);
@@ -309,10 +317,11 @@
   --popup-data-spring-green: #28c860;
   --popup-input-bg: #162018;
   --popup-input-text: #d8e8d0;
-  --popup-input-focus-border: rgba(92, 184, 92, 0.5);
+  --popup-input-focus-border: rgba(180, 130, 40, 0.45);
 }
 
 /* Ice & Fire - cool blues and warm reds split */
+/* Ice blue = accent/resting controls/subtle bg, Fire orange-red = borders/hover/active states */
 .theme-ice-fire {
   --bs-primary: var(--popup-accent);
   --bs-primary-rgb: 88, 176, 232;
@@ -325,17 +334,20 @@
   --popup-text-faint: rgba(224, 232, 240, 0.3);
   --popup-text-medium: rgba(224, 232, 240, 0.6);
   --popup-text-bright: rgba(224, 232, 240, 0.8);
-  --popup-hover-bg: rgba(100, 160, 220, 0.08);
+  /* Fire-tinted hover and active states */
+  --popup-hover-bg: rgba(220, 100, 30, 0.08);
   --popup-subtle-bg: rgba(100, 160, 220, 0.04);
   --popup-control-bg: rgba(100, 160, 220, 0.1);
-  --popup-control-hover-bg: rgba(100, 160, 220, 0.16);
-  --popup-control-active-bg: rgba(100, 160, 220, 0.2);
-  --popup-control-pressed-bg: rgba(100, 160, 220, 0.25);
-  --popup-border: rgba(100, 160, 220, 0.15);
-  --popup-border-subtle: rgba(100, 160, 220, 0.1);
-  --popup-border-control: rgba(100, 160, 220, 0.18);
-  --popup-border-strong: rgba(100, 160, 220, 0.22);
-  --popup-border-stronger: rgba(100, 160, 220, 0.3);
+  --popup-control-hover-bg: rgba(220, 100, 30, 0.12);
+  --popup-control-active-bg: rgba(220, 100, 30, 0.18);
+  --popup-control-pressed-bg: rgba(220, 100, 30, 0.22);
+  /* Fire-tinted borders */
+  --popup-border: rgba(220, 100, 30, 0.15);
+  --popup-border-subtle: rgba(220, 100, 30, 0.08);
+  --popup-border-control: rgba(220, 100, 30, 0.18);
+  --popup-border-strong: rgba(220, 100, 30, 0.22);
+  --popup-border-stronger: rgba(220, 100, 30, 0.3);
+  /* Ice blue accent */
   --popup-accent: #58b0e8;
   --popup-accent-bg: rgba(88, 176, 232, 0.2);
   --popup-accent-hover-bg: rgba(88, 176, 232, 0.3);
@@ -387,7 +399,7 @@
   --popup-data-spring-green: #30d080;
   --popup-input-bg: #141e28;
   --popup-input-text: #e0e8f0;
-  --popup-input-focus-border: rgba(88, 176, 232, 0.5);
+  --popup-input-focus-border: rgba(220, 100, 30, 0.45);
 }
 
 html, body {
