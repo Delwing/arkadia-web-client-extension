@@ -23,7 +23,6 @@ export default function initOpal(client: Client) {
         const history = client.Map.locationHistory;
         if (history.length >= 2) {
             connectedId = history[history.length - 2];
-            client.println(`[opal] stored connectedId=${connectedId}`);
         }
     });
 
@@ -35,7 +34,6 @@ export default function initOpal(client: Client) {
         if (!isDirection(cmd)) return undefined;
         if (getLongDir(cmd) !== "up") return undefined;
 
-        client.println(`[opal] setting up exit to connectedId=${connectedId}`);
         client.Map.currentRoom.exits.up = connectedId;
         return undefined;
     });
