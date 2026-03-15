@@ -3941,6 +3941,21 @@ h1 {
   text-align: left;
 }
 
+#input-area .dropdown-menu li button {
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 0.375rem;
+  color: var(--popup-text);
+  cursor: pointer;
+  font-size: inherit;
+}
+
+#input-area .dropdown-menu li button:hover {
+  background-color: var(--popup-control-hover-bg);
+  border-color: var(--popup-border-stronger);
+  color: var(--popup-text-strong);
+}
+
 #input-area .dropdown-menu .menu-disconnect-button {
   background-color: var(--popup-danger);
   border: 1px solid var(--popup-danger);

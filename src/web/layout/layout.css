@@ -115,6 +115,7 @@ body.layout-objectlist-enabled #objects-list {
   min-height: 0;
   overflow: hidden;
   background: var(--popup-bg, var(--surface-ground, #1a1a1a));
+  color: var(--popup-text, #ccc);
 }
 
 /* Panel header base */
@@ -477,8 +478,8 @@ body.layout-dragging * {
   margin-left: auto;
   font-size: 0.65rem;
   font-weight: 500;
-  color: var(--text-tertiary, #666);
-  background: rgba(0, 0, 0, 0.3);
+  color: var(--popup-text-dim);
+  background: var(--popup-subtle-bg);
   padding: 0.15rem 0.4rem;
   border-radius: 3px;
   white-space: nowrap;
@@ -934,7 +935,7 @@ body.layout-manager-enabled .compass-rose-box {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.25rem 0.5rem;
-  background-color: rgba(30, 33, 40, 0.9);
+  background-color: var(--popup-bg);
   border: 1px solid var(--popup-accent-border);
   border-radius: 0.25rem;
   color: var(--popup-accent);
