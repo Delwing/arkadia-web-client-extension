@@ -237,7 +237,7 @@ function apply(settings: UiSettings) {
     }
     // Apply color theme
     if (document.body) {
-        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-light-parchment', 'theme-light-silver');
+        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver');
         if (settings.colorTheme && settings.colorTheme !== 'default') {
             document.body.classList.add(`theme-${settings.colorTheme}`);
         }
