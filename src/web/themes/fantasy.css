@@ -77,4 +77,14 @@
   --popup-input-bg: #201530;
   --popup-input-text: #e8dff5;
   --popup-input-focus-border: rgba(212, 160, 23, 0.45);
+  /* Footer / bottom chrome */
+  --footer-bg: #1a1225;
+  --footer-border: rgba(200, 160, 40, 0.14);
+  --footer-control-bg: rgba(160, 120, 220, 0.12);
+  --footer-control-border: rgba(200, 160, 40, 0.22);
+  --footer-control-hover-bg: rgba(200, 160, 40, 0.16);
+  --footer-control-hover-border: rgba(200, 160, 40, 0.4);
+  --footer-text-strong: rgba(232, 223, 245, 0.95);
+  --footer-text: rgba(232, 223, 245, 0.8);
+  --footer-text-dim: rgba(232, 223, 245, 0.5);
 }

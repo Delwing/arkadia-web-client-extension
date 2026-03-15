@@ -81,4 +81,14 @@
   --popup-input-bg: #101c28;
   --popup-input-text: #d8e4f0;
   --popup-input-focus-border: rgba(220, 120, 50, 0.5);
+  /* Footer / bottom chrome — fire controls on icy background */
+  --footer-bg: #0c1520;
+  --footer-border: rgba(220, 100, 30, 0.18);
+  --footer-control-bg: rgba(220, 100, 30, 0.12);
+  --footer-control-border: rgba(220, 100, 30, 0.25);
+  --footer-control-hover-bg: rgba(220, 100, 30, 0.22);
+  --footer-control-hover-border: rgba(220, 100, 30, 0.45);
+  --footer-text-strong: rgba(216, 228, 240, 0.95);
+  --footer-text: rgba(216, 228, 240, 0.8);
+  --footer-text-dim: rgba(216, 228, 240, 0.5);
 }

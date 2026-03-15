@@ -93,6 +93,16 @@
   --popup-input-bg: #1e1e2e;
   --popup-input-text: #f1f5f9;
   --popup-input-focus-border: rgba(96, 165, 250, 0.5);
+  /* Footer / bottom chrome */
+  --footer-bg: var(--bs-body-bg, #212529);
+  --footer-border: rgba(255, 255, 255, 0.1);
+  --footer-control-bg: rgba(255, 255, 255, 0.08);
+  --footer-control-border: rgba(255, 255, 255, 0.2);
+  --footer-control-hover-bg: rgba(255, 255, 255, 0.16);
+  --footer-control-hover-border: rgba(255, 255, 255, 0.35);
+  --footer-text-strong: rgba(255, 255, 255, 0.95);
+  --footer-text: rgba(255, 255, 255, 0.8);
+  --footer-text-dim: rgba(255, 255, 255, 0.5);
   --output-font-family: monospace;
   --output-font-size: 0.875rem;
   --panel-btn-size: 20px;
@@ -1076,7 +1086,7 @@ h1 {
 
 #split-handle {
   height: 2px;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: var(--footer-control-hover-border);
   cursor: ns-resize;
   user-select: none;
   touch-action: none;
@@ -1104,8 +1114,8 @@ h1 {
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.8rem;
-  background-color: var(--bs-body-bg);
-  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  background-color: var(--footer-bg);
+  border-top: 0.1vh solid var(--footer-border);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -1121,8 +1131,8 @@ h1 {
   white-space: nowrap;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--footer-control-border);
+  background-color: var(--footer-control-bg);
   color: inherit;
   font: inherit;
   font-size: 0.75rem;
@@ -1136,8 +1146,8 @@ h1 {
 }
 
 #multi-binds .multi-bind:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: var(--footer-control-hover-bg);
+  border-color: var(--footer-control-hover-border);
 }
 
 #multi-binds .multi-bind:active {
@@ -1156,17 +1166,17 @@ h1 {
 
 #multi-binds .multi-bind-key {
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--footer-text-strong);
 }
 
 #multi-binds .multi-bind-action {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--footer-text);
 }
 
 #multi-binds .multi-bind-empty {
   display: inline-flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--footer-text-dim);
   font-style: italic;
   font-size: 0.75rem;
   line-height: 1;
@@ -1184,8 +1194,8 @@ h1 {
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.8rem;
-  background-color: var(--bs-body-bg);
-  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  background-color: var(--footer-bg);
+  border-top: 0.1vh solid var(--footer-border);
   position: relative;
   user-select: none;
 }
@@ -3808,8 +3818,8 @@ h1 {
 #input-area {
   display: flex;
   padding: 7px 10px;
-  background-color: var(--bs-body-bg);
-  border-top: 0.1vh solid rgba(255, 255, 255, 0.1);
+  background-color: var(--footer-bg);
+  border-top: 0.1vh solid var(--footer-border);
   gap: 10px;
   position: relative;
   z-index: 1001;
