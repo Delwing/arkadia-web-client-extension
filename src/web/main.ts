@@ -4,6 +4,8 @@ import './themes/fantasy.css'
 import './themes/forest.css'
 import './themes/icy.css'
 import './themes/gray.css'
+import './themes/light-parchment.css'
+import './themes/light-silver.css'
 import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";
