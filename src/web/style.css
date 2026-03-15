@@ -216,12 +216,12 @@ body {
   min-height: var(--fw-min-height, 200px);
   max-height: var(--fw-max-height, calc(100vh - 2rem));
   border-radius: 0.5rem;
-  background-color: var(--surface-elevated);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: #f8f9fa;
+  color: var(--popup-text);
   box-shadow: 0 1.5rem 3rem #00000080;
 }
 
@@ -4293,8 +4293,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Mobile button config popup - enhanced styling */
 .mobile-button-config {
   position: fixed;
-  background-color: var(--surface-elevated);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 0.75rem;
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4);
   z-index: 1060;
@@ -8791,7 +8791,7 @@ body.mobile-command-radial-active {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: var(--surface-elevated);
+  background-color: var(--popup-bg);
 }
 
 .static-map-popup__content {
@@ -8854,8 +8854,8 @@ body.mobile-command-radial-active {
   min-width: 150px;
   max-height: 250px;
   overflow-y: auto;
-  background-color: var(--surface-elevated, #1e2530);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-border-strong);
   border-radius: 0.25rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   margin-top: 2px;
@@ -9299,7 +9299,7 @@ body.mobile-command-radial-active {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: var(--surface-elevated);
+  background-color: var(--popup-bg);
 }
 
 .room-info-popup__content {
