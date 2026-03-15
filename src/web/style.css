@@ -903,7 +903,7 @@ h1 {
   overflow-wrap: break-word;
   position: relative;
   height: 60vh;
-  background-color: var(--bs-body-bg);
+  background-color: var(--output-bg, #242424);
 }
 
 #logs-search-results {
@@ -911,7 +911,7 @@ h1 {
   overflow-y: auto;
   font-family: monospace;
   font-size: 0.775rem;
-  background-color: var(--bs-body-bg);
+  background-color: var(--output-bg, #242424);
 }
 
 .logs-search-session {

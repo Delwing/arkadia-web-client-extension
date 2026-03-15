@@ -256,6 +256,7 @@ function apply(settings: UiSettings) {
         }
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
+        document.body.style.setProperty('--output-bg', settings.outputBackground);
         content.style.paddingBottom = settings.outputBottomPadding > 0 ? settings.outputBottomPadding + 'px' : '';
     }
     const charState = document.getElementById('char-state');
