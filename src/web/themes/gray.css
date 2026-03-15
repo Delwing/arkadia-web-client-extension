@@ -84,6 +84,8 @@
   --footer-control-border: rgba(180, 180, 185, 0.2);
   --footer-control-hover-bg: rgba(180, 175, 170, 0.16);
   --footer-control-hover-border: rgba(180, 180, 185, 0.35);
+  --footer-button-bg: #282828;
+  --footer-input-focus-border: #a0a5af;
   --footer-text-strong: rgba(216, 216, 220, 0.95);
   --footer-text: rgba(216, 216, 220, 0.8);
   --footer-text-dim: rgba(216, 216, 220, 0.5);

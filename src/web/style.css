@@ -100,6 +100,8 @@
   --footer-control-border: rgba(255, 255, 255, 0.2);
   --footer-control-hover-bg: rgba(255, 255, 255, 0.16);
   --footer-control-hover-border: rgba(255, 255, 255, 0.35);
+  --footer-button-bg: #3e3f3a;
+  --footer-input-focus-border: #646cff;
   --footer-text-strong: rgba(255, 255, 255, 0.95);
   --footer-text: rgba(255, 255, 255, 0.8);
   --footer-text-dim: rgba(255, 255, 255, 0.5);
@@ -120,7 +122,7 @@
   --floating-close-opacity: 0.9;
   --floating-close-hover-opacity: 1;
   --floating-close-background: var(--popup-control-bg);
-  --floating-close-hover-background: var(--popup-control-pressed-bg);
+  --floating-close-hover-background: rgba(255, 255, 255, 0.2);
   --floating-close-hover-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
   --floating-pin-size: 1.75rem;
   --floating-pin-icon-size: 0.75rem;
@@ -2701,7 +2703,7 @@ h1 {
 }
 
 #objects-list .objects-list-button-active {
-  background: var(--popup-control-pressed-bg);
+  background: var(--popup-accent-bg);
   border-color: var(--popup-border-stronger);
 }
 
@@ -2827,7 +2829,7 @@ h1 {
 }
 
 .object-card__number:hover {
-  background: var(--popup-control-pressed-bg);
+  background: var(--popup-accent-bg);
 }
 
 .object-card__number--next-target {
@@ -3293,7 +3295,7 @@ h1 {
 }
 
 .demo-btn:hover {
-  background: var(--popup-control-pressed-bg);
+  background: var(--popup-accent-bg);
 }
 
 .demo-btn--primary {
@@ -3881,13 +3883,13 @@ h1 {
 
 #message-input:focus {
   outline: none;
-  border-color: var(--footer-control-hover-border);
+  border-color: var(--footer-input-focus-border);
 }
 
 #input-area button {
   flex-shrink: 0;
   padding: 0 2vh;
-  background: var(--footer-control-bg);
+  background: var(--footer-button-bg);
   border-color: var(--footer-control-border);
 }
 
