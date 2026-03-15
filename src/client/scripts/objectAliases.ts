@@ -76,6 +76,7 @@ export default function initObjectAliases(
     const allyProtection = initAllyProtection(client);
 
     let enemyGuilds: string[] = [];
+    let allyGuilds: string[] = [];
     let peopleCache: PersonListEntry[] = [];
 
     subscribeMerged(snapshot => {
@@ -83,14 +84,17 @@ export default function initObjectAliases(
     });
     refreshPeopleStore().catch(() => undefined);
 
-    const applyEnemySettings = (settings: any) => {
-        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown };
+    const applySettings = (settings: any) => {
+        const detail = (settings ?? defaultSettings) as { enemyGuilds?: unknown; allyGuilds?: unknown };
         if (Array.isArray(detail.enemyGuilds)) {
             enemyGuilds = [...detail.enemyGuilds];
         }
+        if (Array.isArray(detail.allyGuilds)) {
+            allyGuilds = [...detail.allyGuilds];
+        }
     };
-    applyEnemySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applyEnemySettings);
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     function isEnemyByName(name: string): boolean {
         const person = peopleCache.find(p => p.name === name);
@@ -98,6 +102,13 @@ export default function initObjectAliases(
         if (person.isAlly) return false;
         if (person.isEnemy) return true;
         return enemyGuilds.includes(person.guild);
+    }
+
+    function isAllyByName(name: string): boolean {
+        const person = peopleCache.find(p => p.name === name);
+        if (!person) return false;
+        if (person.isAlly) return true;
+        return allyGuilds.includes(person.guild);
     }
 
     const INTRODUCED_NAME = /^[A-Z][a-z]+$/;
@@ -110,6 +121,26 @@ export default function initObjectAliases(
             o.desc &&
             INTRODUCED_NAME.test(o.desc) &&
             !isEnemyByName(o.desc)
+        );
+
+        if (targets.length === 0) {
+            client.print(colorString('Nie ma kogo zaprosic.', ZAP_COLOR));
+            return;
+        }
+
+        for (const t of targets) {
+            client.sendCommand(`zapros ob_${t.num}`);
+        }
+    }
+
+    function inviteAllAllies() {
+        const objects = client.ObjectManager.getObjectsOnLocation();
+        const targets = objects.filter(o =>
+            o.__category !== 'player' &&
+            o.__category !== 'team' &&
+            o.desc &&
+            INTRODUCED_NAME.test(o.desc) &&
+            isAllyByName(o.desc)
         );
 
         if (targets.length === 0) {
@@ -217,6 +248,10 @@ export default function initObjectAliases(
                     }
                 }
             }
+        });
+        aliases.push({
+            pattern: /\/zap \*$/,
+            callback: () => inviteAllAllies()
         });
         aliases.push({
             pattern: /\/zap 0$/,

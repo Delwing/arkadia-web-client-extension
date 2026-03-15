@@ -66,6 +66,7 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |
 | `/zap numer` | Zapros do druzyny obiekt o podanym numerze |
 | `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |
+| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |
 | `/pro id` | Przekaz prowadzenie obiektowi |
 
 ## Wrogowie na bindach
