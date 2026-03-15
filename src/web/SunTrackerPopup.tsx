@@ -276,7 +276,7 @@ const SunTrackerPopup: React.FC = () => {
             className="sun-tracker-window"
             bodyClassName="sun-tracker-window-body"
         >
-            <div style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, color: '#ddd', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, color: 'var(--popup-text)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
                     <button
                         type="button"
@@ -297,13 +297,13 @@ const SunTrackerPopup: React.FC = () => {
                             type="button"
                             style={{
                                 padding: '4px 10px',
-                                border: '1px solid #444',
+                                border: '1px solid var(--popup-border-control)',
                                 borderRadius: 4,
                                 cursor: 'pointer',
                                 fontSize: 11,
                                 fontFamily: 'monospace',
-                                background: '#222',
-                                color: '#aaa',
+                                background: 'var(--popup-control-bg)',
+                                color: 'var(--popup-text-subtle)',
                             }}
                             onClick={handleExport}
                         >
@@ -313,13 +313,13 @@ const SunTrackerPopup: React.FC = () => {
                             type="button"
                             style={{
                                 padding: '4px 10px',
-                                border: '1px solid #444',
+                                border: '1px solid var(--popup-border-control)',
                                 borderRadius: 4,
                                 cursor: 'pointer',
                                 fontSize: 11,
                                 fontFamily: 'monospace',
-                                background: '#222',
-                                color: '#aaa',
+                                background: 'var(--popup-control-bg)',
+                                color: 'var(--popup-text-subtle)',
                             }}
                             onClick={() => fileInputRef.current?.click()}
                         >
@@ -341,8 +341,8 @@ const SunTrackerPopup: React.FC = () => {
                                 cursor: 'pointer',
                                 fontSize: 11,
                                 fontFamily: 'monospace',
-                                background: '#311',
-                                color: '#c66',
+                                background: 'var(--popup-danger-subtle-bg)',
+                                color: 'var(--popup-danger)',
                             }}
                             onClick={handleClear}
                         >
@@ -350,7 +350,7 @@ const SunTrackerPopup: React.FC = () => {
                         </button>
                     </span>
                 </div>
-                <div style={{ color: '#666', fontSize: 11, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ color: 'var(--popup-text-dim)', fontSize: 11, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
                     <span>{`Potwierdzone: \u2600 ${sunriseCount}/${yearLength}  \u263E ${sunsetCount}/${yearLength}`}</span>
                     {nextSunLabel && <span>{`Nast: ${nextSunLabel}`}</span>}
                 </div>
@@ -359,14 +359,14 @@ const SunTrackerPopup: React.FC = () => {
                         <div key={mr.month} style={{ marginBottom: 14 }}>
                             <div style={{
                                 fontWeight: 'bold',
-                                color: '#ccc',
+                                color: 'var(--popup-text-bright)',
                                 marginBottom: 4,
                                 fontSize: 12,
                                 display: 'flex',
                                 justifyContent: 'space-between',
                             }}>
-                                <span style={{ color: '#fff' }}>{mr.month}</span>
-                                <span style={{ color: '#777', fontSize: 11 }}>
+                                <span style={{ color: 'var(--popup-text-strong)' }}>{mr.month}</span>
+                                <span style={{ color: 'var(--popup-text-dim)', fontSize: 11 }}>
                                     {`${mr.length}d  \u2600${mr.sunrise}  \u263E${mr.sunset}`}
                                 </span>
                             </div>
@@ -396,22 +396,22 @@ const SunTrackerPopup: React.FC = () => {
                                                 borderRadius: 3,
                                                 fontSize: 10,
                                                 lineHeight: 1.3,
-                                                background: hasAny ? '#1a2a1a' : '#111',
+                                                background: hasAny ? 'var(--popup-success-subtle-bg)' : 'var(--popup-subtle-bg)',
                                                 minWidth: 0,
                                                 cursor: 'context-menu',
                                             }}
                                         >
-                                            <div style={{ color: '#666', fontSize: 9 }}>{dayNum}</div>
+                                            <div style={{ color: 'var(--popup-text-dim)', fontSize: 9 }}>{dayNum}</div>
                                             {hasAny && (
                                                 <div style={{ fontSize: 10 }}>
                                                     {hasSunrise && (
-                                                        <span style={{ color: dayData!.sunrise === mr.sunrise ? '#ffd700' : '#ff6347' }}>
+                                                        <span style={{ color: dayData!.sunrise === mr.sunrise ? 'var(--popup-data-gold)' : 'var(--popup-data-tomato)' }}>
                                                             {`\u2600${dayData!.sunrise}`}
                                                         </span>
                                                     )}
                                                     {hasSunrise && hasSunset && ' '}
                                                     {hasSunset && (
-                                                        <span style={{ color: dayData!.sunset === mr.sunset ? '#6495ed' : '#ff6347' }}>
+                                                        <span style={{ color: dayData!.sunset === mr.sunset ? 'var(--popup-data-blue)' : 'var(--popup-data-tomato)' }}>
                                                             {`\u263E${dayData!.sunset}`}
                                                         </span>
                                                     )}
@@ -431,8 +431,8 @@ const SunTrackerPopup: React.FC = () => {
                             position: 'fixed',
                             left: editCell.x,
                             top: editCell.y,
-                            background: '#1a1a2e',
-                            border: '1px solid #555',
+                            background: 'var(--popup-bg)',
+                            border: '1px solid var(--popup-border-strong)',
                             borderRadius: 4,
                             padding: 8,
                             zIndex: 10000,
@@ -442,8 +442,8 @@ const SunTrackerPopup: React.FC = () => {
                             gap: 4,
                         }}
                     >
-                        <div style={{ color: '#aaa', marginBottom: 2 }}>Dzien {editCell.dayOfYear}</div>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ffd700' }}>
+                        <div style={{ color: 'var(--popup-text-subtle)', marginBottom: 2 }}>Dzien {editCell.dayOfYear}</div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--popup-data-gold)' }}>
                             {'\u2600'}
                             <input
                                 type="number"
@@ -452,10 +452,10 @@ const SunTrackerPopup: React.FC = () => {
                                 value={editSunrise}
                                 onChange={e => setEditSunrise(e.target.value)}
                                 placeholder="-"
-                                style={{ width: 40, background: '#111', border: '1px solid #444', borderRadius: 3, color: '#ddd', padding: '2px 4px', fontSize: 11 }}
+                                style={{ width: 40, background: 'var(--popup-input-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-input-text)', padding: '2px 4px', fontSize: 11 }}
                             />
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#6495ed' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--popup-data-blue)' }}>
                             {'\u263E'}
                             <input
                                 type="number"
@@ -464,21 +464,21 @@ const SunTrackerPopup: React.FC = () => {
                                 value={editSunset}
                                 onChange={e => setEditSunset(e.target.value)}
                                 placeholder="-"
-                                style={{ width: 40, background: '#111', border: '1px solid #444', borderRadius: 3, color: '#ddd', padding: '2px 4px', fontSize: 11 }}
+                                style={{ width: 40, background: 'var(--popup-input-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-input-text)', padding: '2px 4px', fontSize: 11 }}
                             />
                         </label>
                         <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
                             <button
                                 type="button"
                                 onClick={handleEditSave}
-                                style={{ flex: 1, padding: '3px 8px', background: '#1a3a1a', border: '1px solid #4a4', borderRadius: 3, color: '#8c8', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
+                                style={{ flex: 1, padding: '3px 8px', background: 'var(--popup-success-subtle-bg)', border: '1px solid var(--popup-success-border)', borderRadius: 3, color: 'var(--popup-success)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
                             >
                                 Zapisz
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setEditCell(null)}
-                                style={{ padding: '3px 8px', background: '#222', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
+                                style={{ padding: '3px 8px', background: 'var(--popup-control-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-text-dim)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
                             >
                                 Anuluj
                             </button>

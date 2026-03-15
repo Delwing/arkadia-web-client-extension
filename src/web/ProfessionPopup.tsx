@@ -130,10 +130,10 @@ const ProfessionPopup: React.FC = () => {
     };
 
     const inputStyle: React.CSSProperties = {
-        background: '#111',
-        border: '1px solid #444',
+        background: 'var(--popup-input-bg)',
+        border: '1px solid var(--popup-border-control)',
         borderRadius: 3,
-        color: '#ddd',
+        color: 'var(--popup-input-text)',
         padding: '2px 6px',
         fontSize: 11,
         fontFamily: 'monospace',
@@ -141,27 +141,27 @@ const ProfessionPopup: React.FC = () => {
 
     const btnStyle: React.CSSProperties = {
         padding: '2px 8px',
-        border: '1px solid #444',
+        border: '1px solid var(--popup-border-control)',
         borderRadius: 3,
         cursor: 'pointer',
         fontSize: 11,
         fontFamily: 'monospace',
-        background: '#222',
-        color: '#aaa',
+        background: 'var(--popup-control-bg)',
+        color: 'var(--popup-text-subtle)',
     };
 
     const saveBtnStyle: React.CSSProperties = {
         ...btnStyle,
-        background: '#1a3a1a',
-        border: '1px solid #4a4',
-        color: '#8c8',
+        background: 'var(--popup-success-subtle-bg)',
+        border: '1px solid var(--popup-success-border)',
+        color: 'var(--popup-success)',
     };
 
     const dangerBtnStyle: React.CSSProperties = {
         ...btnStyle,
-        background: '#311',
-        border: '1px solid #633',
-        color: '#c66',
+        background: 'var(--popup-danger-subtle-bg)',
+        border: '1px solid var(--popup-danger-border)',
+        color: 'var(--popup-danger)',
     };
 
     return (
@@ -174,10 +174,10 @@ const ProfessionPopup: React.FC = () => {
             initialWidth={340}
             className="profession-window"
         >
-            <div style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, color: '#ddd', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, color: 'var(--popup-text)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {!state ? (
                     <div style={{ textAlign: 'center', padding: 16 }}>
-                        <div style={{ color: '#888', marginBottom: 12 }}>Brak danych o zawodzie</div>
+                        <div style={{ color: 'var(--popup-text-dim)', marginBottom: 12 }}>Brak danych o zawodzie</div>
                         <button type="button" style={saveBtnStyle} onClick={handleInit}>
                             Rozpocznij trening
                         </button>
@@ -187,7 +187,7 @@ const ProfessionPopup: React.FC = () => {
                         {/* Progress bar */}
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span style={{ color: '#aaa' }}>Postep</span>
+                                <span style={{ color: 'var(--popup-text-subtle)' }}>Postep</span>
                                 <span style={{ color: percentage >= 100 ? '#4a4' : '#ffd700', fontWeight: 'bold' }}>
                                     {percentage.toFixed(1)}%
                                 </span>
@@ -200,7 +200,7 @@ const ProfessionPopup: React.FC = () => {
                                     transition: 'width 0.3s',
                                 }} />
                             </div>
-                            <div style={{ color: '#666', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
+                            <div style={{ color: 'var(--popup-text-faint)', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
                                 {totalPoints} / {FULL_PROFESSION_POINTS} pkt
                             </div>
                         </div>
@@ -209,7 +209,7 @@ const ProfessionPopup: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
                             {/* Start time */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: '#888' }}>Rozpoczecie:</span>
+                                <span style={{ color: 'var(--popup-text-dim)' }}>Rozpoczecie:</span>
                                 {editingStart ? (
                                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                         <input
@@ -223,7 +223,7 @@ const ProfessionPopup: React.FC = () => {
                                     </span>
                                 ) : (
                                     <span
-                                        style={{ color: '#ccc', cursor: 'pointer', borderBottom: '1px dashed #555' }}
+                                        style={{ color: 'var(--popup-text-bright)', cursor: 'pointer', borderBottom: '1px dashed var(--popup-border-control)' }}
                                         onClick={() => { setStartInput(formatDateInput(state.start_time)); setEditingStart(true); }}
                                         title="Kliknij aby edytowac"
                                     >
@@ -234,21 +234,21 @@ const ProfessionPopup: React.FC = () => {
 
                             {/* Weeks */}
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#888' }}>Tygodnie:</span>
-                                <span style={{ color: '#ccc' }}>{weeks} ({timePoints} pkt, {WEEKLY_POINTS}/tydz)</span>
+                                <span style={{ color: 'var(--popup-text-dim)' }}>Tygodnie:</span>
+                                <span style={{ color: 'var(--popup-text-bright)' }}>{weeks} ({timePoints} pkt, {WEEKLY_POINTS}/tydz)</span>
                             </div>
 
                             {/* Next breakpoint */}
                             {secondsToNext > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#888' }}>Nastepne +{WEEKLY_POINTS}:</span>
-                                    <span style={{ color: '#6495ed' }}>{formatTimeUntil(secondsToNext)}</span>
+                                    <span style={{ color: 'var(--popup-text-dim)' }}>Nastepne +{WEEKLY_POINTS}:</span>
+                                    <span style={{ color: 'var(--popup-data-blue)' }}>{formatTimeUntil(secondsToNext)}</span>
                                 </div>
                             )}
 
                             {/* Plus events */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: '#888' }}>Bonusy (+staz):</span>
+                                <span style={{ color: 'var(--popup-text-dim)' }}>Bonusy (+staz):</span>
                                 {editingPlus ? (
                                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                         <input
@@ -263,7 +263,7 @@ const ProfessionPopup: React.FC = () => {
                                     </span>
                                 ) : (
                                     <span
-                                        style={{ color: '#ccc', cursor: 'pointer', borderBottom: '1px dashed #555' }}
+                                        style={{ color: 'var(--popup-text-bright)', cursor: 'pointer', borderBottom: '1px dashed var(--popup-border-control)' }}
                                         onClick={() => { setPlusInput(String(plusEventCount)); setEditingPlus(true); }}
                                         title="Kliknij aby edytowac"
                                     >
