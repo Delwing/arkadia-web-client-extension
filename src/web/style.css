@@ -137,11 +137,17 @@
   --pin-button-background: var(--floating-pin-background);
   --pin-button-hover-background: var(--floating-pin-hover-background);
   --pin-button-hover-shadow: var(--floating-pin-hover-shadow);
-  --bs-body-bg: var(--surface-content);
-  --bs-body-color: var(--text-primary);
-  --bs-border-color: var(--surface-border);
-  --bs-primary: #3b82f6;
-  --bs-secondary-color: var(--text-secondary);
+  --bs-body-bg: var(--popup-bg);
+  --bs-body-color: var(--popup-text);
+  --bs-border-color: var(--popup-border);
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 96, 165, 250;
+  --bs-secondary-color: var(--popup-text-subtle);
+  --bs-secondary-bg: var(--popup-control-bg);
+  --bs-tertiary-bg: var(--popup-subtle-bg);
+  --bs-emphasis-color: var(--popup-text-strong);
+  --bs-link-color: var(--popup-accent);
+  --bs-link-hover-color: var(--popup-accent);
   color: var(--text-primary);
   background-color: var(--surface-base);
   font-synthesis: none;
@@ -154,6 +160,8 @@
 
 /* Fantasy - mystical purples and enchanted golds */
 .theme-fantasy {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 184, 138, 237;
   --popup-bg: #1a1225;
   --popup-text: #e8dff5;
   --popup-text-dim: rgba(232, 223, 245, 0.5);
@@ -228,6 +236,8 @@
 
 /* Forest - earthy greens and warm browns */
 .theme-forest {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 92, 184, 92;
   --popup-bg: #121a14;
   --popup-text: #d8e8d0;
   --popup-text-dim: rgba(216, 232, 208, 0.5);
@@ -302,6 +312,8 @@
 
 /* Ice & Fire - cool blues and warm reds split */
 .theme-ice-fire {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 88, 176, 232;
   --popup-bg: #101820;
   --popup-text: #e0e8f0;
   --popup-text-dim: rgba(224, 232, 240, 0.5);
@@ -776,33 +788,33 @@ input[type="number"]:disabled,
 input[type="search"]:disabled,
 input[type="tel"]:disabled,
 input[type="url"]:disabled {
-  background-color: var(--surface-sunken);
-  border-color: var(--input-border);
-  color: var(--text-muted);
+  background-color: var(--popup-subtle-bg);
+  border-color: var(--popup-border-subtle);
+  color: var(--popup-text-dim);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 .form-select option,
 .modal option {
-  background-color: var(--surface-raised);
-  color: var(--text-primary);
+  background-color: var(--popup-bg);
+  color: var(--popup-text);
 }
 
 .form-check-input {
-  background-color: var(--input-background);
-  border: 1px solid var(--input-border);
+  background-color: var(--popup-input-bg);
+  border: 1px solid var(--popup-border-control);
   cursor: pointer;
 }
 
 .form-check-input:focus {
-  box-shadow: 0 0 0 0.2rem var(--input-focus-ring);
-  border-color: var(--surface-border-strong);
+  box-shadow: 0 0 0 0.2rem var(--popup-input-focus-border);
+  border-color: var(--popup-accent);
 }
 
 .form-check-input:checked {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+  background-color: var(--popup-accent);
+  border-color: var(--popup-accent);
 }
 
 .table-modern {
@@ -903,20 +915,112 @@ input[type="url"]:disabled {
 }
 
 .dropdown-menu {
-  background-color: var(--surface-elevated);
-  border: 1px solid var(--surface-border);
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-border);
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.35);
-  color: var(--text-primary);
+  color: var(--popup-text);
 }
 
 .dropdown-item {
-  color: inherit;
+  color: var(--popup-text-bright);
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus-visible {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
+  background-color: var(--popup-hover-bg);
+  color: var(--popup-text);
+}
+
+/* Bootstrap button theme overrides */
+.btn-primary {
+  --bs-btn-bg: var(--popup-accent);
+  --bs-btn-border-color: var(--popup-accent);
+  --bs-btn-hover-bg: var(--popup-accent);
+  --bs-btn-hover-border-color: var(--popup-accent);
+  --bs-btn-active-bg: var(--popup-accent);
+  --bs-btn-active-border-color: var(--popup-accent);
+  --bs-btn-disabled-bg: var(--popup-accent);
+  --bs-btn-disabled-border-color: var(--popup-accent);
+}
+
+.btn-secondary {
+  --bs-btn-bg: var(--popup-control-bg);
+  --bs-btn-border-color: var(--popup-border-control);
+  --bs-btn-color: var(--popup-text-bright);
+  --bs-btn-hover-bg: var(--popup-control-hover-bg);
+  --bs-btn-hover-border-color: var(--popup-border-strong);
+  --bs-btn-hover-color: var(--popup-text);
+  --bs-btn-active-bg: var(--popup-control-active-bg);
+  --bs-btn-active-border-color: var(--popup-border-strong);
+  --bs-btn-active-color: var(--popup-text);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--popup-danger);
+  --bs-btn-border-color: var(--popup-danger);
+  --bs-btn-hover-bg: var(--popup-danger-light);
+  --bs-btn-hover-border-color: var(--popup-danger-light);
+  --bs-btn-active-bg: var(--popup-danger);
+  --bs-btn-active-border-color: var(--popup-danger);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--popup-text-subtle);
+  --bs-btn-border-color: var(--popup-border-control);
+  --bs-btn-hover-bg: var(--popup-control-hover-bg);
+  --bs-btn-hover-border-color: var(--popup-border-strong);
+  --bs-btn-hover-color: var(--popup-text);
+  --bs-btn-active-bg: var(--popup-control-active-bg);
+  --bs-btn-active-border-color: var(--popup-border-strong);
+  --bs-btn-active-color: var(--popup-text);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--popup-accent);
+  --bs-btn-border-color: var(--popup-accent);
+  --bs-btn-hover-bg: var(--popup-accent-bg);
+  --bs-btn-hover-border-color: var(--popup-accent);
+  --bs-btn-hover-color: var(--popup-accent);
+  --bs-btn-active-bg: var(--popup-accent-hover-bg);
+  --bs-btn-active-border-color: var(--popup-accent);
+  --bs-btn-active-color: var(--popup-accent);
+}
+
+.btn-warning {
+  --bs-btn-bg: var(--popup-warning);
+  --bs-btn-border-color: var(--popup-warning);
+  --bs-btn-hover-bg: var(--popup-warning-light);
+  --bs-btn-hover-border-color: var(--popup-warning-light);
+}
+
+.btn-success {
+  --bs-btn-bg: var(--popup-success);
+  --bs-btn-border-color: var(--popup-success);
+  --bs-btn-hover-bg: var(--popup-success-light);
+  --bs-btn-hover-border-color: var(--popup-success-light);
+}
+
+/* Bootstrap form-range theme */
+.form-range::-webkit-slider-thumb {
+  background: var(--popup-accent);
+}
+
+.form-range::-moz-range-thumb {
+  background: var(--popup-accent);
+}
+
+.form-range::-webkit-slider-runnable-track {
+  background: var(--popup-control-bg);
+}
+
+.form-range::-moz-range-track {
+  background: var(--popup-control-bg);
+}
+
+/* Bootstrap badge theme */
+.badge.bg-secondary {
+  background-color: var(--popup-control-bg) !important;
+  color: var(--popup-text-bright);
 }
 
 @media (min-width: 576px) {
