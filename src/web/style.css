@@ -27,22 +27,23 @@
   --popup-text: var(--text-primary);
   --popup-text-dim: rgba(241, 245, 249, 0.5);
   --popup-text-dimmer: rgba(241, 245, 249, 0.4);
-  --popup-text-subtle: rgba(241, 245, 249, 0.7);
+  --popup-text-subtle: var(--text-secondary);
   --popup-text-strong: rgba(241, 245, 249, 0.9);
-  --popup-text-faint: rgba(241, 245, 249, 0.3);
+  --popup-text-faint: var(--input-placeholder);
   --popup-text-medium: rgba(241, 245, 249, 0.6);
   --popup-text-bright: rgba(241, 245, 249, 0.8);
   --popup-hover-bg: rgba(255, 255, 255, 0.05);
   --popup-subtle-bg: rgba(255, 255, 255, 0.03);
+  --popup-section-bg: var(--surface-raised);
   --popup-control-bg: rgba(255, 255, 255, 0.06);
   --popup-control-hover-bg: rgba(255, 255, 255, 0.1);
   --popup-control-active-bg: rgba(255, 255, 255, 0.12);
   --popup-control-pressed-bg: rgba(255, 255, 255, 0.15);
-  --popup-border: rgba(255, 255, 255, 0.1);
+  --popup-border: var(--surface-border);
   --popup-border-subtle: rgba(255, 255, 255, 0.08);
-  --popup-border-control: rgba(255, 255, 255, 0.12);
-  --popup-border-strong: rgba(255, 255, 255, 0.15);
-  --popup-border-stronger: rgba(255, 255, 255, 0.2);
+  --popup-border-control: var(--input-border);
+  --popup-border-strong: rgba(148, 163, 184, 0.45);
+  --popup-border-stronger: rgba(255, 255, 255, 0.45);
   --popup-accent: #60a5fa;
   --popup-accent-bg: rgba(96, 165, 250, 0.2);
   --popup-accent-hover-bg: rgba(96, 165, 250, 0.3);
@@ -90,11 +91,11 @@
   --popup-data-tomato: #ff6347;
   --popup-data-magic-green: #00ff87;
   --popup-data-spring-green: #00ff7f;
-  --popup-input-bg: #1e1e2e;
+  --popup-input-bg: var(--input-background);
   --popup-input-text: #f1f5f9;
-  --popup-input-focus-border: rgba(96, 165, 250, 0.5);
+  --popup-input-focus-border: var(--input-focus-ring);
   /* Footer / bottom chrome */
-  --footer-bg: var(--bs-body-bg, #212529);
+  --footer-bg: var(--surface-content, #242424);
   --footer-border: rgba(255, 255, 255, 0.1);
   --footer-control-bg: rgba(255, 255, 255, 0.08);
   --footer-control-border: rgba(255, 255, 255, 0.2);
@@ -121,14 +122,14 @@
   --floating-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
   --floating-close-opacity: 0.9;
   --floating-close-hover-opacity: 1;
-  --floating-close-background: var(--popup-control-bg);
+  --floating-close-background: rgba(255, 255, 255, 0.08);
   --floating-close-hover-background: rgba(255, 255, 255, 0.2);
   --floating-close-hover-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
   --floating-pin-size: 1.75rem;
   --floating-pin-icon-size: 0.75rem;
   --floating-pin-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23888' d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/%3E%3C/svg%3E");
   --floating-pin-active-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23589aff' d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/%3E%3C/svg%3E");
-  --floating-pin-background: var(--popup-control-bg);
+  --floating-pin-background: rgba(255, 255, 255, 0.08);
   --floating-pin-hover-background: rgba(148, 163, 184, 0.24);
   --floating-pin-hover-shadow: 0 0 0 1px rgba(148, 197, 253, 0.4);
   --floating-pin-active-background: rgba(96, 165, 250, 0.35);
@@ -5465,7 +5466,7 @@ body.mobile-command-radial-active {
 
 .ui-settings-section,
 .character-settings-section {
-  background-color: var(--popup-control-bg);
+  background-color: var(--popup-section-bg);
   border: 1px solid var(--popup-border);
   border-radius: 0.5rem;
   padding: 1rem;
@@ -5774,8 +5775,8 @@ body.mobile-command-radial-active {
   width: 100%;
   min-width: 7.5rem;
   min-height: 2rem;
-  background: var(--popup-control-bg);
-  border: 1px solid var(--popup-border-strong);
+  background: var(--popup-bg);
+  border: 1px solid var(--popup-text-dim);
   border-radius: 0.375rem;
   padding: 0.28rem 0.5625rem;
   margin: 0;
@@ -5787,8 +5788,8 @@ body.mobile-command-radial-active {
 }
 
 .context-menu button:hover {
-  border-color: var(--popup-border-stronger);
-  background: var(--popup-control-hover-bg);
+  border-color: var(--popup-text-bright);
+  background: var(--popup-section-bg, var(--popup-bg));
 }
 
 .context-menu button.opens-window {

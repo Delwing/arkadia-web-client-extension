@@ -15,6 +15,7 @@
   /* Gold-tinted hover and active states */
   --popup-hover-bg: rgba(200, 160, 40, 0.08);
   --popup-subtle-bg: rgba(160, 120, 220, 0.04);
+  --popup-section-bg: rgba(160, 120, 220, 0.08);
   --popup-control-bg: rgba(160, 120, 220, 0.1);
   --popup-control-hover-bg: rgba(200, 160, 40, 0.12);
   --popup-control-active-bg: rgba(200, 160, 40, 0.18);

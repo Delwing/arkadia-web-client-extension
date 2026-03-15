@@ -463,7 +463,7 @@ function load(): UiSettings {
             const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
                 ? parsed.outputBottomPadding
                 : defaultUiSettings.outputBottomPadding;
-            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'light-parchment', 'light-silver'].includes(parsed.colorTheme))
+            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver'].includes(parsed.colorTheme))
                 ? parsed.colorTheme as ColorTheme
                 : defaultUiSettings.colorTheme;
             const splitViewHeight = typeof parsed.splitViewHeight === 'number' && parsed.splitViewHeight >= 60
@@ -1364,7 +1364,7 @@ export default async function initUiSettings() {
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultUiSettings.xtermPalette,
-            colorTheme: (['default', 'fantasy', 'forest', 'icy', 'gray', 'light-parchment', 'light-silver'].includes(colorThemeInput?.value) ? colorThemeInput.value : defaultUiSettings.colorTheme) as ColorTheme,
+            colorTheme: (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver'].includes(colorThemeInput?.value) ? colorThemeInput.value : defaultUiSettings.colorTheme) as ColorTheme,
             footerMode: parseInt(footerModeInput.value) || defaultUiSettings.footerMode,
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,

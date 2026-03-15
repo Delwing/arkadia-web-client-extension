@@ -15,6 +15,7 @@
   /* Warm gray hover and active states */
   --popup-hover-bg: rgba(180, 175, 170, 0.07);
   --popup-subtle-bg: rgba(160, 165, 175, 0.04);
+  --popup-section-bg: rgba(160, 165, 175, 0.07);
   --popup-control-bg: rgba(160, 165, 175, 0.09);
   --popup-control-hover-bg: rgba(180, 175, 170, 0.13);
   --popup-control-active-bg: rgba(180, 175, 170, 0.18);

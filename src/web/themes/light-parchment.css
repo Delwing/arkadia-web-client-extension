@@ -16,6 +16,7 @@
   /* Warm brown hover and active states */
   --popup-hover-bg: rgba(139, 90, 43, 0.07);
   --popup-subtle-bg: rgba(139, 90, 43, 0.03);
+  --popup-section-bg: rgba(139, 90, 43, 0.04);
   --popup-control-bg: rgba(139, 90, 43, 0.06);
   --popup-control-hover-bg: rgba(139, 90, 43, 0.1);
   --popup-control-active-bg: rgba(139, 90, 43, 0.14);

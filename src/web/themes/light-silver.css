@@ -16,6 +16,7 @@
   /* Cool gray hover and active states */
   --popup-hover-bg: rgba(0, 0, 0, 0.04);
   --popup-subtle-bg: rgba(0, 0, 0, 0.02);
+  --popup-section-bg: rgba(0, 0, 0, 0.03);
   --popup-control-bg: rgba(0, 0, 0, 0.05);
   --popup-control-hover-bg: rgba(0, 0, 0, 0.08);
   --popup-control-active-bg: rgba(0, 0, 0, 0.11);
