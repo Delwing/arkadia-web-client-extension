@@ -1257,7 +1257,7 @@ h1 {
   margin-left: 0.75rem;
   font-size: 0.85em;
   font-weight: 500;
-  color: rgba(241, 245, 249, 0.75);
+  color: var(--popup-text-subtle);
   white-space: nowrap;
 }
 
@@ -1276,8 +1276,8 @@ h1 {
 .knowledge-tab-button {
   flex: 0 0 auto;
   border: 1px solid transparent;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: rgba(241, 245, 249, 0.85);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-bright);
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
   font-size: 0.9rem;
@@ -1320,10 +1320,10 @@ h1 {
 }
 
 .knowledge-library {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--popup-border-subtle);
   border-radius: 0.5rem;
   padding: 0.75rem 0.9rem;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--popup-subtle-bg);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1360,7 +1360,7 @@ h1 {
 
 .knowledge-library-remaining {
   font-size: 0.9rem;
-  color: rgba(226, 232, 240, 0.8);
+  color: var(--popup-text-bright);
 }
 
 .knowledge-library-actions {
@@ -1384,14 +1384,14 @@ h1 {
 }
 
 .knowledge-library-action {
-  background-color: rgba(34, 197, 94, 0.18);
-  color: #4ade80;
-  border-color: rgba(34, 197, 94, 0.45);
+  background-color: var(--popup-success-bg);
+  color: var(--popup-success-light);
+  border-color: var(--popup-success-border);
 }
 
 .knowledge-library-action:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.45);
+  box-shadow: 0 0 0 1px var(--popup-success-border);
 }
 
 .knowledge-library-action:disabled {
@@ -1400,14 +1400,14 @@ h1 {
 }
 
 .knowledge-library-reset {
-  background-color: rgba(248, 250, 252, 0.1);
-  color: #f8fafc;
-  border-color: rgba(148, 163, 184, 0.35);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  border-color: var(--popup-border-control);
 }
 
 .knowledge-library-reset:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.4);
+  box-shadow: 0 0 0 1px var(--popup-border-strong);
 }
 
 .knowledge-library-statuses {
@@ -1439,7 +1439,7 @@ h1 {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(226, 232, 240, 0.75);
+  color: var(--popup-text-subtle);
 }
 
 .knowledge-chip {
@@ -1468,13 +1468,13 @@ h1 {
 }
 
 .knowledge-chip--active {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 1px var(--popup-border-stronger);
 }
 
 .knowledge-chip--not-started {
-  background-color: rgba(248, 250, 252, 0.15);
-  color: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  border: 1px solid var(--popup-border-control);
 }
 
 .knowledge-chip--in-progress {
@@ -1503,8 +1503,8 @@ h1 {
   font-weight: 600;
   letter-spacing: 0.01em;
   border: 1px solid transparent;
-  background-color: rgba(255, 255, 255, 0.08);
-  color: rgba(241, 245, 249, 0.92);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-strong);
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease,
     color 0.15s ease;
@@ -1515,9 +1515,9 @@ h1 {
 }
 
 .knowledge-library-category--not_started {
-  background-color: rgba(248, 250, 252, 0.12);
-  border-color: rgba(148, 163, 184, 0.35);
-  color: #e2e8f0;
+  background-color: var(--popup-control-bg);
+  border-color: var(--popup-border-control);
+  color: var(--popup-text);
 }
 
 .knowledge-library-category--in_progress {
@@ -1539,10 +1539,10 @@ h1 {
 }
 
 .knowledge-category-tile {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--popup-border-subtle);
   border-radius: 0.6rem;
   padding: 0.85rem;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--popup-subtle-bg);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -1589,20 +1589,20 @@ h1 {
   align-items: center;
   gap: 0.45rem;
   font-size: 0.88rem;
-  color: rgba(226, 232, 240, 0.92);
+  color: var(--popup-text-strong);
 }
 
 .knowledge-status-dot {
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
+  border: 1px solid var(--popup-border-stronger);
   flex: 0 0 auto;
 }
 
 .knowledge-status-dot--not_started {
-  background-color: #f8fafc;
-  border-color: rgba(148, 163, 184, 0.45);
+  background-color: var(--popup-text);
+  border-color: var(--popup-border-strong);
 }
 
 .knowledge-status-dot--in_progress {
@@ -1622,10 +1622,10 @@ h1 {
 .knowledge-empty {
   padding: 1rem;
   text-align: center;
-  border: 1px dashed rgba(148, 163, 184, 0.4);
+  border: 1px dashed var(--popup-border-strong);
   border-radius: 0.5rem;
-  color: rgba(203, 213, 225, 0.85);
-  background-color: rgba(148, 163, 184, 0.1);
+  color: var(--popup-text-bright);
+  background-color: var(--popup-control-bg);
 }
 
 .knowledge-details-body {
@@ -1651,8 +1651,8 @@ h1 {
   z-index: 5;
   padding-bottom: 0.75rem;
   margin-bottom: 0.75rem;
-  background-color: var(--surface-elevated);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--popup-bg);
+  border-bottom: 1px solid var(--popup-border-subtle);
 }
 
 .knowledge-details-toolbar {
@@ -1664,9 +1664,9 @@ h1 {
 }
 
 .knowledge-details-toggle-button {
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background-color: rgba(59, 130, 246, 0.12);
-  color: rgba(226, 232, 240, 0.85);
+  border: 1px solid var(--popup-border-control);
+  background-color: var(--popup-accent-dim-bg);
+  color: var(--popup-text-bright);
   border-radius: 999px;
   padding: 0.35rem 0.95rem;
   font-size: 0.82rem;
@@ -1677,9 +1677,9 @@ h1 {
 
 .knowledge-details-toggle-button:hover,
 .knowledge-details-toggle-button:focus-visible {
-  background-color: rgba(59, 130, 246, 0.22);
-  border-color: rgba(59, 130, 246, 0.45);
-  color: #f8fafc;
+  background-color: var(--popup-accent-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-text);
   outline: none;
 }
 
@@ -1725,9 +1725,9 @@ h1 {
 }
 
 .knowledge-details-nav-button {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background-color: rgba(148, 163, 184, 0.12);
-  color: var(--text-primary);
+  border: 1px solid var(--popup-border);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
   border-radius: 999px;
   padding: 0.25rem 0.75rem;
   font-size: 0.8rem;
@@ -1739,9 +1739,9 @@ h1 {
 
 .knowledge-details-nav-button:hover,
 .knowledge-details-nav-button:focus-visible {
-  background-color: rgba(148, 163, 184, 0.22);
-  border-color: rgba(148, 163, 184, 0.45);
-  color: #f8fafc;
+  background-color: var(--popup-control-active-bg);
+  border-color: var(--popup-border-strong);
+  color: var(--popup-text);
   outline: none;
 }
 
@@ -1753,10 +1753,10 @@ h1 {
 }
 
 .knowledge-details-category {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--popup-border-subtle);
   border-radius: 0.6rem;
   padding: 0.95rem 1rem;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--popup-subtle-bg);
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -1801,10 +1801,10 @@ h1 {
   gap: 0.4rem;
   padding: 0.28rem 0.65rem;
   border-radius: 999px;
-  background-color: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
   font-size: 0.78rem;
-  color: rgba(226, 232, 240, 0.92);
+  color: var(--popup-text-strong);
 }
 
 .knowledge-details-counter-type {
@@ -1821,13 +1821,13 @@ h1 {
   font-size: 0.72rem;
   line-height: 1.1;
   white-space: nowrap;
-  background-color: rgba(59, 130, 246, 0.22);
-  color: #bfdbfe;
+  background-color: var(--popup-accent-bg);
+  color: var(--popup-accent);
 }
 
 .knowledge-details-counter-label--empty {
-  background-color: rgba(148, 163, 184, 0.18);
-  color: rgba(226, 232, 240, 0.55);
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-dim);
 }
 
 .knowledge-details-badge {
@@ -1854,10 +1854,10 @@ h1 {
 }
 
 .knowledge-details-type-group {
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--popup-border-subtle);
   border-radius: 0.5rem;
   padding: 0.75rem 0.85rem;
-  background-color: rgba(255, 255, 255, 0.025);
+  background-color: var(--popup-subtle-bg);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -1871,7 +1871,7 @@ h1 {
   gap: 0.5rem;
   font-weight: 600;
   font-size: 0.9rem;
-  color: rgba(241, 245, 249, 0.9);
+  color: var(--popup-text-strong);
 }
 
 .knowledge-details-type-label {
@@ -1900,14 +1900,14 @@ h1 {
 
 .knowledge-details-entry-name {
   flex: 1 1 auto;
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--popup-text-strong);
 }
 
 .knowledge-details-entry-indicator {
   width: 0.65rem;
   height: 0.65rem;
   border-radius: 999px;
-  border: 2px solid rgba(148, 163, 184, 0.55);
+  border: 2px solid var(--popup-border-stronger);
   background-color: transparent;
   box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.3);
 }
@@ -1928,7 +1928,7 @@ h1 {
 }
 
 .knowledge-details-entry--known .knowledge-details-entry-name {
-  color: rgba(148, 163, 184, 0.85);
+  color: var(--popup-text-medium);
 }
 
 .knowledge-details-entry--unknown .knowledge-details-entry-name {
@@ -1955,9 +1955,9 @@ h1 {
 .knowledge-details-entry-category-badge {
   padding: 0.05rem 0.4rem;
   font-size: 0.7rem;
-  background: rgba(139, 92, 246, 0.15);
-  color: rgba(196, 181, 253, 0.85);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: var(--popup-accent-dim-bg);
+  color: var(--popup-accent);
+  border: 1px solid var(--popup-accent-subtle-bg);
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -1966,9 +1966,9 @@ h1 {
   flex: 0 0 auto;
   padding: 0.05rem 0.4rem;
   font-size: 0.78rem;
-  background: rgba(59, 130, 246, 0.1);
-  color: rgba(147, 197, 253, 0.85);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: var(--popup-accent-dim-bg);
+  color: var(--popup-accent);
+  border: 1px solid var(--popup-accent-subtle-bg);
   border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
@@ -1978,8 +1978,8 @@ h1 {
 }
 
 .knowledge-details-entry-location:hover {
-  background: rgba(59, 130, 246, 0.25);
-  color: rgba(191, 219, 254, 1);
+  background: var(--popup-accent-bg);
+  color: var(--popup-accent);
 }
 
 .knowledge-details-entry-map {
@@ -2006,7 +2006,7 @@ h1 {
   flex-basis: 100%;
   margin-left: 1.15rem;
   font-size: 0.78rem;
-  color: rgba(148, 163, 184, 0.7);
+  color: var(--popup-text-medium);
   font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2023,7 +2023,7 @@ h1 {
 
 .knowledge-details-empty {
   font-size: 0.85rem;
-  color: rgba(148, 163, 184, 0.88);
+  color: var(--popup-text-bright);
 }
 
 .knowledge-details-unknown {
@@ -2043,9 +2043,9 @@ h1 {
 }
 
 .knowledge-details-area-select {
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background-color: rgba(255, 255, 255, 0.06);
-  color: rgba(226, 232, 240, 0.9);
+  border: 1px solid var(--popup-border-control);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-strong);
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   font-size: 0.82rem;
@@ -2054,8 +2054,8 @@ h1 {
 }
 
 .knowledge-details-area-select option {
-  background-color: #1e293b;
-  color: rgba(226, 232, 240, 0.9);
+  background-color: var(--popup-bg);
+  color: var(--popup-text-strong);
 }
 
 .knowledge-details-filter {
@@ -2066,9 +2066,9 @@ h1 {
 }
 
 .knowledge-details-filter-input {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background-color: rgba(255, 255, 255, 0.06);
-  color: rgba(226, 232, 240, 0.9);
+  border: 1px solid var(--popup-border);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-strong);
   border-radius: 999px;
   padding: 0.2rem 1.6rem 0.2rem 0.6rem;
   font-size: 0.78rem;
@@ -2078,12 +2078,12 @@ h1 {
 }
 
 .knowledge-details-filter-input::placeholder {
-  color: rgba(148, 163, 184, 0.55);
+  color: var(--popup-text-dim);
 }
 
 .knowledge-details-filter-input:focus {
-  border-color: rgba(148, 163, 184, 0.6);
-  background-color: rgba(255, 255, 255, 0.09);
+  border-color: var(--popup-border-strong);
+  background-color: var(--popup-control-hover-bg);
 }
 
 .knowledge-details-filter-clear {
@@ -2091,7 +2091,7 @@ h1 {
   right: 0.5rem;
   border: none;
   background: transparent;
-  color: rgba(148, 163, 184, 0.6);
+  color: var(--popup-text-medium);
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
@@ -2102,14 +2102,14 @@ h1 {
 }
 
 .knowledge-details-filter-clear:hover {
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--popup-text-strong);
 }
 
 .knowledge-details-area {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--popup-border-subtle);
   border-radius: 0.6rem;
   padding: 0.95rem 1rem;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--popup-subtle-bg);
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
