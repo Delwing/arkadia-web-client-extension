@@ -1,0 +1,81 @@
+/* Ice & Fire - cool blues and warm reds split */
+/* Ice blue = accent/resting controls/subtle bg, Fire orange-red = borders/hover/active states */
+.theme-ice-fire {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 88, 176, 232;
+  --popup-bg: #101820;
+  --popup-text: #e0e8f0;
+  --popup-text-dim: rgba(224, 232, 240, 0.5);
+  --popup-text-dimmer: rgba(224, 232, 240, 0.4);
+  --popup-text-subtle: rgba(224, 232, 240, 0.7);
+  --popup-text-strong: rgba(224, 232, 240, 0.9);
+  --popup-text-faint: rgba(224, 232, 240, 0.3);
+  --popup-text-medium: rgba(224, 232, 240, 0.6);
+  --popup-text-bright: rgba(224, 232, 240, 0.8);
+  /* Fire-tinted hover and active states */
+  --popup-hover-bg: rgba(220, 100, 30, 0.08);
+  --popup-subtle-bg: rgba(100, 160, 220, 0.04);
+  --popup-control-bg: rgba(100, 160, 220, 0.1);
+  --popup-control-hover-bg: rgba(220, 100, 30, 0.12);
+  --popup-control-active-bg: rgba(220, 100, 30, 0.18);
+  --popup-control-pressed-bg: rgba(220, 100, 30, 0.22);
+  /* Fire-tinted borders */
+  --popup-border: rgba(220, 100, 30, 0.15);
+  --popup-border-subtle: rgba(220, 100, 30, 0.08);
+  --popup-border-control: rgba(220, 100, 30, 0.18);
+  --popup-border-strong: rgba(220, 100, 30, 0.22);
+  --popup-border-stronger: rgba(220, 100, 30, 0.3);
+  /* Ice blue accent */
+  --popup-accent: #58b0e8;
+  --popup-accent-bg: rgba(88, 176, 232, 0.2);
+  --popup-accent-hover-bg: rgba(88, 176, 232, 0.3);
+  --popup-accent-subtle-bg: rgba(88, 176, 232, 0.15);
+  --popup-accent-border: rgba(88, 176, 232, 0.4);
+  --popup-accent-dim-bg: rgba(88, 176, 232, 0.12);
+  --popup-accent-strong-bg: rgba(60, 140, 200, 0.15);
+  --popup-accent-strong-hover-bg: rgba(60, 140, 200, 0.25);
+  --popup-accent-strong-active-bg: rgba(60, 140, 200, 0.4);
+  --popup-accent-team-bg: rgba(60, 140, 200, 0.08);
+  --popup-accent-team-hover-bg: rgba(60, 140, 200, 0.15);
+  /* Ice side — frosty cool success */
+  --popup-success: #40b8c8;
+  --popup-success-light: #58d0e0;
+  --popup-success-bg: rgba(64, 184, 200, 0.2);
+  --popup-success-hover-bg: rgba(64, 184, 200, 0.3);
+  --popup-success-border: rgba(64, 184, 200, 0.25);
+  --popup-success-subtle-bg: rgba(64, 184, 200, 0.1);
+  --popup-success-active-bg: rgba(64, 184, 200, 0.35);
+  /* Fire side — blazing flames for warning/danger */
+  --popup-warning: #e87820;
+  --popup-warning-light: #f89838;
+  --popup-warning-border: rgba(232, 120, 32, 0.35);
+  --popup-warning-bg: rgba(232, 120, 32, 0.22);
+  --popup-warning-hover-bg: rgba(232, 120, 32, 0.35);
+  --popup-danger: #d83018;
+  --popup-danger-light: #f04828;
+  --popup-danger-soft: #e84020;
+  --popup-danger-bg: rgba(216, 48, 24, 0.22);
+  --popup-danger-hover-bg: rgba(216, 48, 24, 0.35);
+  --popup-danger-subtle-bg: rgba(216, 48, 24, 0.12);
+  --popup-danger-border: rgba(216, 48, 24, 0.3);
+  --popup-danger-active-bg: rgba(216, 48, 24, 0.4);
+  --popup-data-yellow: #f0c830;
+  --popup-data-gold: #e0a018;
+  --popup-data-green: #58d870;
+  --popup-data-green-light: #78f090;
+  --popup-data-blue: #60c8f0;
+  --popup-data-orange: #e87820;
+  --popup-data-orange-warm: #d07028;
+  --popup-data-orange-light: #f08828;
+  --popup-data-pink: #e08880;
+  --popup-data-purple: #7878c0;
+  --popup-data-purple-light: #9090d8;
+  --popup-data-gray: #708898;
+  --popup-data-gray-light: #8898a8;
+  --popup-data-tomato: #d84020;
+  --popup-data-magic-green: #38e090;
+  --popup-data-spring-green: #30d080;
+  --popup-input-bg: #141e28;
+  --popup-input-text: #e0e8f0;
+  --popup-input-focus-border: rgba(220, 100, 30, 0.45);
+}

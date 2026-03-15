@@ -6,7 +6,7 @@ export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 
 export type PathFindingAlgorithm = 'dijkstra' | 'astar';
 
-export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'ice-fire';
+export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'ice-fire' | 'ice-fire-2';
 
 export interface FooterComponentConfig {
     id: string;
