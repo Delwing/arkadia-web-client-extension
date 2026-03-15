@@ -89,6 +89,14 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 |---------|------|
 | `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |
 
+## Kolorowanie
+
+| Komenda | Opis |
+|---------|------|
+| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |
+
+> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.
+
 ## Lowienie ryb
 
 | Komenda | Opis |
