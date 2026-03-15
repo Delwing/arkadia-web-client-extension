@@ -2,8 +2,8 @@ import 'bootswatch/dist/darkly/bootstrap.min.css';
 import './style.css'
 import './themes/fantasy.css'
 import './themes/forest.css'
-import './themes/ice-fire.css'
-import './themes/ice-fire-2.css'
+import './themes/icy.css'
+import './themes/gray.css'
 import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
 import Client from "@client/Client";

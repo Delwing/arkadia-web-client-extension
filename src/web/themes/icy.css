@@ -1,6 +1,6 @@
-/* Ice & Fire - cool blues and warm reds split */
+/* Icy - cool blues and warm reds split */
 /* Ice blue = accent/resting controls/subtle bg, Fire orange-red = borders/hover/active states */
-.theme-ice-fire {
+.theme-icy {
   --bs-primary: var(--popup-accent);
   --bs-primary-rgb: 88, 176, 232;
   --popup-bg: #101820;
