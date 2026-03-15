@@ -6,6 +6,8 @@ export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 
 export type PathFindingAlgorithm = 'dijkstra' | 'astar';
 
+export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'ice-fire';
+
 export interface FooterComponentConfig {
     id: string;
     visible: boolean;
@@ -82,6 +84,7 @@ export interface UiSettings {
     objectListBackgroundAlpha: number;
     alwaysVisibleBars: string[];
     barOrder: string[];
+    colorTheme: ColorTheme;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -133,4 +136,5 @@ export const defaultUiSettings: UiSettings = {
     objectListBackgroundAlpha: 0.4,
     alwaysVisibleBars: [],
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
+    colorTheme: 'default',
 };
