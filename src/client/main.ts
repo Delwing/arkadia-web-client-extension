@@ -134,6 +134,7 @@ import initLabyrinthMapper from './scripts/rindeLabyrinthMapper'
 import initRaonLabyrinthMapper from './scripts/raonLabyrinthMapper'
 import initDataRefresh from './scripts/dataRefresh'
 import initTcolor from './scripts/tcolor'
+import initOpal from './scripts/opal'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -297,5 +298,6 @@ export function registerScripts(client: Client) {
     initDobOp(client, aliases)
     initDataRefresh(client, aliases)
     initTcolor(client, aliases)
+    initOpal(client)
 
 }
