@@ -5789,6 +5789,7 @@ body.mobile-command-radial-active {
   text-align: center;
   color: var(--popup-text-bright);
   pointer-events: none;
+  opacity: 0.75;
 }
 
 .context-menu-header-small {
@@ -5813,11 +5814,14 @@ body.mobile-command-radial-active {
   color: var(--popup-text);
   white-space: nowrap;
   cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
 }
 
 .context-menu button:hover {
   border-color: var(--popup-text-bright);
   background: var(--popup-section-bg, var(--popup-bg));
+  opacity: 0.9;
 }
 
 .context-menu button.opens-window {
