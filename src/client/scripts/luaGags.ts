@@ -119,12 +119,17 @@ export default function registerLuaGagTriggers(client: Client) {
     applyDeleteLinesConfig(characterStorage.get(LUA_GAGS_STORAGE_KEY));
     applyWalkaConfig(characterStorage.get(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY));
 
+    let gagsTable: Table | null = null;
+
     characterStorage.onChange(LUA_GAGS_STORAGE_KEY, (newValue) => {
         applyDeleteLinesConfig(newValue);
     });
 
     characterStorage.onChange(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, (newValue) => {
         applyWalkaConfig(newValue);
+        if (gagsTable) {
+            gagsTable.set('fin_prefix', walkaConfig.finPrefix);
+        }
     });
 
     function toPattern(p: PatternObj) {
@@ -328,8 +333,9 @@ export default function registerLuaGagTriggers(client: Client) {
             }
         }
 
+        const gagsTable = new luainjs.Table(gags);
         const scripts = {
-            gags: new luainjs.Table(gags),
+            gags: gagsTable,
             gag_colors: new luainjs.Table(gagColors),
             utils: new luainjs.Table({
                 bind_functional: (string: string) => {
@@ -439,7 +445,7 @@ export default function registerLuaGagTriggers(client: Client) {
         })
         luaEnv.loadLib("scripts", new luainjs.Table(scripts))
         luaEnv.loadLib("ateam", new luainjs.Table(ateam))
-        return {global, luaEnv, resetSelection};
+        return {global, luaEnv, resetSelection, gagsTable};
     }
 
     function escapeLuaString(str: string): string {
@@ -479,7 +485,8 @@ export default function registerLuaGagTriggers(client: Client) {
         client.sendEvent("sound:play", { key: "beep" })
     })
 
-    const {global, luaEnv, resetSelection} = createLuaEnv();
+    const {global, luaEnv, resetSelection, gagsTable: gagsTableRef} = createLuaEnv();
+    gagsTable = gagsTableRef;
     const luaFiles = import.meta.glob("../lua/**/*.lua", {query: "?raw", eager: true});
     Object.values(luaFiles).forEach((file: any) => {
         luaEnv.parse(file.default).exec()

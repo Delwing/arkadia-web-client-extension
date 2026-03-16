@@ -8,6 +8,7 @@ import {
     GMCP_PATHS,
     waitForCommandInput,
     waitForOutputContaining,
+    getRecentOutput,
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
@@ -18,6 +19,7 @@ const WALKA_TAB_BUTTON = 'button:has-text("Walka")';
 
 const LUA_GAGS_STORAGE_KEY = 'lua_gags_delete_lines';
 const LUA_GAGS_COLORS_STORAGE_KEY = 'lua_gags_colors';
+const LUA_GAGS_WALKA_CONFIG_STORAGE_KEY = 'lua_gags_walka_config';
 
 async function openOptions(page: Page) {
     await page.click(MENU_BUTTON);
@@ -82,6 +84,15 @@ async function getStoredLuaGagsColors(page: Page) {
         const raw = localStorage.getItem(realKey);
         return raw ? JSON.parse(raw) : null;
     }, [LUA_GAGS_COLORS_STORAGE_KEY]);
+}
+
+async function getStoredWalkaConfig(page: Page) {
+    return await page.evaluate(([key]) => {
+        const currentChar = localStorage.getItem('currentCharacter');
+        const realKey = currentChar ? `${currentChar}:${key}` : key;
+        const raw = localStorage.getItem(realKey);
+        return raw ? JSON.parse(raw) : null;
+    }, [LUA_GAGS_WALKA_CONFIG_STORAGE_KEY]);
 }
 
 test.describe('Lua gags settings', () => {
@@ -437,5 +448,83 @@ test.describe('Lua gags settings isolation', () => {
         modal = await openLuaGagsTab(page);
         mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
         await expect(mojeCiosySelect).toHaveValue('1');
+    });
+});
+
+const SREBRNY_FIN_MESSAGE =
+    'Podbiegasz do Orka i spokojnym, precyzyjnym ruchem wyprowadzasz szerokie ciecie w jego glowe,' +
+    ' a karby na twoim srebrnym kunsztownym mieczu rozrywaja cialo wroga.' +
+    ' Widzisz, jak ostatkiem sil Ork probuje wstac, lecz po chwili z cichym jekiem osuwa sie na ziemie.';
+
+test.describe('Finisher prefix', () => {
+    test('custom finisher prefix is saved and persisted', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'FinPrefixTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'FinPrefixTester';
+        });
+
+        const modal = await openLuaGagsTab(page);
+
+        const finPrefixInput = modal.locator('#walka-finPrefix');
+        await finPrefixInput.clear();
+        await finPrefixInput.fill('FINISH');
+
+        await saveOptions(page);
+
+        const walkaConfig = await getStoredWalkaConfig(page);
+        expect(walkaConfig, 'walka config should be persisted').toBeTruthy();
+        expect(walkaConfig.finPrefix, 'finPrefix should be saved as FINISH').toBe('FINISH');
+    });
+
+    test('custom finisher prefix appears in gag output', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'FinPrefixGagTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'FinPrefixGagTester';
+        });
+
+        // Set custom finisher prefix and ensure moje_ciosy mode is 2 (prefix)
+        const modal = await openLuaGagsTab(page);
+        const finPrefixInput = modal.locator('#walka-finPrefix');
+        await finPrefixInput.clear();
+        await finPrefixInput.fill('ZABIJ');
+        const mojeCiosySelect = getGagSelect(modal, 'moje_ciosy');
+        await mojeCiosySelect.selectOption('2');
+        await saveOptions(page);
+
+        // Send the srebrny_miecz finisher combat message
+        await pushText(page, SREBRNY_FIN_MESSAGE, {type: 'combat.avatar'});
+
+        await waitForOutputContaining(page, 'ZABIJ', 8000);
+
+        const outputText = await getRecentOutput(page, 20);
+        expect(outputText, 'output should contain [ZABIJ] prefix').toContain('[ZABIJ]');
+    });
+
+    test('default finisher prefix FIN works in gag output', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'DefaultFinTester'});
+
+        await page.waitForFunction(() => {
+            return localStorage.getItem('currentCharacter') === 'DefaultFinTester';
+        });
+
+        // Use default settings - no options changes needed
+        // Send the srebrny_miecz finisher combat message
+        await pushText(page, SREBRNY_FIN_MESSAGE, {type: 'combat.avatar'});
+
+        await waitForOutputContaining(page, 'FIN', 8000);
+
+        const outputText = await getRecentOutput(page, 20);
+        expect(outputText, 'output should contain [FIN] prefix').toContain('[FIN]');
     });
 });
