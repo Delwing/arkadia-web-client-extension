@@ -4347,6 +4347,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .mobile-direction-buttons.collapsed {
   gap: 0;
+  grid-template-columns: auto !important;
 }
 
 #mobile-buttons-preview,
@@ -4794,7 +4795,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .mobile-direction-buttons.collapsed #z-buttons-list,
 .mobile-direction-buttons.collapsed #zas-buttons-list,
 .mobile-direction-buttons.collapsed #w-buttons-list,
-.mobile-direction-buttons.collapsed #prze-buttons-list {
+.mobile-direction-buttons.collapsed #prze-buttons-list,
+.mobile-direction-buttons.collapsed #idz-buttons-list {
   display: none;
 }
 

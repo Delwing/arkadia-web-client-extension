@@ -64,6 +64,7 @@ export default class MobileDirectionButtons {
     private isScrolling = false;
     private lastScrollTop = 0;
     private collapsed = false;
+    private preCollapseLeft: number | null = null;
     // Hold action tracking
     private buttonPressStart = new Map<string, { time: number; x: number; y: number }>();
     private buttonDragged = new Set<string>();
@@ -763,11 +764,34 @@ export default class MobileDirectionButtons {
 
     private toggleVisibility() {
         if (!this.container) return;
+
+        const toggleBtn = this.toggleButton;
+        const toggleScreenX = toggleBtn?.getBoundingClientRect().left;
+
         this.collapsed = !this.collapsed;
+
         if (this.collapsed) {
+            this.preCollapseLeft = this.container.getBoundingClientRect().left;
             this.container.classList.add('collapsed');
+
+            // Shift container so the toggle button stays at the same screen X
+            if (toggleBtn && toggleScreenX !== undefined) {
+                const newToggleX = toggleBtn.getBoundingClientRect().left;
+                const delta = toggleScreenX - newToggleX;
+                if (delta !== 0) {
+                    const left = this.container.getBoundingClientRect().left;
+                    this.container.style.left = `${left + delta}px`;
+                }
+            }
+            this.clampToView();
         } else {
             this.container.classList.remove('collapsed');
+            // Restore original container position
+            if (this.preCollapseLeft !== null) {
+                this.container.style.left = `${this.preCollapseLeft}px`;
+                this.preCollapseLeft = null;
+            }
+            this.clampToView();
         }
         this.updateToggleButton();
     }
