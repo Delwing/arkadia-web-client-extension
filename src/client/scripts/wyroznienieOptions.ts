@@ -15,9 +15,10 @@ export default function initWyroznienieOptions(client: Client) {
     const doWyboruPattern = /^Do wyboru sa:$/;
 
     // Match option lines (indented with 4 spaces or tab, containing text)
-    const optionPattern = /^(?:\t|    )(.+)$/;
+    const optionPattern = /^(?:\t| {4})(.+)$/;
 
     let collectingOptions = false;
+    let resetRegistered = false;
     let currentTitle: string | null = null;
 
     // Main trigger to detect header
@@ -60,9 +61,10 @@ export default function initWyroznienieOptions(client: Client) {
         return lineBuffer;
     }, TAG);
 
-    // Trigger for "Do wyboru sa:" line
+    // Trigger for "Do wyboru sa:" line - starts collecting
     client.Triggers.registerTrigger(doWyboruPattern, (line) => {
         collectingOptions = true;
+        resetRegistered = false;
         return line;
     }, TAG);
 
@@ -77,6 +79,15 @@ export default function initWyroznienieOptions(client: Client) {
         // Skip empty lines or lines that don't look like options
         if (!optionText) {
             return line;
+        }
+
+        // Register one-time reset on first option match
+        if (!resetRegistered) {
+            resetRegistered = true;
+            client.Triggers.registerOneTimeTrigger(/^[^\t ]/, () => {
+                collectingOptions = false;
+                return null;
+            }, TAG);
         }
 
         // Create clickable option line
@@ -94,11 +105,5 @@ export default function initWyroznienieOptions(client: Client) {
         lineBuffer.appendBuffer(optionBuffer);
 
         return lineBuffer;
-    }, TAG);
-
-    // Reset collecting state on empty line or other content
-    client.Triggers.registerTrigger(/^$/, () => {
-        collectingOptions = false;
-        return null;
     }, TAG);
 }
