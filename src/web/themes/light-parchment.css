@@ -1,0 +1,107 @@
+/* Light Parchment - warm cream backgrounds with brown/sepia tones */
+/* Evokes aged paper and ink — warm, readable, easy on the eyes */
+.theme-light-parchment {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 139, 90, 43;
+  color-scheme: light;
+  --popup-bg: #f5f0e6;
+  --popup-text: #3a3228;
+  --popup-text-dim: rgba(58, 50, 40, 0.5);
+  --popup-text-dimmer: rgba(58, 50, 40, 0.4);
+  --popup-text-subtle: rgba(58, 50, 40, 0.65);
+  --popup-text-strong: rgba(58, 50, 40, 0.9);
+  --popup-text-faint: rgba(58, 50, 40, 0.3);
+  --popup-text-medium: rgba(58, 50, 40, 0.55);
+  --popup-text-bright: rgba(58, 50, 40, 0.75);
+  /* Warm brown hover and active states */
+  --popup-hover-bg: rgba(139, 90, 43, 0.07);
+  --popup-subtle-bg: rgba(139, 90, 43, 0.03);
+  --popup-section-bg: rgba(139, 90, 43, 0.04);
+  --popup-control-bg: rgba(139, 90, 43, 0.06);
+  --popup-control-hover-bg: rgba(139, 90, 43, 0.1);
+  --popup-control-active-bg: rgba(139, 90, 43, 0.14);
+  --popup-control-pressed-bg: rgba(139, 90, 43, 0.18);
+  /* Sepia-tinted borders */
+  --popup-border: rgba(139, 90, 43, 0.15);
+  --popup-border-subtle: rgba(139, 90, 43, 0.08);
+  --popup-border-control: rgba(139, 90, 43, 0.18);
+  --popup-border-strong: rgba(139, 90, 43, 0.25);
+  --popup-border-stronger: rgba(139, 90, 43, 0.35);
+  /* Brown accent */
+  --popup-accent: #8b5a2b;
+  --popup-accent-bg: rgba(139, 90, 43, 0.12);
+  --popup-accent-hover-bg: rgba(139, 90, 43, 0.18);
+  --popup-accent-subtle-bg: rgba(139, 90, 43, 0.08);
+  --popup-accent-border: rgba(139, 90, 43, 0.35);
+  --popup-accent-dim-bg: rgba(139, 90, 43, 0.06);
+  --popup-accent-strong-bg: rgba(120, 70, 25, 0.1);
+  --popup-accent-strong-hover-bg: rgba(120, 70, 25, 0.18);
+  --popup-accent-strong-active-bg: rgba(120, 70, 25, 0.28);
+  --popup-accent-team-bg: rgba(120, 70, 25, 0.06);
+  --popup-accent-team-hover-bg: rgba(120, 70, 25, 0.12);
+  --popup-success: #2d7a3a;
+  --popup-success-light: #3d9a4a;
+  --popup-success-bg: rgba(45, 122, 58, 0.12);
+  --popup-success-hover-bg: rgba(45, 122, 58, 0.18);
+  --popup-success-border: rgba(45, 122, 58, 0.2);
+  --popup-success-subtle-bg: rgba(45, 122, 58, 0.06);
+  --popup-success-active-bg: rgba(45, 122, 58, 0.25);
+  /* Warm secondary tones */
+  --popup-warning: #b8860b;
+  --popup-warning-light: #d4a017;
+  --popup-warning-border: rgba(184, 134, 11, 0.25);
+  --popup-warning-bg: rgba(184, 134, 11, 0.12);
+  --popup-warning-hover-bg: rgba(184, 134, 11, 0.18);
+  --popup-danger: #b83030;
+  --popup-danger-light: #d04040;
+  --popup-danger-soft: #c83838;
+  --popup-danger-bg: rgba(184, 48, 48, 0.1);
+  --popup-danger-hover-bg: rgba(184, 48, 48, 0.16);
+  --popup-danger-subtle-bg: rgba(184, 48, 48, 0.06);
+  --popup-danger-border: rgba(184, 48, 48, 0.2);
+  --popup-danger-active-bg: rgba(184, 48, 48, 0.22);
+  --popup-data-yellow: #9a8a00;
+  --popup-data-gold: #a07800;
+  --popup-data-green: #2d8a2d;
+  --popup-data-green-light: #3da83d;
+  --popup-data-blue: #2868a8;
+  --popup-data-orange: #c87020;
+  --popup-data-orange-warm: #b06828;
+  --popup-data-orange-light: #d08020;
+  --popup-data-pink: #a85070;
+  --popup-data-purple: #6048a8;
+  --popup-data-purple-light: #7860b8;
+  --popup-data-gray: #686860;
+  --popup-data-gray-light: #808078;
+  --popup-data-tomato: #c04030;
+  --popup-data-magic-green: #00884a;
+  --popup-data-spring-green: #009048;
+  --popup-input-bg: #ede8dc;
+  --popup-input-text: #3a3228;
+  --popup-input-focus-border: rgba(139, 90, 43, 0.45);
+  /* Close/pin button overrides for light bg */
+  --floating-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%233a3228' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
+  --floating-close-background: rgba(0, 0, 0, 0.06);
+  --floating-close-hover-background: rgba(0, 0, 0, 0.12);
+  --floating-close-hover-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  --floating-pin-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/%3E%3C/svg%3E");
+  --floating-pin-background: rgba(0, 0, 0, 0.06);
+  --floating-pin-hover-background: rgba(0, 0, 0, 0.1);
+  --floating-pin-hover-shadow: 0 0 0 1px rgba(139, 90, 43, 0.3);
+  --floating-pin-active-background: rgba(139, 90, 43, 0.2);
+  --floating-pin-active-hover-background: rgba(139, 90, 43, 0.3);
+  --floating-pin-active-hover-shadow: 0 0 0 1px rgba(139, 90, 43, 0.45);
+  --floating-pin-active-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238b5a2b' d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/%3E%3C/svg%3E");
+  /* Footer / bottom chrome */
+  --footer-bg: #ede8dc;
+  --footer-border: rgba(139, 90, 43, 0.15);
+  --footer-control-bg: rgba(139, 90, 43, 0.08);
+  --footer-control-border: rgba(139, 90, 43, 0.2);
+  --footer-control-hover-bg: rgba(139, 90, 43, 0.12);
+  --footer-control-hover-border: rgba(139, 90, 43, 0.35);
+  --footer-button-bg: rgba(139, 90, 43, 0.1);
+  --footer-input-focus-border: #8b5a2b;
+  --footer-text-strong: rgba(58, 50, 40, 0.95);
+  --footer-text: rgba(58, 50, 40, 0.8);
+  --footer-text-dim: rgba(58, 50, 40, 0.5);
+}

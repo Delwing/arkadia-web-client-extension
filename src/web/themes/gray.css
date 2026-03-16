@@ -1,0 +1,93 @@
+/* Gray - neutral monochrome with subtle cool undertones */
+/* Gray = accent/controls/borders, slightly warmer gray for hover/active states */
+.theme-gray {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 160, 165, 175;
+  --popup-bg: #141416;
+  --popup-text: #d8d8dc;
+  --popup-text-dim: rgba(216, 216, 220, 0.5);
+  --popup-text-dimmer: rgba(216, 216, 220, 0.4);
+  --popup-text-subtle: rgba(216, 216, 220, 0.7);
+  --popup-text-strong: rgba(216, 216, 220, 0.9);
+  --popup-text-faint: rgba(216, 216, 220, 0.3);
+  --popup-text-medium: rgba(216, 216, 220, 0.6);
+  --popup-text-bright: rgba(216, 216, 220, 0.8);
+  /* Warm gray hover and active states */
+  --popup-hover-bg: rgba(180, 175, 170, 0.07);
+  --popup-subtle-bg: rgba(160, 165, 175, 0.04);
+  --popup-section-bg: rgba(160, 165, 175, 0.07);
+  --popup-control-bg: rgba(160, 165, 175, 0.09);
+  --popup-control-hover-bg: rgba(180, 175, 170, 0.13);
+  --popup-control-active-bg: rgba(180, 175, 170, 0.18);
+  --popup-control-pressed-bg: rgba(180, 175, 170, 0.22);
+  /* Neutral borders */
+  --popup-border: rgba(180, 180, 185, 0.13);
+  --popup-border-subtle: rgba(180, 180, 185, 0.07);
+  --popup-border-control: rgba(180, 180, 185, 0.17);
+  --popup-border-strong: rgba(180, 180, 185, 0.22);
+  --popup-border-stronger: rgba(180, 180, 185, 0.3);
+  /* Cool gray accent */
+  --popup-accent: #a0a5af;
+  --popup-accent-bg: rgba(160, 165, 175, 0.2);
+  --popup-accent-hover-bg: rgba(160, 165, 175, 0.3);
+  --popup-accent-subtle-bg: rgba(160, 165, 175, 0.15);
+  --popup-accent-border: rgba(160, 165, 175, 0.4);
+  --popup-accent-dim-bg: rgba(160, 165, 175, 0.12);
+  --popup-accent-strong-bg: rgba(130, 135, 145, 0.15);
+  --popup-accent-strong-hover-bg: rgba(130, 135, 145, 0.25);
+  --popup-accent-strong-active-bg: rgba(130, 135, 145, 0.4);
+  --popup-accent-team-bg: rgba(130, 135, 145, 0.08);
+  --popup-accent-team-hover-bg: rgba(130, 135, 145, 0.15);
+  --popup-success: #6dba6d;
+  --popup-success-light: #88d088;
+  --popup-success-bg: rgba(109, 186, 109, 0.2);
+  --popup-success-hover-bg: rgba(109, 186, 109, 0.3);
+  --popup-success-border: rgba(109, 186, 109, 0.2);
+  --popup-success-subtle-bg: rgba(109, 186, 109, 0.1);
+  --popup-success-active-bg: rgba(109, 186, 109, 0.35);
+  /* Warm gray secondary */
+  --popup-warning: #c8a848;
+  --popup-warning-light: #d8b858;
+  --popup-warning-border: rgba(200, 168, 72, 0.25);
+  --popup-warning-bg: rgba(200, 168, 72, 0.2);
+  --popup-warning-hover-bg: rgba(200, 168, 72, 0.3);
+  --popup-danger: #c06060;
+  --popup-danger-light: #d87878;
+  --popup-danger-soft: #d07070;
+  --popup-danger-bg: rgba(192, 96, 96, 0.2);
+  --popup-danger-hover-bg: rgba(192, 96, 96, 0.3);
+  --popup-danger-subtle-bg: rgba(192, 96, 96, 0.1);
+  --popup-danger-border: rgba(192, 96, 96, 0.25);
+  --popup-danger-active-bg: rgba(192, 96, 96, 0.35);
+  --popup-data-yellow: #d8d050;
+  --popup-data-gold: #c8b040;
+  --popup-data-green: #70c870;
+  --popup-data-green-light: #90d890;
+  --popup-data-blue: #80a8c8;
+  --popup-data-orange: #c89848;
+  --popup-data-orange-warm: #b89050;
+  --popup-data-orange-light: #d0a040;
+  --popup-data-pink: #c08898;
+  --popup-data-purple: #8880a8;
+  --popup-data-purple-light: #a098c0;
+  --popup-data-gray: #888890;
+  --popup-data-gray-light: #a0a0a8;
+  --popup-data-tomato: #b86060;
+  --popup-data-magic-green: #50c880;
+  --popup-data-spring-green: #48c070;
+  --popup-input-bg: #18181c;
+  --popup-input-text: #d8d8dc;
+  --popup-input-focus-border: rgba(160, 165, 175, 0.45);
+  /* Footer / bottom chrome */
+  --footer-bg: #141416;
+  --footer-border: rgba(180, 180, 185, 0.13);
+  --footer-control-bg: rgba(160, 165, 175, 0.1);
+  --footer-control-border: rgba(180, 180, 185, 0.2);
+  --footer-control-hover-bg: rgba(180, 175, 170, 0.16);
+  --footer-control-hover-border: rgba(180, 180, 185, 0.35);
+  --footer-button-bg: #282828;
+  --footer-input-focus-border: #a0a5af;
+  --footer-text-strong: rgba(216, 216, 220, 0.95);
+  --footer-text: rgba(216, 216, 220, 0.8);
+  --footer-text-dim: rgba(216, 216, 220, 0.5);
+}

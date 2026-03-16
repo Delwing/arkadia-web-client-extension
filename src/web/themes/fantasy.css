@@ -1,0 +1,93 @@
+/* Fantasy - mystical purples and enchanted golds */
+/* Purple = accent/resting controls, Gold = borders/hover/active states */
+.theme-fantasy {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 184, 138, 237;
+  --popup-bg: #1a1225;
+  --popup-text: #e8dff5;
+  --popup-text-dim: rgba(232, 223, 245, 0.5);
+  --popup-text-dimmer: rgba(232, 223, 245, 0.4);
+  --popup-text-subtle: rgba(232, 223, 245, 0.7);
+  --popup-text-strong: rgba(232, 223, 245, 0.9);
+  --popup-text-faint: rgba(232, 223, 245, 0.3);
+  --popup-text-medium: rgba(232, 223, 245, 0.6);
+  --popup-text-bright: rgba(232, 223, 245, 0.8);
+  /* Gold-tinted hover and active states */
+  --popup-hover-bg: rgba(200, 160, 40, 0.08);
+  --popup-subtle-bg: rgba(160, 120, 220, 0.04);
+  --popup-section-bg: rgba(160, 120, 220, 0.08);
+  --popup-control-bg: rgba(160, 120, 220, 0.1);
+  --popup-control-hover-bg: rgba(200, 160, 40, 0.12);
+  --popup-control-active-bg: rgba(200, 160, 40, 0.18);
+  --popup-control-pressed-bg: rgba(200, 160, 40, 0.22);
+  /* Gold-tinted borders */
+  --popup-border: rgba(200, 160, 40, 0.14);
+  --popup-border-subtle: rgba(200, 160, 40, 0.08);
+  --popup-border-control: rgba(200, 160, 40, 0.18);
+  --popup-border-strong: rgba(200, 160, 40, 0.22);
+  --popup-border-stronger: rgba(200, 160, 40, 0.3);
+  /* Purple accent */
+  --popup-accent: #b88aed;
+  --popup-accent-bg: rgba(184, 138, 237, 0.2);
+  --popup-accent-hover-bg: rgba(184, 138, 237, 0.3);
+  --popup-accent-subtle-bg: rgba(184, 138, 237, 0.15);
+  --popup-accent-border: rgba(184, 138, 237, 0.4);
+  --popup-accent-dim-bg: rgba(184, 138, 237, 0.12);
+  --popup-accent-strong-bg: rgba(150, 100, 220, 0.15);
+  --popup-accent-strong-hover-bg: rgba(150, 100, 220, 0.25);
+  --popup-accent-strong-active-bg: rgba(150, 100, 220, 0.4);
+  --popup-accent-team-bg: rgba(150, 100, 220, 0.08);
+  --popup-accent-team-hover-bg: rgba(150, 100, 220, 0.15);
+  --popup-success: #50d890;
+  --popup-success-light: #70eaaa;
+  --popup-success-bg: rgba(80, 216, 144, 0.2);
+  --popup-success-hover-bg: rgba(80, 216, 144, 0.3);
+  --popup-success-border: rgba(80, 216, 144, 0.2);
+  --popup-success-subtle-bg: rgba(80, 216, 144, 0.1);
+  --popup-success-active-bg: rgba(80, 216, 144, 0.35);
+  /* Enchanted gold secondary — warm magical glow */
+  --popup-warning: #d4a017;
+  --popup-warning-light: #f0c040;
+  --popup-warning-border: rgba(212, 160, 23, 0.3);
+  --popup-warning-bg: rgba(212, 160, 23, 0.2);
+  --popup-warning-hover-bg: rgba(212, 160, 23, 0.3);
+  --popup-danger: #c85a7c;
+  --popup-danger-light: #e07090;
+  --popup-danger-soft: #d86888;
+  --popup-danger-bg: rgba(200, 90, 124, 0.2);
+  --popup-danger-hover-bg: rgba(200, 90, 124, 0.3);
+  --popup-danger-subtle-bg: rgba(200, 90, 124, 0.1);
+  --popup-danger-border: rgba(200, 90, 124, 0.25);
+  --popup-danger-active-bg: rgba(200, 90, 124, 0.35);
+  --popup-data-yellow: #f0d848;
+  --popup-data-gold: #d4a017;
+  --popup-data-green: #88e830;
+  --popup-data-green-light: #a0f080;
+  --popup-data-blue: #8ab0d8;
+  --popup-data-orange: #d89830;
+  --popup-data-orange-warm: #c89040;
+  --popup-data-orange-light: #e8a838;
+  --popup-data-pink: #d890b0;
+  --popup-data-purple: #9878e8;
+  --popup-data-purple-light: #b090f0;
+  --popup-data-gray: #908898;
+  --popup-data-gray-light: #a8a0b0;
+  --popup-data-tomato: #d06868;
+  --popup-data-magic-green: #40f0a0;
+  --popup-data-spring-green: #30e890;
+  --popup-input-bg: #201530;
+  --popup-input-text: #e8dff5;
+  --popup-input-focus-border: rgba(212, 160, 23, 0.45);
+  /* Footer / bottom chrome */
+  --footer-bg: #1a1225;
+  --footer-border: rgba(200, 160, 40, 0.14);
+  --footer-control-bg: rgba(160, 120, 220, 0.12);
+  --footer-control-border: rgba(200, 160, 40, 0.22);
+  --footer-control-hover-bg: rgba(200, 160, 40, 0.16);
+  --footer-control-hover-border: rgba(200, 160, 40, 0.4);
+  --footer-button-bg: #2a2235;
+  --footer-input-focus-border: #b88aed;
+  --footer-text-strong: rgba(232, 223, 245, 0.95);
+  --footer-text: rgba(232, 223, 245, 0.8);
+  --footer-text-dim: rgba(232, 223, 245, 0.5);
+}

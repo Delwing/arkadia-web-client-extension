@@ -114,7 +114,8 @@ body.layout-objectlist-enabled #objects-list {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--surface-ground, #1a1a1a);
+  background: var(--popup-bg, var(--surface-ground, #1a1a1a));
+  color: var(--popup-text, #ccc);
 }
 
 /* Panel header base */
@@ -122,8 +123,8 @@ body.layout-objectlist-enabled #objects-list {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  background: var(--surface-raised, #252525);
-  border-bottom: 1px solid var(--surface-border, #333);
+  background: var(--popup-control-bg, var(--surface-raised, #252525));
+  border-bottom: 1px solid var(--popup-border-subtle, var(--surface-border, #333));
   user-select: none;
 }
 
@@ -131,7 +132,7 @@ body.layout-objectlist-enabled #objects-list {
 .managed-panel__title {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-secondary, #888);
+  color: var(--popup-text-medium, var(--text-secondary, #888));
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -421,7 +422,7 @@ body.layout-dragging * {
 .dock-panel-preview-inline__title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--popup-text-bright);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.25rem 0.5rem;
@@ -444,7 +445,7 @@ body.layout-dragging * {
 .dock-panel-preview-overlay__title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--popup-text-bright);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.25rem 0.5rem;
@@ -455,7 +456,7 @@ body.layout-dragging * {
 /* Floating Panels - extends managed-panel for floating state */
 .floating-panel {
   position: fixed;
-  border: 1px solid var(--surface-border, #444);
+  border: 1px solid var(--popup-border, var(--surface-border, #444));
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   z-index: 100;
@@ -477,8 +478,8 @@ body.layout-dragging * {
   margin-left: auto;
   font-size: 0.65rem;
   font-weight: 500;
-  color: var(--text-tertiary, #666);
-  background: rgba(0, 0, 0, 0.3);
+  color: var(--popup-text-dim);
+  background: var(--popup-subtle-bg);
   padding: 0.15rem 0.4rem;
   border-radius: 3px;
   white-space: nowrap;
@@ -605,14 +606,14 @@ body.layout-manager-enabled .compass-rose-box {
 
 /* Docked popup panel - shares styling with regular panels but with popup features */
 .docked-panel--popup {
-  background: var(--surface-elevated, #1a1d24);
+  background: var(--popup-bg, var(--surface-elevated, #1a1d24));
 }
 
 .docked-panel--popup .docked-panel__header {
   /* Inherits from managed-panel__header, overrides specific values */
   justify-content: space-between;
   padding: 0 0.4rem;
-  background: var(--surface-raised, #252830);
+  background: var(--popup-control-bg, var(--surface-raised, #252830));
 }
 
 .docked-panel--popup .docked-panel__title {
@@ -734,9 +735,9 @@ body.layout-manager-enabled .compass-rose-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(241, 245, 249, 0.5);
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
   border-radius: 0.25rem;
   padding: 0.2rem;
   cursor: pointer;
@@ -744,12 +745,12 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .map-header-menu__image-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: rgba(241, 245, 249, 0.8);
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-bright);
 }
 
 .map-header-menu__image-btn:active {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--popup-control-pressed-bg);
 }
 
 .map-header-menu__toggle {
@@ -767,14 +768,14 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .map-header-menu__toggle:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--popup-control-hover-bg);
 }
 
 .map-header-menu__hamburger {
   display: block;
   width: 12px;
   height: 2px;
-  background-color: rgba(241, 245, 249, 0.7);
+  background-color: var(--popup-text-subtle);
   position: relative;
 }
 
@@ -785,7 +786,7 @@ body.layout-manager-enabled .compass-rose-box {
   left: 0;
   width: 12px;
   height: 2px;
-  background-color: rgba(241, 245, 249, 0.7);
+  background-color: var(--popup-text-subtle);
 }
 
 .map-header-menu__hamburger::before {
@@ -799,14 +800,14 @@ body.layout-manager-enabled .compass-rose-box {
 .map-header-menu__toggle:hover .map-header-menu__hamburger,
 .map-header-menu__toggle:hover .map-header-menu__hamburger::before,
 .map-header-menu__toggle:hover .map-header-menu__hamburger::after {
-  background-color: rgba(241, 245, 249, 0.9);
+  background-color: var(--popup-text-strong);
 }
 
 .map-header-menu__dropdown {
   /* position, top, right set via inline styles for fixed positioning */
   min-width: 140px;
-  background-color: var(--surface-elevated, #1e2128);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 1020;
   overflow-y: auto;
@@ -820,7 +821,7 @@ body.layout-manager-enabled .compass-rose-box {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: rgba(241, 245, 249, 0.8);
+  color: var(--popup-text-bright);
   font-size: 0.75rem;
   text-align: left;
   cursor: pointer;
@@ -828,27 +829,27 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .map-header-menu__item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: rgba(241, 245, 249, 1);
+  background-color: var(--popup-hover-bg);
+  color: var(--popup-text);
 }
 
 .map-header-menu__item--back {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--popup-border-subtle);
   font-weight: 500;
-  color: rgba(96, 165, 250, 0.9);
+  color: var(--popup-accent);
 }
 
 .map-header-menu__item--back:hover {
-  color: #60a5fa;
+  color: var(--popup-accent);
 }
 
 .map-header-menu__item--active {
-  background-color: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
+  background-color: var(--popup-accent-subtle-bg);
+  color: var(--popup-accent);
 }
 
 .map-header-menu__item--active:hover {
-  background-color: rgba(96, 165, 250, 0.25);
+  background-color: var(--popup-accent-hover-bg);
 }
 
 .map-header-menu__zoom-row {
@@ -873,12 +874,12 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .map-header-menu__area-list::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--popup-border-stronger);
   border-radius: 3px;
 }
 
 .map-header-menu__area-list::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--popup-border-strong);
 }
 
 .map-header-menu__item--checkbox {
@@ -890,7 +891,7 @@ body.layout-manager-enabled .compass-rose-box {
 .map-header-menu__checkbox {
   width: 14px;
   height: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--popup-border-stronger);
   border-radius: 3px;
   background: transparent;
   flex-shrink: 0;
@@ -898,8 +899,8 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .map-header-menu__checkbox--checked {
-  background: rgba(96, 165, 250, 0.3);
-  border-color: #60a5fa;
+  background: var(--popup-accent-hover-bg);
+  border-color: var(--popup-accent);
 }
 
 .map-header-menu__checkbox--checked::after {
@@ -909,7 +910,7 @@ body.layout-manager-enabled .compass-rose-box {
   top: 1px;
   width: 4px;
   height: 8px;
-  border: solid #60a5fa;
+  border: solid var(--popup-accent);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -934,10 +935,10 @@ body.layout-manager-enabled .compass-rose-box {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.25rem 0.5rem;
-  background-color: rgba(30, 33, 40, 0.9);
-  border: 1px solid rgba(96, 165, 250, 0.5);
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-accent-border);
   border-radius: 0.25rem;
-  color: #60a5fa;
+  color: var(--popup-accent);
   font-size: 0.65rem;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -946,8 +947,8 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .map-return-button:hover {
-  background-color: rgba(96, 165, 250, 0.2);
-  border-color: #60a5fa;
+  background-color: var(--popup-accent-bg);
+  border-color: var(--popup-accent);
 }
 
 /* ============================================

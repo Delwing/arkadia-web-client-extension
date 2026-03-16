@@ -9,6 +9,7 @@ import {loadLayoutState, resetLayoutState, saveLayoutState} from "@web/layout";
 import {
     defaultFooterComponents,
     defaultUiSettings,
+    type ColorTheme,
     type FooterComponentConfig,
     type MapRoomShape,
     type PathFindingAlgorithm,
@@ -17,7 +18,7 @@ import {
 import {globalStorage} from "@modules/core/storage";
 
 // Re-export for backwards compatibility
-export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm } from "./defaultUiSettings";
+export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
 
 function hexAlphaToRgba(hex: string, alpha: number): string {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -234,6 +235,13 @@ function apply(settings: UiSettings) {
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
     }
+    // Apply color theme
+    if (document.body) {
+        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver');
+        if (settings.colorTheme && settings.colorTheme !== 'default') {
+            document.body.classList.add(`theme-${settings.colorTheme}`);
+        }
+    }
     // Set CSS custom properties for font settings (used by chat popup and other components)
     if (document.body) {
         document.body.style.setProperty('--output-font-family', resolvedFontFamily || 'monospace');
@@ -248,6 +256,7 @@ function apply(settings: UiSettings) {
         }
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
+        document.body.style.setProperty('--output-bg', settings.outputBackground);
         content.style.paddingBottom = settings.outputBottomPadding > 0 ? settings.outputBottomPadding + 'px' : '';
     }
     const charState = document.getElementById('char-state');
@@ -454,6 +463,9 @@ function load(): UiSettings {
             const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
                 ? parsed.outputBottomPadding
                 : defaultUiSettings.outputBottomPadding;
+            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver'].includes(parsed.colorTheme))
+                ? parsed.colorTheme as ColorTheme
+                : defaultUiSettings.colorTheme;
             const splitViewHeight = typeof parsed.splitViewHeight === 'number' && parsed.splitViewHeight >= 60
                 ? parsed.splitViewHeight
                 : undefined;
@@ -500,6 +512,7 @@ function load(): UiSettings {
                 splitViewHeight,
                 objectListBackgroundColor,
                 objectListBackgroundAlpha,
+                colorTheme,
             };
         }
     } catch {
@@ -532,6 +545,7 @@ export default async function initUiSettings() {
     let alwaysVisibleBarsConfig: string[] = [];
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
+    const colorThemeInput = modalEl.querySelector('#ui-color-theme') as HTMLSelectElement;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
     const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
@@ -842,6 +856,7 @@ export default async function initUiSettings() {
         emojiLabelsInput.checked = settings.emojiLabels;
         fightTitleIconInput.checked = settings.fightTitleIcon;
         xtermPaletteInput.value = settings.xtermPalette;
+        if (colorThemeInput) colorThemeInput.value = settings.colorTheme || 'default';
         footerModeInput.value = String(settings.footerMode);
         instantMoveInput.checked = settings.instantMove;
         highlightCurrentRoomInput.checked = settings.highlightCurrentRoom;
@@ -1349,6 +1364,7 @@ export default async function initUiSettings() {
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultUiSettings.xtermPalette,
+            colorTheme: (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver'].includes(colorThemeInput?.value) ? colorThemeInput.value : defaultUiSettings.colorTheme) as ColorTheme,
             footerMode: parseInt(footerModeInput.value) || defaultUiSettings.footerMode,
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,

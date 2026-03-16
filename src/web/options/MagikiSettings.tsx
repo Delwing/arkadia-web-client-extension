@@ -162,11 +162,9 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
                                                 }}
                                                 onMouseEnter={(e) => {
                                                     e.currentTarget.classList.add("bg-primary");
-                                                    e.currentTarget.classList.add("text-white");
                                                 }}
                                                 onMouseLeave={(e) => {
                                                     e.currentTarget.classList.remove("bg-primary");
-                                                    e.currentTarget.classList.remove("text-white");
                                                 }}
                                             >
                                                 {suggestion}
@@ -192,7 +190,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
                                                     marginLeft: "0.5rem",
                                                     background: "none",
                                                     border: "none",
-                                                    color: "white",
+                                                    color: "inherit",
                                                     cursor: "pointer",
                                                     fontSize: "1.2rem",
                                                     lineHeight: "1",

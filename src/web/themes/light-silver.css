@@ -1,0 +1,107 @@
+/* Light Silver - clean cool-gray backgrounds with blue accents */
+/* Modern, neutral light theme with subtle cool undertones */
+.theme-light-silver {
+  --bs-primary: var(--popup-accent);
+  --bs-primary-rgb: 51, 102, 187;
+  color-scheme: light;
+  --popup-bg: #f0f2f5;
+  --popup-text: #1a1c20;
+  --popup-text-dim: rgba(26, 28, 32, 0.5);
+  --popup-text-dimmer: rgba(26, 28, 32, 0.4);
+  --popup-text-subtle: rgba(26, 28, 32, 0.65);
+  --popup-text-strong: rgba(26, 28, 32, 0.9);
+  --popup-text-faint: rgba(26, 28, 32, 0.3);
+  --popup-text-medium: rgba(26, 28, 32, 0.55);
+  --popup-text-bright: rgba(26, 28, 32, 0.75);
+  /* Cool gray hover and active states */
+  --popup-hover-bg: rgba(0, 0, 0, 0.04);
+  --popup-subtle-bg: rgba(0, 0, 0, 0.02);
+  --popup-section-bg: rgba(0, 0, 0, 0.03);
+  --popup-control-bg: rgba(0, 0, 0, 0.05);
+  --popup-control-hover-bg: rgba(0, 0, 0, 0.08);
+  --popup-control-active-bg: rgba(0, 0, 0, 0.11);
+  --popup-control-pressed-bg: rgba(0, 0, 0, 0.14);
+  /* Cool borders */
+  --popup-border: rgba(0, 0, 0, 0.1);
+  --popup-border-subtle: rgba(0, 0, 0, 0.06);
+  --popup-border-control: rgba(0, 0, 0, 0.13);
+  --popup-border-strong: rgba(0, 0, 0, 0.18);
+  --popup-border-stronger: rgba(0, 0, 0, 0.25);
+  /* Blue accent */
+  --popup-accent: #3366bb;
+  --popup-accent-bg: rgba(51, 102, 187, 0.1);
+  --popup-accent-hover-bg: rgba(51, 102, 187, 0.16);
+  --popup-accent-subtle-bg: rgba(51, 102, 187, 0.07);
+  --popup-accent-border: rgba(51, 102, 187, 0.3);
+  --popup-accent-dim-bg: rgba(51, 102, 187, 0.05);
+  --popup-accent-strong-bg: rgba(40, 80, 160, 0.08);
+  --popup-accent-strong-hover-bg: rgba(40, 80, 160, 0.15);
+  --popup-accent-strong-active-bg: rgba(40, 80, 160, 0.22);
+  --popup-accent-team-bg: rgba(40, 80, 160, 0.05);
+  --popup-accent-team-hover-bg: rgba(40, 80, 160, 0.1);
+  --popup-success: #1a8a3a;
+  --popup-success-light: #28a748;
+  --popup-success-bg: rgba(26, 138, 58, 0.1);
+  --popup-success-hover-bg: rgba(26, 138, 58, 0.16);
+  --popup-success-border: rgba(26, 138, 58, 0.18);
+  --popup-success-subtle-bg: rgba(26, 138, 58, 0.06);
+  --popup-success-active-bg: rgba(26, 138, 58, 0.22);
+  /* Neutral secondary tones */
+  --popup-warning: #a87a00;
+  --popup-warning-light: #c89400;
+  --popup-warning-border: rgba(168, 122, 0, 0.22);
+  --popup-warning-bg: rgba(168, 122, 0, 0.1);
+  --popup-warning-hover-bg: rgba(168, 122, 0, 0.16);
+  --popup-danger: #c83030;
+  --popup-danger-light: #e04040;
+  --popup-danger-soft: #d83838;
+  --popup-danger-bg: rgba(200, 48, 48, 0.08);
+  --popup-danger-hover-bg: rgba(200, 48, 48, 0.14);
+  --popup-danger-subtle-bg: rgba(200, 48, 48, 0.05);
+  --popup-danger-border: rgba(200, 48, 48, 0.18);
+  --popup-danger-active-bg: rgba(200, 48, 48, 0.2);
+  --popup-data-yellow: #8a7a00;
+  --popup-data-gold: #907000;
+  --popup-data-green: #1a7a1a;
+  --popup-data-green-light: #289828;
+  --popup-data-blue: #1860a8;
+  --popup-data-orange: #b86818;
+  --popup-data-orange-warm: #a06020;
+  --popup-data-orange-light: #c07818;
+  --popup-data-pink: #a04068;
+  --popup-data-purple: #5040a0;
+  --popup-data-purple-light: #6858b0;
+  --popup-data-gray: #606068;
+  --popup-data-gray-light: #787880;
+  --popup-data-tomato: #b83828;
+  --popup-data-magic-green: #007848;
+  --popup-data-spring-green: #008040;
+  --popup-input-bg: #e8eaee;
+  --popup-input-text: #1a1c20;
+  --popup-input-focus-border: rgba(51, 102, 187, 0.45);
+  /* Close/pin button overrides for light bg */
+  --floating-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%231a1c20' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");
+  --floating-close-background: rgba(0, 0, 0, 0.05);
+  --floating-close-hover-background: rgba(0, 0, 0, 0.1);
+  --floating-close-hover-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  --floating-pin-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23777' d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/%3E%3C/svg%3E");
+  --floating-pin-background: rgba(0, 0, 0, 0.05);
+  --floating-pin-hover-background: rgba(0, 0, 0, 0.08);
+  --floating-pin-hover-shadow: 0 0 0 1px rgba(51, 102, 187, 0.25);
+  --floating-pin-active-background: rgba(51, 102, 187, 0.15);
+  --floating-pin-active-hover-background: rgba(51, 102, 187, 0.22);
+  --floating-pin-active-hover-shadow: 0 0 0 1px rgba(51, 102, 187, 0.4);
+  --floating-pin-active-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%233366bb' d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/%3E%3C/svg%3E");
+  /* Footer / bottom chrome */
+  --footer-bg: #e8eaee;
+  --footer-border: rgba(0, 0, 0, 0.1);
+  --footer-control-bg: rgba(0, 0, 0, 0.06);
+  --footer-control-border: rgba(0, 0, 0, 0.15);
+  --footer-control-hover-bg: rgba(0, 0, 0, 0.1);
+  --footer-control-hover-border: rgba(0, 0, 0, 0.25);
+  --footer-button-bg: rgba(0, 0, 0, 0.06);
+  --footer-input-focus-border: #3366bb;
+  --footer-text-strong: rgba(26, 28, 32, 0.95);
+  --footer-text: rgba(26, 28, 32, 0.8);
+  --footer-text-dim: rgba(26, 28, 32, 0.5);
+}

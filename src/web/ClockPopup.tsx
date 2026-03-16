@@ -21,10 +21,10 @@ type ClockData = {
 // Season names and colors matching ClockDisplay
 const SEASON_NAMES = ['Wiosna', 'Lato', 'Jesien', 'Zima'];
 const SEASON_COLORS = [
-    '#00ff7f', // wiosna (spring)
-    '#ffff00', // lato (summer)
-    '#ff8c00', // jesien (autumn)
-    '#00bfff'  // zima (winter)
+    'var(--popup-data-spring-green)', // wiosna (spring)
+    'var(--popup-data-yellow)',       // lato (summer)
+    'var(--popup-data-orange)',       // jesien (autumn)
+    'var(--popup-data-blue)',         // zima (winter)
 ];
 
 function formatTime(hours: number, minutes: number): string {

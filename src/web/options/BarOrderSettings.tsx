@@ -64,7 +64,7 @@ function SortableBarItem({ item, hasDefault, onToggle }: SortableBarItemProps) {
         <div
             ref={setNodeRef}
             className="d-flex align-items-center gap-2 p-1 border rounded"
-            style={{ ...style, background: 'var(--surface-raised)' }}
+            style={{ ...style, background: 'var(--popup-control-bg)' }}
         >
             <span
                 {...attributes}
