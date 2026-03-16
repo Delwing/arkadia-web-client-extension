@@ -647,29 +647,79 @@ const KnowledgeDetailsReport: React.FC = () => {
     return { total, known, percentage };
   }, [data]);
 
+  const collectEntryNames = useCallback((status: 'known' | 'missing') => {
+    if (!data) return '';
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const category of data.categories) {
+      for (const { key } of TYPE_CONFIG) {
+        const summary = category.types[key];
+        if (!summary) continue;
+        for (const entry of summary.entries) {
+          if (entry.status !== status) continue;
+          const lower = entry.name.toLowerCase();
+          if (seen.has(lower)) continue;
+          seen.add(lower);
+          names.push(entry.name);
+        }
+      }
+    }
+    return names.join('\n');
+  }, [data]);
+
+  const handleCopyCompleted = useCallback(() => {
+    const text = collectEntryNames('known');
+    if (text) navigator.clipboard.writeText(text);
+  }, [collectEntryNames]);
+
+  const handleCopyNotCompleted = useCallback(() => {
+    const text = collectEntryNames('missing');
+    if (text) navigator.clipboard.writeText(text);
+  }, [collectEntryNames]);
+
   const titleWithProgress = overallProgress
     ? `Raport wiedzy ${overallProgress.known}/${overallProgress.total} (${overallProgress.percentage}%)`
     : 'Raport wiedzy';
 
   const headerActions = (
-    <div className="knowledge-details-filter">
-      <input
-        type="text"
-        className="knowledge-details-filter-input"
-        placeholder="Filtruj..."
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-      />
-      {filter && (
-        <button
-          type="button"
-          className="knowledge-details-filter-clear"
-          onClick={() => setFilter('')}
-        >
-          &times;
-        </button>
-      )}
-    </div>
+    <>
+      <button
+        type="button"
+        className="knowledge-details-copy-button"
+        title="Kopiuj brakujace wpisy"
+        onClick={handleCopyNotCompleted}
+        disabled={!data}
+      >
+        Kopiuj brakujace
+      </button>
+      <button
+        type="button"
+        className="knowledge-details-copy-button"
+        title="Kopiuj ukonczone wpisy"
+        onClick={handleCopyCompleted}
+        disabled={!data}
+      >
+        Kopiuj ukonczone
+      </button>
+      <div className="knowledge-details-filter">
+        <input
+          type="text"
+          className="knowledge-details-filter-input"
+          placeholder="Filtruj..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        {filter && (
+          <button
+            type="button"
+            className="knowledge-details-filter-clear"
+            onClick={() => setFilter('')}
+          >
+            &times;
+          </button>
+        )}
+      </div>
+    </>
   );
 
   return (
