@@ -130,6 +130,7 @@ export default class MapHelper {
             this.setBlockable(false);
             this.gmcpPosition = eventDetail?.map;
             if (this.refreshPosition) {
+                console.log("Refreshing position: ", this.gmcpPosition, " -")
                 this.setMapPosition(this.gmcpPosition);
                 this.refreshPosition = false;
             }
@@ -389,9 +390,17 @@ export default class MapHelper {
             }
         }
 
-        this.refreshPosition = true;
+        if (!this.isGmcpPositionCurrent()) {
+            this.refreshPosition = true;
+        }
 
         return undefined;
+    }
+
+    private isGmcpPositionCurrent(): boolean {
+        if (!this.gmcpPosition || !this.currentRoom) return false;
+        const hash = `${this.gmcpPosition.x}:${this.gmcpPosition.y}:0:${this.gmcpPosition.name}`;
+        return this.hashes[hash] === this.currentRoom.id;
     }
 
     refresh() {
@@ -407,6 +416,7 @@ export default class MapHelper {
             const hash = `${data.x}:${data.y}:0:${data.name}`;
             const room = this.hashes[hash];
             this.setMapRoom(room);
+            this.refreshPosition = false;
             return true;
         }
         return false;
