@@ -93,7 +93,7 @@ export default function initWhoCount(client: Client) {
         } else {
             // Long format: each person starts on a non-indented line
             for (const l of lines) {
-                if (l.length === 0 || l.startsWith(' ')) continue;
+                if (l.length === 0 || l.startsWith(' ') || l.endsWith('.') || !/,\s+\S+$/.test(l)) continue;
                 const firstWord = l.split(/\s/)[0];
                 const name = firstWord.replace(/^\*|\*$/g, '').replace(/,+$/, '');
                 if (name.length > 0) {
