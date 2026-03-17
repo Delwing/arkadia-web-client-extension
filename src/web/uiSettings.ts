@@ -16,6 +16,7 @@ import {
     type UiSettings
 } from "./defaultUiSettings";
 import {globalStorage} from "@modules/core/storage";
+import {applyCustomTheme, computeAccentHex, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
 
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
@@ -236,9 +237,17 @@ function apply(settings: UiSettings) {
         document.body.dataset.mapPosition = settings.mapPosition;
     }
     // Apply color theme
+    removeCustomTheme();
     if (document.body) {
-        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver');
-        if (settings.colorTheme && settings.colorTheme !== 'default') {
+        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver', 'theme-custom-dark');
+        if (settings.colorTheme === 'custom-dark') {
+            if (!settings.customThemeColor) {
+                settings.customThemeColor = generateRandomColor();
+                save(settings);
+            }
+            applyCustomTheme(settings.customThemeColor);
+            document.body.classList.add('theme-custom-dark');
+        } else if (settings.colorTheme && settings.colorTheme !== 'default') {
             document.body.classList.add(`theme-${settings.colorTheme}`);
         }
     }
@@ -463,9 +472,12 @@ function load(): UiSettings {
             const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
                 ? parsed.outputBottomPadding
                 : defaultUiSettings.outputBottomPadding;
-            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver'].includes(parsed.colorTheme))
+            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'custom-dark'].includes(parsed.colorTheme))
                 ? parsed.colorTheme as ColorTheme
                 : defaultUiSettings.colorTheme;
+            const customThemeColor = (typeof parsed.customThemeColor === 'string' && /^#[0-9a-f]{6}$/i.test(parsed.customThemeColor))
+                ? parsed.customThemeColor
+                : undefined;
             const splitViewHeight = typeof parsed.splitViewHeight === 'number' && parsed.splitViewHeight >= 60
                 ? parsed.splitViewHeight
                 : undefined;
@@ -513,6 +525,7 @@ function load(): UiSettings {
                 objectListBackgroundColor,
                 objectListBackgroundAlpha,
                 colorTheme,
+                customThemeColor,
             };
         }
     } catch {
@@ -546,6 +559,9 @@ export default async function initUiSettings() {
     const fightTitleIconInput = modalEl.querySelector('#ui-fight-title-icon') as HTMLInputElement;
     const xtermPaletteInput = modalEl.querySelector('#ui-xterm-palette') as HTMLSelectElement;
     const colorThemeInput = modalEl.querySelector('#ui-color-theme') as HTMLSelectElement;
+    const customThemeControls = modalEl.querySelector('#ui-random-theme-controls') as HTMLElement | null;
+    const customThemeColorInput = modalEl.querySelector('#ui-random-theme-color') as HTMLInputElement | null;
+    const randomizeThemeBtn = modalEl.querySelector('#ui-randomize-theme') as HTMLButtonElement | null;
     const footerModeInput = modalEl.querySelector('#ui-footer-mode') as HTMLSelectElement;
     const instantMoveInput = modalEl.querySelector('#ui-instant-move') as HTMLInputElement;
     const highlightCurrentRoomInput = modalEl.querySelector('#ui-highlight-current-room') as HTMLInputElement;
@@ -913,6 +929,49 @@ export default async function initUiSettings() {
     let renderBarOrderSettings = () => {};
 
     populateFormInputs(current);
+
+    const applyCustomDarkFromColor = (color: string) => {
+        current = {
+            ...current,
+            colorTheme: 'custom-dark',
+            customThemeColor: color,
+        };
+        save(current);
+        removeCustomTheme();
+        applyCustomTheme(color);
+        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver');
+        if (!document.body.classList.contains('theme-custom-dark')) {
+            document.body.classList.add('theme-custom-dark');
+        }
+        if (colorThemeInput) colorThemeInput.value = 'custom-dark';
+    };
+
+    const updateCustomThemeControls = () => {
+        const isCustom = colorThemeInput?.value === 'custom-dark';
+        if (customThemeControls) {
+            customThemeControls.classList.toggle('d-none', !isCustom);
+            customThemeControls.classList.toggle('d-flex', isCustom);
+        }
+        if (isCustom && customThemeColorInput && current.customThemeColor) {
+            customThemeColorInput.value = computeAccentHex(current.customThemeColor);
+        }
+    };
+    updateCustomThemeControls();
+    colorThemeInput?.addEventListener('change', updateCustomThemeControls);
+
+    if (customThemeColorInput) {
+        customThemeColorInput.addEventListener('change', () => {
+            applyCustomDarkFromColor(customThemeColorInput.value);
+            customThemeColorInput.value = computeAccentHex(customThemeColorInput.value);
+        });
+    }
+    if (randomizeThemeBtn) {
+        randomizeThemeBtn.addEventListener('click', () => {
+            const color = generateRandomColor();
+            if (customThemeColorInput) customThemeColorInput.value = computeAccentHex(color);
+            applyCustomDarkFromColor(color);
+        });
+    }
 
     const updateLabelRenderModeState = () => {
         if (transparentLabelsInput.checked) {
@@ -1324,6 +1383,7 @@ export default async function initUiSettings() {
             populateFormInputs(current);
             updateLabelRenderModeState();
             updateCustomFontState();
+            updateCustomThemeControls();
         }
     });
     globalStorage.onChange('custom_sounds', async () => {
@@ -1364,7 +1424,8 @@ export default async function initUiSettings() {
             emojiLabels: emojiLabelsInput.checked,
             fightTitleIcon: fightTitleIconInput.checked,
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultUiSettings.xtermPalette,
-            colorTheme: (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver'].includes(colorThemeInput?.value) ? colorThemeInput.value : defaultUiSettings.colorTheme) as ColorTheme,
+            colorTheme: (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'custom-dark'].includes(colorThemeInput?.value) ? colorThemeInput.value : defaultUiSettings.colorTheme) as ColorTheme,
+            customThemeColor: current.customThemeColor,
             footerMode: parseInt(footerModeInput.value) || defaultUiSettings.footerMode,
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
@@ -1477,6 +1538,7 @@ export default async function initUiSettings() {
         populateFormInputs(current);
         updateLabelRenderModeState();
         updateCustomFontState();
+        updateCustomThemeControls();
         refreshExplorationStats();
         // Populate layout manager state
         if (layoutManagerEnabledInput) {

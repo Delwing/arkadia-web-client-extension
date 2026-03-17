@@ -6,7 +6,7 @@ export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 
 export type PathFindingAlgorithm = 'dijkstra' | 'astar';
 
-export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver';
+export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'custom-dark';
 
 export interface FooterComponentConfig {
     id: string;
@@ -85,6 +85,7 @@ export interface UiSettings {
     alwaysVisibleBars: string[];
     barOrder: string[];
     colorTheme: ColorTheme;
+    customThemeColor?: string;
 }
 
 export const defaultUiSettings: UiSettings = {
