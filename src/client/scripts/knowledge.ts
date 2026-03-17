@@ -1148,7 +1148,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     });
 
-    let lastCharacterKey: string | null = null;
+    let lastCharacterKey = getCharacterProgressKey();
 
     client.on('gmcp.char.info', (detail) => {
         const characterKey = getCharacterProgressKey();
