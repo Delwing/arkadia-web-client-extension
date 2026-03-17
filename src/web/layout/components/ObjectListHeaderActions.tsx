@@ -1,6 +1,7 @@
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
 import eventBus from '@modules/core/eventBus';
 import { useEffect } from 'react';
+import { ObjectListHeaderMenu } from './ObjectListHeaderMenu';
 
 const PANEL_ID = 'objectList';
 
@@ -48,6 +49,7 @@ export function ObjectListHeaderActions() {
             >
                 {VIEW_MODE_LABELS[viewMode]}
             </button>
+            <ObjectListHeaderMenu />
         </>
     );
 }

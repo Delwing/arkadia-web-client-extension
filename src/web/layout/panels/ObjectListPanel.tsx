@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ObjectListTimersBar } from '../components/ObjectListTimersBar';
 
 interface ObjectListPanelProps {
   objectListElement: HTMLElement | null;
@@ -6,6 +8,7 @@ interface ObjectListPanelProps {
 
 export function ObjectListPanel({ objectListElement }: ObjectListPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [timersHost, setTimersHost] = useState<HTMLDivElement | null>(null);
   const originalParentRef = useRef<HTMLElement | null>(null);
   const originalStyleRef = useRef<{
     position: string;
@@ -33,6 +36,17 @@ export function ObjectListPanel({ objectListElement }: ObjectListPanelProps) {
     // Move object list element into our container
     containerRef.current.appendChild(objectListElement);
 
+    // Create a host element for the timers bar inside #objects-list
+    // so it inherits the user's font-size and font-family settings
+    const host = document.createElement('div');
+    const contentEl = objectListElement.querySelector('.objects-list-content');
+    if (contentEl) {
+      objectListElement.insertBefore(host, contentEl);
+    } else {
+      objectListElement.prepend(host);
+    }
+    setTimersHost(host);
+
     // Reset positioning styles for docked mode
     objectListElement.style.position = 'relative';
     objectListElement.style.left = '';
@@ -44,6 +58,10 @@ export function ObjectListPanel({ objectListElement }: ObjectListPanelProps) {
     objectListElement.style.height = '100%';
 
     return () => {
+      // Clean up timers host
+      host.remove();
+      setTimersHost(null);
+
       // Restore object list to original parent and styles on unmount
       if (originalParentRef.current && objectListElement && originalStyleRef.current) {
         originalParentRef.current.appendChild(objectListElement);
@@ -59,5 +77,10 @@ export function ObjectListPanel({ objectListElement }: ObjectListPanelProps) {
     };
   }, [objectListElement]);
 
-  return <div ref={containerRef} className="object-list-panel-container" />;
+  return (
+    <>
+      {timersHost && createPortal(<ObjectListTimersBar />, timersHost)}
+      <div ref={containerRef} className="object-list-panel-container" />
+    </>
+  );
 }

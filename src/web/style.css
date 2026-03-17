@@ -2802,7 +2802,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px;
+  padding: 4px 0;
   font-size: inherit;
 }
 
@@ -3082,7 +3082,7 @@ h1 {
 /* Compact Card View */
 .objects-list-cards--compact {
   gap: 3px;
-  padding: 2px;
+  padding: 2px 0;
 }
 
 .object-card--compact {

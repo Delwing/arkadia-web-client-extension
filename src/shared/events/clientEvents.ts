@@ -273,6 +273,10 @@ export interface KnownEvents {
     "mapAlwaysShowNote": boolean;
     "mapShowGrid": boolean;
     "objectListViewMode": "list" | "card" | "compact" | "compact-dots";
+    "objectList.showWeaponState": boolean;
+    "objectList.showCoverTimer": boolean;
+    "objectList.showOrderTimer": boolean;
+    "objectList.showZaskTimer": boolean;
     "objectListDemo.popup.open": void;
     "layoutManagerStateChanged": { type?: 'import' } | void;
     "walker.popup.open": void;

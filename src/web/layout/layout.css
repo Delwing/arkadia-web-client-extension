@@ -1029,3 +1029,41 @@ body.layout-manager-enabled .compass-rose-box {
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+/* ============================================
+   Object List Timers Bar
+   ============================================ */
+
+.object-list-timers-bar {
+  display: flex;
+  gap: 0.75rem;
+  font: inherit;
+  pointer-events: none;
+  user-select: none;
+  color: var(--popup-text-dim);
+  margin-bottom: 0.5em;
+}
+
+.object-list-timers-bar__item {
+  white-space: nowrap;
+}
+
+.object-list-timers-bar__item--ready {
+  color: springgreen;
+}
+
+.object-list-timers-bar__item--active {
+  color: #e6c04c;
+}
+
+.object-list-timers-bar__item--danger {
+  color: #e05050;
+}
+
+.object-list-timers-bar__value--on {
+  color: springgreen;
+}
+
+.object-list-timers-bar__value--off {
+  color: #888;
+}
