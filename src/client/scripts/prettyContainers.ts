@@ -23,6 +23,7 @@ const GROUP_NAME_COLOR = createColorFormat('#557C99');
 export type GroupDefinition = {
     name: string;
     filter: (item: string) => boolean;
+    priority?: number;
 };
 
 export type ContainerItem = {
@@ -92,8 +93,12 @@ export function categorizeItems(items: ContainerItem[], groups: GroupDefinition[
     const result: Record<string, ContainerItem[]> = {};
     for (const g of groups) result[g.name] = [];
     result['inne'] = [];
+    const hasPriority = groups.some(gr => gr.priority);
+    const sorted = hasPriority
+        ? [...groups].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+        : groups;
     for (const item of items) {
-        const g = groups.find(gr => gr.filter(item.name));
+        const g = sorted.find(gr => gr.filter(item.name));
         if (g) result[g.name].push(item); else result['inne'].push(item);
     }
     return result;
@@ -369,7 +374,7 @@ const gems = ["obsydia(ny|now|n)", "labrado(ry|row|r)", "oliwi(ny|now|n)", "gaga
     "zoisy(ty|tow|t)", "grana(ty|tow|t)", "almandy(ny|now|n)", "ortokla(zy|zow|z)", "topa(zy|zow|z)", "tytani(ty|tow|t)",
     "diamen(ty|tow|t)", "szafi(ry|row|r)", "szmaragd(y|ow|u|em|zie)?( |$|,)", "chryzoberyl", "spinel", "chryzopraz", "rodochrozyt", "heliodor"]
 
-const defs = [
+const defs: GroupDefinition[] = [
     {name: "bronie", filter: createRegexpFilter(weapons)},
     {name: "korpus", filter: createRegexpFilter(torso)},
     {name: "tarcze", filter: createRegexpFilter(shields)},
@@ -529,7 +534,7 @@ async function loadMagicAndKeysFilter(client: Client) {
         const [keys, magics] = await Promise.all([loadMagicKeys(), loadMagics()]);
         const keyRegexp = createRegexpFilter(keys);
         keyFilter = keyRegexp;
-        defs.push({ name: "klucze", filter: keyRegexp });
+        defs.push({ name: "klucze", filter: keyRegexp, priority: 1 });
         defaultTransforms.push({
             transform: (buffer, item) => {
                 if (keyRegexp(item.name)) {

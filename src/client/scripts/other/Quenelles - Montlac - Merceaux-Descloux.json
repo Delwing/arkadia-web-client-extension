@@ -8,6 +8,7 @@
         {
             "start": 4659,
             "destination": 7786,
+            "time": 44,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - Merceaux-Descloux!$",
             "label": "Montlac"
@@ -15,6 +16,7 @@
         {
             "start": 7786,
             "destination": 7744,
+            "time": 7,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - most pod Parravon!$",
             "label": "Merceaux-Descloux"
@@ -22,6 +24,7 @@
         {
             "start": 7744,
             "destination": 26659,
+            "time": 7,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac przed zajazdem\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - Merceaux-Descloux!$",
             "label": "Parravon"
@@ -29,6 +32,7 @@
         {
             "start": 26659,
             "destination": 7744,
+            "time": 7,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - Montlac!$",
             "label": "Merceaux-Descloux"
@@ -36,6 +40,7 @@
         {
             "start": 7744,
             "destination": 7786,
+            "time": 16,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - Quenelles!$",
             "label": "Montlac"
@@ -43,6 +48,7 @@
         {
             "start": 7786,
             "destination": 4659,
+            "time": 44,
             "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac Gillesa le Breton\\.$",
             "set_pattern": "^Woznica.* wola: Nastepny postoj - Montlac!$",
             "label": "Quenelles"
