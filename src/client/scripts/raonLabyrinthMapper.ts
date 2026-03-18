@@ -753,7 +753,7 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
 
     // Follower mode: "podazasz za [name] na [direction]" starts capture
     client.Triggers.registerTrigger(
-        /^[Pp]odazasz za .+ na (.+)\.$/,
+        /[Pp]odazasz za .+ na (.+)\.$/,
         (line, matches) => {
             const dirText = stripPolishCharacters(matches![1]);
             if (!isDirection(dirText)) return line;
