@@ -17,7 +17,7 @@ test.describe('Release guard timer', () => {
 
         // Pusc should be white when active
         const puscSpan = releaseGuardTimer.locator('span').first();
-        await expect(puscSpan, 'Pusc should be white when active').toHaveCSS('color', 'rgb(255, 255, 255)'); // white
+        await expect(puscSpan, 'Pusc should be white when active').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
     });
 
     test('toggles guard state when clicking anywhere on element', async ({page}) => {
@@ -28,20 +28,20 @@ test.describe('Release guard timer', () => {
         const releaseGuardTimer = page.locator('#release-guard-timer');
         const puscSpan = releaseGuardTimer.locator('span').first();
 
-        // Initial state should be ON (white)
-        await expect(puscSpan, 'Pusc should be white initially').toHaveCSS('color', 'rgb(255, 255, 255)');
+        // Initial state should be ON (strong)
+        await expect(puscSpan, 'Pusc should be strong initially').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
 
         // Click anywhere to turn OFF
         await releaseGuardTimer.click();
 
-        // Should change to OFF state (dimgray)
-        await expect(puscSpan, 'Pusc should be dimgray after click').toHaveCSS('color', 'rgb(105, 105, 105)'); // dimgray
+        // Should change to OFF state (dim)
+        await expect(puscSpan, 'Pusc should be dim after click').toHaveCSS('color', 'rgba(255, 255, 255, 0.5)');
 
         // Click again to toggle back ON
         await releaseGuardTimer.click();
 
-        // Should return to ON state (white)
-        await expect(puscSpan, 'Pusc should be white again').toHaveCSS('color', 'rgb(255, 255, 255)');
+        // Should return to ON state (strong)
+        await expect(puscSpan, 'Pusc should be strong again').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
     });
 
     test('always remains visible', async ({page}) => {
