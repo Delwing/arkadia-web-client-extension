@@ -274,6 +274,7 @@ export default function initSunTracker(client: Client) {
     client.on("clock.parsedTime", (data) => {
         if (pendingEvent) {
             pendingEvent.observedHour = data.hour;
+            pendingEvent.dayOfYear = data.dayOfYear;
             confirmPending();
         }
     });
