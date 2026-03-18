@@ -164,9 +164,37 @@ export default class TeamManager {
     }
 
     private checkTeam(obj: ObjectData, id: number) {
-        if (!obj || !obj.team) {
+        if (!obj || obj.team === undefined) {
             return;
         }
+
+        if (!obj.team) {
+            const name = this.teamMemberDescriptions.get(id);
+            if (name) {
+                this.teamMemberDescriptions.delete(id);
+                let stillMapped = false;
+                for (const desc of this.teamMemberDescriptions.values()) {
+                    if (desc === name) {
+                        stillMapped = true;
+                        break;
+                    }
+                }
+                if (!stillMapped) {
+                    this.members.delete(name);
+                    if (this.members.size === 0) {
+                        this.joined = false;
+                    }
+                    this.client.sendEvent('teamChange');
+                }
+            }
+            if (this.leaderId === id) {
+                this.leader = undefined;
+                this.leaderId = undefined;
+                this.client.sendEvent('teamChange');
+            }
+            return;
+        }
+
         const name = this.accumulatedObjectsData.get(id)?.desc;
         if (!name) {
             return;
@@ -221,23 +249,14 @@ export default class TeamManager {
         triggers.registerTrigger("Nie jestes w zadnej druzynie.", clear, tag);
         triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? rozwiazuje druzyne\.$/, clear, tag);
         triggers.registerTrigger(/^Porzucasz (?:swoja druzyne|druzyne, ktorej przewodzil[ea]s)\.$/, clear, tag);
-        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (line, matches) => {
-            this.clearTeam();
-            const list = matches?.groups?.team ?? '';
-            this.parseNames(list).forEach(name => this.addMember(name));
+        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (line) => {
+            this.client.sendGMCP("objects.nums");
+            this.client.sendGMCP("objects.data");
             return line;
         }, tag);
-        triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (line, matches) => {
-            this.clearTeam();
-            const leader = matches?.groups?.leader?.trim().replace(/^\[|]$/g, '');
-            if (leader) {
-                this.leader = leader;
-                this.addMember(leader);
-            }
-            const list = matches?.groups?.team;
-            if (list) {
-                this.parseNames(list).forEach(n => this.addMember(n));
-            }
+        triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (line) => {
+            this.client.sendGMCP("objects.nums");
+            this.client.sendGMCP("objects.data");
             return line;
         }, tag);
         triggers.registerTrigger(/^Dolaczasz do druzyny \[?([A-Z][a-z ]+?)]?\.(?: Od teraz jej sklad stanowicie ty(?:, | i )(.+)\.)?$/, (line, matches) => {
@@ -291,6 +310,12 @@ export default class TeamManager {
 
     getTeamMembers(): string[] {
         return Array.from(this.members);
+    }
+
+    getTeamMembersOnLocation(): string[] {
+        return this.client.ObjectManager.getObjectsOnLocation()
+            .filter(o => o.__category === 'team' && o.desc)
+            .map(o => o.desc!);
     }
 
     isInTeam(name: string): boolean {

@@ -40,6 +40,7 @@ describe('transport stop triggers', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   test('stop pattern does not register trigger', () => {
@@ -140,37 +141,37 @@ describe('transport stop triggers', () => {
 
     const lastEvent = () => events[events.length - 1];
 
-    expect(lastEvent()).toMatchObject({ label: 'Quenelles → Montlac', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Quenelles → Montlac', remaining: 44, total: 44 });
 
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
 
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac.');
-    expect(lastEvent()).toMatchObject({ label: 'Montlac → Merceaux-Descloux', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Montlac → Merceaux-Descloux', remaining: 7, total: 7 });
 
     parseLine('Woznica wola: Nastepny postoj - Merceaux-Descloux!');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux.');
-    expect(lastEvent()).toMatchObject({ label: 'Merceaux-Descloux → Parravon', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Merceaux-Descloux → Parravon', remaining: 7, total: 7 });
 
     parseLine('Woznica wola: Nastepny postoj - most pod Parravon!');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac przed zajazdem.');
-    expect(lastEvent()).toMatchObject({ label: 'Parravon → Merceaux-Descloux', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Parravon → Merceaux-Descloux', remaining: 7, total: 7 });
 
     parseLine('Woznica wola: Nastepny postoj - Merceaux-Descloux!');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux.');
-    expect(lastEvent()).toMatchObject({ label: 'Merceaux-Descloux → Montlac', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Merceaux-Descloux → Montlac', remaining: 16, total: 16 });
 
     parseLine('Woznica wola: Nastepny postoj - Montlac!');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac.');
-    expect(lastEvent()).toMatchObject({ label: 'Montlac → Quenelles', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Montlac → Quenelles', remaining: 44, total: 44 });
 
     parseLine('Woznica wola: Nastepny postoj - Quenelles!');
     parseLine('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
     parseLine('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac Gillesa le Breton.');
-    expect(lastEvent()).toMatchObject({ label: 'Quenelles → Montlac', remaining: null, total: null });
+    expect(lastEvent()).toMatchObject({ label: 'Quenelles → Montlac', remaining: 44, total: 44 });
 
     emitCommand('wyjscie');
     expect(lastEvent()).toBeNull();
