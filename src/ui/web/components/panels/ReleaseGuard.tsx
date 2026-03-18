@@ -41,7 +41,7 @@ export const ReleaseGuard: React.FC = () => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    containerRef.current.innerHTML = `<span style="color: white">Pusc zas: </span>${state ? "on" : "off"}`;
+    containerRef.current.innerHTML = `Pusc zas: ${state ? "on" : "off"}`;
     containerRef.current.className = state ? "on" : "off";
     containerRef.current.style.display = "block";
   }, [state]);

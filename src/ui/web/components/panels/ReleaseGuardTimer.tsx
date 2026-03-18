@@ -49,18 +49,18 @@ export const ReleaseGuardTimer: React.FC = () => {
     if (!containerRef.current) return;
 
     const isTimerActive = timerSeconds != null && timerSeconds > 0;
-    const guardColor = guardState ? "white" : "dimgray";
+    const guardColor = guardState ? "var(--footer-text-strong)" : "var(--footer-text-dim)";
 
     let timerHtml: string;
     if (isTimerActive) {
-      timerHtml = `<span style="color: yellow;">${timerSeconds.toFixed(2)}</span>`;
+      timerHtml = `<span style="color: var(--popup-data-yellow);">${timerSeconds.toFixed(2)}</span>`;
     } else {
-      timerHtml = `<span style="color: springgreen;">OK</span>`;
+      timerHtml = `<span style="color: var(--popup-data-spring-green);">OK</span>`;
     }
 
     containerRef.current.innerHTML =
       `<span style="color: ${guardColor};">Pusc</span>` +
-      `<span style="color: white;"> Zas: </span>${timerHtml}`;
+      `<span> Zas: </span>${timerHtml}`;
 
     containerRef.current.style.display = "block";
     containerRef.current.style.cursor = "pointer";

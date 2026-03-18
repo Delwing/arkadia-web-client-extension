@@ -1153,6 +1153,7 @@ h1 {
   font-size: 0.8rem;
   background-color: var(--footer-bg);
   border-top: 0.1vh solid var(--footer-border);
+  color: var(--footer-text);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -1233,6 +1234,7 @@ h1 {
   font-size: 0.8rem;
   background-color: var(--footer-bg);
   border-top: 0.1vh solid var(--footer-border);
+  color: var(--footer-text);
   position: relative;
   user-select: none;
 }
@@ -2516,32 +2518,32 @@ h1 {
 
 #transport-timer.green {
   display: block;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #transport-timer.yellow {
   display: block;
-  color: yellow;
+  color: var(--popup-data-yellow);
 }
 
 #transport-timer.red {
   display: block;
-  color: tomato;
+  color: var(--popup-data-tomato);
 }
 
 #lamp-timer.green {
   display: block;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #lamp-timer.yellow {
   display: block;
-  color: yellow;
+  color: var(--popup-data-yellow);
 }
 
 #lamp-timer.red {
   display: block;
-  color: tomato;
+  color: var(--popup-data-tomato);
 }
 
 #release-guard-timer {
@@ -2554,17 +2556,17 @@ h1 {
 
 #zask-timer.green {
   display: block;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #zask-timer.yellow {
   display: block;
-  color: yellow;
+  color: var(--popup-data-yellow);
 }
 
 #zask-timer.red {
   display: block;
-  color: tomato;
+  color: var(--popup-data-tomato);
 }
 
 #combat-timer {
@@ -2573,17 +2575,17 @@ h1 {
 
 #combat-timer.green {
   display: block;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #combat-timer.yellow {
   display: block;
-  color: yellow;
+  color: var(--popup-data-yellow);
 }
 
 #combat-timer.red {
   display: block;
-  color: tomato;
+  color: var(--popup-data-tomato);
 }
 
 #cover-timer {
@@ -2592,12 +2594,12 @@ h1 {
 
 #cover-timer.green {
   display: block;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #cover-timer.yellow {
   display: block;
-  color: yellow;
+  color: var(--popup-data-yellow);
 }
 
 #order-timer {
@@ -2606,12 +2608,12 @@ h1 {
 
 #order-timer.green {
   display: block;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #order-timer.yellow {
   display: block;
-  color: yellow;
+  color: var(--popup-data-yellow);
 }
 
 #world-destruction-timer {
@@ -2620,7 +2622,7 @@ h1 {
 
 #world-destruction-timer.active {
   display: inline;
-  color: red;
+  color: var(--popup-danger);
   font-weight: bold;
 }
 
@@ -2629,16 +2631,16 @@ h1 {
 }
 
 #break-item-warning {
-  color: tomato;
+  color: var(--popup-data-tomato);
   cursor: pointer;
 }
 
 #weapon-state .weapon-on {
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #weapon-state .weapon-off {
-  color: #888;
+  color: var(--popup-data-gray);
 }
 
 #attack-mode {
@@ -2648,17 +2650,17 @@ h1 {
 
 #attack-mode.A {
   display: inline;
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 #attack-mode.AW {
   display: inline;
-  color: gold;
+  color: var(--popup-data-gold);
 }
 
 #attack-mode.AWR {
   display: inline;
-  color: deepskyblue;
+  color: var(--popup-data-blue);
 }
 
 #objects-list {
@@ -2882,7 +2884,7 @@ h1 {
 }
 
 .object-card__name--teammate {
-  color: springgreen;
+  color: var(--popup-data-spring-green);
 }
 
 .object-card__name--attacking {
@@ -3883,6 +3885,7 @@ h1 {
   padding: 7px 10px;
   background-color: var(--footer-bg);
   border-top: 0.1vh solid var(--footer-border);
+  color: var(--footer-text);
   gap: 10px;
   position: relative;
   z-index: 1001;
