@@ -685,6 +685,22 @@ class TransportTracker {
                     return;
                 }
             }
+            // The set_pattern on stop `i` announces what comes after that stop.
+            // The next segment to travel is (i+1). If that's among candidates, resolve to it.
+            const nextIndex = (index + 1) % definition.stops.length;
+            if (journey.candidateIndexes.has(nextIndex)) {
+                this.applyCandidateIndexes(journey, [nextIndex], false);
+                journey.activeIndex = nextIndex;
+                this.pendingCandidates.delete(definition);
+                const startedAt = journey.startTimes.get(nextIndex);
+                if (typeof startedAt === "number") {
+                    this.startCountdown(journey, nextIndex, startedAt);
+                }
+                this.log(`Set pattern resolved direction on ${definition.name}. Active stop: ${formatLabel(definition, definition.stops[nextIndex])}`);
+                this.refreshTimer(journey);
+                this.emitRoute();
+                return;
+            }
             this.log(
                 `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – not among current candidates (${this.describeCandidates(journey)}).`
             );
