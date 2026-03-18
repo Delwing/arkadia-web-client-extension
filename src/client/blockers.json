@@ -288,6 +288,10 @@
     "type": "0"
   },
   {
+    "pattern": "Nie mozesz sie stad wymknac posiadajac przy sobie zrodlo swiatla.",
+    "type": "0"
+  },
+  {
     "pattern": "do ciebie: Nikt z bronia nie wejdzie na teren Uniwersytetu. Prosze zostawic ja na stojaku.",
     "type": "0"
   },
