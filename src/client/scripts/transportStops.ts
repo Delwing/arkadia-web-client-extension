@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { isDirection } from "@shared/map";
-import type { TransportTimerPayload } from "../types/transport";
+import type { TransportTimerPayload, TransportRoutePayload, TransportRouteStop } from "../types/transport";
 import { getAllTransportSegments, recordTransportSegment } from "../utils/transportStats";
 import type { StoredTransportSegmentRecord } from "../utils/transportStats";
 
@@ -296,6 +296,7 @@ class TransportTracker {
         this.registerFollowExitTriggers();
         this.registerListeners();
         this.emitTimer(null);
+        this.emitRoute();
         void this.loadSegmentDurationOverrides();
     }
 
@@ -557,6 +558,7 @@ class TransportTracker {
         this.pendingCandidates.delete(definition);
         this.log(`Entered ${definition.name}. Candidate stops: ${this.describeCandidates(journey)}`);
         this.refreshTimer(journey);
+        this.emitRoute();
     }
 
     private handleExit(definition?: CompiledTransportDefinition, _line?: string) {
@@ -610,6 +612,7 @@ class TransportTracker {
         }
         this.pendingCandidates.delete(definition);
         this.log(`Journey on ${definition.name} started. Candidate stops: ${this.describeCandidates(journey)}`);
+        this.emitRoute();
     }
 
     private handleSet(definition: CompiledTransportDefinition, index: number) {
@@ -678,6 +681,7 @@ class TransportTracker {
                     }
                     this.log(`Set pattern corrected direction on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
                     this.refreshTimer(journey);
+                    this.emitRoute();
                     return;
                 }
             }
@@ -703,10 +707,12 @@ class TransportTracker {
         }
         this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
         this.refreshTimer(journey);
+        this.emitRoute();
     }
 
     private handleStop(definition: CompiledTransportDefinition, index: number) {
         if (!this.shouldHandle(definition)) {
+            this.adoptFromStopPattern(definition, index);
             return;
         }
         const journey = this.ensureJourney(definition);
@@ -770,7 +776,9 @@ class TransportTracker {
         journey.candidateIndexes = new Set([nextIndex]);
 
         this.log(`Arrived at ${formatLabel(definition, stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
+        this.client.sendEvent("transportArrival", index);
         this.refreshTimer(journey);
+        this.emitRoute();
 
         queueMicrotask(() => {
             if (!this.currentJourney || this.currentJourney !== journey) {
@@ -780,6 +788,22 @@ class TransportTracker {
                 journey.activeIndex = undefined;
             }
         });
+    }
+
+    private adoptFromStopPattern(definition: CompiledTransportDefinition, index: number) {
+        if (this.currentJourney) {
+            return;
+        }
+        const stop = definition.stops[index];
+        const journey = this.ensureJourney(definition);
+        journey.onBoard = true;
+        const nextIndex = (index + 1) % definition.stops.length;
+        journey.candidateIndexes = new Set([nextIndex]);
+        journey.activeIndex = undefined;
+        this.log(`Detected ${definition.name} from stop pattern at ${formatLabel(definition, stop)}. Next: ${this.describeCandidates(journey)}`);
+        this.client.sendEvent("transportArrival", index);
+        this.refreshTimer(journey);
+        this.emitRoute();
     }
 
     private ensureJourney(definition: CompiledTransportDefinition): JourneyState {
@@ -922,6 +946,7 @@ class TransportTracker {
         this.currentJourney = null;
         this.pendingCandidates.clear();
         this.emitTimer(null);
+        this.emitRoute();
     }
 
     private shouldHandle(definition: CompiledTransportDefinition): boolean {
@@ -933,6 +958,29 @@ class TransportTracker {
 
     private emitTimer(payload: TransportTimerPayload | null) {
         this.client.sendEvent("transportTimer", payload);
+    }
+
+    private buildRoutePayload(): TransportRoutePayload | null {
+        if (!this.currentJourney) {
+            return null;
+        }
+        const { definition, activeIndex, onBoard } = this.currentJourney;
+        const stops: TransportRouteStop[] = definition.stops.map(stop => ({
+            label: resolveDestinationLabel(definition, stop),
+            durationSeconds: typeof stop.time === "number" && !Number.isNaN(stop.time) ? stop.time : null,
+        }));
+        const originLabel = resolveLocationLabel(definition, definition.stops[0].start);
+        return {
+            transportName: definition.name,
+            originLabel,
+            stops,
+            activeStopIndex: activeIndex,
+            onBoard,
+        };
+    }
+
+    private emitRoute() {
+        this.client.sendEvent("transportRoute", this.buildRoutePayload());
     }
 
     private log(message: string) {

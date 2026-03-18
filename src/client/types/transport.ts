@@ -3,3 +3,16 @@ export interface TransportTimerPayload {
     remaining: number | null;
     total: number | null;
 }
+
+export interface TransportRouteStop {
+    label: string;
+    durationSeconds: number | null;
+}
+
+export interface TransportRoutePayload {
+    transportName: string;
+    originLabel: string;
+    stops: TransportRouteStop[];
+    activeStopIndex: number | undefined;
+    onBoard: boolean;
+}

@@ -9919,3 +9919,105 @@ body.mobile-command-radial-active {
   background-color: var(--popup-danger-bg);
   color: var(--popup-danger);
 }
+
+/* Transport Route Popup */
+
+.transport-route-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--popup-bg);
+}
+
+.transport-route-popup__empty {
+  padding: 1rem 0.75rem;
+  color: var(--popup-text-dim);
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+}
+
+.transport-route-popup__stops {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+.transport-route-popup__stop {
+  padding: 0.1rem 0.25rem;
+  color: var(--popup-text);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.transport-route-popup__stop:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.transport-route-popup__stop--active {
+  color: springgreen;
+  font-weight: bold;
+}
+
+.transport-route-popup__stop--alert {
+  border-color: #e6c04c;
+}
+
+.transport-route-popup__stop--arrived {
+  border-color: springgreen;
+  background-color: rgba(0, 255, 127, 0.15);
+  animation: transport-arrived-flash 1s ease-in-out 3;
+}
+
+@keyframes transport-arrived-flash {
+  0%, 100% { background-color: rgba(0, 255, 127, 0.15); }
+  50% { background-color: rgba(0, 255, 127, 0.35); }
+}
+
+.transport-route-popup__alert-icon {
+  margin-left: auto;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.transport-route-popup__stop-marker {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.transport-route-popup__segment {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.05rem 0.5rem;
+  color: var(--popup-text-dim);
+  font-size: 0.8rem;
+}
+
+.transport-route-popup__segment--active {
+  color: #e6c04c;
+}
+
+.transport-route-popup__segment-arrow {
+  flex-shrink: 0;
+}
+
+.transport-route-popup__segment-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.transport-route-popup__loop {
+  padding: 0.1rem 0;
+  color: var(--popup-text-dim);
+  font-size: 1rem;
+  text-align: left;
+}
