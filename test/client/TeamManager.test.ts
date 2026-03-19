@@ -8,6 +8,7 @@ class FakeClient {
   Triggers = new Triggers({} as any);
   println = jest.fn();
   sendGMCP = jest.fn();
+  ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([]) };
   on(event: string, cb: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
@@ -53,21 +54,32 @@ describe('TeamManager', () => {
     expect(manager.getTeamMembers()).toEqual([]);
   });
 
-  test('full sync message sets members and leader from text', () => {
+  test('Druzyne prowadzi does not add members, requests gmcp refresh', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
-    expect(manager.getLeader()).toBe('Vesper');
-    const members = manager.getTeamMembers();
-    expect(members).toEqual(expect.arrayContaining(['Vesper', 'Pablo', 'Opeteh']));
-    expect(manager.isInTeam('Pablo')).toBe(true);
+    expect(manager.getTeamMembers()).toEqual([]);
+    expect(manager.getLeader()).toBeUndefined();
+    expect(client.sendGMCP).toHaveBeenCalledWith('objects.nums');
+    expect(client.sendGMCP).toHaveBeenCalledWith('objects.data');
   });
 
-  test('full sync message leader comes from gmcp', () => {
+  test('Druzyne prowadzi members and leader come from gmcp', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
     client.sendEvent('gmcp.objects.data', {
       '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
+      '6': { desc: 'Pablo', living: true, team: true },
+      '7': { desc: 'Opeteh', living: true, team: true },
     });
     expect(manager.getLeader()).toBe('Vesper');
     expect(manager.getLeaderId()).toBe(5);
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    expect(manager.isInTeam('Opeteh')).toBe(true);
+  });
+
+  test('Przewodzisz druzynie does not add members, requests gmcp refresh', () => {
+    client.Triggers.parseLine(new AnsiAwareBuffer('Przewodzisz druzynie, w ktorej oprocz ciebie sa jeszcze: Pablo i Vesper.'), '');
+    expect(manager.getTeamMembers()).toEqual([]);
+    expect(client.sendGMCP).toHaveBeenCalledWith('objects.nums');
+    expect(client.sendGMCP).toHaveBeenCalledWith('objects.data');
   });
 
   test('returns leader id when available', () => {
@@ -268,6 +280,60 @@ describe('TeamManager', () => {
     expect(avatarCallback).toHaveBeenCalled();
   });
 
+  test('removes member when gmcp sends team: false', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: false },
+    });
+    expect(manager.isInTeam('Pablo')).toBe(false);
+    expect(manager.getTeamMemberObjectId('Pablo')).toBeUndefined();
+  });
+
+  test('removes leader when gmcp sends team: false for leader obj_id', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper', living: true, team: true, team_leader: true },
+    });
+    expect(manager.getLeader()).toBe('Vesper');
+    expect(manager.getLeaderId()).toBe(5);
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper', living: true, team: false },
+    });
+    expect(manager.getLeader()).toBeUndefined();
+    expect(manager.getLeaderId()).toBeUndefined();
+    expect(manager.isInTeam('Vesper')).toBe(false);
+  });
+
+  test('does not remove member name if another obj_id still maps to it', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: true },
+      '43': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: false },
+    });
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    expect(manager.getTeamMemberObjectId('Pablo')).toBe(43);
+  });
+
+  test('new obj_id after reconnect is not seen as team member', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '42': { desc: 'Pablo', living: true, team: true },
+    });
+    expect(manager.isInTeam('Pablo')).toBe(true);
+    // Player reconnects with new obj_id, not in team
+    client.sendEvent('gmcp.objects.data', {
+      '55': { desc: 'Pablo', living: true, team: false },
+    });
+    // Old obj_id still thinks Pablo is in team, but new one says no
+    // The old entry remains until explicitly cleared
+    // The key behavior: obj_id 55 is NOT a team member
+    expect(manager.getTeamMemberObjectId('Pablo')).toBe(42);
+  });
+
   test('getTeamMemberObjectId resolves name to object id', () => {
     client.sendEvent('gmcp.objects.data', {
       '42': { desc: 'Pablo', living: true, team: true },
@@ -289,6 +355,24 @@ describe('TeamManager', () => {
       '42': { desc: 'Pablo', living: true, team: true },
     });
     expect(manager.getTeamMemberObjectId('Vesper')).toBeUndefined();
+  });
+
+  test('getTeamMembersOnLocation returns team members from ObjectManager', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { num: 99, desc: 'You', __category: 'player' },
+      { num: 42, desc: 'Pablo', __category: 'team' },
+      { num: 44, desc: 'Opeteh', __category: 'team' },
+      { num: 50, desc: 'Goblin', __category: 'rest' },
+    ]);
+    expect(manager.getTeamMembersOnLocation()).toEqual(['Pablo', 'Opeteh']);
+  });
+
+  test('getTeamMembersOnLocation returns empty when no team members on location', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { num: 99, desc: 'You', __category: 'player' },
+      { num: 50, desc: 'Goblin', __category: 'rest' },
+    ]);
+    expect(manager.getTeamMembersOnLocation()).toEqual([]);
   });
 
 });

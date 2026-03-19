@@ -18,9 +18,9 @@ export default function initOstatnio(
     aliases.push({
         pattern: /^\/ostatnio$/,
         callback: () => {
-            const members = client.TeamManager.getTeamMembers();
+            const members = client.TeamManager.getTeamMembersOnLocation();
             if (members.length === 0) {
-                client.println("Nie jestes w zadnej druzynie lub brak czlonkow.");
+                client.println("Brak czlonkow druzyny na lokacji.");
                 return;
             }
 

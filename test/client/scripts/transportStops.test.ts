@@ -40,6 +40,7 @@ describe('transport stop triggers', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   test('stop pattern does not register trigger', () => {
