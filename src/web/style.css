@@ -9919,3 +9919,140 @@ body.mobile-command-radial-active {
   background-color: var(--popup-danger-bg);
   color: var(--popup-danger);
 }
+
+/* Transport Route Popup */
+
+.transport-route-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--popup-bg);
+}
+
+.transport-route-popup__empty {
+  padding: 1rem 0.75rem;
+  color: var(--popup-text-dim);
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+}
+
+/* --- Transport graph view --- */
+
+.transport-graph {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Node */
+
+.transport-graph__node {
+  padding: 0.15rem 0.25rem;
+  color: var(--popup-text);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.transport-graph__node:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.transport-graph__node--active {
+  color: springgreen;
+  font-weight: bold;
+}
+
+.transport-graph__node--alert {
+  border-color: #e6c04c;
+}
+
+.transport-graph__node--arrived {
+  border-color: springgreen;
+  background-color: rgba(0, 255, 127, 0.15);
+  animation: transport-arrived-flash 1s ease-in-out 3;
+}
+
+@keyframes transport-arrived-flash {
+  0%, 100% { background-color: rgba(0, 255, 127, 0.15); }
+  50% { background-color: rgba(0, 255, 127, 0.35); }
+}
+
+.transport-graph__node-dot {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  width: 1em;
+  text-align: center;
+}
+
+.transport-graph__node-label {
+  white-space: nowrap;
+}
+
+.transport-graph__alert-icon {
+  margin-left: auto;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Edge */
+
+.transport-graph__edge {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.15rem 0 0.15rem 0.55rem;
+  min-height: 1.6rem;
+}
+
+.transport-graph__edge-line {
+  width: 2px;
+  background-color: var(--popup-text-dim);
+  border-radius: 1px;
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+
+.transport-graph__edge--active .transport-graph__edge-line {
+  background-color: #e6c04c;
+  opacity: 0.7;
+}
+
+.transport-graph__edge--traveling .transport-graph__edge-line {
+  opacity: 1;
+  animation: transport-edge-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes transport-edge-glow {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 3px #e6c04c; }
+  50% { opacity: 1; box-shadow: 0 0 8px #e6c04c, 0 0 3px #e6c04c; }
+}
+
+.transport-graph__edge-times {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  font-size: 0.78rem;
+  color: var(--popup-text-dim);
+}
+
+.transport-graph__edge-time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.transport-graph__edge-time--active {
+  color: #e6c04c;
+  font-weight: bold;
+}

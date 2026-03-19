@@ -332,10 +332,17 @@ export default class Client {
                 }
                 characterStorage.set('object_num', newNum);
             }
+            if (info?.gender) {
+                characterStorage.set('gender', info.gender);
+            }
         });
 
         this.on('gmcp.char.colors', (data) => {
             this.defaultColor = data?.text ?? 255;
+        });
+
+        this.on('printLine', (text) => {
+            this.println(text);
         });
 
         this.on('output-sent', () => {

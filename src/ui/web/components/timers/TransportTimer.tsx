@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useClientEvent, useLocalStorage } from "../../hooks";
 import type { UiSettings } from "@web/uiSettings";
 import {TransportTimerPayload} from "@client/types/transport.ts";
 import {globalStorage} from "@modules/core/storage";
+import eventBus from "@modules/core/eventBus";
 
 /**
  * TransportTimer component - displays transport timer with label
@@ -23,6 +24,18 @@ export const TransportTimer: React.FC = () => {
   useClientEvent<TransportTimerPayload | null>("transportTimer", (newPayload) => {
     setPayload(newPayload);
   });
+
+  const handleClick = useCallback(() => {
+    eventBus.emit("transport.popup.open");
+  }, []);
+
+  useEffect(() => {
+    const container = document.getElementById("transport-timer");
+    if (!container) return;
+    container.style.cursor = "pointer";
+    container.title = "Kliknij aby otworzyc trase";
+    container.onclick = handleClick;
+  }, [handleClick]);
 
   useEffect(() => {
     return globalStorage.onChange('uiSettings', (newSettings) => {

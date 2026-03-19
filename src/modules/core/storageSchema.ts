@@ -18,6 +18,7 @@ import type { UserAlias } from '@client/scripts/userAliases';
 import type { ShortcutEntry } from '@client/scripts/shortcuts';
 import type { ContractsSnapshot } from '@client/scripts/contracts';
 import type { AttackMode } from '@client/utils/attackController';
+import type { CharGender } from '@shared/events/gmcpTypes';
 
 /**
  * Character-scoped storage keys.
@@ -48,6 +49,7 @@ export interface CharacterStorageSchema {
     lua_gags_walka_config: any; // TODO: type lua gags walka config
     attack_mode: AttackMode;
     chat_history: any[]; // TODO: use serialized ChatEntry[] type
+    gender: CharGender;
 }
 
 /**
@@ -139,6 +141,7 @@ export const characterStorageKeys = [
     'lua_gags_walka_config',
     'attack_mode',
     'chat_history',
+    'gender',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */
