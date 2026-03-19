@@ -1,6 +1,9 @@
+export type CharGender = 'male' | 'female';
+
 export interface GmcpCharInfo {
     object_num?: number;
     name?: string;
+    gender?: CharGender;
 }
 
 export interface GmcpCharState {

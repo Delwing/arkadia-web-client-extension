@@ -43,7 +43,7 @@ import Salignac from "./other/Salignac - Nuln.json";
 import NulnBlekitnaWstega from "./other/Nuln - Blekitna Wstega.json";
 import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
 import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
-import QuenellesMontlacMerceauxDescloux from "./other/Quenelles - Montlac - Merceaux-Descloux.json";
+import QuenellesMontlacMerceauxDesclouxParravon from "./other/Quenelles - Montlac - Merceaux-Descloux - Parravon.json";
 
 const BOARD_COMMANDS = new Set([
     "wsiadz na statek",
@@ -127,8 +127,8 @@ const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
     ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
     ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
     [
-        "Quenelles - Montlac - Merceaux-Descloux",
-        QuenellesMontlacMerceauxDescloux as RawTransportDefinition,
+        "Quenelles - Montlac - Merceaux-Descloux - Parravon",
+        QuenellesMontlacMerceauxDesclouxParravon as RawTransportDefinition,
     ],
 ];
 
@@ -613,6 +613,7 @@ class TransportTracker {
         this.pendingCandidates.delete(definition);
         this.log(`Journey on ${definition.name} started. Candidate stops: ${this.describeCandidates(journey)}`);
         this.emitRoute();
+        this.client.emit('transportDeparture');
     }
 
     private handleSet(definition: CompiledTransportDefinition, index: number) {
@@ -623,6 +624,10 @@ class TransportTracker {
         const onBoard = isCurrentJourney && this.currentJourney.onBoard;
 
         if (!onBoard) {
+            if (!this.currentJourney) {
+                this.adoptFromSetPattern(definition, index);
+                return;
+            }
             const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
             const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             if (typeof locationId !== "number") {
@@ -792,9 +797,9 @@ class TransportTracker {
         journey.candidateIndexes = new Set([nextIndex]);
 
         this.log(`Arrived at ${formatLabel(definition, stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
-        this.client.sendEvent("transportArrival", index);
         this.refreshTimer(journey);
         this.emitRoute();
+        this.client.sendEvent("transportArrival", index);
 
         queueMicrotask(() => {
             if (!this.currentJourney || this.currentJourney !== journey) {
@@ -811,13 +816,52 @@ class TransportTracker {
             return;
         }
         const stop = definition.stops[index];
+        const siblingIndexes = definition.stopPatternGroups.get(stop.patternKey) ?? [index];
+
         const journey = this.ensureJourney(definition);
         journey.onBoard = true;
-        const nextIndex = (index + 1) % definition.stops.length;
-        journey.candidateIndexes = new Set([nextIndex]);
-        journey.activeIndex = undefined;
-        this.log(`Detected ${definition.name} from stop pattern at ${formatLabel(definition, stop)}. Next: ${this.describeCandidates(journey)}`);
+
+        if (siblingIndexes.length > 1) {
+            // Ambiguous stop pattern — store all possible next stops as candidates
+            // and wait for the set_pattern to disambiguate
+            const nextIndexes = siblingIndexes.map(i => (i + 1) % definition.stops.length);
+            journey.candidateIndexes = new Set(nextIndexes);
+            journey.activeIndex = undefined;
+            this.log(`Detected ${definition.name} from ambiguous stop pattern at ${formatLabel(definition, stop)}. Candidates: ${this.describeCandidates(journey)}`);
+        } else {
+            const nextIndex = (index + 1) % definition.stops.length;
+            journey.candidateIndexes = new Set([nextIndex]);
+            journey.activeIndex = undefined;
+            this.log(`Detected ${definition.name} from stop pattern at ${formatLabel(definition, stop)}. Next: ${this.describeCandidates(journey)}`);
+        }
+
+        this.refreshTimer(journey);
+        this.emitRoute();
         this.client.sendEvent("transportArrival", index);
+    }
+
+    private adoptFromSetPattern(definition: CompiledTransportDefinition, index: number) {
+        if (this.currentJourney) {
+            return;
+        }
+        const stop = definition.stops[index];
+        const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
+        const siblingIndexes = setGroup && setGroup.length > 0 ? setGroup : [index];
+
+        // set_pattern on stop i means we're about to travel stop (i+1)
+        const nextIndexes = siblingIndexes.map(i => (i + 1) % definition.stops.length);
+
+        const journey = this.ensureJourney(definition);
+        journey.onBoard = true;
+        journey.candidateIndexes = new Set(nextIndexes);
+        journey.activeIndex = undefined;
+
+        if (nextIndexes.length > 1) {
+            this.log(`Detected ${definition.name} from ambiguous set pattern at ${formatLabel(definition, stop)}. Candidates: ${this.describeCandidates(journey)}`);
+        } else {
+            this.log(`Detected ${definition.name} from set pattern at ${formatLabel(definition, stop)}. Next: ${this.describeCandidates(journey)}`);
+        }
+
         this.refreshTimer(journey);
         this.emitRoute();
     }

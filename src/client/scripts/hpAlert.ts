@@ -5,7 +5,7 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 
 export default function initHpAlert(client: Client) {
     const ORANGE = createColorFormat("#ffa500");
-    const CONDITIONS = [
+    const CONDITIONS_MALE = [
         '',
         'ledwo zywy',
         'ciezko ranny',
@@ -15,8 +15,21 @@ export default function initHpAlert(client: Client) {
         'w dobrym stanie',
         'w swietnej kondycji',
     ];
+    const CONDITIONS_FEMALE = [
+        '',
+        'ledwo zywa',
+        'ciezko ranna',
+        'w zlej kondycji',
+        'ranna',
+        'lekko ranna',
+        'w dobrym stanie',
+        'w swietnej kondycji',
+    ];
     let prev = Infinity;
     let alertLevel = 2;
+
+    const getConditions = () =>
+        characterStorage.get('gender') === 'female' ? CONDITIONS_FEMALE : CONDITIONS_MALE;
 
     const applySettings = (settings: any) => {
         const detail = (settings ?? defaultSettings) as { lowHpAlert?: unknown };
@@ -26,7 +39,7 @@ export default function initHpAlert(client: Client) {
         }
         const value = Number(detail.lowHpAlert);
         if (Number.isFinite(value)) {
-            const max = CONDITIONS.length - 1;
+            const max = CONDITIONS_MALE.length - 1;
             alertLevel = Math.max(0, Math.min(max, Math.floor(value)));
         } else {
             alertLevel = 2;
@@ -44,7 +57,7 @@ export default function initHpAlert(client: Client) {
             return;
         }
         if (hp < prev && hp <= alertLevel) {
-            const plain = `Jestes ${CONDITIONS[hp] ?? ''}`;
+            const plain = `Jestes ${getConditions()[hp] ?? ''}`;
             const msg = colorString(plain, ORANGE).prepend("\n").append('\n');
             client.sendEvent("sound:play", { key: "beep" });
             client.println(msg);

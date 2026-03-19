@@ -159,6 +159,7 @@ export interface KnownEvents {
     "transportTimer": TransportTimerPayload | null;
     "transportRoute": TransportRoutePayload | null;
     "transportArrival": number;
+    "transportDeparture": void;
     "transport.popup.open": void;
     "combatTimer": number | null;
     "worldDestructionTimer": number | null;
@@ -177,6 +178,7 @@ export interface KnownEvents {
     "requestKnowledgeDetailsReport": void;
     "knowledgeHints": { enabled: boolean; hideCompleted: boolean };
     "sendCommand": SendCommandEvent;
+    "printLine": string | AnsiAwareBuffer;
     "requestHerbCounts": void;
     "herbManagerClose": void;
     "herbCounts": unknown;
