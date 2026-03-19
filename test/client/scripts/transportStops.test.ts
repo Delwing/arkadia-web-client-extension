@@ -583,4 +583,118 @@ describe('transport stop triggers', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  test('gmcp.room.info with map coordinates clears journey', () => {
+    initTransportStops(client as unknown as any);
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 3247 });
+
+    emitCommand('wejdz na statek');
+    parseLine('Wchodzisz na niewielki dwumasztowy statek.');
+    parseLine('Statek odbija od brzegu.');
+
+    const timer = events[events.length - 1] as TransportTimerPayload;
+    expect(timer).toBeTruthy();
+
+    // Receiving gmcp.room.info with map data means we're at a real map location
+    client.dispatchEvent('gmcp.room.info', { map: { x: 10, y: 20 } });
+    expect(events[events.length - 1]).toBeNull();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('reset event clears journey', () => {
+    initTransportStops(client as unknown as any);
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    client.dispatchEvent('enterLocation', { id: 3247 });
+
+    emitCommand('wejdz na statek');
+    parseLine('Wchodzisz na niewielki dwumasztowy statek.');
+    parseLine('Statek odbija od brzegu.');
+
+    const timer = events[events.length - 1] as TransportTimerPayload;
+    expect(timer).toBeTruthy();
+
+    client.dispatchEvent('reset');
+    expect(events[events.length - 1]).toBeNull();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('movement command while on board does not clear journey', () => {
+    initTransportStops(client as unknown as any);
+    jest.useFakeTimers();
+    const events: (TransportTimerPayload | null)[] = [];
+    client.sendEvent = jest.fn((type: string, payload: any) => {
+      if (type === 'transportTimer') {
+        events.push(payload);
+      }
+    });
+
+    const parseLine = (line: string) => {
+      parse(line);
+    };
+
+    const emitCommand = (command: string) => {
+      client.dispatchEvent('command', command);
+    };
+
+    // Start at Kelim's first stop location
+    client.dispatchEvent('enterLocation', { id: 3247 });
+
+    // Board the ship
+    emitCommand('wejdz na statek');
+    parseLine('Wchodzisz na niewielki dwumasztowy statek.');
+
+    // Ship departs
+    parseLine('Statek odbija od brzegu.');
+
+    const timerBeforeMove = events[events.length - 1] as TransportTimerPayload;
+    expect(timerBeforeMove).toBeTruthy();
+    expect(timerBeforeMove.label).toBe('Obawa zach. → Novigrad');
+
+    // Walk between rooms on the ship (multi-room ship with map locations)
+    emitCommand('polnoc');
+    client.dispatchEvent('enterLocation', { id: 9999 });
+
+    // Timer should still be active
+    const timerAfterMove = events[events.length - 1] as TransportTimerPayload;
+    expect(timerAfterMove).not.toBeNull();
+    expect(timerAfterMove.label).toBe('Obawa zach. → Novigrad');
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 });

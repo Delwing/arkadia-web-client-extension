@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { isDirection } from "@shared/map";
 import type { TransportTimerPayload, TransportRoutePayload, TransportRouteStop } from "../types/transport";
+import type { GmcpRoomInfo } from "@shared/events";
 import { getAllTransportSegments, recordTransportSegment } from "../utils/transportStats";
 import type { StoredTransportSegmentRecord } from "../utils/transportStats";
 
@@ -381,6 +382,15 @@ class TransportTracker {
                 this.clearJourney();
             }
         });
+        this.client.on("gmcp.room.info", (detail) => {
+            const info = detail as GmcpRoomInfo;
+            if (info?.map && this.currentJourney) {
+                this.clearJourney();
+            }
+        });
+        this.client.on("reset", () => {
+            this.clearJourney();
+        });
     }
 
     private registerTriggers() {
@@ -474,7 +484,7 @@ class TransportTracker {
                 this.markOutOfTransport();
                 return;
             }
-            if (this.isMovementCommand(normalized)) {
+            if (this.isMovementCommand(normalized) && !this.currentJourney?.onBoard) {
                 this.clearJourney();
             }
         });
