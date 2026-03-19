@@ -8,21 +8,6 @@ import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {PathFinder} from "mudlet-map-renderer";
 
-
-/**
- * Notes for implementation:
- * 1. Bowl - if lost, pause mapping if on uknown location, or do side mapping, and then merge
- * 2. Sarkofag, mark ones opened, bind dobadz broni on not opened, on all killed bind opusc bron (same for kaplica)
- * 4. Figury - mark if set + bind based on sculptures
- *
- */
-
-/**
- * Random at bowl:
- *  Gdy ruszasz za Wilibaldem na polnocny-wschod, z misy bucha wielka chmura bialego dymu, ktora momentalnie cie dosiega. Nie majac innego wyjscia, nabierasz oparu w pluca i juz po chwili komnata zaczyna krecic sie dookola ciebie, coraz szybciej i szybciej, odbierajac ci orientacje w kierunkach. Zupelnie tracisz ze wzroku Wilibalda i czym predzej zmierzasz ku najblizszemu ci wyjsciu, by wydostac sie spod wladania tej tej przekletej trucizny.
- */
-
-
 const ENTRY_ROOM_ID = 23147;
 const ENTRY_UP_TARGET = 23146;
 
@@ -46,7 +31,7 @@ const ROOM_TYPE_KEYWORDS: { type: RoomType; keywords: string[] }[] = [
     {type: 'griffins', keywords: ['gryfy']},
     {type: 'figurines', keywords: ['figurki']},
     {type: 'altar', keywords: ['oltarz']},
-    {type: 'bowl', keywords: ['misa']},
+    {type: 'bowl', keywords: ['misy']},
     {type: 'chapel', keywords: ['kaplica', 'rzedy law']},
 ];
 
@@ -160,7 +145,7 @@ interface SavedRoomData {
 
 type CaptureState =
     | { phase: 'idle' }
-    | { phase: 'capturing'; lines: string[]; direction: string | null; sourceFingerprint: string | null; doorDirection: string | null };
+    | { phase: 'capturing'; lines: string[]; direction: string | null; sourceFingerprint: string | null; doorDirection: string | null; teleport?: boolean };
 
 const reverseDirection: Record<string, string> = {
     north: "south", south: "north", east: "west", west: "east",
@@ -177,6 +162,7 @@ let pendingLook = false;
 let savedBriefValue: unknown = undefined;
 let chaliceSet = false;
 let figurinesSet = false;
+let hasTeleportedRooms = false;
 const clearedSarcophagi = new Set<string>(); // fingerprints of sarcophagus rooms where all enemies killed
 const figurineEyes: Record<string, string> = {}; // smok/gryf/jednorozec -> eye color
 
@@ -429,7 +415,64 @@ function findFreePosition(baseX: number, baseY: number): { x: number; y: number 
     return {x: baseX, y: baseY};
 }
 
-function finishCapture(client: Client, descriptionLines: string[], exitString: string, direction: string | null, sourceFingerprint: string | null, doorDirection: string | null) {
+function repositionAllRooms(client: Client) {
+    const reader = client.Map.getMapReader() as any;
+    const readerRooms: Record<number, MapData.Room> = reader.rooms;
+
+    occupiedPositions.clear();
+    occupiedPositions.add(`${entryX}:${entryY}`);
+
+    const visited = new Set<string>();
+    const queue: string[] = [];
+
+    // Seed BFS with rooms directly connected to entry
+    for (const [fp, room] of rooms) {
+        for (const [, target] of room.exits) {
+            if (target !== '__entry__' || visited.has(fp)) continue;
+            visited.add(fp);
+            const mapRoom = readerRooms[room.mapRoomId];
+            if (!mapRoom) continue;
+            // First entry-connected room placed 20 units below entry (matching initial placement)
+            const pos = queue.length === 0
+                ? {x: entryX, y: entryY + 20}
+                : findFreePosition(entryX, entryY + 20);
+            mapRoom.x = pos.x;
+            mapRoom.y = pos.y;
+            occupiedPositions.add(`${pos.x}:${pos.y}`);
+            queue.push(fp);
+        }
+    }
+
+    // BFS — place each room relative to its parent in the direction of the exit
+    while (queue.length > 0) {
+        const curFP = queue.shift()!;
+        const curRoom = rooms.get(curFP)!;
+        const curMap = readerRooms[curRoom.mapRoomId];
+        if (!curMap) continue;
+
+        for (const [dir, targetFP] of curRoom.exits) {
+            if (!targetFP || targetFP === '__entry__' || visited.has(targetFP)) continue;
+            const targetRoom = rooms.get(targetFP);
+            if (!targetRoom) continue;
+            const targetMap = readerRooms[targetRoom.mapRoomId];
+            if (!targetMap) continue;
+            const delta = DIRECTION_DELTA[dir];
+            if (!delta) continue;
+
+            visited.add(targetFP);
+            const pos = findFreePosition(
+                curMap.x + delta.x * GRID_SPACING,
+                curMap.y + delta.y * GRID_SPACING,
+            );
+            targetMap.x = pos.x;
+            targetMap.y = pos.y;
+            occupiedPositions.add(`${pos.x}:${pos.y}`);
+            queue.push(targetFP);
+        }
+    }
+}
+
+function finishCapture(client: Client, descriptionLines: string[], exitString: string, direction: string | null, sourceFingerprint: string | null, doorDirection: string | null, teleport = false) {
     const fingerprint = descriptionLines.join('\n').trim();
     if (!fingerprint) return;
 
@@ -484,6 +527,7 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
             visitCount: 0,
         };
         rooms.set(fingerprint, room);
+        if (teleport) hasTeleportedRooms = true;
 
         const saved = savedRoomData.get(mapRoomId);
         if (!saved) return;
@@ -517,6 +561,18 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
                     const pos = sourceFingerprint
                         ? findFreePosition(srcX + delta.x * GRID_SPACING, srcY + delta.y * GRID_SPACING)
                         : {x: srcX, y: srcY};
+                    mapRoom.x = pos.x;
+                    mapRoom.y = pos.y;
+                    occupiedPositions.add(`${pos.x}:${pos.y}`);
+                }
+            }
+        } else if (sourceFingerprint) {
+            // Teleport: place near source room with offset
+            const src = rooms.get(sourceFingerprint);
+            if (src) {
+                const srcMap = readerRooms[src.mapRoomId];
+                if (srcMap) {
+                    const pos = findFreePosition(srcMap.x + GRID_SPACING * 3, srcMap.y + GRID_SPACING * 3);
                     mapRoom.x = pos.x;
                     mapRoom.y = pos.y;
                     occupiedPositions.add(`${pos.x}:${pos.y}`);
@@ -595,6 +651,36 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
             if (reverse) {
                 chapel.exits.set(reverse, r.fingerprint);
             }
+        }
+    }
+
+    // After edges are finalized, check if teleported rooms just merged with main graph
+    if (hasTeleportedRooms && !teleport) {
+        const reachable = new Set<string>();
+        const bfsQ: string[] = [];
+        for (const [fp, r] of rooms) {
+            for (const [, target] of r.exits) {
+                if (target === '__entry__' && !reachable.has(fp)) {
+                    reachable.add(fp);
+                    bfsQ.push(fp);
+                }
+            }
+        }
+        while (bfsQ.length > 0) {
+            const fp = bfsQ.shift()!;
+            const r = rooms.get(fp);
+            if (!r) continue;
+            for (const [, target] of r.exits) {
+                if (target && target !== '__entry__' && rooms.has(target) && !reachable.has(target)) {
+                    reachable.add(target);
+                    bfsQ.push(target);
+                }
+            }
+        }
+        if (reachable.size === rooms.size) {
+            repositionAllRooms(client);
+            hasTeleportedRooms = false;
+            client.println(colorString("[Raon] Polaczono z glowna mapa - pozycje pokojow przeliczone.", COLOR_TYPE));
         }
     }
 
@@ -740,6 +826,7 @@ function fullReset(client: Client) {
     pendingLook = false;
     chaliceSet = false;
     figurinesSet = false;
+    hasTeleportedRooms = false;
     clearedSarcophagi.clear();
     isActive = false;
     isInitialized = false;
@@ -844,9 +931,31 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
     client.Triggers.registerTrigger(
         /.+/,
         (line) => {
+            const text = line.text ?? (typeof line === 'string' ? line : String(line));
+            const stripped = stripPolishCharacters(text);
+
+            // Detect bowl smoke teleport — start/reset capture without direction
+            if (isActive && stripped.includes('z misy bucha')) {
+                if (captureState.phase !== 'capturing') {
+                    captureState = {
+                        phase: 'capturing',
+                        lines: [],
+                        direction: null,
+                        sourceFingerprint: currentFingerprint,
+                        doorDirection: null,
+                        teleport: true,
+                    };
+                } else {
+                    captureState.direction = null;
+                    captureState.lines = [];
+                    captureState.teleport = true;
+                }
+                client.println(colorString("[Raon] Teleport z misy!", COLOR_TYPE));
+                return line;
+            }
+
             if (captureState.phase !== 'capturing') {
                 if (pendingLook && currentFingerprint) {
-                    const text = line.text ?? (typeof line === 'string' ? line : String(line));
                     if (LABYRINTH_EXIT_PATTERN.test(text)) {
                         pendingLook = false;
                         printRoomStatus(client, currentFingerprint);
@@ -855,7 +964,13 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
                 return line;
             }
 
-            const text = line.text ?? (typeof line === 'string' ? line : String(line));
+            // Skip additional smoke narration lines during teleport
+            if (captureState.teleport) {
+                const smokeKeywords = ['nabierasz oparu', 'odbierajac ci orientacje', 'przekletej trucizny', 'zmierzasz ku najblizszemu'];
+                if (smokeKeywords.some(kw => stripped.includes(kw))) {
+                    return line;
+                }
+            }
 
             // Detect door text — extract direction to chapel, skip from description
             const doorMatch = text.match(/^(?:Zamkniete|Otwarte) masywne drzwi prowadzace na (\S+)/);
@@ -877,8 +992,9 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
                 const dir = captureState.direction;
                 const src = captureState.sourceFingerprint;
                 const doorDir = captureState.doorDirection;
+                const isTeleport = captureState.teleport ?? false;
                 captureState = {phase: 'idle'};
-                finishCapture(client, descLines, match[1], dir, src, doorDir);
+                finishCapture(client, descLines, match[1], dir, src, doorDir, isTeleport);
                 return line;
             }
 
