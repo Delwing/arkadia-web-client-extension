@@ -8,6 +8,21 @@ import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {PathFinder} from "mudlet-map-renderer";
 
+
+/**
+ * Notes for implementation:
+ * 1. Bowl - if lost, pause mapping if on uknown location, or do side mapping, and then merge
+ * 2. Sarkofag, mark ones opened, bind dobadz broni on not opened, on all killed bind opusc bron (same for kaplica)
+ * 4. Figury - mark if set + bind based on sculptures
+ *
+ */
+
+/**
+ * Random at bowl:
+ *  Gdy ruszasz za Wilibaldem na polnocny-wschod, z misy bucha wielka chmura bialego dymu, ktora momentalnie cie dosiega. Nie majac innego wyjscia, nabierasz oparu w pluca i juz po chwili komnata zaczyna krecic sie dookola ciebie, coraz szybciej i szybciej, odbierajac ci orientacje w kierunkach. Zupelnie tracisz ze wzroku Wilibalda i czym predzej zmierzasz ku najblizszemu ci wyjsciu, by wydostac sie spod wladania tej tej przekletej trucizny.
+ */
+
+
 const ENTRY_ROOM_ID = 23147;
 const ENTRY_UP_TARGET = 23146;
 
@@ -158,7 +173,12 @@ let isActive = false;
 let isInitialized = false; // true after first activation (rooms snapshot taken)
 let captureState: CaptureState = {phase: 'idle'};
 let currentFingerprint: string | null = null;
+let pendingLook = false;
 let savedBriefValue: unknown = undefined;
+let chaliceSet = false;
+let figurinesSet = false;
+const clearedSarcophagi = new Set<string>(); // fingerprints of sarcophagus rooms where all enemies killed
+const figurineEyes: Record<string, string> = {}; // smok/gryf/jednorozec -> eye color
 
 const rooms = new Map<string, RaonRoom>();
 let availablePool: number[] = [];
@@ -240,6 +260,40 @@ function getRoomIndex(fingerprint: string): number {
         if (key === fingerprint) return i;
     }
     return 0;
+}
+
+function printRoomStatus(client: Client, fingerprint: string) {
+    const room = rooms.get(fingerprint);
+    if (!room) return;
+
+    const roomIndex = getRoomIndex(fingerprint);
+    const buf = new AnsiAwareBuffer(`[Raon] Pokoj ${roomIndex}/${rooms.size}`);
+
+    const typeLabel = ROOM_TYPE_LABEL[room.roomType];
+    if (typeLabel) {
+        buf.append(" ");
+        const done = (room.roomType === 'altar' && chaliceSet) || (room.roomType === 'figurines' && figurinesSet) || (room.roomType === 'sarcophagus' && clearedSarcophagi.has(fingerprint));
+        const pending = (room.roomType === 'altar' && !chaliceSet) || (room.roomType === 'figurines' && !figurinesSet) || (room.roomType === 'sarcophagus' && !clearedSarcophagi.has(fingerprint));
+        const labelColor = done ? COLOR_KNOWN : pending ? COLOR_UNKNOWN : COLOR_TYPE;
+        const suffix = done ? ' ✓' : pending ? ' ✗' : '';
+        buf.appendBuffer(colorString(`[${typeLabel}${suffix}]`, labelColor));
+    }
+
+    buf.append(" | ");
+    let first = true;
+    for (const [dir, target] of room.exits) {
+        if (!first) buf.append(", ");
+        first = false;
+        const polishDir = englishToPolish[dir] ?? dir;
+        if (target === '__entry__') {
+            buf.appendBuffer(colorString(`${polishDir} [wyjscie]`, COLOR_KNOWN));
+        } else if (target) {
+            buf.appendBuffer(colorString(`${polishDir} [${getRoomIndex(target)}]`, COLOR_KNOWN));
+        } else {
+            buf.appendBuffer(colorString(polishDir, COLOR_UNKNOWN));
+        }
+    }
+    client.println(buf);
 }
 
 function updateAllRoomChars(client: Client) {
@@ -554,31 +608,18 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
     buildCustomLines(client);
     rebuildAndRender(client);
 
-    // Print status line
-    const roomIndex = getRoomIndex(fingerprint);
-    const buf = new AnsiAwareBuffer(`[Raon] Pokoj ${roomIndex}/${rooms.size}`);
+    printRoomStatus(client, fingerprint);
 
-    const typeLabel = ROOM_TYPE_LABEL[room!.roomType];
-    if (typeLabel) {
-        buf.append(" ");
-        buf.appendBuffer(colorString(`[${typeLabel}]`, COLOR_TYPE));
+    // Functional binds for special rooms
+    if (room!.roomType === 'griffins') {
+        client.FunctionalBind.set("ob gryfy;ob szczeliny;ob wglebienia;ob mozaike;wcisnij kafelek");
+    } else if (room!.roomType === 'bowl') {
+        client.FunctionalBind.set("ob rubin;przekrec rubin");
+    } else if (room!.roomType === 'altar' && !chaliceSet) {
+        client.FunctionalBind.set("postaw kielich na oltarzu");
+    } else if (room!.roomType === 'figurines' && !figurinesSet && figurineEyes['smok'] && figurineEyes['gryf'] && figurineEyes['jednorozec']) {
+        client.FunctionalBind.set(`przesun figurke smoka na ${figurineEyes['smok']} pole;przesun figurke jednorozca na ${figurineEyes['jednorozec']} pole;przesun figurke gryfa na ${figurineEyes['gryf']} pole`);
     }
-
-    buf.append(" | ");
-    let first = true;
-    for (const [dir, target] of room!.exits) {
-        if (!first) buf.append(", ");
-        first = false;
-        const polishDir = englishToPolish[dir] ?? dir;
-        if (target === '__entry__') {
-            buf.appendBuffer(colorString(`${polishDir} [wyjscie]`, COLOR_KNOWN));
-        } else if (target) {
-            buf.appendBuffer(colorString(`${polishDir} [${getRoomIndex(target)}]`, COLOR_KNOWN));
-        } else {
-            buf.appendBuffer(colorString(polishDir, COLOR_UNKNOWN));
-        }
-    }
-    client.println(buf);
 }
 
 function initRooms(client: Client) {
@@ -696,6 +737,10 @@ function fullReset(client: Client) {
 
     savedBriefValue = undefined;
     captureState = {phase: 'idle'};
+    pendingLook = false;
+    chaliceSet = false;
+    figurinesSet = false;
+    clearedSarcophagi.clear();
     isActive = false;
     isInitialized = false;
 
@@ -724,10 +769,18 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
         },
     });
 
-    // Leader mode: track direction when active
+    // Leader mode: track direction and look commands when active
     client.registerCommandHook("raon-labyrinth-mapper", (command) => {
+        if (!isActive) return undefined;
+
+        const cmd = stripPolishCharacters(command).trim();
+        if (cmd === 'sp' || cmd === 'spojrz') {
+            pendingLook = true;
+            return undefined;
+        }
+
         const direction = extractDirection(command);
-        if (!direction || !isActive) return undefined;
+        if (!direction) return undefined;
 
         captureState = {
             phase: 'capturing',
@@ -748,6 +801,21 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
             savedBriefValue = gmcp?.char?.options?.brief;
             client.sendGMCP('char.options', {brief: 0});
             activate(client);
+        }
+    });
+
+    // Track sarcophagus cleared when all enemies killed
+    eventBus.on('allEnemiesKilled', () => {
+        if (!isActive || !currentFingerprint) return;
+        const room = rooms.get(currentFingerprint);
+        if (room && room.roomType === 'sarcophagus') {
+            clearedSarcophagi.add(currentFingerprint);
+            const reader = client.Map.getMapReader() as any;
+            const mapRoom: MapData.Room | undefined = reader.rooms[room.mapRoomId];
+            if (mapRoom) {
+                mapRoom.env = 266;
+                rebuildAndRender(client);
+            }
         }
     });
 
@@ -776,7 +844,16 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
     client.Triggers.registerTrigger(
         /.+/,
         (line) => {
-            if (captureState.phase !== 'capturing') return line;
+            if (captureState.phase !== 'capturing') {
+                if (pendingLook && currentFingerprint) {
+                    const text = line.text ?? (typeof line === 'string' ? line : String(line));
+                    if (LABYRINTH_EXIT_PATTERN.test(text)) {
+                        pendingLook = false;
+                        printRoomStatus(client, currentFingerprint);
+                    }
+                }
+                return line;
+            }
 
             const text = line.text ?? (typeof line === 'string' ? line : String(line));
 
@@ -791,8 +868,8 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
                 return line;
             }
 
-            // Skip "podazasz za" movement lines
-            if (/^[Pp]odazasz za .+ na .+\.$/.test(text)) return line;
+            // Skip "podazasz za" movement lines (with or without "Wraz z ..." prefix)
+            if (/podazasz za .+ na .+\.$/.test(text)) return line;
 
             const match = text.match(LABYRINTH_EXIT_PATTERN);
             if (match) {
@@ -806,6 +883,77 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
             }
 
             captureState.lines.push(text);
+            return line;
+        },
+        tag
+    );
+
+    // Track chalice placed on altar
+    client.Triggers.registerTrigger(
+        /(?:stawia krysztalowy kielich na oltarzu|Stawiasz krysztalowy kielich na oltarzu)\./,
+        (line) => {
+            if (!isActive) return line;
+            chaliceSet = true;
+            return line;
+        },
+        tag
+    );
+
+    // Track figurines placed on fields
+    client.Triggers.registerTrigger(
+        /(?:przesuwa|Przesuwasz) figurke \S+ na \S+ pole/,
+        (line) => {
+            if (!isActive) return line;
+            figurinesSet = true;
+            return line;
+        },
+        tag
+    );
+
+    // Bowl smoke starting
+    client.Triggers.registerTrigger(
+        /^Z dna misy zaczyna unosic sie najpierw ledwo widoczna/,
+        (line) => {
+            if (!isActive) return line;
+            const buf = colorString("[ STOP ] ", createColorFormat("red"));
+            buf.appendBuffer(colorString(line.text, createColorFormat("red")));
+            client.FunctionalBind.set("ob rubin;przekrec rubin");
+            return buf;
+        },
+        tag
+    );
+
+    // Bowl smoke cleared
+    client.Triggers.registerTrigger(
+        /^Bialy dym przestaje wydobywac sie z wnetrza kamiennej misy\./,
+        (line) => {
+            if (!isActive) return line;
+            return colorString(line.text, createColorFormat("SpringGreen"));
+        },
+        tag
+    );
+
+    // Figurine eye color triggers (persist across labyrinth runs)
+    client.Triggers.registerTrigger(
+        /(\S+) oczy jarza sie delikatna poswiata/,
+        (line, matches) => {
+            figurineEyes['smok'] = matches![1].toLowerCase();
+            return line;
+        },
+        tag
+    );
+    client.Triggers.registerTrigger(
+        /(\S+) oczy gryfa lsnia niebezpiecznie/,
+        (line, matches) => {
+            figurineEyes['gryf'] = matches![1].toLowerCase();
+            return line;
+        },
+        tag
+    );
+    client.Triggers.registerTrigger(
+        /Jego (\S+), tajemnicze oczy zwrocone sa/,
+        (line, matches) => {
+            figurineEyes['jednorozec'] = matches![1].toLowerCase();
             return line;
         },
         tag
