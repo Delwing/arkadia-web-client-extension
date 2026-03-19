@@ -20,6 +20,10 @@ class FakeClient {
     return () => {};
   }
 
+  emit(event: string, ...args: any[]) {
+    (this.listeners[event] || []).forEach(listener => listener(...args));
+  }
+
   dispatchEvent(event: string, detail?: any) {
     (this.listeners[event] || []).forEach(listener => listener(detail));
   }

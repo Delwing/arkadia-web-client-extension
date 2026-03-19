@@ -632,13 +632,13 @@ class TransportTracker {
         const onBoard = isCurrentJourney && this.currentJourney.onBoard;
 
         if (!onBoard) {
-            if (!this.currentJourney) {
-                this.adoptFromSetPattern(definition, index);
-                return;
-            }
             const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
             const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             if (typeof locationId !== "number") {
+                if (!this.currentJourney) {
+                    this.adoptFromSetPattern(definition, index);
+                    return;
+                }
                 this.log(
                     `Ignoring set pattern on ${definition.name} for ${formatLabel(
                         definition,
@@ -856,15 +856,12 @@ class TransportTracker {
         const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
         const siblingIndexes = setGroup && setGroup.length > 0 ? setGroup : [index];
 
-        // set_pattern on stop i means we're about to travel stop (i+1)
-        const nextIndexes = siblingIndexes.map(i => (i + 1) % definition.stops.length);
-
         const journey = this.ensureJourney(definition);
         journey.onBoard = true;
-        journey.candidateIndexes = new Set(nextIndexes);
+        journey.candidateIndexes = new Set(siblingIndexes);
         journey.activeIndex = undefined;
 
-        if (nextIndexes.length > 1) {
+        if (siblingIndexes.length > 1) {
             this.log(`Detected ${definition.name} from ambiguous set pattern at ${formatLabel(definition, stop)}. Candidates: ${this.describeCandidates(journey)}`);
         } else {
             this.log(`Detected ${definition.name} from set pattern at ${formatLabel(definition, stop)}. Next: ${this.describeCandidates(journey)}`);
