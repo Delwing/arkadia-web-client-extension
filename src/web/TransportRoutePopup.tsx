@@ -97,7 +97,48 @@ function buildGraph(route: TransportRoutePayload): RouteGraph {
         stopToEdge.set(i, { edgeIndex: edges.length - 1, direction: 'forward' });
     }
 
-    return { nodes, edges, stopToEdge, nodeToStopIndexes };
+    // Reorder nodes to form a proper chain from one end to the other.
+    // The first-appearance order can place an origin node in the middle of the
+    // chain (e.g. Scala-rogatki), causing the renderer to miss edges that skip
+    // over intermediate node indexes.
+    const adjacency = new Map<string, Set<string>>();
+    for (const node of nodes) {
+        adjacency.set(node, new Set());
+    }
+    for (const edge of edges) {
+        adjacency.get(edge.nodeA)!.add(edge.nodeB);
+        adjacency.get(edge.nodeB)!.add(edge.nodeA);
+    }
+
+    // Find a chain end (degree 1 node) to start the walk
+    let startNode = nodes[0];
+    for (const [node, neighbors] of adjacency) {
+        if (neighbors.size === 1) {
+            startNode = node;
+            break;
+        }
+    }
+
+    // Walk the chain
+    const orderedNodes: string[] = [startNode];
+    const visited = new Set<string>([startNode]);
+    let current = startNode;
+    while (orderedNodes.length < nodes.length) {
+        const neighbors = adjacency.get(current)!;
+        let next: string | null = null;
+        for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+                next = neighbor;
+                break;
+            }
+        }
+        if (!next) break;
+        orderedNodes.push(next);
+        visited.add(next);
+        current = next;
+    }
+
+    return { nodes: orderedNodes, edges, stopToEdge, nodeToStopIndexes };
 }
 
 const TransportRoutePopup: React.FC = () => {
