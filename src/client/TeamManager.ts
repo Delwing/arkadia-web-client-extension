@@ -249,12 +249,17 @@ export default class TeamManager {
         triggers.registerTrigger("Nie jestes w zadnej druzynie.", clear, tag);
         triggers.registerTrigger(/^\[?([A-Z][a-z ]+?)]? rozwiazuje druzyne\.$/, clear, tag);
         triggers.registerTrigger(/^Porzucasz (?:swoja druzyne|druzyne, ktorej przewodzil[ea]s)\.$/, clear, tag);
-        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (line) => {
+        triggers.registerTrigger(/^Przewodzisz druzynie, w ktorej oprocz ciebie (?:jest|sa) jeszcze(?::|) (?<team>.*)\.$/, (line, matches) => {
+            if (matches?.groups?.team) {
+                this.reconcileMembers(this.parseNames(matches.groups.team));
+            }
             this.client.sendGMCP("objects.nums");
             this.client.sendGMCP("objects.data");
             return line;
         }, tag);
-        triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (line) => {
+        triggers.registerTrigger(/^Druzyne prowadzi (?<leader>.+?)(?:, zas ty jestes jej jedynym czlonkiem| i oprocz ciebie (?:jest|sa) w niej jeszcze:? (?<team>.*))\.$/, (line, matches) => {
+            const expectedMembers = matches?.groups?.team ? this.parseNames(matches.groups.team) : [];
+            this.reconcileMembers(expectedMembers);
             this.client.sendGMCP("objects.nums");
             this.client.sendGMCP("objects.data");
             return line;
@@ -276,6 +281,29 @@ export default class TeamManager {
 
     private parseNames(list: string): string[] {
         return list.split(/,| i /).map(s => s.trim().replace(/^\[|]$/g, '')).filter(Boolean);
+    }
+
+    private reconcileMembers(expectedNames: string[]) {
+        const expected = new Set(expectedNames);
+        let changed = false;
+        for (const name of this.members) {
+            if (!expected.has(name)) {
+                this.members.delete(name);
+                for (const [id, desc] of this.teamMemberDescriptions.entries()) {
+                    if (desc === name) {
+                        this.teamMemberDescriptions.delete(id);
+                        break;
+                    }
+                }
+                changed = true;
+            }
+        }
+        if (changed) {
+            if (this.members.size === 0) {
+                this.joined = false;
+            }
+            this.client.sendEvent('teamChange');
+        }
     }
 
     private addMember(name: string) {

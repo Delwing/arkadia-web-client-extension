@@ -115,6 +115,7 @@ const MALE_TO_FEMALE_ENTRY_PREFIX = new Map<string, string>([
   ['Zabiles', 'Zabilas'],
   ['Zebrales', 'Zebralas'],
   ['Zglebiles', 'Zglebilas'],
+  ['zyskales', 'zyskalas'],
 ]);
 
 const FEMALE_TO_MALE_ENTRY_PREFIX = new Map<string, string>();
@@ -131,8 +132,16 @@ function replaceGenderedPrefix(
     if (value === from) {
       return to;
     }
-    if (value.startsWith(from + ' ')) {
+    if (value.startsWith(from + ' ') || value.startsWith(from + ',')) {
       return to + value.slice(from.length);
+    }
+    // Handle gendered word mid-string (preceded by space)
+    const pos = value.indexOf(' ' + from, 0);
+    if (pos !== -1) {
+      const afterPos = pos + 1 + from.length;
+      if (afterPos === value.length || value[afterPos] === ' ' || value[afterPos] === ',') {
+        return value.slice(0, pos + 1) + to + value.slice(afterPos);
+      }
     }
   }
   return null;
