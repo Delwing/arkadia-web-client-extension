@@ -15,4 +15,5 @@ export interface TransportRoutePayload {
     stops: TransportRouteStop[];
     activeStopIndex: number | undefined;
     onBoard: boolean;
+    loop: boolean;
 }

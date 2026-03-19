@@ -559,6 +559,14 @@ class TransportTracker {
         this.log(`Entered ${definition.name}. Candidate stops: ${this.describeCandidates(journey)}`);
         this.refreshTimer(journey);
         this.emitRoute();
+
+        // If we're at a stop (not mid-travel), emit arrival for the current stop
+        if (journey.activeIndex === undefined && journey.candidateIndexes.size > 0) {
+            const numStops = definition.stops.length;
+            const firstCandidate = journey.candidateIndexes.values().next().value as number;
+            const arrivedIndex = (firstCandidate - 1 + numStops) % numStops;
+            this.client.sendEvent("transportArrival", arrivedIndex);
+        }
     }
 
     private handleExit(definition?: CompiledTransportDefinition, _line?: string) {
@@ -1030,12 +1038,15 @@ class TransportTracker {
             durationSeconds: typeof stop.time === "number" && !Number.isNaN(stop.time) ? stop.time : null,
         }));
         const originLabel = resolveLocationLabel(definition, definition.stops[0].start);
+        const uniqueDestinations = new Set(definition.stops.map(s => s.destination));
+        const loop = definition.stops.length > 0 && uniqueDestinations.size === definition.stops.length;
         return {
             transportName: definition.name,
             originLabel,
             stops,
             activeStopIndex: activeIndex,
             onBoard,
+            loop,
         };
     }
 
