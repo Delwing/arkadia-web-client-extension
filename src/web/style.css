@@ -10056,3 +10056,13 @@ body.mobile-command-radial-active {
   color: #e6c04c;
   font-weight: bold;
 }
+
+/* Loop-back node */
+
+.transport-graph__node--loop-back {
+  opacity: 0.65;
+}
+
+.transport-graph__node--loop-back .transport-graph__node-dot {
+  font-size: 0.85rem;
+}

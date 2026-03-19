@@ -10,7 +10,7 @@ const POPUP_ID = 'popup:transport-route';
 
 function formatTime(seconds: number | null): string {
     if (seconds === null) {
-        return '?';
+        return '---';
     }
     const total = Math.floor(seconds);
     const m = Math.floor(total / 60);
@@ -112,7 +112,7 @@ const TransportRoutePopup: React.FC = () => {
     const [arrivedNodeLabel, setArrivedNodeLabel] = useState<string | null>(null);
     const [currentNodeLabel, setCurrentNodeLabel] = useState<string | null>(null);
     const routeRef = useRef<TransportRoutePayload | null>(null);
-    const graph = useMemo(() => route ? buildGraph(route) : null, [route]);
+    const graph = useMemo(() => route && !route.loop ? buildGraph(route) : null, [route]);
 
     useEffect(() => {
         return eventBus.on('transportRoute', (data) => {
@@ -134,10 +134,26 @@ const TransportRoutePopup: React.FC = () => {
 
     useEffect(() => {
         return eventBus.on('transportArrival', (stopIndex) => {
-            const nodeLabel = routeRef.current?.stops[stopIndex]?.label ?? null;
+            const currentRoute = routeRef.current;
+            const nodeLabel = currentRoute?.stops[stopIndex]?.label ?? null;
             setCurrentNodeLabel(nodeLabel);
 
-            if (!alertNodeLabel || !graph) return;
+            if (!alertNodeLabel || !currentRoute) return;
+
+            // For loop routes, check directly against stop labels
+            if (currentRoute.loop) {
+                if (nodeLabel === alertNodeLabel) {
+                    const stopLabel = nodeLabel;
+                    const verb = gender === 'female' ? 'Dotarlas' : 'Dotarles';
+                    eventBus.emit('notify', { text: `${verb} do: ${stopLabel}` });
+                    const ARRIVAL_COLOR = createColorFormat('#00cc66');
+                    eventBus.emit('printLine', colorString(`${verb} do: ${stopLabel}`, ARRIVAL_COLOR));
+                    setArrivedNodeLabel(alertNodeLabel);
+                }
+                return;
+            }
+
+            if (!graph) return;
             const stopIndexes = graph.nodeToStopIndexes.get(alertNodeLabel);
             if (stopIndexes && stopIndexes.includes(stopIndex)) {
                 const stopLabel = nodeLabel ?? alertNodeLabel;
@@ -150,7 +166,7 @@ const TransportRoutePopup: React.FC = () => {
         });
     }, [alertNodeLabel, graph, route, gender]);
 
-    // Determine which edge + direction is active
+    // Determine which edge + direction is active (graph mode)
     const activeEdgeInfo = useMemo(() => {
         if (!graph || route?.activeStopIndex === undefined || !route.onBoard) return null;
         return graph.stopToEdge.get(route.activeStopIndex) ?? null;
@@ -182,126 +198,253 @@ const TransportRoutePopup: React.FC = () => {
             className="transport-route-popup"
             bodyClassName="transport-route-popup-body"
         >
-            {!route || !graph ? (
+            {!route ? (
                 <div className="transport-route-popup__empty">
                     Brak aktywnej trasy
                 </div>
-            ) : (
-                <div className="transport-graph">
-                    {graph.nodes.map((nodeLabel, nodeIndex) => {
-                        const isActive = currentNodeLabel === nodeLabel;
-                        const isAlert = alertNodeLabel === nodeLabel;
-                        const isArrived = arrivedNodeLabel === nodeLabel;
+            ) : route.loop ? (
+                <LoopRouteView
+                    route={route}
+                    timer={timer}
+                    alertNodeLabel={alertNodeLabel}
+                    arrivedNodeLabel={arrivedNodeLabel}
+                    currentNodeLabel={currentNodeLabel}
+                    onNodeClick={handleNodeClick}
+                />
+            ) : graph ? (
+                <GraphRouteView
+                    graph={graph}
+                    timer={timer}
+                    activeEdgeInfo={activeEdgeInfo}
+                    alertNodeLabel={alertNodeLabel}
+                    arrivedNodeLabel={arrivedNodeLabel}
+                    currentNodeLabel={currentNodeLabel}
+                    onNodeClick={handleNodeClick}
+                />
+            ) : null}
+        </DockablePopupWrapper>
+    );
+};
 
-                        const nodeClasses = [
-                            'transport-graph__node',
-                            isActive ? 'transport-graph__node--active' : '',
-                            isAlert ? 'transport-graph__node--alert' : '',
-                            isArrived ? 'transport-graph__node--arrived' : '',
-                        ].filter(Boolean).join(' ');
+/* ── Loop route rendering ─────────────────────────────────────────── */
 
-                        // Find edge from this node to the next node in the list
-                        const edge = graph.edges.find(e =>
-                            (e.nodeA === nodeLabel && graph.nodes.indexOf(e.nodeB) === nodeIndex + 1) ||
-                            (e.nodeB === nodeLabel && graph.nodes.indexOf(e.nodeA) === nodeIndex + 1)
-                        );
+interface LoopRouteViewProps {
+    route: TransportRoutePayload;
+    timer: TransportTimerPayload | null;
+    alertNodeLabel: string | null;
+    arrivedNodeLabel: string | null;
+    currentNodeLabel: string | null;
+    onNodeClick: (label: string) => void;
+}
 
-                        // Determine if edge is flipped (nodeB comes first in node order)
-                        const edgeFlipped = edge ? edge.nodeB === nodeLabel : false;
+const LoopRouteView: React.FC<LoopRouteViewProps> = ({
+    route, timer, alertNodeLabel, arrivedNodeLabel, currentNodeLabel, onNodeClick,
+}) => {
+    // sequence = [origin, stop0.label, stop1.label, ..., stopN.label]
+    // For a loop, the last entry equals origin — rendered as loop-back indicator
+    const sequence = useMemo(
+        () => [route.originLabel, ...route.stops.map(s => s.label)],
+        [route.originLabel, route.stops],
+    );
 
-                        let edgeActive = false;
-                        let edgeDirection: 'forward' | 'backward' | null = null;
-                        if (edge && activeEdgeInfo) {
-                            const edgeIndex = graph.edges.indexOf(edge);
-                            if (edgeIndex === activeEdgeInfo.edgeIndex) {
-                                edgeActive = true;
-                                edgeDirection = activeEdgeInfo.direction;
-                            }
-                        }
+    return (
+        <div className="transport-graph">
+            {sequence.map((nodeLabel, i) => {
+                const isLoopBack = i === sequence.length - 1 && nodeLabel === route.originLabel;
+                const stopIndex = i < route.stops.length ? i : null;
+                const stop = stopIndex !== null ? route.stops[stopIndex] : null;
 
-                        // Resolve display times for this edge
-                        // "downward" = from this node to the next node in visual order
-                        // "upward" = from the next node back to this node
-                        let downTime: number | null = null;
-                        let upTime: number | null = null;
-                        let downStopIndexes: number[] = [];
-                        let upStopIndexes: number[] = [];
-                        if (edge) {
-                            if (!edgeFlipped) {
-                                downTime = edge.forwardDuration;
-                                upTime = edge.backwardDuration;
-                                downStopIndexes = edge.forwardStopIndexes;
-                                upStopIndexes = edge.backwardStopIndexes;
-                            } else {
-                                downTime = edge.backwardDuration;
-                                upTime = edge.forwardDuration;
-                                downStopIndexes = edge.backwardStopIndexes;
-                                upStopIndexes = edge.forwardStopIndexes;
-                            }
-                        }
+                const isActive = currentNodeLabel === nodeLabel;
+                const isAlert = alertNodeLabel === nodeLabel;
+                const isArrived = arrivedNodeLabel === nodeLabel;
 
-                        // If active, show countdown on the active direction
-                        const activeGoingDown = edgeActive && (
-                            (!edgeFlipped && edgeDirection === 'forward') ||
-                            (edgeFlipped && edgeDirection === 'backward')
-                        );
-                        const activeGoingUp = edgeActive && (
-                            (!edgeFlipped && edgeDirection === 'backward') ||
-                            (edgeFlipped && edgeDirection === 'forward')
-                        );
+                // Edge active state
+                const edgeIsActive = stop !== null && route.activeStopIndex === stopIndex && route.onBoard;
+                const isTraveling = edgeIsActive && currentNodeLabel === null;
+                const displayTime = edgeIsActive && timer !== null ? timer.remaining : stop?.durationSeconds ?? null;
 
-                        const displayDownTime = activeGoingDown && timer !== null ? timer.remaining : downTime;
-                        const displayUpTime = activeGoingUp && timer !== null ? timer.remaining : upTime;
-
-                        const isTraveling = edgeActive && currentNodeLabel === null;
-                        const edgeClasses = edge ? [
-                            'transport-graph__edge',
-                            edgeActive ? 'transport-graph__edge--active' : '',
-                            isTraveling ? 'transport-graph__edge--traveling' : '',
-                        ].filter(Boolean).join(' ') : '';
-
-                        return (
-                            <React.Fragment key={nodeLabel}>
-                                <div
-                                    className={nodeClasses}
-                                    onClick={() => handleNodeClick(nodeLabel)}
-                                >
-                                    <span className="transport-graph__node-dot">
-                                        {isActive ? '\u25CF' : '\u25CB'}
+                return (
+                    <React.Fragment key={i}>
+                        {isLoopBack ? (
+                            <div
+                                className={[
+                                    'transport-graph__node transport-graph__node--loop-back',
+                                    isActive ? 'transport-graph__node--active' : '',
+                                    isAlert ? 'transport-graph__node--alert' : '',
+                                    isArrived ? 'transport-graph__node--arrived' : '',
+                                ].filter(Boolean).join(' ')}
+                                onClick={() => onNodeClick(nodeLabel)}
+                            >
+                                <span className="transport-graph__node-dot">&#8635;</span>
+                                <span className="transport-graph__node-label">{nodeLabel}</span>
+                                {isAlert && (
+                                    <span className="transport-graph__alert-icon">&#128276;</span>
+                                )}
+                            </div>
+                        ) : (
+                            <div
+                                className={[
+                                    'transport-graph__node',
+                                    isActive ? 'transport-graph__node--active' : '',
+                                    isAlert ? 'transport-graph__node--alert' : '',
+                                    isArrived ? 'transport-graph__node--arrived' : '',
+                                ].filter(Boolean).join(' ')}
+                                onClick={() => onNodeClick(nodeLabel)}
+                            >
+                                <span className="transport-graph__node-dot">
+                                    {isActive ? '\u25CF' : '\u25CB'}
+                                </span>
+                                <span className="transport-graph__node-label">{nodeLabel}</span>
+                                {isAlert && (
+                                    <span className="transport-graph__alert-icon">&#128276;</span>
+                                )}
+                            </div>
+                        )}
+                        {stop && (
+                            <div className={[
+                                'transport-graph__edge',
+                                edgeIsActive ? 'transport-graph__edge--active' : '',
+                                isTraveling ? 'transport-graph__edge--traveling' : '',
+                            ].filter(Boolean).join(' ')}>
+                                <div className="transport-graph__edge-line" />
+                                <div className="transport-graph__edge-times">
+                                    <span className={`transport-graph__edge-time${edgeIsActive ? ' transport-graph__edge-time--active' : ''}`}>
+                                        &#8595; {formatTime(displayTime)}
                                     </span>
-                                    <span className="transport-graph__node-label">{nodeLabel}</span>
-                                    {isAlert && (
-                                        <span className="transport-graph__alert-icon">&#128276;</span>
+                                </div>
+                            </div>
+                        )}
+                    </React.Fragment>
+                );
+            })}
+        </div>
+    );
+};
+
+/* ── Graph (back-and-forth) route rendering ───────────────────────── */
+
+interface GraphRouteViewProps {
+    graph: RouteGraph;
+    timer: TransportTimerPayload | null;
+    activeEdgeInfo: { edgeIndex: number; direction: 'forward' | 'backward' } | null;
+    alertNodeLabel: string | null;
+    arrivedNodeLabel: string | null;
+    currentNodeLabel: string | null;
+    onNodeClick: (label: string) => void;
+}
+
+const GraphRouteView: React.FC<GraphRouteViewProps> = ({
+    graph, timer, activeEdgeInfo, alertNodeLabel, arrivedNodeLabel, currentNodeLabel, onNodeClick,
+}) => {
+    return (
+        <div className="transport-graph">
+            {graph.nodes.map((nodeLabel, nodeIndex) => {
+                const isActive = currentNodeLabel === nodeLabel;
+                const isAlert = alertNodeLabel === nodeLabel;
+                const isArrived = arrivedNodeLabel === nodeLabel;
+
+                const nodeClasses = [
+                    'transport-graph__node',
+                    isActive ? 'transport-graph__node--active' : '',
+                    isAlert ? 'transport-graph__node--alert' : '',
+                    isArrived ? 'transport-graph__node--arrived' : '',
+                ].filter(Boolean).join(' ');
+
+                // Find edge from this node to the next node in the list
+                const edge = graph.edges.find(e =>
+                    (e.nodeA === nodeLabel && graph.nodes.indexOf(e.nodeB) === nodeIndex + 1) ||
+                    (e.nodeB === nodeLabel && graph.nodes.indexOf(e.nodeA) === nodeIndex + 1)
+                );
+
+                // Determine if edge is flipped (nodeB comes first in node order)
+                const edgeFlipped = edge ? edge.nodeB === nodeLabel : false;
+
+                let edgeActive = false;
+                let edgeDirection: 'forward' | 'backward' | null = null;
+                if (edge && activeEdgeInfo) {
+                    const edgeIndex = graph.edges.indexOf(edge);
+                    if (edgeIndex === activeEdgeInfo.edgeIndex) {
+                        edgeActive = true;
+                        edgeDirection = activeEdgeInfo.direction;
+                    }
+                }
+
+                // Resolve display times for this edge
+                // "downward" = from this node to the next node in visual order
+                // "upward" = from the next node back to this node
+                let downTime: number | null = null;
+                let upTime: number | null = null;
+                let downStopIndexes: number[] = [];
+                let upStopIndexes: number[] = [];
+                if (edge) {
+                    if (!edgeFlipped) {
+                        downTime = edge.forwardDuration;
+                        upTime = edge.backwardDuration;
+                        downStopIndexes = edge.forwardStopIndexes;
+                        upStopIndexes = edge.backwardStopIndexes;
+                    } else {
+                        downTime = edge.backwardDuration;
+                        upTime = edge.forwardDuration;
+                        downStopIndexes = edge.backwardStopIndexes;
+                        upStopIndexes = edge.forwardStopIndexes;
+                    }
+                }
+
+                // If active, show countdown on the active direction
+                const activeGoingDown = edgeActive && (
+                    (!edgeFlipped && edgeDirection === 'forward') ||
+                    (edgeFlipped && edgeDirection === 'backward')
+                );
+                const activeGoingUp = edgeActive && (
+                    (!edgeFlipped && edgeDirection === 'backward') ||
+                    (edgeFlipped && edgeDirection === 'forward')
+                );
+
+                const displayDownTime = activeGoingDown && timer !== null ? timer.remaining : downTime;
+                const displayUpTime = activeGoingUp && timer !== null ? timer.remaining : upTime;
+
+                const isTraveling = edgeActive && currentNodeLabel === null;
+                const edgeClasses = edge ? [
+                    'transport-graph__edge',
+                    edgeActive ? 'transport-graph__edge--active' : '',
+                    isTraveling ? 'transport-graph__edge--traveling' : '',
+                ].filter(Boolean).join(' ') : '';
+
+                return (
+                    <React.Fragment key={nodeLabel}>
+                        <div
+                            className={nodeClasses}
+                            onClick={() => onNodeClick(nodeLabel)}
+                        >
+                            <span className="transport-graph__node-dot">
+                                {isActive ? '\u25CF' : '\u25CB'}
+                            </span>
+                            <span className="transport-graph__node-label">{nodeLabel}</span>
+                            {isAlert && (
+                                <span className="transport-graph__alert-icon">&#128276;</span>
+                            )}
+                        </div>
+                        {edge && (
+                            <div className={edgeClasses}>
+                                <div className="transport-graph__edge-line" />
+                                <div className="transport-graph__edge-times">
+                                    {downStopIndexes.length > 0 && (
+                                        <span className={`transport-graph__edge-time${activeGoingDown ? ' transport-graph__edge-time--active' : ''}`}>
+                                            &#8595; {formatTime(displayDownTime)}
+                                        </span>
+                                    )}
+                                    {upStopIndexes.length > 0 && (
+                                        <span className={`transport-graph__edge-time${activeGoingUp ? ' transport-graph__edge-time--active' : ''}`}>
+                                            &#8593; {formatTime(displayUpTime)}
+                                        </span>
                                     )}
                                 </div>
-                                {edge && (
-                                    <div className={edgeClasses}>
-                                        <div className="transport-graph__edge-line" />
-                                        <div className="transport-graph__edge-times">
-                                            {downTime !== null && (
-                                                <span className={`transport-graph__edge-time${activeGoingDown ? ' transport-graph__edge-time--active' : ''}`}>
-                                                    &#8595; {formatTime(displayDownTime)}
-                                                </span>
-                                            )}
-                                            {upTime !== null && (
-                                                <span className={`transport-graph__edge-time${activeGoingUp ? ' transport-graph__edge-time--active' : ''}`}>
-                                                    &#8593; {formatTime(displayUpTime)}
-                                                </span>
-                                            )}
-                                            {downTime !== null && upTime === null && !downStopIndexes.length && upStopIndexes.length > 0 && (
-                                                <span className={`transport-graph__edge-time${activeGoingUp ? ' transport-graph__edge-time--active' : ''}`}>
-                                                    &#8593; {formatTime(displayUpTime)}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </React.Fragment>
-                        );
-                    })}
-                </div>
-            )}
-        </DockablePopupWrapper>
+                            </div>
+                        )}
+                    </React.Fragment>
+                );
+            })}
+        </div>
     );
 };
 

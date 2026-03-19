@@ -16,7 +16,7 @@
             "destination": 3248,
             "time": 58,
             "stop_pattern": "^(?:Zarosniety smierdzacy mezczyzna|Kelim) krzyczy: Doplynelismy do srodkowego pomostu w Obawie! Mozna wysiadac!$",
-            "label" : "Obawa"
+            "label" : "Obawa srod."
         },
         {
             "start": 3248,
@@ -30,7 +30,7 @@
             "destination": 3247,
             "time": 77,
             "stop_pattern": "^(?:Zarosniety smierdzacy mezczyzna|Kelim) krzyczy: Doplynelismy do zachodniego pomostu w Obawie! Mozna wysiadac!$",
-            "label" : "Obawa"
+            "label" : "Obawa zach."
         }
     ]
 }
