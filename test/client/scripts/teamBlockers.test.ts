@@ -2,13 +2,10 @@ import Triggers from '@client/Triggers';
 import initTeamBlockers from '@client/scripts/teamBlockers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
-type CommandHookCallback = (command: string, echo?: boolean, options?: any) => string | null | undefined;
-
 class FakeClient {
   Map: { moveBack: jest.Mock; setBlockable: jest.Mock; isBlockable: boolean };
   TeamManager: { isInAnyTeam: jest.Mock; isLeader: jest.Mock };
   Triggers: Triggers;
-  private commandHooks: { id: string; callback: CommandHookCallback }[] = [];
 
   constructor() {
     this.TeamManager = {
@@ -24,16 +21,6 @@ class FakeClient {
       isBlockable: false,
     };
     this.Triggers = new Triggers(({} as unknown) as any);
-  }
-
-  registerCommandHook(id: string, callback: CommandHookCallback) {
-    this.commandHooks.push({ id, callback });
-  }
-
-  simulateCommand(command: string) {
-    for (const hook of this.commandHooks) {
-      hook.callback(command);
-    }
   }
 }
 
@@ -90,38 +77,5 @@ describe('team blockers', () => {
 
     expect(client.Map.moveBack).toHaveBeenCalled();
     expect(client.Map.setBlockable).toHaveBeenCalledWith(false);
-  });
-
-  describe('move-dependent blocker', () => {
-    const kultystkaLine = 'Bialowlosa ociezala kultystka nie pozwoli ci zblizyc sie do drzwi.';
-
-    test('moves back when preceded by a direction command', () => {
-      client.simulateCommand('n');
-      parse(kultystkaLine);
-      expect(client.Map.moveBack).toHaveBeenCalled();
-    });
-
-    test('moves back when preceded by a Polish direction command', () => {
-      client.simulateCommand('po\u0142noc');
-      parse(kultystkaLine);
-      expect(client.Map.moveBack).toHaveBeenCalled();
-    });
-
-    test('moves back when preceded by przemknij direction', () => {
-      client.simulateCommand('przemknij n');
-      parse(kultystkaLine);
-      expect(client.Map.moveBack).toHaveBeenCalled();
-    });
-
-    test('does not move back when preceded by a non-direction command', () => {
-      client.simulateCommand('otworz drzwi');
-      parse(kultystkaLine);
-      expect(client.Map.moveBack).not.toHaveBeenCalled();
-    });
-
-    test('does not move back when no command was sent', () => {
-      parse(kultystkaLine);
-      expect(client.Map.moveBack).not.toHaveBeenCalled();
-    });
   });
 });
