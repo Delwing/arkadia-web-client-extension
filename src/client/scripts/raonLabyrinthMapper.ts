@@ -472,6 +472,56 @@ function repositionAllRooms(client: Client) {
     }
 }
 
+const CHAPEL_PLACEHOLDER_FP = '__chapel_placeholder__';
+
+function getChapelFingerprint(): string | null {
+    for (const [fp, r] of rooms) {
+        if (r.roomType === 'chapel') return fp;
+    }
+    return null;
+}
+
+function createChapelPlaceholder(client: Client, sourceRoom: RaonRoom, doorDirection: string) {
+    const reader = client.Map.getMapReader() as any;
+    const readerRooms: Record<number, MapData.Room> = reader.rooms;
+
+    const saved = savedRoomData.get(CHAPEL_ROOM_ID);
+    if (!saved) return;
+    const mapRoom = saved.ref;
+
+    mapRoom.exits = {} as Record<MapData.direction, number>;
+    mapRoom.stubs = [];
+    mapRoom.roomChar = ROOM_TYPE_CHAR['chapel'];
+    mapRoom.customLines = {} as Record<string, MapData.Line>;
+    mapRoom.env = saved.env;
+
+    // Position chapel in the door direction from source room
+    const srcMap = readerRooms[sourceRoom.mapRoomId];
+    const delta = DIRECTION_DELTA[doorDirection];
+    if (srcMap && delta) {
+        const pos = findFreePosition(srcMap.x + delta.x * GRID_SPACING, srcMap.y + delta.y * GRID_SPACING);
+        mapRoom.x = pos.x;
+        mapRoom.y = pos.y;
+        occupiedPositions.add(`${pos.x}:${pos.y}`);
+    }
+
+    // Add to map
+    const hashes: Record<string, number> = (client.Map as any).hashes;
+    readerRooms[CHAPEL_ROOM_ID] = mapRoom;
+    hashes[mapRoom.hash] = CHAPEL_ROOM_ID;
+    const areaSources: Record<number, MapData.Area> = reader.areaSources;
+    areaSources[mapRoom.area].rooms.push(mapRoom);
+
+    const chapel: RaonRoom = {
+        fingerprint: CHAPEL_PLACEHOLDER_FP,
+        mapRoomId: CHAPEL_ROOM_ID,
+        roomType: 'chapel',
+        exits: new Map(),
+        visitCount: 0,
+    };
+    rooms.set(CHAPEL_PLACEHOLDER_FP, chapel);
+}
+
 function finishCapture(client: Client, descriptionLines: string[], exitString: string, direction: string | null, sourceFingerprint: string | null, doorDirection: string | null, teleport = false) {
     const fingerprint = descriptionLines.join('\n').trim();
     if (!fingerprint) return;
@@ -505,6 +555,17 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
                 rooms.set(fingerprint, room);
                 break;
             }
+        }
+    }
+
+    // Chapel placeholder — replace with real fingerprint on first visit
+    if (isNew && roomType === 'chapel') {
+        const placeholder = rooms.get(CHAPEL_PLACEHOLDER_FP);
+        if (placeholder) {
+            rooms.delete(CHAPEL_PLACEHOLDER_FP);
+            placeholder.fingerprint = fingerprint;
+            room = placeholder;
+            rooms.set(fingerprint, room);
         }
     }
 
@@ -632,16 +693,18 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
         }
     }
 
-    // Store door direction on room (for reconnection when chapel is discovered later)
+    // Store door direction on room
     if (doorDirection) {
         room!.doorDirection = doorDirection;
     }
 
-    // Connect door rooms <-> chapel bidirectionally
-    let chapelFP: string | null = null;
-    for (const [fp, r] of rooms) {
-        if (r.roomType === 'chapel') { chapelFP = fp; break; }
+    // Create chapel placeholder on first door detection
+    if (doorDirection && !getChapelFingerprint()) {
+        createChapelPlaceholder(client, room!, doorDirection);
     }
+
+    // Connect door rooms <-> chapel bidirectionally
+    const chapelFP = getChapelFingerprint();
     if (chapelFP) {
         const chapel = rooms.get(chapelFP)!;
         for (const [, r] of rooms) {
@@ -770,6 +833,16 @@ function activate(client: Client) {
     client.println("[Raon] Mapper wlaczony.");
 }
 
+// Pause mapping: stop capturing but keep all discovered rooms
+function pause(client: Client) {
+    isActive = false;
+    captureState = {phase: 'idle'};
+    pendingLook = false;
+    currentFingerprint = null;
+    client.sendGMCP('char.options', {brief: savedBriefValue});
+    client.println("[Raon] Mapper wstrzymany.");
+}
+
 // Full deactivate: restore original map data
 function fullReset(client: Client) {
     const reader = client.Map.getMapReader() as any;
@@ -887,7 +960,15 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
             if (!reader) return;
             savedBriefValue = gmcp?.char?.options?.brief;
             client.sendGMCP('char.options', {brief: 0});
-            activate(client);
+            if (isInitialized) {
+                // Resume paused session
+                isActive = true;
+                client.Map.refreshPosition = false;
+                rebuildAndRender(client, ENTRY_ROOM_ID);
+                client.println("[Raon] Mapper wznowiony.");
+            } else {
+                activate(client);
+            }
         }
     });
 
@@ -1070,6 +1151,18 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
         /Jego (\S+), tajemnicze oczy zwrocone sa/,
         (line, matches) => {
             figurineEyes['jednorozec'] = matches![1].toLowerCase();
+            return line;
+        },
+        tag
+    );
+
+    // Leaving labyrinth (staircase room) — pause mapping but keep state
+    client.Triggers.registerTrigger(
+        /^Zagubione w niebycie, kamienne schody sa jedyna namacalna rzecza/,
+        (line) => {
+            if (isActive) {
+                pause(client);
+            }
             return line;
         },
         tag
