@@ -109,4 +109,165 @@ describe('user aliases', () => {
     expect(client.executed).toEqual(expectedSequence);
     expect(client.output).toEqual(expectedSequence);
   });
+
+  describe('range expansion with $i', () => {
+    function setupRangeClient() {
+      const client = new AliasClient();
+      initUserAliases((client as unknown) as any, client.aliases);
+      return client;
+    }
+
+    test('expands ascending range 1-3', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'kok (.+)', command: 'rozerwij $i. kokon' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('kok 1-3'));
+      expect(alias).toBeTruthy();
+      const match = 'kok 1-3'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual([
+        'rozerwij 1. kokon',
+        'rozerwij 2. kokon',
+        'rozerwij 3. kokon',
+      ]);
+    });
+
+    test('expands descending range 3-1', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'kok (.+)', command: 'rozerwij $i. kokon' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('kok 3-1'));
+      const match = 'kok 3-1'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual([
+        'rozerwij 3. kokon',
+        'rozerwij 2. kokon',
+        'rozerwij 1. kokon',
+      ]);
+    });
+
+    test('single number sends one command', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'kok (.+)', command: 'rozerwij $i. kokon' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('kok 5'));
+      const match = 'kok 5'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual(['rozerwij 5. kokon']);
+    });
+
+    test('$i combined with $1 in same command', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'kok (\\d+-?\\d*) (.+)', command: 'rozerwij $i. $2 (zakres $1)' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('kok 1-2 kokon'));
+      const match = 'kok 1-2 kokon'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual([
+        'rozerwij 1. kokon (zakres 1-2)',
+        'rozerwij 2. kokon (zakres 1-2)',
+      ]);
+    });
+
+    test('caps range at 50 iterations', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'kok (.+)', command: 'rozerwij $i. kokon' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('kok 1-100'));
+      const match = 'kok 1-100'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toHaveLength(50);
+      expect(client.executed[0]).toBe('rozerwij 1. kokon');
+      expect(client.executed[49]).toBe('rozerwij 50. kokon');
+    });
+
+    test('no $i in command preserves original behavior', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'zab (.+)', command: 'zabij $1' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('zab goblin'));
+      const match = 'zab goblin'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual(['zabij goblin']);
+    });
+
+    test('character override with $i', async () => {
+      characterStorage.setCharacter('Warrior');
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        {
+          pattern: 'kok (.+)',
+          command: 'rozerwij $i. kokon',
+          overrides: { Warrior: 'rozbij $i. kokon' },
+        },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('kok 1-2'));
+      const match = 'kok 1-2'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual([
+        'rozbij 1. kokon',
+        'rozbij 2. kokon',
+      ]);
+    });
+
+    test('newlines in command treated as separators', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'prep (.+)', command: 'pierwsza $1\ndruga $1' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('prep cos'));
+      const match = 'prep cos'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual(['pierwsza cos', 'druga cos']);
+    });
+
+    test('newlines with $i range', async () => {
+      const client = setupRangeClient();
+      globalStorage.set('aliases', [
+        { pattern: 'multi (.+)', command: 'wez $i. rzecz\nschowaj $i. rzecz' },
+      ] as any);
+
+      const alias = client.aliases.find((e) => e.pattern.test('multi 1-2'));
+      const match = 'multi 1-2'.match(alias!.pattern) as RegExpMatchArray;
+      await alias!.callback(match);
+      await client.flush();
+
+      expect(client.executed).toEqual([
+        'wez 1. rzecz',
+        'schowaj 1. rzecz',
+        'wez 2. rzecz',
+        'schowaj 2. rzecz',
+      ]);
+    });
+  });
 });

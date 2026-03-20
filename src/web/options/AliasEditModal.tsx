@@ -121,12 +121,12 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
 
                         <div className="mb-3">
                             <label className="form-label">Komenda (domyslna)</label>
-                            <input
-                                type="text"
+                            <textarea
                                 className="form-control font-monospace"
                                 value={command}
                                 onChange={e => setCommand(e.target.value)}
                                 placeholder="np. zabij $1"
+                                rows={2}
                                 autoCorrect="off"
                                 autoComplete="off"
                                 autoCapitalize="off"
@@ -141,12 +141,12 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                                     <span className="text-nowrap small" style={{ minWidth: '8rem' }}>
                                         {o.char}
                                     </span>
-                                    <input
-                                        type="text"
+                                    <textarea
                                         className="form-control form-control-sm font-monospace"
                                         value={o.cmd}
                                         onChange={e => updateOverrideCmd(idx, e.target.value)}
                                         placeholder="Komenda dla tej postaci"
+                                        rows={2}
                                         autoCorrect="off"
                                         autoComplete="off"
                                         autoCapitalize="off"
@@ -191,7 +191,9 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
 
                         <small className="text-secondary">
                             Pattern jest wyrazeniem regularnym. Uzyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawic odpowiednie grupy.<br />
-                            Mozesz takze korzystac ze skrotow obiektow (<code>@1</code>, <code>@A</code>, <code>@@</code>), ktore zostana rozwiniete do identyfikatorow obiektow.
+                            Mozesz takze korzystac ze skrotow obiektow (<code>@1</code>, <code>@A</code>, <code>@@</code>), ktore zostana rozwiniete do identyfikatorow obiektow.<br />
+                            Uzyj <code>$i</code> w komendzie, aby powtorzyc ja dla zakresu, np. wzorzec <code>kok (.+)</code>, komenda <code>rozerwij $i. kokon</code> &mdash; wpisz <code>kok 1-7</code>.<br />
+                            Kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik).
                         </small>
                     </div>
                     <div className="modal-footer">

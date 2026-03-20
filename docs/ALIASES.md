@@ -8,6 +8,19 @@ Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 - **Wzorzec** - wyrazenie regularne dopasowujace komende
 - **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania
 - **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow
+- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)
+
+### Zakresy ($i)
+
+Uzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.
+
+**Przyklad:**
+- Wzorzec: `kok (.+)`
+- Komenda: `rozerwij $i. kokon`
+- Wpisz: `kok 1-7`
+- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`
+
+Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 
 ## Komunikacja
 

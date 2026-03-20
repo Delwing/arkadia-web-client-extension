@@ -8,6 +8,36 @@ export interface UserAlias {
 }
 
 const STORAGE_KEY = "aliases";
+const MAX_RANGE = 50;
+const RANGE_PATTERN = /^(\d+)(?:-(\d+))?$/;
+
+function findRange(m: RegExpMatchArray): { start: number; end: number } | null {
+    for (let i = 1; i < m.length; i++) {
+        if (!m[i]) continue;
+        const rm = m[i].match(RANGE_PATTERN);
+        if (rm) {
+            const start = parseInt(rm[1]);
+            const end = rm[2] !== undefined ? parseInt(rm[2]) : start;
+            return { start, end };
+        }
+    }
+    return null;
+}
+
+function expandRange(start: number, end: number): number[] {
+    const step = start <= end ? 1 : -1;
+    const count = Math.abs(end - start) + 1;
+    const capped = Math.min(count, MAX_RANGE);
+    const result: number[] = [];
+    for (let i = 0; i < capped; i++) {
+        result.push(start + i * step);
+    }
+    return result;
+}
+
+function substituteGroups(cmd: string, m: RegExpMatchArray): string {
+    return cmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
+}
 
 export default function initUserAliases(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const list = aliases || client.aliases;
@@ -28,10 +58,24 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
             }
             return {
                 pattern: regexp,
-                callback: (m: RegExpMatchArray) => {
+                callback: async (m: RegExpMatchArray) => {
                     const char = characterStorage.getCharacter();
                     const baseCmd = (char && item.overrides?.[char]) || item.command;
-                    const cmd = baseCmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
+                    const normalized = baseCmd.replace(/\n/g, ';');
+
+                    if (normalized.includes('$i')) {
+                        const range = findRange(m);
+                        if (range) {
+                            const values = expandRange(range.start, range.end);
+                            for (const val of values) {
+                                const cmd = substituteGroups(normalized, m).replace(/\$i/g, String(val));
+                                await client.sendCommand(cmd);
+                            }
+                            return;
+                        }
+                    }
+
+                    const cmd = substituteGroups(normalized, m);
                     return client.sendCommand(cmd);
                 }
             };
