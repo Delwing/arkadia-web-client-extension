@@ -11,19 +11,12 @@ const teamBlockerPatterns: RegExp[] = [
     /^Nagle czujesz, ze cos oplata twa noge\.\.\. ziemia w zawrotnym tepie zamienia sie miejscami z niebem\. Zwisasz teraz, przywiazany za noge rzemieniem, dyndajac jak kukielka\.$/,
     /^Probujesz otworzyc polyskujace wrota, ale nie udaje ci sie to\.$/,
     /^Probujesz isc naprzod, ale sliski lod sprawia, ze wywracasz sie na nim\.$/,
-    /^Zbyt raptowanie probujesz znowu ruszyc na .*, przez co tylko jeszcze bardziej placzesz sobie nogi w gestwinie pajeczych sieci\.$/
+    /^Zbyt raptowanie probujesz znowu ruszyc na .*, przez co tylko jeszcze bardziej placzesz sobie nogi w gestwinie pajeczych sieci\.$/,
+    /nie pozwoli ci zblizyc sie do drzwi\./
 ];
 
 function createBlockerHandler(client: Client) {
     return (line: AnsiAwareBuffer) => {
-        if (!client.TeamManager.isInAnyTeam()) {
-            client.Map.moveBack();
-            return line;
-        }
-        if (client.TeamManager.isLeader()) {
-            client.Map.moveBack();
-            return line;
-        }
         if (!client.Map.isBlockable) {
             return line;
         }
