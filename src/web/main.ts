@@ -203,7 +203,7 @@ function preventTabSleep() {
 function setupAudioContextResume() {
     const resumeOnInteraction = () => {
         preloadHowler();
-        resumeAudioContext();
+        void resumeAudioContext();
     };
     document.addEventListener('click', resumeOnInteraction);
     document.addEventListener('keydown', resumeOnInteraction);
@@ -212,9 +212,15 @@ function setupAudioContextResume() {
     // Also resume when returning to the tab
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-            resumeAudioContext();
+            void resumeAudioContext();
         }
     });
+
+    // Periodic keepalive: browsers can re-suspend the AudioContext after
+    // ~30-60 s of inactivity. Check every 15 s and resume if needed.
+    setInterval(() => {
+        void resumeAudioContext();
+    }, 15_000);
 }
 
 setupAudioContextResume();

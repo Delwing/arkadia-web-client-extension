@@ -22,7 +22,7 @@ function loadHowlerModule(): Promise<typeof import('howler').Howl> {
                 (howlerGlobal as any).autoSuspend = false;
             }
             // Try to resume immediately after loading (may work if close to a user gesture)
-            resumeAudioContext();
+            void resumeAudioContext();
             const constructor = module?.Howl ?? module?.default?.Howl ?? module?.default ?? module;
             return constructor as typeof import('howler').Howl;
         });
@@ -41,15 +41,17 @@ export function preloadHowler(): void {
 /**
  * Resume the audio context if it's suspended.
  * Should be called on user interaction to ensure sounds can play.
+ * Returns a promise that resolves when the context is running.
  */
-export function resumeAudioContext(): void {
-    if (!howlerGlobal) return;
+export function resumeAudioContext(): Promise<void> {
+    if (!howlerGlobal) return Promise.resolve();
     const ctx = (howlerGlobal as any).ctx as AudioContext | undefined;
     if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch((err: unknown) => {
+        return ctx.resume().catch((err: unknown) => {
             console.warn('Failed to resume audio context:', err);
         });
     }
+    return Promise.resolve();
 }
 
 export default class SoundManager {
@@ -93,6 +95,9 @@ export default class SoundManager {
     }
 
     async prepare(): Promise<void> {
+        // Resume audio context first (prepare is typically called from a click handler)
+        await resumeAudioContext();
+
         const keys = this.getKeysToPreload();
         await Promise.all(
             Array.from(keys).map(async key => {
@@ -196,7 +201,15 @@ export default class SoundManager {
     private playLoadedSound(sound: Howl) {
         const play = () => {
             sound.stop();
-            sound.play();
+            const id = sound.play();
+            // Handle play errors (e.g. AudioContext still locked) by retrying
+            // after resuming the audio context
+            sound.once('playerror', (_soundId: number) => {
+                void resumeAudioContext().then(() => {
+                    sound.stop();
+                    sound.play();
+                });
+            }, id);
         };
         if (sound.state() === 'loaded') {
             play();
@@ -209,8 +222,8 @@ export default class SoundManager {
     private async play(key: SoundKey) {
         if (this.muted) return;
 
-        // Resume audio context if suspended (browser autoplay policy)
-        resumeAudioContext();
+        // Ensure audio context is running before attempting playback
+        await resumeAudioContext();
 
         const existing = this.sounds[key];
         if (existing) {
