@@ -4,14 +4,9 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Map: { moveBack: jest.Mock; setBlockable: jest.Mock; isBlockable: boolean };
-  TeamManager: { isInAnyTeam: jest.Mock; isLeader: jest.Mock };
   Triggers: Triggers;
 
   constructor() {
-    this.TeamManager = {
-      isInAnyTeam: jest.fn(() => false),
-      isLeader: jest.fn(() => false),
-    };
     const self = this;
     this.Map = {
       moveBack: jest.fn(),
@@ -37,40 +32,16 @@ describe('team blockers', () => {
   const blockerLine =
     'Probujesz sie ruszyc na polnoc, jednak pajecze sieci, w ktore sie w miedzyczasie zaplatales, uniemozliwiaja ci to.';
 
-  test('moves back when player is not in team but does not set blockable', () => {
-    client.Map.isBlockable = true;
-    client.TeamManager.isInAnyTeam.mockReturnValue(false);
-
-    parse(blockerLine);
-
-    expect(client.Map.moveBack).toHaveBeenCalled();
-    expect(client.Map.setBlockable).not.toHaveBeenCalled();
-  });
-
-  test('moves back when player is team leader but does not set blockable', () => {
-    client.Map.isBlockable = true;
-    client.TeamManager.isInAnyTeam.mockReturnValue(true);
-    client.TeamManager.isLeader.mockReturnValue(true);
-
-    parse(blockerLine);
-
-    expect(client.Map.moveBack).toHaveBeenCalled();
-    expect(client.Map.setBlockable).not.toHaveBeenCalled();
-  });
-
   test('does not move back when movement is not blockable', () => {
-    client.TeamManager.isInAnyTeam.mockReturnValue(true);
-    client.TeamManager.isLeader.mockReturnValue(false);
     client.Map.isBlockable = false;
 
     parse(blockerLine);
 
     expect(client.Map.moveBack).not.toHaveBeenCalled();
+    expect(client.Map.setBlockable).not.toHaveBeenCalled();
   });
 
-  test('moves back when in team, not leader and blockable', () => {
-    client.TeamManager.isInAnyTeam.mockReturnValue(true);
-    client.TeamManager.isLeader.mockReturnValue(false);
+  test('moves back and clears blockable when blockable', () => {
     client.Map.isBlockable = true;
 
     parse(blockerLine);
