@@ -1732,6 +1732,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            preloadHowler();
+            resumeAudioContext();
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
@@ -1771,6 +1773,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isConnected) {
             arkadiaClient.disconnect();
         } else {
+            preloadHowler();
+            resumeAudioContext();
             isConnecting = true;
             updateConnectButtons();
             void client.prepareSounds();
