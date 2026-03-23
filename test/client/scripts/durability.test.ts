@@ -17,19 +17,37 @@ describe('durability trigger', () => {
       Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
   });
 
-  test('handles wyglada na to line', () => {
-    const result = parse('Wyglada na to, ze moglby ci jeszcze naprawde dlugo sluzyc.');
+  test.each([
+    ['naprawde dlugo', '8d'],
+    ['bardzo dlugo', '5d-8d'],
+    ['dlugo', '3d-5d'],
+    ['raczej dlugo', '2d-3d'],
+    ['troche', '1d-2d'],
+    ['raczej krotko', '6h-1d'],
+    ['krotko', '1h-6h'],
+    ['bardzo krotko', '1h'],
+  ])('handles wyglada line with "%s" → [%s]', (phrase, short) => {
+    const result = parse(`Wyglada na to, ze moglby ci jeszcze ${phrase} sluzyc.`);
     expect(result?.text).toBe(
-      'Wyglada na to, ze moglby ci jeszcze naprawde dlugo [8d] sluzyc.'
+      `Wyglada na to, ze moglby ci jeszcze ${phrase} [${short}] sluzyc.`
     );
   });
 
-  test('handles posluzy line', () => {
-    const result = parse('sztylet (posluzy krotko)');
-    expect(result?.text).toBe('sztylet (posluzy krotko [1h-6h])');
+  test.each([
+    ['naprawde dlugo', '8d'],
+    ['bardzo dlugo', '5d-8d'],
+    ['dlugo', '3d-5d'],
+    ['raczej dlugo', '2d-3d'],
+    ['troche', '1d-2d'],
+    ['raczej krotko', '6h-1d'],
+    ['krotko', '1h-6h'],
+    ['bardzo krotko', '1h'],
+  ])('handles posluzy line with "%s" → [%s]', (phrase, short) => {
+    const result = parse(`sztylet (posluzy ${phrase})`);
+    expect(result?.text).toBe(`sztylet (posluzy ${phrase} [${short}])`);
   });
 
-  test('handles posluz z dodatkiem', () => {
+  test('handles posluzy with additional info', () => {
     const result = parse('miecz (posluzy raczej krotko, jest w zlym stanie)');
     expect(result?.text).toBe(
       'miecz (posluzy raczej krotko [6h-1d], jest w zlym stanie)'
