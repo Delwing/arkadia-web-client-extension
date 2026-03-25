@@ -5,6 +5,7 @@ import {
     type Settings,
     RoomContextMenuEventDetail,
     type RoomClickEventDetail,
+    type PanEventDetail,
     LabelRenderMode
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
@@ -92,6 +93,7 @@ export class EmbeddedMap {
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
         this.map.addEventListener('roomclick', (ev: CustomEvent<RoomClickEventDetail>) => this.onRoomClick(ev));
+        this.map.addEventListener('pan', (ev: CustomEvent<PanEventDetail>) => this.onPan(ev));
         this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
 
@@ -304,6 +306,21 @@ export class EmbeddedMap {
         this.zoom = clampedZoom;
         if (shouldSave) {
             this.saveZoom();
+        }
+    }
+
+    private onPan(ev: CustomEvent<PanEventDetail>) {
+        if (!this._isViewingPlayerPosition) return;
+
+        const room = this.reader.getRoom(this.currentRoom);
+        if (!room) return;
+
+        const bounds = ev.detail;
+        const isVisible = room.x >= bounds.minX && room.x <= bounds.maxX
+            && room.y >= bounds.minY && room.y <= bounds.maxY;
+
+        if (!isVisible) {
+            this.setViewingPlayerPosition(false, room.area, room.z);
         }
     }
 
