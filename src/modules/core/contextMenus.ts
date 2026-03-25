@@ -1,4 +1,3 @@
-import type Client from "@client/Client";
 import {mudletColorLine} from "./Colors";
 import type {HerbUse} from "@client/scripts/herbsLoader";
 import {showContextMenu} from "@shared/dom/contextMenu";
@@ -24,7 +23,6 @@ interface HerbMenuOptions {
 }
 
 export function buildHerbContextMenuItems(
-    client: Client,
     herbId: string,
     actions: HerbUse[] | undefined,
     commandPrefix: string,
@@ -49,16 +47,16 @@ export function buildHerbContextMenuItems(
             return {
                 label: `${action.action} ${amount}${effectLabel}`,
                 action: () => {
-                    preUseCommands.forEach(cmd => client.sendCommand(cmd));
-                    client.sendCommand(`${commandPrefix} ${action.action} ${herbId} ${amount}`);
-                    postUseCommands.forEach(cmd => client.sendCommand(cmd));
+                    preUseCommands.forEach(cmd => eventBus.emit('sendCommand', { command: cmd }));
+                    eventBus.emit('sendCommand', { command: `${commandPrefix} ${action.action} ${herbId} ${amount}` });
+                    postUseCommands.forEach(cmd => eventBus.emit('sendCommand', { command: cmd }));
                 }
             };
         })
     );
 }
 
-export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
+export function openHerbContextMenu(options: HerbMenuOptions) {
     const {
         herbId,
         actions,
@@ -71,7 +69,6 @@ export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
     } = options;
 
     const items = buildHerbContextMenuItems(
-        client,
         herbId,
         actions,
         commandPrefix,

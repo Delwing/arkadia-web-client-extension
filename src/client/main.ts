@@ -85,6 +85,10 @@ import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
 import initShipLocalizers from './scripts/shipLocalizers'
 import initMapAliases from './scripts/mapAliases'
+import { registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
+import { registerCurrentRoomProvider } from '@modules/core/currentRoomProvider'
+import { registerMapDestinationsProvider } from '@modules/core/mapDestinationsProvider'
+import { registerTeamStateProvider } from '@modules/core/teamStateProvider'
 import initShortcuts from './scripts/shortcuts'
 import initMultibinds from './scripts/multibinds'
 import initCompareAll from './scripts/compareAll'
@@ -157,6 +161,28 @@ export function registerScripts(client: Client) {
     initSoundAliases(client, aliases)
     initMapAliases(client, aliases)
     initZaznaczaj(client, aliases)
+
+    registerRoomInfoProvider((roomId: number) => {
+        const reader = client.Map.tryGetMapReader();
+        if (!reader) return null;
+        const room = reader.getRoom(roomId);
+        if (!room) return null;
+        const areaName = room.area !== undefined ? (client.Map.getAreaName(String(room.area)) || '') : '';
+        return {
+            roomName: room.name || '',
+            areaName,
+            mapNote: room.userData?.note ?? null,
+        };
+    })
+
+    registerCurrentRoomProvider(() => client.Map.currentRoom?.id ?? null)
+
+    registerMapDestinationsProvider(() => client.Map.destinations)
+
+    registerTeamStateProvider(() => ({
+        isInAnyTeam: !!client.TeamManager?.isInAnyTeam?.(),
+        isLeader: !!client.TeamManager?.isLeader?.(),
+    }))
 
     initTeamBlockers(client)
     initMove(client)

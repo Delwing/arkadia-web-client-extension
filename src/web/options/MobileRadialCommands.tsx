@@ -24,7 +24,7 @@ import {
     Settings,
     RadialCommandSetting,
 } from "../mobileButtonSettings";
-import { getClientInstance } from "@shared/runtime";
+import { getTeamState } from "@modules/core/teamStateProvider";
 
 const ADD_BUTTON_ID = "mobile-radial-add";
 const SAVE_BUTTON_ID = "mobile-radial-save";
@@ -249,10 +249,8 @@ function MobileRadialCommands() {
         };
         setSettings(normalizedSettings);
         saveSettings(normalizedSettings);
-        const extension = getClientInstance();
-        const teamActive = !!extension?.TeamManager?.isInAnyTeam?.();
-        const leaderActive = !!extension?.TeamManager?.isLeader?.();
-        applySettings(normalizedSettings, teamActive, leaderActive);
+        const { isInAnyTeam, isLeader } = getTeamState();
+        applySettings(normalizedSettings, isInAnyTeam, isLeader);
         window.dispatchEvent(new Event("close-options"));
     }, [settings]);
 

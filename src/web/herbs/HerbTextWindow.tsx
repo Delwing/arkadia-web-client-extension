@@ -5,7 +5,6 @@ import { normalizeHerbBagsState } from "@client/types/herbs";
 import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
 import { buildHerbTextBuffer } from "@client/scripts/herbTextBuilder";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
-import { getClientInstance } from "@shared/runtime";
 import eventBus from "@modules/core/eventBus";
 import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
 import { usePopup } from "../hooks/usePopup";
@@ -55,11 +54,10 @@ const HerbTextWindow = () => {
 
     // Context menu handler for herb names
     const handleHerbContextMenu = useCallback((herbId: string, ev: MouseEvent) => {
-        const client = getClientInstance();
-        if (!client || !herbsDataRef.current) return;
+        if (!herbsDataRef.current) return;
 
         const actions = herbsDataRef.current.herb_id_to_use[herbId];
-        openHerbContextMenu(client, {
+        openHerbContextMenu({
             herbId,
             actions,
             x: ev.clientX,

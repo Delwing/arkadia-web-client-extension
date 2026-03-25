@@ -4,7 +4,7 @@ import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { SEGMENT_COLORS } from '@shared/map/MapHelper';
-import { getClientInstance } from '@shared/runtime';
+import { getMapDestinations } from '@modules/core/mapDestinationsProvider';
 import {
     DndContext,
     closestCenter,
@@ -242,8 +242,8 @@ const TripPlannerPopup: React.FC = () => {
             // If stops are empty but there are active destinations (from /prowadz), populate
             setStops(prev => {
                 if (prev.length > 0) return prev;
-                const destinations = getClientInstance()?.Map?.destinations as number[] | undefined;
-                if (!destinations || destinations.length === 0) return prev;
+                const destinations = getMapDestinations();
+                if (destinations.length === 0) return prev;
                 return destinations.map(id => ({
                     id,
                     name: getRoomName(id),

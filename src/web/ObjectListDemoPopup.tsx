@@ -2,8 +2,6 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import { getClientInstance } from '@shared/runtime/clientRegistry';
-import type Client from '@client/Client';
 
 interface DemoObject {
     id: number;
@@ -37,9 +35,6 @@ const ObjectListDemoPopup: React.FC = () => {
     const isFirstRender = useRef(true);
 
     const applyDemo = useCallback(() => {
-        const client = getClientInstance<Client>();
-        if (!client) return;
-
         // Build GMCP data
         const gmcpData: Record<string, any> = {};
         const playerObj = objects.find(o => o.id === 99);
@@ -73,17 +68,17 @@ const ObjectListDemoPopup: React.FC = () => {
             };
         });
 
-        // Send GMCP events in correct order:
+        // Emit GMCP events via eventBus in correct order:
         // 1. char.info first - sets playerNum in TeamManager
         // 2. objects.data - TeamManager auto-detects team members via checkTeam
         // 3. objects.nums - triggers final render
-        client.sendEvent('gmcp.char.info', {
+        eventBus.emit('gmcp.char.info', {
             object_num: 99,
             name: playerObj?.desc || 'Gracz'
         });
-        client.sendEvent('gmcp.char.state', { hp: (playerObj?.hp ?? 6) * 10 + 10 });
-        client.sendEvent('gmcp.objects.data', gmcpData);
-        client.sendEvent('gmcp.objects.nums', objects.map(o => o.id));
+        eventBus.emit('gmcp.char.state', { hp: (playerObj?.hp ?? 6) });
+        eventBus.emit('gmcp.objects.data', gmcpData as any);
+        eventBus.emit('gmcp.objects.nums', objects.map(o => o.id));
     }, [objects, isLeader]);
 
     // Auto-apply when objects or isLeader changes (but not on first render)

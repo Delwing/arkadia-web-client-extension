@@ -1,13 +1,13 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { characterStorage } from "@modules/core/storage";
-import type { HerbBagState, HerbBagsState, HerbManagerApi, HerbMoveOptions } from "@client/types/herbs";
+import type { HerbBagState, HerbBagsState, HerbMoveOptions } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
 import eventBus from "@modules/core/eventBus";
 import { hideContextMenu } from "@shared/dom/contextMenu";
-import { getClientInstance } from "@shared/runtime";
+import { getHerbManager } from "@modules/core/herbManagerProvider";
 import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
 import { usePopup } from "../hooks/usePopup";
@@ -389,7 +389,7 @@ const HerbManager = () => {
         setError(null);
         setBags(moveResult.next);
         setBusy(true);
-        const manager = getClientInstance()?.herbManager as HerbManagerApi | undefined;
+        const manager = getHerbManager();
         const payload: HerbMoveOptions = {
             herbId: moveResult.moved.herbId,
             amount: moveResult.moved.count,
@@ -463,10 +463,6 @@ const HerbManager = () => {
     const handleContextMenu = (stack: HerbStack) => async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         const { pageX, pageY } = event;
-        const client = getClientInstance();
-        if (!client) {
-            return;
-        }
         const data = herbsDataRef.current ?? (await ensureHerbsData());
         if (!data) {
             return;
@@ -475,7 +471,7 @@ const HerbManager = () => {
         if (!actions || actions.length === 0) {
             return;
         }
-        openHerbContextMenu(client, {
+        openHerbContextMenu({
             herbId: stack.herbId,
             actions,
             x: pageX,

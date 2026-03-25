@@ -16,7 +16,7 @@ import {
     saveSettings,
     Settings,
 } from "../mobileButtonSettings";
-import {getClientInstance} from "@shared/runtime";
+import {getTeamState} from "@modules/core/teamStateProvider";
 import {
     getRegisteredButtonMacros,
     isButtonMacroAvailable,
@@ -346,10 +346,8 @@ function MobileButtons() {
 
     function save() {
         saveSettings(settings);
-        const extension = getClientInstance();
-        const teamActive = !!extension?.TeamManager?.isInAnyTeam?.();
-        const leaderActive = !!extension?.TeamManager?.isLeader?.();
-        applySettings(settings, teamActive, leaderActive);
+        const { isInAnyTeam, isLeader } = getTeamState();
+        applySettings(settings, isInAnyTeam, isLeader);
         window.dispatchEvent(new Event('close-options'));
     }
 

@@ -28,7 +28,7 @@ export default async function initHerbDescriptions(client: Client) {
         if (!herbs) return;
 
         const showHerbActions = (herbId: string, ev: MouseEvent) => {
-            openHerbContextMenu(client, {
+            openHerbContextMenu({
                 herbId,
                 actions: herbs.herb_id_to_use[herbId],
                 x: ev.pageX,

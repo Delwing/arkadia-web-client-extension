@@ -6,13 +6,8 @@ jest.mock("@shared/dom/contextMenu", () => ({
 }));
 
 describe("buildHerbContextMenuItems", () => {
-    const mockClient = {
-        sendCommand: jest.fn(),
-    } as any;
-
     it("parses mudlet color codes in herb effects", () => {
         const items = buildHerbContextMenuItems(
-            mockClient,
             "rumianek",
             [{ action: "zjedz", effect: "<yellow>+15 ZDR<reset>" }],
             "/z",
@@ -27,7 +22,6 @@ describe("buildHerbContextMenuItems", () => {
 
     it("handles missing effects gracefully", () => {
         const items = buildHerbContextMenuItems(
-            mockClient,
             "rumianek",
             [{ action: "zjedz", effect: "" }],
             "/z",
@@ -41,7 +35,6 @@ describe("buildHerbContextMenuItems", () => {
 
     it("skips actions marked with dont_bind", () => {
         const items = buildHerbContextMenuItems(
-            mockClient,
             "rumianek",
             [
                 { action: "zjedz", effect: "+15 ZDR" },
@@ -59,11 +52,8 @@ describe("buildHerbContextMenuItems", () => {
 
     it("shows empty menu with header when no bindable actions remain", () => {
         (showContextMenu as jest.Mock).mockClear();
-        const clientWithMenu = {
-            sendCommand: jest.fn(),
-        } as any;
 
-        openHerbContextMenu(clientWithMenu, {
+        openHerbContextMenu({
             herbId: "rumianek",
             actions: [{ action: "napoj", effect: "+5 HP", dont_bind: true }],
             x: 10,

@@ -4,7 +4,7 @@ import eventBus from "@modules/core/eventBus";
 import type { ClientEvents } from "@modules/core/eventBus";
 import { getNote, saveNote, deleteNote, type LocationNote } from "./options/locationNotesStorage";
 import { getPluginLocationNotes, type PluginLocationNote } from "@modules/core/pluginLocationNotesRegistry";
-import { getClientInstance } from "@shared/runtime";
+import { getRoomInfo } from "@modules/core/roomInfoProvider";
 
 function LocationNoteEditor() {
     const [show, setShow] = useState(false);
@@ -31,36 +31,15 @@ function LocationNoteEditor() {
         setPluginNotes(getPluginLocationNotes(id));
     }, []);
 
-    const getRoomInfo = useCallback((id: number) => {
-        const client = getClientInstance();
-        if (!client) return { roomName: '', areaName: '', mapNote: null as string | null };
-
-        const reader = client.Map?.tryGetMapReader?.();
-        if (!reader) return { roomName: '', areaName: '', mapNote: null as string | null };
-
-        const room = reader.getRoom?.(id);
-        if (!room) return { roomName: '', areaName: '', mapNote: null as string | null };
-
-        const name = room.name || '';
-        const areaId = room.area;
-        let area = '';
-        if (areaId !== undefined) {
-            const areaObj = typeof (reader as any).getArea === 'function'
-                ? (reader as any).getArea(areaId)
-                : null;
-            area = areaObj?.getAreaName?.() || client.Map?.getAreaName?.(String(areaId)) || '';
-        }
-
-        const roomMapNote = (room as any).userData?.note ?? null;
-
-        return { roomName: name, areaName: area, mapNote: roomMapNote };
+    const lookupRoomInfo = useCallback((id: number) => {
+        return getRoomInfo(id) ?? { roomName: '', areaName: '', mapNote: null };
     }, []);
 
     useEffect(() => {
         const handleEdit = ({ roomId: id, roomName: rn, areaName: an }: ClientEvents['locationNote.edit']) => {
             setRoomId(id);
 
-            const info = getRoomInfo(id);
+            const info = lookupRoomInfo(id);
             setRoomName(rn || info.roomName);
             setAreaName(an || info.areaName);
             setMapNote(info.mapNote);
@@ -72,7 +51,7 @@ function LocationNoteEditor() {
         const handleOpen = ({ roomId: id }: ClientEvents['locationNote.open']) => {
             setRoomId(id);
 
-            const info = getRoomInfo(id);
+            const info = lookupRoomInfo(id);
             setRoomName(info.roomName);
             setAreaName(info.areaName);
             setMapNote(info.mapNote);
@@ -88,7 +67,7 @@ function LocationNoteEditor() {
             unsubEdit();
             unsubOpen();
         };
-    }, [loadNote, getRoomInfo]);
+    }, [loadNote, lookupRoomInfo]);
 
     useEffect(() => {
         if (show && textareaRef.current) {

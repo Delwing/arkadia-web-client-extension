@@ -3,8 +3,9 @@ import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData} from "./herbsLoader";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
-import type {HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
+import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
 import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
+import {registerHerbManagerProvider} from "@modules/core/herbManagerProvider";
 import {getWearValue} from "./wearUsed";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { polishWordToNumber } from "./polishNumberConverter";
@@ -204,7 +205,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     let currentBag = 0;
 
     const showHerbActions = (id: string, ev: MouseEvent) => {
-        openHerbContextMenu(client, {
+        openHerbContextMenu({
             herbId: id,
             actions: herbs?.herb_id_to_use[id],
             x: ev.pageX,
@@ -615,12 +616,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     }
 
-    client.herbManager = {
+    const herbManagerApi: HerbManagerApi = {
         getBags: cloneBags,
         take,
         put,
         move,
     };
+    client.herbManager = herbManagerApi;
+    registerHerbManagerProvider(herbManagerApi);
 
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
