@@ -86,20 +86,20 @@ export function openHerbContextMenu(client: Client, options: HerbMenuOptions) {
     });
 }
 
-export function openMapContextMenu(client: Client, roomId: number, x: number, y: number, extraItems?: ContextMenuItem[]) {
+export function openMapContextMenu(roomId: number, x: number, y: number, extraItems?: ContextMenuItem[]) {
     const items: ContextMenuItem[] = [
         ...(extraItems ?? []),
         {
             label: 'Ustaw lokację',
-            action: () => client.Map.setMapRoomById(roomId),
+            action: () => eventBus.emit('map.setLocation', { roomId }),
         },
         {
             label: 'Prowadź do lokacji',
-            action: () => client.sendEvent('leadTo', roomId),
+            action: () => eventBus.emit('leadTo', roomId),
         },
         {
             label: 'Idź do lokacji',
-            action: () => client.sendCommand(`/idz ${roomId}`),
+            action: () => eventBus.emit('sendCommand', { command: `/idz ${roomId}` }),
         },
         {
             label: 'Dodaj skrót',

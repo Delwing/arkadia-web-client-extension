@@ -13,6 +13,7 @@ import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 import { getClientInstance } from "@shared/runtime";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
+import { openMapContextMenu } from "@modules/core/contextMenus";
 
 const MIN_ZOOM = 0.01;
 
@@ -309,12 +310,11 @@ export class EmbeddedMap {
 
         const room = ev.detail.roomId
         if (room) {
-            const client = getClientInstance();
             // Transform canvas-relative coordinates to viewport coordinates
             const mapRect = this.map.getBoundingClientRect();
             const viewportX = ev.detail.position.x + mapRect.left;
             const viewportY = ev.detail.position.y + mapRect.top;
-            client?.openMapContextMenu?.(room, viewportX, viewportY);
+            openMapContextMenu(room, viewportX, viewportY);
         }
     }
 

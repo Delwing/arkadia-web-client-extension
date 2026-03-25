@@ -11,7 +11,7 @@ import {defaultSettings} from "@modules/core/defaultSettings";
 import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
-import {openMapContextMenu} from "@modules/core/contextMenus";
+
 import type {HerbManagerApi} from "./types/herbs";
 import type {CommandOptions} from "./scripts/commandPreserveCaseMode";
 
@@ -621,9 +621,6 @@ export default class Client {
         (eventBus.emit as (...emitArgs: any[]) => number)(eventName, ...args);
     }
 
-    openMapContextMenu(roomId: number, x: number, y: number, extraItems?: import("@modules/core/contextMenus").ContextMenuItem[]) {
-        openMapContextMenu(this, roomId, x, y, extraItems);
-    }
 
     createEvent(type, payload) {
         return {

@@ -3,8 +3,8 @@ import { Renderer, RoomContextMenuEventDetail, type RoomClickEventDetail } from 
 import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
-import { getClientInstance } from '@shared/runtime';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
+import { openMapContextMenu } from '@modules/core/contextMenus';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
@@ -710,11 +710,10 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 customEv.preventDefault();
                 const room = customEv.detail.roomId;
                 if (room && containerForMenu) {
-                    const client = getClientInstance();
                     const rect = containerForMenu.getBoundingClientRect();
                     const viewportX = customEv.detail.position.x + rect.left;
                     const viewportY = customEv.detail.position.y + rect.top;
-                    client?.openMapContextMenu?.(room, viewportX, viewportY, [
+                    openMapContextMenu(room, viewportX, viewportY, [
                         {
                             label: 'Pokaz w tym oknie',
                             action: () => navigateToRoom(room),
