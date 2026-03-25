@@ -15,7 +15,8 @@ import {
   PackageStatus,
   ClockDisplay,
   MailStatus,
-  WeaponState
+  WeaponState,
+  PlaybackControls
 } from "./components";
 
 type MountResult = {
@@ -67,11 +68,22 @@ export const mountMigratedComponents = (): MountResult => {
   charStateRoot.render(<CharState />);
   roots.push(charStateRoot);
 
+  // PlaybackControls uses a portal to render directly to document.body
+  const playbackControlsContainer = document.createElement("div");
+  playbackControlsContainer.style.display = "none";
+  document.body.appendChild(playbackControlsContainer);
+  const playbackControlsRoot = createRoot(playbackControlsContainer);
+  playbackControlsRoot.render(<PlaybackControls />);
+  roots.push(playbackControlsRoot);
+
   return {
     destroy: () => {
       roots.forEach((root) => root.unmount());
       if (charStateContainer.parentNode) {
         charStateContainer.parentNode.removeChild(charStateContainer);
+      }
+      if (playbackControlsContainer.parentNode) {
+        playbackControlsContainer.parentNode.removeChild(playbackControlsContainer);
       }
     },
   };
