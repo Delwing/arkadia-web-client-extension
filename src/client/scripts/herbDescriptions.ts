@@ -49,9 +49,11 @@ export default async function initHerbDescriptions(client: Client) {
                         return line;
                     }
 
-                    line.insert(index + desc.length, " (")
+                    const stateIndex = Math.min(index + desc.length, line.length) - 1;
+                    const surroundingState = stateIndex >= 0 ? line.getStateAt(stateIndex) ?? {} : {};
+                    line.insert(index + desc.length, " (", surroundingState)
                         .insert(index + desc.length + 2, id, HERB_NAME_COLOR)
-                        .insert(index + desc.length + 2 + id.length, ")")
+                        .insert(index + desc.length + 2 + id.length, ")", surroundingState)
 
                     // Create link for the herb ID
                     const idStart = index + desc.length + 2;
