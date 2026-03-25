@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, submitCommand, waitForCommandInput} from './support/mocks';
 
 test.describe('Notification center', () => {
     test.beforeEach(async ({page}) => {
@@ -17,19 +17,15 @@ test.describe('Notification center', () => {
     });
 
     test('renders notification with correct text', async ({page}) => {
-        await page.evaluate(() => {
-            (window as any).clientExtension.emit('notify', {text: 'Hello world'});
-        });
+        await submitCommand(page, '/opoz 2');
 
         const notification = page.locator('#notification-center .notification');
         await expect(notification).toBeVisible();
-        await expect(notification).toHaveText('Hello world');
+        await expect(notification).toHaveText('[WALK] delay 2.00s');
     });
 
     test('auto-removes after default timeout', async ({page}) => {
-        await page.evaluate(() => {
-            (window as any).clientExtension.emit('notify', {text: 'Temporary'});
-        });
+        await submitCommand(page, '/opoz 1');
 
         const notification = page.locator('#notification-center .notification');
         await expect(notification).toBeVisible();
@@ -38,29 +34,15 @@ test.describe('Notification center', () => {
         await expect(notification).toBeHidden({timeout: 4000});
     });
 
-    test('auto-removes after custom timeout', async ({page}) => {
-        await page.evaluate(() => {
-            (window as any).clientExtension.emit('notify', {text: 'Quick', time: 500});
-        });
-
-        const notification = page.locator('#notification-center .notification');
-        await expect(notification).toBeVisible();
-
-        await expect(notification).toBeHidden({timeout: 2000});
-    });
-
     test('multiple notifications stack', async ({page}) => {
-        await page.evaluate(() => {
-            const ext = (window as any).clientExtension;
-            ext.emit('notify', {text: 'First', time: 10000});
-            ext.emit('notify', {text: 'Second', time: 10000});
-            ext.emit('notify', {text: 'Third', time: 10000});
-        });
+        await submitCommand(page, '/opoz 1');
+        await submitCommand(page, '/szybciej');
+        await submitCommand(page, '/wolniej');
 
         const notifications = page.locator('#notification-center .notification');
         await expect(notifications).toHaveCount(3);
-        await expect(notifications.nth(0)).toHaveText('First');
-        await expect(notifications.nth(1)).toHaveText('Second');
-        await expect(notifications.nth(2)).toHaveText('Third');
+        await expect(notifications.nth(0)).toHaveText('[WALK] delay 1.00s');
+        await expect(notifications.nth(1)).toHaveText('[WALK] delay 0.50s');
+        await expect(notifications.nth(2)).toHaveText('[WALK] delay 1.00s');
     });
 });

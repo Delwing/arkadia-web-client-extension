@@ -5750,6 +5750,10 @@ body.mobile-command-radial-active {
   z-index: 1104;
 }
 
+body.layout-manager-enabled #notification-center {
+  top: 0.5rem;
+}
+
 #notification-center .notification {
   background-color: rgba(0, 0, 0, 0.6);
   color: #fff;
