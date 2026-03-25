@@ -9,6 +9,7 @@ import './themes/light-parchment.css'
 import './themes/light-silver.css'
 import './layout/layout.css'
 import arkadiaClient from "./ArkadiaClient.ts";
+import recordingManager from "./RecordingManager.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import {preloadHowler, resumeAudioContext} from "@client/SoundManager";
@@ -1394,7 +1395,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {
-            arkadiaClient.stopRecording(true);
+            recordingManager.stopRecording(true);
         });
     }
 
@@ -1402,64 +1403,64 @@ document.addEventListener('DOMContentLoaded', () => {
         playbackPause.addEventListener('click', () => {
             const isPaused = playbackPause.getAttribute('data-paused') === 'true';
             if (isPaused) {
-                arkadiaClient.resumePlayback();
+                recordingManager.resumePlayback();
             } else {
-                arkadiaClient.pausePlayback();
+                recordingManager.pausePlayback();
             }
         });
     }
 
     if (playbackStop) {
         playbackStop.addEventListener('click', () => {
-            arkadiaClient.stopPlayback();
+            recordingManager.stopPlayback();
         });
     }
 
     if (playbackReplay) {
         playbackReplay.addEventListener('click', () => {
-            arkadiaClient.replayLast();
+            recordingManager.replayLast();
         });
     }
 
     if (playbackStepBack) {
         playbackStepBack.addEventListener('click', () => {
-            arkadiaClient.stepBack();
+            recordingManager.stepBack();
         });
     }
 
     if (playbackStep) {
         playbackStep.addEventListener('click', () => {
-            arkadiaClient.stepForward();
+            recordingManager.stepForward();
         });
     }
 
     if (playbackStartOver) {
         playbackStartOver.addEventListener('click', () => {
-            arkadiaClient.startOver();
+            recordingManager.startOver();
         });
     }
 
     if (playbackLoopSetStart) {
         playbackLoopSetStart.addEventListener('click', () => {
-            arkadiaClient.setLoopStart();
+            recordingManager.setLoopStart();
         });
     }
 
     if (playbackLoopSetEnd) {
         playbackLoopSetEnd.addEventListener('click', () => {
-            arkadiaClient.setLoopEnd();
+            recordingManager.setLoopEnd();
         });
     }
 
     if (playbackLoopToggle) {
         playbackLoopToggle.addEventListener('click', () => {
-            arkadiaClient.toggleLoop();
+            recordingManager.toggleLoop();
         });
     }
 
     if (playbackLoopClear) {
         playbackLoopClear.addEventListener('click', () => {
-            arkadiaClient.clearLoop();
+            recordingManager.clearLoop();
         });
     }
 
@@ -1487,7 +1488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playbackSpeedSlider.addEventListener('input', () => {
             const sliderValue = parseFloat(playbackSpeedSlider.value);
             const speed = sliderToSpeed(sliderValue);
-            arkadiaClient.setPlaybackSpeed(speed);
+            recordingManager.setPlaybackSpeed(speed);
         });
     }
 
@@ -1507,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playbackPreviewToggle.classList.add('collapsed');
     }
 
-    updatePlaybackSpeedDisplay(arkadiaClient.getPlaybackSpeed());
+    updatePlaybackSpeedDisplay(recordingManager.getPlaybackSpeed());
 
     if (playbackControls) {
         const dragTarget =
@@ -1595,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playbackPause.textContent = '▶';
             playbackPause.setAttribute('data-paused', 'true');
         }
-        updatePlaybackSpeedDisplay(arkadiaClient.getPlaybackSpeed());
+        updatePlaybackSpeedDisplay(recordingManager.getPlaybackSpeed());
         updateConnectButtons();
     });
 
@@ -1607,7 +1608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playbackPause.textContent = '⏸';
             playbackPause.setAttribute('data-paused', 'false');
         }
-        updatePlaybackSpeedDisplay(arkadiaClient.getPlaybackSpeed());
+        updatePlaybackSpeedDisplay(recordingManager.getPlaybackSpeed());
         updateConnectButtons();
     });
 
@@ -1949,4 +1950,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-window.client = arkadiaClient
+window.client = arkadiaClient;

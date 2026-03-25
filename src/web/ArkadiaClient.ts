@@ -1,5 +1,3 @@
-import {RecordedEvent, getRecording, saveRecording, getRecordingNames, deleteRecording} from './recordingStorage';
-import {Recorder} from "@shared/recorder";
 import {ClientAdapter} from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
@@ -24,7 +22,6 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 
 // WebSocket configuration
 const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
-const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
 const MCCP_STORAGE_KEY = 'mccpEnabled';
 
 class ArkadiaClient implements ClientAdapter {
@@ -35,10 +32,6 @@ class ArkadiaClient implements ClientAdapter {
     private readonly gmcpStream: (data: string) => void;
     private readonly telnetOptionHandler: (optionData: string) => string;
     private readonly mccpHandler: MccpHandler;
-    private recorder: Recorder<CommandOptions>;
-    private autoRecorder: Recorder<CommandOptions> | null = null;
-    private readonly activeRecorders = new Set<Recorder<CommandOptions>>();
-    private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
 
@@ -48,7 +41,6 @@ class ArkadiaClient implements ClientAdapter {
             onEnvelope: ({path, value}) => {
                 if (path === "char.info" && !this.receivedFirstGmcp) {
                     this.receivedFirstGmcp = true;
-                    this.maybeStartAutoRecording();
                 }
                 this.emit(`gmcp.${path}`, value);
                 this.emit('gmcp', {path, value});
@@ -59,14 +51,12 @@ class ArkadiaClient implements ClientAdapter {
             onFirstCharInfo: () => {
                 if (!this.receivedFirstGmcp) {
                     this.receivedFirstGmcp = true;
-                    this.maybeStartAutoRecording();
                 }
             },
         });
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
-        this.recorder = this.createRecorder(false);
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 event.preventDefault();
@@ -90,6 +80,10 @@ class ArkadiaClient implements ClientAdapter {
             if (typeof settings?.commandEcho === 'boolean') {
                 this.commandEcho = settings.commandEcho;
             }
+        });
+
+        eventBus.on('playback.incomingData', (data: string, options?: { timestamp?: number }) => {
+            this.processIncomingData(data, options);
         });
     }
 
@@ -138,7 +132,7 @@ class ArkadiaClient implements ClientAdapter {
                     const decodedData = atob(event.data);
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
-                    this.recordIncoming(data);
+                    this.emit('socket.incoming', data);
                     try {
                         this.processIncomingData(data);
                     } catch (processingError) {
@@ -159,8 +153,6 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
                 this.mccpHandler.reset();
-
-                void this.stopAutoRecording(true);
             };
 
             this.socket.onopen = (event: Event) => {
@@ -210,7 +202,7 @@ class ArkadiaClient implements ClientAdapter {
                 autoLowercaseCommands: this.autoLowercaseCommands
             };
             message = normalizeCommand(message, normalizeOptions)
-            this.recordOutgoing(message);
+            this.emit('socket.outgoing', message);
         }
 
         try {
@@ -297,245 +289,6 @@ class ArkadiaClient implements ClientAdapter {
 
         this.messageBuffer = [];
         this.emit('flushLines', groups);
-    }
-
-    // -- RECORDER -- //
-
-    getRecorder(): Recorder {
-        return this.recorder;
-    }
-
-    startRecording(name: string) {
-        if (this.activeRecorders.has(this.recorder)) {
-            this.unregisterRecorder(this.recorder);
-        }
-        const recorder = this.createRecorder(false);
-        this.recorder = recorder;
-        this.registerRecorder(recorder);
-        recorder.startRecording(name);
-    }
-
-    async stopRecording(save?: boolean) {
-        if (!this.activeRecorders.has(this.recorder)) {
-            return;
-        }
-        await this.recorder.stopRecording(save);
-        this.unregisterRecorder(this.recorder);
-    }
-
-    async loadRecording(name: string) {
-        await this.recorder.loadRecording(name);
-    }
-
-    listRecordings() {
-        return this.recorder.listRecordings();
-    }
-
-    deleteRecording(name: string) {
-        return this.recorder.deleteRecording(name);
-    }
-
-    stopPlayback() {
-        this.recorder.stopPlayback();
-    }
-
-    pausePlayback() {
-        this.recorder.pausePlayback();
-    }
-
-    resumePlayback() {
-        this.recorder.resumePlayback();
-    }
-
-    stepForward() {
-        this.recorder.stepForward();
-    }
-
-    stepBack() {
-        this.recorder.stepBack();
-    }
-
-    replayLast() {
-        this.recorder.replayLast();
-    }
-
-    startOver() {
-        this.recorder.startOver();
-    }
-
-    setLoopStart() {
-        this.recorder.setLoopStart();
-    }
-
-    setLoopEnd() {
-        this.recorder.setLoopEnd();
-    }
-
-    toggleLoop() {
-        this.recorder.toggleLoop();
-    }
-
-    clearLoop() {
-        this.recorder.clearLoop();
-    }
-
-    getLoopState() {
-        return this.recorder.getLoopState();
-    }
-
-    getRecordedMessages() {
-        return this.recorder.getRecordedMessages();
-    }
-
-    setRecordedMessages(events: RecordedEvent[]) {
-        this.recorder.setRecordedMessages(events);
-    }
-
-    replayRecordedMessages() {
-        this.recorder.replayRecordedMessages();
-    }
-
-    replayRecordedMessagesTimed() {
-        this.recorder.replayRecordedMessagesTimed();
-    }
-
-    setPlaybackSpeed(speed: number) {
-        this.recorder.setPlaybackSpeed(speed);
-    }
-
-    getPlaybackSpeed() {
-        return this.recorder.getPlaybackSpeed();
-    }
-
-    private maybeStartAutoRecording() {
-        if (this.autoRecorder && this.autoRecorder.isRecordingActive()) return;
-        const recorder = this.createRecorder(true);
-        this.autoRecorder = recorder;
-        this.registerRecorder(recorder);
-        recorder.startRecording(this.autoRecordingName);
-    }
-
-    private recordIncoming(data: string) {
-        this.activeRecorders.forEach(recorder => {
-            try {
-                recorder.handleIncoming(data);
-            } catch (error) {
-                console.error('Error recording incoming data:', error);
-            }
-        });
-    }
-
-    private recordOutgoing(message: string) {
-        this.activeRecorders.forEach(recorder => {
-            try {
-                recorder.handleOutgoing(message);
-            } catch (error) {
-                console.error('Error recording outgoing data:', error);
-            }
-        });
-    }
-
-    private createRecorder(auto: boolean) {
-        const recorder = new Recorder<CommandOptions>({
-            processIncomingData: (d, opts) => this.processIncomingData(d, opts),
-            sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
-            emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
-            notifySendCommand: (command, echo = false, options) => {
-                eventBus.emit('sendCommand', { command, echo: echo ?? false, options });
-            },
-        }, {
-            saveRecording,
-            getRecording,
-            getRecordingNames,
-            deleteRecording,
-        }, eventBus);
-        return recorder;
-    }
-
-    private registerRecorder(recorder: Recorder<CommandOptions>) {
-        this.activeRecorders.add(recorder);
-    }
-
-    private unregisterRecorder(recorder: Recorder<CommandOptions>) {
-        this.activeRecorders.delete(recorder);
-        if (this.autoRecorder === recorder) {
-            this.autoRecorder = null;
-        }
-    }
-
-    private emitRecorderEvent(auto: boolean, recorder: Recorder<CommandOptions>, event: string, ...args: any[]) {
-        if (auto) {
-            if (event === 'recording.start') {
-                this.emit('recording.auto.start', recorder.getCurrentRecordingName());
-                return;
-            }
-            if (event === 'recording.stop') {
-                this.emit('recording.auto.stop', recorder.getCurrentRecordingName(), ...args);
-            }
-        }
-        (this.emit as (...emitArgs: any[]) => void)(event as keyof ClientEvents, ...args);
-    }
-
-    private async stopAutoRecording(save?: boolean) {
-        if (!this.autoRecorder || !this.activeRecorders.has(this.autoRecorder)) {
-            this.autoRecorder = null;
-            return;
-        }
-        const recorder = this.autoRecorder;
-        this.unregisterRecorder(recorder);
-        try {
-            await recorder.stopRecording(save);
-        } catch (error) {
-            console.error('Failed to stop auto recording:', error);
-        }
-    }
-
-    getActiveRecordingName() {
-        if (this.recorder.isRecordingActive()) {
-            return this.recorder.getCurrentRecordingName();
-        }
-        return null;
-    }
-
-    getAutoRecordingName() {
-        if (this.autoRecorder && this.autoRecorder.isRecordingActive()) {
-            return this.autoRecorder.getCurrentRecordingName();
-        }
-        return null;
-    }
-
-    async getRecordingSnapshot(name: string, options?: { recentMs?: number }): Promise<RecordedEvent[] | null> {
-        const recorder = this.findRecorderByName(name);
-        if (recorder) {
-            if (options?.recentMs) {
-                return recorder.getRecordedMessagesSince(options.recentMs);
-            }
-            return recorder.getRecordedMessages();
-        }
-        try {
-            const events = await getRecording(name);
-            if (events && options?.recentMs) {
-                return this.filterRecentEvents(events, options.recentMs);
-            }
-            return events;
-        } catch (error) {
-            console.error('Failed to read recording snapshot:', error);
-            return null;
-        }
-    }
-
-    private findRecorderByName(name: string) {
-        for (const recorder of this.activeRecorders) {
-            if (recorder.getCurrentRecordingName && recorder.getCurrentRecordingName() === name) {
-                return recorder;
-            }
-        }
-        return null;
-    }
-
-    private filterRecentEvents(events: RecordedEvent[], durationMs: number) {
-        const cutoff = Date.now() - durationMs;
-        return events.filter(event => typeof event.timestamp === 'number' && event.timestamp >= cutoff);
     }
 
 }

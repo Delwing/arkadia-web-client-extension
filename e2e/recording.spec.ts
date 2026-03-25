@@ -1,20 +1,54 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 
+async function startRecordingViaUI(page: any, name: string) {
+    await page.click('#menu-button');
+    await page.click('#recordings-button');
+    await expect(page.locator('#recordings-modal')).toBeVisible();
+    await page.fill('.recording-name-input', name);
+    await page.click('button:has-text("Rozpocznij")');
+    await expect(page.locator('#recording-button')).toBeVisible();
+}
+
+async function stopRecordingViaUI(page: any) {
+    await page.click('#recording-button');
+    await expect(page.locator('#recording-button')).not.toBeVisible();
+}
+
+async function deleteRecordingFromDB(page: any, name: string) {
+    await page.evaluate((n: string) => {
+        return new Promise<void>((resolve, reject) => {
+            const request = indexedDB.open('ArkadiaRecordingsDB', 1);
+            request.onsuccess = () => {
+                const db = request.result;
+                const tx = db.transaction(['recordings'], 'readwrite');
+                const store = tx.objectStore('recordings');
+                const req = store.delete(n);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(new Error('Failed to delete'));
+            };
+            request.onerror = () => reject(new Error('Failed to open DB'));
+        });
+    }, name);
+}
+
+async function playTimedViaUI(page: any, name: string) {
+    await page.click('#menu-button');
+    await page.click('#recordings-button');
+    await expect(page.locator('#recordings-modal')).toBeVisible();
+    const row = page.locator('.recordings-item', {has: page.locator(`.recordings-item-name:has-text("${name}")`)});
+    await row.locator('button:has-text("Odtwórz w czasie")').click();
+    await expect(page.locator('#playback-controls')).toBeVisible();
+}
+
 test.describe('Recording and Playback', () => {
     test('should record messages and save recording', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Start recording using client API
         const recordingName = `test-recording-${Date.now()}`;
-        await page.evaluate((name) => {
-            window.client.startRecording(name);
-        }, recordingName);
-
-        // Verify recording indicator is visible
-        await expect(page.locator('#recording-button')).toBeVisible();
+        await startRecordingViaUI(page, recordingName);
 
         // Send some test messages
         await pushText(page, 'Test message 1');
@@ -22,25 +56,17 @@ test.describe('Recording and Playback', () => {
         await pushText(page, 'Test message 3');
         await waitForOutputContaining(page, 'Test message 3');
 
-        // Stop recording
-        await page.evaluate(() => {
-            window.client.stopRecording(true);
-        });
+        // Stop recording via UI
+        await stopRecordingViaUI(page);
 
-        // Verify recording button is hidden
-        await expect(page.locator('#recording-button')).not.toBeVisible();
+        // Verify recording appears in the list
+        await page.click('#menu-button');
+        await page.click('#recordings-button');
+        await expect(page.locator('#recordings-modal')).toBeVisible();
+        await expect(page.locator(`.recordings-item-name:has-text("${recordingName}")`)).toBeVisible();
 
-        // Verify recording was saved by loading it
-        const recordingExists = await page.evaluate((name) => {
-            return window.client.loadRecording(name).then(() => true).catch(() => false);
-        }, recordingName);
-
-        expect(recordingExists).toBe(true);
-
-        // Clean up: delete the recording
-        await page.evaluate((name) => {
-            return window.client.deleteRecording?.(name);
-        }, recordingName);
+        // Clean up
+        await deleteRecordingFromDB(page, recordingName);
     });
 
     test('should show playback controls during timed playback', async ({page}) => {
@@ -48,13 +74,8 @@ test.describe('Recording and Playback', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Start recording
         const recordingName = `test-timed-${Date.now()}`;
-        await page.evaluate((name) => {
-            window.client.startRecording(name);
-        }, recordingName);
-
-        await expect(page.locator('#recording-button')).toBeVisible();
+        await startRecordingViaUI(page, recordingName);
 
         // Send messages with real delays — recording captures timestamps between messages
         for (let i = 1; i <= 5; i++) {
@@ -62,22 +83,10 @@ test.describe('Recording and Playback', () => {
             await page.waitForTimeout(300);
         }
 
-        // Stop recording
-        await page.evaluate(() => {
-            window.client.stopRecording(true);
-        });
+        await stopRecordingViaUI(page);
 
-        await expect(page.locator('#recording-button')).not.toBeVisible();
-
-        // Start timed playback
-        await page.evaluate((name) => {
-            return window.client.loadRecording(name).then(() => {
-                window.client.replayRecordedMessagesTimed();
-            });
-        }, recordingName);
-
-        // Verify playback controls appear
-        await expect(page.locator('#playback-controls')).toBeVisible();
+        // Start timed playback via UI
+        await playTimedViaUI(page, recordingName);
 
         // Verify playback info is visible
         await expect(page.locator('#playback-info')).toBeVisible();
@@ -96,9 +105,7 @@ test.describe('Recording and Playback', () => {
         await expect(page.locator('#playback-controls')).not.toBeVisible();
 
         // Clean up
-        await page.evaluate((name) => {
-            return window.client.deleteRecording?.(name);
-        }, recordingName);
+        await deleteRecordingFromDB(page, recordingName);
     });
 
     test('should control playback with step functions', async ({page}) => {
@@ -106,11 +113,8 @@ test.describe('Recording and Playback', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Start recording
         const recordingName = `test-stepping-${Date.now()}`;
-        await page.evaluate((name) => {
-            window.client.startRecording(name);
-        }, recordingName);
+        await startRecordingViaUI(page, recordingName);
 
         // Send messages with real delays so recording captures timing data
         await pushText(page, 'Step message 1');
@@ -120,20 +124,10 @@ test.describe('Recording and Playback', () => {
         await pushText(page, 'Step message 3');
         await waitForOutputContaining(page, 'Step message 3');
 
-        // Stop recording
-        await page.evaluate(() => {
-            window.client.stopRecording(true);
-        });
+        await stopRecordingViaUI(page);
 
-        // Start timed playback
-        await page.evaluate((name) => {
-            return window.client.loadRecording(name).then(() => {
-                window.client.replayRecordedMessagesTimed();
-            });
-        }, recordingName);
-
-        // Wait for playback to start
-        await expect(page.locator('#playback-controls')).toBeVisible();
+        // Start timed playback via UI
+        await playTimedViaUI(page, recordingName);
 
         // Pause immediately
         await page.click('#playback-pause');
@@ -152,9 +146,7 @@ test.describe('Recording and Playback', () => {
         await expect(page.locator('#playback-controls')).not.toBeVisible();
 
         // Clean up
-        await page.evaluate((name) => {
-            return window.client.deleteRecording?.(name);
-        }, recordingName);
+        await deleteRecordingFromDB(page, recordingName);
     });
 
     test('should start recording from UI and verify button visibility', async ({page}) => {
@@ -162,31 +154,17 @@ test.describe('Recording and Playback', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Open recordings modal
-        await page.click('#menu-button');
-        await page.click('#recordings-button');
-        await expect(page.locator('#recordings-modal')).toBeVisible();
-
-        // Start recording from UI
         const recordingName = `ui-test-${Date.now()}`;
-        await page.fill('.recording-name-input', recordingName);
-        await page.click('button:has-text("Rozpocznij")');
-
-        // Verify recording button appears and modal closes
-        await expect(page.locator('#recording-button')).toBeVisible();
-        await expect(page.locator('#recordings-modal')).not.toBeVisible();
+        await startRecordingViaUI(page, recordingName);
 
         // Send a test message
         await pushText(page, 'UI test message');
         await waitForOutputContaining(page, 'UI test message');
 
         // Stop recording by clicking the button
-        await page.click('#recording-button');
-        await expect(page.locator('#recording-button')).not.toBeVisible();
+        await stopRecordingViaUI(page);
 
         // Clean up
-        await page.evaluate((name) => {
-            return window.client.deleteRecording?.(name);
-        }, recordingName);
+        await deleteRecordingFromDB(page, recordingName);
     });
 });

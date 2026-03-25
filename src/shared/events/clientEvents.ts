@@ -332,6 +332,9 @@ export interface KnownEvents {
     "firebase.sync.error": { message: string };
     "firebase.listener.status": { active: boolean };
     "flushLines": [{ text: string; type: string }[]];
+    "socket.incoming": string;
+    "socket.outgoing": string;
+    "playback.incomingData": [data: string, options?: { timestamp?: number }];
 }
 
 export interface WalkerState {

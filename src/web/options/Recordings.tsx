@@ -1,6 +1,8 @@
 import {ChangeEvent, useEffect, useRef, useState} from 'react';
 import {Button, Form} from 'react-bootstrap';
 import {getRecordingNames, deleteRecording, getRecording, saveRecording, RecordedEvent} from './recordingStorage';
+import eventBus from "@modules/core/eventBus";
+import recordingManager from "../RecordingManager";
 
 const AUTO_RECENT_WINDOW_MS = 3 * 60 * 1000;
 
@@ -19,8 +21,6 @@ function Recordings() {
     useEffect(load, []);
 
     useEffect(() => {
-        if (!window.client) return;
-
         const startHandler = (name: string) => {
             setRecordingName(name);
             setRecording(true);
@@ -31,22 +31,20 @@ function Recordings() {
             if (save) load();
         };
 
-        window.client.on('recording.start', startHandler);
-        window.client.on('recording.stop', stopHandler);
+        const offStart = eventBus.on('recording.start', startHandler);
+        const offStop = eventBus.on('recording.stop', stopHandler);
         return () => {
-            window.client.off('recording.start', startHandler);
-            window.client.off('recording.stop', stopHandler);
+            offStart?.();
+            offStop?.();
         };
     }, []);
 
     useEffect(() => {
-        if (!window.client) return;
-
         const updateAutoState = () => {
-            setAutoRecordingName(window.client.getAutoRecordingName?.() ?? null);
+            setAutoRecordingName(recordingManager.getAutoRecordingName());
         };
 
-        const autoStartHandler = (name?: string | null) => {
+        const autoStartHandler = (name: string | null | undefined) => {
             if (typeof name === 'string' && name) {
                 setAutoRecordingName(name);
             } else {
@@ -59,31 +57,30 @@ function Recordings() {
         };
 
         updateAutoState();
-        window.client.on('recording.auto.start', autoStartHandler as any);
-        window.client.on('recording.auto.stop', autoStopHandler as any);
+        const offAutoStart = eventBus.on('recording.auto.start', autoStartHandler);
+        const offAutoStop = eventBus.on('recording.auto.stop', autoStopHandler);
 
         return () => {
-            window.client.off('recording.auto.start', autoStartHandler as any);
-            window.client.off('recording.auto.stop', autoStopHandler as any);
+            offAutoStart?.();
+            offAutoStop?.();
         };
     }, []);
 
 
     async function handlePlay(name: string) {
-        await window.client.loadRecording(name);
-        window.client.replayRecordedMessages();
-
+        await recordingManager.loadRecording(name);
+        recordingManager.replayRecordedMessages();
     }
 
     async function handlePlayTimed(name: string) {
         window.dispatchEvent(new Event('close-options'));
-        await window.client.loadRecording(name);
-        window.client.replayRecordedMessagesTimed();
+        await recordingManager.loadRecording(name);
+        recordingManager.replayRecordedMessagesTimed();
     }
 
     async function handleLoad(name: string) {
         window.dispatchEvent(new Event('close-options'));
-        await window.client.loadRecording(name);
+        await recordingManager.loadRecording(name);
     }
 
     async function handleDelete(name: string) {
@@ -110,11 +107,9 @@ function Recordings() {
         if (!name) {
             return null;
         }
-        if (window.client?.getRecordingSnapshot) {
-            const snapshot = await window.client.getRecordingSnapshot(name, options);
-            if (snapshot) {
-                return snapshot;
-            }
+        const snapshot = await recordingManager.getRecordingSnapshot(name, options);
+        if (snapshot) {
+            return snapshot;
         }
         const events = await getRecording(name);
         if (events && options?.recentMs) {
@@ -131,11 +126,11 @@ function Recordings() {
     async function downloadRecordings() {
         const all: Record<string, any[]> = {};
         const namesToExport = new Set(await getRecordingNames());
-        const activeManual = window.client?.getActiveRecordingName?.();
+        const activeManual = recordingManager.getActiveRecordingName();
         if (activeManual) {
             namesToExport.add(activeManual);
         }
-        const activeAuto = window.client?.getAutoRecordingName?.();
+        const activeAuto = recordingManager.getAutoRecordingName();
         if (activeAuto) {
             namesToExport.add(activeAuto);
         }
@@ -220,12 +215,12 @@ function Recordings() {
     function start() {
         const name = recordingName.trim();
         if (!name) return;
-        window.client.startRecording(name);
+        recordingManager.startRecording(name);
         setRecording(true);
     }
 
     async function stop(save: boolean) {
-        await window.client.stopRecording(save);
+        await recordingManager.stopRecording(save);
         if (save) load();
         setRecording(false);
     }
