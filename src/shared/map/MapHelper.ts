@@ -158,6 +158,10 @@ export default class MapHelper {
             this.client.sendEvent("refreshPositionWhenAble");
         })
 
+        this.client.on("map.setLocation", (data: { roomId: number }) => {
+            this.setMapRoomById(data.roomId);
+        });
+
         this.client.on("leadTo", (target: number) => {
             this.leadTo(target);
         });
@@ -587,6 +591,16 @@ export default class MapHelper {
     }
 
     leadTo(id: number) {
+        const currentId = this.currentRoom?.id;
+        if (currentId === id) {
+            this.client.sendEvent("notify", { text: 'Jestes juz na miejscu' });
+            return;
+        }
+        const path = this.pathFinder?.findPath(currentId, id);
+        if (!path || path.length <= 1) {
+            this.client.sendEvent("notify", { text: 'Brak sciezki do lokacji' });
+            return;
+        }
         this._destinations = [id];
         this.emitDrawData();
     }
@@ -766,23 +780,27 @@ export default class MapHelper {
             // Calculate total distance through all destinations
             let totalDistance = 0;
             let fromId = currentId;
+            let hasValidPath = false;
             for (const destId of this._destinations) {
                 const segment = this.pathFinder?.findPath(fromId, destId);
-                if (segment) {
+                if (segment && segment.length > 0) {
                     totalDistance += segment.length - 1;
                     fromId = destId;
+                    hasValidPath = true;
                 }
             }
 
-            const finalDestId = this._destinations[this._destinations.length - 1];
-            const destRoom = this.mapReader?.getRoom(finalDestId);
-            const destArea = destRoom ? this.mapReader.getArea(destRoom.area) : null;
-            const destName = destArea ? destArea.getAreaName() : String(finalDestId);
+            if (hasValidPath) {
+                const finalDestId = this._destinations[this._destinations.length - 1];
+                const destRoom = this.mapReader?.getRoom(finalDestId);
+                const destArea = destRoom ? this.mapReader.getArea(destRoom.area) : null;
+                const destName = destArea ? destArea.getAreaName() : String(finalDestId);
 
-            if (this._destinations.length > 1) {
-                text += ` → #${finalDestId} ${destName} (${totalDistance}, ${this._destinations.length} przystankow)`;
-            } else {
-                text += ` → #${finalDestId} ${destName} (${totalDistance})`;
+                if (this._destinations.length > 1) {
+                    text += ` → #${finalDestId} ${destName} (${totalDistance}, ${this._destinations.length} przystankow)`;
+                } else {
+                    text += ` → #${finalDestId} ${destName} (${totalDistance})`;
+                }
             }
         }
 

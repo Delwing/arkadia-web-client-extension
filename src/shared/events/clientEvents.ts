@@ -273,7 +273,6 @@ export interface KnownEvents {
     "peopleBrowser.popup.open": void;
     "map.centerOn": { roomId: number };
     "map.setLocation": { roomId: number };
-    "map.showPath": { toRoomId: number };
     "mapLabelVisibility": boolean;
     "mapAlwaysShowNote": boolean;
     "mapShowGrid": boolean;

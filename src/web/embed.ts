@@ -257,26 +257,6 @@ export class EmbeddedMap {
             this.refreshRender();
         });
 
-        eventBus.on('map.setLocation', (data: { roomId: number }) => {
-            getClientInstance()?.Map?.setMapRoomById(data.roomId);
-        });
-
-        eventBus.on('map.showPath', (data: { toRoomId: number }) => {
-            const currentRoom = this.currentRoom;
-            const pathFinder = (this as any).pathFinder ?? (globalThis as any).embedded?.pathFinder;
-            if (currentRoom && pathFinder) {
-                const path = pathFinder.findPath(currentRoom, data.toRoomId);
-                if (path) {
-                    this.currentPath = { segments: [{ path, color: '#7FFF00' }] };
-                    this.refresh();
-                } else {
-                    eventBus.emit('notify', { text: 'Brak sciezki do lokacji' });
-                }
-            } else {
-                eventBus.emit('notify', { text: 'Brak sciezki do lokacji' });
-            }
-        });
-
         this.initVisitedRooms(initialRoom);
     }
 
