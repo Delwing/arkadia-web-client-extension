@@ -54,4 +54,34 @@ describe('break item triggers', () => {
     cb();
     expect(client.sendCommand).toHaveBeenCalledWith('odloz zniszczona zbroje');
   });
+
+  test('does not bind or warn for other person armor breaking', () => {
+    const line = 'Czarna blyszczaca zbroja plytowa Apoliosa rozpada sie!';
+    const result = parse(line);
+    expect(result?.text).toContain('[  SPRZET  ]');
+    expect(client.sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
+    expect(client.sendEvent).not.toHaveBeenCalledWith('breakItem', expect.anything());
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+  });
+
+  test('does not bind or warn for other person weapon breaking', () => {
+    const line = 'Stalowy miecz Apoliosa peka!';
+    const result = parse(line);
+    expect(result?.text).toContain('[  SPRZET  ]');
+    expect(client.sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
+    expect(client.sendEvent).not.toHaveBeenCalledWith('breakItem', expect.anything());
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    'Odkladasz zniszczona zbroje plytowa.',
+    'Odkladasz zniszczony helm.',
+    'Odkladasz zniszczone buty.',
+    'Odkladasz zlamana bron.',
+    'Odkladasz zlamany miecz.',
+    'Odkladasz zlamane kopie.',
+  ])('clears warning on: %s', (line) => {
+    parse(line);
+    expect(client.sendEvent).toHaveBeenCalledWith('breakItem', null);
+  });
 });
