@@ -494,6 +494,7 @@ export default class MapHelper {
             this.lastMoveDirection = null;
             this.client.sendEvent("enterLocation", {id, room: this.currentRoom, direction});
         }
+        this.removeReachedDestination(id);
         this.emitDrawData();
     }
 
@@ -695,11 +696,10 @@ export default class MapHelper {
         }
     }
 
-    checkDestinationReached(roomId: number) {
+    removeReachedDestination(roomId: number) {
         const index = this._destinations.indexOf(roomId);
         if (index > -1) {
             this._destinations.splice(index, 1);
-            this.emitDrawData();
         }
     }
 

@@ -11,7 +11,6 @@ import {
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
-import { getClientInstance } from "@shared/runtime";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
 import { openMapContextMenu } from "@modules/core/contextMenus";
 
@@ -220,7 +219,6 @@ export class EmbeddedMap {
             this.reader.addVisitedRoom(id);
             characterStorage.set('mapperRoomId', id);
             saveVisitedRooms(Array.from(this.visited));
-            getClientInstance()?.Map?.checkDestinationReached(id);
             this.renderRoomById(id);
         });
 
