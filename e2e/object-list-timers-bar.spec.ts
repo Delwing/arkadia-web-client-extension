@@ -67,11 +67,11 @@ async function clickMenuToggle(page: Page, label: string): Promise<void> {
     await item.click();
 }
 
-// Send a client event via the app's exposed clientExtension object.
-async function sendClientEvent(page: Page, name: string, value: unknown): Promise<void> {
-    await page.evaluate(([eventName, eventValue]) => {
-        (window as any).clientExtension.sendEvent(eventName, eventValue);
-    }, [name, value] as [string, unknown]);
+// Activate sneak mode (moveMode=1) by pressing the moveMode key bind (Backquote).
+async function activateSneakMode(page: Page): Promise<void> {
+    // Focus the command input so keydown reaches the app
+    await page.locator('#message-input').focus();
+    await page.keyboard.press('Backquote');
 }
 
 // Wait until the timers bar is visible inside #objects-list.
@@ -288,14 +288,16 @@ test.describe('Object list timers bar', () => {
 
     test.describe('cover timer item', () => {
         test('shows "Zas: OK" in green when no active timer', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaslony');
 
             await waitForTimersBar(page);
 
-            // No cover text sent — timer stays inactive → shows "OK".
-            await sendClientEvent(page, 'coverTimer', null);
+            // Trigger and expire the cover timer so it transitions to "OK".
+            await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
+            await page.clock.runFor(5500);
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const coverItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'});
@@ -330,14 +332,17 @@ test.describe('Object list timers bar', () => {
         });
 
         test('cover timer label stays default color regardless of state', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaslony');
 
             await waitForTimersBar(page);
 
-            // Check label color in OK state.
-            await sendClientEvent(page, 'coverTimer', null);
+            // Trigger and expire the cover timer to reach OK state.
+            await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
+            await page.clock.runFor(5500);
+
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const coverItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'});
 
@@ -528,13 +533,18 @@ test.describe('Object list timers bar', () => {
         });
 
         test('shows "Zask: OK" in green when ok is true', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaskoku');
 
             await waitForTimersBar(page);
 
-            await sendClientEvent(page, 'zaskTimer', {seconds: 30, ok: true});
+            // Activate sneak mode, then push room.info to start the zask timer.
+            await activateSneakMode(page);
+            await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {num: 1, id: 1, name: 'Room', zone: 'Test', exits: {}, map: {x: 0, y: 0, name: 'Test'}});
+            // Advance clock past the 30s safe threshold.
+            await page.clock.runFor(31000);
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const zaskItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'});
@@ -546,13 +556,17 @@ test.describe('Object list timers bar', () => {
         });
 
         test('shows zask seconds in yellow when seconds >= 20 and not ok', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaskoku');
 
             await waitForTimersBar(page);
 
-            await sendClientEvent(page, 'zaskTimer', {seconds: 25, ok: false});
+            await activateSneakMode(page);
+            await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {num: 1, id: 1, name: 'Room', zone: 'Test', exits: {}, map: {x: 0, y: 0, name: 'Test'}});
+            // Advance clock to 25 seconds (>= 20, not yet 30).
+            await page.clock.runFor(25500);
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const zaskItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'});
@@ -564,13 +578,17 @@ test.describe('Object list timers bar', () => {
         });
 
         test('shows zask seconds in red when seconds < 20 and not ok', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaskoku');
 
             await waitForTimersBar(page);
 
-            await sendClientEvent(page, 'zaskTimer', {seconds: 10, ok: false});
+            await activateSneakMode(page);
+            await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {num: 1, id: 1, name: 'Room', zone: 'Test', exits: {}, map: {x: 0, y: 0, name: 'Test'}});
+            // Advance clock to 10 seconds (< 20).
+            await page.clock.runFor(10500);
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const zaskItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'});
@@ -582,13 +600,16 @@ test.describe('Object list timers bar', () => {
         });
 
         test('shows zask seconds in red at the boundary (seconds === 19)', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaskoku');
 
             await waitForTimersBar(page);
 
-            await sendClientEvent(page, 'zaskTimer', {seconds: 19, ok: false});
+            await activateSneakMode(page);
+            await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {num: 1, id: 1, name: 'Room', zone: 'Test', exits: {}, map: {x: 0, y: 0, name: 'Test'}});
+            await page.clock.runFor(19500);
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const zaskItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'});
@@ -597,13 +618,16 @@ test.describe('Object list timers bar', () => {
         });
 
         test('shows zask seconds in yellow at the boundary (seconds === 20)', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaskoku');
 
             await waitForTimersBar(page);
 
-            await sendClientEvent(page, 'zaskTimer', {seconds: 20, ok: false});
+            await activateSneakMode(page);
+            await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {num: 1, id: 1, name: 'Room', zone: 'Test', exits: {}, map: {x: 0, y: 0, name: 'Test'}});
+            await page.clock.runFor(20500);
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const zaskItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'});
@@ -612,18 +636,24 @@ test.describe('Object list timers bar', () => {
         });
 
         test('zask timer transitions from null back to "--" display', async ({page}) => {
+            await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer zaskoku');
 
             await waitForTimersBar(page);
 
-            await sendClientEvent(page, 'zaskTimer', {seconds: 20, ok: true});
+            // Activate sneak and push room.info to start timer, then advance past threshold.
+            await activateSneakMode(page);
+            await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {num: 1, id: 1, name: 'Room', zone: 'Test', exits: {}, map: {x: 0, y: 0, name: 'Test'}});
+            await page.clock.runFor(31000);
+
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const zaskItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'});
             await expect(zaskItem, 'should show OK first').toContainText('Zask: OK');
 
-            await sendClientEvent(page, 'zaskTimer', null);
+            // Deactivate sneak mode (toggle back to mode 0) to stop the timer → emits null.
+            await activateSneakMode(page);
             await expect(zaskItem, 'should return to "--" when payload is null').toContainText('Zask: --');
         });
     });

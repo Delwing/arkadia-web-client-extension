@@ -10,6 +10,37 @@ import {
     GMCP_PATHS,
 } from './support/mocks';
 
+const SUGGESTION_PLUGIN_URL = 'https://example.com/suggestion-plugin.js';
+
+function makeSuggestionPlugin(words: string[]): string {
+    const wordsStr = words.map(w => `'${w}'`).join(', ');
+    return `export async function init(api) {
+    api.command.addSuggestions(${wordsStr});
+    return { name: 'Suggestion Plugin', version: '1.0.0' };
+}`;
+}
+
+async function loadSuggestionPlugin(page: Page, words: string[]): Promise<void> {
+    const body = makeSuggestionPlugin(words);
+    await page.route(`${SUGGESTION_PLUGIN_URL}**`, async (route) => {
+        await route.fulfill({status: 200, contentType: 'application/javascript', body});
+    });
+
+    await page.click('#menu-button');
+    await page.click('#scripts-button');
+    const modal = page.locator('#scripts-modal');
+    await expect(modal).toBeVisible();
+
+    const input = modal.getByPlaceholder('URL skryptu');
+    const addBtn = modal.getByRole('button', {name: 'Dodaj'});
+    await input.fill(SUGGESTION_PLUGIN_URL);
+    await addBtn.click();
+    await expect(modal.getByText('Suggestion Plugin')).toBeVisible();
+
+    await modal.locator('.btn-close').first().click();
+    await expect(modal).not.toBeVisible();
+}
+
 const MESSAGE_INPUT = '#message-input';
 
 async function getInputValue(page: Page): Promise<string> {
@@ -151,10 +182,8 @@ test.describe('Tab completion — output buffer based', () => {
         await pushText(page, 'Widzisz tutaj poteznego wojownika.\n');
         await waitForOutputContaining(page, 'poteznego');
 
-        // Register a plugin suggestion that also matches
-        await page.evaluate(() => {
-            (window as any).clientExtension.commandLineSuggestions.push('potwornego');
-        });
+        // Load a minimal plugin that registers a suggestion via the plugin API
+        await loadSuggestionPlugin(page, ['potwornego']);
 
         await setInputValue(page, 'pot');
         await pressTab(page);

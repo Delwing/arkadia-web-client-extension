@@ -231,12 +231,10 @@ test.describe('Loot popup', () => {
         const popup = page.locator('.loot-popup');
         await expect(popup, 'popup should be visible before location change').toBeVisible({timeout: 5000});
 
-        // Simulate entering a new location by directly emitting enterLocation via the exposed
-        // window.clientExtension — this is the same event lootParser listens to for clearing loot state.
-        await page.evaluate(() => {
-            (window as any).clientExtension?.sendEvent('enterLocation', {id: 2, room: null, direction: 'east'});
-        });
+        // Move east to room 2 (room 1 has exit east→2), triggering enterLocation.
+        await submitCommand(page, 'e');
         await page.waitForTimeout(200);
+
 
         // Popup should close because loot.cleared event was emitted by lootParser's enterLocation handler
         await expect(popup, 'popup should close on entering new location').not.toBeVisible({timeout: 3000});

@@ -58,14 +58,6 @@ test.describe('Context menu', () => {
     });
 
     test('clicking Wiedza triggers /wiedza command', async ({page}) => {
-        // Install a command listener to capture the /wiedza command
-        await page.evaluate(() => {
-            (window as any).__capturedCommands = [];
-            (window as any).clientExtension.on('command', (cmd: string) => {
-                (window as any).__capturedCommands.push(cmd);
-            });
-        });
-
         const output = page.locator(OUTPUT_SELECTOR);
         await output.click({button: 'right'});
 
@@ -75,13 +67,8 @@ test.describe('Context menu', () => {
         const wiedzaButton = menu.locator('button', {hasText: 'Wiedza'}).first();
         await wiedzaButton.click();
 
-        await expect.poll(
-            async () => await page.evaluate(() => (window as any).__capturedCommands ?? []),
-            {message: 'should capture /wiedza command'},
-        ).toContain('/wiedza');
-
-        const commands = await page.evaluate(() => (window as any).__capturedCommands ?? []);
-        expect(commands).toContain('/wiedza');
+        // /wiedza is a client-side alias that opens the knowledge details report popup.
+        await expect(page.getByText('Raport wiedzy')).toBeVisible({timeout: 5000});
     });
 
     test('timestamp toggle adds/removes output-show-timestamps class', async ({page}) => {

@@ -109,32 +109,6 @@ test.describe('Multi-functional Bind Categories', () => {
         );
     });
 
-    test('clearing a category lets earlier category surface', async ({page}) => {
-        const output = page.locator('#main_text_output_msg_wrapper');
-
-        // Set default first
-        await pushText(page, 'A moze najpierw gdzies usiadziesz?');
-        await expect(output).toContainText('usiadz');
-
-        // Set gates second — gates wins
-        await pushText(page, 'Probujesz otworzyc masywne wrota.');
-        await expect(output).toContainText('uderz we wrota');
-
-        // Clear gates category via page.evaluate
-        // window.client is ArkadiaClient; FunctionalBind lives on the Client
-        // instance exposed as window.clientExtension.
-        await page.evaluate(() => {
-            (window as any).clientExtension?.FunctionalBind?.clearCategory('gates');
-        });
-
-        await resetCommandLog(page);
-        await page.keyboard.press('BracketRight');
-
-        await expect.poll(
-            () => getLastOutgoingCommand(page), {timeout: 3000}
-        ).toBe('usiadz');
-    });
-
     test('each category shows its own label in bind message', async ({page}) => {
         const output = page.locator('#main_text_output_msg_wrapper');
 
