@@ -1,5 +1,4 @@
 import eventBus from "@modules/core/eventBus";
-import { clearClientInstance } from "@shared/runtime";
 import MultiBinds from "../../src/web/MultiBinds";
 
 describe("MultiBinds", () => {
@@ -8,7 +7,6 @@ describe("MultiBinds", () => {
   });
 
   afterEach(() => {
-    clearClientInstance();
     eventBus.clear("sendCommand");
   });
 

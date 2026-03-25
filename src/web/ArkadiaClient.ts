@@ -6,7 +6,6 @@ import type {ClientEvents} from "@shared/events";
 import {globalStorage} from "@modules/core/storage";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
-import {getClientInstance} from "@shared/runtime";
 import {
     createGmcpStream,
     createTelnetOptionParser,
@@ -42,6 +41,11 @@ class ArkadiaClient implements ClientAdapter {
     private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
+    private _client: Client | null = null;
+
+    setClient(client: Client): void {
+        this._client = client;
+    }
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -210,8 +214,7 @@ class ArkadiaClient implements ClientAdapter {
      * Send a message through the WebSocket
      */
     private echoMessage(message: string): void {
-        const client = getClientInstance<Client>();
-        const display = client ? client.ObjectManager.resolveObjectIds(message) : message;
+        const display = this._client ? this._client.ObjectManager.resolveObjectIds(message) : message;
         this.output("→ " + display, 'command');
     }
 
@@ -324,9 +327,8 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private sendLine(text: string, type: string) {
-        const client = getClientInstance<Client>();
-        if (client) {
-            const parts = client.onLine(text, type);
+        if (this._client) {
+            const parts = this._client.onLine(text, type);
             parts.forEach((part) => {
                 eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, part), {once: true})
                 this.output(part, type);
@@ -477,12 +479,11 @@ class ArkadiaClient implements ClientAdapter {
             sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
             emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
             getCurrentMapLocation: () => {
-                const ext = getClientInstance();
-                const id = ext?.Map?.currentRoom?.id;
+                const id = this._client?.Map?.currentRoom?.id;
                 return typeof id === 'number' ? id : null;
             },
             setMapLocationSilently: (locationId: number) => {
-                const map = getClientInstance()?.Map;
+                const map = this._client?.Map;
                 if (!map || typeof locationId !== 'number') {
                     return;
                 }

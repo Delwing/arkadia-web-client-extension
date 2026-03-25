@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useClientEvent } from "../../hooks";
-import { requireClientInstance } from "@shared/runtime";
+import { useClientEvent, useClientCommand } from "../../hooks";
 
 interface BreakItemData {
   text: string;
@@ -13,6 +12,7 @@ interface BreakItemData {
  */
 export const BreakItemWarning: React.FC = () => {
   const [data, setData] = useState<BreakItemData | null>(null);
+  const sendCommand = useClientCommand();
 
   useClientEvent<BreakItemData | null>("breakItem", (newData) => {
     setData(newData);
@@ -20,8 +20,7 @@ export const BreakItemWarning: React.FC = () => {
 
   const handleClick = () => {
     if (data?.command) {
-      const client = requireClientInstance();
-      client.send(data.command);
+      sendCommand(data.command);
     }
     setData(null);
   };

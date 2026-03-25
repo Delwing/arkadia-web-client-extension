@@ -16,7 +16,6 @@ import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
 import {getContextMenuEntries as getPluginContextMenuEntries} from "@modules/core/pluginUiRegistry";
-import {setClientInstance} from "@shared/runtime";
 import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
@@ -110,7 +109,7 @@ let mobileRadial: MobileCommandRadial | null = null;
 switchKeymap(getActiveKeymapId());
 
 const client = new Client(arkadiaClient);
-setClientInstance(client);
+arkadiaClient.setClient(client);
 registerScripts(client);
 
 const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {

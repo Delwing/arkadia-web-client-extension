@@ -1,5 +1,4 @@
 import Recorder from '@web/Recorder';
-import { clearClientInstance, setClientInstance } from "@shared/runtime";
 
 describe('Recorder playback', () => {
   test('replayRecordedMessagesTimed echoes outgoing commands', () => {
@@ -11,8 +10,6 @@ describe('Recorder playback', () => {
       setMapLocationSilently: jest.fn(),
     };
     const recorder = new Recorder(hooks as any);
-    const mockClient = { sendCommand: jest.fn() } as any;
-    setClientInstance(mockClient);
     recorder.setRecordedMessages([
       { message: 'look', timestamp: 0, direction: 'out' },
     ]);
@@ -59,9 +56,5 @@ describe('Recorder playback', () => {
 
     expect(hooks.setMapLocationSilently).toHaveBeenCalledTimes(1);
     expect(hooks.setMapLocationSilently).toHaveBeenCalledWith(3525);
-  });
-
-  afterEach(() => {
-    clearClientInstance();
   });
 });

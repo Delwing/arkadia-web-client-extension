@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useClientEvent } from "../../hooks";
-import { requireClientInstance } from "@shared/runtime";
+import { useClientEvent, useClientCommand } from "../../hooks";
 
 interface MailState {
   unread?: boolean;
@@ -15,6 +14,7 @@ interface MailState {
  */
 export const MailStatus: React.FC = () => {
   const [mailState, setMailState] = useState<MailState>({});
+  const sendCommand = useClientCommand();
 
   useClientEvent<MailState>("gmcp.mail.state", (state) => {
     setMailState(state || {});
@@ -27,8 +27,7 @@ export const MailStatus: React.FC = () => {
   }
 
   const handleClick = () => {
-    const client = requireClientInstance();
-    client.send("wyslij zwierze");
+    sendCommand("wyslij zwierze");
   };
 
   const statusParts: string[] = [];

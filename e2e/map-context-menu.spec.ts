@@ -205,8 +205,8 @@ test.describe('Map context menu', () => {
         const walkButton = menu.locator('button', { hasText: 'Idź do lokacji' });
         await walkButton.click();
 
-        // Advance fake clock past the minimum walk delay (500ms + jitter up to 300ms)
-        await page.clock.fastForward(1000);
+        // Advance fake clock past the walk delay (1s base + up to 0.3s jitter)
+        await page.clock.fastForward(1500);
 
         const commandLog = await getCommandLog(page);
         // /idz calls leadTo (path arrow visible) and then sends direction commands after delay
