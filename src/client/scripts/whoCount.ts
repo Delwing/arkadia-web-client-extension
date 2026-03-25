@@ -12,6 +12,49 @@ const GREEN = createColorFormat('#00ff00');
 const RED = createColorFormat('#ff0000');
 const DEFAULT_NAME_COLOR = createColorFormat('#ffffff');
 
+/**
+ * Parse names from the kto response body.
+ * Supports two formats:
+ * - Long format (kto / kto l): each person on a separate line with descriptions and commas
+ * - Short format (kto k): names in columns separated by 2+ spaces, no commas
+ * Leading/trailing * is stripped from names.
+ */
+export function parseKtoNames(body: string): string[] {
+    const names: string[] = [];
+    const lines = body.split('\n');
+
+    // Detect format: long format has commas (descriptions), short format doesn't
+    const isShortFormat = !body.includes(',');
+
+    if (isShortFormat) {
+        // Short/column format: names separated by 2+ spaces
+        for (const l of lines) {
+            const trimmed = l.trim();
+            if (trimmed.length === 0) continue;
+            const parts = trimmed.split(/\s{2,}/);
+            for (const part of parts) {
+                const name = part.trim().replace(/^\*|\*$/g, '');
+                if (name.length > 0) {
+                    names.push(name);
+                }
+            }
+        }
+    } else {
+        // Long format: each person starts on a non-indented line
+        for (const l of lines) {
+            const trimmed = l.trimEnd();
+            if (trimmed.length === 0 || l.startsWith(' ') || trimmed.endsWith('.') || !trimmed.includes(',')) continue;
+            const firstWord = l.split(/\s/)[0];
+            const name = firstWord.replace(/^\*|\*$/g, '').replace(/,+$/, '');
+            if (name.length > 0) {
+                names.push(name);
+            }
+        }
+    }
+
+    return names;
+}
+
 export default function initWhoCount(client: Client) {
     let lastCount: number | null = null;
     let previousNames: string[] = [];
@@ -61,48 +104,6 @@ export default function initWhoCount(client: Client) {
             return createColorFormat(guildColorHex);
         }
         return DEFAULT_NAME_COLOR;
-    }
-
-    /**
-     * Parse names from the kto response body.
-     * Supports two formats:
-     * - Long format (kto / kto l): each person on a separate line with descriptions and commas
-     * - Short format (kto k): names in columns separated by 2+ spaces, no commas
-     * Leading/trailing * is stripped from names.
-     */
-    function parseKtoNames(body: string): string[] {
-        const names: string[] = [];
-        const lines = body.split('\n');
-
-        // Detect format: long format has commas (descriptions), short format doesn't
-        const isShortFormat = !body.includes(',');
-
-        if (isShortFormat) {
-            // Short/column format: names separated by 2+ spaces
-            for (const l of lines) {
-                const trimmed = l.trim();
-                if (trimmed.length === 0) continue;
-                const parts = trimmed.split(/\s{2,}/);
-                for (const part of parts) {
-                    const name = part.trim().replace(/^\*|\*$/g, '');
-                    if (name.length > 0) {
-                        names.push(name);
-                    }
-                }
-            }
-        } else {
-            // Long format: each person starts on a non-indented line
-            for (const l of lines) {
-                if (l.length === 0 || l.startsWith(' ') || l.endsWith('.') || !/,\s+\S+$/.test(l)) continue;
-                const firstWord = l.split(/\s/)[0];
-                const name = firstWord.replace(/^\*|\*$/g, '').replace(/,+$/, '');
-                if (name.length > 0) {
-                    names.push(name);
-                }
-            }
-        }
-
-        return names;
     }
 
     function isWordChar(ch: string | undefined): boolean {
