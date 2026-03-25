@@ -126,6 +126,7 @@ export interface KnownEvents {
     "output-sent": number;
     "buffer-sent": number;
     "mapMove": void;
+    "renderMapLocation": { locationId: number };
     "stepBack": void;
     "leadTo": number;
     "clearLeadTo": void;
@@ -330,6 +331,7 @@ export interface KnownEvents {
     "firebase.sync.pendingPassphrase": { categories: SyncCategory[] };
     "firebase.sync.error": { message: string };
     "firebase.listener.status": { active: boolean };
+    "flushLines": [{ text: string; type: string }[]];
 }
 
 export interface WalkerState {

@@ -18,8 +18,11 @@ export interface RecorderHooks<CommandOptions = unknown> {
     sendCommand(command: string, echo?: boolean, options?: CommandOptions): void;
     emit(event: string, ...args: any[]): void;
     notifySendCommand?(command: string, echo?: boolean, options?: CommandOptions): void;
-    getCurrentMapLocation?(): number | null;
-    setMapLocationSilently?(locationId: number): void;
+}
+
+export interface RecorderEventBus {
+    on(event: string, listener: (...args: any[]) => void): (() => void) | void;
+    emit(event: string, ...args: any[]): void;
 }
 
 export default class Recorder<CommandOptions = unknown> {
@@ -38,11 +41,17 @@ export default class Recorder<CommandOptions = unknown> {
     private loopEnabled = false;
     private loopStartIndex: number | null = null;
     private loopEndIndex: number | null = null;
+    private currentMapRoomId: number | null = null;
 
     constructor(
         private readonly hooks: RecorderHooks<CommandOptions>,
         private readonly storage: RecorderStorage,
-    ) {}
+        eventBus?: RecorderEventBus,
+    ) {
+        eventBus?.on('enterLocation', (ev: { id: number }) => {
+            this.currentMapRoomId = ev.id;
+        });
+    }
 
     handleIncoming(message: string) {
         if (this.isRecording) {
@@ -335,14 +344,11 @@ export default class Recorder<CommandOptions = unknown> {
     }
 
     private applyInitialLocation() {
-        if (typeof this.hooks.setMapLocationSilently !== 'function') {
-            return;
-        }
         const initialEvent = this.recordedMessages.find(event => typeof event.initialLocationId === 'number');
         const fallbackEvent = this.recordedMessages.find(event => typeof event.locationId === 'number');
         const locationId = initialEvent?.initialLocationId ?? fallbackEvent?.locationId;
         if (typeof locationId === 'number') {
-            this.hooks.setMapLocationSilently(locationId);
+            this.hooks.emit('renderMapLocation', { locationId });
         }
     }
 
@@ -375,11 +381,7 @@ export default class Recorder<CommandOptions = unknown> {
     }
 
     private readCurrentLocation(): number | null {
-        if (typeof this.hooks.getCurrentMapLocation !== 'function') {
-            return null;
-        }
-        const location = this.hooks.getCurrentMapLocation();
-        return typeof location === 'number' ? location : null;
+        return this.currentMapRoomId;
     }
 
     private executeCurrent() {

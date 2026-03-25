@@ -126,6 +126,10 @@ export default class MapHelper {
         this.client.on("enterLocation", detail => this.handleNewLocation(detail as { room: any }));
         this.client.on("stepBack", () => this.pendingBindAbort?.abort());
 
+        this.client.on("renderMapLocation", (ev: { locationId: number }) => {
+            this.renderRoomByIdSilently(ev.locationId);
+        });
+
         this.client.on("gmcp.room.info", (eventDetail) => {
             this.setBlockable(false);
             this.gmcpPosition = eventDetail?.map;

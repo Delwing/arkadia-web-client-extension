@@ -50,7 +50,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
                 client.sendCommand(cmd, false);
             }
         }
-        if (client.clientAdapter.isCommandEchoEnabled()) {
+        if (client.clientAdapter.shouldEchoCommand()) {
             client.clientAdapter.output("→ '" + msg, 'command');
             client.clientAdapter.flushMessageBuffer();
         }
@@ -59,7 +59,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
     client.aliases.push({
         pattern: /^justaw (.*)$/,
         callback: (matches: RegExpMatchArray) => {
-            client.send('justaw ' + matches[1], true);
+            client.send('justaw ' + matches[1], false);
             lastLang = matches[1];
             characterStorage.set(STORAGE_KEY, lastLang);
         }

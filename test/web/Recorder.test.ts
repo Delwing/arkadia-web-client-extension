@@ -1,4 +1,15 @@
-import Recorder from '@web/Recorder';
+import {Recorder} from '@shared/recorder';
+
+const mockStorage = {
+  saveRecording: jest.fn(),
+  getRecording: jest.fn(),
+  getRecordingNames: jest.fn(),
+  deleteRecording: jest.fn(),
+};
+
+function createTestRecorder(hooks: any) {
+  return new Recorder(hooks, mockStorage);
+}
 
 describe('Recorder playback', () => {
   test('replayRecordedMessagesTimed echoes outgoing commands', () => {
@@ -6,10 +17,8 @@ describe('Recorder playback', () => {
       processIncomingData: jest.fn(),
       sendCommand: jest.fn(),
       emit: jest.fn(),
-      getCurrentMapLocation: jest.fn(),
-      setMapLocationSilently: jest.fn(),
     };
-    const recorder = new Recorder(hooks as any);
+    const recorder = createTestRecorder(hooks);
     recorder.setRecordedMessages([
       { message: 'look', timestamp: 0, direction: 'out' },
     ]);
@@ -24,37 +33,26 @@ describe('Recorder playback', () => {
       processIncomingData: jest.fn(),
       sendCommand: jest.fn(),
       emit: jest.fn(),
-      getCurrentMapLocation: jest.fn(),
-      setMapLocationSilently: jest.fn(),
     };
-    const recorder = new Recorder(hooks as any);
+    const recorder = createTestRecorder(hooks);
     recorder.setPlaybackSpeed(2);
     expect(hooks.emit).toHaveBeenCalledWith('playback.speed', 2);
   });
 
-  test('stores start location and applies it once during playback', async () => {
-    const getCurrentMapLocation = jest.fn()
-      .mockReturnValueOnce(3525)
-      .mockReturnValue(3527);
+  test('applies initial location via renderMapLocation event during playback', () => {
     const hooks = {
       processIncomingData: jest.fn(),
       sendCommand: jest.fn(),
       emit: jest.fn(),
-      getCurrentMapLocation,
-      setMapLocationSilently: jest.fn(),
     };
-    const recorder = new Recorder(hooks as any);
-    recorder.startRecording('demo');
-    recorder.handleIncoming('Some line');
-    await recorder.stopRecording(false);
+    const recorder = createTestRecorder(hooks);
 
-    const events = recorder.getRecordedMessages();
-    expect(events[0].initialLocationId).toBe(3525);
-    expect(events[0].locationId).toBe(3527);
+    recorder.setRecordedMessages([
+      { message: 'Some line', timestamp: 0, direction: 'in' as const, initialLocationId: 3525, locationId: 3527 },
+    ]);
 
     recorder.replayRecordedMessages();
 
-    expect(hooks.setMapLocationSilently).toHaveBeenCalledTimes(1);
-    expect(hooks.setMapLocationSilently).toHaveBeenCalledWith(3525);
+    expect(hooks.emit).toHaveBeenCalledWith('renderMapLocation', { locationId: 3525 });
   });
 });

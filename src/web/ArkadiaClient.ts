@@ -1,6 +1,6 @@
-import {RecordedEvent, getRecording} from './recordingStorage';
-import Recorder from './Recorder';
-import Client, {ClientAdapter} from "@client/Client";
+import {RecordedEvent, getRecording, saveRecording, getRecordingNames, deleteRecording} from './recordingStorage';
+import {Recorder} from "@shared/recorder";
+import {ClientAdapter} from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
 import {globalStorage} from "@modules/core/storage";
@@ -35,17 +35,12 @@ class ArkadiaClient implements ClientAdapter {
     private readonly gmcpStream: (data: string) => void;
     private readonly telnetOptionHandler: (optionData: string) => string;
     private readonly mccpHandler: MccpHandler;
-    private recorder: Recorder;
-    private autoRecorder: Recorder | null = null;
-    private readonly activeRecorders = new Set<Recorder>();
+    private recorder: Recorder<CommandOptions>;
+    private autoRecorder: Recorder<CommandOptions> | null = null;
+    private readonly activeRecorders = new Set<Recorder<CommandOptions>>();
     private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
-    private _client: Client | null = null;
-
-    setClient(client: Client): void {
-        this._client = client;
-    }
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -203,27 +198,8 @@ class ArkadiaClient implements ClientAdapter {
         return !this.isSocketOpen() || this.receivedFirstGmcp;
     }
 
-    /**
-     * Returns true if command echo is enabled in UI settings
-     */
-    isCommandEchoEnabled(): boolean {
-        return this.commandEcho;
-    }
-
-    /**
-     * Send a message through the WebSocket
-     */
-    private echoMessage(message: string): void {
-        const display = this._client ? this._client.ObjectManager.resolveObjectIds(message) : message;
-        this.output("→ " + display, 'command');
-    }
-
-    send(message: string, echo: boolean = true, options?: CommandOptions): void {
-        const shouldEcho = echo && this.commandEcho;
+    send(message: string, _echo?: boolean, options?: CommandOptions): void {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            if (shouldEcho && message) {
-                this.echoMessage(message);
-            }
             return;
         }
 
@@ -239,14 +215,15 @@ class ArkadiaClient implements ClientAdapter {
 
         try {
             this.socket.send(btoa(message + "\r\n"));
-            // Only echo commands if requested and we've received the first GMCP event
-            if (shouldEcho && this.receivedFirstGmcp && message) {
-                this.echoMessage(message);
-            }
         } catch (error) {
             console.error('Error sending message:', error);
             this.emit('error', error);
         }
+    }
+
+    shouldEchoCommand(): boolean {
+        if (!this.isSocketOpen()) return true;
+        return this.receivedFirstGmcp && this.commandEcho;
     }
 
     /**
@@ -295,46 +272,31 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     flushMessageBuffer() {
-        let groupCount = 0;
+        if (this.messageBuffer.length === 0) {
+            return;
+        }
+
+        const groups: { text: string; type: string }[] = [];
         let currentType: string | null = null;
         let currentText = "";
-
-        const flushCurrentGroup = () => {
-            if (currentType === null) {
-                return;
-            }
-
-            this.sendLine(currentText, currentType);
-            groupCount += 1;
-            currentType = null;
-            currentText = "";
-        }
 
         this.messageBuffer.forEach((message) => {
             if (message.type === currentType) {
                 currentText += message.text;
             } else {
-                flushCurrentGroup();
+                if (currentType !== null) {
+                    groups.push({ text: currentText, type: currentType });
+                }
                 currentType = message.type;
                 currentText = message.text;
             }
         });
-
-        flushCurrentGroup();
-
-        this.emit('output-sent', groupCount);
-        this.messageBuffer = []
-    }
-
-    private sendLine(text: string, type: string) {
-        if (this._client) {
-            const parts = this._client.onLine(text, type);
-            parts.forEach((part) => {
-                eventBus.on('output-sent', () => this.emit(`gmcp_msg.${type}`, part), {once: true})
-                this.output(part, type);
-            })
-
+        if (currentType !== null) {
+            groups.push({ text: currentText, type: currentType });
         }
+
+        this.messageBuffer = [];
+        this.emit('flushLines', groups);
     }
 
     // -- RECORDER -- //
@@ -474,43 +436,34 @@ class ArkadiaClient implements ClientAdapter {
     }
 
     private createRecorder(auto: boolean) {
-        const recorder = new Recorder({
+        const recorder = new Recorder<CommandOptions>({
             processIncomingData: (d, opts) => this.processIncomingData(d, opts),
             sendCommand: (cmd, echo, options) => this.send(cmd, echo, options),
             emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
-            getCurrentMapLocation: () => {
-                const id = this._client?.Map?.currentRoom?.id;
-                return typeof id === 'number' ? id : null;
+            notifySendCommand: (command, echo = false, options) => {
+                eventBus.emit('sendCommand', { command, echo: echo ?? false, options });
             },
-            setMapLocationSilently: (locationId: number) => {
-                const map = this._client?.Map;
-                if (!map || typeof locationId !== 'number') {
-                    return;
-                }
-                if (typeof map.renderRoomByIdSilently === 'function') {
-                    map.renderRoomByIdSilently(locationId);
-                    return;
-                }
-                if (typeof map.renderRoomById === 'function') {
-                    map.renderRoomById(locationId, false);
-                }
-            }
-        });
+        }, {
+            saveRecording,
+            getRecording,
+            getRecordingNames,
+            deleteRecording,
+        }, eventBus);
         return recorder;
     }
 
-    private registerRecorder(recorder: Recorder) {
+    private registerRecorder(recorder: Recorder<CommandOptions>) {
         this.activeRecorders.add(recorder);
     }
 
-    private unregisterRecorder(recorder: Recorder) {
+    private unregisterRecorder(recorder: Recorder<CommandOptions>) {
         this.activeRecorders.delete(recorder);
         if (this.autoRecorder === recorder) {
             this.autoRecorder = null;
         }
     }
 
-    private emitRecorderEvent(auto: boolean, recorder: Recorder, event: string, ...args: any[]) {
+    private emitRecorderEvent(auto: boolean, recorder: Recorder<CommandOptions>, event: string, ...args: any[]) {
         if (auto) {
             if (event === 'recording.start') {
                 this.emit('recording.auto.start', recorder.getCurrentRecordingName());

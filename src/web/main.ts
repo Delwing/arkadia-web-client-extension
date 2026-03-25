@@ -109,7 +109,6 @@ let mobileRadial: MobileCommandRadial | null = null;
 switchKeymap(getActiveKeymapId());
 
 const client = new Client(arkadiaClient);
-arkadiaClient.setClient(client);
 registerScripts(client);
 
 const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {

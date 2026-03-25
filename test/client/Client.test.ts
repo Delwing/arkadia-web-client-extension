@@ -85,7 +85,7 @@ beforeEach(() => {
   (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
   (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn();
-  (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn() };
+  (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn(), shouldEchoCommand: jest.fn(() => false), flushMessageBuffer: jest.fn(), emit: jest.fn() };
 });
 
 afterEach(() => {
@@ -168,8 +168,8 @@ test('sendCommand dispatches event and splits commands', async () => {
   await client.sendCommand('foo#bar');
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('foo#bar');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', true, undefined);
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'bar', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:foo', false, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'bar', false, undefined);
 });
 
 test('sendCommand leaves casing unchanged by default', async () => {
@@ -178,7 +178,7 @@ test('sendCommand leaves casing unchanged by default', async () => {
   await client.sendCommand('LOOK AROUND');
   expect(parseCommand).toHaveBeenCalledTimes(1);
   expect(parseCommand).toHaveBeenCalledWith('LOOK AROUND');
-  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:LOOK AROUND', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:LOOK AROUND', false, undefined);
 });
 
 test('sendCommand keeps casing for speech commands', async () => {
@@ -210,7 +210,7 @@ test('sendCommand preserves casing when requested', async () => {
   expect(parseCommand).toHaveBeenCalledWith('UPPER CASE');
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith(
     'parsed:UPPER CASE',
-    true,
+    false,
     {
       preserveCase: true,
     }
@@ -221,7 +221,7 @@ test('sendCommand allows empty command', async () => {
   const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('');
   expect(parseCommand).toHaveBeenCalledWith('');
-  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('parsed:', false, undefined);
 });
 
 test('sendCommand splits commands returned by parseCommand', async () => {
@@ -229,8 +229,8 @@ test('sendCommand splits commands returned by parseCommand', async () => {
   const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('e');
   expect(parseCommand).toHaveBeenCalledWith('e');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'foo', true, undefined);
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'bar', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'foo', false, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'bar', false, undefined);
 });
 
 test('sendCommand does not split # in direct user input', async () => {
@@ -238,7 +238,7 @@ test('sendCommand does not split # in direct user input', async () => {
   const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('foo#bar', true, undefined, false, true);
   expect((global as any).clientAdapterMock.send).toHaveBeenCalledTimes(1);
-  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('foo#bar', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenCalledWith('foo#bar', false, undefined);
 });
 
 test('sendCommand splits # when user input is transformed by parseCommand', async () => {
@@ -246,8 +246,8 @@ test('sendCommand splits # when user input is transformed by parseCommand', asyn
   const client = new Client((global as any).clientAdapterMock as any);
   await client.sendCommand('s', true, undefined, false, true);
   expect(parseCommand).toHaveBeenCalledWith('s');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'cmd1', true, undefined);
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'cmd2', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'cmd1', false, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'cmd2', false, undefined);
 });
 
 test('sendCommand prints echo commands locally', async () => {
@@ -303,13 +303,13 @@ test('sendCommand expands object shortcuts', async () => {
   ] as any);
 
   await client.sendCommand('zabij @1');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:zabij ob_5', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(1, 'parsed:zabij ob_5', false, undefined);
 
   await client.sendCommand('obejrzyj @A');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:obejrzyj ob_7', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(2, 'parsed:obejrzyj ob_7', false, undefined);
 
   await client.sendCommand('help @@');
-  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', true, undefined);
+  expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', false, undefined);
 });
 
 }); // describe('Client')

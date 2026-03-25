@@ -65,7 +65,7 @@ export interface ClientAdapter {
 
     emit(event: string, ...args: any[]): void;
 
-    isCommandEchoEnabled(): boolean;
+    shouldEchoCommand(): boolean;
 }
 
 export default class Client {
@@ -352,6 +352,21 @@ export default class Client {
             this.buffer = []
         });
 
+        this.on('flushLines', (groups: { text: string; type: string }[]) => {
+            const deferred: Array<() => void> = [];
+
+            for (const {text, type} of groups) {
+                const parts = this.onLine(text, type);
+                for (const part of parts) {
+                    deferred.push(() => this.sendEvent(`gmcp_msg.${type}` as any, part));
+                    this.clientAdapter.output(part, type);
+                }
+            }
+
+            this.sendEvent('output-sent', groups.length);
+            deferred.forEach(fn => fn());
+        });
+
         // Apply initial binds and uiSettings from storage
         const initialBinds = globalStorage.get('binds');
         if (initialBinds) applyBinds(initialBinds as any);
@@ -389,7 +404,15 @@ export default class Client {
     }
 
     send(command: string, echo: boolean = true, options?: CommandOptions) {
-        this.clientAdapter.send(command, echo, options)
+        if (echo && this.clientAdapter.shouldEchoCommand()) {
+            this.echoCommand(command);
+        }
+        this.clientAdapter.send(command, false, options)
+    }
+
+    private echoCommand(command: string): void {
+        const display = this.ObjectManager.resolveObjectIds(command);
+        this.clientAdapter.output("→ " + display, 'command');
     }
 
     support() {
@@ -560,7 +583,10 @@ export default class Client {
         } else {
             commandToSend = this.applyMoveMode(moveRes.direction)
         }
-        this.clientAdapter.send(commandToSend, echo, options)
+        if (echo && this.clientAdapter.shouldEchoCommand()) {
+            this.echoCommand(commandToSend);
+        }
+        this.clientAdapter.send(commandToSend, false, options)
 
         // Execute post-walk commands if original command was a direction or map moved
         if (isOriginalDirection || moveRes.moved) {
