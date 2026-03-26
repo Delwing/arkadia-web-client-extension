@@ -6,7 +6,7 @@ import type { BindAction, BindMode, HelperBind, HelperStatus } from "@modules/he
 import { getHelperBinds } from "@modules/helper/helperBindRegistry";
 
 const STORAGE_KEY = 'arkadia.helperBinds';
-const HELPER_BASE_PATH = '/helper/arkadia-helper';
+const HELPER_BASE_PATH = `${import.meta.env.BASE_URL}helper/arkadia-helper`;
 
 function getDownloadUrl(): { url: string; label: string } | null {
     const ua = navigator.userAgent.toLowerCase();
