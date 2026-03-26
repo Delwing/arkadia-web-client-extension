@@ -1,7 +1,7 @@
 import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
-import {isDirection} from "@shared/map/directions";
 import {Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
+import MovementManager from "./MovementManager";
 import {formatLabel, FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
@@ -93,6 +93,7 @@ export default class Client {
     commandLineSuggestions: string[] = [];
     readonly SoundManager = new SoundManager(this);
     public readonly notificationManager = new NotificationManager();
+    public readonly movementManager = new MovementManager(this);
     aliases: { pattern: RegExp; callback: Function }[] = [];
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
@@ -130,11 +131,19 @@ export default class Client {
     buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
     suppressMapMoveEvent = false;
     suppressItemEvaluation = false;
-    moveMode = 0;
-    carriageMode = false;
     moveModeButton?: HTMLInputElement | HTMLButtonElement;
-    preWalkCommands: string[] = [];
-    postWalkCommands: string[] = [];
+
+    get moveMode() { return this.movementManager.moveMode; }
+    set moveMode(v: number) { this.movementManager.moveMode = v; }
+
+    get carriageMode() { return this.movementManager.carriageMode; }
+    set carriageMode(v: boolean) { this.movementManager.carriageMode = v; }
+
+    get preWalkCommands() { return this.movementManager.preWalkCommands; }
+    set preWalkCommands(v: string[]) { this.movementManager.preWalkCommands = v; }
+
+    get postWalkCommands() { return this.movementManager.postWalkCommands; }
+    set postWalkCommands(v: string[]) { this.movementManager.postWalkCommands = v; }
     herbManager?: HerbManagerApi;
     private commandHooks: CommandHook[] = [];
 
@@ -412,7 +421,7 @@ export default class Client {
         this.clientAdapter.send(command, false, options)
     }
 
-    private echoCommand(command: string): void {
+    echoCommand(command: string): void {
         const display = this.ObjectManager.resolveObjectIds(command);
         this.clientAdapter.output("→ " + display, 'command');
     }
@@ -497,7 +506,7 @@ export default class Client {
             this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
             return
         }
-        this.sendMovement(command, echo, options)
+        this.movementManager.sendMovement(command, echo, options)
     }
 
     sendGMCP(type: string, payload?: any) {
@@ -538,76 +547,6 @@ export default class Client {
             const obj = this.ObjectManager.getObjectsOnLocation().find(o => o.shortcut?.toLowerCase() === short.toLowerCase())
             return obj ? `ob_${obj.num}` : match
         })
-    }
-
-    private sendMovement(command: string, echo: boolean, options?: CommandOptions) {
-        // Check if command is already prefixed with przemknij/jedz - extract direction and move map
-        let direction: string
-        let movePrefix = ''
-
-        if (command.startsWith('przemknij z druzyna ')) {
-            direction = command.substring(20)
-            movePrefix = 'przemknij z druzyna '
-        } else if (command.startsWith('przemknij ')) {
-            direction = command.substring(10)
-            movePrefix = 'przemknij '
-        } else {
-            direction = command
-        }
-
-        // Check if original direction is a direction command (for pre/post walk)
-        const isOriginalDirection = isDirection(direction)
-
-        const moveRes = this.Map.move(direction)
-        if (moveRes.suppress) {
-            return
-        }
-        if (moveRes.moved) {
-            this.Map.setBlockable(true)
-        }
-
-        // Execute pre-walk commands if original command was a direction or map moved
-        if (isOriginalDirection || moveRes.moved) {
-            for (const cmd of this.preWalkCommands) {
-                this.sendCommand(cmd, echo, options)
-            }
-        }
-
-        // Determine command to send:
-        // - If already prefixed, apply same prefix to resolved direction
-        // - If map moved, apply move mode to resolved direction
-        // - Otherwise send resolved direction as-is
-        let commandToSend: string
-        if (movePrefix) {
-            commandToSend = movePrefix + moveRes.direction
-        } else if (moveRes.moved) {
-            commandToSend = this.applyMoveModePrefix(moveRes.direction)
-        } else {
-            commandToSend = this.applyMoveMode(moveRes.direction)
-        }
-        if (echo && this.clientAdapter.shouldEchoCommand()) {
-            this.echoCommand(commandToSend);
-        }
-        this.clientAdapter.send(commandToSend, false, options)
-
-        // Execute post-walk commands if original command was a direction or map moved
-        if (isOriginalDirection || moveRes.moved) {
-            for (const cmd of this.postWalkCommands) {
-                this.sendCommand(cmd, echo, options)
-            }
-        }
-    }
-
-    private applyMoveMode(cmd: string): string {
-        if (!isDirection(cmd)) return cmd
-        return this.applyMoveModePrefix(cmd)
-    }
-
-    private applyMoveModePrefix(cmd: string): string {
-        if (this.carriageMode) return `jedz na ${cmd}`
-        if (this.moveMode === 1) return `przemknij ${cmd}`
-        if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`
-        return cmd
     }
 
     onLine(line: string, type: string): AnsiAwareBuffer[] {
