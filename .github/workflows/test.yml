@@ -76,6 +76,7 @@ jobs:
 
   build-helper:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -242,8 +243,8 @@ jobs:
           reporter: jest-junit
 
   deploy:
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     needs: [build, build-helper, unit-test, e2e-test]
+    if: always() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.build.result == 'success' && needs.unit-test.result == 'success' && needs.e2e-test.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -259,12 +260,15 @@ jobs:
           name: dist
           path: dist
       - name: Download helper binaries
+        continue-on-error: true
+        id: download-helpers
         uses: actions/download-artifact@v7
         with:
           pattern: helper-*
           path: dist/helper
           merge-multiple: true
       - name: Generate helper version file
+        if: steps.download-helpers.outcome == 'success'
         run: echo "$(git rev-parse --short HEAD)" > dist/helper/version.txt
       - name: Setup Pages
         uses: actions/configure-pages@v5
