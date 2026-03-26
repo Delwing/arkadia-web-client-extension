@@ -119,7 +119,9 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
     }, [helperConnection, sendBindsToHelper]);
 
     useEffect(() => {
-        helperConnection.probe().then(setStatus);
+        if (localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {
+            helperConnection.probe().then(setStatus);
+        }
     }, [helperConnection]);
 
     useEffect(() => {
