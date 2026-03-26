@@ -3,6 +3,7 @@ import {colorString, createColorFormat} from "@modules/core/Colors";
 import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import {getKillData} from "./kill";
 
 const HEADER_COLOR = createColorFormat("#90ee90");
 const SECTION_COLOR = createColorFormat("#ffa500");
@@ -180,7 +181,6 @@ export function getFormattedPostepyTable(): AnsiAwareBuffer | null {
 
 export default class ImproveCounter {
     private client: Client;
-    private killCounter: any;
     private entries: ImproveEntry[] = [];
     private lifetime: { date: string; count: number; noFormCount?: number }[] = [];
     private lifetimeEnabled = true;
@@ -197,9 +197,8 @@ export default class ImproveCounter {
     private stateForm: number = 0;
     private optionsForm: number = 0;
     private selfPersisting = false;
-    constructor(client: Client, killCounter: any) {
+    constructor(client: Client) {
         this.client = client;
-        this.killCounter = killCounter;
         improveCounterInstance = this;
 
         const initialData = characterStorage.get('improve_counter');
@@ -264,10 +263,7 @@ export default class ImproveCounter {
     }
 
     private getKills() {
-        if (this.killCounter && typeof this.killCounter.getSessionTotals === "function") {
-            return this.killCounter.getSessionTotals();
-        }
-        return {my: 0, team: 0};
+        return getKillData()?.totals ?? {my: 0, team: 0};
     }
 
     getData(): ImproveData {
@@ -661,9 +657,13 @@ export default class ImproveCounter {
         lines.push(header("Postepy"));
         lines.push(pad());
 
+        const todayStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
+        const todayEntry = this.lifetime.find(e => e.date === todayStr);
+        const todayCount = (todayEntry?.count ?? 0) + (todayEntry?.noFormCount ?? 0);
+
         const currentLine = new AnsiAwareBuffer();
         currentLine.appendBuffer(colorString(`Aktualny czas   : ${formatDate(now)}`, TIME_COLOR));
-        currentLine.append(`    : sred ${formatDuration(avg)}       Dzisiaj: ${this.entries.length}`);
+        currentLine.append(`    : sred ${formatDuration(avg)}       Dzisiaj: ${todayCount}`);
         lines.push(pad(currentLine));
 
         lines.push(pad());
@@ -785,10 +785,9 @@ export default class ImproveCounter {
 
 export function initImproveCounter(
     client: Client,
-    killCounter: any,
     aliases?: { pattern: RegExp; callback: Function }[]
 ): ImproveCounter {
-    const counter = new ImproveCounter(client, killCounter);
+    const counter = new ImproveCounter(client);
     if (aliases) {
         aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
         aliases.push({pattern: /\/postepyw$/, callback: () => eventBus.emit("postepy.popup.open")});

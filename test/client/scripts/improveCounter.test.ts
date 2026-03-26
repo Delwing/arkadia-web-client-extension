@@ -43,11 +43,11 @@ describe('improve counter', () => {
     localStorage.clear();
     characterStorage.set('object_num','1');
     client = new FakeClient();
-    const killCounter = initKillCounter((client as unknown) as any, []);
+    initKillCounter((client as unknown) as any, []);
     characterStorage.set('kill_counter', {} as any);
     characterStorage.set('kill_counter_session', {} as any);
     aliases = [];
-    initImproveCounter((client as unknown) as any, killCounter, aliases);
+    initImproveCounter((client as unknown) as any, aliases);
     parse = (line: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     // aliases: /postepy(0), /postepy_popup(1), /postepy_reset(2), /postepy2(3), ...
@@ -98,7 +98,7 @@ describe('improve counter', () => {
     client.dispatch('reset', undefined);
     show();
     const printed = client.print.mock.calls[0][0]?.text;
-    expect(printed).toMatch(/Dzisiaj: 0/);
+    expect(printed).toMatch(/Dzisiaj: 3/);
     expect(printed).not.toMatch(/1\. male/);
   });
 
@@ -185,13 +185,13 @@ describe('improve counter', () => {
   test('adds missed improvements on login before lifetime loads', () => {
     jest.useFakeTimers();
     const c = new FakeClient();
-    const kill = initKillCounter((c as unknown) as any, []);
+    initKillCounter((c as unknown) as any, []);
     characterStorage.set('kill_counter', {} as any);
     characterStorage.set('kill_counter_session', {} as any);
     const als: { pattern: RegExp; callback: any }[] = [];
     characterStorage.remove('object_num');
     characterStorage.set('improve_counter', { level: 2, lastObjNum: 1 });
-    initImproveCounter((c as unknown) as any, kill, als);
+    initImproveCounter((c as unknown) as any, als);
     c.dispatch('gmcp.char.state', { improve: 4 });
     const showLife = als.find((a) => a.pattern.source === '\\/postepy2$')!.callback;
     showLife();
@@ -269,13 +269,13 @@ describe('improve counter', () => {
   test('does not re-add improvements when reconnecting with same object number', () => {
     // simulate existing data: level 2 already recorded for object 1
     const c = new FakeClient();
-    const kill = initKillCounter((c as unknown) as any, []);
+    initKillCounter((c as unknown) as any, []);
     characterStorage.set('kill_counter', {} as any);
     characterStorage.set('kill_counter_session', {} as any);
     const als: { pattern: RegExp; callback: any }[] = [];
     characterStorage.set('improve_counter', { level: 2, lastObjNum: 1 });
     characterStorage.set('improve_counter_lifetime', { entries: [{ date: '1970/1/1', count: 2 }] });
-    initImproveCounter((c as unknown) as any, kill, als);
+    initImproveCounter((c as unknown) as any, als);
     // same object number reports same level again
     characterStorage.set('object_num','1');
     // server replays improvements from 1 to 2 on reconnect

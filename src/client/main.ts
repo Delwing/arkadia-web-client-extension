@@ -221,9 +221,8 @@ export function registerScripts(client: Client) {
     initCarriage(client)
     initPausers(client)
     initIdz(client, aliases)
-    const killCounter = initKillCounter(client, aliases)
-    ;(client as any).killCounter = killCounter
-    initImproveCounter(client, killCounter, aliases)
+    initKillCounter(client, aliases)
+    initImproveCounter(client, aliases)
     initEscape(client)
     initTracking(client)
     initGps(client)
