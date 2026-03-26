@@ -157,13 +157,13 @@ func SetCaptureCallback(cb captureCallback) {
 
 // RunMessagePump creates the CGEventTap and runs the CFRunLoop.
 func RunMessagePump() {
-	eventMask := C.CGEventMaskBit(C.kCGEventKeyDown)
+	eventMask := C.CGEventMask(1 << C.kCGEventKeyDown)
 
 	tap := C.CGEventTapCreate(
 		C.kCGSessionEventTap,
 		C.kCGHeadInsertEventTap,
 		0, // active tap (can modify/suppress events)
-		C.CGEventMask(eventMask),
+		eventMask,
 		C.CGEventTapCallBack(C.hookCallback),
 		nil,
 	)
