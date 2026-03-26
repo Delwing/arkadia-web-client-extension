@@ -26,7 +26,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 }
 
 // Derive encryption key from passphrase using PBKDF2
-async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
     const encoder = new TextEncoder();
     const passphraseKey = await crypto.subtle.importKey(
         'raw',
