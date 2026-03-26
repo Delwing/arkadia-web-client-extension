@@ -42,6 +42,7 @@ import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/d
 import {createAttackController} from "./utils/attackController";
 import initAllyProtection from "./scripts/allyProtection";
 import SoundManager from "./SoundManager";
+import NotificationManager from "./NotificationManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {bindMatches} from "@modules/core/keymapTypes";
 
@@ -91,6 +92,7 @@ export default class Client {
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
     readonly SoundManager = new SoundManager(this);
+    public readonly notificationManager = new NotificationManager();
     aliases: { pattern: RegExp; callback: Function }[] = [];
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
@@ -674,30 +676,11 @@ export default class Client {
     }
 
     enableNotifications() {
-        if (typeof Notification === 'undefined') {
-            return
-        }
-        if ('serviceWorker' in navigator && navigator.serviceWorker) {
-            navigator.serviceWorker.register('sw.js').catch(() => {})
-        }
-        if (Notification.permission === 'default') {
-            Notification.requestPermission()
-        }
+        this.notificationManager.enableNotifications();
     }
 
     notify(message: string) {
-        if (typeof Notification === 'undefined') {
-            return
-        }
-        if (Notification.permission === 'granted') {
-            if ('serviceWorker' in navigator && navigator.serviceWorker) {
-                navigator.serviceWorker.ready
-                    .then((reg) => reg.showNotification(message))
-                    .catch(() => {})
-            } else {
-                new Notification(message)
-            }
-        }
+        this.notificationManager.notify(message);
     }
 
     prefix(rawLine: string, prefix: string) {
