@@ -139,7 +139,7 @@ test.describe('Session persistence across page reload', () => {
             expect(output, 'should still show Dzisiaj count after reload').toMatch(/Dzisiaj:\s*[1-9]/);
         });
 
-        test('session postepy reset when same character dies and respawns (objNum changes)', async ({page}) => {
+        test('Dzisiaj shows lifetime count even after character dies and respawns (objNum changes)', async ({page}) => {
             await page.goto('/');
             await waitForCommandInput(page);
             await ensureGameSocket(page);
@@ -163,12 +163,12 @@ test.describe('Session persistence across page reload', () => {
             await pushGmcp(page, 'char.info', { name: 'PostepyDeath', object_num: 44445 });
             await waitForCharacter(page, 'PostepyDeath');
 
-            // Verify session postepy are cleared (character died/respawned)
+            // Verify Dzisiaj still shows lifetime count (not session-only)
             await submitCommand(page, '/postepy');
             await waitForOutputContaining(page, 'Postepy');
 
             output = await getRecentOutput(page, 15);
-            expect(output, 'should show Dzisiaj: 0 after death').toMatch(/Dzisiaj:\s*0/);
+            expect(output, 'Dzisiaj should still show lifetime count after death').toMatch(/Dzisiaj:\s*[1-9]/);
         });
     });
 

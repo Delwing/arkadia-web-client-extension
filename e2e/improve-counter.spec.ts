@@ -150,6 +150,6 @@ test.describe('Improve counter', () => {
         await waitForOutputContaining(page, 'Postepy');
 
         output = await getRecentOutput(page, 20);
-        expect(output, 'should show Dzisiaj: 0 after respawn').toMatch(/Dzisiaj:\s*0/);
+        expect(output, 'should keep lifetime Dzisiaj count after respawn').toMatch(/Dzisiaj:\s*2/);
     });
 });

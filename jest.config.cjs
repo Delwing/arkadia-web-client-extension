@@ -1,9 +1,11 @@
+const reporters = ['default'];
+if (process.env.CI) {
+  reporters.push(['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }]);
+}
+
 module.exports = {
   testEnvironment: 'jsdom',
-  reporters: [
-    'default',
-    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
-  ],
+  reporters,
   roots: [
     '<rootDir>/test/client',
     '<rootDir>/test/web',

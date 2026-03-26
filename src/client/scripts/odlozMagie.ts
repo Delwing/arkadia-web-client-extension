@@ -28,10 +28,52 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
     const finalPattern = /^(Masz przy sobie|Nie masz nic przy sobie)/;
     const tag = 'odloz-magie';
 
+    function splitItems(text: string): string[] {
+        return text.split(/,\s+|\s+i\s+/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function findMaszPrzySobieItems(rawLine: string): string[] {
+        const match = rawLine.match(/^Masz przy sobie\s+(.+)\.?\s*$/);
+        if (!match) return [];
+        const items = splitItems(match[1].replace(/\.\s*$/, ''));
+        const result: string[] = [];
+        for (const item of items) {
+            for (const re of regexps) {
+                if (re.test(item)) {
+                    result.push(item);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    function buildCommands(items: string[], container: string): string[] {
+        return items.flatMap(it => {
+            if (corrections[it] === false) {
+                return [];
+            }
+            const item = corrections[it] || it;
+            const wlozCmd = `wloz ${item} do ${container}`;
+            const preCmd = preCommands[it];
+            return preCmd ? [preCmd, wlozCmd] : [wlozCmd];
+        });
+    }
+
     function run(container: string) {
         const found: string[] = [];
         const trigger = client.Triggers.registerTrigger(/^.*$/, (line) => {
             const rawLine = line.text;
+            if (finalPattern.test(rawLine)) {
+                client.Triggers.removeTrigger(trigger);
+                const carriedItems = findMaszPrzySobieItems(rawLine);
+                const allCommands = [
+                    ...buildCommands(found, container),
+                    ...buildCommands(carriedItems, container),
+                ];
+                client.FunctionalBind.set(allCommands.length > 0 ? allCommands.join(';') : null);
+                return line;
+            }
             regexps.forEach((re, idx) => {
                 if (re.test(rawLine)) {
                     const item = patterns[idx];
@@ -40,32 +82,6 @@ export default async function initOdlozMagie(client: Client, aliases?: { pattern
                     }
                 }
             });
-            if (finalPattern.test(rawLine)) {
-                client.Triggers.removeTrigger(trigger);
-                if (found.length > 0) {
-                    const commands = found
-                        .flatMap(it => {
-                            // Check if item should be skipped or corrected
-                            if (corrections[it] === false) {
-                                return [];
-                            }
-                            const item = corrections[it] || it;
-                            const wlozCmd = `wloz ${item} do ${container}`;
-                            // Check if item needs a pre-command
-                            const preCmd = preCommands[it];
-                            return preCmd ? [preCmd, wlozCmd] : [wlozCmd];
-                        });
-
-                    if (commands.length > 0) {
-                        client.FunctionalBind.set(commands.join(';'));
-                    } else {
-                        client.FunctionalBind.set(null);
-                    }
-                } else {
-                    client.FunctionalBind.set(null);
-                }
-                return line;
-            }
             return line;
         }, tag);
         client.sendCommand('i');
