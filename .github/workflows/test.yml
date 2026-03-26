@@ -231,7 +231,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs: [build, build-helper]
+    needs: [build, build-helper, unit-test, e2e-test]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
