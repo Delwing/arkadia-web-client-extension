@@ -75,28 +75,40 @@ jobs:
           retention-days: 7
 
   build-helper:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - goos: windows
+          - runner: ubuntu-latest
+            goos: windows
             goarch: amd64
             suffix: '.exe'
-          - goos: windows
+            cgo: '0'
+          - runner: ubuntu-latest
+            goos: windows
             goarch: arm64
             suffix: '.exe'
-          - goos: darwin
+            cgo: '0'
+          - runner: macos-latest
+            goos: darwin
             goarch: amd64
             suffix: ''
-          - goos: darwin
+            cgo: '1'
+          - runner: macos-latest
+            goos: darwin
             goarch: arm64
             suffix: ''
-          - goos: linux
+            cgo: '1'
+          - runner: ubuntu-latest
+            goos: linux
             goarch: amd64
             suffix: ''
-          - goos: linux
+            cgo: '0'
+          - runner: ubuntu-latest
+            goos: linux
             goarch: arm64
             suffix: ''
+            cgo: '0'
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v5
@@ -108,7 +120,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: '0'
+          CGO_ENABLED: ${{ matrix.cgo }}
         run: |
           COMMIT=$(git rev-parse --short HEAD)
           LDFLAGS="-s -w -X main.Version=$COMMIT"

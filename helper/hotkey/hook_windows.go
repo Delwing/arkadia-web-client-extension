@@ -203,6 +203,12 @@ func UninstallHook() {
 	}
 }
 
+// PlatformGrab is a no-op on Windows — the global hook sees all keys.
+func PlatformGrab(mods Modifier, vk KeyCode) error { return nil }
+
+// PlatformUngrab is a no-op on Windows.
+func PlatformUngrab(mods Modifier, vk KeyCode) {}
+
 // RunMessagePump runs the Windows message pump. This must run on the same
 // thread that installed the hook. It blocks until the hook is uninstalled.
 func RunMessagePump() {

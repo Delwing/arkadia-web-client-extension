@@ -1,6 +1,7 @@
 package hotkey
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 	"sync"
@@ -79,6 +80,10 @@ func (m *Manager) Register(bind protocol.Bind) error {
 
 	m.Unregister(bind.ID)
 
+	if err := PlatformGrab(mods, vk); err != nil {
+		return fmt.Errorf("grab %s: %w", bind.Key, err)
+	}
+
 	reg := &registration{bind: bind, vk: vk, mods: mods}
 
 	m.mu.Lock()
@@ -92,19 +97,28 @@ func (m *Manager) Register(bind protocol.Bind) error {
 // Unregister removes a hotkey registration.
 func (m *Manager) Unregister(id string) {
 	m.mu.Lock()
-	_, ok := m.registrations[id]
+	reg, ok := m.registrations[id]
 	if ok {
 		delete(m.registrations, id)
-		log.Printf("Unregistered hotkey: %s", id)
 	}
 	m.mu.Unlock()
+
+	if ok {
+		PlatformUngrab(reg.mods, reg.vk)
+		log.Printf("Unregistered hotkey: %s", id)
+	}
 }
 
 // UnregisterAll removes all hotkey registrations.
 func (m *Manager) UnregisterAll() {
 	m.mu.Lock()
+	regs := m.registrations
 	m.registrations = make(map[string]*registration)
 	m.mu.Unlock()
+
+	for _, reg := range regs {
+		PlatformUngrab(reg.mods, reg.vk)
+	}
 }
 
 // CaptureNextKey sets up a one-shot capture. The next full key combo
