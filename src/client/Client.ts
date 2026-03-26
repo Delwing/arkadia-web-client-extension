@@ -1,42 +1,22 @@
 import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
-import {Colors, mudletColorLine, setXtermPalette} from "@modules/core/Colors";
+import {Colors, setXtermPalette} from "@modules/core/Colors";
 import MovementManager from "./MovementManager";
+import CommandProcessor from "./CommandProcessor";
+import type { CommandHookCallback } from "./CommandProcessor";
 import {formatLabel, FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import {defaultSettings} from "@modules/core/defaultSettings";
-import {stripPolishCharacters} from "./stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
 
 import type {HerbManagerApi} from "./types/herbs";
 import type {CommandOptions} from "./scripts/commandPreserveCaseMode";
 
-/**
- * Command hook callback type.
- * Hooks are called early in sendCommand before any processing.
- * @param command - The original command string
- * @param echo - Whether command should be echoed
- * @param options - Command options
- * @returns Modified command string, null to suppress, or undefined to keep original
- */
-export type CommandHookCallback = (
-    command: string,
-    echo: boolean,
-    options?: CommandOptions
-) => string | null | undefined;
-
-/**
- * Registered command hook with metadata
- */
-export interface CommandHook {
-    id: string;
-    callback: CommandHookCallback;
-    priority: number;
-}
+export type { CommandHookCallback, CommandHook } from "./CommandProcessor";
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
 import {createAttackController} from "./utils/attackController";
@@ -94,7 +74,10 @@ export default class Client {
     readonly SoundManager = new SoundManager(this);
     public readonly notificationManager = new NotificationManager();
     public readonly movementManager = new MovementManager(this);
-    aliases: { pattern: RegExp; callback: Function }[] = [];
+    public readonly commandProcessor = new CommandProcessor(this);
+
+    get aliases() { return this.commandProcessor.aliases; }
+    set aliases(v) { this.commandProcessor.aliases = v; }
     lampBind = {key: "Digit4", ctrl: true} as {
         key: string;
         ctrl?: boolean;
@@ -145,7 +128,6 @@ export default class Client {
     get postWalkCommands() { return this.movementManager.postWalkCommands; }
     set postWalkCommands(v: string[]) { this.movementManager.postWalkCommands = v; }
     herbManager?: HerbManagerApi;
-    private commandHooks: CommandHook[] = [];
 
 
     constructor(clientAdapter: ClientAdapter) {
@@ -451,102 +433,19 @@ export default class Client {
     }
 
     async sendCommand(command: string, echo: boolean = true, options?: CommandOptions, skipMapParse: boolean = false, fromUserInput: boolean = false): Promise<void> {
-        // Run command hooks early - before any processing
-        for (const hook of this.commandHooks) {
-            const result = hook.callback(command, echo, options);
-            if (result === null) {
-                // Hook suppressed the command
-                return;
-            }
-            if (result !== undefined) {
-                // Hook modified the command
-                command = result;
-            }
-        }
-
-        if (command) {
-            command = stripPolishCharacters(command)
-        }
-        this.sendEvent('command', command)
-
-        let commandChanged = false
-        if (!skipMapParse) {
-            const parsedCommand = this.Map.parseCommand(command)
-            if (parsedCommand === null) {
-                return
-            }
-            commandChanged = parsedCommand !== command
-            command = parsedCommand
-        }
-        command = this.expandObjectShortcuts(command)
-        if (command.startsWith('echo ')) {
-            this.print(mudletColorLine(command.substring(5)))
-            return
-        }
-        const split = command.split((fromUserInput && !commandChanged) ? /;/ : /[#;]/)
-        if (split.length > 1) {
-            for (const part of split) {
-                await this.sendCommand(part, echo, options, skipMapParse || commandChanged)
-            }
-            return
-        }
-
-        for (const alias of this.aliases) {
-            const matches = command.match(alias.pattern)
-            if (matches) {
-                const result = alias.callback(matches)
-                if (result && typeof (result as Promise<unknown>).then === 'function') {
-                    await result
-                }
-                return
-            }
-        }
-
-        if (command.startsWith('/') && command.match(/^\/\w+/)) {
-            this.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`))
-            return
-        }
-        this.movementManager.sendMovement(command, echo, options)
+        return this.commandProcessor.sendCommand(command, echo, options, skipMapParse, fromUserInput);
     }
 
     sendGMCP(type: string, payload?: any) {
         this.clientAdapter.sendGmcp(type, payload)
     }
 
-    /**
-     * Register a command hook that can alter or suppress commands before processing.
-     * Hooks are called in priority order (higher priority first).
-     * @param id - Unique identifier for the hook
-     * @param callback - Hook callback function
-     * @param priority - Hook priority (default 0, higher runs first)
-     */
-    registerCommandHook(id: string, callback: CommandHookCallback, priority: number = 0): void {
-        // Remove existing hook with same id
-        this.unregisterCommandHook(id);
-        this.commandHooks.push({ id, callback, priority });
-        // Sort by priority (descending)
-        this.commandHooks.sort((a, b) => b.priority - a.priority);
+    registerCommandHook(id: string, callback: CommandHookCallback, priority?: number): void {
+        this.commandProcessor.registerCommandHook(id, callback, priority);
     }
 
-    /**
-     * Unregister a command hook by id
-     * @param id - Hook identifier to remove
-     * @returns true if hook was found and removed
-     */
     unregisterCommandHook(id: string): boolean {
-        const index = this.commandHooks.findIndex(h => h.id === id);
-        if (index !== -1) {
-            this.commandHooks.splice(index, 1);
-            return true;
-        }
-        return false;
-    }
-
-    private expandObjectShortcuts(command: string): string {
-        return command.replace(/@([A-Za-z0-9@]+)/g, (match, short) => {
-            const obj = this.ObjectManager.getObjectsOnLocation().find(o => o.shortcut?.toLowerCase() === short.toLowerCase())
-            return obj ? `ob_${obj.num}` : match
-        })
+        return this.commandProcessor.unregisterCommandHook(id);
     }
 
     onLine(line: string, type: string): AnsiAwareBuffer[] {
