@@ -25,11 +25,9 @@ export default class KeyBindingManager {
     ];
 
     private client: Client;
-    private helperConnection?: HelperConnection;
 
     constructor(client: Client, helperConnection?: HelperConnection) {
         this.client = client;
-        this.helperConnection = helperConnection;
         this.setupKeydownListener();
         this.setupBindsListener();
         this.setupHelperBindListener();
@@ -297,7 +295,6 @@ export default class KeyBindingManager {
     }
 
     setHelperConnection(helper: HelperConnection) {
-        this.helperConnection = helper;
         this.setupHelperListener(helper);
     }
 
