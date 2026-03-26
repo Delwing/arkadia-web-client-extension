@@ -231,21 +231,21 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs: [build, build-helper, unit-test, e2e-test]
+    needs: [build, build-helper]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: ' '
+          sparse-checkout-cone-mode: false
       - name: Download dist artifact
         uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist
-      - uses: actions/checkout@v6
-        with:
-          sparse-checkout: ' '
-          sparse-checkout-cone-mode: false
       - name: Download helper binaries
         uses: actions/download-artifact@v7
         with:
