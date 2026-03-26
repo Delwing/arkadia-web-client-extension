@@ -7,7 +7,9 @@ package hotkey
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreFoundation/CoreFoundation.h>
 
-extern CGEventRef hookCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon);
+extern CGEventRef darwinEventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon);
+
+static inline CGEventRef nullCGEvent() { return NULL; }
 */
 import "C"
 
@@ -71,8 +73,8 @@ func macFlagsToMods(flags C.CGEventFlags) Modifier {
 	return m
 }
 
-//export hookCallback
-func hookCallback(proxy C.CGEventTapProxy, evType C.CGEventType, event C.CGEventRef, refcon unsafe.Pointer) C.CGEventRef {
+//export darwinEventTapCallback
+func darwinEventTapCallback(proxy C.CGEventTapProxy, evType C.CGEventType, event C.CGEventRef, refcon unsafe.Pointer) C.CGEventRef {
 	if evType != C.kCGEventKeyDown {
 		return event
 	}
@@ -95,12 +97,12 @@ func hookCallback(proxy C.CGEventTapProxy, evType C.CGEventType, event C.CGEvent
 			darwinCapCb = nil
 			darwinCapMu.Unlock()
 			go capCb(KeyEvent{})
-			return C.CGEventRef(nil) // suppress
+			return C.nullCGEvent() // suppress
 		}
 		darwinCapCb = nil
 		darwinCapMu.Unlock()
 		go capCb(ke)
-		return C.CGEventRef(nil) // suppress
+		return C.nullCGEvent() // suppress
 	}
 	darwinCapMu.Unlock()
 
@@ -110,7 +112,7 @@ func hookCallback(proxy C.CGEventTapProxy, evType C.CGEventType, event C.CGEvent
 	darwinMu.Unlock()
 
 	if cb != nil && cb(ke) {
-		return C.CGEventRef(nil) // suppress
+		return C.nullCGEvent() // suppress
 	}
 
 	return event
@@ -164,7 +166,7 @@ func RunMessagePump() {
 		C.kCGHeadInsertEventTap,
 		0, // active tap (can modify/suppress events)
 		eventMask,
-		C.CGEventTapCallBack(C.hookCallback),
+		C.CGEventTapCallBack(C.darwinEventTapCallback),
 		nil,
 	)
 	if tap == 0 {
