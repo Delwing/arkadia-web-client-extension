@@ -15,6 +15,7 @@ import eventBus from "@modules/core/eventBus";
 import {preloadHowler, resumeAudioContext} from "@client/SoundManager";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
+import {HelperConnection} from "@modules/helper/HelperConnection";
 import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
 import {getContextMenuEntries as getPluginContextMenuEntries} from "@modules/core/pluginUiRegistry";
 import {Dropdown, Modal} from 'bootstrap';
@@ -51,6 +52,7 @@ import Shortcuts from "./options/Shortcuts.tsx"
 import LocationNotes from "./options/LocationNotes.tsx"
 import LocationNoteEditor from "./LocationNoteEditor.tsx"
 import ButtonsSettings from "./options/ButtonsSettings.tsx"
+import HelperSettings from "./options/HelperSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
 import {copyOutputAsImage, saveOutputAsHtml} from "./copyOutputAsImage";
@@ -111,6 +113,30 @@ switchKeymap(getActiveKeymapId());
 
 const client = new Client(arkadiaClient);
 registerScripts(client);
+
+// Helper connection (optional companion app)
+const helperConnection = new HelperConnection();
+client.keyBindingManager.setHelperConnection(helperConnection);
+
+helperConnection.onStateChange((state) => {
+    if (state === 'connected') {
+        helperConnection.send({
+            type: 'set_window_match',
+            patterns: ['Arkadia', 'arkadia.rpg.pl']
+        });
+    }
+});
+
+// Auto-connect: probe first, launch if not running
+if (localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {
+    helperConnection.probe().then(status => {
+        if (status) {
+            helperConnection.connect();
+        } else {
+            helperConnection.launch();
+        }
+    });
+}
 
 const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {
     if (typeof command !== 'string') {
@@ -958,6 +984,23 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Helper bind support for directions
+client.on('helperBind', (bindName) => {
+    const dirMatch = bindName.match(/^dir_(.+)$/);
+    if (dirMatch) {
+        const dir = dirMatch[1];
+        if (dir === 'special') {
+            const exits = client.Map.currentRoom?.specialExits ?? {};
+            const first = Object.keys(exits)[0];
+            if (first) {
+                eventBus.emit('sendCommand', {command: first});
+            }
+        } else {
+            client.sendCommand(dir);
+        }
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Request persistent storage
     if (navigator.storage?.persist) {
@@ -1041,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const peopleBrowserButton = document.getElementById('people-browser-button') as HTMLButtonElement | null;
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const mobileRadialButton = document.getElementById('mobile-radial-button') as HTMLButtonElement | null;
+    const helperButton = document.getElementById('helper-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
@@ -1066,6 +1110,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutsModal = shortcutsModalElement ? new Modal(shortcutsModalElement) : null;
     const locationNotesModalElement = document.getElementById('location-notes-modal');
     const locationNotesModal = locationNotesModalElement ? new Modal(locationNotesModalElement) : null;
+    const helperModalElement = document.getElementById('helper-modal');
+    const helperModal = helperModalElement ? new Modal(helperModalElement) : null;
     const mobileButtonsModalElement = document.getElementById('mobile-buttons-modal');
     const mobileButtonsModal = mobileButtonsModalElement ? new Modal(mobileButtonsModalElement) : null;
     const mobileRadialModalElement = document.getElementById('mobile-radial-modal');
@@ -1361,6 +1407,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (helperButton && helperModal) {
+        helperButton.addEventListener('click', () => {
+            helperModal.show();
+        });
+    }
+
     if (shareLocationButton && locationQrImage && locationShareModal) {
         shareLocationButton.addEventListener('click', () => {
             const roomId = client.Map.currentRoom?.id;
@@ -1619,6 +1671,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileRadialRoot = document.getElementById('mobile-radial-options');
     if (mobileRadialRoot) {
         createRoot(mobileRadialRoot).render(createElement(MobileRadialCommands));
+    }
+
+    const helperRoot = document.getElementById('helper-options');
+    if (helperRoot) {
+        createRoot(helperRoot).render(createElement(HelperSettings, { helperConnection }));
     }
 
     // Mount Layout Manager (includes all dockable popups)

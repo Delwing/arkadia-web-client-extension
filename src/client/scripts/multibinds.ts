@@ -357,6 +357,19 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         }
     });
 
+    // Helper bind support for roomBind and drinkable
+    client.on('helperBind', (bindName) => {
+        if (bindName === 'roomBind') {
+            const room = client.Map.currentRoom as any;
+            if (room?.userData?.bind) {
+                client.Map.executeBind(room.userData.bind);
+            }
+        }
+        if (bindName === 'drinkable') {
+            client.sendCommand("napij sie do syta wody");
+        }
+    });
+
     if (aliases) {
         aliases.push({
             pattern: /^\/mbind (\d) (.+)$/,

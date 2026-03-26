@@ -288,6 +288,26 @@ export default function initEnemyBinds(
         }
     });
 
+    // Helper bind support for enemy attack/block
+    client.on('helperBind', (bindName) => {
+        const attackMatch = bindName.match(/^enemy(\d)$/);
+        if (attackMatch) {
+            const index = parseInt(attackMatch[1]) - 1;
+            const objectId = bindSlots[index];
+            if (objectId !== null && enabled && enabledSlots[index]) {
+                attackController.attackById(objectId);
+            }
+        }
+        const blockMatch = bindName.match(/^enemyBlock(\d)$/);
+        if (blockMatch) {
+            const index = parseInt(blockMatch[1]) - 1;
+            const objectId = bindSlots[index];
+            if (objectId !== null && enabled && enabledSlots[index]) {
+                client.sendCommand(`zablokuj ob_${objectId}`);
+            }
+        }
+    });
+
     list.push({
         pattern: /^\/nabindach$/,
         callback: () => {

@@ -215,6 +215,23 @@ export class FunctionalBindManager {
         window.addEventListener('keydown', (ev) => {
             this.handleKeyDown(ev);
         });
+
+        // Helper bind support
+        const catMap: Record<string, FunctionalBindCategory> = {
+            functional: 'default',
+            functionalGates: 'gates',
+            functionalTransport: 'transport',
+            functionalLoot: 'loot',
+        };
+        client.on('helperBind', (bindName) => {
+            const cat = catMap[bindName];
+            if (cat) {
+                const bind = this.categories.get(cat);
+                if (bind?.isActive()) {
+                    bind.execute();
+                }
+            }
+        });
     }
 
     private handleKeyDown(ev: KeyboardEvent) {

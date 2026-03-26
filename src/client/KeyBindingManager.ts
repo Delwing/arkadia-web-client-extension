@@ -2,6 +2,9 @@ import type Client from "./Client";
 import { formatLabel } from "./scripts/functionalBind";
 import { globalStorage } from "@modules/core/storage";
 import { bindMatches } from "@modules/core/keymapTypes";
+import type { HelperConnection } from "@modules/helper/HelperConnection";
+import type { HotkeyMsg } from "@modules/helper/helperProtocol";
+import { registerHelperBind } from "@modules/helper/helperBindRegistry";
 
 type BindConfig = {
     key: string;
@@ -22,11 +25,98 @@ export default class KeyBindingManager {
     ];
 
     private client: Client;
+    private helperConnection?: HelperConnection;
 
-    constructor(client: Client) {
+    constructor(client: Client, helperConnection?: HelperConnection) {
         this.client = client;
+        this.helperConnection = helperConnection;
         this.setupKeydownListener();
         this.setupBindsListener();
+        this.setupHelperBindListener();
+        this.registerBuiltInHelperBinds();
+        if (helperConnection) {
+            this.setupHelperListener(helperConnection);
+        }
+    }
+
+    private setupHelperBindListener() {
+        this.client.on('helperBind', (bindName) => {
+            switch (bindName) {
+                case 'lamp':
+                    this.client.sendCommand('napelnij lampe olejem');
+                    break;
+                case 'attack': {
+                    const id = this.client.TeamManager.getAttackTargetId?.();
+                    if (id) {
+                        if (this.client.AllyProtection.isAlly(id)) {
+                            if (this.client.AllyProtection.checkPendingAttack(id, 'attackBind')) {
+                                this.client.sendCommand(`${this.client.attackCommand} ob_${id}`);
+                            } else {
+                                const info = this.client.AllyProtection.getAllyInfo(id);
+                                this.client.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
+                                this.client.AllyProtection.setPendingAttack(id, 'attackBind');
+                            }
+                        } else {
+                            this.client.sendCommand(`${this.client.attackCommand} ob_${id}`);
+                        }
+                    }
+                    break;
+                }
+                case 'support': {
+                    const targetId = this.client.TeamManager.getAttackTargetId?.();
+                    if (targetId && this.client.AllyProtection.isAlly(targetId)) {
+                        if (this.client.AllyProtection.checkPendingAttack(targetId, 'supportBind')) {
+                            this.client.support();
+                        } else {
+                            const info = this.client.AllyProtection.getAllyInfo(targetId);
+                            this.client.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
+                            this.client.AllyProtection.setPendingAttack(targetId, 'supportBind');
+                        }
+                    } else {
+                        this.client.support();
+                    }
+                    break;
+                }
+                case 'temp1':
+                    if (this.tempBinds[0]?.command) this.client.sendCommand(this.tempBinds[0].command);
+                    break;
+                case 'temp2':
+                    if (this.tempBinds[1]?.command) this.client.sendCommand(this.tempBinds[1].command);
+                    break;
+            }
+        });
+    }
+
+    private registerBuiltInHelperBinds() {
+        registerHelperBind({ id: 'lamp', label: 'Napełnij lampę', category: 'Ogólne' });
+        registerHelperBind({ id: 'attack', label: 'Atakuj', category: 'Walka' });
+        registerHelperBind({ id: 'support', label: 'Wesprzyj', category: 'Walka' });
+        registerHelperBind({ id: 'moveMode', label: 'Tryb ruchu', category: 'Ruch' });
+        registerHelperBind({ id: 'functional', label: 'Funkcyjny', category: 'Ogólne' });
+        registerHelperBind({ id: 'functionalGates', label: 'Funkcyjny (wrota)', category: 'Ogólne' });
+        registerHelperBind({ id: 'functionalTransport', label: 'Funkcyjny (transport)', category: 'Ogólne' });
+        registerHelperBind({ id: 'functionalLoot', label: 'Funkcyjny (zbieranie)', category: 'Ogólne' });
+        registerHelperBind({ id: 'roomBind', label: 'Bind w lokacji', category: 'Ruch' });
+        registerHelperBind({ id: 'drinkable', label: 'Napij się wody', category: 'Ogólne' });
+        registerHelperBind({ id: 'temp1', label: 'Tymczasowe 1', category: 'Ogólne' });
+        registerHelperBind({ id: 'temp2', label: 'Tymczasowe 2', category: 'Ogólne' });
+        registerHelperBind({ id: 'enemy1', label: 'Atakuj wroga 1', category: 'Walka' });
+        registerHelperBind({ id: 'enemy2', label: 'Atakuj wroga 2', category: 'Walka' });
+        registerHelperBind({ id: 'enemy3', label: 'Atakuj wroga 3', category: 'Walka' });
+        registerHelperBind({ id: 'enemyBlock1', label: 'Blokuj wroga 1', category: 'Walka' });
+        registerHelperBind({ id: 'enemyBlock2', label: 'Blokuj wroga 2', category: 'Walka' });
+        registerHelperBind({ id: 'enemyBlock3', label: 'Blokuj wroga 3', category: 'Walka' });
+        registerHelperBind({ id: 'dir_n', label: 'Kierunek: N', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_s', label: 'Kierunek: S', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_w', label: 'Kierunek: W', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_e', label: 'Kierunek: E', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_nw', label: 'Kierunek: NW', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_ne', label: 'Kierunek: NE', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_sw', label: 'Kierunek: SW', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_se', label: 'Kierunek: SE', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_u', label: 'Kierunek: Góra', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_d', label: 'Kierunek: Dół', category: 'Kierunki' });
+        registerHelperBind({ id: 'dir_special', label: 'Wyjście specjalne', category: 'Kierunki' });
     }
 
     setTempBind(index: number, command: string) {
@@ -204,5 +294,41 @@ export default class KeyBindingManager {
         // Apply initial binds from storage
         const initialBinds = globalStorage.get('binds');
         if (initialBinds) applyBinds(initialBinds as any);
+    }
+
+    setHelperConnection(helper: HelperConnection) {
+        this.helperConnection = helper;
+        this.setupHelperListener(helper);
+    }
+
+    private setupHelperListener(helper: HelperConnection) {
+        helper.onHotkey((msg: HotkeyMsg) => {
+            this.handleHelperHotkey(msg);
+        });
+    }
+
+    private handleHelperHotkey(msg: HotkeyMsg) {
+        this.client.emit('helperHotkey', msg.id, msg.key);
+
+        // Look up helper-specific binds from localStorage
+        try {
+            const raw = localStorage.getItem('arkadia.helperBinds');
+            if (raw) {
+                const helperBinds: { id: string; action: string; command?: string; targetBind?: string }[] = JSON.parse(raw);
+                const match = helperBinds.find(b => b.id === msg.id);
+                if (match) {
+                    if (match.action === 'bind' && match.targetBind) {
+                        this.executeBind(match.targetBind);
+                    } else if (match.command) {
+                        this.client.sendCommand(match.command);
+                    }
+                    return;
+                }
+            }
+        } catch { /* ignore parse errors */ }
+    }
+
+    private executeBind(bindName: string) {
+        this.client.emit('helperBind', bindName);
     }
 }

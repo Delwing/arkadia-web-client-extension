@@ -79,6 +79,10 @@ export default function initMoveMode(client: Client) {
         }
     });
 
+    client.on('helperBind', (bindName) => {
+        if (bindName === 'moveMode') toggle(true);
+    });
+
     client.on('gmcp.char.info', info => {
         if (info && typeof info.object_num !== 'undefined') {
             playerNum = info.object_num;

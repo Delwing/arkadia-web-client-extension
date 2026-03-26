@@ -335,6 +335,8 @@ export interface KnownEvents {
     "socket.incoming": string;
     "socket.outgoing": string;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];
+    "helperHotkey": [id: string, key: string];
+    "helperBind": string;
 }
 
 export interface WalkerState {
