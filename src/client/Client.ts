@@ -4,7 +4,7 @@ import {Colors, setXtermPalette} from "@modules/core/Colors";
 import MovementManager from "./MovementManager";
 import CommandProcessor from "./CommandProcessor";
 import type { CommandHookCallback } from "./CommandProcessor";
-import {formatLabel, FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
+import {FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener} from "./gmcp";
@@ -23,8 +23,8 @@ import {createAttackController} from "./utils/attackController";
 import initAllyProtection from "./scripts/allyProtection";
 import SoundManager from "./SoundManager";
 import NotificationManager from "./NotificationManager";
+import KeyBindingManager from "./KeyBindingManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {bindMatches} from "@modules/core/keymapTypes";
 
 type EventKey = keyof ClientEvents;
 type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
@@ -78,37 +78,28 @@ export default class Client {
 
     get aliases() { return this.commandProcessor.aliases; }
     set aliases(v) { this.commandProcessor.aliases = v; }
-    lampBind = {key: "Digit4", ctrl: true} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    attackBind = {key: "Digit1", ctrl: true} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
     attackCommand = DEFAULT_ATTACK_COMMAND;
     drawWeaponCommand = DEFAULT_DRAW_WEAPON_COMMAND;
-    supportBind = {key: "KeyQ", ctrl: true} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    moveModeBind = {key: "Backquote"} as {
-        key: string;
-        ctrl?: boolean;
-        alt?: boolean;
-        shift?: boolean;
-    };
-    customBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string }[] = [];
-    tempBinds: { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean; command: string | null }[] = [
-        { key: 'F4', command: null },
-        { key: 'F5', command: null },
-    ];
+
+    public readonly keyBindingManager = new KeyBindingManager(this);
+
+    get lampBind() { return this.keyBindingManager.lampBind; }
+    set lampBind(v) { this.keyBindingManager.lampBind = v; }
+
+    get attackBind() { return this.keyBindingManager.attackBind; }
+    set attackBind(v) { this.keyBindingManager.attackBind = v; }
+
+    get supportBind() { return this.keyBindingManager.supportBind; }
+    set supportBind(v) { this.keyBindingManager.supportBind = v; }
+
+    get moveModeBind() { return this.keyBindingManager.moveModeBind; }
+    set moveModeBind(v) { this.keyBindingManager.moveModeBind = v; }
+
+    get customBinds() { return this.keyBindingManager.customBinds; }
+    set customBinds(v) { this.keyBindingManager.customBinds = v; }
+
+    get tempBinds() { return this.keyBindingManager.tempBinds; }
+    set tempBinds(v) { this.keyBindingManager.tempBinds = v; }
     inLineProcess = false; //TODO figure out something else
     defaultColor = 255;
     buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
@@ -142,157 +133,6 @@ export default class Client {
         window.addEventListener('resize', () => this.updateContentWidth());
         globalStorage.onChange('uiSettings', () => this.updateContentWidth());
 
-        window.addEventListener('keydown', (ev) => {
-            if (bindMatches(ev, this.lampBind)) {
-                this.sendCommand('napelnij lampe olejem')
-                ev.preventDefault()
-            }
-            if (bindMatches(ev, this.attackBind)) {
-                const id = this.TeamManager.getAttackTargetId?.()
-                if (id) {
-                    if (this.AllyProtection.isAlly(id)) {
-                        if (this.AllyProtection.checkPendingAttack(id, 'attackBind')) {
-                            const command = `${this.attackCommand} ob_${id}`;
-                            this.sendCommand(command)
-                        } else {
-                            const info = this.AllyProtection.getAllyInfo(id);
-                            this.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-                            this.AllyProtection.setPendingAttack(id, 'attackBind');
-                        }
-                    } else {
-                        const command = `${this.attackCommand} ob_${id}`;
-                        this.sendCommand(command)
-                    }
-                }
-                ev.preventDefault()
-            }
-            if (bindMatches(ev, this.supportBind)) {
-                const targetId = this.TeamManager.getAttackTargetId?.()
-                if (targetId && this.AllyProtection.isAlly(targetId)) {
-                    if (this.AllyProtection.checkPendingAttack(targetId, 'supportBind')) {
-                        this.support()
-                    } else {
-                        const info = this.AllyProtection.getAllyInfo(targetId);
-                        this.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-                        this.AllyProtection.setPendingAttack(targetId, 'supportBind');
-                    }
-                } else {
-                    this.support()
-                }
-                ev.preventDefault()
-            }
-            this.customBinds.forEach(cb => {
-                if (bindMatches(ev, cb)) {
-                    this.sendCommand(cb.command)
-                    ev.preventDefault()
-                }
-            })
-            this.tempBinds.forEach(tb => {
-                if (!tb.command) {
-                    return
-                }
-                if (bindMatches(ev, tb)) {
-                    this.sendCommand(tb.command)
-                    ev.preventDefault()
-                }
-            })
-        })
-
-        const applyBinds = (b: any) => {
-            if (!b) {
-                return
-            }
-            const bind = b?.main
-            if (bind) {
-                this.FunctionalBind.updateOptions({
-                    key: bind.key,
-                    ctrl: bind.ctrl,
-                    alt: bind.alt,
-                    shift: bind.shift,
-                    label: formatLabel(bind)
-                })
-            }
-            // Per-category bind overrides (gates, transport) – fall back to main
-            const gatesBind = b?.mainGates || bind;
-            if (gatesBind) {
-                this.FunctionalBind.updateOptions({
-                    key: gatesBind.key,
-                    ctrl: gatesBind.ctrl,
-                    alt: gatesBind.alt,
-                    shift: gatesBind.shift,
-                    label: formatLabel(gatesBind)
-                }, 'gates')
-            }
-            const transportBind = b?.mainTransport || bind;
-            if (transportBind) {
-                this.FunctionalBind.updateOptions({
-                    key: transportBind.key,
-                    ctrl: transportBind.ctrl,
-                    alt: transportBind.alt,
-                    shift: transportBind.shift,
-                    label: formatLabel(transportBind)
-                }, 'transport')
-            }
-            const lootBind = b?.mainLoot || bind;
-            if (lootBind) {
-                this.FunctionalBind.updateOptions({
-                    key: lootBind.key,
-                    ctrl: lootBind.ctrl,
-                    alt: lootBind.alt,
-                    shift: lootBind.shift,
-                    label: formatLabel(lootBind)
-                }, 'loot')
-            }
-            const lamp = b?.lamp
-            if (lamp) {
-                this.lampBind = { ...lamp }
-            }
-            const attack = b?.attack
-            if (attack) {
-                this.attackBind = { ...attack }
-            }
-            const support = b?.support
-            if (support) {
-                this.supportBind = { ...support }
-            }
-            const moveMode = b?.moveMode
-            if (moveMode) {
-                this.moveModeBind = { ...moveMode }
-            }
-            const temp = b?.temp
-            if (Array.isArray(temp)) {
-                temp.forEach((tempBind: any, index: number) => {
-                    if (!tempBind || typeof tempBind !== 'object') {
-                        return
-                    }
-                    if (typeof tempBind.key !== 'string' || tempBind.key === '') {
-                        return
-                    }
-                    const current = this.tempBinds[index]
-                    if (current) {
-                        current.key = tempBind.key
-                        current.ctrl = tempBind.ctrl ? true : undefined
-                        current.alt = tempBind.alt ? true : undefined
-                        current.shift = tempBind.shift ? true : undefined
-                    } else {
-                        this.tempBinds[index] = {
-                            key: tempBind.key,
-                            ctrl: tempBind.ctrl ? true : undefined,
-                            alt: tempBind.alt ? true : undefined,
-                            shift: tempBind.shift ? true : undefined,
-                            command: null,
-                        }
-                    }
-                })
-            }
-            const custom = b?.custom
-            if (custom) {
-                this.customBinds = [...custom]
-            } else {
-                this.customBinds = []
-            }
-        }
-
         const initialSettings = characterStorage.get('settings');
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
         this.drawWeaponCommand = normalizeDrawWeaponCommand(initialSettings?.drawWeaponCommand);
@@ -301,10 +141,6 @@ export default class Client {
             const detail = (settings ?? defaultSettings) as Record<string, any>;
             this.attackCommand = normalizeAttackCommand(detail?.attackCommand);
             this.drawWeaponCommand = normalizeDrawWeaponCommand(detail?.drawWeaponCommand);
-        });
-
-        globalStorage.onChange('binds', (binds) => {
-            applyBinds(binds as any);
         });
 
         globalStorage.onChange('uiSettings', (uiSettings) => {
@@ -360,9 +196,7 @@ export default class Client {
             deferred.forEach(fn => fn());
         });
 
-        // Apply initial binds and uiSettings from storage
-        const initialBinds = globalStorage.get('binds');
-        if (initialBinds) applyBinds(initialBinds as any);
+        // Apply initial uiSettings from storage
         const initialUiSettings = globalStorage.get('uiSettings');
         if (initialUiSettings?.xtermPalette === 'arkadia' || initialUiSettings?.xtermPalette === 'proper') {
             setXtermPalette(initialUiSettings.xtermPalette);
@@ -382,18 +216,7 @@ export default class Client {
     }
 
     setTempBind(index: number, command: string) {
-        const bind = this.tempBinds[index]
-        if (!bind) {
-            return
-        }
-        const trimmed = command.trim()
-        bind.command = trimmed ? trimmed : null
-        const label = formatLabel(bind)
-        if (bind.command) {
-            this.println(`Tymczasowe przypisanie ${index + 1} (${label}) ustawione na: ${bind.command}`)
-        } else {
-            this.println(`Tymczasowe przypisanie ${index + 1} (${label}) zostalo wyczyszczone.`)
-        }
+        this.keyBindingManager.setTempBind(index, command);
     }
 
     send(command: string, echo: boolean = true, options?: CommandOptions) {
