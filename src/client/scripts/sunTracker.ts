@@ -209,8 +209,10 @@ export default function initSunTracker(client: Client) {
             observedHour: pendingEvent.observedHour,
             confirmedAt: Date.now(),
         });
+        const confirmedDomain = pendingEvent.domain;
         clearPending();
-        client.sendEvent("sunTracker.updated");
+        client.sendEvent("sunTracker.updated", { domain: confirmedDomain });
+        client.sendEvent("sunTracker.popup.open", { domain: confirmedDomain });
     }
 
     function printSunMessage(type: SunEventType): void {

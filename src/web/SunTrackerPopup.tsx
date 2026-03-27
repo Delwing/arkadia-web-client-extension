@@ -119,6 +119,11 @@ const SunTrackerPopup: React.FC = () => {
     const editRef = useRef<HTMLDivElement>(null);
     const todayRef = useRef<HTMLDivElement>(null);
     const needsScrollRef = useRef(false);
+    const [rangeStart, setRangeStart] = useState<number | null>(null);
+    const [rangeEdit, setRangeEdit] = useState<{ from: number; to: number; x: number; y: number } | null>(null);
+    const [rangeSunrise, setRangeSunrise] = useState('');
+    const [rangeSunset, setRangeSunset] = useState('');
+    const rangeRef = useRef<HTMLDivElement>(null);
 
     const loadEvents = useCallback(async (domain: Domain) => {
         const data = await getEventsForDomain(domain);
@@ -150,12 +155,16 @@ const SunTrackerPopup: React.FC = () => {
 
     // Refresh when a new observation is confirmed
     useEffect(() => {
-        return eventBus.on("sunTracker.updated", () => {
+        return eventBus.on("sunTracker.updated", (data) => {
             if (wrapperProps.isOpen) {
+                if (data && typeof data === 'object' && 'domain' in data && data.domain) {
+                    setActiveTab(data.domain);
+                }
+                needsScrollRef.current = true;
                 setRefreshKey(k => k + 1);
             }
         });
-    }, [wrapperProps.isOpen, activeTab]);
+    }, [wrapperProps.isOpen]);
 
     // Track clock data for next sun event display
     useEffect(() => {
@@ -182,6 +191,16 @@ const SunTrackerPopup: React.FC = () => {
             setActiveTab(lastDomainRef.current);
         }
     }, [wrapperProps.isOpen]);
+
+    // Handle domain from sunTracker.popup.open event (e.g. after czas confirmation)
+    useEffect(() => {
+        return eventBus.on("sunTracker.popup.open", (data) => {
+            if (data && typeof data === 'object' && 'domain' in data && data.domain) {
+                setActiveTab(data.domain);
+                needsScrollRef.current = true;
+            }
+        });
+    }, []);
 
     const handleClear = async () => {
         await clearEventsForDomain(activeTab);
@@ -244,6 +263,44 @@ const SunTrackerPopup: React.FC = () => {
         setRefreshKey(k => k + 1);
     };
 
+    const handleDayClick = (ev: React.MouseEvent, dayOfYear: number) => {
+        if (!ev.shiftKey) return;
+        ev.preventDefault();
+        if (rangeStart === null) {
+            setRangeStart(dayOfYear);
+            setRangeEdit(null);
+        } else {
+            const from = Math.min(rangeStart, dayOfYear);
+            const to = Math.max(rangeStart, dayOfYear);
+            if (from === to) {
+                setRangeStart(null);
+                return;
+            }
+            setRangeSunrise('');
+            setRangeSunset('');
+            setRangeEdit({ from, to, x: ev.clientX, y: ev.clientY });
+            setRangeStart(null);
+        }
+    };
+
+    const handleRangeFill = async () => {
+        if (!rangeEdit) return;
+        const sr = rangeSunrise.trim() !== '' ? parseInt(rangeSunrise, 10) : null;
+        const ss = rangeSunset.trim() !== '' ? parseInt(rangeSunset, 10) : null;
+        if ((sr === null || isNaN(sr)) && (ss === null || isNaN(ss))) return;
+        const now = Date.now();
+        for (let day = rangeEdit.from; day <= rangeEdit.to; day++) {
+            if (sr !== null && !isNaN(sr)) {
+                await storeConfirmedEvent({ domain: activeTab, type: 'sunrise', dayOfYear: day, observedHour: sr, confirmedAt: now });
+            }
+            if (ss !== null && !isNaN(ss)) {
+                await storeConfirmedEvent({ domain: activeTab, type: 'sunset', dayOfYear: day, observedHour: ss, confirmedAt: now });
+            }
+        }
+        setRangeEdit(null);
+        setRefreshKey(k => k + 1);
+    };
+
     // Close edit menu on click outside
     useEffect(() => {
         if (!editCell) return;
@@ -255,6 +312,24 @@ const SunTrackerPopup: React.FC = () => {
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [editCell]);
+
+    // Close range popup on click outside
+    useEffect(() => {
+        if (!rangeEdit) return;
+        const handler = (e: MouseEvent) => {
+            if (rangeRef.current && !rangeRef.current.contains(e.target as Node)) {
+                setRangeEdit(null);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [rangeEdit]);
+
+    // Clear range selection on tab switch
+    useEffect(() => {
+        setRangeStart(null);
+        setRangeEdit(null);
+    }, [activeTab]);
 
     const eventIndex = indexEvents(events);
     const monthRanges = getMonthRanges(activeTab);
@@ -351,7 +426,14 @@ const SunTrackerPopup: React.FC = () => {
                     </span>
                 </div>
                 <div style={{ color: 'var(--popup-text-dim)', fontSize: 11, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{`Potwierdzone: \u2600 ${sunriseCount}/${yearLength}  \u263E ${sunsetCount}/${yearLength}`}</span>
+                    <span>
+                        {`Potwierdzone: \u2600 ${sunriseCount}/${yearLength}  \u263E ${sunsetCount}/${yearLength}`}
+                        {rangeStart !== null && (
+                            <span style={{ color: 'var(--popup-data-gold)', marginLeft: 8 }}>
+                                {`Kliknij dzien koncowy (od ${rangeStart})`}
+                            </span>
+                        )}
+                    </span>
                     {nextSunLabel && <span>{`Nast: ${nextSunLabel}`}</span>}
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: 6 }}>
@@ -374,6 +456,7 @@ const SunTrackerPopup: React.FC = () => {
                                 display: 'grid',
                                 gridTemplateColumns: 'repeat(8, 1fr)',
                                 gap: 2,
+                                userSelect: 'none',
                             }}>
                                 {Array.from({ length: mr.length }, (_, d) => {
                                     const dayOfYear = mr.startDay + d;
@@ -383,20 +466,24 @@ const SunTrackerPopup: React.FC = () => {
                                     const hasSunset = dayData?.sunset !== undefined;
                                     const hasAny = hasSunrise || hasSunset;
                                     const isToday = dayOfYear === todayDayOfYear;
+                                    const isRangeSelected = rangeStart === dayOfYear;
+                                    const isInRange = rangeEdit && dayOfYear >= rangeEdit.from && dayOfYear <= rangeEdit.to;
+                                    const isEditing = editCell?.dayOfYear === dayOfYear;
 
                                     return (
                                         <div
                                             key={dayOfYear}
                                             ref={isToday ? todayRef : undefined}
+                                            onClick={(ev) => handleDayClick(ev, dayOfYear)}
                                             onContextMenu={(ev) => openEditMenu(ev, dayOfYear, dayData?.sunrise, dayData?.sunset)}
                                             style={{
                                                 padding: '2px 3px',
                                                 textAlign: 'center',
-                                                border: isToday ? '1px solid #cc9900' : `1px solid ${hasAny ? '#444' : '#2a2a2a'}`,
+                                                border: isEditing ? '1px solid var(--popup-data-gold)' : isRangeSelected ? '1px solid var(--popup-data-gold)' : isInRange ? '1px solid #996600' : isToday ? '1px solid #cc9900' : `1px solid ${hasAny ? '#444' : '#2a2a2a'}`,
                                                 borderRadius: 3,
                                                 fontSize: 10,
                                                 lineHeight: 1.3,
-                                                background: hasAny ? 'var(--popup-success-subtle-bg)' : 'var(--popup-subtle-bg)',
+                                                background: isEditing ? 'rgba(204, 153, 0, 0.3)' : isRangeSelected ? 'rgba(204, 153, 0, 0.3)' : isInRange ? 'rgba(204, 153, 0, 0.15)' : hasAny ? 'var(--popup-success-subtle-bg)' : 'var(--popup-subtle-bg)',
                                                 minWidth: 0,
                                                 cursor: 'context-menu',
                                             }}
@@ -478,6 +565,74 @@ const SunTrackerPopup: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setEditCell(null)}
+                                style={{ padding: '3px 8px', background: 'var(--popup-control-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-text-dim)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
+                            >
+                                Anuluj
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => { setRangeStart(editCell.dayOfYear); setEditCell(null); }}
+                            style={{ marginTop: 2, padding: '3px 8px', background: 'var(--popup-control-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-data-gold)', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', width: '100%' }}
+                        >
+                            Zakres od dnia {editCell.dayOfYear}...
+                        </button>
+                    </div>
+                )}
+                {rangeEdit && (
+                    <div
+                        ref={rangeRef}
+                        style={{
+                            position: 'fixed',
+                            left: rangeEdit.x,
+                            top: rangeEdit.y,
+                            background: 'var(--popup-bg)',
+                            border: '1px solid var(--popup-border-strong)',
+                            borderRadius: 4,
+                            padding: 8,
+                            zIndex: 10000,
+                            fontSize: 11,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                        }}
+                    >
+                        <div style={{ color: 'var(--popup-text-subtle)', marginBottom: 2 }}>Dni {rangeEdit.from} - {rangeEdit.to} ({rangeEdit.to - rangeEdit.from + 1})</div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--popup-data-gold)' }}>
+                            {'\u2600'}
+                            <input
+                                type="number"
+                                min={0}
+                                max={23}
+                                value={rangeSunrise}
+                                onChange={e => setRangeSunrise(e.target.value)}
+                                placeholder="-"
+                                style={{ width: 40, background: 'var(--popup-input-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-input-text)', padding: '2px 4px', fontSize: 11 }}
+                            />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--popup-data-blue)' }}>
+                            {'\u263E'}
+                            <input
+                                type="number"
+                                min={0}
+                                max={23}
+                                value={rangeSunset}
+                                onChange={e => setRangeSunset(e.target.value)}
+                                placeholder="-"
+                                style={{ width: 40, background: 'var(--popup-input-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-input-text)', padding: '2px 4px', fontSize: 11 }}
+                            />
+                        </label>
+                        <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+                            <button
+                                type="button"
+                                onClick={handleRangeFill}
+                                style={{ flex: 1, padding: '3px 8px', background: 'var(--popup-success-subtle-bg)', border: '1px solid var(--popup-success-border)', borderRadius: 3, color: 'var(--popup-success)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
+                            >
+                                Wypelnij
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRangeEdit(null)}
                                 style={{ padding: '3px 8px', background: 'var(--popup-control-bg)', border: '1px solid var(--popup-border-control)', borderRadius: 3, color: 'var(--popup-text-dim)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
                             >
                                 Anuluj

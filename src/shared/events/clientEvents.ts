@@ -322,8 +322,8 @@ export interface KnownEvents {
     "loot.ground.open": { items: GroundItem[] };
     "profession.popup.open": void;
     "profession.updated": void;
-    "sunTracker.popup.open": void;
-    "sunTracker.updated": void;
+    "sunTracker.popup.open": { domain?: "Empire" | "Ishtar" } | void;
+    "sunTracker.updated": { domain: "Empire" | "Ishtar" } | void;
     // Firebase real-time sync listener events
     "firebase.sync.metadata": FirebaseSyncMetadataPayload;
     "firebase.sync.applied": { categories: SyncCategory[] };
