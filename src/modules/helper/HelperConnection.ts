@@ -36,9 +36,11 @@ export class HelperConnection {
     }
 
     launch(): void {
-        const a = document.createElement('a');
-        a.href = 'arkadia://launch';
-        a.click();
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = 'arkadia://launch';
+        document.body.appendChild(iframe);
+        setTimeout(() => iframe.remove(), 1000);
         this.pollAndConnect();
     }
 
