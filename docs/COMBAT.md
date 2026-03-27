@@ -21,6 +21,7 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | `/x id` | Zaskocz obiekt o podanym id |
 | `/x` | Zaskocz cel oznaczony jako cel ataku |
 | `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |
+| `/z_all` | Atakuj wszystkich nie-druzunowych na lokacji (pomija sojusznikow) |
 
 ## Kolejka ataku
 
