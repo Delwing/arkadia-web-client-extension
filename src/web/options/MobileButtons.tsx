@@ -2,20 +2,19 @@ import {RefObject, useEffect, useRef, useState} from "react";
 import {Alert, Button, Form} from "react-bootstrap";
 import {
     applySettings,
-    ButtonSetting,
     createDefaultLayout,
     defaultBackground,
     defaultButtonGap,
     defaultButtonSize,
     defaultCols,
-    defaultFontColor,
     defaultOrder,
     defaultSettings,
     loadSettings,
-    MacroType,
     saveSettings,
     Settings,
 } from "../mobileButtonSettings";
+import type { MacroType, MobileButtonSetting } from "../buttonSettings";
+import { defaultFontColor } from "../buttonSettings";
 import {getTeamState} from "@modules/core/teamStateProvider";
 import {
     getRegisteredButtonMacros,
@@ -51,7 +50,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
 
 const directionOptions = ["nw","n","ne","w","e","sw","s","se","u","d"] as const;
 
-const emptySetting: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
+const emptySetting: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 function clampAlpha(value: number) {
     if (Number.isNaN(value)) return 0;
@@ -96,7 +95,7 @@ function rgbaFromHexAlpha(hex: string, alpha: number) {
     return `rgba(${r}, ${g}, ${b}, ${alphaRounded})`;
 }
 
-type SettingsMap = Record<string, ButtonSetting>;
+type SettingsMap = Record<string, MobileButtonSetting>;
 
 const modes: Mode[] = ['solo', 'team', 'leader'];
 
@@ -239,7 +238,7 @@ function MobileButtons() {
         setActive({ set: setName, id });
         setConfigOpen(true);
         const cfg = settings[setName].buttons[id] || defaultSettings[id] || emptySetting;
-        if (cfg.macro === 'kierunek') {
+        if (cfg.macroType === 'kierunek') {
             setSyncDirs(true);
         }
         ev.stopPropagation();
@@ -261,7 +260,7 @@ function MobileButtons() {
         }
     }
 
-    function update(setName: Mode, id: string, field: keyof ButtonSetting, value: any) {
+    function update(setName: Mode, id: string, field: keyof MobileButtonSetting, value: any) {
         setSettings(prev => ({
             ...prev,
             [setName]: {
@@ -280,7 +279,7 @@ function MobileButtons() {
                 const buttons: SettingsMap = { ...set.buttons };
                 set.order.forEach(id => {
                     const cfg = buttons[id] || defaultSettings[id] || emptySetting;
-                    if (cfg.macro === 'kierunek') {
+                    if (cfg.macroType === 'kierunek') {
                         buttons[id] = { ...cfg, [field]: value };
                     }
                 });
@@ -297,7 +296,7 @@ function MobileButtons() {
 
     function resetColor(setName: Mode, id: string) {
         const def = defaultSettings[id]?.color || emptySetting.color;
-        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+        if (syncDirs && (settings[setName].buttons[id]?.macroType === 'kierunek' || defaultSettings[id]?.macroType === 'kierunek')) {
             updateAllDirections('color', def);
         } else {
             update(setName, id, 'color', def);
@@ -306,7 +305,7 @@ function MobileButtons() {
 
     function resetActiveColor(setName: Mode, id: string) {
         const def = defaultSettings[id]?.activeColor || '#2fa7c5';
-        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+        if (syncDirs && (settings[setName].buttons[id]?.macroType === 'kierunek' || defaultSettings[id]?.macroType === 'kierunek')) {
             updateAllDirections('activeColor', def);
         } else {
             update(setName, id, 'activeColor', def);
@@ -315,7 +314,7 @@ function MobileButtons() {
 
     function resetFontColor(setName: Mode, id: string) {
         const def = defaultSettings[id]?.fontColor || defaultFontColor;
-        if (syncDirs && (settings[setName].buttons[id]?.macro === 'kierunek' || defaultSettings[id]?.macro === 'kierunek')) {
+        if (syncDirs && (settings[setName].buttons[id]?.macroType === 'kierunek' || defaultSettings[id]?.macroType === 'kierunek')) {
             updateAllDirections('fontColor', def);
         } else {
             update(setName, id, 'fontColor', def);
@@ -570,14 +569,14 @@ function MobileButtons() {
                                 <Form.Label>Makro</Form.Label>
                                 <Form.Select
                                     size="sm"
-                                    className={`mobile-button-macro ${!isButtonMacroAvailable(activeCfg.macro) ? 'border-warning' : ''}`}
-                                    value={activeCfg.macro}
+                                    className={`mobile-button-macro ${!isButtonMacroAvailable(activeCfg.macroType) ? 'border-warning' : ''}`}
+                                    value={activeCfg.macroType}
                                     onChange={e => {
                                         const val = e.target.value;
                                         if (val === 'empty') {
                                             makeBlank(active!.set, active!.id);
                                         } else {
-                                            update(active!.set, active!.id, 'macro', val);
+                                            update(active!.set, active!.id, 'macroType', val);
                                             if (val !== 'compound') {
                                                 update(active!.set, active!.id, 'steps', undefined);
                                             }
@@ -602,19 +601,19 @@ function MobileButtons() {
                                             </optgroup>
                                         ));
                                     })()}
-                                    {activeCfg.macro.startsWith('plugin:') && !isButtonMacroAvailable(activeCfg.macro) && (
-                                        <option value={activeCfg.macro} disabled>
-                                            {activeCfg.macro} (wtyczka niedostepna)
+                                    {activeCfg.macroType.startsWith('plugin:') && !isButtonMacroAvailable(activeCfg.macroType) && (
+                                        <option value={activeCfg.macroType} disabled>
+                                            {activeCfg.macroType} (wtyczka niedostepna)
                                         </option>
                                     )}
                                 </Form.Select>
                             </div>
-                            {!isButtonMacroAvailable(activeCfg.macro) && (
+                            {!isButtonMacroAvailable(activeCfg.macroType) && (
                                 <Form.Text className="text-warning">
                                     Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
                                 </Form.Text>
                             )}
-                            {activeCfg.macro !== 'empty' && (
+                            {activeCfg.macroType !== 'empty' && (
                                 <div className="mobile-button-config-row">
                                     <Form.Label>Etykieta</Form.Label>
                                     <Form.Control
@@ -628,7 +627,7 @@ function MobileButtons() {
                             )}
                         </div>
 
-                        {activeCfg.macro === "compound" && (
+                        {activeCfg.macroType === "compound" && (
                             <div className="mobile-button-config-section">
                                 <div className="mobile-button-config-section-title">Kroki</div>
                                 {(activeCfg.steps || []).map((step, index) => (
@@ -669,10 +668,10 @@ function MobileButtons() {
                                         <Form.Select
                                             size="sm"
                                             className="mb-1"
-                                            value={step.macro}
+                                            value={step.macroType}
                                             onChange={e => {
                                                 const steps = [...(activeCfg.steps || [])];
-                                                steps[index] = { ...steps[index], macro: e.target.value };
+                                                steps[index] = { ...steps[index], macroType: e.target.value };
                                                 update(active!.set, active!.id, 'steps', steps);
                                             }}
                                         >
@@ -695,7 +694,7 @@ function MobileButtons() {
                                                 ));
                                             })()}
                                         </Form.Select>
-                                        {step.macro === 'command' && (
+                                        {step.macroType === 'command' && (
                                             <Form.Control
                                                 as="textarea"
                                                 size="sm"
@@ -712,7 +711,7 @@ function MobileButtons() {
                                                 spellCheck={false}
                                             />
                                         )}
-                                        {step.macro === 'kierunek' && (
+                                        {step.macroType === 'kierunek' && (
                                             <Form.Select
                                                 size="sm"
                                                 value={step.direction || 'n'}
@@ -727,7 +726,7 @@ function MobileButtons() {
                                                 ))}
                                             </Form.Select>
                                         )}
-                                        {(step.macro === 'attackEnemy' || step.macro === 'blockEnemy') && (
+                                        {(step.macroType === 'attackEnemy' || step.macroType === 'blockEnemy') && (
                                             <Form.Select
                                                 size="sm"
                                                 value={step.enemySlot ?? 0}
@@ -749,7 +748,7 @@ function MobileButtons() {
                                     variant="outline-primary"
                                     className="w-100"
                                     onClick={() => {
-                                        const steps = [...(activeCfg.steps || []), { macro: 'command' as MacroType, command: '' }];
+                                        const steps = [...(activeCfg.steps || []), { macroType: 'command' as MacroType, command: '' }];
                                         update(active!.set, active!.id, 'steps', steps);
                                     }}
                                 >+ Dodaj krok</Button>
@@ -757,7 +756,7 @@ function MobileButtons() {
                         )}
 
                         {/* Appearance section */}
-                        {activeCfg.macro !== 'empty' && (
+                        {activeCfg.macroType !== 'empty' && (
                             <div className="mobile-button-config-section">
                                 <div className="mobile-button-config-section-title">Wyglad</div>
                                 <div className="mobile-button-color-row">
@@ -768,7 +767,7 @@ function MobileButtons() {
                                         value={activeCfg.color}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            if (syncDirs && activeCfg.macro === 'kierunek') {
+                                            if (syncDirs && activeCfg.macroType === 'kierunek') {
                                                 updateAllDirections('color', val);
                                             } else {
                                                 update(active!.set, active!.id, 'color', val);
@@ -785,7 +784,7 @@ function MobileButtons() {
                                         value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            if (syncDirs && activeCfg.macro === 'kierunek') {
+                                            if (syncDirs && activeCfg.macroType === 'kierunek') {
                                                 updateAllDirections('fontColor', val);
                                             } else {
                                                 update(active!.set, active!.id, 'fontColor', val);
@@ -794,7 +793,7 @@ function MobileButtons() {
                                     />
                                     <Button size="sm" variant="outline-secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
                                 </div>
-                                {activeCfg.macro === 'kierunek' && (
+                                {activeCfg.macroType === 'kierunek' && (
                                     <div className="mobile-button-color-row">
                                         <Form.Label>Kolor aktywny</Form.Label>
                                         <Form.Control
@@ -813,7 +812,7 @@ function MobileButtons() {
                                         <Button size="sm" variant="outline-secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
                                     </div>
                                 )}
-                                {activeCfg.macro === 'kierunek' && (
+                                {activeCfg.macroType === 'kierunek' && (
                                     <Form.Check
                                         type="checkbox"
                                         label="Synchronizuj kolory kierunkow"
@@ -825,7 +824,7 @@ function MobileButtons() {
                         )}
 
                         {/* Macro-specific options */}
-                        {activeCfg.macro === "kierunek" && (
+                        {activeCfg.macroType === "kierunek" && (
                             <div className="mobile-button-config-row">
                                 <Form.Label>Kierunek</Form.Label>
                                 <Form.Select
@@ -840,7 +839,7 @@ function MobileButtons() {
                                 </Form.Select>
                             </div>
                         )}
-                        {activeCfg.macro === "command" && (
+                        {activeCfg.macroType === "command" && (
                             <div className="mobile-button-config-row">
                                 <Form.Label>Komenda</Form.Label>
                                 <Form.Control
@@ -856,7 +855,7 @@ function MobileButtons() {
                                 />
                             </div>
                         )}
-                        {activeCfg.macro === "specialExit" && (
+                        {activeCfg.macroType === "specialExit" && (
                             <div className="mobile-button-config-section">
                                 <div className="mobile-button-config-section-title">Opcje</div>
                                 <Form.Check
@@ -879,7 +878,7 @@ function MobileButtons() {
                                 )}
                             </div>
                         )}
-                        {(activeCfg.macro === "attackEnemy" || activeCfg.macro === "blockEnemy") && (
+                        {(activeCfg.macroType === "attackEnemy" || activeCfg.macroType === "blockEnemy") && (
                             <div className="mobile-button-config-row">
                                 <Form.Label>Slot wroga</Form.Label>
                                 <Form.Select
@@ -894,8 +893,8 @@ function MobileButtons() {
                             </div>
                         )}
                         {/* Plugin macro config fields */}
-                        {activeCfg.macro.startsWith('plugin:') && (() => {
-                            const pluginMacro = pluginMacros.find(pm => pm.id === activeCfg.macro);
+                        {activeCfg.macroType.startsWith('plugin:') && (() => {
+                            const pluginMacro = pluginMacros.find(pm => pm.id === activeCfg.macroType);
                             if (!pluginMacro?.configFields?.length) return null;
                             const config = activeCfg.pluginConfig || {};
                             return (
@@ -954,8 +953,8 @@ function MobileButtons() {
                             );
                         })()}
                         {/* State labels and colors for stateful plugin macros */}
-                        {activeCfg.macro.startsWith('plugin:') && (() => {
-                            const states = getMacroStates(activeCfg.macro);
+                        {activeCfg.macroType.startsWith('plugin:') && (() => {
+                            const states = getMacroStates(activeCfg.macroType);
                             if (!states?.length) return null;
                             const config = activeCfg.pluginConfig || {};
                             const stateLabels = (config.stateLabels || {}) as Record<string, string>;
@@ -1012,8 +1011,8 @@ function MobileButtons() {
                         })()}
 
                         {/* Hold action configuration */}
-                        {activeCfg.macro !== 'empty' && (() => {
-                            const holdCfg = activeCfg.hold || { macro: 'command' };
+                        {activeCfg.macroType !== 'empty' && (() => {
+                            const holdCfg = activeCfg.hold || { macroType: 'command' };
                             const updateHold = (field: string, value: any) => {
                                 update(active!.set, active!.id, 'hold', { ...holdCfg, [field]: value });
                             };
@@ -1039,10 +1038,10 @@ function MobileButtons() {
                                                 <Form.Label className="small mb-1">Makro (hold)</Form.Label>
                                                 <Form.Select
                                                     size="sm"
-                                                    className={`mobile-button-macro ${holdCfg.macro && !isButtonMacroAvailable(holdCfg.macro) ? 'border-warning' : ''}`}
-                                                    value={holdCfg.macro || 'command'}
+                                                    className={`mobile-button-macro ${holdCfg.macroType && !isButtonMacroAvailable(holdCfg.macroType) ? 'border-warning' : ''}`}
+                                                    value={holdCfg.macroType || 'command'}
                                                     onChange={e => {
-                                                        updateHold('macro', e.target.value);
+                                                        updateHold('macroType', e.target.value);
                                                         if (e.target.value !== 'compound') {
                                                             updateHold('steps', undefined);
                                                         }
@@ -1068,7 +1067,7 @@ function MobileButtons() {
                                                     })()}
                                                 </Form.Select>
                                             </Form.Group>
-                                            {holdCfg.macro === 'command' && (
+                                            {holdCfg.macroType === 'command' && (
                                                 <Form.Group className="mb-2">
                                                     <Form.Label className="small mb-1">Komenda (hold)</Form.Label>
                                                     <Form.Control
@@ -1083,7 +1082,7 @@ function MobileButtons() {
                                                     />
                                                 </Form.Group>
                                             )}
-                                            {holdCfg.macro === 'kierunek' && (
+                                            {holdCfg.macroType === 'kierunek' && (
                                                 <Form.Group className="mb-2">
                                                     <Form.Label className="small mb-1">Kierunek (hold)</Form.Label>
                                                     <Form.Select
@@ -1097,7 +1096,7 @@ function MobileButtons() {
                                                     </Form.Select>
                                                 </Form.Group>
                                             )}
-                                            {(holdCfg.macro === 'attackEnemy' || holdCfg.macro === 'blockEnemy') && (
+                                            {(holdCfg.macroType === 'attackEnemy' || holdCfg.macroType === 'blockEnemy') && (
                                                 <Form.Group className="mb-2">
                                                     <Form.Label className="small mb-1">Slot wroga (hold)</Form.Label>
                                                     <Form.Select
@@ -1111,7 +1110,7 @@ function MobileButtons() {
                                                     </Form.Select>
                                                 </Form.Group>
                                             )}
-                                            {holdCfg.macro === 'compound' && (
+                                            {holdCfg.macroType === 'compound' && (
                                                 <div className="mb-2">
                                                     <Form.Label className="small fw-bold mb-1">Kroki (hold)</Form.Label>
                                                     {(holdCfg.steps || []).map((step, index) => (
@@ -1152,10 +1151,10 @@ function MobileButtons() {
                                                             <Form.Select
                                                                 size="sm"
                                                                 className="mb-1"
-                                                                value={step.macro}
+                                                                value={step.macroType}
                                                                 onChange={e => {
                                                                     const steps = [...(holdCfg.steps || [])];
-                                                                    steps[index] = { ...steps[index], macro: e.target.value };
+                                                                    steps[index] = { ...steps[index], macroType: e.target.value };
                                                                     updateHold('steps', steps);
                                                                 }}
                                                             >
@@ -1178,7 +1177,7 @@ function MobileButtons() {
                                                                     ));
                                                                 })()}
                                                             </Form.Select>
-                                                            {step.macro === 'command' && (
+                                                            {step.macroType === 'command' && (
                                                                 <Form.Control
                                                                     as="textarea"
                                                                     size="sm"
@@ -1195,7 +1194,7 @@ function MobileButtons() {
                                                                     spellCheck={false}
                                                                 />
                                                             )}
-                                                            {step.macro === 'kierunek' && (
+                                                            {step.macroType === 'kierunek' && (
                                                                 <Form.Select
                                                                     size="sm"
                                                                     value={step.direction || 'n'}
@@ -1210,7 +1209,7 @@ function MobileButtons() {
                                                                     ))}
                                                                 </Form.Select>
                                                             )}
-                                                            {(step.macro === 'attackEnemy' || step.macro === 'blockEnemy') && (
+                                                            {(step.macroType === 'attackEnemy' || step.macroType === 'blockEnemy') && (
                                                                 <Form.Select
                                                                     size="sm"
                                                                     value={step.enemySlot ?? 0}
@@ -1232,15 +1231,15 @@ function MobileButtons() {
                                                         variant="outline-primary"
                                                         className="w-100"
                                                         onClick={() => {
-                                                            const steps = [...(holdCfg.steps || []), { macro: 'command' as MacroType, command: '' }];
+                                                            const steps = [...(holdCfg.steps || []), { macroType: 'command' as MacroType, command: '' }];
                                                             updateHold('steps', steps);
                                                         }}
                                                     >+ Dodaj krok</Button>
                                                 </div>
                                             )}
                                             {/* Hold plugin macro config fields */}
-                                            {holdCfg.macro?.startsWith('plugin:') && (() => {
-                                                const pluginMacro = pluginMacros.find(pm => pm.id === holdCfg.macro);
+                                            {holdCfg.macroType?.startsWith('plugin:') && (() => {
+                                                const pluginMacro = pluginMacros.find(pm => pm.id === holdCfg.macroType);
                                                 if (!pluginMacro?.configFields?.length) return null;
                                                 const pluginConfig = holdCfg.pluginConfig || {};
                                                 return pluginMacro.configFields.map(field => (

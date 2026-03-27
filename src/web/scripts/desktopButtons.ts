@@ -1,13 +1,11 @@
 import Client from "@client/Client";
 import {
     loadSettings as loadDesktopButtonSettings,
-    DesktopButtonSetting,
     DesktopButtonsSettings,
     hexToRgba,
-    ListGrowDirection,
-    ListPosition,
     saveSettings,
 } from "../desktopButtonSettings";
+import type { DesktopButtonSetting, ListGrowDirection, ListPosition } from "../buttonSettings";
 import {
     executeButtonMacro,
     getButtonMacroDisplayInfo,

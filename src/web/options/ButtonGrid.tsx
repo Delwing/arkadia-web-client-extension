@@ -1,5 +1,7 @@
 import { RefObject, MouseEvent, CSSProperties } from "react";
-import { ButtonSetting, Settings, defaultSettings, defaultBackground, defaultButtonSize, defaultButtonGap, defaultFontColor, computeBoxShadow } from "../mobileButtonSettings";
+import { Settings, defaultSettings, defaultBackground, defaultButtonSize, defaultButtonGap, computeBoxShadow } from "../mobileButtonSettings";
+import type { MobileButtonSetting } from "../buttonSettings";
+import { defaultFontColor } from "../buttonSettings";
 
 export type Mode = 'solo' | 'team' | 'leader';
 
@@ -8,7 +10,7 @@ interface Props {
     view: Mode;
     settings: Settings;
     notEditable: string[];
-    emptySetting: ButtonSetting;
+    emptySetting: MobileButtonSetting;
     openConfig: (setName: Mode, id: string, ev: MouseEvent<HTMLButtonElement>) => void;
     gridRef: RefObject<HTMLDivElement>;
     activeButtonId?: string | null;
@@ -34,13 +36,13 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
             {set.order.map(id => {
                 const cfg = set.buttons[id] || defaultSettings[id] || emptySetting;
                 let classes = 'mobile-button';
-                const isText = cfg.macro !== 'kierunek';
-                if (cfg.macro === 'kierunek') {
+                const isText = cfg.macroType !== 'kierunek';
+                if (cfg.macroType === 'kierunek') {
                     classes += ' direction-button';
                 } else {
                     classes += ' mobile-button-text';
                 }
-                const isEmpty = cfg.macro === 'empty' || !cfg.label;
+                const isEmpty = cfg.macroType === 'empty' || !cfg.label;
                 if (isEmpty) classes += ' empty';
                 const isActive = activeButtonId === id;
                 if (isActive) classes += ' editing';

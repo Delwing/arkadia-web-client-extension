@@ -2,11 +2,11 @@ import Client from "@client/Client";
 import {formatLabel} from "@client/scripts/functionalBind";
 import {
     loadSettings as loadMobileButtonSettings,
-    ButtonSetting,
     Settings,
-    defaultFontColor,
     defaultBackground,
 } from "../mobileButtonSettings";
+import type { MobileButtonSetting } from "../buttonSettings";
+import { defaultFontColor } from "../buttonSettings";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
 import {
@@ -80,7 +80,7 @@ export default class MobileDirectionButtons {
         locked: false,
         radial: {enabled: true, commands: []},
     };
-    private buttonSettings: Record<string, ButtonSetting> = {};
+    private buttonSettings: Record<string, MobileButtonSetting> = {};
     private teamMode = false;
     private leaderMode = false;
     private hapticEnabled = true;
@@ -197,7 +197,7 @@ export default class MobileDirectionButtons {
             Object.keys(this.buttonSettings).forEach(id => {
                 const btn = document.getElementById(id) as HTMLButtonElement | null;
                 const cfg = this.buttonSettings[id];
-                if (btn && cfg && cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
+                if (btn && cfg && cfg.macroType.startsWith('plugin:') && isStatefulMacro(cfg.macroType)) {
                     this.applyConfigToButton(id, btn);
                 }
             });
@@ -209,7 +209,7 @@ export default class MobileDirectionButtons {
             Object.keys(this.buttonSettings).forEach(id => {
                 const btn = document.getElementById(id) as HTMLButtonElement | null;
                 const cfg = this.buttonSettings[id];
-                if (btn && cfg && cfg.macro.startsWith('plugin:')) {
+                if (btn && cfg && cfg.macroType.startsWith('plugin:')) {
                     this.applyConfigToButton(id, btn);
                 }
             });
@@ -898,9 +898,9 @@ export default class MobileDirectionButtons {
         let effectiveActiveColor = cfg.activeColor;
         let effectiveLabel = cfg.label;
 
-        if (cfg.macro === 'specialExit' && cfg.syncWithDirections) {
+        if (cfg.macroType === 'specialExit' && cfg.syncWithDirections) {
             // Find a direction button to sync colors from
-            const directionButton = Object.values(this.buttonSettings).find(b => b.macro === 'kierunek');
+            const directionButton = Object.values(this.buttonSettings).find(b => b.macroType === 'kierunek');
             if (directionButton) {
                 effectiveColor = directionButton.color;
                 effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
@@ -908,13 +908,13 @@ export default class MobileDirectionButtons {
         }
 
         // Handle stateful plugin macros
-        if (cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
+        if (cfg.macroType.startsWith('plugin:') && isStatefulMacro(cfg.macroType)) {
             // Pass custom state overrides from pluginConfig if user customized them
             const customOverrides = {
                 labels: cfg.pluginConfig?.stateLabels as Record<string, string> | undefined,
                 colors: cfg.pluginConfig?.stateColors as Record<string, string> | undefined
             };
-            const displayInfo = getButtonMacroDisplayInfo(cfg.macro, customOverrides);
+            const displayInfo = getButtonMacroDisplayInfo(cfg.macroType, customOverrides);
             if (displayInfo) {
                 // Combine user label with state label: "userLabel stateLabel"
                 if (displayInfo.stateLabel) {
@@ -926,7 +926,7 @@ export default class MobileDirectionButtons {
             }
         }
 
-        const isEmpty = cfg.macro === 'empty' || !effectiveLabel;
+        const isEmpty = cfg.macroType === 'empty' || !effectiveLabel;
         btn.textContent = isEmpty ? '' : effectiveLabel;
         if (isEmpty) {
             btn.classList.add('empty');
@@ -940,7 +940,7 @@ export default class MobileDirectionButtons {
             btn.style.backgroundColor = effectiveColor;
             btn.style.border = '';
             btn.style.color = cfg.fontColor || defaultFontColor;
-            if (cfg.macro === 'kierunek' || (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
+            if (cfg.macroType === 'kierunek' || (cfg.macroType === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
                 btn.style.setProperty('--color', effectiveColor);
                 btn.style.setProperty('--active-color', effectiveActiveColor || '#2fa7c5');
             } else {
@@ -959,17 +959,17 @@ export default class MobileDirectionButtons {
         }
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
-        if (cfg.macro === 'wList') {
+        if (cfg.macroType === 'wList') {
             this.wToggle = newBtn;
         } else if (this.wToggle === newBtn) {
             this.wToggle = null;
         }
-        if (cfg.macro === 'idzList') {
+        if (cfg.macroType === 'idzList') {
             this.idzToggle = newBtn;
         } else if (this.idzToggle === newBtn) {
             this.idzToggle = null;
         }
-        if (cfg.macro === 'przeList') {
+        if (cfg.macroType === 'przeList') {
             this.przeToggle = newBtn;
         } else if (this.przeToggle === newBtn) {
             this.przeToggle = null;
@@ -981,14 +981,14 @@ export default class MobileDirectionButtons {
                 newBtn.dataset.direction = dirKey;
             }
         }
-        if (cfg.macro === 'kierunek' && cfg.direction) {
+        if (cfg.macroType === 'kierunek' && cfg.direction) {
             newBtn.dataset.direction = getShortDir(cfg.direction);
         } else if (!newBtn.dataset.direction) {
             newBtn.removeAttribute('data-direction');
         }
 
         // Hold action support - macro executes on release, duration determines tap vs hold
-        if (cfg.holdEnabled && cfg.hold?.macro) {
+        if (cfg.holdEnabled && cfg.hold?.macroType) {
             const hold = cfg.hold;
 
             const onPointerDown = (e: PointerEvent) => {
@@ -1064,20 +1064,20 @@ export default class MobileDirectionButtons {
 
                 if (elapsed >= MobileDirectionButtons.HOLD_DURATION) {
                     // Execute hold action (haptic already done when glow activated)
-                    const holdCfg: ButtonSetting = {
+                    const holdCfg: MobileButtonSetting = {
                         ...cfg,
-                        macro: hold.macro,
+                        macroType: hold.macroType,
                         command: hold.command,
                         direction: hold.direction,
                         enemySlot: hold.enemySlot,
                         pluginConfig: hold.pluginConfig,
                         steps: hold.steps,
                     };
-                    this.executeMacro(hold.macro, hold.command, hold.direction, hold.enemySlot, hold.pluginConfig, newBtn, holdCfg);
+                    this.executeMacro(hold.macroType, hold.command, hold.direction, hold.enemySlot, hold.pluginConfig, newBtn, holdCfg);
                 } else {
                     // Execute tap action
                     if (this.hapticEnabled) navigator.vibrate?.(20);
-                    this.executeMacro(cfg.macro, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
+                    this.executeMacro(cfg.macroType, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
                 }
             };
 
@@ -1103,17 +1103,17 @@ export default class MobileDirectionButtons {
             // Standard click handler (no hold)
             const handler = () => {
                 if (this.hapticEnabled) navigator.vibrate?.(20);
-                this.executeMacro(cfg.macro, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
+                this.executeMacro(cfg.macroType, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
             };
             newBtn.addEventListener('click', handler);
         }
 
-        if (cfg.macro === 'moveMode') {
+        if (cfg.macroType === 'moveMode') {
             this.client.moveModeButton = newBtn;
             newBtn.dataset.moveModeLabel = cfg.label || '';
             this.updateMoveModeButton(newBtn);
             newBtn.disabled = this.client.carriageMode;
-        } else if (cfg.macro === 'specialExit') {
+        } else if (cfg.macroType === 'specialExit') {
             // Add direction-button class if activeColor is supported
                 newBtn.classList.add('direction-button');
                 newBtn.classList.add('mobile-button-text');
@@ -1168,7 +1168,7 @@ export default class MobileDirectionButtons {
         enemySlot?: number,
         pluginConfig?: Record<string, any>,
         btn?: HTMLButtonElement,
-        cfg?: ButtonSetting
+        cfg?: MobileButtonSetting
     ) {
         switch (macro) {
             case 'empty':
@@ -1287,7 +1287,7 @@ export default class MobileDirectionButtons {
             case 'compound':
                 if (cfg?.steps) {
                     for (const step of cfg.steps) {
-                        this.executeMacro(step.macro, step.command, step.direction, step.enemySlot, step.pluginConfig, btn, step as any);
+                        this.executeMacro(step.macroType, step.command, step.direction, step.enemySlot, step.pluginConfig, btn, step as any);
                     }
                 }
                 break;

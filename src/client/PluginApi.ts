@@ -87,7 +87,7 @@ import {
   unregisterTriggerMacro,
   updateTriggerMacroPluginName
 } from "@modules/core/pluginTriggerMacroRegistry";
-import type {ButtonSetting} from "@web/mobileButtonSettings";
+import type {MobileButtonSetting} from "@web/buttonSettings";
 import {shouldPopupAutoOpen, getPopupPinnedState} from "@web/layout/utils/layoutStorage";
 import {
   registerPluginPopup,
@@ -140,7 +140,7 @@ export type {
   MacroStateContext,
   ButtonMacroClickContext,
   TriggerMacroContext,
-  ButtonSetting
+  MobileButtonSetting
 };
 
 // Re-export location note types for plugin developers
@@ -1904,7 +1904,7 @@ export interface ButtonMacrosApi {
   register(options: {
     id: string;
     label: string;
-    onClick: ((context: ButtonMacroClickContext) => void) | ((button: ButtonSetting, client: Client, config: Record<string, any>) => void);
+    onClick: ((context: ButtonMacroClickContext) => void) | ((button: MobileButtonSetting, client: Client, config: Record<string, any>) => void);
     configFields?: MacroConfigField[];
     states?: MacroState[];
     initialState?: string;

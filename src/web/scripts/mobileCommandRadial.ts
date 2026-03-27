@@ -1,5 +1,6 @@
 import Client from "@client/Client";
-import { loadSettings, Settings, LayoutSettings, ButtonSetting, RadialCommandSetting } from "../mobileButtonSettings";
+import { loadSettings, Settings, LayoutSettings, RadialCommandSetting } from "../mobileButtonSettings";
+import type { MobileButtonSetting } from "../buttonSettings";
 import eventBus from "@modules/core/eventBus";
 
 type ActiveLayoutKey = "solo" | "team" | "leader";
@@ -449,7 +450,7 @@ export default class MobileCommandRadial {
                 return;
             }
             seen.add(id);
-            const config = layout.buttons[id] || ({} as ButtonSetting);
+            const config = layout.buttons[id] || ({} as MobileButtonSetting);
             const commandText = this.extractCommand(config);
             if (!commandText) {
                 return;
@@ -475,7 +476,7 @@ export default class MobileCommandRadial {
         }
     }
 
-    private extractCommand(config: ButtonSetting | undefined): string | null {
+    private extractCommand(config: MobileButtonSetting | undefined): string | null {
         if (!config) {
             return null;
         }
