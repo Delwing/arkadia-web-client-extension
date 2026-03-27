@@ -45,6 +45,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "attackAllEnemies", label: "Atakuj wszystkich wrogow" },
     { value: "mute", label: "Wycisz dzwieki" },
     { value: "unmute", label: "Wlacz dzwieki" },
+    { value: "compound", label: "Złożone (wiele akcji)" },
     { value: "empty", label: "Puste" },
 ];
 
@@ -577,6 +578,9 @@ function MobileButtons() {
                                             makeBlank(active!.set, active!.id);
                                         } else {
                                             update(active!.set, active!.id, 'macro', val);
+                                            if (val !== 'compound') {
+                                                update(active!.set, active!.id, 'steps', undefined);
+                                            }
                                         }
                                     }}
                                 >
@@ -623,6 +627,134 @@ function MobileButtons() {
                                 </div>
                             )}
                         </div>
+
+                        {activeCfg.macro === "compound" && (
+                            <div className="mobile-button-config-section">
+                                <div className="mobile-button-config-section-title">Kroki</div>
+                                {(activeCfg.steps || []).map((step, index) => (
+                                    <div key={index} className="mb-2 p-2 border rounded">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <span className="small fw-bold">Krok {index + 1}</span>
+                                            <div className="d-flex gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline-secondary"
+                                                    disabled={index === 0}
+                                                    onClick={() => {
+                                                        const steps = [...(activeCfg.steps || [])];
+                                                        [steps[index - 1], steps[index]] = [steps[index], steps[index - 1]];
+                                                        update(active!.set, active!.id, 'steps', steps);
+                                                    }}
+                                                >^</Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline-secondary"
+                                                    disabled={index === (activeCfg.steps || []).length - 1}
+                                                    onClick={() => {
+                                                        const steps = [...(activeCfg.steps || [])];
+                                                        [steps[index], steps[index + 1]] = [steps[index + 1], steps[index]];
+                                                        update(active!.set, active!.id, 'steps', steps);
+                                                    }}
+                                                >v</Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline-danger"
+                                                    onClick={() => {
+                                                        const steps = (activeCfg.steps || []).filter((_, i) => i !== index);
+                                                        update(active!.set, active!.id, 'steps', steps);
+                                                    }}
+                                                >X</Button>
+                                            </div>
+                                        </div>
+                                        <Form.Select
+                                            size="sm"
+                                            className="mb-1"
+                                            value={step.macro}
+                                            onChange={e => {
+                                                const steps = [...(activeCfg.steps || [])];
+                                                steps[index] = { ...steps[index], macro: e.target.value };
+                                                update(active!.set, active!.id, 'steps', steps);
+                                            }}
+                                        >
+                                            {macroOptions.filter(o => o.value !== 'empty' && o.value !== 'compound').map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                            ))}
+                                            {(() => {
+                                                const byPlugin = new Map<string, typeof pluginMacros>();
+                                                for (const pm of pluginMacros) {
+                                                    const key = pm.pluginName || pm.pluginId;
+                                                    if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                                    byPlugin.get(key)!.push(pm);
+                                                }
+                                                return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                                    <optgroup key={pluginName} label={pluginName}>
+                                                        {macros.map(pm => (
+                                                            <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                ));
+                                            })()}
+                                        </Form.Select>
+                                        {step.macro === 'command' && (
+                                            <Form.Control
+                                                as="textarea"
+                                                size="sm"
+                                                placeholder="Komenda"
+                                                value={step.command || ''}
+                                                onChange={e => {
+                                                    const steps = [...(activeCfg.steps || [])];
+                                                    steps[index] = { ...steps[index], command: e.target.value };
+                                                    update(active!.set, active!.id, 'steps', steps);
+                                                }}
+                                                autoCorrect="off"
+                                                autoComplete="off"
+                                                autoCapitalize="off"
+                                                spellCheck={false}
+                                            />
+                                        )}
+                                        {step.macro === 'kierunek' && (
+                                            <Form.Select
+                                                size="sm"
+                                                value={step.direction || 'n'}
+                                                onChange={e => {
+                                                    const steps = [...(activeCfg.steps || [])];
+                                                    steps[index] = { ...steps[index], direction: e.target.value };
+                                                    update(active!.set, active!.id, 'steps', steps);
+                                                }}
+                                            >
+                                                {directionOptions.map(d => (
+                                                    <option key={d} value={d}>{d}</option>
+                                                ))}
+                                            </Form.Select>
+                                        )}
+                                        {(step.macro === 'attackEnemy' || step.macro === 'blockEnemy') && (
+                                            <Form.Select
+                                                size="sm"
+                                                value={step.enemySlot ?? 0}
+                                                onChange={e => {
+                                                    const steps = [...(activeCfg.steps || [])];
+                                                    steps[index] = { ...steps[index], enemySlot: parseInt(e.target.value) };
+                                                    update(active!.set, active!.id, 'steps', steps);
+                                                }}
+                                            >
+                                                <option value={0}>Slot 1</option>
+                                                <option value={1}>Slot 2</option>
+                                                <option value={2}>Slot 3</option>
+                                            </Form.Select>
+                                        )}
+                                    </div>
+                                ))}
+                                <Button
+                                    size="sm"
+                                    variant="outline-primary"
+                                    className="w-100"
+                                    onClick={() => {
+                                        const steps = [...(activeCfg.steps || []), { macro: 'command' as MacroType, command: '' }];
+                                        update(active!.set, active!.id, 'steps', steps);
+                                    }}
+                                >+ Dodaj krok</Button>
+                            </div>
+                        )}
 
                         {/* Appearance section */}
                         {activeCfg.macro !== 'empty' && (
@@ -909,7 +1041,12 @@ function MobileButtons() {
                                                     size="sm"
                                                     className={`mobile-button-macro ${holdCfg.macro && !isButtonMacroAvailable(holdCfg.macro) ? 'border-warning' : ''}`}
                                                     value={holdCfg.macro || 'command'}
-                                                    onChange={e => updateHold('macro', e.target.value)}
+                                                    onChange={e => {
+                                                        updateHold('macro', e.target.value);
+                                                        if (e.target.value !== 'compound') {
+                                                            updateHold('steps', undefined);
+                                                        }
+                                                    }}
                                                 >
                                                     {macroOptions.filter(o => o.value !== 'empty').map(o => (
                                                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -973,6 +1110,133 @@ function MobileButtons() {
                                                         <option value={2}>Slot 3</option>
                                                     </Form.Select>
                                                 </Form.Group>
+                                            )}
+                                            {holdCfg.macro === 'compound' && (
+                                                <div className="mb-2">
+                                                    <Form.Label className="small fw-bold mb-1">Kroki (hold)</Form.Label>
+                                                    {(holdCfg.steps || []).map((step, index) => (
+                                                        <div key={index} className="mb-2 p-2 border rounded">
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <span className="small fw-bold">Krok {index + 1}</span>
+                                                                <div className="d-flex gap-1">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline-secondary"
+                                                                        disabled={index === 0}
+                                                                        onClick={() => {
+                                                                            const steps = [...(holdCfg.steps || [])];
+                                                                            [steps[index - 1], steps[index]] = [steps[index], steps[index - 1]];
+                                                                            updateHold('steps', steps);
+                                                                        }}
+                                                                    >^</Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline-secondary"
+                                                                        disabled={index === (holdCfg.steps || []).length - 1}
+                                                                        onClick={() => {
+                                                                            const steps = [...(holdCfg.steps || [])];
+                                                                            [steps[index], steps[index + 1]] = [steps[index + 1], steps[index]];
+                                                                            updateHold('steps', steps);
+                                                                        }}
+                                                                    >v</Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline-danger"
+                                                                        onClick={() => {
+                                                                            const steps = (holdCfg.steps || []).filter((_: any, i: number) => i !== index);
+                                                                            updateHold('steps', steps);
+                                                                        }}
+                                                                    >X</Button>
+                                                                </div>
+                                                            </div>
+                                                            <Form.Select
+                                                                size="sm"
+                                                                className="mb-1"
+                                                                value={step.macro}
+                                                                onChange={e => {
+                                                                    const steps = [...(holdCfg.steps || [])];
+                                                                    steps[index] = { ...steps[index], macro: e.target.value };
+                                                                    updateHold('steps', steps);
+                                                                }}
+                                                            >
+                                                                {macroOptions.filter(o => o.value !== 'empty' && o.value !== 'compound').map(o => (
+                                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                                ))}
+                                                                {(() => {
+                                                                    const byPlugin = new Map<string, typeof pluginMacros>();
+                                                                    for (const pm of pluginMacros) {
+                                                                        const key = pm.pluginName || pm.pluginId;
+                                                                        if (!byPlugin.has(key)) byPlugin.set(key, []);
+                                                                        byPlugin.get(key)!.push(pm);
+                                                                    }
+                                                                    return Array.from(byPlugin.entries()).map(([pluginName, macros]) => (
+                                                                        <optgroup key={pluginName} label={pluginName}>
+                                                                            {macros.map(pm => (
+                                                                                <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                                                            ))}
+                                                                        </optgroup>
+                                                                    ));
+                                                                })()}
+                                                            </Form.Select>
+                                                            {step.macro === 'command' && (
+                                                                <Form.Control
+                                                                    as="textarea"
+                                                                    size="sm"
+                                                                    placeholder="Komenda"
+                                                                    value={step.command || ''}
+                                                                    onChange={e => {
+                                                                        const steps = [...(holdCfg.steps || [])];
+                                                                        steps[index] = { ...steps[index], command: e.target.value };
+                                                                        updateHold('steps', steps);
+                                                                    }}
+                                                                    autoCorrect="off"
+                                                                    autoComplete="off"
+                                                                    autoCapitalize="off"
+                                                                    spellCheck={false}
+                                                                />
+                                                            )}
+                                                            {step.macro === 'kierunek' && (
+                                                                <Form.Select
+                                                                    size="sm"
+                                                                    value={step.direction || 'n'}
+                                                                    onChange={e => {
+                                                                        const steps = [...(holdCfg.steps || [])];
+                                                                        steps[index] = { ...steps[index], direction: e.target.value };
+                                                                        updateHold('steps', steps);
+                                                                    }}
+                                                                >
+                                                                    {directionOptions.map(d => (
+                                                                        <option key={d} value={d}>{d}</option>
+                                                                    ))}
+                                                                </Form.Select>
+                                                            )}
+                                                            {(step.macro === 'attackEnemy' || step.macro === 'blockEnemy') && (
+                                                                <Form.Select
+                                                                    size="sm"
+                                                                    value={step.enemySlot ?? 0}
+                                                                    onChange={e => {
+                                                                        const steps = [...(holdCfg.steps || [])];
+                                                                        steps[index] = { ...steps[index], enemySlot: parseInt(e.target.value) };
+                                                                        updateHold('steps', steps);
+                                                                    }}
+                                                                >
+                                                                    <option value={0}>Slot 1</option>
+                                                                    <option value={1}>Slot 2</option>
+                                                                    <option value={2}>Slot 3</option>
+                                                                </Form.Select>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline-primary"
+                                                        className="w-100"
+                                                        onClick={() => {
+                                                            const steps = [...(holdCfg.steps || []), { macro: 'command' as MacroType, command: '' }];
+                                                            updateHold('steps', steps);
+                                                        }}
+                                                    >+ Dodaj krok</Button>
+                                                </div>
                                             )}
                                             {/* Hold plugin macro config fields */}
                                             {holdCfg.macro?.startsWith('plugin:') && (() => {

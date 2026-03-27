@@ -19,7 +19,8 @@ export type MacroType =
     | 'attackAllEnemies'
     | 'mute'
     | 'unmute'
-    | 'empty';
+    | 'empty'
+    | 'compound';
 
 export interface ButtonMacroConfig {
     macro: MacroType | string;  // string allows plugin macros like "plugin:..."
@@ -27,6 +28,7 @@ export interface ButtonMacroConfig {
     direction?: string;
     enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
     pluginConfig?: Record<string, any>;
+    steps?: ButtonMacroConfig[]; // For compound macro: sequential steps to execute
 }
 
 export interface ButtonSetting extends ButtonMacroConfig {
@@ -232,6 +234,25 @@ function cloneDefaultRadialCommands(): RadialCommandSetting[] {
     return defaultRadialSettings.commands.map(cmd => ({ ...cmd }));
 }
 
+function parseSteps(raw: unknown): ButtonMacroConfig[] | undefined {
+    if (!Array.isArray(raw)) return undefined;
+    const steps: ButtonMacroConfig[] = [];
+    for (const entry of raw) {
+        if (!entry || typeof entry !== 'object') continue;
+        const macro = typeof entry.macro === 'string' ? entry.macro : '';
+        if (!macro || macro === 'compound') continue; // prevent nesting
+        const step: ButtonMacroConfig = { macro };
+        if (typeof entry.command === 'string') step.command = entry.command;
+        if (typeof entry.direction === 'string') step.direction = entry.direction;
+        if (typeof entry.enemySlot === 'number') step.enemySlot = entry.enemySlot;
+        if (entry.pluginConfig && typeof entry.pluginConfig === 'object') {
+            step.pluginConfig = entry.pluginConfig as Record<string, any>;
+        }
+        steps.push(step);
+    }
+    return steps.length > 0 ? steps : undefined;
+}
+
 function extractButtons(set: any): Record<string, ButtonSetting> {
     if (!set || typeof set !== 'object') {
         return {};
@@ -258,6 +279,9 @@ function mergeButtonSettings(buttons: Record<string, ButtonSetting>): Record<str
         const override = (buttons && buttons[id]) || {};
         const cfg: ButtonSetting = { ...base, ...override };
         cfg.fontColor = cfg.fontColor || base.fontColor || defaultFontColor;
+        if (cfg.macro === 'compound') {
+            cfg.steps = parseSteps((override as any).steps);
+        }
         merged[id] = cfg;
     });
     return merged;

@@ -11,6 +11,7 @@ export interface DesktopButtonMacroConfig {
     direction?: string;
     enemySlot?: number;
     pluginConfig?: Record<string, any>;
+    steps?: DesktopButtonMacroConfig[]; // For compound macro: sequential steps to execute
 }
 
 export interface DesktopButtonSetting extends DesktopButtonMacroConfig {
@@ -72,8 +73,30 @@ export function createDefaultSettings(): DesktopButtonsSettings {
 const validMacroTypes: MacroType[] = [
     'functional', 'zList', 'zaList', 'wList', 'przeList', 'idzList',
     'command', 'specialExit', 'kierunek', 'wesprzyj', 'moveMode',
-    'toggleButtons', 'attackEnemy', 'blockEnemy', 'attackAllEnemies', 'mute', 'unmute', 'empty'
+    'toggleButtons', 'attackEnemy', 'blockEnemy', 'attackAllEnemies', 'mute', 'unmute', 'empty', 'compound'
 ];
+
+function parseDesktopSteps(raw: unknown): DesktopButtonMacroConfig[] | undefined {
+    if (!Array.isArray(raw)) return undefined;
+    const steps: DesktopButtonMacroConfig[] = [];
+    for (const entry of raw) {
+        if (!entry || typeof entry !== 'object') continue;
+        const rawType = typeof entry.macroType === 'string' ? entry.macroType : '';
+        if (!rawType || rawType === 'compound') continue; // prevent nesting
+        const macroType = validMacroTypes.includes(rawType as MacroType) || rawType.startsWith('plugin:')
+            ? rawType : undefined;
+        if (!macroType) continue;
+        const step: DesktopButtonMacroConfig = { macroType };
+        if (typeof entry.command === 'string') step.command = entry.command;
+        if (typeof entry.direction === 'string') step.direction = entry.direction;
+        if (typeof entry.enemySlot === 'number') step.enemySlot = entry.enemySlot;
+        if (entry.pluginConfig && typeof entry.pluginConfig === 'object') {
+            step.pluginConfig = entry.pluginConfig as Record<string, any>;
+        }
+        steps.push(step);
+    }
+    return steps.length > 0 ? steps : undefined;
+}
 
 function parseHoldConfig(candidate: Record<string, unknown>): DesktopButtonMacroConfig | undefined {
     // Support both new nested format and old flat format for migration
@@ -85,12 +108,14 @@ function parseHoldConfig(candidate: Record<string, unknown>): DesktopButtonMacro
         if (!rawMacroType) return undefined;
         const macroType = validMacroTypes.includes(rawMacroType as MacroType) || rawMacroType.startsWith('plugin:')
             ? rawMacroType : 'command';
+        const steps = macroType === 'compound' ? parseDesktopSteps(holdObj.steps as unknown) : undefined;
         return {
             macroType,
             command: typeof holdObj.command === 'string' ? holdObj.command : undefined,
             direction: typeof holdObj.direction === 'string' ? holdObj.direction : undefined,
             enemySlot: typeof holdObj.enemySlot === 'number' ? holdObj.enemySlot : undefined,
             pluginConfig: holdObj.pluginConfig && typeof holdObj.pluginConfig === 'object' ? holdObj.pluginConfig as Record<string, any> : undefined,
+            steps,
         };
     }
 
@@ -146,7 +171,8 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
     // Hold action
     const holdEnabled = typeof candidate.holdEnabled === 'boolean' ? candidate.holdEnabled : undefined;
     const hold = parseHoldConfig(candidate);
-    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig, holdEnabled, hold };
+    const steps = macroType === 'compound' ? parseDesktopSteps(candidate.steps as unknown) : undefined;
+    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig, holdEnabled, hold, steps };
 }
 
 export function loadSettings(): DesktopButtonsSettings {

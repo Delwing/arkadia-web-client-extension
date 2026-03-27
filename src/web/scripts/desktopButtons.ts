@@ -413,6 +413,13 @@ export default class DesktopButtons {
             case 'unmute':
                 this.client.SoundManager.unmute();
                 break;
+            case 'compound':
+                if (settings?.steps) {
+                    for (const step of settings.steps) {
+                        this.executeMacro(step.macroType, step.command, step.enemySlot, step.pluginConfig, settings);
+                    }
+                }
+                break;
         }
     }
 
@@ -542,12 +549,13 @@ export default class DesktopButtons {
             if (elapsed >= HOLD_THRESHOLD) {
                 // Execute hold action
                 const hold = settings.hold!;
+                const holdSettings = { ...settings, steps: hold.steps };
                 this.executeMacro(
                     hold.macroType,
                     hold.command,
                     hold.enemySlot,
                     hold.pluginConfig,
-                    settings
+                    holdSettings
                 );
             } else {
                 // Execute tap action
@@ -667,12 +675,13 @@ export default class DesktopButtons {
             if (elapsed >= HOLD_THRESHOLD) {
                 // Execute hold action
                 const hold = settings.hold!;
+                const holdSettings = { ...settings, steps: hold.steps };
                 this.executeMacro(
                     hold.macroType,
                     hold.command,
                     hold.enemySlot,
                     hold.pluginConfig,
-                    settings
+                    holdSettings
                 );
             } else {
                 // Execute tap action

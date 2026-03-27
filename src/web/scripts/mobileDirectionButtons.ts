@@ -1070,7 +1070,8 @@ export default class MobileDirectionButtons {
                         command: hold.command,
                         direction: hold.direction,
                         enemySlot: hold.enemySlot,
-                        pluginConfig: hold.pluginConfig
+                        pluginConfig: hold.pluginConfig,
+                        steps: hold.steps,
                     };
                     this.executeMacro(hold.macro, hold.command, hold.direction, hold.enemySlot, hold.pluginConfig, newBtn, holdCfg);
                 } else {
@@ -1282,6 +1283,13 @@ export default class MobileDirectionButtons {
                 break;
             case 'unmute':
                 this.client.SoundManager.unmute();
+                break;
+            case 'compound':
+                if (cfg?.steps) {
+                    for (const step of cfg.steps) {
+                        this.executeMacro(step.macro, step.command, step.direction, step.enemySlot, step.pluginConfig, btn, step as any);
+                    }
+                }
                 break;
             default:
                 // Handle plugin macros
