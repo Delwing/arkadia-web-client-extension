@@ -1,46 +1,10 @@
 import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
+import { MacroType, ButtonMacroConfig, MobileButtonSetting, defaultFontColor } from "./buttonSettings";
 
-export type MacroType =
-    | 'functional'
-    | 'zList'
-    | 'zaList'
-    | 'wList'
-    | 'przeList'
-    | 'idzList'
-    | 'command'
-    | 'specialExit'
-    | 'kierunek'
-    | 'wesprzyj'
-    | 'moveMode'
-    | 'toggleButtons'
-    | 'attackEnemy'
-    | 'blockEnemy'
-    | 'attackAllEnemies'
-    | 'mute'
-    | 'unmute'
-    | 'empty'
-    | 'compound';
-
-export interface ButtonMacroConfig {
-    macro: MacroType | string;  // string allows plugin macros like "plugin:..."
-    command?: string;
-    direction?: string;
-    enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
-    pluginConfig?: Record<string, any>;
-    steps?: ButtonMacroConfig[]; // For compound macro: sequential steps to execute
-}
-
-export interface ButtonSetting extends ButtonMacroConfig {
-    label: string;
-    color: string;
-    activeColor?: string;
-    fontColor?: string;
-    syncWithDirections?: boolean;
-    // Hold (tap and hold) action
-    holdEnabled?: boolean;
-    hold?: ButtonMacroConfig;
-}
+export type { MacroType, ButtonMacroConfig };
+export { defaultFontColor };
+export type ButtonSetting = MobileButtonSetting;
 
 export interface RadialCommandSetting {
     id: string;
@@ -56,8 +20,6 @@ export interface RadialSettings {
     commands: RadialCommandSetting[];
 }
 
-export const defaultFontColor = '#f1f5f9';
-
 export const defaultBackground = 'rgba(135, 206, 235, 0.7)';
 
 export const defaultButtonSize = 36;
@@ -66,18 +28,18 @@ export const defaultButtonGap = 10;
 
 export const defaultSettings: Record<string, ButtonSetting> = {
     // top row buttons
-    'z-list-toggle': { macro: 'zList', label: '/z', color: '#6EB4DC', fontColor: defaultFontColor },
-    'zas-list-toggle': { macro: 'zaList', label: '/za', color: '#6EB4DC', fontColor: defaultFontColor },
-    'go-button': { macro: 'command', label: '/go', color: '#6EB4DC', fontColor: defaultFontColor, command: '/go' },
-    'buttons-toggle': { macro: 'toggleButtons', label: '⇩', color: '#6EB4DC', fontColor: defaultFontColor },
-    'bracket-right-button': { macro: 'functional', label: ']', color: '#6EB4DC', fontColor: defaultFontColor },
-    'button-1': { macro: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC', fontColor: defaultFontColor },
-    'button-2': { macro: 'command', label: '/z cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/z' },
-    'button-3': { macro: 'command', label: '/za cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/za' },
+    'z-list-toggle': { macroType: 'zList', label: '/z', color: '#6EB4DC', fontColor: defaultFontColor },
+    'zas-list-toggle': { macroType: 'zaList', label: '/za', color: '#6EB4DC', fontColor: defaultFontColor },
+    'go-button': { macroType: 'command', label: '/go', color: '#6EB4DC', fontColor: defaultFontColor, command: '/go' },
+    'buttons-toggle': { macroType: 'toggleButtons', label: '⇩', color: '#6EB4DC', fontColor: defaultFontColor },
+    'bracket-right-button': { macroType: 'functional', label: ']', color: '#6EB4DC', fontColor: defaultFontColor },
+    'button-1': { macroType: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC', fontColor: defaultFontColor },
+    'button-2': { macroType: 'command', label: '/z cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/z' },
+    'button-3': { macroType: 'command', label: '/za cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/za' },
 
     // direction buttons in visual order
     'nw-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '↖',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -86,7 +48,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'nw',
     },
     'n-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '↑',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -95,7 +57,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'n',
     },
     'ne-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '↗',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -104,7 +66,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'ne',
     },
     'u-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: 'u',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -113,7 +75,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'u',
     },
     'w-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '←',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -121,9 +83,9 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         command: 'w',
         direction: 'w',
     },
-    'c-button': { macro: 'command', label: 'zerknij', color: '#6CA6CD', fontColor: defaultFontColor, command: 'zerknij' },
+    'c-button': { macroType: 'command', label: 'zerknij', color: '#6CA6CD', fontColor: defaultFontColor, command: 'zerknij' },
     'e-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '→',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -132,7 +94,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'e',
     },
     'd-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: 'd',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -141,7 +103,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'd',
     },
     'sw-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '↙',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -150,7 +112,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 'sw',
     },
     's-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '↓',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -159,7 +121,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         direction: 's',
     },
     'se-button': {
-        macro: 'kierunek',
+        macroType: 'kierunek',
         label: '↘',
         color: '#6CA6CD',
         activeColor: '#2fa7c5',
@@ -167,7 +129,7 @@ export const defaultSettings: Record<string, ButtonSetting> = {
         command: 'se',
         direction: 'se',
     },
-    'special-exit-button': { macro: 'specialExit', label: 'sp ex', color: '#6CA6CD', fontColor: defaultFontColor },
+    'special-exit-button': { macroType: 'specialExit', label: 'sp ex', color: '#6CA6CD', fontColor: defaultFontColor },
 };
 
 export const defaultOrder = [
@@ -216,7 +178,7 @@ export function createDefaultLayout(): LayoutSettings {
     return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols, background: defaultBackground };
 }
 
-const emptyButton: ButtonSetting = { macro: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
+const emptyButton: ButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 const defaultRadialSettings: RadialSettings = {
     enabled: true,
@@ -239,9 +201,10 @@ function parseSteps(raw: unknown): ButtonMacroConfig[] | undefined {
     const steps: ButtonMacroConfig[] = [];
     for (const entry of raw) {
         if (!entry || typeof entry !== 'object') continue;
-        const macro = typeof entry.macro === 'string' ? entry.macro : '';
-        if (!macro || macro === 'compound') continue; // prevent nesting
-        const step: ButtonMacroConfig = { macro };
+        const macroType = typeof entry.macroType === 'string' ? entry.macroType
+            : typeof entry.macro === 'string' ? entry.macro : '';
+        if (!macroType || macroType === 'compound') continue; // prevent nesting
+        const step: ButtonMacroConfig = { macroType };
         if (typeof entry.command === 'string') step.command = entry.command;
         if (typeof entry.direction === 'string') step.direction = entry.direction;
         if (typeof entry.enemySlot === 'number') step.enemySlot = entry.enemySlot;
@@ -276,11 +239,21 @@ function mergeButtonSettings(buttons: Record<string, ButtonSetting>): Record<str
     const keys = new Set([...Object.keys(defaultSettings), ...Object.keys(buttons || {})]);
     keys.forEach(id => {
         const base = defaultSettings[id] || emptyButton;
-        const override = (buttons && buttons[id]) || {};
+        const override = (buttons && buttons[id]) || {} as any;
+        // Migrate old macro field to macroType
+        if (typeof override.macro === 'string' && typeof override.macroType !== 'string') {
+            override.macroType = override.macro;
+            delete override.macro;
+        }
         const cfg: ButtonSetting = { ...base, ...override };
         cfg.fontColor = cfg.fontColor || base.fontColor || defaultFontColor;
-        if (cfg.macro === 'compound') {
+        if (cfg.macroType === 'compound') {
             cfg.steps = parseSteps((override as any).steps);
+        }
+        // Migrate hold.macro → hold.macroType
+        if (cfg.hold && typeof (cfg.hold as any).macro === 'string' && typeof cfg.hold.macroType !== 'string') {
+            cfg.hold = { ...cfg.hold, macroType: (cfg.hold as any).macro };
+            delete (cfg.hold as any).macro;
         }
         merged[id] = cfg;
     });
@@ -453,9 +426,9 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             // Handle color syncing for special exit buttons
             let effectiveColor = cfg.color;
             let effectiveActiveColor = cfg.activeColor;
-            if (cfg.macro === 'specialExit' && cfg.syncWithDirections) {
+            if (cfg.macroType === 'specialExit' && cfg.syncWithDirections) {
                 // Find a direction button to sync colors from
-                const directionButton = Object.values(set.buttons).find(b => b.macro === 'kierunek');
+                const directionButton = Object.values(set.buttons).find(b => b.macroType === 'kierunek');
                 if (directionButton) {
                     effectiveColor = directionButton.color;
                     effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
@@ -465,18 +438,18 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
             const btn = document.createElement('button');
             btn.id = id;
             btn.className = 'mobile-button';
-            if (cfg.macro === 'kierunek') {
+            if (cfg.macroType === 'kierunek') {
                 btn.classList.add('direction-button');
-            } else if (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections)) {
+            } else if (cfg.macroType === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections)) {
                 btn.classList.add('direction-button');
                 btn.classList.add('mobile-button-text');
             } else {
                 btn.classList.add('mobile-button-text');
             }
-            const isEmpty = cfg.macro === 'empty' || !cfg.label;
+            const isEmpty = cfg.macroType === 'empty' || !cfg.label;
             if (!isEmpty) {
                 btn.textContent = cfg.label;
-                if (cfg.macro === 'kierunek' || (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
+                if (cfg.macroType === 'kierunek' || (cfg.macroType === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
                     btn.style.setProperty('--color', effectiveColor);
                     btn.style.setProperty('--active-color', effectiveActiveColor || '#2fa7c5');
                     btn.style.backgroundColor = effectiveColor;
