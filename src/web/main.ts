@@ -80,10 +80,10 @@ initLogFileSaver(arkadiaClient).catch(err => console.error('File saver init fail
 
 // Run migrations before initializing the client
 migrateNewlyCharacterScopedKeys();
+migrateMobileButtonMacroField();
 runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();
-migrateMobileButtonMacroField();
 
 // Initialize Firebase real-time sync listener (skip on localhost)
 if (!(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {

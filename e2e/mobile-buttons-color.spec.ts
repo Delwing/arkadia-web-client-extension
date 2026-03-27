@@ -90,7 +90,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await macroSelect.selectOption('command');
 
         // Wait for command textarea to appear
-        const commandInput = configPanel.locator('.mobile-button-command');
+        const commandInput = configPanel.locator('textarea');
         await expect(commandInput, 'command input should be visible').toBeVisible();
 
         // Set a command
@@ -175,7 +175,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(selectedMacro, 'macro should still be command after reload').toBe('command');
 
         // Verify the command is still set
-        const commandInputAfterReload = configPanelAfterReload.locator('.mobile-button-command');
+        const commandInputAfterReload = configPanelAfterReload.locator('textarea');
         await expect(commandInputAfterReload, 'command input should be visible after reload').toBeVisible();
         const commandValue = await commandInputAfterReload.inputValue();
         expect(commandValue, 'command should still be test command after reload').toBe('test command');
@@ -220,7 +220,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await macroSelect.selectOption('kierunek');
 
         // Check that direction select appears
-        const directionSelect = configPanel.locator('.mobile-button-direction');
+        const directionSelect = configPanel.locator('select').nth(1);
         await expect(directionSelect, 'direction select should be visible for kierunek macro').toBeVisible();
 
         // Close config panel
@@ -237,7 +237,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         const macroSelect2 = configPanel.locator('.mobile-button-macro');
         await macroSelect2.selectOption('command');
 
-        const commandInput = configPanel.locator('.mobile-button-command');
+        const commandInput = configPanel.locator('textarea');
         await expect(commandInput, 'command input should be visible for command macro').toBeVisible();
     });
 
@@ -302,7 +302,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         const macroSelect = configPanel.locator('.mobile-button-macro');
         await macroSelect.selectOption('command');
 
-        const commandInput = configPanel.locator('.mobile-button-command');
+        const commandInput = configPanel.locator('textarea');
         await commandInput.fill('zerknij');
 
         const labelInput = configPanel.locator('.mobile-button-label');

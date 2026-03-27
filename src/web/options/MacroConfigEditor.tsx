@@ -115,6 +115,7 @@ function CompoundStepsEditor({ steps, onChange, pluginMacros }: CompoundStepsEdi
 
     return (
         <div>
+            <Form.Label className="small fw-bold">Kroki</Form.Label>
             {steps.map((step, index) => (
                 <div key={index} className="mb-2 p-2 border rounded">
                     <div className="d-flex justify-content-between align-items-center mb-1">
