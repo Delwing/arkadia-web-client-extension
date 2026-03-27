@@ -404,6 +404,9 @@ export default class DesktopButtons {
                 this.client.blockEnemySlot(slot);
                 break;
             }
+            case 'attackAllEnemies':
+                this.client.attackAllEnemies();
+                break;
             case 'mute':
                 this.client.SoundManager.mute();
                 break;

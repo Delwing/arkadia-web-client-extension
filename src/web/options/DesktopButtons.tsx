@@ -46,6 +46,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "moveMode", label: "Tryb ruchu" },
     { value: "attackEnemy", label: "Atakuj wroga" },
     { value: "blockEnemy", label: "Zablokuj wroga" },
+    { value: "attackAllEnemies", label: "Atakuj wszystkich wrogow" },
     { value: "functional", label: "Bind funkcyjny" },
     { value: "kierunek", label: "Kierunek" },
     { value: "specialExit", label: "Wyjscie specjalne" },

@@ -243,6 +243,10 @@ export default class Client {
         // Implementation provided by enemyBinds.ts
     }
 
+    attackAllEnemies() {
+        this.AttackController.attackAllEnemies((id) => this.AllyProtection.isAlly(id));
+    }
+
     releaseGuard() {
         this.sendCommand('przestan zaslaniac')
     }

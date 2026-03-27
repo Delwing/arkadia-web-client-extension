@@ -16,6 +16,7 @@ export type MacroType =
     | 'toggleButtons'
     | 'attackEnemy'
     | 'blockEnemy'
+    | 'attackAllEnemies'
     | 'mute'
     | 'unmute'
     | 'empty';

@@ -42,6 +42,7 @@ const macroOptions: { value: MacroType; label: string }[] = [
     { value: "toggleButtons", label: "Przełącz przyciski" },
     { value: "attackEnemy", label: "Atakuj wroga" },
     { value: "blockEnemy", label: "Zablokuj wroga" },
+    { value: "attackAllEnemies", label: "Atakuj wszystkich wrogow" },
     { value: "mute", label: "Wycisz dzwieki" },
     { value: "unmute", label: "Wlacz dzwieki" },
     { value: "empty", label: "Puste" },

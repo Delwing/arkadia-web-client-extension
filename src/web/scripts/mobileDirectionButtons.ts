@@ -1274,6 +1274,9 @@ export default class MobileDirectionButtons {
                     this.client.blockEnemySlot(enemySlot);
                 }
                 break;
+            case 'attackAllEnemies':
+                this.client.attackAllEnemies();
+                break;
             case 'mute':
                 this.client.SoundManager.mute();
                 break;

@@ -41,6 +41,17 @@ export function createAttackController(client: Client) {
         }
     };
 
+    const attackAllEnemies = (isAlly?: (id: number) => boolean) => {
+        const objects = client.ObjectManager.getObjectsOnLocation();
+        const targets = objects.filter(o =>
+            o.__category === 'rest' || o.__category === 'rest-noncombat'
+        );
+        for (const t of targets) {
+            if (isAlly && isAlly(t.num)) continue;
+            attackById(t.num);
+        }
+    };
+
     const support = (command: string = supportCommand) => {
         client.sendCommand(command);
         const id = client.TeamManager.getLeaderId?.();
@@ -51,6 +62,7 @@ export function createAttackController(client: Client) {
 
     return {
         attackById,
+        attackAllEnemies,
         support,
         getAttackCommand: () => attackCommand,
         getSupportCommand: () => supportCommand,
