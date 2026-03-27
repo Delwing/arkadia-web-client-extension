@@ -1,10 +1,6 @@
 import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
-import { MacroType, ButtonMacroConfig, MobileButtonSetting, defaultFontColor } from "./buttonSettings";
-
-export type { MacroType, ButtonMacroConfig };
-export { defaultFontColor };
-export type ButtonSetting = MobileButtonSetting;
+import { ButtonMacroConfig, MobileButtonSetting, defaultFontColor } from "./buttonSettings";
 
 export interface RadialCommandSetting {
     id: string;
@@ -26,7 +22,7 @@ export const defaultButtonSize = 36;
 
 export const defaultButtonGap = 10;
 
-export const defaultSettings: Record<string, ButtonSetting> = {
+export const defaultSettings: Record<string, MobileButtonSetting> = {
     // top row buttons
     'z-list-toggle': { macroType: 'zList', label: '/z', color: '#6EB4DC', fontColor: defaultFontColor },
     'zas-list-toggle': { macroType: 'zaList', label: '/za', color: '#6EB4DC', fontColor: defaultFontColor },
@@ -158,7 +154,7 @@ export const defaultOrder = [
 export const defaultCols = 4;
 
 export interface LayoutSettings {
-    buttons: Record<string, ButtonSetting>;
+    buttons: Record<string, MobileButtonSetting>;
     order: string[];
     cols: number;
     background: string;
@@ -178,7 +174,7 @@ export function createDefaultLayout(): LayoutSettings {
     return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols, background: defaultBackground };
 }
 
-const emptyButton: ButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
+const emptyButton: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 const defaultRadialSettings: RadialSettings = {
     enabled: true,
@@ -216,26 +212,26 @@ function parseSteps(raw: unknown): ButtonMacroConfig[] | undefined {
     return steps.length > 0 ? steps : undefined;
 }
 
-function extractButtons(set: any): Record<string, ButtonSetting> {
+function extractButtons(set: any): Record<string, MobileButtonSetting> {
     if (!set || typeof set !== 'object') {
         return {};
     }
     const candidate = set.buttons && typeof set.buttons === 'object' ? set.buttons : set;
-    const result: Record<string, ButtonSetting> = {};
+    const result: Record<string, MobileButtonSetting> = {};
     Object.keys(candidate).forEach(key => {
         if (['order', 'cols', 'background'].includes(key)) {
             return;
         }
         const value = candidate[key];
         if (value && typeof value === 'object') {
-            result[key] = value as ButtonSetting;
+            result[key] = value as MobileButtonSetting;
         }
     });
     return result;
 }
 
-function mergeButtonSettings(buttons: Record<string, ButtonSetting>): Record<string, ButtonSetting> {
-    const merged: Record<string, ButtonSetting> = {};
+function mergeMobileButtonSettings(buttons: Record<string, MobileButtonSetting>): Record<string, MobileButtonSetting> {
+    const merged: Record<string, MobileButtonSetting> = {};
     const keys = new Set([...Object.keys(defaultSettings), ...Object.keys(buttons || {})]);
     keys.forEach(id => {
         const base = defaultSettings[id] || emptyButton;
@@ -245,7 +241,7 @@ function mergeButtonSettings(buttons: Record<string, ButtonSetting>): Record<str
             override.macroType = override.macro;
             delete override.macro;
         }
-        const cfg: ButtonSetting = { ...base, ...override };
+        const cfg: MobileButtonSetting = { ...base, ...override };
         cfg.fontColor = cfg.fontColor || base.fontColor || defaultFontColor;
         if (cfg.macroType === 'compound') {
             cfg.steps = parseSteps((override as any).steps);
@@ -261,7 +257,7 @@ function mergeButtonSettings(buttons: Record<string, ButtonSetting>): Record<str
 }
 
 function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout()): LayoutSettings {
-    const buttons = mergeButtonSettings(extractButtons(set));
+    const buttons = mergeMobileButtonSettings(extractButtons(set));
     const order = Array.isArray(set?.order) ? set.order : [...fallback.order];
     const cols = typeof set?.cols === 'number' && set.cols > 0 ? set.cols : fallback.cols;
     const background = typeof set?.background === 'string' && set.background ? set.background : fallback.background;
@@ -339,19 +335,19 @@ export function loadSettings(): Settings {
                         : defaultBackground;
             return {
                 solo: {
-                    buttons: mergeButtonSettings(extractButtons(raw.solo)),
+                    buttons: mergeMobileButtonSettings(extractButtons(raw.solo)),
                     order: [...order],
                     cols,
                     background: soloBackground,
                 },
                 team: {
-                    buttons: mergeButtonSettings(extractButtons(raw.team || raw.solo)),
+                    buttons: mergeMobileButtonSettings(extractButtons(raw.team || raw.solo)),
                     order: [...order],
                     cols,
                     background: teamBackground,
                 },
                 leader: {
-                    buttons: mergeButtonSettings(extractButtons(raw.leader || raw.team || raw.solo)),
+                    buttons: mergeMobileButtonSettings(extractButtons(raw.leader || raw.team || raw.solo)),
                     order: [...order],
                     cols,
                     background: leaderBackground,
@@ -418,7 +414,7 @@ export function applySettings(settings: Settings, inTeam = false, isLeader = fal
         const prze = document.getElementById('prze-buttons-list');
         const idz = document.getElementById('idz-buttons-list');
         container.querySelectorAll('button').forEach(b => b.remove());
-        const empty: ButtonSetting = { ...emptyButton };
+        const empty: MobileButtonSetting = { ...emptyButton };
         const insertBefore = z || zas || w || prze || idz || null;
         set.order.forEach(id => {
             const cfg = set.buttons[id] || defaultSettings[id] || empty;

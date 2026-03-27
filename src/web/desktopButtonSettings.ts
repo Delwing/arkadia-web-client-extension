@@ -9,7 +9,6 @@ import {
     defaultFontColor,
 } from "./buttonSettings";
 
-export type { DesktopButtonSetting, ListPosition, ListGrowDirection };
 export { defaultFontColor };
 
 export interface DesktopButtonsSettings {
