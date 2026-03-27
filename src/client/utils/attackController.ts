@@ -48,7 +48,7 @@ export function createAttackController(client: Client) {
         );
         for (const t of targets) {
             if (isAlly && isAlly(t.num)) continue;
-            attackById(t.num);
+            client.sendCommand(`${attackCommand} ob_${t.num}`);
         }
     };
 
