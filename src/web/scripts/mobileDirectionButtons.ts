@@ -6,7 +6,7 @@ import {
 } from "../mobileButtonSettings";
 import type { MobileButtonSetting } from "../buttonSettings";
 import { defaultFontColor } from "../buttonSettings";
-import {characterStorage, globalStorage} from "@modules/core/storage";
+import {globalStorage} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
 import {
     getButtonMacroDisplayInfo,
@@ -40,7 +40,6 @@ export default class MobileDirectionButtons {
     private wToggle: HTMLButtonElement | null = null;
     private przeToggle: HTMLButtonElement | null = null;
     private idzToggle: HTMLButtonElement | null = null;
-    private bracketRightButton: HTMLButtonElement | null = null;
     private toggleButton: HTMLButtonElement | null = null;
     private enabled = false;
     private isMobile = false;
@@ -96,7 +95,6 @@ export default class MobileDirectionButtons {
         this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement;
         this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement;
         this.idzToggle = null;
-        this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement;
         this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement;
 
         if (!this.container) {
@@ -126,7 +124,6 @@ export default class MobileDirectionButtons {
         this.updateTeamMode();
         this.setupEventHandlers();
         this.applyActiveSettings();
-        this.updateBracketRightButton();
         this.updateToggleButton();
         this.setupDraggable();
         this.checkMobile();
@@ -235,7 +232,6 @@ export default class MobileDirectionButtons {
         this.client.on('mobileButtonsSettings', (settings) => {
             this.buttonSettings = (settings ?? this.buttonSettings) as typeof this.buttonSettings;
             this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement | null;
-            this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement | null;
             this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement | null;
             this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement | null;
             this.wToggle = null;
@@ -266,11 +262,6 @@ export default class MobileDirectionButtons {
             this.updateTeamMode();
         });
 
-        // Update functional bind label when settings change
-        this.updateBracketRightButton();
-        characterStorage.onChange('settings', () => {
-            this.updateBracketRightButton();
-        });
 
         // Enable by default for all devices (unless showButtons is explicitly false)
         const uiSettings = globalStorage.get('uiSettings');
@@ -723,10 +714,6 @@ export default class MobileDirectionButtons {
         }
     }
 
-    private updateBracketRightButton() {
-        if (!this.bracketRightButton) return;
-        this.bracketRightButton.textContent = this.client.FunctionalBind.getLabel();
-    }
 
     private updateToggleButton() {
         if (!this.toggleButton) return;
@@ -923,7 +910,6 @@ export default class MobileDirectionButtons {
         btn.replaceWith(clone);
         const newBtn = clone;
         this.applyButtonSize(newBtn);
-        if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
         if (id === 'buttons-toggle') {
             this.toggleButton = newBtn;
             this.updateToggleButton();
