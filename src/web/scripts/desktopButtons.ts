@@ -7,11 +7,11 @@ import {
 } from "../desktopButtonSettings";
 import type { DesktopButtonSetting, ListGrowDirection, ListPosition } from "../buttonSettings";
 import {
-    executeButtonMacro,
     getButtonMacroDisplayInfo,
     isStatefulMacro
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
+import { executeMacro, type MacroExecutorCallbacks } from "./buttonMacroExecutor";
 
 const LONG_PRESS_DURATION = 1000;  // 1s for drag activation
 const HOLD_THRESHOLD = 500;  // 500ms determines tap vs hold
@@ -348,77 +348,15 @@ export default class DesktopButtons {
         });
     }
 
-    private executeMacro(
-        macroType: string,
-        command?: string,
-        enemySlot?: number,
-        pluginConfig?: Record<string, any>,
-        settings?: DesktopButtonSetting,
-        e?: MouseEvent
-    ) {
-        // Handle plugin macros (state is managed globally by the registry)
-        if (macroType.startsWith('plugin:') && settings) {
-            executeButtonMacro(macroType, settings, this.client, pluginConfig || {});
-            return;
-        }
-
-        // Execute macro based on type
-        switch (macroType) {
-            case 'command':
-                if (command) {
-                    const commands = command.split('\n').filter(cmd => cmd.trim());
-                    for (const cmd of commands) {
-                        this.client.sendCommand(cmd.trim());
-                    }
-                }
-                break;
-            case 'zList':
-            case 'zaList':
-            case 'wList':
-            case 'przeList':
-            case 'idzList':
+    private getCallbacks(settings?: DesktopButtonSetting, e?: MouseEvent): MacroExecutorCallbacks {
+        return {
+            toggleList: () => {
                 if (e && settings) {
                     e.stopPropagation();
                     this.toggleList(settings.id, settings);
                 }
-                break;
-            case 'wesprzyj':
-                this.client.support();
-                break;
-            case 'moveMode':
-                if (!this.client.carriageMode) {
-                    const options = this.getMoveModeOptionsCount();
-                    this.client.moveMode = (this.client.moveMode + 1) % options;
-                    this.client.sendEvent('moveModeChanged', this.client.moveMode);
-                }
-                break;
-            case 'attackEnemy': {
-                const slot = enemySlot ?? 0;
-                this.client.attackEnemySlot(slot);
-                break;
-            }
-            case 'blockEnemy': {
-                const slot = enemySlot ?? 0;
-                this.client.blockEnemySlot(slot);
-                break;
-            }
-            case 'attackAllEnemies':
-                this.client.attackAllEnemies();
-                break;
-            case 'mute':
-                this.client.SoundManager.mute();
-                break;
-            case 'unmute':
-                this.client.SoundManager.unmute();
-                break;
-            case 'compound':
-                if (settings?.steps) {
-                    for (const step of settings.steps) {
-                        this.executeMacro(step.macroType, step.command, step.enemySlot, step.pluginConfig, settings);
-                    }
-                }
-                break;
-        }
+            },
+        };
     }
 
     private handleClick(e: MouseEvent, settings: DesktopButtonSetting) {
@@ -444,12 +382,8 @@ export default class DesktopButtons {
             return;
         }
 
-        this.executeMacro(settings.macroType, settings.command, settings.enemySlot, settings.pluginConfig, settings, e);
-    }
-
-    private getMoveModeOptionsCount(): number {
-        const inTeam = this.client.TeamManager?.isInAnyTeam?.() ?? false;
-        return inTeam ? 3 : 2;
+        const btn = e.currentTarget as HTMLButtonElement;
+        executeMacro(this.client, settings.macroType, settings, this.getCallbacks(settings, e), btn);
     }
 
     private handleMouseDown(e: MouseEvent, settings: DesktopButtonSetting) {
@@ -519,7 +453,7 @@ export default class DesktopButtons {
         this.updateDragPosition(e.clientX, e.clientY);
     }
 
-    private handleMouseUp(e: MouseEvent) {
+    private handleMouseUp(_e: MouseEvent) {
         // Handle hold button release
         this.buttonPressStart.forEach((pressStart, buttonId) => {
             const settings = pressStart.settings;
@@ -547,24 +481,11 @@ export default class DesktopButtons {
             if (elapsed >= HOLD_THRESHOLD) {
                 // Execute hold action
                 const hold = settings.hold!;
-                const holdSettings = { ...settings, steps: hold.steps };
-                this.executeMacro(
-                    hold.macroType,
-                    hold.command,
-                    hold.enemySlot,
-                    hold.pluginConfig,
-                    holdSettings
-                );
+                const holdConfig = { ...settings, macroType: hold.macroType, command: hold.command, direction: hold.direction, enemySlot: hold.enemySlot, pluginConfig: hold.pluginConfig, steps: hold.steps };
+                executeMacro(this.client, hold.macroType, holdConfig, this.getCallbacks(settings), btn);
             } else {
                 // Execute tap action
-                this.executeMacro(
-                    settings.macroType,
-                    settings.command,
-                    settings.enemySlot,
-                    settings.pluginConfig,
-                    settings,
-                    e
-                );
+                executeMacro(this.client, settings.macroType, settings, this.getCallbacks(settings), btn);
             }
         });
 
@@ -673,23 +594,11 @@ export default class DesktopButtons {
             if (elapsed >= HOLD_THRESHOLD) {
                 // Execute hold action
                 const hold = settings.hold!;
-                const holdSettings = { ...settings, steps: hold.steps };
-                this.executeMacro(
-                    hold.macroType,
-                    hold.command,
-                    hold.enemySlot,
-                    hold.pluginConfig,
-                    holdSettings
-                );
+                const holdConfig = { ...settings, macroType: hold.macroType, command: hold.command, direction: hold.direction, enemySlot: hold.enemySlot, pluginConfig: hold.pluginConfig, steps: hold.steps };
+                executeMacro(this.client, hold.macroType, holdConfig, this.getCallbacks(settings), btn);
             } else {
                 // Execute tap action
-                this.executeMacro(
-                    settings.macroType,
-                    settings.command,
-                    settings.enemySlot,
-                    settings.pluginConfig,
-                    settings
-                );
+                executeMacro(this.client, settings.macroType, settings, this.getCallbacks(settings), btn);
             }
         });
 
