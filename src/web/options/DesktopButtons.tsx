@@ -28,6 +28,7 @@ import MacroConfigEditor from "./MacroConfigEditor";
 import HoldConfig from "./HoldConfig";
 
 const listMacros = ['zList', 'zaList', 'wList', 'przeList', 'idzList'];
+const desktopMacroFilter = (opt: { value: string }) => opt.value !== 'toggleButtons';
 
 function isListMacro(macroType: string): boolean {
     return listMacros.includes(macroType);
@@ -305,6 +306,7 @@ function DesktopButtons() {
                             }}
                             pluginMacros={pluginMacros}
                             showUnavailableWarning
+                            filter={desktopMacroFilter}
                         />
                         {!isButtonMacroAvailable(selectedBtn.macroType) && (
                             <Form.Text className="text-warning">

@@ -11,7 +11,7 @@ import {
     isStatefulMacro
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
-import { executeMacro, type MacroExecutorCallbacks } from "./buttonMacroExecutor";
+import { executeMacro, type MacroExecutorCallbacks, updateMoveModeLabel } from "./buttonMacroExecutor";
 
 const LONG_PRESS_DURATION = 1000;  // 1s for drag activation
 const HOLD_THRESHOLD = 500;  // 500ms determines tap vs hold
@@ -41,6 +41,7 @@ export default class DesktopButtons {
     private buttonPressStart: Map<string, { time: number; x: number; y: number; settings: DesktopButtonSetting; btn: HTMLButtonElement }> = new Map();
     private buttonDragged: Set<string> = new Set();
     private buttonHoldGlowTimers: Map<string, number> = new Map();
+
 
     constructor(client: Client) {
         this.client = client;
@@ -150,6 +151,12 @@ export default class DesktopButtons {
         }
 
         btn.textContent = displayLabel;
+
+        // For moveMode buttons, store the user label as prefix and show mode suffix
+        if (settings.macroType === 'moveMode') {
+            btn.dataset.moveModeLabel = settings.label || '';
+            updateMoveModeLabel(btn, this.client.moveMode);
+        }
 
         // Apply styles
         btn.style.left = `${settings.x}px`;
@@ -355,6 +362,9 @@ export default class DesktopButtons {
                     e.stopPropagation();
                     this.toggleList(settings.id, settings);
                 }
+            },
+            updateMoveModeButton: (btn: HTMLButtonElement) => {
+                updateMoveModeLabel(btn, this.client.moveMode);
             },
         };
     }

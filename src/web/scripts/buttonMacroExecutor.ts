@@ -4,12 +4,21 @@ import {
     executeButtonMacro,
     type AnyButtonSetting,
 } from "@modules/core/pluginButtonMacroRegistry";
+export const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
+export const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
+
+export function updateMoveModeLabel(button: HTMLButtonElement, mode: number) {
+    const prefix = button.dataset.moveModeLabel ?? '';
+    const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[mode]}` : MOVE_MODE_LABELS[mode];
+    const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[mode]}` : MOVE_MODE_TITLES[mode];
+    button.textContent = label;
+    button.title = title;
+}
 
 export interface MacroExecutorCallbacks {
     toggleList?: (macroType: string) => void;
     toggleVisibility?: () => void;
     updateMoveModeButton?: (btn: HTMLButtonElement) => void;
-    getFunctionalBinding?: () => { key: string; ctrl: boolean; alt: boolean; shift: boolean } | null;
 }
 
 /**
@@ -33,22 +42,9 @@ export function executeMacro(
     switch (macroType) {
         case 'empty':
             break;
-        case 'functional': {
-            const binding = callbacks?.getFunctionalBinding?.();
-            if (binding) {
-                const event = new KeyboardEvent('keydown', {
-                    code: binding.key,
-                    key: binding.key,
-                    ctrlKey: binding.ctrl,
-                    altKey: binding.alt,
-                    shiftKey: binding.shift,
-                    bubbles: true,
-                    cancelable: true
-                });
-                document.dispatchEvent(event);
-            }
+        case 'functional':
+            client.sendEvent('executeFunctionalBind');
             break;
-        }
         case 'command':
             if (config.command) {
                 const commands = config.command.split('\n').filter(cmd => cmd.trim());
@@ -112,7 +108,10 @@ export function executeMacro(
         case 'compound':
             if (config.steps) {
                 for (const step of config.steps) {
-                    executeMacro(client, step.macroType, step, callbacks, btn);
+                    // Merge step macro fields onto the parent button config so plugin
+                    // handlers still receive full button metadata (id, label, color, etc.)
+                    const stepConfig = { ...config, ...step, steps: step.steps };
+                    executeMacro(client, step.macroType, stepConfig, callbacks, btn);
                 }
             }
             break;

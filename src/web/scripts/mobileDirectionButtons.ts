@@ -1,5 +1,4 @@
 import Client from "@client/Client";
-import {formatLabel} from "@client/scripts/functionalBind";
 import {
     loadSettings as loadMobileButtonSettings,
     Settings,
@@ -14,7 +13,7 @@ import {
     isStatefulMacro
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
-import { executeMacro as executeSharedMacro, type MacroExecutorCallbacks } from "./buttonMacroExecutor";
+import { executeMacro as executeSharedMacro, type MacroExecutorCallbacks, MOVE_MODE_LABELS, updateMoveModeLabel } from "./buttonMacroExecutor";
 
 const ORIENTATIONS = ["portrait", "landscape"] as const;
 type Orientation = (typeof ORIENTATIONS)[number];
@@ -25,8 +24,6 @@ type StoredPosition = {
 };
 const DEFAULT_ORIGIN: StoredPosition["origin"] = "left";
 
-const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
-const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
 export default class MobileDirectionButtons {
     private client: Client;
@@ -45,10 +42,6 @@ export default class MobileDirectionButtons {
     private idzToggle: HTMLButtonElement | null = null;
     private bracketRightButton: HTMLButtonElement | null = null;
     private toggleButton: HTMLButtonElement | null = null;
-    private boundKey = 'BracketRight';
-    private boundCtrl = false;
-    private boundAlt = false;
-    private boundShift = false;
     private enabled = false;
     private isMobile = false;
 
@@ -273,27 +266,10 @@ export default class MobileDirectionButtons {
             this.updateTeamMode();
         });
 
-        // Listen for bind settings changes
-        const initialSettings = characterStorage.get('settings');
-        if (initialSettings) {
-            const bind = (initialSettings as any)?.binds?.main;
-            if (bind) {
-                this.boundKey = bind.key;
-                this.boundCtrl = !!bind.ctrl;
-                this.boundAlt = !!bind.alt;
-                this.boundShift = !!bind.shift;
-                this.updateBracketRightButton();
-            }
-        }
-        characterStorage.onChange('settings', (settings) => {
-            const bind = (settings as any)?.binds?.main;
-            if (bind) {
-                this.boundKey = bind.key;
-                this.boundCtrl = !!bind.ctrl;
-                this.boundAlt = !!bind.alt;
-                this.boundShift = !!bind.shift;
-                this.updateBracketRightButton();
-            }
+        // Update functional bind label when settings change
+        this.updateBracketRightButton();
+        characterStorage.onChange('settings', () => {
+            this.updateBracketRightButton();
         });
 
         // Enable by default for all devices (unless showButtons is explicitly false)
@@ -749,12 +725,7 @@ export default class MobileDirectionButtons {
 
     private updateBracketRightButton() {
         if (!this.bracketRightButton) return;
-        this.bracketRightButton.textContent = formatLabel({
-            key: this.boundKey,
-            ctrl: this.boundCtrl,
-            alt: this.boundAlt,
-            shift: this.boundShift,
-        });
+        this.bracketRightButton.textContent = this.client.FunctionalBind.getLabel();
     }
 
     private updateToggleButton() {
@@ -1154,11 +1125,7 @@ export default class MobileDirectionButtons {
             this.client.moveMode = safeMode;
             this.client.sendEvent('moveModeChanged', this.client.moveMode);
         }
-        const prefix = button.dataset.moveModeLabel ?? '';
-        const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[safeMode]}` : MOVE_MODE_LABELS[safeMode];
-        const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[safeMode]}` : MOVE_MODE_TITLES[safeMode];
-        button.textContent = label;
-        button.title = title;
+        updateMoveModeLabel(button, safeMode);
     }
 
     private getCallbacks(btn?: HTMLButtonElement): MacroExecutorCallbacks {
@@ -1168,12 +1135,6 @@ export default class MobileDirectionButtons {
             },
             toggleVisibility: () => this.toggleVisibility(),
             updateMoveModeButton: (b: HTMLButtonElement) => this.updateMoveModeButton(b),
-            getFunctionalBinding: () => ({
-                key: this.boundKey,
-                ctrl: this.boundCtrl,
-                alt: this.boundAlt,
-                shift: this.boundShift,
-            }),
         };
     }
 
