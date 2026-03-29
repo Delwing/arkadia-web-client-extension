@@ -112,8 +112,8 @@ function predictRealTime(
     let daysAhead = targetDayOfYear - clock.dayOfYear;
     if (daysAhead < 0) daysAhead += yearLength;
 
-    const mudMinutesUntil = daysAhead * 24 * 60 + (targetHour * 60) - (clock.hours * 60 + clock.minutes);
-    if (mudMinutesUntil < 0) return null; // event already passed today (same day)
+    let mudMinutesUntil = daysAhead * 24 * 60 + (targetHour * 60) - (clock.hours * 60 + clock.minutes);
+    if (mudMinutesUntil < 0) mudMinutesUntil += yearLength * 24 * 60;
 
     const realSeconds = mudMinutesUntil * MUD_MINUTE_IN_SECONDS;
     return new Date(Date.now() + realSeconds * 1000);
