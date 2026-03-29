@@ -33,7 +33,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openButtonsSettings(page);
+        await openButtonsSettings(page);
         await switchToDesktopTab(page);
 
         // Add a new desktop button
@@ -53,7 +53,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openButtonsSettings(page);
+        await openButtonsSettings(page);
         await switchToDesktopTab(page);
 
         // Add a new desktop button
@@ -242,7 +242,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openButtonsSettings(page);
+        await openButtonsSettings(page);
         await switchToDesktopTab(page);
 
         await page.getByText('+ Dodaj przycisk').click();
@@ -258,5 +258,89 @@ test.describe('Desktop buttons compound macro', () => {
         const options = await stepSelect.locator('option').allTextContents();
         expect(options, 'step options should not include compound').not.toContain(expect.stringContaining('wiele akcji'));
         expect(options, 'step options should not include empty').not.toContain('Pusty');
+    });
+
+    test('kierunek desktop button sends direction on click', async ({ page }) => {
+        await page.addInitScript(() => {
+            const settings = {
+                buttons: [
+                    {
+                        id: 'desktop-btn-1',
+                        label: 'North',
+                        macroType: 'kierunek',
+                        command: '',
+                        direction: 'n',
+                        color: '#6EB4DC',
+                        fontColor: '#f1f5f9',
+                        fontSize: 11,
+                        width: 80,
+                        height: 36,
+                        x: 100,
+                        y: 100,
+                        backgroundOpacity: 0.85,
+                    },
+                ],
+                locked: true,
+            };
+            localStorage.setItem('desktopButtonSettings', JSON.stringify(settings));
+        });
+
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await resetCommandLog(page);
+
+        const desktopBtn = page.locator('#desktop-buttons-container .desktop-button').first();
+        await expect(desktopBtn).toBeVisible();
+        await desktopBtn.click();
+
+        await expect.poll(
+            async () => await getCommandLog(page),
+            { message: 'should send direction command from desktop button', timeout: 5000 }
+        ).toEqual(expect.arrayContaining(['n']));
+    });
+
+    test('plain command desktop button sends command on click', async ({ page }) => {
+        // Pre-configure a desktop button with a plain command macro
+        await page.addInitScript(() => {
+            const settings = {
+                buttons: [
+                    {
+                        id: 'desktop-btn-1',
+                        label: 'TestCmd',
+                        macroType: 'command',
+                        command: 'zerknij',
+                        color: '#6EB4DC',
+                        fontColor: '#f1f5f9',
+                        fontSize: 11,
+                        width: 80,
+                        height: 36,
+                        x: 100,
+                        y: 100,
+                        backgroundOpacity: 0.85,
+                    },
+                ],
+                locked: true,
+            };
+            localStorage.setItem('desktopButtonSettings', JSON.stringify(settings));
+        });
+
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await resetCommandLog(page);
+
+        // Click the desktop button
+        const desktopBtn = page.locator('#desktop-buttons-container .desktop-button').first();
+        await expect(desktopBtn).toBeVisible();
+        await desktopBtn.click();
+
+        // Verify command was sent
+        await expect.poll(
+            async () => await getCommandLog(page),
+            { message: 'should send plain command from desktop button', timeout: 5000 }
+        ).toEqual(expect.arrayContaining(['zerknij']));
     });
 });

@@ -2397,6 +2397,23 @@ export interface ObjectListFiltersApi {
 }
 
 /**
+ * Settings for a single mobile button
+ */
+export interface MobileButtonSetting {
+    macroType: string;
+    label: string;
+    color: string;
+    fontColor?: string;
+    command?: string;
+    direction?: string;
+    activeColor?: string;
+    syncWithDirections?: boolean;
+    holdEnabled?: boolean;
+    hold?: { macroType: string; command?: string; direction?: string };
+    steps?: Array<{ macroType: string; command?: string; direction?: string }>;
+}
+
+/**
  * Handle returned by buttonMacros.register() for controlling macro state
  */
 
@@ -2492,7 +2509,7 @@ export interface ButtonMacrosApi {
     register(options: {
         id: string;
         label: string;
-        onClick: ((context: ButtonMacroClickContext) => void) | ((button: ButtonSetting, client: Client, config: Record<string, any>) => void);
+        onClick: ((context: ButtonMacroClickContext) => void) | ((button: MobileButtonSetting, client: Client, config: Record<string, any>) => void);
         configFields?: MacroConfigField[];
         states?: MacroState[];
         initialState?: string;

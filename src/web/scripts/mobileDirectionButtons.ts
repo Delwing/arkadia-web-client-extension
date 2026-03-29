@@ -1,20 +1,19 @@
 import Client from "@client/Client";
-import {formatLabel} from "@client/scripts/functionalBind";
 import {
     loadSettings as loadMobileButtonSettings,
-    ButtonSetting,
     Settings,
-    defaultFontColor,
     defaultBackground,
 } from "../mobileButtonSettings";
-import {characterStorage, globalStorage} from "@modules/core/storage";
+import type { MobileButtonSetting } from "../buttonSettings";
+import { defaultFontColor } from "../buttonSettings";
+import {globalStorage} from "@modules/core/storage";
 import {getShortDir} from "@shared/map/directions";
 import {
-    executeButtonMacro,
     getButtonMacroDisplayInfo,
     isStatefulMacro
 } from "@modules/core/pluginButtonMacroRegistry";
 import eventBus from "@modules/core/eventBus";
+import { executeMacro as executeSharedMacro, type MacroExecutorCallbacks, MOVE_MODE_LABELS, updateMoveModeLabel } from "./buttonMacroExecutor";
 
 const ORIENTATIONS = ["portrait", "landscape"] as const;
 type Orientation = (typeof ORIENTATIONS)[number];
@@ -25,8 +24,6 @@ type StoredPosition = {
 };
 const DEFAULT_ORIGIN: StoredPosition["origin"] = "left";
 
-const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
-const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
 export default class MobileDirectionButtons {
     private client: Client;
@@ -43,12 +40,7 @@ export default class MobileDirectionButtons {
     private wToggle: HTMLButtonElement | null = null;
     private przeToggle: HTMLButtonElement | null = null;
     private idzToggle: HTMLButtonElement | null = null;
-    private bracketRightButton: HTMLButtonElement | null = null;
     private toggleButton: HTMLButtonElement | null = null;
-    private boundKey = 'BracketRight';
-    private boundCtrl = false;
-    private boundAlt = false;
-    private boundShift = false;
     private enabled = false;
     private isMobile = false;
 
@@ -80,7 +72,7 @@ export default class MobileDirectionButtons {
         locked: false,
         radial: {enabled: true, commands: []},
     };
-    private buttonSettings: Record<string, ButtonSetting> = {};
+    private buttonSettings: Record<string, MobileButtonSetting> = {};
     private teamMode = false;
     private leaderMode = false;
     private hapticEnabled = true;
@@ -103,7 +95,6 @@ export default class MobileDirectionButtons {
         this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement;
         this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement;
         this.idzToggle = null;
-        this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement;
         this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement;
 
         if (!this.container) {
@@ -133,7 +124,6 @@ export default class MobileDirectionButtons {
         this.updateTeamMode();
         this.setupEventHandlers();
         this.applyActiveSettings();
-        this.updateBracketRightButton();
         this.updateToggleButton();
         this.setupDraggable();
         this.checkMobile();
@@ -197,7 +187,7 @@ export default class MobileDirectionButtons {
             Object.keys(this.buttonSettings).forEach(id => {
                 const btn = document.getElementById(id) as HTMLButtonElement | null;
                 const cfg = this.buttonSettings[id];
-                if (btn && cfg && cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
+                if (btn && cfg && cfg.macroType.startsWith('plugin:') && isStatefulMacro(cfg.macroType)) {
                     this.applyConfigToButton(id, btn);
                 }
             });
@@ -209,7 +199,7 @@ export default class MobileDirectionButtons {
             Object.keys(this.buttonSettings).forEach(id => {
                 const btn = document.getElementById(id) as HTMLButtonElement | null;
                 const cfg = this.buttonSettings[id];
-                if (btn && cfg && cfg.macro.startsWith('plugin:')) {
+                if (btn && cfg && cfg.macroType.startsWith('plugin:')) {
                     this.applyConfigToButton(id, btn);
                 }
             });
@@ -242,7 +232,6 @@ export default class MobileDirectionButtons {
         this.client.on('mobileButtonsSettings', (settings) => {
             this.buttonSettings = (settings ?? this.buttonSettings) as typeof this.buttonSettings;
             this.toggleButton = document.getElementById('buttons-toggle') as HTMLButtonElement | null;
-            this.bracketRightButton = document.getElementById('bracket-right-button') as HTMLButtonElement | null;
             this.zToggle = document.getElementById('z-list-toggle') as HTMLButtonElement | null;
             this.zasToggle = document.getElementById('zas-list-toggle') as HTMLButtonElement | null;
             this.wToggle = null;
@@ -273,28 +262,6 @@ export default class MobileDirectionButtons {
             this.updateTeamMode();
         });
 
-        // Listen for bind settings changes
-        const initialSettings = characterStorage.get('settings');
-        if (initialSettings) {
-            const bind = (initialSettings as any)?.binds?.main;
-            if (bind) {
-                this.boundKey = bind.key;
-                this.boundCtrl = !!bind.ctrl;
-                this.boundAlt = !!bind.alt;
-                this.boundShift = !!bind.shift;
-                this.updateBracketRightButton();
-            }
-        }
-        characterStorage.onChange('settings', (settings) => {
-            const bind = (settings as any)?.binds?.main;
-            if (bind) {
-                this.boundKey = bind.key;
-                this.boundCtrl = !!bind.ctrl;
-                this.boundAlt = !!bind.alt;
-                this.boundShift = !!bind.shift;
-                this.updateBracketRightButton();
-            }
-        });
 
         // Enable by default for all devices (unless showButtons is explicitly false)
         const uiSettings = globalStorage.get('uiSettings');
@@ -747,15 +714,6 @@ export default class MobileDirectionButtons {
         }
     }
 
-    private updateBracketRightButton() {
-        if (!this.bracketRightButton) return;
-        this.bracketRightButton.textContent = formatLabel({
-            key: this.boundKey,
-            ctrl: this.boundCtrl,
-            alt: this.boundAlt,
-            shift: this.boundShift,
-        });
-    }
 
     private updateToggleButton() {
         if (!this.toggleButton) return;
@@ -898,9 +856,9 @@ export default class MobileDirectionButtons {
         let effectiveActiveColor = cfg.activeColor;
         let effectiveLabel = cfg.label;
 
-        if (cfg.macro === 'specialExit' && cfg.syncWithDirections) {
+        if (cfg.macroType === 'specialExit' && cfg.syncWithDirections) {
             // Find a direction button to sync colors from
-            const directionButton = Object.values(this.buttonSettings).find(b => b.macro === 'kierunek');
+            const directionButton = Object.values(this.buttonSettings).find(b => b.macroType === 'kierunek');
             if (directionButton) {
                 effectiveColor = directionButton.color;
                 effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
@@ -908,13 +866,13 @@ export default class MobileDirectionButtons {
         }
 
         // Handle stateful plugin macros
-        if (cfg.macro.startsWith('plugin:') && isStatefulMacro(cfg.macro)) {
+        if (cfg.macroType.startsWith('plugin:') && isStatefulMacro(cfg.macroType)) {
             // Pass custom state overrides from pluginConfig if user customized them
             const customOverrides = {
                 labels: cfg.pluginConfig?.stateLabels as Record<string, string> | undefined,
                 colors: cfg.pluginConfig?.stateColors as Record<string, string> | undefined
             };
-            const displayInfo = getButtonMacroDisplayInfo(cfg.macro, customOverrides);
+            const displayInfo = getButtonMacroDisplayInfo(cfg.macroType, customOverrides);
             if (displayInfo) {
                 // Combine user label with state label: "userLabel stateLabel"
                 if (displayInfo.stateLabel) {
@@ -926,7 +884,7 @@ export default class MobileDirectionButtons {
             }
         }
 
-        const isEmpty = cfg.macro === 'empty' || !effectiveLabel;
+        const isEmpty = cfg.macroType === 'empty' || !effectiveLabel;
         btn.textContent = isEmpty ? '' : effectiveLabel;
         if (isEmpty) {
             btn.classList.add('empty');
@@ -940,7 +898,7 @@ export default class MobileDirectionButtons {
             btn.style.backgroundColor = effectiveColor;
             btn.style.border = '';
             btn.style.color = cfg.fontColor || defaultFontColor;
-            if (cfg.macro === 'kierunek' || (cfg.macro === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
+            if (cfg.macroType === 'kierunek' || (cfg.macroType === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
                 btn.style.setProperty('--color', effectiveColor);
                 btn.style.setProperty('--active-color', effectiveActiveColor || '#2fa7c5');
             } else {
@@ -952,24 +910,23 @@ export default class MobileDirectionButtons {
         btn.replaceWith(clone);
         const newBtn = clone;
         this.applyButtonSize(newBtn);
-        if (id === 'bracket-right-button') this.bracketRightButton = newBtn;
         if (id === 'buttons-toggle') {
             this.toggleButton = newBtn;
             this.updateToggleButton();
         }
         if (id === 'z-list-toggle') this.zToggle = newBtn;
         if (id === 'zas-list-toggle') this.zasToggle = newBtn;
-        if (cfg.macro === 'wList') {
+        if (cfg.macroType === 'wList') {
             this.wToggle = newBtn;
         } else if (this.wToggle === newBtn) {
             this.wToggle = null;
         }
-        if (cfg.macro === 'idzList') {
+        if (cfg.macroType === 'idzList') {
             this.idzToggle = newBtn;
         } else if (this.idzToggle === newBtn) {
             this.idzToggle = null;
         }
-        if (cfg.macro === 'przeList') {
+        if (cfg.macroType === 'przeList') {
             this.przeToggle = newBtn;
         } else if (this.przeToggle === newBtn) {
             this.przeToggle = null;
@@ -981,14 +938,14 @@ export default class MobileDirectionButtons {
                 newBtn.dataset.direction = dirKey;
             }
         }
-        if (cfg.macro === 'kierunek' && cfg.direction) {
+        if (cfg.macroType === 'kierunek' && cfg.direction) {
             newBtn.dataset.direction = getShortDir(cfg.direction);
         } else if (!newBtn.dataset.direction) {
             newBtn.removeAttribute('data-direction');
         }
 
         // Hold action support - macro executes on release, duration determines tap vs hold
-        if (cfg.holdEnabled && cfg.hold?.macro) {
+        if (cfg.holdEnabled && cfg.hold?.macroType) {
             const hold = cfg.hold;
 
             const onPointerDown = (e: PointerEvent) => {
@@ -1064,20 +1021,20 @@ export default class MobileDirectionButtons {
 
                 if (elapsed >= MobileDirectionButtons.HOLD_DURATION) {
                     // Execute hold action (haptic already done when glow activated)
-                    const holdCfg: ButtonSetting = {
+                    const holdCfg: MobileButtonSetting = {
                         ...cfg,
-                        macro: hold.macro,
+                        macroType: hold.macroType,
                         command: hold.command,
                         direction: hold.direction,
                         enemySlot: hold.enemySlot,
                         pluginConfig: hold.pluginConfig,
                         steps: hold.steps,
                     };
-                    this.executeMacro(hold.macro, hold.command, hold.direction, hold.enemySlot, hold.pluginConfig, newBtn, holdCfg);
+                    executeSharedMacro(this.client, hold.macroType, holdCfg, this.getCallbacks(newBtn), newBtn);
                 } else {
                     // Execute tap action
                     if (this.hapticEnabled) navigator.vibrate?.(20);
-                    this.executeMacro(cfg.macro, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
+                    executeSharedMacro(this.client, cfg.macroType, cfg, this.getCallbacks(newBtn), newBtn);
                 }
             };
 
@@ -1103,17 +1060,17 @@ export default class MobileDirectionButtons {
             // Standard click handler (no hold)
             const handler = () => {
                 if (this.hapticEnabled) navigator.vibrate?.(20);
-                this.executeMacro(cfg.macro, cfg.command, cfg.direction, cfg.enemySlot, cfg.pluginConfig, newBtn, cfg);
+                executeSharedMacro(this.client, cfg.macroType, cfg, this.getCallbacks(newBtn), newBtn);
             };
             newBtn.addEventListener('click', handler);
         }
 
-        if (cfg.macro === 'moveMode') {
+        if (cfg.macroType === 'moveMode') {
             this.client.moveModeButton = newBtn;
             newBtn.dataset.moveModeLabel = cfg.label || '';
             this.updateMoveModeButton(newBtn);
             newBtn.disabled = this.client.carriageMode;
-        } else if (cfg.macro === 'specialExit') {
+        } else if (cfg.macroType === 'specialExit') {
             // Add direction-button class if activeColor is supported
                 newBtn.classList.add('direction-button');
                 newBtn.classList.add('mobile-button-text');
@@ -1154,149 +1111,36 @@ export default class MobileDirectionButtons {
             this.client.moveMode = safeMode;
             this.client.sendEvent('moveModeChanged', this.client.moveMode);
         }
-        const prefix = button.dataset.moveModeLabel ?? '';
-        const label = prefix ? `${prefix} ${MOVE_MODE_LABELS[safeMode]}` : MOVE_MODE_LABELS[safeMode];
-        const title = prefix ? `${prefix} ${MOVE_MODE_TITLES[safeMode]}` : MOVE_MODE_TITLES[safeMode];
-        button.textContent = label;
-        button.title = title;
+        updateMoveModeLabel(button, safeMode);
     }
 
-    private executeMacro(
-        macro: string,
-        command?: string,
-        direction?: string,
-        enemySlot?: number,
-        pluginConfig?: Record<string, any>,
-        btn?: HTMLButtonElement,
-        cfg?: ButtonSetting
-    ) {
-        switch (macro) {
-            case 'empty':
-                break;
-            case 'functional':
-                const event = new KeyboardEvent('keydown', {
-                    code: this.boundKey,
-                    key: this.boundKey,
-                    ctrlKey: this.boundCtrl,
-                    altKey: this.boundAlt,
-                    shiftKey: this.boundShift,
-                    bubbles: true,
-                    cancelable: true
-                });
-                document.dispatchEvent(event);
-                break;
-            case 'zList':
-                if (this.zList && this.zList.style.display === 'grid') {
-                    this.hideLists();
-                } else {
-                    this.hideLists();
-                    this.renderZList();
-                    if (this.zList) this.zList.style.display = 'grid';
-                    btn?.classList.add('active');
-                }
-                break;
-            case 'zaList':
-                if (this.zasList && this.zasList.style.display === 'grid') {
-                    this.hideLists();
-                } else {
-                    this.hideLists();
-                    this.renderZasList();
-                    if (this.zasList) this.zasList.style.display = 'grid';
-                    btn?.classList.add('active');
-                }
-                break;
-            case 'wList':
-                if (this.wList && this.wList.style.display === 'grid') {
-                    this.hideLists();
-                } else {
-                    this.hideLists();
-                    this.renderWList();
-                    if (this.wList) this.wList.style.display = 'grid';
-                    btn?.classList.add('active');
-                }
-                break;
-            case 'przeList':
-                if (this.przeList && this.przeList.style.display === 'grid') {
-                    this.hideLists();
-                } else {
-                    this.hideLists();
-                    this.renderPrzeList();
-                    if (this.przeList) this.przeList.style.display = 'grid';
-                    btn?.classList.add('active');
-                }
-                break;
-            case 'idzList':
-                if (this.idzList && this.idzList.style.display === 'grid') {
-                    this.hideLists();
-                } else {
-                    this.hideLists();
-                    this.renderIdzList();
-                    if (this.idzList) this.idzList.style.display = 'grid';
-                    btn?.classList.add('active');
-                }
-                break;
-            case 'toggleButtons':
-                this.toggleVisibility();
-                break;
-            case 'command':
-                if (command) this.client.sendCommand(command);
-                break;
-            case 'kierunek':
-                if (command) {
-                    this.client.sendCommand(command);
-                } else if (direction) {
-                    this.client.sendCommand(direction);
-                }
-                break;
-            case 'wesprzyj':
-                this.client.support();
-                break;
-            case 'moveMode':
-                if (this.client.carriageMode || !btn) break;
-                const options = this.getMoveModeOptionsCount() || 1;
-                this.client.moveMode = (this.client.moveMode + 1) % options;
-                this.updateMoveModeButton(btn);
-                this.client.sendEvent('moveModeChanged', this.client.moveMode);
-                break;
-            case 'specialExit':
-                const specialExits = this.client.Map.currentRoom?.specialExits ?? {};
-                const firstExit = Object.keys(specialExits)[0];
-                if (firstExit) {
-                    this.client.sendCommand(firstExit);
-                }
-                break;
-            case 'attackEnemy':
-                if (typeof enemySlot === 'number') {
-                    this.client.attackEnemySlot(enemySlot);
-                }
-                break;
-            case 'blockEnemy':
-                if (typeof enemySlot === 'number') {
-                    this.client.blockEnemySlot(enemySlot);
-                }
-                break;
-            case 'attackAllEnemies':
-                this.client.attackAllEnemies();
-                break;
-            case 'mute':
-                this.client.SoundManager.mute();
-                break;
-            case 'unmute':
-                this.client.SoundManager.unmute();
-                break;
-            case 'compound':
-                if (cfg?.steps) {
-                    for (const step of cfg.steps) {
-                        this.executeMacro(step.macro, step.command, step.direction, step.enemySlot, step.pluginConfig, btn, step as any);
-                    }
-                }
-                break;
-            default:
-                // Handle plugin macros
-                if (macro.startsWith('plugin:') && cfg) {
-                    executeButtonMacro(macro, cfg, this.client, pluginConfig || {});
-                }
-                break;
+    private getCallbacks(btn?: HTMLButtonElement): MacroExecutorCallbacks {
+        return {
+            toggleList: (macroType: string) => {
+                this.toggleMobileList(macroType, btn);
+            },
+            toggleVisibility: () => this.toggleVisibility(),
+            updateMoveModeButton: (b: HTMLButtonElement) => this.updateMoveModeButton(b),
+        };
+    }
+
+    private toggleMobileList(macroType: string, btn?: HTMLButtonElement) {
+        const listMap: Record<string, { list: HTMLDivElement | null; render: () => void }> = {
+            zList: { list: this.zList, render: () => this.renderZList() },
+            zaList: { list: this.zasList, render: () => this.renderZasList() },
+            wList: { list: this.wList, render: () => this.renderWList() },
+            przeList: { list: this.przeList, render: () => this.renderPrzeList() },
+            idzList: { list: this.idzList, render: () => this.renderIdzList() },
+        };
+        const entry = listMap[macroType];
+        if (!entry) return;
+        if (entry.list && entry.list.style.display === 'grid') {
+            this.hideLists();
+        } else {
+            this.hideLists();
+            entry.render();
+            if (entry.list) entry.list.style.display = 'grid';
+            btn?.classList.add('active');
         }
     }
 

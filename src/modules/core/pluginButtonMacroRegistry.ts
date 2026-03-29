@@ -1,10 +1,9 @@
 import type Client from "@client/Client";
-import type { ButtonSetting } from "@web/mobileButtonSettings";
-import type { DesktopButtonSetting } from "@web/desktopButtonSettings";
+import type { MobileButtonSetting, DesktopButtonSetting } from "@web/buttonSettings";
 import eventBus from "./eventBus";
 
 // Union type for button settings from both mobile and desktop
-export type AnyButtonSetting = ButtonSetting | DesktopButtonSetting;
+export type AnyButtonSetting = MobileButtonSetting | DesktopButtonSetting;
 
 export interface MacroConfigField {
     name: string;
@@ -58,7 +57,7 @@ export interface PluginButtonMacro {
      * Click handler - receives full context object
      * For backwards compatibility, also supports (button, client, config) signature
      */
-    onClick: ((context: ButtonMacroClickContext) => void) | ((button: ButtonSetting, client: Client, config: Record<string, any>) => void);
+    onClick: ((context: ButtonMacroClickContext) => void) | ((button: MobileButtonSetting, client: Client, config: Record<string, any>) => void);
     configFields?: MacroConfigField[];
     /**
      * For stateful macros: array of possible states

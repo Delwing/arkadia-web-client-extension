@@ -73,6 +73,11 @@ const migrations: Migration[] = [
             return settings;
         },
     },
+    {
+        version: 6,
+        description: 'Rename macro to macroType in mobileButtonSettings (handled by migrateMobileButtonMacroField)',
+        migrate: settings => settings,
+    },
 ];
 
 /**
@@ -252,6 +257,87 @@ export function migrateButtonSizeMultiplier(): void {
         }
     } catch (e) {
         console.error('[SettingsMigrations] Failed to migrate buttonSize multiplier:', e);
+    }
+}
+
+/**
+ * Rename `macro` to `macroType` in mobileButtonSettings.
+ * This is migration version 6 that converts the old field name used in
+ * mobile button configs to the unified `macroType` field.
+ */
+export function migrateMobileButtonMacroField(): void {
+    const currentVersion = getMigrationsVersion();
+
+    // This is migration version 6
+    if (currentVersion >= 6) {
+        return;
+    }
+
+    try {
+        const raw: any = globalStorage.get('mobileButtonSettings');
+        if (!raw || typeof raw !== 'object') {
+            return;
+        }
+
+        let changed = false;
+
+        function renameMacroInConfig(obj: any): void {
+            if (!obj || typeof obj !== 'object') return;
+            if ('macro' in obj && !('macroType' in obj)) {
+                obj.macroType = obj.macro;
+                delete obj.macro;
+                changed = true;
+            }
+            // Recurse into hold config
+            if (obj.hold && typeof obj.hold === 'object') {
+                renameMacroInConfig(obj.hold);
+            }
+            // Recurse into steps array
+            if (Array.isArray(obj.steps)) {
+                for (const step of obj.steps) {
+                    renameMacroInConfig(step);
+                }
+            }
+            // Recurse into hold.steps
+            if (obj.hold && Array.isArray(obj.hold.steps)) {
+                for (const step of obj.hold.steps) {
+                    renameMacroInConfig(step);
+                }
+            }
+        }
+
+        // Process each layout (solo, team, leader)
+        for (const mode of ['solo', 'team', 'leader']) {
+            const layout = raw[mode];
+            if (!layout || typeof layout !== 'object') continue;
+            const buttons = layout.buttons || layout;
+            if (typeof buttons !== 'object') continue;
+            for (const key of Object.keys(buttons)) {
+                if (['order', 'cols', 'background'].includes(key)) continue;
+                const btn = buttons[key];
+                if (btn && typeof btn === 'object') {
+                    renameMacroInConfig(btn);
+                }
+            }
+        }
+
+        // Also handle legacy flat format (no solo/team/leader wrapper)
+        if (!raw.solo && !raw.team && !raw.leader) {
+            for (const key of Object.keys(raw)) {
+                if (['order', 'cols', 'background', 'locked', 'radial', 'buttonSize', 'buttonGap'].includes(key)) continue;
+                const btn = raw[key];
+                if (btn && typeof btn === 'object' && ('macro' in btn || 'macroType' in btn)) {
+                    renameMacroInConfig(btn);
+                }
+            }
+        }
+
+        if (changed) {
+            globalStorage.set('mobileButtonSettings', raw);
+            console.log('[SettingsMigrations] Renamed macro to macroType in mobileButtonSettings');
+        }
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to migrate mobileButtonSettings macro field:', e);
     }
 }
 

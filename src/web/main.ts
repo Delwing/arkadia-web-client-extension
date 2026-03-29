@@ -64,6 +64,7 @@ import {characterStorage, globalStorage, migrateNewlyCharacterScopedKeys} from "
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
+    migrateMobileButtonMacroField,
     runAllSettingsMigrations
 } from "@modules/core/settingsMigrations"
 import {
@@ -79,6 +80,7 @@ initLogFileSaver(arkadiaClient).catch(err => console.error('File saver init fail
 
 // Run migrations before initializing the client
 migrateNewlyCharacterScopedKeys();
+migrateMobileButtonMacroField();
 runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();

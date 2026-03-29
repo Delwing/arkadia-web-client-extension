@@ -223,6 +223,7 @@ export class FunctionalBindManager {
             functionalTransport: 'transport',
             functionalLoot: 'loot',
         };
+        // Helper bind support — only for the helper system
         client.on('helperBind', (bindName) => {
             const cat = catMap[bindName];
             if (cat) {
@@ -232,6 +233,40 @@ export class FunctionalBindManager {
                 }
             }
         });
+
+        // Button macro support — execute the highest-priority active bind.
+        // Uses a dedicated event so helperBind stays for the helper system only.
+        client.on('executeFunctionalBind', () => {
+            this.findBestBind()?.execute();
+        });
+    }
+
+    /** Find the highest-priority active bind, optionally filtered by a key event. */
+    private findBestBind(ev?: KeyboardEvent): FunctionalBind | null {
+        let bestOrder = -1;
+        let bestBind: FunctionalBind | null = null;
+
+        for (const [cat, bind] of this.categories) {
+            if (!bind.isActive()) continue;
+
+            if (ev) {
+                const matches = bindMatches(ev, {
+                    key: bind.getKey(),
+                    ctrl: bind.getCtrl(),
+                    alt: bind.getAlt(),
+                    shift: bind.getShift(),
+                });
+                if (!matches) continue;
+            }
+
+            const order = this.setOrder.get(cat) ?? 0;
+            if (order > bestOrder) {
+                bestOrder = order;
+                bestBind = bind;
+            }
+        }
+
+        return bestBind;
     }
 
     private handleKeyDown(ev: KeyboardEvent) {
@@ -249,28 +284,7 @@ export class FunctionalBindManager {
             return;
         }
 
-        // Collect active categories whose key matches, then pick the most recently set one
-        let bestOrder = -1;
-        let bestBind: FunctionalBind | null = null;
-
-        for (const [cat, bind] of this.categories) {
-            if (!bind.isActive()) continue;
-
-            const matches = bindMatches(ev, {
-                key: bind.getKey(),
-                ctrl: bind.getCtrl(),
-                alt: bind.getAlt(),
-                shift: bind.getShift(),
-            });
-            if (matches) {
-                const order = this.setOrder.get(cat) ?? 0;
-                if (order > bestOrder) {
-                    bestOrder = order;
-                    bestBind = bind;
-                }
-            }
-        }
-
+        const bestBind = this.findBestBind(ev);
         if (bestBind) {
             bestBind.execute();
             ev.preventDefault();
