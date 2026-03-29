@@ -101,6 +101,33 @@ function getNextSunEvent(clock: ClockState): string | null {
     return `${icon} ${hour}:00 (${formatRealtime(realSeconds)})`;
 }
 
+function predictRealTime(
+    clock: ClockState,
+    targetDayOfYear: number,
+    targetHour: number,
+    yearLength: number,
+): Date | null {
+    if (clock.dayOfYear === undefined) return null;
+
+    let daysAhead = targetDayOfYear - clock.dayOfYear;
+    if (daysAhead < 0) daysAhead += yearLength;
+
+    const mudMinutesUntil = daysAhead * 24 * 60 + (targetHour * 60) - (clock.hours * 60 + clock.minutes);
+    if (mudMinutesUntil < 0) return null; // event already passed today (same day)
+
+    const realSeconds = mudMinutesUntil * MUD_MINUTE_IN_SECONDS;
+    return new Date(Date.now() + realSeconds * 1000);
+}
+
+function formatTime(date: Date): string {
+    const now = new Date();
+    const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    const time = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return time;
+    const day = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+    return `${day} ${time}`;
+}
+
 const POPUP_ID = 'popup:sunTracker';
 
 const SunTrackerPopup: React.FC = () => {
@@ -124,6 +151,7 @@ const SunTrackerPopup: React.FC = () => {
     const [rangeSunrise, setRangeSunrise] = useState('');
     const [rangeSunset, setRangeSunset] = useState('');
     const rangeRef = useRef<HTMLDivElement>(null);
+    const [hoverDay, setHoverDay] = useState<{ dayOfYear: number; x: number; y: number } | null>(null);
 
     const loadEvents = useCallback(async (domain: Domain) => {
         const data = await getEventsForDomain(domain);
@@ -476,6 +504,11 @@ const SunTrackerPopup: React.FC = () => {
                                             ref={isToday ? todayRef : undefined}
                                             onClick={(ev) => handleDayClick(ev, dayOfYear)}
                                             onContextMenu={(ev) => openEditMenu(ev, dayOfYear, dayData?.sunrise, dayData?.sunset)}
+                                            onMouseEnter={(ev) => {
+                                                const rect = ev.currentTarget.getBoundingClientRect();
+                                                setHoverDay({ dayOfYear, x: rect.left + rect.width / 2, y: rect.top });
+                                            }}
+                                            onMouseLeave={() => setHoverDay(null)}
                                             style={{
                                                 padding: '2px 3px',
                                                 textAlign: 'center',
@@ -640,6 +673,45 @@ const SunTrackerPopup: React.FC = () => {
                         </div>
                     </div>
                 )}
+                {hoverDay && activeClock && (() => {
+                    const dayData = eventIndex[hoverDay.dayOfYear];
+                    const mr = monthRanges.find(m => hoverDay.dayOfYear >= m.startDay && hoverDay.dayOfYear < m.startDay + m.length);
+                    if (!mr) return null;
+                    const srHour = dayData?.sunrise ?? mr.sunrise;
+                    const ssHour = dayData?.sunset ?? mr.sunset;
+                    const srTime = predictRealTime(activeClock, hoverDay.dayOfYear, srHour, yearLength);
+                    const ssTime = predictRealTime(activeClock, hoverDay.dayOfYear, ssHour, yearLength);
+                    if (!srTime && !ssTime) return null;
+                    return (
+                        <div style={{
+                            position: 'fixed',
+                            left: hoverDay.x,
+                            top: hoverDay.y - 4,
+                            transform: 'translate(-50%, -100%)',
+                            background: 'var(--popup-bg)',
+                            border: '1px solid var(--popup-border-strong)',
+                            borderRadius: 4,
+                            padding: '4px 8px',
+                            zIndex: 10001,
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                            pointerEvents: 'none',
+                            whiteSpace: 'nowrap',
+                            color: 'var(--popup-text)',
+                        }}>
+                            {srTime && (
+                                <div style={{ color: dayData?.sunrise !== undefined ? 'var(--popup-data-gold)' : 'var(--popup-text-dim)' }}>
+                                    {`\u2600 ${srHour}:00 \u2192 ${formatTime(srTime)}`}
+                                </div>
+                            )}
+                            {ssTime && (
+                                <div style={{ color: dayData?.sunset !== undefined ? 'var(--popup-data-blue)' : 'var(--popup-text-dim)' }}>
+                                    {`\u263E ${ssHour}:00 \u2192 ${formatTime(ssTime)}`}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
             </div>
         </DockablePopupWrapper>
     );
