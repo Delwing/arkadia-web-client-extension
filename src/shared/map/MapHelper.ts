@@ -441,6 +441,8 @@ export default class MapHelper {
             }
             return;
         }
+        this.locationHistory.length = 0;
+        this.locationHistory.push(id);
         this.lastMoveDirection = options?.direction ?? null;
         this.renderRoomById(id);
     }
