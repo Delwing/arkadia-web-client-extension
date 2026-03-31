@@ -1,6 +1,4 @@
 import Client from "../Client";
-import {getLongDir, isDirection} from "@shared/map/directions";
-import {stripPolishCharacters} from "../stripPolishCharacters";
 
 /*
 For better future implementation:
@@ -16,25 +14,17 @@ export default function initOpal(client: Client) {
     client.on("enterLocation", (detail) => {
         const {id, direction} = detail as { id: number; direction: string | null };
 
-        if (id !== UP_LOCATION || direction !== "down") {
+        if (id !== UP_LOCATION) {
             return;
         }
 
-        const history = client.Map.locationHistory;
-        if (history.length >= 2) {
-            connectedId = history[history.length - 2];
+        if (direction === "down") {
+            const history = client.Map.locationHistory;
+            if (history.length >= 2) {
+                connectedId = history[history.length - 2];
+                client.Map.getRoomById(UP_LOCATION).exits.up = connectedId;
+            }
         }
     });
 
-    client.registerCommandHook("opal", (command) => {
-        if (!connectedId) return undefined;
-        if (client.Map.currentRoom?.id !== UP_LOCATION) return undefined;
-
-        const cmd = stripPolishCharacters(command);
-        if (!isDirection(cmd)) return undefined;
-        if (getLongDir(cmd) !== "up") return undefined;
-
-        client.Map.currentRoom.exits.up = connectedId;
-        return undefined;
-    });
 }

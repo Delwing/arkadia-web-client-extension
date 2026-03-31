@@ -495,13 +495,13 @@ export default class MapHelper {
         this.currentRoom = this.mapReader.getRoom(id);
         this.savedRoomId = id;
         this.storage.setItem('mapperRoomId', id);
+        this.removeReachedDestination(id);
+        this.emitDrawData();
         if (sendEvent) {
             const direction = this.lastMoveDirection;
             this.lastMoveDirection = null;
             this.client.sendEvent("enterLocation", {id, room: this.currentRoom, direction});
         }
-        this.removeReachedDestination(id);
-        this.emitDrawData();
     }
 
     findRoomByExit(room: MapData.Room, targetRoom: MapData.Room, targetDir: string) {
