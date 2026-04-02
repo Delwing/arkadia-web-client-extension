@@ -115,7 +115,16 @@ export const KNOWLEDGE_CATEGORY_ORDER = KNOWLEDGE_CATEGORY_CONFIG.map((config) =
 
 export function getBaseCategoryFromName(name: string): KnowledgeCategoryBaseName | null {
   const normalized = normalizeKey(name);
-  return baseLookup.get(normalized) ?? dativeLookup.get(normalized) ?? null;
+  const result = baseLookup.get(normalized) ?? dativeLookup.get(normalized);
+  if (result) return result;
+
+  // Try stripping "o " prefix (DB stores "o goblinoidach", config has "goblinoidach")
+  const withoutO = normalized.replace(/^o /, '');
+  if (withoutO !== normalized) {
+    return dativeLookup.get(withoutO) ?? null;
+  }
+
+  return null;
 }
 
 export function getDativeCategoryName(base: string): string {

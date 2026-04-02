@@ -8,6 +8,8 @@ import {
     KnowledgeCategoryStatus,
     KnowledgeLibraryEntry,
     KnowledgeLibraryProgress,
+    KnowledgeProgress,
+    KnowledgeProgressByCharacter,
     KnowledgeSnapshot,
 } from '@modules/data/dataStores/knowledgeStore';
 import {
@@ -40,6 +42,11 @@ import {
 import knowledgeData from '../knowledge.json';
 import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
 import { showContextMenu } from '@shared/dom/contextMenu';
+import {
+    addKnowledgeEvent,
+    parseDativeCategory,
+    getKnowledgeEventsForCharacter,
+} from '@modules/data/dataStores/knowledgeEventsStore';
 
 interface KnowledgeJsonEntry {
     Rodzaj: string;
@@ -104,6 +111,13 @@ const COMPLETE_LIBRARY_PATTERN =
     /^Masz wrazenie, ze tutaj nie dowiesz sie juz niczego wiecej o (.*)\.$/;
 const KNOWLEDGE_PROMPT_PATTERN =
     /^Wiedze o czym chcesz zglebiac\? (.*)$/;
+
+const KNOWLEDGE_TICK_PATTERN =
+    /^Wydaje ci sie, ze twoja wiedza (.+) wzrosla .*\.$/;
+const KNOWLEDGE_BOOK_COMPLETE_PATTERN =
+    /^Masz wrazenie, ze z (.+?) nie dowiesz sie juz niczego wiecej (.*)\.$/;
+const WIEDZA_TOTAL_LEVEL_PATTERN =
+    /^(.+?):\s{2,}(.+)$/;
 
 const KNOWLEDGE_COMMANDS = KNOWLEDGE_CATEGORY_CONFIG.map((config) => config.command);
 const KNOWLEDGE_COMMAND_SEQUENCE = KNOWLEDGE_COMMANDS.join(';');
@@ -253,6 +267,45 @@ function ensureKnowledgeCharacterProgress(
     progress: KnowledgeCharacterProgress | undefined | null,
 ): KnowledgeCharacterProgress {
     return progress ? {...progress} : {};
+}
+
+function createEmptyEntriesMap(): KnowledgeEntriesMap {
+    return {fight: [], books: [], exploration: []};
+}
+
+function upsertCategoryTotalLevel(
+    characterProgress: KnowledgeCharacterProgress,
+    category: KnowledgeCategoryBaseName,
+    level: string,
+    timestamp: number,
+): void {
+    const existing = characterProgress[category];
+    if (existing) {
+        characterProgress[category] = {...existing, totalLevel: level, updatedAt: timestamp};
+    } else {
+        characterProgress[category] = {
+            entries: createEmptyEntriesMap(),
+            unknownEntries: createEmptyEntriesMap(),
+            levels: {},
+            totalLevel: level,
+            updatedAt: timestamp,
+        };
+    }
+}
+
+function applyTotalLevels(
+    baseProgress: Record<string, KnowledgeCharacterProgress>,
+    characterKey: string,
+    levels: Iterable<[KnowledgeCategoryBaseName, string]>,
+    timestamp: number,
+): Record<string, KnowledgeCharacterProgress> {
+    const nextProgress = {...baseProgress};
+    const characterProgress = {...(nextProgress[characterKey] ?? {})};
+    for (const [category, level] of levels) {
+        upsertCategoryTotalLevel(characterProgress, category, level, timestamp);
+    }
+    nextProgress[characterKey] = characterProgress;
+    return nextProgress;
 }
 
 function sanitizeStringArray(value: unknown): string[] {
@@ -1205,6 +1258,43 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         currentLibraryId = internalId;
     }
 
+    type LibraryProgressContext = {
+        snapshot: KnowledgeSnapshot;
+        libraryId: string;
+        nextProgress: KnowledgeProgressByCharacter;
+        characterKey: string;
+        characterProgress: KnowledgeProgress;
+        libraryProgress: KnowledgeLibraryProgress;
+    };
+
+    function prepareLibraryProgressUpdate(
+        snapshot: KnowledgeSnapshot | undefined,
+        libraryId: string,
+    ): LibraryProgressContext | null {
+        if (!snapshot || !snapshot.data.libraries[libraryId]) {
+            return null;
+        }
+        const nextProgress = {...snapshot.data.progress};
+        const characterKey = getCharacterProgressKey();
+        const characterProgress = {...(nextProgress[characterKey] ?? {})};
+        const libraryProgress = {...(characterProgress[libraryId] ?? {})};
+        return {snapshot, libraryId, nextProgress, characterKey, characterProgress, libraryProgress};
+    }
+
+    function commitLibraryProgress(ctx: LibraryProgressContext): KnowledgeSnapshot {
+        if (Object.keys(ctx.libraryProgress).length === 0) {
+            delete ctx.characterProgress[ctx.libraryId];
+        } else {
+            ctx.characterProgress[ctx.libraryId] = ctx.libraryProgress;
+        }
+        if (Object.keys(ctx.characterProgress).length === 0) {
+            delete ctx.nextProgress[ctx.characterKey];
+        } else {
+            ctx.nextProgress[ctx.characterKey] = ctx.characterProgress;
+        }
+        return {...ctx.snapshot, data: {...ctx.snapshot.data, progress: ctx.nextProgress}};
+    }
+
     function setProgress(category: string, status: KnowledgeCategoryStatus) {
         if (!currentSnapshot) {
             return;
@@ -1224,42 +1314,73 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
         void store
             .applyLocalChange((snapshot) => {
+                const ctx = prepareLibraryProgressUpdate(snapshot, libraryId);
+                if (!ctx) return snapshot;
+
+                const previousStatus = ctx.libraryProgress[normalized];
+                if (previousStatus === 'completed' && status !== 'completed') return snapshot;
+                if (previousStatus === status) return snapshot;
+
+                ctx.libraryProgress[normalized] = status;
+                ctx.characterProgress[libraryId] = ctx.libraryProgress;
+                ctx.nextProgress[ctx.characterKey] = ctx.characterProgress;
+                return {...ctx.snapshot, data: {...ctx.snapshot.data, progress: ctx.nextProgress}};
+            })
+            .catch((error) => {
+                console.error('Failed to update knowledge progress:', error);
+            });
+    }
+
+    function setBookProgress(
+        bookKey: string,
+        category: KnowledgeCategoryBaseName,
+        completed: boolean,
+    ) {
+        void store
+            .applyLocalChange((snapshot) => {
                 if (!snapshot) {
                     return snapshot;
                 }
 
-                if (!snapshot.data.libraries[libraryId]) {
-                    return snapshot;
-                }
-
-                const nextProgress = {...snapshot.data.progress};
+                const nextBookProgress = {...(snapshot.data.bookProgress ?? {})};
                 const characterKey = getCharacterProgressKey();
-                const characterProgress = {...(nextProgress[characterKey] ?? {})};
-                const libraryProgress = {...(characterProgress[libraryId] ?? {})};
-                const previousStatus = libraryProgress[normalized];
+                const characterBookProgress = {...(nextBookProgress[characterKey] ?? {})};
+                const bookCategories = {...(characterBookProgress[bookKey] ?? {})};
 
-                if (previousStatus === 'completed' && status !== 'completed') {
-                    return snapshot;
+                if (completed) {
+                    if (bookCategories[category] === true) {
+                        return snapshot;
+                    }
+                    bookCategories[category] = true;
+                } else {
+                    if (!bookCategories[category]) {
+                        return snapshot;
+                    }
+                    delete bookCategories[category];
                 }
 
-                if (previousStatus === status) {
-                    return snapshot;
+                if (Object.keys(bookCategories).length > 0) {
+                    characterBookProgress[bookKey] = bookCategories;
+                } else {
+                    delete characterBookProgress[bookKey];
                 }
 
-                libraryProgress[normalized] = status;
-                characterProgress[libraryId] = libraryProgress;
-                nextProgress[characterKey] = characterProgress;
+                if (Object.keys(characterBookProgress).length > 0) {
+                    nextBookProgress[characterKey] = characterBookProgress;
+                } else {
+                    delete nextBookProgress[characterKey];
+                }
 
                 return {
                     ...snapshot,
                     data: {
                         ...snapshot.data,
-                        progress: nextProgress,
+                        bookProgress: nextBookProgress,
                     },
                 };
             })
             .catch((error) => {
-                console.error('Failed to update knowledge progress:', error);
+                console.error('Failed to update book progress:', error);
             });
     }
 
@@ -1294,6 +1415,226 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         pendingPromptTrigger = {trigger, timeoutId};
     });
 
+    // Capture wiedza_total levels from the "wiedza" command output
+    let activeWiedzaTotalRun: {
+        tag: string;
+        commandTimestamp: number;
+        inactivityTimer: number | null;
+        abortTimer: number;
+        results: Map<KnowledgeCategoryBaseName, string>;
+        tickCounts: Map<KnowledgeCategoryBaseName, number>;
+    } | null = null;
+    const WIEDZA_TOTAL_INACTIVITY_TIMEOUT = 1500;
+    const WIEDZA_TOTAL_HARD_TIMEOUT = 10000;
+    const WIEDZA_TOTAL_TAG_PREFIX = 'wiedza-total-';
+
+    const LEVEL_COLORS: Record<number, string> = {
+        0: '#808080', // brak - gray
+        1: '#ef4444', // znikoma - red
+        2: '#ef4444', // niewielka - red
+        3: '#f59e0b', // czesciowa - amber
+        4: '#f59e0b', // niezla - amber
+        5: '#eab308', // dosc dobra - yellow
+        6: '#eab308', // dobra - yellow
+        7: '#22c55e', // bardzo dobra - green
+        8: '#22c55e', // doskonala - green
+        9: '#16a34a', // prawie pelna - dark green
+        10: '#4ade80', // pelna - bright green
+    };
+
+    function finishWiedzaTotalRun() {
+        if (!activeWiedzaTotalRun) {
+            return;
+        }
+        const run = activeWiedzaTotalRun;
+        activeWiedzaTotalRun = null;
+
+        window.clearTimeout(run.abortTimer);
+        if (run.inactivityTimer != null) {
+            window.clearTimeout(run.inactivityTimer);
+        }
+        client.Triggers.removeByTag(run.tag);
+
+        if (run.results.size === 0 || !knowledgeDetailsSnapshot) {
+            return;
+        }
+
+        const timestamp = Date.now();
+        // Use the command timestamp for level_change events so ticks
+        // that arrived between command send and finish are counted correctly
+        const levelChangeTimestamp = run.commandTimestamp;
+        const characterKey = getCharacterProgressKey();
+
+        // Store level_change events only if the level differs from the last known event
+        void getKnowledgeEventsForCharacter(characterKey).then((events) => {
+            const latestLevel = new Map<string, string>();
+            for (const e of events) {
+                if (e.type === 'level_change' && e.level) {
+                    latestLevel.set(e.category, e.level);
+                }
+            }
+
+            for (const [category, level] of run.results) {
+                const prevLevel = latestLevel.get(category);
+                if (prevLevel === level) continue;
+                void addKnowledgeEvent(characterKey, {
+                    category,
+                    categoryDative: getDativeCategoryName(category),
+                    type: 'level_change',
+                    locationId: 0,
+                    timestamp: levelChangeTimestamp,
+                    level,
+                });
+            }
+        });
+
+        void detailsStore
+            .applyLocalChange((snapshot) => {
+                const baseSnapshot = snapshot ?? knowledgeDetailsSnapshot!;
+                const nextProgress = applyTotalLevels(baseSnapshot.data.progress, characterKey, run.results, timestamp);
+                return {...baseSnapshot, data: {...baseSnapshot.data, progress: nextProgress}};
+            })
+            .then(() => {
+                scheduleReportUpdate();
+            })
+            .catch((error) => {
+                console.error('Failed to store wiedza_total levels:', error);
+            });
+    }
+
+    client.on('command', (command = '') => {
+        const normalized = command.trim();
+        if (normalized !== 'wiedza') {
+            return;
+        }
+
+        // Cancel any existing run
+        if (activeWiedzaTotalRun) {
+            finishWiedzaTotalRun();
+        }
+
+        const tag = `${WIEDZA_TOTAL_TAG_PREFIX}${Date.now().toString(36)}`;
+        const commandTimestamp = Date.now();
+        activeWiedzaTotalRun = {
+            tag,
+            commandTimestamp,
+            inactivityTimer: null,
+            abortTimer: window.setTimeout(() => finishWiedzaTotalRun(), WIEDZA_TOTAL_HARD_TIMEOUT),
+            results: new Map(),
+            tickCounts: new Map(),
+        };
+
+        // Pre-load tick counts so they're available synchronously in the trigger
+        const characterKey = getCharacterProgressKey();
+        void getKnowledgeEventsForCharacter(characterKey).then((events) => {
+            if (!activeWiedzaTotalRun || activeWiedzaTotalRun.tag !== tag) return;
+
+            // Find the latest level_change timestamp per category
+            const lastLevelChangeTs = new Map<string, number>();
+            for (const e of events) {
+                if (e.type === 'level_change') {
+                    const prev = lastLevelChangeTs.get(e.category) ?? 0;
+                    if (e.timestamp > prev) {
+                        lastLevelChangeTs.set(e.category, e.timestamp);
+                    }
+                }
+            }
+
+            for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
+                const cat = config.base;
+                const sinceTs = lastLevelChangeTs.get(cat) ?? 0;
+                let count = 0;
+                for (const e of events) {
+                    if (e.type === 'tick' && e.category === cat && e.timestamp > sinceTs) {
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    activeWiedzaTotalRun.tickCounts.set(cat, count);
+                }
+            }
+        });
+
+        function scheduleWiedzaTotalInactivity() {
+            if (!activeWiedzaTotalRun || activeWiedzaTotalRun.tag !== tag) {
+                return;
+            }
+            if (activeWiedzaTotalRun.inactivityTimer != null) {
+                window.clearTimeout(activeWiedzaTotalRun.inactivityTimer);
+            }
+            activeWiedzaTotalRun.inactivityTimer = window.setTimeout(
+                () => finishWiedzaTotalRun(),
+                WIEDZA_TOTAL_INACTIVITY_TIMEOUT,
+            );
+        }
+
+        scheduleWiedzaTotalInactivity();
+
+        client.Triggers.registerTrigger(
+            WIEDZA_TOTAL_LEVEL_PATTERN,
+            (line, matches) => {
+                if (!activeWiedzaTotalRun || activeWiedzaTotalRun.tag !== tag) {
+                    return line;
+                }
+
+                const categoryName = matches[1]?.trim();
+                const levelText = matches[2]?.trim();
+                if (!categoryName || !levelText) {
+                    return line;
+                }
+
+                const category = getBaseCategoryFromName(categoryName);
+                if (!category) {
+                    return line;
+                }
+
+                const sanitizedLevel = sanitizeKnowledgeLevel(levelText);
+                if (!sanitizedLevel) {
+                    return line;
+                }
+
+                scheduleWiedzaTotalInactivity();
+                activeWiedzaTotalRun.results.set(category, sanitizedLevel);
+
+                // Suffix colored progress bar onto the original line
+                const levelIndex = KNOWLEDGE_LEVEL_LABELS.indexOf(
+                    sanitizedLevel as (typeof KNOWLEDGE_LEVEL_LABELS)[number],
+                );
+                const barColor = createColorFormat(LEVEL_COLORS[levelIndex] ?? '#808080');
+                const dimColor = createColorFormat('#4a5568');
+                const BAR_LEN = 10;
+                const filled = levelIndex > 0 ? '='.repeat(levelIndex) : '';
+                const empty = ' '.repeat(BAR_LEN - Math.max(0, levelIndex));
+                const percent = levelIndex >= 0 ? Math.round((levelIndex / BAR_LEN) * 100) : 0;
+
+                // Pad level text so bars align (longest level = "prawie pelna" = 12 chars)
+                const MAX_LEVEL_LEN = 12;
+                const levelPad = ' '.repeat(Math.max(0, MAX_LEVEL_LEN - levelText.length));
+                const endPos = line.text.length;
+                line.insert(endPos, levelPad + ' [', dimColor);
+                if (filled) {
+                    line.insert(line.text.length, filled, barColor);
+                }
+                if (empty) {
+                    line.insert(line.text.length, empty, dimColor);
+                }
+                line.insert(line.text.length, ']', dimColor);
+
+                if (percent < 100) {
+                    line.insert(line.text.length, ` ${percent}%`, createColorFormat('#94a3b8'));
+                    const ticks = activeWiedzaTotalRun.tickCounts.get(category) ?? 0;
+                    line.insert(line.text.length, ` + ${ticks}`, createColorFormat(ticks > 0 ? '#fbbf24' : '#94a3b8'));
+                    line.insert(line.text.length, ' ticks', createColorFormat('#94a3b8'));
+                } else {
+                    line.insert(line.text.length, ' 100%', barColor);
+                }
+
+                return line;
+            },
+            tag,
+        );
+    });
+
     client.Triggers.registerTrigger(
         START_LIBRARY_PATTERN,
         (line, matches) => {
@@ -1312,6 +1653,65 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             const category = matches[1];
             if (category) {
                 setProgress(category, 'completed');
+            }
+            return line;
+        },
+        'knowledge-progress',
+    );
+
+    // Tick event: "Wydaje ci sie, ze twoja wiedza o X wzrosla ..."
+    client.Triggers.registerTrigger(
+        KNOWLEDGE_TICK_PATTERN,
+        (line, matches) => {
+            const dativeText = matches[1];
+            if (dativeText) {
+                const category = parseDativeCategory(dativeText);
+                const roomId = client.Map.currentRoom?.userData?.internal_id;
+                if (category) {
+                    void addKnowledgeEvent(getCharacterProgressKey(), {
+                        category,
+                        categoryDative: dativeText.trim(),
+                        type: 'tick',
+                        locationId: roomId ? parseInt(roomId, 10) : 0,
+                        timestamp: Date.now(),
+                    });
+                    client.sendEvent('knowledgeTickEvent', {
+                        category,
+                        dative: dativeText.trim(),
+                    });
+                }
+            }
+
+            // Color the entire line
+            const tickColor = createColorFormat('#fbbf24');
+            line.replace([0, line.text.length], line.text, tickColor);
+            return line;
+        },
+        'knowledge-progress',
+    );
+
+    // Book completion: "Masz wrazenie, ze z X nie dowiesz sie juz niczego wiecej o Y."
+    client.Triggers.registerTrigger(
+        KNOWLEDGE_BOOK_COMPLETE_PATTERN,
+        (line, matches) => {
+            const bookDopelniacz = matches[1]?.trim();
+            const categoryDative = matches[2]?.trim();
+            if (bookDopelniacz && categoryDative && currentSnapshot) {
+                const category = getBaseCategoryFromName(categoryDative);
+                if (category) {
+                    // Find book by dopelniacz
+                    const books = currentSnapshot.data.books;
+                    let bookKey: string | null = null;
+                    for (const [key, book] of Object.entries(books)) {
+                        if (book.dopelniacz === bookDopelniacz) {
+                            bookKey = key;
+                            break;
+                        }
+                    }
+                    if (bookKey) {
+                        setBookProgress(bookKey, category, true);
+                    }
+                }
             }
             return line;
         },
@@ -1505,6 +1905,22 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         client.sendEvent('knowledgeReport', report);
     }
 
+    function dispatchBookReport(overrideCharacter?: string) {
+        if (!currentSnapshot) {
+            client.sendEvent('knowledgeBookReport', null);
+            return;
+        }
+
+        const characterKey = overrideCharacter || getCharacterProgressKey();
+        const bookProgress = currentSnapshot.data.bookProgress?.[characterKey] ?? {};
+        const books = currentSnapshot.data.books ?? {};
+
+        client.sendEvent('knowledgeBookReport', {
+            books,
+            bookProgress,
+        });
+    }
+
     async function updateLibraryCategoriesStatus(
         libraryId: string,
         status: KnowledgeCategoryStatus,
@@ -1527,67 +1943,30 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
         try {
             await store.applyLocalChange((snapshot) => {
-                if (!snapshot) {
-                    return snapshot;
-                }
-
-                if (!snapshot.data.libraries[libraryId]) {
-                    return snapshot;
-                }
-
-                const nextProgress = {...snapshot.data.progress};
-                const characterKey = getCharacterProgressKey();
-                const characterProgress = {...(nextProgress[characterKey] ?? {})};
-                const libraryProgress = {...(characterProgress[libraryId] ?? {})};
+                const ctx = prepareLibraryProgressUpdate(snapshot, libraryId);
+                if (!ctx) return snapshot;
 
                 if (status === 'not_started') {
                     let removedAny = false;
                     for (const category of categories) {
-                        if (libraryProgress[category]) {
-                            delete libraryProgress[category];
+                        if (ctx.libraryProgress[category]) {
+                            delete ctx.libraryProgress[category];
                             removedAny = true;
                         }
                     }
-
-                    if (!removedAny) {
-                        return snapshot;
-                    }
+                    if (!removedAny) return snapshot;
                 } else {
                     let changedAny = false;
                     for (const category of categories) {
-                        if (libraryProgress[category] === status) {
-                            continue;
-                        }
-                        libraryProgress[category] = status;
+                        if (ctx.libraryProgress[category] === status) continue;
+                        ctx.libraryProgress[category] = status;
                         changedAny = true;
                     }
-
-                    if (!changedAny) {
-                        return snapshot;
-                    }
+                    if (!changedAny) return snapshot;
                 }
 
                 updated = true;
-
-                if (Object.keys(libraryProgress).length === 0) {
-                    delete characterProgress[libraryId];
-                } else {
-                    characterProgress[libraryId] = libraryProgress;
-                }
-
-                if (Object.keys(characterProgress).length === 0) {
-                    delete nextProgress[characterKey];
-                } else {
-                    nextProgress[characterKey] = characterProgress;
-                }
-
-                return {
-                    ...snapshot,
-                    data: {
-                        ...snapshot.data,
-                        progress: nextProgress,
-                    },
-                };
+                return commitLibraryProgress(ctx);
             });
         } catch (error) {
             console.error('Failed to update knowledge library status:', error);
@@ -1614,7 +1993,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     });
 
     // Handle request events for popups that auto-open after reload
-    client.on('requestKnowledgeReport', () => {
+    client.on('requestKnowledgeReport', (detail) => {
         if (!currentSnapshot) {
             return;
         }
@@ -1622,8 +2001,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (libraryEntries.length === 0) {
             return;
         }
-        const characterKey = getCharacterProgressKey();
+        const overrideChar = (detail as { character?: string } | undefined)?.character;
+        const characterKey = overrideChar || getCharacterProgressKey();
         const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
+        const allCharKeys = Object.keys(currentSnapshot.data.progress);
+        console.log('requestKnowledgeReport: characterKey=', characterKey, 'allProgressKeys=', allCharKeys, 'libraryCount=', Object.keys(characterProgress).length);
         const report = buildKnowledgeReport(libraryEntries, characterProgress);
         if (report) {
             client.sendEvent('knowledgeReport', report);
@@ -1650,6 +2032,129 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 client.sendEvent('knowledgeDetailsReport', emptyPayload);
             }
         }
+    });
+
+    client.on('requestKnowledgeBookReport', (detail) => {
+        const overrideChar = (detail as { character?: string } | undefined)?.character;
+        dispatchBookReport(overrideChar);
+    });
+
+    client.on('knowledgeBookReportAction', (detail) => {
+        const action = detail as { type: string; bookKey: string; category: string } | undefined | null;
+        if (!action) {
+            return;
+        }
+        const category = getBaseCategoryFromName(action.category);
+        if (!category) {
+            return;
+        }
+        if (action.type === 'toggleBook') {
+            const characterKey = getCharacterProgressKey();
+            const currentBookProgress = currentSnapshot?.data.bookProgress?.[characterKey]?.[action.bookKey]?.[category];
+            setBookProgress(action.bookKey, category, !currentBookProgress);
+            // Re-dispatch after a short delay to allow store update
+            window.setTimeout(() => dispatchBookReport(), 50);
+        }
+    });
+
+    // Import handlers
+    function resolveLibraryKey(
+        snapshot: KnowledgeSnapshot,
+        numericId: number,
+    ): string | null {
+        // Try map lookup: numeric room ID → room → userData.internal_id → library key
+        const room = client.Map.getRoomById(numericId);
+        const internalId = room?.userData?.internal_id?.trim();
+        if (internalId && snapshot.data.libraries[internalId]) {
+            return internalId;
+        }
+
+        return null;
+    }
+
+    // Import handlers
+    function getImportCharacterKey(payloadCharacter: string): string {
+        return payloadCharacter || getCharacterProgressKey();
+    }
+
+    client.on('wiedzaImportLibraries', (detail) => {
+        const payload = detail as { character: string; libraries: { locationId: number; categoryDative: string }[] } | undefined;
+        if (!payload || !currentSnapshot) return;
+
+        const resolvedKeys = new Map<number, string>();
+        for (const lib of payload.libraries) {
+            if (!resolvedKeys.has(lib.locationId)) {
+                const key = resolveLibraryKey(currentSnapshot, lib.locationId);
+                if (key) resolvedKeys.set(lib.locationId, key);
+            }
+        }
+        if (resolvedKeys.size === 0) return;
+
+        void store.applyLocalChange((snapshot) => {
+            if (!snapshot) return snapshot;
+            const characterKey = getImportCharacterKey(payload.character);
+            const nextProgress = {...snapshot.data.progress};
+            const characterProgress = {...(nextProgress[characterKey] ?? {})};
+
+            for (const lib of payload.libraries) {
+                const libraryKey = resolvedKeys.get(lib.locationId);
+                if (!libraryKey) continue;
+                const library = snapshot.data.libraries[libraryKey];
+                if (!library) continue;
+                const category = getBaseCategoryFromName(lib.categoryDative);
+                if (!category) continue;
+                const normalized = normalizeCategory(category, library);
+                if (!normalized) continue;
+                const libraryProgress = {...(characterProgress[libraryKey] ?? {})};
+                libraryProgress[normalized] = 'completed';
+                characterProgress[libraryKey] = libraryProgress;
+            }
+
+            nextProgress[characterKey] = characterProgress;
+            return {...snapshot, data: {...snapshot.data, progress: nextProgress}};
+        }).catch((e) => console.error('Failed to import libraries:', e));
+    });
+
+    client.on('wiedzaImportBooks', (detail) => {
+        const payload = detail as { character: string; books: { bookName: string; categoryDative: string }[] } | undefined;
+        if (!payload) return;
+
+        void store.applyLocalChange((snapshot) => {
+            if (!snapshot) return snapshot;
+            const characterKey = getImportCharacterKey(payload.character);
+            const nextBookProgress = {...(snapshot.data.bookProgress ?? {})};
+            const characterBookProgress = {...(nextBookProgress[characterKey] ?? {})};
+
+            for (const book of payload.books) {
+                const category = getBaseCategoryFromName(book.categoryDative);
+                if (!category) continue;
+                const bookCategories = {...(characterBookProgress[book.bookName] ?? {})};
+                bookCategories[category] = true;
+                characterBookProgress[book.bookName] = bookCategories;
+            }
+
+            nextBookProgress[characterKey] = characterBookProgress;
+            return {...snapshot, data: {...snapshot.data, bookProgress: nextBookProgress}};
+        }).catch((e) => console.error('Failed to import books:', e));
+    });
+
+    client.on('wiedzaImportTotalLevels', (detail) => {
+        const payload = detail as { character: string; levels: { categoryName: string; level: string }[] } | undefined;
+        if (!payload || !knowledgeDetailsSnapshot) return;
+
+        const latestLevels = new Map<KnowledgeCategoryBaseName, string>();
+        for (const entry of payload.levels) {
+            const category = getBaseCategoryFromName(entry.categoryName);
+            if (category) latestLevels.set(category, entry.level);
+        }
+        if (latestLevels.size === 0) return;
+
+        void detailsStore.applyLocalChange((snapshot) => {
+            const baseSnapshot = snapshot ?? knowledgeDetailsSnapshot!;
+            const characterKey = getImportCharacterKey(payload.character);
+            const nextProgress = applyTotalLevels(baseSnapshot.data.progress, characterKey, latestLevels, Date.now());
+            return {...baseSnapshot, data: {...baseSnapshot.data, progress: nextProgress}};
+        }).catch((e) => console.error('Failed to import total levels:', e));
     });
 
     aliasList.push({pattern: /\/zglebiaj$/, callback: showLibraryCategories});

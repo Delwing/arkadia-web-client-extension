@@ -39,9 +39,16 @@ export interface KnowledgeFile {
   libraries?: Record<string, KnowledgeLibraryEntry>;
 }
 
+// Per book, per category completion tracking
+// bookName → categoryBaseName → true
+export type KnowledgeBookCategoryProgress = Record<string, boolean>;
+export type KnowledgeBookProgress = Record<string, KnowledgeBookCategoryProgress>;
+export type KnowledgeBookProgressByCharacter = Record<string, KnowledgeBookProgress>;
+
 export interface KnowledgeSnapshotData extends KnowledgeFile {
   libraries: Record<string, KnowledgeLibraryEntry>;
   progress: KnowledgeProgressByCharacter;
+  bookProgress: KnowledgeBookProgressByCharacter;
 }
 
 export interface KnowledgeSnapshot {
@@ -124,6 +131,7 @@ class KnowledgeLoader
 
     const libraries = data.libraries ?? {};
     const progress = sanitizeProgress(context.previousSnapshot?.data.progress, libraries);
+    const bookProgress = context.previousSnapshot?.data.bookProgress ?? {};
 
     return {
       snapshot: {
@@ -132,6 +140,7 @@ class KnowledgeLoader
           books: data.books ?? {},
           libraries,
           progress,
+          bookProgress,
         },
         timestamp: Date.now(),
       },
@@ -148,6 +157,7 @@ interface KnowledgeIndexedDbStrategyOptions {
 type KnowledgeLibrariesPayload = {
   libraries: Record<string, KnowledgeLibraryEntry>;
   progress: KnowledgeProgressByCharacter;
+  bookProgress?: KnowledgeBookProgressByCharacter;
   version?: number;
   timestamp?: number;
 };
@@ -190,6 +200,7 @@ class KnowledgeIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshMetadata
             books,
             libraries,
             progress: sanitizeProgress(librariesPayload.progress, libraries),
+            bookProgress: librariesPayload.bookProgress ?? {},
           },
           timestamp: librariesPayload.timestamp ?? Date.now(),
         };
@@ -215,6 +226,7 @@ class KnowledgeIndexedDbStrategy<TMeta extends RefreshMetadata = RefreshMetadata
     const payload: KnowledgeLibrariesPayload = {
       libraries: snapshot.data.libraries,
       progress: snapshot.data.progress,
+      bookProgress: snapshot.data.bookProgress,
       version: snapshot.data.version,
       timestamp: snapshot.timestamp,
     };

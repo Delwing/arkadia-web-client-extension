@@ -91,6 +91,7 @@ export default class MapHelper {
     private pathFinder!: PathFinder;
     public refreshPosition = true;
     private hashes: Record<string, number> = {};
+    private internalIds: Record<string, number> = {};
     private gmcpPosition!: Position;
     public paused = false;
     private savedRoomId: number | null = null;
@@ -130,11 +131,18 @@ export default class MapHelper {
             this.renderRoomByIdSilently(ev.locationId);
         });
 
+        this.client.on("leadToByInternalId", (internalId: string) => {
+            if (!internalId) return;
+            const roomId = this.internalIds[internalId];
+            if (roomId != null) {
+                this.leadTo(roomId);
+            }
+        });
+
         this.client.on("gmcp.room.info", (eventDetail) => {
             this.setBlockable(false);
             this.gmcpPosition = eventDetail?.map;
             if (this.refreshPosition) {
-                console.log("Refreshing position: ", this.gmcpPosition, " -")
                 this.setMapPosition(this.gmcpPosition);
                 this.refreshPosition = false;
             }
@@ -207,9 +215,14 @@ export default class MapHelper {
         this.mapReader = new MapReader(mapData, colors);
         this.pathFinder = new PathFinder(this.mapReader);
         this.hashes = {};
+        this.internalIds = {};
         this.areas = {};
         this.mapReader.getRooms().forEach(room => {
             this.hashes[room.hash] = room.id;
+            const internalId = room.userData?.internal_id;
+            if (internalId) {
+                this.internalIds[internalId] = room.id;
+            }
         });
         const startId = this.savedRoomId ?? 1;
         this.renderRoomById(startId);
@@ -239,6 +252,10 @@ export default class MapHelper {
 
     tryGetMapReader(): MapReader | null {
         return this.mapReader ?? null;
+    }
+
+    getRoomIdByInternalId(internalId: string): number | null {
+        return this.internalIds[internalId] ?? null;
     }
 
     getRoomById(id: number): MapData.Room | null {

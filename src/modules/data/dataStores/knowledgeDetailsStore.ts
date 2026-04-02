@@ -41,6 +41,7 @@ export interface KnowledgeCategoryProgress {
   entries: KnowledgeEntriesMap;
   unknownEntries: KnowledgeEntriesMap;
   levels: KnowledgeLevelMap;
+  totalLevel?: string;
   updatedAt: number;
 }
 
@@ -326,7 +327,7 @@ function sanitizeProgress(
         }
       }
 
-      sanitizedCategories[baseCategory] = {
+      const sanitized: KnowledgeCategoryProgress = {
         entries: sanitizedEntries,
         unknownEntries,
         levels: ensureLevelMap(categoryProgress.levels),
@@ -335,6 +336,12 @@ function sanitizeProgress(
                 ? categoryProgress.updatedAt
                 : Date.now(),
       };
+
+      if (typeof categoryProgress.totalLevel === 'string' && categoryProgress.totalLevel.trim().length > 0) {
+        sanitized.totalLevel = categoryProgress.totalLevel.trim();
+      }
+
+      sanitizedCategories[baseCategory] = sanitized;
     }
 
     if (Object.keys(sanitizedCategories).length > 0) {

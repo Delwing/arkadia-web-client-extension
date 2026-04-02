@@ -2,13 +2,30 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import type { KnowledgeCategoryStatus } from '@modules/data/dataStores/knowledgeStore';
+import type {
+  KnowledgeCategoryStatus,
+  KnowledgeBookEntry,
+  KnowledgeBookCategoryProgress,
+} from '@modules/data/dataStores/knowledgeStore';
 import eventBus from '@modules/core/eventBus';
 import type { KnowledgeReportAction } from '@shared/events';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { getBaseCategoryFromName, type KnowledgeCategoryBaseName } from '@client/knowledgeCategories';
+import type {
+  WiedzaDbResult,
+  WiedzaDbWorkerRequest,
+  WiedzaDbWorkerResponse,
+} from '@modules/data/wiedzaDbImport.shared';
+import {
+  mergeKnowledgeEvents,
+  getKnowledgeEventsForCharacter,
+  type KnowledgeEvent,
+} from '@modules/data/dataStores/knowledgeEventsStore';
+import { characterStorage } from '@modules/core/storage';
 
 type KnowledgeReportLibraryCategory = {
   name: string;
@@ -45,7 +62,25 @@ type KnowledgeReportPayload = {
   categories: KnowledgeReportCategory[];
 };
 
+type BookReportPayload = {
+  books: Record<string, KnowledgeBookEntry>;
+  bookProgress: Record<string, KnowledgeBookCategoryProgress>;
+};
+
+type WiedzaTotalCategory = {
+  name: KnowledgeCategoryBaseName;
+  totalLevel: string;
+};
+
+type TabType = 'libraries' | 'categories' | 'books' | 'wiedza' | 'history';
+
 const POPUP_ID = 'popup:knowledgeReport';
+
+const KNOWLEDGE_LEVEL_LABELS = [
+  'brak', 'znikoma', 'niewielka', 'czesciowa', 'niezla',
+  'dosc dobra', 'dobra', 'bardzo dobra', 'doskonala',
+  'prawie pelna', 'pelna',
+];
 
 const LIBRARY_STATUS_CONFIG: {
   key: KnowledgeCategoryStatus;
@@ -73,18 +108,52 @@ function groupLibraryCategories(
   );
 }
 
+function getLevelIndex(level: string): number {
+  return KNOWLEDGE_LEVEL_LABELS.indexOf(level.toLowerCase());
+}
+
+function getLevelColorClass(index: number): string {
+  if (index <= 0) return 'knowledge-level--none';
+  if (index <= 2) return 'knowledge-level--low';
+  if (index <= 4) return 'knowledge-level--mid';
+  if (index <= 6) return 'knowledge-level--good';
+  if (index <= 8) return 'knowledge-level--high';
+  if (index === 9) return 'knowledge-level--almost';
+  return 'knowledge-level--full';
+}
+
+type ImportState =
+  | { phase: 'idle' }
+  | { phase: 'loading' }
+  | { phase: 'preview'; parsed: WiedzaDbResult; selectedCharacter: string } // '__all__' = all characters
+  | { phase: 'importing' }
+  | { phase: 'done'; message: string }
+  | { phase: 'error'; message: string };
+
 const KnowledgeReport: React.FC = () => {
   const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
-  const [activeTab, setActiveTab] = useState<'libraries' | 'categories'>('libraries');
+  const [bookData, setBookData] = useState<BookReportPayload | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('libraries');
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
+  const [importState, setImportState] = useState<ImportState>({ phase: 'idle' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
     if (!detail || (!detail.libraries?.length && !detail.categories?.length)) {
       setData(null);
-      // Don't close if pinned (popup should stay open with empty state)
       if (!isPinned) {
         setIsOpen(false);
       }
@@ -102,20 +171,25 @@ const KnowledgeReport: React.FC = () => {
   }, [isPinned, setIsOpen]);
 
   useEffect(() => {
-    const unsubscribe = eventBus.on('knowledgeReport', (payload) => {
-      handleReport(payload as KnowledgeReportPayload | null | undefined);
-    });
-    return () => {
-      unsubscribe();
-    };
+    const unsubs = [
+      eventBus.on('knowledgeReport', (payload) => {
+        handleReport(payload as KnowledgeReportPayload | null | undefined);
+      }),
+      eventBus.on('knowledgeBookReport', (payload) => {
+        setBookData(payload as BookReportPayload | null);
+      }),
+    ];
+    return () => unsubs.forEach((fn) => fn());
   }, [handleReport]);
 
-  // Request data when popup auto-opens (e.g., after page reload when docked/pinned)
   useEffect(() => {
     if (isOpen && !data) {
       eventBus.emit('requestKnowledgeReport');
     }
-  }, [isOpen, data]);
+    if (isOpen && !bookData) {
+      eventBus.emit('requestKnowledgeBookReport');
+    }
+  }, [isOpen, data, bookData]);
 
   const handleStartCategory = useCallback((dative: string) => {
     eventBus.emit('sendCommand', {
@@ -123,13 +197,9 @@ const KnowledgeReport: React.FC = () => {
     });
   }, []);
 
-  const handleLeadToLibrary = useCallback((locationId: string) => {
-    if (!locationId) {
-      return;
-    }
-    eventBus.emit('sendCommand', {
-      command: `/prowadz ${locationId}`,
-    });
+  const handleLeadToLibrary = useCallback((internalId: string) => {
+    if (!internalId) return;
+    eventBus.emit('leadToByInternalId', internalId);
   }, []);
 
   const toggleLibraryStatus = useCallback(
@@ -161,23 +231,194 @@ const KnowledgeReport: React.FC = () => {
     [sendKnowledgeReportAction],
   );
 
-  const libraryContent = useMemo(() => {
-    if (!data) {
-      return null;
-    }
-    if (data.libraries.length === 0) {
-      return (
-        <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>
+  const handleToggleBook = useCallback((bookKey: string, category: string) => {
+    eventBus.emit('knowledgeBookReportAction', {
+      type: 'toggleBook',
+      bookKey,
+      category,
+    });
+  }, []);
+
+  // === Import ===
+
+  async function parseInWorker(buffer: ArrayBuffer): Promise<WiedzaDbResult> {
+    if (!workerRef.current) {
+      workerRef.current = new Worker(
+        new URL('@modules/data/wiedzaDbImport.worker.ts', import.meta.url),
+        { type: 'module' },
       );
     }
 
-    const activeLibraries = data.libraries.filter((library) => library.remaining > 0);
-    const completedLibraries = data.libraries.filter((library) => library.remaining === 0);
+    const worker = workerRef.current;
+
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        worker.removeEventListener('message', handleMessage);
+        worker.removeEventListener('error', handleError);
+      };
+
+      const handleMessage = (event: MessageEvent) => {
+        const resp = event.data as WiedzaDbWorkerResponse | undefined;
+        if (!resp) return;
+        if (resp.type === 'success') {
+          cleanup();
+          resolve(resp.payload);
+        }
+        if (resp.type === 'error') {
+          cleanup();
+          reject(new Error(resp.message));
+        }
+      };
+
+      const handleError = (event: ErrorEvent) => {
+        cleanup();
+        if (workerRef.current === worker) {
+          workerRef.current.terminate();
+          workerRef.current = null;
+        }
+        reject(event.error ?? new Error(event.message));
+      };
+
+      worker.addEventListener('message', handleMessage);
+      worker.addEventListener('error', handleError);
+
+      const request: WiedzaDbWorkerRequest = { type: 'parse', buffer };
+      worker.postMessage(request, [buffer]);
+    });
+  }
+
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file) return;
+
+    setImportState({ phase: 'loading' });
+    try {
+      const buffer = await file.arrayBuffer();
+      const parsed = await parseInWorker(buffer);
+      if (parsed.characters.length === 0) {
+        setImportState({ phase: 'error', message: 'Baza nie zawiera zadnych danych.' });
+        return;
+      }
+      setImportState({ phase: 'preview', parsed, selectedCharacter: '__all__' });
+    } catch (err) {
+      setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Nieznany blad.' });
+    }
+  }, []);
+
+  const handleImportConfirm = useCallback(async () => {
+    if (importState.phase !== 'preview') return;
+
+    const isAll = importState.selectedCharacter === '__all__';
+    const charactersToImport = isAll
+      ? importState.parsed.characters
+      : [importState.selectedCharacter];
+
+    setImportState({ phase: 'importing' });
+
+    try {
+      const results: string[] = [];
+
+      for (const sourceChar of charactersToImport) {
+        const charData = importState.parsed.byCharacter[sourceChar];
+        if (!charData) continue;
+
+        const targetChar = sourceChar.toLowerCase();
+
+        if (charData.events.length > 0) {
+          const events: KnowledgeEvent[] = charData.events.map((e) => ({
+            category: e.category,
+            categoryDative: e.categoryDative,
+            type: e.type,
+            locationId: e.locationId,
+            timestamp: e.timestamp,
+          }));
+          const added = await mergeKnowledgeEvents(targetChar, events);
+          results.push(`${sourceChar}: zdarzenia ${added}/${charData.events.length}`);
+        }
+
+        if (charData.libraries.length > 0) {
+          eventBus.emit('wiedzaImportLibraries', {
+            character: targetChar,
+            libraries: charData.libraries,
+          });
+          results.push(`${sourceChar}: biblioteki ${charData.libraries.length}`);
+        }
+
+        if (charData.books.length > 0) {
+          eventBus.emit('wiedzaImportBooks', {
+            character: targetChar,
+            books: charData.books,
+          });
+          results.push(`${sourceChar}: ksiegi ${charData.books.length}`);
+        }
+
+        if (charData.totalLevels.length > 0) {
+          eventBus.emit('wiedzaImportTotalLevels', {
+            character: targetChar,
+            levels: charData.totalLevels,
+          });
+          // Also store level changes as events for history
+          const levelEvents: KnowledgeEvent[] = [];
+          for (const lv of charData.totalLevels) {
+            const category = getBaseCategoryFromName(lv.categoryName);
+            if (category) {
+              levelEvents.push({
+                category,
+                categoryDative: '',
+                type: 'level_change',
+                locationId: 0,
+                timestamp: lv.timestamp,
+                level: lv.level,
+              });
+            }
+          }
+          if (levelEvents.length > 0) {
+            await mergeKnowledgeEvents(targetChar, levelEvents);
+          }
+          results.push(`${sourceChar}: poziomy ${charData.totalLevels.length}`);
+        }
+      }
+
+      setImportState({
+        phase: 'done',
+        message: `Import zakonczony.\n${results.join('\n')}`,
+      });
+
+      // Refresh all reports after import
+      window.setTimeout(() => {
+        eventBus.emit('requestKnowledgeReport');
+        eventBus.emit('requestKnowledgeBookReport');
+      }, 100);
+    } catch (err) {
+      setImportState({
+        phase: 'error',
+        message: err instanceof Error ? err.message : 'Blad importu.',
+      });
+    }
+  }, [importState]);
+
+  const handleImportCancel = useCallback(() => {
+    setImportState({ phase: 'idle' });
+  }, []);
+
+  // === Library Content ===
+
+  const libraryContent = useMemo(() => {
+    if (!data) return null;
+    if (data.libraries.length === 0) {
+      return <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>;
+    }
+
+    const activeLibraries = data.libraries.filter((l) => l.remaining > 0);
+    const completedLibraries = data.libraries.filter((l) => l.remaining === 0);
 
     if (activeLibraries.length === 0 && completedLibraries.length === 0) {
-      return (
-        <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>
-      );
+      return <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>;
     }
 
     const renderLibrary = (library: KnowledgeReportLibrary, mode: 'active' | 'completed') => {
@@ -187,9 +428,7 @@ const KnowledgeReport: React.FC = () => {
         <div key={library.id} className="knowledge-library">
           <div className="knowledge-library-header">
             <div className="knowledge-library-info">
-              <button
-                type="button"
-                className="knowledge-library-name"
+              <button type="button" className="knowledge-library-name"
                 onClick={() => handleLeadToLibrary(library.locationId)}
               >
                 {library.name}
@@ -199,19 +438,21 @@ const KnowledgeReport: React.FC = () => {
               </span>
             </div>
             <div className="knowledge-library-actions">
+              <button type="button" className="knowledge-library-lead"
+                onClick={() => handleLeadToLibrary(library.locationId)}
+                title="Prowadz do biblioteki"
+              >
+                Prowadz
+              </button>
               {mode === 'active' ? (
-                <button
-                  type="button"
-                  className="knowledge-library-action"
+                <button type="button" className="knowledge-library-action"
                   onClick={() => handleCompleteLibrary(library.id)}
                   disabled={library.remaining === 0}
                 >
                   Zakoncz biblioteke
                 </button>
               ) : (
-                <button
-                  type="button"
-                  className="knowledge-library-reset"
+                <button type="button" className="knowledge-library-reset"
                   onClick={() => handleResetLibrary(library.id)}
                 >
                   Resetuj biblioteke
@@ -222,31 +463,24 @@ const KnowledgeReport: React.FC = () => {
           <div className="knowledge-library-statuses">
             {LIBRARY_STATUS_CONFIG.map(({ key, label, chipClass }) => {
               const count = library[key];
-              if (!count) {
-                return null;
-              }
+              if (!count) return null;
               const isExpanded = Boolean(libraryExpanded[key]);
               return (
                 <div key={key} className={`knowledge-library-status knowledge-library-status--${key}`}>
-                  <button
-                    type="button"
-                    className={`knowledge-chip knowledge-chip--${chipClass} ${
-                      isExpanded ? 'knowledge-chip--active' : ''
-                    }`}
+                  <button type="button"
+                    className={`knowledge-chip knowledge-chip--${chipClass} ${isExpanded ? 'knowledge-chip--active' : ''}`}
                     onClick={() => toggleLibraryStatus(library.id, key)}
                   >
                     {label}: {count}
                   </button>
                   {isExpanded && grouped[key].length > 0 && (
                     <div className="knowledge-library-categories">
-                      {grouped[key].map((category) => (
-                        <button
-                          type="button"
-                          key={category.name}
-                          className={`knowledge-library-category knowledge-library-category--${category.status}`}
-                          onClick={() => handleStartCategory(category.dative)}
+                      {grouped[key].map((cat) => (
+                        <button type="button" key={cat.name}
+                          className={`knowledge-library-category knowledge-library-category--${cat.status}`}
+                          onClick={() => handleStartCategory(cat.dative)}
                         >
-                          {category.name}
+                          {cat.name}
                         </button>
                       ))}
                     </div>
@@ -265,7 +499,7 @@ const KnowledgeReport: React.FC = () => {
           <div className="knowledge-library-group">
             <div className="knowledge-library-group-title">Do zglebienia</div>
             <div className="knowledge-libraries">
-              {activeLibraries.map((library) => renderLibrary(library, 'active'))}
+              {activeLibraries.map((l) => renderLibrary(l, 'active'))}
             </div>
           </div>
         )}
@@ -273,108 +507,539 @@ const KnowledgeReport: React.FC = () => {
           <div className="knowledge-library-group">
             <div className="knowledge-library-group-title">Ukonczone</div>
             <div className="knowledge-libraries">
-              {completedLibraries.map((library) => renderLibrary(library, 'completed'))}
+              {completedLibraries.map((l) => renderLibrary(l, 'completed'))}
             </div>
           </div>
         )}
       </div>
     );
-  }, [
-    data,
-    expandedStatuses,
-    handleCompleteLibrary,
-    handleResetLibrary,
-    handleLeadToLibrary,
-    handleStartCategory,
-    toggleLibraryStatus,
-  ]);
+  }, [data, expandedStatuses, handleCompleteLibrary, handleResetLibrary, handleLeadToLibrary, handleStartCategory, toggleLibraryStatus]);
+
+  // === Categories Content ===
 
   const categoriesContent = useMemo(() => {
-    if (!data) {
-      return null;
-    }
+    if (!data) return null;
     if (data.categories.length === 0) {
       return <div className="knowledge-empty">Brak kategorii wymagajacych zglebiania.</div>;
     }
+
+    // Build book entries per category
+    const booksByCategory = new Map<string, { name: string; completed: boolean }[]>();
+    if (bookData?.books && bookData?.bookProgress) {
+      for (const [bookKey, book] of Object.entries(bookData.books)) {
+        const prog = bookData.bookProgress[bookKey] ?? {};
+        for (const cat of book.categories) {
+          const list = booksByCategory.get(cat) ?? [];
+          list.push({ name: bookKey, completed: prog[cat] === true });
+          booksByCategory.set(cat, list);
+        }
+      }
+    }
+
     return (
       <div className="knowledge-category-grid">
-        {data.categories.map((category) => (
-          <div key={category.name} className="knowledge-category-tile">
-            <div className="knowledge-category-header">
-              <span className="knowledge-category-name">{category.name}</span>
-              <button
-                type="button"
-                className="knowledge-category-command"
-                onClick={() => handleStartCategory(category.dative)}
-              >
-                Zglebiaj
-              </button>
+        {data.categories.map((category) => {
+          const categoryBooks = booksByCategory.get(category.name) ?? [];
+          return (
+            <div key={category.name} className="knowledge-category-tile">
+              <div className="knowledge-category-header">
+                <span className="knowledge-category-name">{category.name}</span>
+                <button type="button" className="knowledge-category-command"
+                  onClick={() => handleStartCategory(category.dative)}
+                >
+                  Zglebiaj
+                </button>
+              </div>
+              <div className="knowledge-category-libraries">
+                {category.libraries.map((library) => (
+                  <div key={library.id} className="knowledge-category-entry">
+                    <span
+                      className={`knowledge-status-dot knowledge-status-dot--${library.status}`}
+                      title={library.status === 'completed' ? 'Ukonczone' : library.status === 'in_progress' ? 'W trakcie' : 'Nierozpoczete'}
+                    />
+                    <span className="knowledge-category-entry-name">{library.name}</span>
+                  </div>
+                ))}
+                {categoryBooks.map((book) => (
+                  <div key={`book-${book.name}`} className="knowledge-category-entry">
+                    <span
+                      className={`knowledge-status-dot knowledge-status-dot--${book.completed ? 'completed' : 'not_started'}`}
+                      title={book.completed ? 'Przeczytane' : 'Nieprzeczytane'}
+                    />
+                    <span className="knowledge-category-entry-name knowledge-category-entry-name--book">{book.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="knowledge-category-libraries">
-              {category.libraries.map((library) => (
-                <div key={library.id} className="knowledge-category-entry">
-                  <span
-                    className={`knowledge-status-dot knowledge-status-dot--${library.status}`}
-                    title={
-                      library.status === 'completed'
-                        ? 'Ukonczone'
-                        : library.status === 'in_progress'
-                        ? 'W trakcie'
-                        : 'Nierozpoczete'
-                    }
-                  />
-                  <span className="knowledge-category-entry-name">{library.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
-  }, [data, handleStartCategory]);
+  }, [data, bookData, handleStartCategory]);
+
+  // === Wiedza Total Content ===
+
+  const [wiedzaLevels, setWiedzaLevels] = useState<WiedzaTotalCategory[]>([]);
+  const [wiedzaTickCounts, setWiedzaTickCounts] = useState<Record<string, number>>({});
+  const [wiedzaLevelsLoaded, setWiedzaLevelsLoaded] = useState(false);
+
+  useEffect(() => {
+    const charKey = characterStorage.getCharacter()?.trim() || '';
+    if (!charKey) {
+      setWiedzaLevels([]);
+      setWiedzaTickCounts({});
+      setWiedzaLevelsLoaded(true);
+      return;
+    }
+    setWiedzaLevelsLoaded(false);
+    void getKnowledgeEventsForCharacter(charKey).then((events) => {
+      // Extract latest level per category
+      const latest = new Map<string, { level: string; timestamp: number }>();
+      for (const e of events) {
+        if (e.type !== 'level_change' || !e.level) continue;
+        const prev = latest.get(e.category);
+        if (!prev || e.timestamp > prev.timestamp) {
+          latest.set(e.category, { level: e.level, timestamp: e.timestamp });
+        }
+      }
+      const cats: WiedzaTotalCategory[] = [];
+      for (const [name, { level }] of latest) {
+        cats.push({ name: name as KnowledgeCategoryBaseName, totalLevel: level });
+      }
+      cats.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Count ticks since last level change per category
+      const ticks: Record<string, number> = {};
+      for (const e of events) {
+        if (e.type !== 'tick') continue;
+        const levelEntry = latest.get(e.category);
+        const sinceTs = levelEntry?.timestamp ?? 0;
+        if (e.timestamp > sinceTs) {
+          ticks[e.category] = (ticks[e.category] ?? 0) + 1;
+        }
+      }
+
+      setWiedzaLevels(cats);
+      setWiedzaTickCounts(ticks);
+      setWiedzaLevelsLoaded(true);
+    });
+  }, [importState.phase]);
+
+  const wiedzaTotalContent = useMemo(() => {
+    if (!wiedzaLevelsLoaded) {
+      return <div className="knowledge-empty">Ladowanie...</div>;
+    }
+    if (wiedzaLevels.length === 0) {
+      return <div className="knowledge-empty">Brak danych o poziomach wiedzy. Uzyj komendy 'wiedza' w grze lub zaimportuj dane.</div>;
+    }
+
+    return (
+      <div className="knowledge-wiedza-total">
+        {wiedzaLevels.map((cat) => {
+          const levelIndex = getLevelIndex(cat.totalLevel);
+          const percent = levelIndex >= 0 ? Math.round((levelIndex / 10) * 100) : 0;
+          const colorClass = getLevelColorClass(levelIndex);
+          const isFull = levelIndex >= 10;
+
+          return (
+            <div key={cat.name} className={`knowledge-wiedza-row ${colorClass} ${isFull ? 'knowledge-wiedza-row--full' : ''}`}>
+              <span className="knowledge-wiedza-name">{cat.name}</span>
+              <span className="knowledge-wiedza-level-label">{cat.totalLevel}</span>
+              <div className="knowledge-wiedza-bar">
+                <div className="knowledge-wiedza-bar-track">
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <div
+                      key={i}
+                      className={`knowledge-wiedza-bar-segment ${i < levelIndex ? 'knowledge-wiedza-bar-segment--filled' : ''}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <span className="knowledge-wiedza-percent">{percent}%</span>
+              <span className={`knowledge-wiedza-ticks ${!isFull && (wiedzaTickCounts[cat.name] ?? 0) > 0 ? 'knowledge-wiedza-ticks--active' : ''}`}>
+                {isFull ? '' : `+${wiedzaTickCounts[cat.name] ?? 0}`}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [wiedzaLevels, wiedzaLevelsLoaded, wiedzaTickCounts]);
+
+  // === Books Content ===
+
+  const booksContent = useMemo(() => {
+    if (!bookData || !bookData.books || Object.keys(bookData.books).length === 0) {
+      return <div className="knowledge-empty">Brak danych o ksiegach.</div>;
+    }
+
+    const books = bookData.books;
+    const progress = bookData.bookProgress ?? {};
+    const bookEntries = Object.entries(books).sort(([a], [b]) => a.localeCompare(b));
+
+    const completedBooks = bookEntries.filter(([bookKey, book]) => {
+      const bookProg = progress[bookKey] ?? {};
+      return book.categories.every((cat) => bookProg[cat] === true);
+    });
+    const activeBooks = bookEntries.filter(([bookKey, book]) => {
+      const bookProg = progress[bookKey] ?? {};
+      return !book.categories.every((cat) => bookProg[cat] === true);
+    });
+
+    const renderBook = (bookKey: string, book: KnowledgeBookEntry, mode: 'active' | 'completed') => {
+      const bookCategories = book.categories;
+      const bookProg = progress[bookKey] ?? {};
+      const completedCount = bookCategories.filter((cat) => bookProg[cat] === true).length;
+      const totalCount = bookCategories.length;
+
+      return (
+        <div key={bookKey} className={`knowledge-book ${mode === 'completed' ? 'knowledge-book--complete' : ''}`}>
+          <div className="knowledge-library-header">
+            <div className="knowledge-library-info">
+              <span className="knowledge-book-name">{bookKey}</span>
+              <span className="knowledge-library-remaining">
+                {completedCount} z {totalCount} kategorii
+              </span>
+            </div>
+          </div>
+          <div className="knowledge-book-categories">
+            {bookCategories.map((cat) => {
+              const isComplete = bookProg[cat] === true;
+              return (
+                <button
+                  type="button"
+                  key={cat}
+                  className={`knowledge-library-category knowledge-book-category ${isComplete ? 'knowledge-library-category--completed' : 'knowledge-library-category--not_started'}`}
+                  onClick={() => handleToggleBook(bookKey, cat)}
+                  title={`${cat}: ${isComplete ? 'Ukonczone' : 'Do zrobienia'}`}
+                >
+                  <span className={`knowledge-status-dot knowledge-status-dot--${isComplete ? 'completed' : 'not_started'}`} />
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="knowledge-library-groups">
+        {activeBooks.length > 0 && (
+          <div className="knowledge-library-group">
+            <div className="knowledge-library-group-title">Do przeczytania</div>
+            <div className="knowledge-books">
+              {activeBooks.map(([key, book]) => renderBook(key, book, 'active'))}
+            </div>
+          </div>
+        )}
+        {completedBooks.length > 0 && (
+          <div className="knowledge-library-group">
+            <div className="knowledge-library-group-title">Przeczytane</div>
+            <div className="knowledge-books">
+              {completedBooks.map(([key, book]) => renderBook(key, book, 'completed'))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }, [bookData, handleToggleBook]);
+
+  // === History Content ===
+
+  const [historyEvents, setHistoryEvents] = useState<KnowledgeEvent[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyCategoryFilter, setHistoryCategoryFilter] = useState('');
+
+  useEffect(() => {
+    if (activeTab !== 'history' || historyLoaded) return;
+    const charKey = characterStorage.getCharacter()?.trim() || '';
+    if (!charKey) {
+      setHistoryLoaded(true);
+      return;
+    }
+    void getKnowledgeEventsForCharacter(charKey).then((events) => {
+      setHistoryEvents(events);
+      setHistoryLoaded(true);
+    });
+  }, [activeTab, historyLoaded]);
+
+  // Reload history after import
+  useEffect(() => {
+    if (importState.phase === 'done') {
+      setHistoryLoaded(false);
+    }
+  }, [importState.phase]);
+
+  const historyCategories = useMemo(() => {
+    const cats = new Set<string>();
+    for (const e of historyEvents) {
+      if (e.type === 'tick' || e.type === 'level_change') cats.add(e.category);
+    }
+    return Array.from(cats).sort();
+  }, [historyEvents]);
+
+  const historyContent = useMemo(() => {
+    if (!historyLoaded) {
+      return <div className="knowledge-empty">Ladowanie...</div>;
+    }
+
+    const filtered = historyEvents.filter(
+      (e) => (e.type === 'tick' || e.type === 'level_change') &&
+             (!historyCategoryFilter || e.category === historyCategoryFilter),
+    );
+    if (historyEvents.length === 0) {
+      return <div className="knowledge-empty">Brak zdarzen. Ticki i zmiany poziomu pojawia sie tutaj.</div>;
+    }
+
+    // Show newest first
+    const sorted = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
+
+    return (
+      <div className="knowledge-history">
+        <div className="knowledge-history-filters">
+          <select
+            className="knowledge-import-select"
+            value={historyCategoryFilter}
+            onChange={(e) => setHistoryCategoryFilter(e.target.value)}
+          >
+            <option value="">Wszystkie kategorie</option>
+            {historyCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <span className="knowledge-history-count">{sorted.length} zdarzen</span>
+        </div>
+        <table className="knowledge-history-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Kategoria</th>
+              <th>Typ</th>
+              <th>Szczegoly</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((event, idx) => {
+              const date = new Date(event.timestamp);
+              const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+              const isLevelChange = event.type === 'level_change';
+              const levelIndex = isLevelChange && event.level ? getLevelIndex(event.level) : -1;
+              const colorClass = isLevelChange ? getLevelColorClass(levelIndex) : '';
+
+              return (
+                <tr key={`${event.timestamp}-${event.category}-${idx}`} className={isLevelChange ? 'knowledge-history-row--level' : ''}>
+                  <td className="knowledge-history-date">{dateStr}</td>
+                  <td className="knowledge-history-category">{event.category}</td>
+                  <td className="knowledge-history-type">
+                    {isLevelChange ? (
+                      <span className="knowledge-history-badge knowledge-history-badge--level">poziom</span>
+                    ) : (
+                      <span className="knowledge-history-badge knowledge-history-badge--tick">tick</span>
+                    )}
+                  </td>
+                  <td className="knowledge-history-detail">
+                    {isLevelChange && event.level ? (
+                      <span className={`knowledge-wiedza-level-label ${colorClass}`}>{event.level}</span>
+                    ) : event.locationId ? (
+                      <span className="knowledge-history-location">#{event.locationId}</span>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  }, [historyEvents, historyLoaded, historyCategoryFilter, historyCategories]);
+
+  // === Import Content ===
+
+  const importContent = useMemo(() => {
+    if (importState.phase === 'idle') {
+      return (
+        <div className="knowledge-import">
+          <p>Wybierz plik Database_wiedza.db z Mudleta aby zaimportowac dane.</p>
+          <button type="button" className="knowledge-import-btn" onClick={handleImportClick}>
+            Wybierz plik...
+          </button>
+          <input ref={fileInputRef} type="file" accept=".db" style={{ display: 'none' }} onChange={handleFileChange} />
+        </div>
+      );
+    }
+
+    if (importState.phase === 'loading') {
+      return <div className="knowledge-import">Wczytywanie bazy danych...</div>;
+    }
+
+    if (importState.phase === 'importing') {
+      return <div className="knowledge-import">Importowanie danych...</div>;
+    }
+
+    if (importState.phase === 'error') {
+      return (
+        <div className="knowledge-import">
+          <div className="knowledge-import-error">{importState.message}</div>
+          <button type="button" className="knowledge-import-btn" onClick={handleImportCancel}>
+            Zamknij
+          </button>
+        </div>
+      );
+    }
+
+    if (importState.phase === 'done') {
+      return (
+        <div className="knowledge-import">
+          <div className="knowledge-import-done">{importState.message}</div>
+          <button type="button" className="knowledge-import-btn" onClick={handleImportCancel}>
+            Zamknij
+          </button>
+        </div>
+      );
+    }
+
+    if (importState.phase === 'preview') {
+      const isAll = importState.selectedCharacter === '__all__';
+      const selectedChars = isAll ? importState.parsed.characters : [importState.selectedCharacter];
+      const totals = { events: 0, libraries: 0, books: 0, levels: 0 };
+      for (const c of selectedChars) {
+        const d = importState.parsed.byCharacter[c];
+        if (!d) continue;
+        totals.events += d.events.length;
+        totals.libraries += d.libraries.length;
+        totals.books += d.books.length;
+        totals.levels += d.totalLevels.length;
+      }
+
+      return (
+        <div className="knowledge-import">
+          <div className="knowledge-import-row">
+            <label className="knowledge-import-label">Postac:</label>
+            <select
+              className="knowledge-import-select"
+              value={importState.selectedCharacter}
+              onChange={(e) => setImportState({ ...importState, selectedCharacter: e.target.value })}
+            >
+              <option value="__all__">Wszystkie postacie ({importState.parsed.characters.length})</option>
+              {importState.parsed.characters.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div className="knowledge-import-summary">
+            <div>Zdarzenia (ticki/wpisy): <strong>{totals.events}</strong></div>
+            <div>Biblioteki: <strong>{totals.libraries}</strong></div>
+            <div>Ksiegi: <strong>{totals.books}</strong></div>
+            <div>Poziomy wiedzy: <strong>{totals.levels}</strong></div>
+          </div>
+          <div className="knowledge-import-actions">
+            <button type="button" className="knowledge-import-btn knowledge-import-btn--confirm"
+              onClick={handleImportConfirm}
+            >
+              Importuj
+            </button>
+            <button type="button" className="knowledge-import-btn" onClick={handleImportCancel}>
+              Anuluj
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }, [importState, handleImportClick, handleFileChange, handleImportConfirm, handleImportCancel]);
+
+  // === Render ===
 
   const hasLibraries = data?.libraries && data.libraries.length > 0;
+  const hasAnyData = data || bookData || wiedzaLevels.length > 0;
+
+  function renderTabContent() {
+    switch (activeTab) {
+      case 'libraries': return libraryContent;
+      case 'categories': return categoriesContent;
+      case 'wiedza': return wiedzaTotalContent;
+      case 'books': return booksContent;
+      case 'history': return historyContent;
+      default: return null;
+    }
+  }
+
+  const headerActions = (
+    <>
+      <button
+        type="button"
+        className="knowledge-header-import-btn"
+        onClick={handleImportClick}
+        disabled={importState.phase === 'loading' || importState.phase === 'importing'}
+        title="Import z Mudleta"
+      >
+        Import
+      </button>
+      <input ref={fileInputRef} type="file" accept=".db" style={{ display: 'none' }} onChange={handleFileChange} />
+    </>
+  );
 
   return (
     <DockablePopupWrapper
       {...wrapperProps}
       popupType="knowledgeReport"
-      title="Biblioteki"
+      title="Wiedza"
       minWidth={500}
       minHeight={350}
       initialWidth={960}
       initialHeight={Math.min(window.innerHeight * 0.75, window.innerHeight - 32)}
       className="knowledge-window"
       bodyClassName="knowledge-window-body"
+      headerActions={headerActions}
     >
-      {!data ? (
-        <div className="knowledge-empty">Brak danych. Użyj komendy /wiedza lub /biblioteki.</div>
+      {importState.phase !== 'idle' && (
+        <div className="knowledge-import-panel">
+          {importContent}
+        </div>
+      )}
+      {!hasAnyData && importState.phase === 'idle' ? (
+        <div className="knowledge-empty">Brak danych. Uzyj komendy /wiedza lub /biblioteki.</div>
       ) : (
         <>
-      <div className="knowledge-tabs">
-        <button
-          type="button"
-          className={`knowledge-tab-button ${
-            activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''
-          }`}
-          onClick={() => setActiveTab('libraries')}
-          disabled={!hasLibraries}
-        >
-          Biblioteki
-        </button>
-        <button
-          type="button"
-          className={`knowledge-tab-button ${
-            activeTab === 'categories' ? 'knowledge-tab-button--active' : ''
-          }`}
-          onClick={() => setActiveTab('categories')}
-        >
-          Kategorie
-        </button>
-      </div>
-      <div className="knowledge-content">
-        {activeTab === 'libraries' ? libraryContent : categoriesContent}
-      </div>
+          <div className="knowledge-tabs">
+            <button type="button"
+              className={`knowledge-tab-button ${activeTab === 'wiedza' ? 'knowledge-tab-button--active' : ''}`}
+              onClick={() => setActiveTab('wiedza')}
+            >
+              Wiedza
+            </button>
+            <button type="button"
+              className={`knowledge-tab-button ${activeTab === 'libraries' ? 'knowledge-tab-button--active' : ''}`}
+              onClick={() => setActiveTab('libraries')}
+              disabled={!hasLibraries}
+            >
+              Biblioteki
+            </button>
+            <button type="button"
+              className={`knowledge-tab-button ${activeTab === 'books' ? 'knowledge-tab-button--active' : ''}`}
+              onClick={() => setActiveTab('books')}
+            >
+              Ksiegi
+            </button>
+            <button type="button"
+              className={`knowledge-tab-button ${activeTab === 'categories' ? 'knowledge-tab-button--active' : ''}`}
+              onClick={() => setActiveTab('categories')}
+            >
+              Kategorie
+            </button>
+            <button type="button"
+              className={`knowledge-tab-button ${activeTab === 'history' ? 'knowledge-tab-button--active' : ''}`}
+              onClick={() => { setHistoryLoaded(false); setActiveTab('history'); }}
+            >
+              Historia
+            </button>
+          </div>
+          <div className="knowledge-content">
+            {renderTabContent()}
+          </div>
         </>
       )}
     </DockablePopupWrapper>

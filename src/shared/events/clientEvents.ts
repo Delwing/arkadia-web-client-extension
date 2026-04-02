@@ -175,9 +175,17 @@ export interface KnownEvents {
     "knowledgeDetailsReport": unknown | null;
     "knowledgeDetails.popup.open": void;
     "knowledgeReportAction": KnowledgeReportAction;
-    "requestKnowledgeReport": void;
+    "requestKnowledgeReport": void | { character?: string };
     "requestKnowledgeDetailsReport": void;
     "knowledgeHints": { enabled: boolean; hideCompleted: boolean };
+    "knowledgeTickEvent": { category: string; dative: string };
+    "knowledgeBookReport": unknown | null;
+    "knowledgeBookReportAction": { type: string; bookKey: string; category: string };
+    "requestKnowledgeBookReport": void | { character?: string };
+    "wiedzaImportLibraries": { character: string; libraries: unknown[] };
+    "wiedzaImportBooks": { character: string; books: unknown[] };
+    "wiedzaImportTotalLevels": { character: string; levels: unknown[] };
+    "leadToByInternalId": string;
     "sendCommand": SendCommandEvent;
     "printLine": string | AnsiAwareBuffer;
     "requestHerbCounts": void;
