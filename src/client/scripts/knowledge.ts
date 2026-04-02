@@ -2004,8 +2004,6 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const overrideChar = (detail as { character?: string } | undefined)?.character;
         const characterKey = overrideChar || getCharacterProgressKey();
         const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
-        const allCharKeys = Object.keys(currentSnapshot.data.progress);
-        console.log('requestKnowledgeReport: characterKey=', characterKey, 'allProgressKeys=', allCharKeys, 'libraryCount=', Object.keys(characterProgress).length);
         const report = buildKnowledgeReport(libraryEntries, characterProgress);
         if (report) {
             client.sendEvent('knowledgeReport', report);

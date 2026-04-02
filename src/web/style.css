@@ -2054,6 +2054,7 @@ h1 {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.82rem;
+  table-layout: fixed;
 }
 
 .knowledge-history-table th {
@@ -2080,6 +2081,10 @@ h1 {
   background-color: var(--popup-subtle-bg);
 }
 
+.knowledge-history-col-date { width: 17ch; }
+.knowledge-history-col-type { width: 11ch; }
+.knowledge-history-col-detail { width: 19ch; }
+
 .knowledge-history-date {
   white-space: nowrap;
   color: var(--popup-text-subtle);
@@ -2088,15 +2093,22 @@ h1 {
 
 .knowledge-history-category {
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-history-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .knowledge-history-badge {
   display: inline-block;
-  padding: 0.1rem 0.45rem;
+  padding: 0.1rem 0.3rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 

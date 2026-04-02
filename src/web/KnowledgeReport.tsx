@@ -825,10 +825,10 @@ const KnowledgeReport: React.FC = () => {
         <table className="knowledge-history-table">
           <thead>
             <tr>
-              <th>Data</th>
+              <th className="knowledge-history-col-date">Data</th>
               <th>Kategoria</th>
-              <th>Typ</th>
-              <th>Szczegoly</th>
+              <th className="knowledge-history-col-type">Typ</th>
+              <th className="knowledge-history-col-detail">Szczegoly</th>
             </tr>
           </thead>
           <tbody>
