@@ -21,6 +21,11 @@
   --text-muted: #888;
   --text-default: #e0e0e0;
   --primary: #589aff;
+  --output-bg: #242424;
+  --dim-start: 1;
+  --dim-end: 0.3;
+  --dim-duration: 1000ms;
+  --dim-easing: ease-in-out;
 
   /* Popup semantic colors */
   --popup-bg: var(--surface-elevated);
