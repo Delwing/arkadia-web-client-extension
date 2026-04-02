@@ -33,10 +33,19 @@ const languageLevels: Record<string, number> = {
     pelna: 10,
 };
 
-function createGauge(current: number, max: number): string {
-    const filled = "#".repeat(current);
-    const empty = "-".repeat(max - current);
-    return `[${filled}${empty}]`;
+const dimColor = createColorFormat('#4a5568');
+
+function appendGauge(result: AnsiAwareBuffer, current: number, max: number, levelColor: ReturnType<typeof createColorFormat>): void {
+    const filled = current > 0 ? '='.repeat(current) : '';
+    const empty = ' '.repeat(max - Math.max(0, current));
+    result.appendBuffer(colorString(' [', dimColor));
+    if (filled) {
+        result.appendBuffer(colorString(filled, levelColor));
+    }
+    if (empty) {
+        result.appendBuffer(colorString(empty, dimColor));
+    }
+    result.appendBuffer(colorString(']', dimColor));
 }
 
 function getMaxLevels(): Record<string, number> {
@@ -138,10 +147,10 @@ export default function initLanguageSkills(
 
                 if (num) {
                     const color = COLORS[num - 1];
-                    const gauge = createGauge(num, max);
-                    // Pad level to max length (12 for "prawie pelna")
+                    // Pad level text so bars align (longest = "prawie pelna" = 12 chars)
                     const paddedLevel = levelText + " ".repeat(Math.max(0, 12 - levelText.length));
-                    result.appendBuffer(colorString(paddedLevel + gauge, color));
+                    result.append(paddedLevel, originalFormatting);
+                    appendGauge(result, num, max, color);
                 } else {
                     result.append(levelText, originalFormatting);
                 }

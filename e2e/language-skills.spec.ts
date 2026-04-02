@@ -53,7 +53,7 @@ test.describe('Language skills', () => {
         await waitForOutputContaining(page, 'Orkowy');
 
         // Verify the output contains the language gauge display
-        // The script adds color-coded gauge bars like [###---] next to each language
+        // The script adds color-coded gauge bars like [===   ] next to each language
         const output = await getRecentOutput(page, 15);
 
         // The output should contain the language names
@@ -62,8 +62,8 @@ test.describe('Language skills', () => {
         expect(output, 'should show Wspolny language').toContain('Wspolny');
         expect(output, 'should show Orkowy language').toContain('Orkowy');
 
-        // The gauge display uses # for filled and - for empty, enclosed in brackets
-        expect(output, 'should contain gauge characters').toMatch(/[#\-]/);
+        // The gauge display uses = for filled and space for empty, enclosed in brackets
+        expect(output, 'should contain gauge characters').toMatch(/[=\[\]]/);
     });
 
     test('max language levels persist across page reload', async ({page}) => {
@@ -97,8 +97,8 @@ test.describe('Language skills', () => {
         expect(output, 'should show Wspolny after reload').toContain('Wspolny');
         expect(output, 'should show Orkowy after reload').toContain('Orkowy');
 
-        // The gauge uses # and - characters
-        expect(output, 'should contain gauge characters after reload').toMatch(/[#\-]/);
+        // The gauge uses = characters and brackets
+        expect(output, 'should contain gauge characters after reload').toMatch(/[=\[\]]/);
     });
 
     test('gauge display reflects actual vs max levels', async ({page}) => {
@@ -116,12 +116,12 @@ test.describe('Language skills', () => {
 
         const output = await getRecentOutput(page, 15);
 
-        // Wspolny is pelna (10) with max pelna (10) - should be fully filled [##########]
-        // The gauge for a fully maxed skill should have only # characters
-        expect(output, 'should show fully filled gauge for pelna/pelna skill').toMatch(/\[#+]/);
+        // Wspolny is pelna (10) with max pelna (10) - should be fully filled [==========]
+        // The gauge for a fully maxed skill should have only = characters
+        expect(output, 'should show fully filled gauge for pelna/pelna skill').toMatch(/\[=+]/);
 
-        // Orkowy is znikoma (1) with max dobra (6) - should have mostly dashes
-        // [#-----] pattern
-        expect(output, 'should show partially filled gauge for lower skill').toMatch(/\[#+-+]/);
+        // Orkowy is znikoma (1) with max dobra (6) - should have mostly spaces
+        // [=     ] pattern
+        expect(output, 'should show partially filled gauge for lower skill').toMatch(/\[=+ +]/);
     });
 });
