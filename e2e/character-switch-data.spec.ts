@@ -498,8 +498,8 @@ test.describe('Language max levels character switch', () => {
         await waitForOutputContaining(page, 'Krasnoludzki');
 
         const output = await getRecentOutput(page, 5);
-        // dobra = 6, with max 10 → [######----]
-        expect(output, 'should show gauge with default max 10').toMatch(/\[#{6}-{4}]/);
+        // dobra = 6, with max 10 → [======    ]
+        expect(output, 'should show gauge with default max 10').toMatch(/\[={6} {4}]/);
 
         // Switch back to LangCharA — max levels should be restored
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'LangCharA', object_num: 80005});
@@ -510,8 +510,8 @@ test.describe('Language max levels character switch', () => {
         await waitForOutputContaining(page, 'Krasnoludzki');
 
         const outputA = await getRecentOutput(page, 5);
-        // dobra = 6, with max 7 (bardzo dobra) → [######-]
-        expect(outputA, 'should show gauge with restored max 7').toMatch(/\[#{6}-]/);
+        // dobra = 6, with max 7 (bardzo dobra) → [====== ]
+        expect(outputA, 'should show gauge with restored max 7').toMatch(/\[={6} ]/);
     });
 });
 
