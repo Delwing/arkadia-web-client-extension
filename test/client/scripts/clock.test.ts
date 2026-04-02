@@ -804,8 +804,8 @@ describe('ArkadiaTime - Clock System', () => {
         });
 
         test('Empire: day 218 should be Autumn', () => {
-            // Day 218 = Nachgeheim day 17
-            const line = 'Jest w przyblizeniu pierwsza rano, siedemnasty dzien miesiaca Nachgeheim wedlug Kalendarza Imperialnego.';
+            // Day 218 = Nachgeheim day 18
+            const line = 'Jest w przyblizeniu pierwsza rano, osiemnasty dzien miesiaca Nachgeheim wedlug Kalendarza Imperialnego.';
             parse(line);
             const snapshot = display.getSnapshot("Empire");
             expect(snapshot.season).toBe(2); // Autumn
