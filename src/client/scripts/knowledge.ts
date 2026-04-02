@@ -39,6 +39,7 @@ import {
 } from '@modules/core/pluginLocationNotesRegistry';
 import knowledgeData from '../knowledge.json';
 import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
+import { showContextMenu } from '@shared/dom/contextMenu';
 
 interface KnowledgeJsonEntry {
     Rodzaj: string;
@@ -988,6 +989,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     }
 
+    type BookTriggerEntry = { dopelniacz: string; categories: string[] };
+
     function registerBookTriggers(books: Record<string, KnowledgeBookEntry> | undefined) {
         client.Triggers.removeByTag(BOOK_TRIGGER_TAG);
 
@@ -995,7 +998,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             return;
         }
 
-        const bookVariants = new Map<string, string[]>();
+        const bookVariants = new Map<string, BookTriggerEntry>();
 
         for (const [, book] of Object.entries(books)) {
             const categories = book.categories;
@@ -1019,17 +1022,20 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 const existing = bookVariants.get(trimmed);
                 if (existing) {
                     for (const cat of categories) {
-                        if (!existing.includes(cat)) {
-                            existing.push(cat);
+                        if (!existing.categories.includes(cat)) {
+                            existing.categories.push(cat);
                         }
                     }
                 } else {
-                    bookVariants.set(trimmed, [...categories]);
+                    bookVariants.set(trimmed, {
+                        dopelniacz: book.dopelniacz,
+                        categories: [...categories],
+                    });
                 }
             }
         }
 
-        for (const [token, categories] of bookVariants.entries()) {
+        for (const [token, entry] of bookVariants.entries()) {
             client.Triggers.registerTokenTrigger(
                 token,
                 (line, matches) => {
@@ -1039,8 +1045,17 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
 
                     line.createLinksForText(tokenText, {
-                        onMouseEnter: (ev) => showBookTooltip(categories, ev.pageX, ev.pageY),
+                        onMouseEnter: (ev) => showBookTooltip(entry.categories, ev.pageX, ev.pageY),
                         onMouseLeave: () => hideBookTooltip(),
+                        onContextMenu: (ev) => {
+                            hideBookTooltip();
+                            const items = entry.categories.map((category) => {
+                                const dative = getDativeCategoryName(category);
+                                const cmd = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
+                                return { label: cmd, action: () => client.sendCommand(cmd) };
+                            });
+                            showContextMenu(items, ev.pageX, ev.pageY);
+                        },
                     });
 
                     return line;

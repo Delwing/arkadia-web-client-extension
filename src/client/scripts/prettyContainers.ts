@@ -5,6 +5,8 @@ import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
 import {getKnowledgeStore, KnowledgeBookEntry} from "@modules/data/dataStores/knowledgeStore";
 import { showBookTooltip, hideBookTooltip } from "@web/bookTooltip";
+import { showContextMenu } from "@shared/dom/contextMenu";
+import { getDativeCategoryName } from "../knowledgeCategories";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {
     MITHRIL_COLOR,
@@ -486,7 +488,17 @@ let plugLinks = false;
 
 // Book filter for pretty containers (populated after async load)
 let bookFilter: ((name: string) => boolean) | null = null;
-const bookCategoryLookup = new Map<string, string[]>();
+type BookLookupEntry = { dopelniacz: string; categories: string[] };
+const bookCategoryLookup = new Map<string, BookLookupEntry>();
+
+function openBookContextMenu(client: Client, entry: BookLookupEntry, x: number, y: number) {
+    const items = entry.categories.map((category) => {
+        const dative = getDativeCategoryName(category);
+        const cmd = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
+        return { label: cmd, action: () => client.sendCommand(cmd) };
+    });
+    showContextMenu(items, x, y);
+}
 
 
 function isFavoriteMagic(itemName: string): boolean {
@@ -613,10 +625,13 @@ async function loadMagicAndKeysFilter(client: Client) {
                     const existing = bookCategoryLookup.get(lower);
                     if (existing) {
                         for (const cat of categories) {
-                            if (!existing.includes(cat)) existing.push(cat);
+                            if (!existing.categories.includes(cat)) existing.categories.push(cat);
                         }
                     } else {
-                        bookCategoryLookup.set(lower, [...categories]);
+                        bookCategoryLookup.set(lower, {
+                            dopelniacz: book.dopelniacz,
+                            categories: [...categories],
+                        });
                     }
                 }
             }
@@ -635,11 +650,15 @@ async function loadMagicAndKeysFilter(client: Client) {
         defaultTransforms.push({
             transform: (buffer, item, group) => {
                 if (group !== 'ksiazki') return buffer;
-                const categories = bookCategoryLookup.get(item.name.trim().toLowerCase());
-                if (!categories) return buffer;
+                const entry = bookCategoryLookup.get(item.name.trim().toLowerCase());
+                if (!entry) return buffer;
                 buffer.createLink([0, buffer.length], {
-                    onMouseEnter: (ev) => showBookTooltip(categories, ev.pageX, ev.pageY),
+                    onMouseEnter: (ev) => showBookTooltip(entry.categories, ev.pageX, ev.pageY),
                     onMouseLeave: () => hideBookTooltip(),
+                    onContextMenu: (ev) => {
+                        hideBookTooltip();
+                        openBookContextMenu(client, entry, ev.pageX, ev.pageY);
+                    },
                 });
                 return buffer;
             },
