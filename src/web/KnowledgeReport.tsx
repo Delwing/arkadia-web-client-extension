@@ -582,6 +582,13 @@ const KnowledgeReport: React.FC = () => {
   const [wiedzaLevels, setWiedzaLevels] = useState<WiedzaTotalCategory[]>([]);
   const [wiedzaTickCounts, setWiedzaTickCounts] = useState<Record<string, number>>({});
   const [wiedzaLevelsLoaded, setWiedzaLevelsLoaded] = useState(false);
+  const [wiedzaRefreshCounter, setWiedzaRefreshCounter] = useState(0);
+
+  useEffect(() => {
+    const handler = () => setWiedzaRefreshCounter((c) => c + 1);
+    eventBus.on('knowledgeDetailsReport', handler);
+    return () => { eventBus.off('knowledgeDetailsReport', handler); };
+  }, []);
 
   useEffect(() => {
     const charKey = characterStorage.getCharacter()?.trim() || '';
@@ -623,14 +630,19 @@ const KnowledgeReport: React.FC = () => {
       setWiedzaTickCounts(ticks);
       setWiedzaLevelsLoaded(true);
     });
-  }, [importState.phase]);
+  }, [importState.phase, wiedzaRefreshCounter]);
 
   const wiedzaTotalContent = useMemo(() => {
     if (!wiedzaLevelsLoaded) {
       return <div className="knowledge-empty">Ladowanie...</div>;
     }
     if (wiedzaLevels.length === 0) {
-      return <div className="knowledge-empty">Brak danych o poziomach wiedzy. Uzyj komendy 'wiedza' w grze lub zaimportuj dane.</div>;
+      return (
+        <div className="knowledge-empty" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <span>Brak danych o poziomach wiedzy. Uzyj komendy 'wiedza' w grze lub zaimportuj dane.</span>
+          <button className="btn btn-sm btn-outline-light" onClick={() => eventBus.emit('sendCommand', { command: 'wiedza' })}>Wyslij 'wiedza'</button>
+        </div>
+      );
     }
 
     return (
