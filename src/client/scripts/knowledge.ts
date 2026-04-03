@@ -96,6 +96,10 @@ const STATUS_COLORS: Record<KnowledgeCategoryStatus, FormatStateSnapshot> = {
 
 const HEADER_COLOR = createColorFormat('#7cfc00');
 const KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR = createColorFormat('#ffe066');
+const BOOK_STATUS_COLORS = {
+    in_progress: createColorFormat('#b8a960'),
+    completed: createColorFormat('#7aab7a'),
+};
 const KNOWLEDGE_ENTRY_TRIGGER_TAG = 'knowledge-entry-triggers';
 const BOOK_TRIGGER_TAG = 'book-triggers';
 
@@ -1044,7 +1048,27 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     }
 
-    type BookTriggerEntry = { dopelniacz: string; categories: string[] };
+    type BookTriggerEntry = { bookKey: string; dopelniacz: string; categories: string[] };
+
+    function getBookStatusColor(bookKey: string, categories: string[]): FormatStateSnapshot | null {
+        if (!currentSnapshot) {
+            return null;
+        }
+        const characterKey = getCharacterProgressKey();
+        const bookProg = currentSnapshot.data.bookProgress?.[characterKey]?.[bookKey];
+        if (!bookProg) {
+            return null; // not_started — keep default gray
+        }
+        const allCompleted = categories.every((cat) => bookProg[cat] === true);
+        if (allCompleted) {
+            return BOOK_STATUS_COLORS.completed;
+        }
+        const anyStarted = categories.some((cat) => bookProg[cat] != null);
+        if (anyStarted) {
+            return BOOK_STATUS_COLORS.in_progress;
+        }
+        return null;
+    }
 
     function registerBookTriggers(books: Record<string, KnowledgeBookEntry> | undefined) {
         client.Triggers.removeByTag(BOOK_TRIGGER_TAG);
@@ -1055,7 +1079,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
         const bookVariants = new Map<string, BookTriggerEntry>();
 
-        for (const [, book] of Object.entries(books)) {
+        for (const [key, book] of Object.entries(books)) {
             const categories = book.categories;
             if (!categories || categories.length === 0) {
                 continue;
@@ -1083,6 +1107,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
                 } else {
                     bookVariants.set(trimmed, {
+                        bookKey: key,
                         dopelniacz: book.dopelniacz,
                         categories: [...categories],
                     });
@@ -1097,6 +1122,18 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     const tokenText = matches[0];
                     if (!tokenText) {
                         return line;
+                    }
+
+                    // Color based on book progress status
+                    const bookColor = getBookStatusColor(entry.bookKey, entry.categories);
+                    if (bookColor) {
+                        const startIndex =
+                            typeof matches.index === 'number' && matches.index >= 0
+                                ? matches.index
+                                : line.text.indexOf(tokenText);
+                        if (startIndex >= 0) {
+                            line.replace([startIndex, startIndex + tokenText.length], tokenText, bookColor);
+                        }
                     }
 
                     line.createLinksForText(tokenText, {
