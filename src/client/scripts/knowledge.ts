@@ -1647,6 +1647,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             const category = matches[1];
             if (category) {
                 setProgress(category, 'in_progress');
+                window.setTimeout(() => dispatchKnowledgeReport(), 50);
             }
             return line;
         },
@@ -1659,6 +1660,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             const category = matches[1];
             if (category) {
                 setProgress(category, 'completed');
+                window.setTimeout(() => dispatchKnowledgeReport(), 50);
             }
             return line;
         },
@@ -1715,6 +1717,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
                     if (bookKey) {
                         setBookProgress(bookKey, category, 'in_progress');
+                        window.setTimeout(() => dispatchBookReport(), 50);
                     }
                 }
             }
@@ -1743,6 +1746,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
                     if (bookKey) {
                         setBookProgress(bookKey, category, true);
+                        window.setTimeout(() => dispatchBookReport(), 50);
                     }
                 }
             }
