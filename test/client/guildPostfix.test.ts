@@ -21,7 +21,7 @@ describe("guildPostfix", () => {
     characterStorage.setCharacter('TestChar');
     client = new FakeClient();
     initGuildPostfix((client as unknown) as any);
-    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), "");
+    parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), "living.long");
   });
 
   afterEach(() => {
