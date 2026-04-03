@@ -334,7 +334,7 @@ const defaultContainerPatterns: RegExp[] = [
     /^Dostrzegasz na (?:nim|niej) jeszcze (?<content>.*)\.$/,
     /^Drewniany okuty (?<container>stelaz) zawiera (?<content>.*)\.$/,
     /^Dwukonny czerwony (?<container>powoz) porzucony na poboczu zawiera (?<content>.*)\.$/,
-    /^(?:\w+ ){2}(?<container>sekretarzyk|kabinet) zawiera (?<content>.*)\.$/
+    /^(?:\w+ ){1,2}(?<container>sekretarzyk|kabinet) zawiera (?<content>.*)\.$/
 ];
 
 const weapons = ["darda", "dardy", "multon", "kord", "puginal", "gladius", "topor", "berdysz", "siekier", "czekan",
