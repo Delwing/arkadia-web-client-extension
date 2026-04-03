@@ -20,6 +20,7 @@ import type {
   WiedzaDbWorkerRequest,
   WiedzaDbWorkerResponse,
 } from '@modules/data/wiedzaDbImport.shared';
+import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import {
   mergeKnowledgeEvents,
   getKnowledgeEventsForCharacter,
@@ -84,6 +85,23 @@ type WiedzaTotalCategory = {
   name: KnowledgeCategoryBaseName;
   totalLevel: string;
 };
+
+type WiedzaTypeLevelInfo = {
+  level: string;
+  levelIndex: number;
+};
+
+type WiedzaDetailsCategory = {
+  name: string;
+  types: Partial<Record<KnowledgeDetailsType, WiedzaTypeLevelInfo>>;
+};
+
+const WIEDZA_TYPE_LABELS: Record<KnowledgeDetailsType, string> = {
+  fight: 'Z walki',
+  books: 'Z ksiazek i bibliotek',
+  exploration: 'Z eksploracji',
+};
+
 
 type TabType = 'libraries' | 'categories' | 'books' | 'wiedza' | 'history';
 
@@ -616,9 +634,25 @@ const KnowledgeReport: React.FC = () => {
   const [wiedzaTickCounts, setWiedzaTickCounts] = useState<Record<string, number>>({});
   const [wiedzaLevelsLoaded, setWiedzaLevelsLoaded] = useState(false);
   const [wiedzaRefreshCounter, setWiedzaRefreshCounter] = useState(0);
+  const [wiedzaDetailsCategories, setWiedzaDetailsCategories] = useState<WiedzaDetailsCategory[]>([]);
 
   useEffect(() => {
-    const handler = () => setWiedzaRefreshCounter((c) => c + 1);
+    const handler = (payload: unknown) => {
+      setWiedzaRefreshCounter((c) => c + 1);
+      const report = payload as { categories?: { name: string; types: Record<string, { level?: string; levelIndex?: number }> }[] } | null;
+      if (report?.categories) {
+        const cats: WiedzaDetailsCategory[] = report.categories.map((cat) => {
+          const types: Partial<Record<KnowledgeDetailsType, WiedzaTypeLevelInfo>> = {};
+          for (const [typeKey, summary] of Object.entries(cat.types)) {
+            if (summary.level && summary.levelIndex != null) {
+              types[typeKey as KnowledgeDetailsType] = { level: summary.level, levelIndex: summary.levelIndex };
+            }
+          }
+          return { name: cat.name, types };
+        });
+        setWiedzaDetailsCategories(cats);
+      }
+    };
     eventBus.on('knowledgeDetailsReport', handler);
     return () => { eventBus.off('knowledgeDetailsReport', handler); };
   }, []);
@@ -631,7 +665,6 @@ const KnowledgeReport: React.FC = () => {
       setWiedzaLevelsLoaded(true);
       return;
     }
-    setWiedzaLevelsLoaded(false);
     void getKnowledgeEventsForCharacter(charKey).then((events) => {
       // Extract latest level per category
       const latest = new Map<string, { level: string; timestamp: number }>();
@@ -678,6 +711,8 @@ const KnowledgeReport: React.FC = () => {
       );
     }
 
+    const detailsMap = new Map(wiedzaDetailsCategories.map((c) => [c.name, c]));
+
     return (
       <div className="knowledge-wiedza-total">
         {wiedzaLevels.map((cat) => {
@@ -685,9 +720,11 @@ const KnowledgeReport: React.FC = () => {
           const percent = levelIndex >= 0 ? Math.round((levelIndex / 10) * 100) : 0;
           const colorClass = getLevelColorClass(levelIndex);
           const isFull = levelIndex >= 10;
+          const details = detailsMap.get(cat.name);
+          const hasSubLevels = details && Object.keys(details.types).length > 0;
 
           return (
-            <div key={cat.name} className={`knowledge-wiedza-row ${colorClass} ${isFull ? 'knowledge-wiedza-row--full' : ''}`}>
+            <div key={cat.name} className={`knowledge-wiedza-row ${colorClass} ${isFull ? 'knowledge-wiedza-row--full' : ''} ${hasSubLevels ? 'knowledge-wiedza-row--has-sub' : ''}`}>
               <span className="knowledge-wiedza-name">{cat.name}</span>
               <span className="knowledge-wiedza-level-label">{cat.totalLevel}</span>
               <div className="knowledge-wiedza-bar">
@@ -704,12 +741,37 @@ const KnowledgeReport: React.FC = () => {
               <span className={`knowledge-wiedza-ticks ${!isFull && (wiedzaTickCounts[cat.name] ?? 0) > 0 ? 'knowledge-wiedza-ticks--active' : ''}`}>
                 {isFull ? '' : `+${wiedzaTickCounts[cat.name] ?? 0}`}
               </span>
+              {hasSubLevels && (
+                <div className="knowledge-wiedza-sub-levels">
+                  {(['fight', 'books', 'exploration'] as KnowledgeDetailsType[]).map((type) => {
+                    const info = details.types[type];
+                    if (!info) return null;
+                    const subColorClass = getLevelColorClass(info.levelIndex);
+                    return (
+                      <div key={type} className={`knowledge-wiedza-sub-item ${subColorClass}`} title={`${WIEDZA_TYPE_LABELS[type]}: ${info.level} (${info.levelIndex}/10)`}>
+                        <span className="knowledge-wiedza-sub-name">{WIEDZA_TYPE_LABELS[type]}</span>
+                        <span className="knowledge-wiedza-sub-level-label">{info.level}</span>
+                        <div className="knowledge-wiedza-sub-bar">
+                          <div className="knowledge-wiedza-bar-track">
+                            {Array.from({ length: 10 }, (_, i) => (
+                              <div
+                                key={i}
+                                className={`knowledge-wiedza-bar-segment ${i < info.levelIndex ? 'knowledge-wiedza-bar-segment--filled' : ''}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
     );
-  }, [wiedzaLevels, wiedzaLevelsLoaded, wiedzaTickCounts]);
+  }, [wiedzaLevels, wiedzaLevelsLoaded, wiedzaTickCounts, wiedzaDetailsCategories]);
 
   // === Books Content ===
 

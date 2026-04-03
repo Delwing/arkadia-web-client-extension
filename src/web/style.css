@@ -1724,12 +1724,13 @@ h1 {
 .knowledge-wiedza-name {
   font-weight: 600;
   font-size: 0.88rem;
-  flex: 0 0 auto;
-  min-width: 11rem;
+  flex: 0 0 11rem;
+  width: 11rem;
 }
 
 .knowledge-wiedza-level-label {
   flex: 0 0 7.5rem;
+  min-width: 7.5rem;
   width: 7.5rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -1741,6 +1742,7 @@ h1 {
   background: rgba(148, 163, 184, 0.14);
   color: rgba(226, 232, 240, 0.9);
   text-align: center;
+  box-sizing: border-box;
   box-sizing: border-box;
 }
 
@@ -1861,6 +1863,105 @@ h1 {
 
 .knowledge-wiedza-ticks--active {
   color: #fbbf24;
+}
+
+.knowledge-wiedza-row--has-sub {
+  flex-wrap: wrap;
+}
+
+.knowledge-wiedza-sub-levels {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--popup-border-subtle);
+  margin-top: 0.15rem;
+}
+
+.knowledge-wiedza-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.knowledge-wiedza-sub-name {
+  flex: 0 0 11rem;
+  font-size: 0.72rem;
+  color: var(--popup-text-subtle);
+  white-space: nowrap;
+}
+
+.knowledge-wiedza-sub-level-label {
+  flex: 0 0 7.5rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  background: rgba(148, 163, 184, 0.14);
+  color: rgba(226, 232, 240, 0.9);
+  text-align: center;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+
+.knowledge-level--none .knowledge-wiedza-sub-level-label {
+  border-color: rgba(148, 163, 184, 0.36);
+  background: rgba(148, 163, 184, 0.14);
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.knowledge-level--low .knowledge-wiedza-sub-level-label {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.18);
+  color: rgba(254, 202, 202, 0.95);
+}
+
+.knowledge-level--mid .knowledge-wiedza-sub-level-label {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.18);
+  color: rgba(254, 243, 199, 0.95);
+}
+
+.knowledge-level--good .knowledge-wiedza-sub-level-label {
+  border-color: rgba(234, 179, 8, 0.45);
+  background: rgba(234, 179, 8, 0.18);
+  color: rgba(254, 240, 138, 0.95);
+}
+
+.knowledge-level--high .knowledge-wiedza-sub-level-label {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(22, 163, 74, 0.18);
+  color: rgba(187, 247, 208, 0.94);
+}
+
+.knowledge-level--almost .knowledge-wiedza-sub-level-label {
+  border-color: rgba(34, 197, 94, 0.55);
+  background: rgba(22, 163, 74, 0.25);
+  color: rgba(187, 247, 208, 0.98);
+}
+
+.knowledge-level--full .knowledge-wiedza-sub-level-label {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(22, 163, 74, 0.3);
+  color: #4ade80;
+}
+
+.knowledge-wiedza-sub-bar {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.knowledge-wiedza-sub-bar .knowledge-wiedza-bar-track {
+  height: 0.25rem;
 }
 
 /* ── Books (Ksiegi) — reuses .knowledge-library card layout ── */
