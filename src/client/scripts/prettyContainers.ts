@@ -327,7 +327,6 @@ const defaultContainerPatterns: RegExp[] = [
     /^W .+? (?<container>skrzyni|kufrze|skrzynce) zauwazasz miedzy innymi (?<content>.*)\.$/,
     /^Otwarty .+? (?<container>kosz(?:|yk)) zawiera (?<content>.*)\.$/,
     /^Na (?<container>stojakach) zauwazasz miedzy innymi (?<content>.*)\.$/,
-    /^Debowy wysoki (?<container>sekretarzyk) zawiera (?<content>.*)\.$/,
     /^(?<container>.+? (?:skrzynia|kufer|komoda|stojak|biblioteczka|kuferek|skrzynka|regal|szkatula))(?:| z okuciami| depozytowa) zawiera (?<content>.*)\.$/,
     /^Wsrod pedantycznego porzadku w (?<container>szafie) zauwazasz miedzy innymi (?<content>.*)\.$/,
     /^Otwart[ay] (?<container>[a-z- ]+ (?:koszyk|szafa|sejf|misa|sarkofag|sarkofag z kamiennych plyt)) zawiera (?<content>.*)\.$/,
@@ -335,7 +334,7 @@ const defaultContainerPatterns: RegExp[] = [
     /^Dostrzegasz na (?:nim|niej) jeszcze (?<content>.*)\.$/,
     /^Drewniany okuty (?<container>stelaz) zawiera (?<content>.*)\.$/,
     /^Dwukonny czerwony (?<container>powoz) porzucony na poboczu zawiera (?<content>.*)\.$/,
-    /.* (?<container>sekretarzyk) zawiera (?<content>.*)\.$/
+    /^(?:\w+ ){2}(?<container>sekretarzyk|kabinet) zawiera (?<content>.*)\.$/
 ];
 
 const weapons = ["darda", "dardy", "multon", "kord", "puginal", "gladius", "topor", "berdysz", "siekier", "czekan",
