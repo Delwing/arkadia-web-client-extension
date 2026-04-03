@@ -3,7 +3,7 @@ import {createColorFormat} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
-import {getKnowledgeStore, KnowledgeBookEntry} from "@modules/data/dataStores/knowledgeStore";
+import {getKnowledgeStore, KnowledgeBookEntry, KnowledgeBookCategoryProgress, DEFAULT_KNOWLEDGE_CHARACTER_KEY} from "@modules/data/dataStores/knowledgeStore";
 import { showBookTooltip, hideBookTooltip } from "@web/bookTooltip";
 import { showContextMenu } from "@shared/dom/contextMenu";
 import { getDativeCategoryName } from "../knowledgeCategories";
@@ -443,6 +443,15 @@ export function getItemCssColor(name: string): string | undefined {
     // Favorite magics get a special highlight
     if (magicFilter?.(name) && isFavoriteMagic(name)) return '#00ff00';
 
+    // Book progress colors
+    if (bookFilter?.(name)) {
+        const entry = bookCategoryLookup.get(name.trim().toLowerCase());
+        if (entry) {
+            const fmt = getBookColor(entry);
+            if (fmt?.foreground && 'color' in fmt.foreground) return fmt.foreground.color as string;
+        }
+    }
+
     // Item categories
     for (const def of defs) {
         if (def.filter(name)) {
@@ -488,8 +497,34 @@ let plugLinks = false;
 
 // Book filter for pretty containers (populated after async load)
 let bookFilter: ((name: string) => boolean) | null = null;
-type BookLookupEntry = { dopelniacz: string; categories: string[] };
+type BookLookupEntry = { dopelniacz: string; categories: string[]; bookKey: string };
 const bookCategoryLookup = new Map<string, BookLookupEntry>();
+let bookProgressByCharacter: Record<string, Record<string, KnowledgeBookCategoryProgress>> = {};
+
+const BOOK_IN_PROGRESS_COLOR = createColorFormat('#b8a960');
+const BOOK_COMPLETED_COLOR = createColorFormat('#7aab7a');
+
+function findBookProgValue(bookProg: KnowledgeBookCategoryProgress, cat: string): true | 'in_progress' | undefined {
+    // Try exact match first, then case-insensitive
+    if (bookProg[cat] != null) return bookProg[cat];
+    const lower = cat.toLowerCase();
+    for (const [key, value] of Object.entries(bookProg)) {
+        if (key.toLowerCase() === lower) return value;
+    }
+    return undefined;
+}
+
+function getBookColor(entry: BookLookupEntry): ReturnType<typeof createColorFormat> | null {
+    const current = characterStorage.getCharacter();
+    const charKey = current?.trim() || DEFAULT_KNOWLEDGE_CHARACTER_KEY;
+    const bookProg = bookProgressByCharacter[charKey]?.[entry.bookKey];
+    if (!bookProg) return null;
+    const allCompleted = entry.categories.every((cat) => findBookProgValue(bookProg, cat) === true);
+    if (allCompleted) return BOOK_COMPLETED_COLOR;
+    const anyStarted = entry.categories.some((cat) => findBookProgValue(bookProg, cat) != null);
+    if (anyStarted) return BOOK_IN_PROGRESS_COLOR;
+    return null;
+}
 
 function openBookContextMenu(client: Client, entry: BookLookupEntry, x: number, y: number) {
     const items = entry.categories.map((category) => {
@@ -610,7 +645,7 @@ async function loadMagicAndKeysFilter(client: Client) {
 
             const allVariants = new Set<string>();
 
-            for (const book of Object.values(books)) {
+            for (const [bookKey, book] of Object.entries(books)) {
                 const categories = book.categories;
                 if (!categories || categories.length === 0) continue;
 
@@ -631,6 +666,7 @@ async function loadMagicAndKeysFilter(client: Client) {
                         bookCategoryLookup.set(lower, {
                             dopelniacz: book.dopelniacz,
                             categories: [...categories],
+                            bookKey,
                         });
                     }
                 }
@@ -640,10 +676,12 @@ async function loadMagicAndKeysFilter(client: Client) {
         }
 
         registerBooks(knowledgeSnapshot?.data.books);
+        bookProgressByCharacter = knowledgeSnapshot?.data.bookProgress ?? {};
 
         // Remove old book group/transform and re-add on updates
         knowledgeStore.subscribe((snapshot) => {
             registerBooks(snapshot?.data.books);
+            bookProgressByCharacter = snapshot?.data.bookProgress ?? {};
         });
 
         defs.push({ name: "ksiazki", filter: (item: string) => bookFilter?.(item) ?? false });
@@ -652,6 +690,10 @@ async function loadMagicAndKeysFilter(client: Client) {
                 if (group !== 'ksiazki') return buffer;
                 const entry = bookCategoryLookup.get(item.name.trim().toLowerCase());
                 if (!entry) return buffer;
+                const bookColor = getBookColor(entry);
+                if (bookColor) {
+                    buffer.color([0, buffer.length], bookColor);
+                }
                 buffer.createLink([0, buffer.length], {
                     onMouseEnter: (ev) => showBookTooltip(entry.categories, ev.pageX, ev.pageY),
                     onMouseLeave: () => hideBookTooltip(),

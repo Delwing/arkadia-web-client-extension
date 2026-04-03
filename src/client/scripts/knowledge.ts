@@ -1050,6 +1050,18 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
     type BookTriggerEntry = { bookKey: string; dopelniacz: string; categories: string[] };
 
+    function findBookProgValue(
+        bookProg: Record<string, true | 'in_progress'>,
+        cat: string,
+    ): true | 'in_progress' | undefined {
+        if (bookProg[cat] != null) return bookProg[cat];
+        const lower = cat.toLowerCase();
+        for (const [key, value] of Object.entries(bookProg)) {
+            if (key.toLowerCase() === lower) return value;
+        }
+        return undefined;
+    }
+
     function getBookStatusColor(bookKey: string, categories: string[]): FormatStateSnapshot | null {
         if (!currentSnapshot) {
             return null;
@@ -1059,11 +1071,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (!bookProg) {
             return null; // not_started — keep default gray
         }
-        const allCompleted = categories.every((cat) => bookProg[cat] === true);
+        const allCompleted = categories.every((cat) => findBookProgValue(bookProg, cat) === true);
         if (allCompleted) {
             return BOOK_STATUS_COLORS.completed;
         }
-        const anyStarted = categories.some((cat) => bookProg[cat] != null);
+        const anyStarted = categories.some((cat) => findBookProgValue(bookProg, cat) != null);
         if (anyStarted) {
             return BOOK_STATUS_COLORS.in_progress;
         }
@@ -2131,7 +2143,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (action.type === 'toggleBook') {
             const characterKey = getCharacterProgressKey();
             // Use action.category directly — it comes from the book's own categories array
-            const currentBookProgress = currentSnapshot?.data.bookProgress?.[characterKey]?.[action.bookKey]?.[action.category];
+            const bookProg = currentSnapshot?.data.bookProgress?.[characterKey]?.[action.bookKey] ?? {};
+            const currentBookProgress = findBookProgValue(bookProg, action.category);
             setBookProgress(action.bookKey, action.category as KnowledgeCategoryBaseName, !currentBookProgress);
             // Re-dispatch after a short delay to allow store update
             window.setTimeout(() => dispatchBookReport(), 50);

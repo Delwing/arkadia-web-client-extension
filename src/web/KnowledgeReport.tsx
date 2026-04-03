@@ -27,6 +27,18 @@ import {
 } from '@modules/data/dataStores/knowledgeEventsStore';
 import { characterStorage } from '@modules/core/storage';
 
+function findBookProgValue(
+  bookProg: KnowledgeBookCategoryProgress,
+  cat: string,
+): true | 'in_progress' | undefined {
+  if (bookProg[cat] != null) return bookProg[cat];
+  const lower = cat.toLowerCase();
+  for (const [key, value] of Object.entries(bookProg)) {
+    if (key.toLowerCase() === lower) return value;
+  }
+  return undefined;
+}
+
 type KnowledgeReportLibraryCategory = {
   name: string;
   dative: string;
@@ -530,7 +542,7 @@ const KnowledgeReport: React.FC = () => {
         const prog = bookData.bookProgress[bookKey] ?? {};
         for (const cat of book.categories) {
           const list = booksByCategory.get(cat) ?? [];
-          const value = prog[cat];
+          const value = findBookProgValue(prog, cat);
           const status = value === true ? 'completed' as const : value === 'in_progress' ? 'in_progress' as const : 'not_started' as const;
           list.push({ name: bookKey, status });
           booksByCategory.set(cat, list);
@@ -693,7 +705,7 @@ const KnowledgeReport: React.FC = () => {
 
     const completedBooks = bookEntries.filter(([bookKey, book]) => {
       const bookProg = progress[bookKey] ?? {};
-      return book.categories.every((cat) => bookProg[cat] === true);
+      return book.categories.every((cat) => findBookProgValue(bookProg, cat) === true);
     });
     const activeBooks = bookEntries.filter(([bookKey]) => {
       return !completedBooks.some(([key]) => key === bookKey);
@@ -702,7 +714,7 @@ const KnowledgeReport: React.FC = () => {
     const renderBook = (bookKey: string, book: KnowledgeBookEntry, mode: 'active' | 'completed') => {
       const bookCategories = book.categories;
       const bookProg = progress[bookKey] ?? {};
-      const completedCount = bookCategories.filter((cat) => bookProg[cat] === true).length;
+      const completedCount = bookCategories.filter((cat) => findBookProgValue(bookProg, cat) === true).length;
       const totalCount = bookCategories.length;
 
       return (
@@ -717,7 +729,7 @@ const KnowledgeReport: React.FC = () => {
           </div>
           <div className="knowledge-book-categories">
             {bookCategories.map((cat) => {
-              const value = bookProg[cat];
+              const value = findBookProgValue(bookProg, cat);
               const catStatus = value === true ? 'completed' : value === 'in_progress' ? 'in_progress' : 'not_started';
               return (
                 <button
