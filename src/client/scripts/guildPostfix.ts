@@ -30,7 +30,10 @@ export default function initGuildPostfix(client: Client) {
     characterStorage.onChange('settings', applySettings);
 
     function register(pattern: RegExp | string, guild: string) {
-        client.Triggers.registerTrigger(pattern, (line) => {
+        client.Triggers.registerTrigger(pattern, (line, _matches, type) => {
+            if (type !== "living.long") {
+                return;
+            }
             const color = enemyGuilds.has(guild) ? ENEMY_RED : guildColors[guild] ?? SLATE_BLUE;
             line.append(` [${guild}]`, color);
             return line;
