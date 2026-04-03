@@ -1370,6 +1370,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             });
     }
 
+    function resolveBookCategory(book: KnowledgeBookEntry, category: KnowledgeCategoryBaseName): string | null {
+        const lower = category.toLowerCase();
+        return book.categories.find((cat) => cat.toLowerCase() === lower) ?? null;
+    }
+
     function setBookProgress(
         bookKey: string,
         category: KnowledgeCategoryBaseName,
@@ -1746,14 +1751,16 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 if (category) {
                     const books = currentSnapshot.data.books;
                     let bookKey: string | null = null;
+                    let resolvedCategory: string | null = null;
                     for (const [key, book] of Object.entries(books)) {
                         if (book.biernik === bookBiernik) {
                             bookKey = key;
+                            resolvedCategory = resolveBookCategory(book, category);
                             break;
                         }
                     }
-                    if (bookKey) {
-                        setBookProgress(bookKey, category, 'in_progress');
+                    if (bookKey && resolvedCategory) {
+                        setBookProgress(bookKey, resolvedCategory as KnowledgeCategoryBaseName, 'in_progress');
                         window.setTimeout(() => dispatchBookReport(), 50);
                     }
                 }
@@ -1775,14 +1782,16 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     // Find book by dopelniacz
                     const books = currentSnapshot.data.books;
                     let bookKey: string | null = null;
+                    let resolvedCategory: string | null = null;
                     for (const [key, book] of Object.entries(books)) {
                         if (book.dopelniacz === bookDopelniacz) {
                             bookKey = key;
+                            resolvedCategory = resolveBookCategory(book, category);
                             break;
                         }
                     }
-                    if (bookKey) {
-                        setBookProgress(bookKey, category, true);
+                    if (bookKey && resolvedCategory) {
+                        setBookProgress(bookKey, resolvedCategory as KnowledgeCategoryBaseName, true);
                         window.setTimeout(() => dispatchBookReport(), 50);
                     }
                 }
@@ -2116,14 +2125,14 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (!action) {
             return;
         }
-        const category = getBaseCategoryFromName(action.category);
-        if (!category) {
+        if (!getBaseCategoryFromName(action.category)) {
             return;
         }
         if (action.type === 'toggleBook') {
             const characterKey = getCharacterProgressKey();
-            const currentBookProgress = currentSnapshot?.data.bookProgress?.[characterKey]?.[action.bookKey]?.[category];
-            setBookProgress(action.bookKey, category, !currentBookProgress);
+            // Use action.category directly — it comes from the book's own categories array
+            const currentBookProgress = currentSnapshot?.data.bookProgress?.[characterKey]?.[action.bookKey]?.[action.category];
+            setBookProgress(action.bookKey, action.category as KnowledgeCategoryBaseName, !currentBookProgress);
             // Re-dispatch after a short delay to allow store update
             window.setTimeout(() => dispatchBookReport(), 50);
         }
@@ -2200,8 +2209,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             for (const book of payload.books) {
                 const category = getBaseCategoryFromName(book.categoryDative);
                 if (!category) continue;
+                const bookEntry = snapshot.data.books?.[book.bookName];
+                const resolvedCat = bookEntry ? resolveBookCategory(bookEntry, category) : null;
+                if (!resolvedCat) continue;
                 const bookCategories = {...(characterBookProgress[book.bookName] ?? {})};
-                bookCategories[category] = true;
+                bookCategories[resolvedCat] = true;
                 characterBookProgress[book.bookName] = bookCategories;
             }
 
