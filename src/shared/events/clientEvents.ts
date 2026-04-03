@@ -172,6 +172,7 @@ export interface KnownEvents {
     "reset": void;
     "refreshPositionWhenAble": void;
     "knowledgeReport": unknown | null;
+    "knowledgeReportCurrentLibrary": string | null;
     "knowledgeDetailsReport": unknown | null;
     "knowledgeDetails.popup.open": void;
     "knowledgeReportAction": KnowledgeReportAction;

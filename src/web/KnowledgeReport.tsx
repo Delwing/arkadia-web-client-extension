@@ -72,6 +72,7 @@ type KnowledgeReportCategory = {
 type KnowledgeReportPayload = {
   libraries: KnowledgeReportLibrary[];
   categories: KnowledgeReportCategory[];
+  currentLibraryId?: string | null;
 };
 
 type BookReportPayload = {
@@ -186,6 +187,9 @@ const KnowledgeReport: React.FC = () => {
     const unsubs = [
       eventBus.on('knowledgeReport', (payload) => {
         handleReport(payload as KnowledgeReportPayload | null | undefined);
+      }),
+      eventBus.on('knowledgeReportCurrentLibrary', (libraryId) => {
+        setData((prev) => prev ? { ...prev, currentLibraryId: libraryId as string | null } : prev);
       }),
       eventBus.on('knowledgeBookReport', (payload) => {
         setBookData(payload as BookReportPayload | null);
@@ -426,10 +430,17 @@ const KnowledgeReport: React.FC = () => {
       return <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>;
     }
 
-    const activeLibraries = data.libraries.filter((l) => l.remaining > 0);
-    const completedLibraries = data.libraries.filter((l) => l.remaining === 0);
+    const currentLibrary = data.currentLibraryId
+      ? data.libraries.find((l) => l.id === data.currentLibraryId)
+      : undefined;
+    const activeLibraries = data.libraries.filter(
+      (l) => l.remaining > 0 && l.id !== data.currentLibraryId,
+    );
+    const completedLibraries = data.libraries.filter(
+      (l) => l.remaining === 0 && l.id !== data.currentLibraryId,
+    );
 
-    if (activeLibraries.length === 0 && completedLibraries.length === 0) {
+    if (!currentLibrary && activeLibraries.length === 0 && completedLibraries.length === 0) {
       return <div className="knowledge-empty">Brak wiedzy do zglebiania w znanych bibliotekach.</div>;
     }
 
@@ -507,6 +518,14 @@ const KnowledgeReport: React.FC = () => {
 
     return (
       <div className="knowledge-library-groups">
+        {currentLibrary && (
+          <div className="knowledge-library-group knowledge-library-group--current">
+            <div className="knowledge-library-group-title">Obecna biblioteka</div>
+            <div className="knowledge-libraries">
+              {renderLibrary(currentLibrary, currentLibrary.remaining > 0 ? 'active' : 'completed')}
+            </div>
+          </div>
+        )}
         {activeLibraries.length > 0 && (
           <div className="knowledge-library-group">
             <div className="knowledge-library-group-title">Do zglebienia</div>

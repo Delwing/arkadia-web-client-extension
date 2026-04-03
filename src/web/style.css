@@ -1498,6 +1498,15 @@ h1 {
   color: var(--popup-text-subtle);
 }
 
+.knowledge-library-group--current {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.knowledge-library-group--current .knowledge-library-group-title {
+  color: #8bc34a;
+}
+
 .knowledge-chip {
   border-radius: 999px;
   padding: 0.25rem 0.7rem;

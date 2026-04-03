@@ -665,6 +665,7 @@ type KnowledgeReportCategory = {
 type KnowledgeReportPayload = {
     libraries: KnowledgeReportLibrary[];
     categories: KnowledgeReportCategory[];
+    currentLibraryId?: string | null;
 };
 
 type KnowledgeDetailsReportTypeEntry = {
@@ -1445,7 +1446,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     }
 
     client.on('enterLocation', (detail) => {
+        const prevLibraryId = currentLibraryId;
         updateCurrentLibrary((detail as { room?: any })?.room);
+        if (currentLibraryId !== prevLibraryId) {
+            client.sendEvent('knowledgeReportCurrentLibrary', currentLibraryId);
+        }
     });
 
     client.on('command', (command = '') => {
@@ -1997,6 +2002,9 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const characterKey = getCharacterProgressKey();
         const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
         const report = buildKnowledgeReport(libraryEntries, characterProgress);
+        if (report) {
+            report.currentLibraryId = currentLibraryId;
+        }
         client.sendEvent('knowledgeReport', report);
     }
 
@@ -2101,6 +2109,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const characterProgress = currentSnapshot.data.progress[characterKey] ?? {};
         const report = buildKnowledgeReport(libraryEntries, characterProgress);
         if (report) {
+            report.currentLibraryId = currentLibraryId;
             client.sendEvent('knowledgeReport', report);
         }
     });
@@ -2599,6 +2608,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             return;
         }
 
+        report.currentLibraryId = currentLibraryId;
         client.sendEvent('knowledgeReport', report);
     }
 
