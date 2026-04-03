@@ -25,6 +25,16 @@ e2e/
 └── *.spec.ts                    # Test specs (flat directory, ~100 files)
 ```
 
+## Testing Philosophy
+
+**Always test from the user's perspective.** E2E tests simulate real user behavior:
+- Interact through the UI: click buttons, type in inputs, open menus
+- **Never** dispatch events directly, call internal functions, or manipulate DOM state programmatically
+- Use `page.locator()`, `page.click()`, `page.fill()`, `page.getByRole()`, etc.
+- The only exceptions are game server simulation helpers (`pushGmcp`, `pushText`) which mock the server side, not the client
+
+If a feature can't be tested through user-visible UI interactions, that's a sign the test needs rethinking, not that you should reach into internals.
+
 ## Conventions
 
 - **File naming**: `{feature-name}.spec.ts` — one spec file per feature, kebab-case
