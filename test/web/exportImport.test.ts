@@ -82,6 +82,7 @@ function allOptionsOff(): ExportOptions {
         visitedRooms: false,
         locationNotes: false,
         peopleEdits: false,
+        knowledge: false,
     };
 }
 

@@ -27,6 +27,7 @@ export interface SyncOptions {
     deposits: boolean;         // Deposit tracking per character
     containers: boolean;       // Container configuration per character
     peopleEdits: boolean;      // Local edits to person database
+    knowledge: boolean;        // Knowledge progress (libraries, books, events, details)
 }
 
 export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
@@ -46,6 +47,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
     deposits: true,
     containers: true,
     peopleEdits: true,
+    knowledge: true,
 };
 
 // Encrypted data structure
@@ -76,6 +78,7 @@ export const SYNC_CATEGORIES: SyncCategory[] = [
     'deposits',
     'containers',
     'peopleEdits',
+    'knowledge',
 ];
 
 // Category display names (Polish)
@@ -96,6 +99,7 @@ export const SYNC_CATEGORY_NAMES: Record<SyncCategory, string> = {
     deposits: 'Depozyty',
     containers: 'Pojemniki',
     peopleEdits: 'Edycje bazy postaci',
+    knowledge: 'Wiedza',
 };
 
 // Per-category payload stored in Firestore

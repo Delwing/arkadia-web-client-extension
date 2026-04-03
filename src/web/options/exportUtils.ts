@@ -3,6 +3,9 @@ import type { RecordedEvent } from "./recordingStorage";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
 import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";
+import { getKnowledgeStore, type KnowledgeProgressByCharacter, type KnowledgeBookProgressByCharacter } from "@modules/data/dataStores/knowledgeStore";
+import { getKnowledgeDetailsStore, type KnowledgeProgressByCharacter as KnowledgeDetailsProgressByCharacter, type KnowledgeCharacterMetadataMap } from "@modules/data/dataStores/knowledgeDetailsStore";
+import { loadKnowledgeEvents, mergeKnowledgeEvents, type KnowledgeEventsByCharacter } from "@modules/data/dataStores/knowledgeEventsStore";
 import eventBus from '@modules/core/eventBus';
 import {
     getDeviceInfo,
@@ -32,6 +35,14 @@ export interface ExportedVisitedRoomsEntry {
     rooms: number[];
 }
 
+export interface ExportedKnowledgeData {
+    libraryProgress: KnowledgeProgressByCharacter;
+    bookProgress: KnowledgeBookProgressByCharacter;
+    events: KnowledgeEventsByCharacter;
+    detailsProgress: KnowledgeDetailsProgressByCharacter;
+    detailsCharacters: KnowledgeCharacterMetadataMap;
+}
+
 export interface ExportOptions {
     uiSettings: boolean;       // Interface settings (colors, themes, layout)
     binds: boolean;            // Key bindings
@@ -47,6 +58,7 @@ export interface ExportOptions {
     visitedRooms: boolean;
     locationNotes: boolean;
     peopleEdits: boolean;      // Local edits to people database
+    knowledge: boolean;        // Knowledge progress (libraries, books, events, details)
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -64,6 +76,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
     visitedRooms: true,
     locationNotes: true,
     peopleEdits: true,
+    knowledge: true,
 };
 
 // Map specific global keys to their export options
@@ -104,6 +117,7 @@ export interface ExportPayload {
         visitedRooms: ExportedVisitedRoomsEntry[];
         locationNotes?: LocationNote[];
         killRecords?: KillRecord[];
+        knowledge?: ExportedKnowledgeData;
     };
     /** Device info and settings from the exporting device */
     device?: ExportedDeviceInfo;
@@ -345,8 +359,112 @@ export async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): 
     });
 }
 
+async function exportKnowledgeData(selectedCharacters: string[]): Promise<ExportedKnowledgeData | undefined> {
+    const selectedSet = new Set(selectedCharacters);
+
+    const [knowledgeSnapshot, detailsSnapshot, allEvents] = await Promise.all([
+        getKnowledgeStore().getSnapshot(),
+        getKnowledgeDetailsStore().getSnapshot(),
+        loadKnowledgeEvents(),
+    ]);
+
+    const libraryProgress: KnowledgeProgressByCharacter = {};
+    const bookProgress: KnowledgeBookProgressByCharacter = {};
+    const detailsProgress: KnowledgeDetailsProgressByCharacter = {};
+    const detailsCharacters: KnowledgeCharacterMetadataMap = {};
+    const events: KnowledgeEventsByCharacter = {};
+
+    if (knowledgeSnapshot) {
+        for (const [char, progress] of Object.entries(knowledgeSnapshot.data.progress)) {
+            if (selectedSet.has(char)) libraryProgress[char] = progress;
+        }
+        for (const [char, progress] of Object.entries(knowledgeSnapshot.data.bookProgress)) {
+            if (selectedSet.has(char)) bookProgress[char] = progress;
+        }
+    }
+
+    if (detailsSnapshot) {
+        for (const [char, progress] of Object.entries(detailsSnapshot.data.progress)) {
+            if (selectedSet.has(char)) detailsProgress[char] = progress;
+        }
+        for (const [char, metadata] of Object.entries(detailsSnapshot.data.characters)) {
+            if (selectedSet.has(char)) detailsCharacters[char] = metadata;
+        }
+    }
+
+    for (const [char, data] of Object.entries(allEvents)) {
+        if (selectedSet.has(char)) events[char] = data;
+    }
+
+    const hasData = Object.keys(libraryProgress).length > 0 ||
+        Object.keys(bookProgress).length > 0 ||
+        Object.keys(events).length > 0 ||
+        Object.keys(detailsProgress).length > 0;
+
+    if (!hasData) return undefined;
+
+    return { libraryProgress, bookProgress, events, detailsProgress, detailsCharacters };
+}
+
+async function importKnowledgeData(data: ExportedKnowledgeData): Promise<void> {
+    // Import library progress and book progress into the knowledge store
+    if (Object.keys(data.libraryProgress).length > 0 || Object.keys(data.bookProgress).length > 0) {
+        const store = getKnowledgeStore();
+        await store.applyLocalChange((current) => {
+            if (!current) return current!;
+            const nextProgress = { ...current.data.progress };
+            for (const [char, progress] of Object.entries(data.libraryProgress)) {
+                nextProgress[char] = { ...(nextProgress[char] ?? {}), ...progress };
+            }
+            const nextBookProgress = { ...current.data.bookProgress };
+            for (const [char, progress] of Object.entries(data.bookProgress)) {
+                nextBookProgress[char] = { ...(nextBookProgress[char] ?? {}), ...progress };
+            }
+            return {
+                ...current,
+                data: { ...current.data, progress: nextProgress, bookProgress: nextBookProgress },
+            };
+        });
+    }
+
+    // Import knowledge events using merge (deduplication by timestamp)
+    for (const [char, charData] of Object.entries(data.events)) {
+        if (charData.events.length > 0) {
+            await mergeKnowledgeEvents(char, charData.events);
+        }
+    }
+
+    // Import details progress and characters (preserving definitions)
+    if (Object.keys(data.detailsProgress).length > 0 || Object.keys(data.detailsCharacters).length > 0) {
+        const detailsStore = getKnowledgeDetailsStore();
+        await detailsStore.applyLocalChange((current) => {
+            if (!current) return current!;
+            const nextProgress = { ...current.data.progress };
+            for (const [char, progress] of Object.entries(data.detailsProgress)) {
+                const existing = nextProgress[char] ?? {};
+                const merged = { ...existing };
+                for (const [category, categoryProgress] of Object.entries(progress)) {
+                    const existingCat = merged[category as keyof typeof merged];
+                    if (!existingCat || categoryProgress.updatedAt > existingCat.updatedAt) {
+                        merged[category as keyof typeof merged] = categoryProgress;
+                    }
+                }
+                nextProgress[char] = merged;
+            }
+            const nextCharacters = { ...current.data.characters };
+            for (const [char, metadata] of Object.entries(data.detailsCharacters)) {
+                nextCharacters[char] = { ...nextCharacters[char], ...metadata };
+            }
+            return {
+                ...current,
+                data: { ...current.data, progress: nextProgress, characters: nextCharacters },
+            };
+        });
+    }
+}
+
 export async function buildExport(selectedCharacters: string[], options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<ExportPayload> {
-    const [multibinds, recordings, visitedRooms, locationNotes, killRecords] = await Promise.all([
+    const [multibinds, recordings, visitedRooms, locationNotes, killRecords, knowledge] = await Promise.all([
         options.multibinds
             ? getMultibindsSnapshot().catch(err => {
                 console.error("Failed to export multibinds", err);
@@ -372,6 +490,12 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             console.error("Failed to export kill records", err);
             return [] as KillRecord[];
         }),
+        options.knowledge
+            ? exportKnowledgeData(selectedCharacters).catch(err => {
+                console.error("Failed to export knowledge data", err);
+                return undefined;
+            })
+            : Promise.resolve(undefined),
     ]);
 
     const localStorageData = exportLocalStorage(selectedCharacters, options);
@@ -408,6 +532,7 @@ export async function buildExport(selectedCharacters: string[], options: ExportO
             visitedRooms,
             locationNotes,
             killRecords,
+            knowledge,
         },
         device,
     };
@@ -514,6 +639,9 @@ export async function applyImportedData(payload: ExportPayload): Promise<ImportR
     await importVisitedRooms(payload.indexedDB.visitedRooms ?? []);
     await importNotes(payload.indexedDB.locationNotes ?? []);
     await importAllKillRecords(payload.indexedDB.killRecords ?? []);
+    if (payload.indexedDB.knowledge) {
+        await importKnowledgeData(payload.indexedDB.knowledge);
+    }
 
     // Import device info and settings
     if (payload.device?.sourceDevice) {
@@ -590,6 +718,7 @@ export interface CategoryData {
     deposits?: Record<string, string>;        // CharacterName -> deposits JSON
     containers?: Record<string, string>;      // CharacterName -> containers JSON
     peopleEdits?: Record<string, string>;     // CharacterName -> peopleLocalEvents JSON
+    knowledge?: ExportedKnowledgeData;
 }
 
 // Export a single category as JSON string
@@ -788,6 +917,10 @@ export async function exportCategory(
                     if (raw) result[charName] = raw;
                 }
                 return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
+            }
+            case 'knowledge': {
+                const knowledgeData = await exportKnowledgeData(selectedCharacters);
+                return knowledgeData ? JSON.stringify(knowledgeData) : null;
             }
             default:
                 return null;
@@ -993,6 +1126,10 @@ export async function importCategory(
                     if (typeof raw !== 'string') return;
                     trackingSetItem(`${charName}:peopleLocalEvents`, raw);
                 });
+                break;
+            }
+            case 'knowledge': {
+                await importKnowledgeData(data as ExportedKnowledgeData);
                 break;
             }
             default:
