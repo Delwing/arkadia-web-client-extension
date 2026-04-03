@@ -114,6 +114,8 @@ const KNOWLEDGE_PROMPT_PATTERN =
 
 const KNOWLEDGE_TICK_PATTERN =
     /^Wydaje ci sie, ze twoja wiedza (.+) wzrosla .*\.$/;
+const KNOWLEDGE_BOOK_START_PATTERN =
+    /^Zaczynasz zglebiac (.+?), probujac dowiedziec sie czegos wiecej o (.*)\.$/;
 const KNOWLEDGE_BOOK_COMPLETE_PATTERN =
     /^Masz wrazenie, ze z (.+?) nie dowiesz sie juz niczego wiecej (.*)\.$/;
 const WIEDZA_TOTAL_LEVEL_PATTERN =
@@ -1334,7 +1336,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     function setBookProgress(
         bookKey: string,
         category: KnowledgeCategoryBaseName,
-        completed: boolean,
+        status: true | 'in_progress' | false,
     ) {
         void store
             .applyLocalChange((snapshot) => {
@@ -1347,16 +1349,20 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 const characterBookProgress = {...(nextBookProgress[characterKey] ?? {})};
                 const bookCategories = {...(characterBookProgress[bookKey] ?? {})};
 
-                if (completed) {
-                    if (bookCategories[category] === true) {
-                        return snapshot;
-                    }
-                    bookCategories[category] = true;
-                } else {
+                if (status === false) {
                     if (!bookCategories[category]) {
                         return snapshot;
                     }
                     delete bookCategories[category];
+                } else {
+                    // Don't downgrade completed to in_progress
+                    if (bookCategories[category] === true && status === 'in_progress') {
+                        return snapshot;
+                    }
+                    if (bookCategories[category] === status) {
+                        return snapshot;
+                    }
+                    bookCategories[category] = status;
                 }
 
                 if (Object.keys(bookCategories).length > 0) {
@@ -1685,6 +1691,33 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             // Color the entire line
             const tickColor = createColorFormat('#fbbf24');
             line.replace([0, line.text.length], line.text, tickColor);
+            return line;
+        },
+        'knowledge-progress',
+    );
+
+    // Book start: "Zaczynasz zglebiac X, probujac dowiedziec sie czegos wiecej o Y."
+    client.Triggers.registerTrigger(
+        KNOWLEDGE_BOOK_START_PATTERN,
+        (line, matches) => {
+            const bookBiernik = matches[1]?.trim();
+            const categoryDative = matches[2]?.trim();
+            if (bookBiernik && categoryDative && currentSnapshot) {
+                const category = getBaseCategoryFromName(categoryDative);
+                if (category) {
+                    const books = currentSnapshot.data.books;
+                    let bookKey: string | null = null;
+                    for (const [key, book] of Object.entries(books)) {
+                        if (book.biernik === bookBiernik) {
+                            bookKey = key;
+                            break;
+                        }
+                    }
+                    if (bookKey) {
+                        setBookProgress(bookKey, category, 'in_progress');
+                    }
+                }
+            }
             return line;
         },
         'knowledge-progress',

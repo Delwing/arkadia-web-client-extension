@@ -524,13 +524,15 @@ const KnowledgeReport: React.FC = () => {
     }
 
     // Build book entries per category
-    const booksByCategory = new Map<string, { name: string; completed: boolean }[]>();
+    const booksByCategory = new Map<string, { name: string; status: 'completed' | 'in_progress' | 'not_started' }[]>();
     if (bookData?.books && bookData?.bookProgress) {
       for (const [bookKey, book] of Object.entries(bookData.books)) {
         const prog = bookData.bookProgress[bookKey] ?? {};
         for (const cat of book.categories) {
           const list = booksByCategory.get(cat) ?? [];
-          list.push({ name: bookKey, completed: prog[cat] === true });
+          const value = prog[cat];
+          const status = value === true ? 'completed' as const : value === 'in_progress' ? 'in_progress' as const : 'not_started' as const;
+          list.push({ name: bookKey, status });
           booksByCategory.set(cat, list);
         }
       }
@@ -563,8 +565,8 @@ const KnowledgeReport: React.FC = () => {
                 {categoryBooks.map((book) => (
                   <div key={`book-${book.name}`} className="knowledge-category-entry">
                     <span
-                      className={`knowledge-status-dot knowledge-status-dot--${book.completed ? 'completed' : 'not_started'}`}
-                      title={book.completed ? 'Przeczytane' : 'Nieprzeczytane'}
+                      className={`knowledge-status-dot knowledge-status-dot--${book.status}`}
+                      title={book.status === 'completed' ? 'Przeczytane' : book.status === 'in_progress' ? 'W trakcie' : 'Nieprzeczytane'}
                     />
                     <span className="knowledge-category-entry-name knowledge-category-entry-name--book">{book.name}</span>
                   </div>
@@ -693,9 +695,8 @@ const KnowledgeReport: React.FC = () => {
       const bookProg = progress[bookKey] ?? {};
       return book.categories.every((cat) => bookProg[cat] === true);
     });
-    const activeBooks = bookEntries.filter(([bookKey, book]) => {
-      const bookProg = progress[bookKey] ?? {};
-      return !book.categories.every((cat) => bookProg[cat] === true);
+    const activeBooks = bookEntries.filter(([bookKey]) => {
+      return !completedBooks.some(([key]) => key === bookKey);
     });
 
     const renderBook = (bookKey: string, book: KnowledgeBookEntry, mode: 'active' | 'completed') => {
@@ -716,16 +717,17 @@ const KnowledgeReport: React.FC = () => {
           </div>
           <div className="knowledge-book-categories">
             {bookCategories.map((cat) => {
-              const isComplete = bookProg[cat] === true;
+              const value = bookProg[cat];
+              const catStatus = value === true ? 'completed' : value === 'in_progress' ? 'in_progress' : 'not_started';
               return (
                 <button
                   type="button"
                   key={cat}
-                  className={`knowledge-library-category knowledge-book-category ${isComplete ? 'knowledge-library-category--completed' : 'knowledge-library-category--not_started'}`}
+                  className={`knowledge-library-category knowledge-book-category knowledge-library-category--${catStatus}`}
                   onClick={() => handleToggleBook(bookKey, cat)}
-                  title={`${cat}: ${isComplete ? 'Ukonczone' : 'Do zrobienia'}`}
+                  title={`${cat}: ${catStatus === 'completed' ? 'Ukonczone' : catStatus === 'in_progress' ? 'W trakcie' : 'Do zrobienia'}`}
                 >
-                  <span className={`knowledge-status-dot knowledge-status-dot--${isComplete ? 'completed' : 'not_started'}`} />
+                  <span className={`knowledge-status-dot knowledge-status-dot--${catStatus}`} />
                   {cat}
                 </button>
               );

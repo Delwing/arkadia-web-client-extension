@@ -40,8 +40,8 @@ export interface KnowledgeFile {
 }
 
 // Per book, per category completion tracking
-// bookName → categoryBaseName → true
-export type KnowledgeBookCategoryProgress = Record<string, boolean>;
+// bookName → categoryBaseName → true | 'in_progress'
+export type KnowledgeBookCategoryProgress = Record<string, true | 'in_progress'>;
 export type KnowledgeBookProgress = Record<string, KnowledgeBookCategoryProgress>;
 export type KnowledgeBookProgressByCharacter = Record<string, KnowledgeBookProgress>;
 
