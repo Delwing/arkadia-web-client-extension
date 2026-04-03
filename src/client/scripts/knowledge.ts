@@ -837,6 +837,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     const pendingEntryUpdates: KnowledgeEntryTriggerTarget[] = [];
     let suppressEntryHighlighting = false;
     let reportUpdateTimer: ReturnType<typeof setTimeout> | undefined;
+    let knowledgeReportTimer: ReturnType<typeof setTimeout> | undefined;
 
     function scheduleReportUpdate() {
         // Debounce: cancel previous timer and schedule a new one
@@ -1189,6 +1190,13 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (client.Map.currentRoom) {
             updateCurrentLibrary(client.Map.currentRoom);
         }
+        if (knowledgeReportTimer != null) {
+            clearTimeout(knowledgeReportTimer);
+        }
+        knowledgeReportTimer = setTimeout(() => {
+            knowledgeReportTimer = undefined;
+            dispatchKnowledgeReport();
+        }, 50);
     });
 
     void detailsStore.refresh().catch((error) => {
