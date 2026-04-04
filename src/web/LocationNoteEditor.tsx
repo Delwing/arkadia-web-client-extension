@@ -44,8 +44,11 @@ function LocationNoteEditor() {
             setAreaName(an || info.areaName);
             setMapNote(info.mapNote);
 
-            await loadNote(id);
-            setShow(true);
+            try {
+                await loadNote(id);
+            } finally {
+                setShow(true);
+            }
         };
 
         const handleOpen = async ({ roomId: id }: ClientEvents['locationNote.open']) => {
@@ -56,8 +59,11 @@ function LocationNoteEditor() {
             setAreaName(info.areaName);
             setMapNote(info.mapNote);
 
-            await loadNote(id);
-            setShow(true);
+            try {
+                await loadNote(id);
+            } finally {
+                setShow(true);
+            }
         };
 
         const unsubEdit = eventBus.on('locationNote.edit', handleEdit);
