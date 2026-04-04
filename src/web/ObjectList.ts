@@ -495,9 +495,7 @@ export default class ObjectList {
 
         const items = this.contextMenuCommands.map((command) => ({
             label: command,
-            action: () => {
-                this.client.sendCommand(`${command} ob_${objectId}`);
-            },
+            action: () => this.client.sendCommand(`${command} ob_${objectId}`),
         }));
 
         showContextMenu(items, e.clientX, e.clientY);
@@ -1280,9 +1278,7 @@ export default class ObjectList {
 
         const items = this.contextMenuCommands.map((command) => ({
             label: command,
-            action: () => {
-                this.client.sendCommand(`${command} ob_${objectId}`);
-            },
+            action: () => this.client.sendCommand(`${command} ob_${objectId}`),
         }));
 
         showContextMenu(items, e.clientX, e.clientY);
@@ -1310,9 +1306,7 @@ export default class ObjectList {
 
         const items = this.contextMenuCommands.map((command) => ({
             label: command,
-            action: () => {
-                this.client.sendCommand(`${command} ob_${objectId}`);
-            },
+            action: () => this.client.sendCommand(`${command} ob_${objectId}`),
         }));
 
         showContextMenu(items, e.clientX, e.clientY);

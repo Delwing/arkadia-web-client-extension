@@ -87,6 +87,11 @@ export function showContextMenu(
         btn.onclick = () => {
             hideContextMenu();
             item.action();
+            const input = document.getElementById('message-input') as HTMLTextAreaElement | null;
+            if (input) {
+                input.focus();
+                input.select();
+            }
         };
         (buttonsContainer || menu).appendChild(btn);
     });
