@@ -30,6 +30,9 @@ export default defineConfig({
         },
     },
     base: "./",
+    optimizeDeps: {
+        include: ['sql.js/dist/sql-wasm.js'],
+    },
     define: {
         __COMMIT_SHA__: JSON.stringify(commitSha),
         __COMMIT_DATE__: JSON.stringify(commitDate),

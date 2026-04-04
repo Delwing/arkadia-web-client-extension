@@ -102,6 +102,25 @@ On master, plugin types are built (`yarn build:types`) and everything deploys to
 - **Mocks**: `test/__mocks__/` for module mocks, `jest.setup.js` for global setup
 - Test environment: jsdom for unit tests, Chromium for e2e
 
+### E2E Tests Details
+
+E2E tests use Playwright with Chromium. See `e2e/CLAUDE.md` for full documentation.
+
+**Running e2e tests:**
+```bash
+yarn test:e2e                              # All tests (needs 10+ min)
+yarn test:e2e e2e/some-feature.spec.ts     # Single spec file
+yarn test:e2e -- --shard=1/8               # Run one CI shard
+```
+
+**Environment variable:** Set `PLAYWRIGHT_BROWSERS_PATH` if browsers are installed in a non-default location (e.g., `/opt/pw-browsers`).
+
+**Playwright version:** The `@playwright/test` version must match the pre-installed Chromium browser revision. If tests fail with "Executable doesn't exist", the Playwright version is mismatched with available browsers. Pin the version in `package.json` to match.
+
+**External network requests:** The test fixtures (`e2e/support/fixtures.ts` and `e2e/support/firebase-fixtures.ts`) block external network requests (Google Analytics, Google Fonts, buycoffee.to) to prevent page load timeouts. If new external resources are added to `index.html`, they must be added to the route blocking pattern in both fixture files.
+
+**Test structure:** Always import `test` and `expect` from `./support/fixtures` (or `./support/firebase-fixtures` for Firebase tests), never from `@playwright/test` directly. Key helpers: `ensureGameSocket`, `waitForCommandInput`, `pushGmcp`, `pushText`, `submitCommand`.
+
 ## Coding Guidelines
 
 ### General
