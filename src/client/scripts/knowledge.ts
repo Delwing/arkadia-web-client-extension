@@ -2618,6 +2618,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
         report.currentLibraryId = currentLibraryId;
         client.sendEvent('knowledgeReport', report);
+        client.sendEvent('knowledgeReport.popup.open');
     }
 
     // Knowledge hints: orange highlights + plugin location notes

@@ -969,6 +969,8 @@ export interface ClientEvents {
   "refreshPositionWhenAble": void;
   /** Knowledge report */
   "knowledgeReport": unknown | null;
+  /** Open knowledge report popup */
+  "knowledgeReport.popup.open": void;
   /** Knowledge details report */
   "knowledgeDetailsReport": unknown | null;
   /** Open knowledge details popup */

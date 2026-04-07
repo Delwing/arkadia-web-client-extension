@@ -192,7 +192,6 @@ const KnowledgeReport: React.FC = () => {
     }
 
     setData(detail);
-    setIsOpen(true);
     setExpandedStatuses({});
     if (detail.libraries.length > 0) {
       setActiveTab('libraries');
@@ -211,6 +210,9 @@ const KnowledgeReport: React.FC = () => {
       }),
       eventBus.on('knowledgeBookReport', (payload) => {
         setBookData(payload as BookReportPayload | null);
+      }),
+      eventBus.on('knowledgeReport.popup.open', () => {
+        setIsOpen(true);
       }),
     ];
     return () => unsubs.forEach((fn) => fn());
