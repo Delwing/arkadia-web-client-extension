@@ -32,8 +32,9 @@ export default function initWorldDestructionTimer(client: Client) {
     }
 
     // Pattern: "Pamietaj, juz tylko X minut do momentu zniszczenia swiata."
+    // May appear at end of a longer line prefixed with "W swoim umysle slyszysz glos Jezdzca Apokalipsy..."
     client.Triggers.registerTrigger(
-        /^Pamietaj, juz tylko (\d+) minut do momentu zniszczenia swiata\.$/,
+        /Pamietaj, juz tylko (\d+) minut do momentu zniszczenia swiata\./,
         (line, matches) => {
             const minutes = parseInt(matches[1], 10);
             if (!isNaN(minutes) && minutes > 0) {
