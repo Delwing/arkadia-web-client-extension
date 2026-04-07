@@ -1,5 +1,5 @@
 import Client from '../Client';
-import {colorString, createColorFormat} from '@modules/core/Colors';
+import {colorString, createColorFormat, mudletColorLine} from '@modules/core/Colors';
 import type {KnowledgeReportAction} from '@shared/events';
 import {
     DEFAULT_KNOWLEDGE_CHARACTER_KEY,
@@ -1787,6 +1787,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     if (bookKey && resolvedCategory) {
                         setBookProgress(bookKey, resolvedCategory as KnowledgeCategoryBaseName, 'in_progress');
                         window.setTimeout(() => dispatchBookReport(), 50);
+                    } else if (!bookKey) {
+                        client.println(mudletColorLine(`<tomato>Nieznana ksiazka "<sky_blue>${bookBiernik}<tomato>" - zglos ja na Discordzie!`));
                     }
                 }
             }
