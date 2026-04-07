@@ -36,7 +36,7 @@ function LocationNoteEditor() {
     }, []);
 
     useEffect(() => {
-        const handleEdit = ({ roomId: id, roomName: rn, areaName: an }: ClientEvents['locationNote.edit']) => {
+        const handleEdit = async ({ roomId: id, roomName: rn, areaName: an }: ClientEvents['locationNote.edit']) => {
             setRoomId(id);
 
             const info = lookupRoomInfo(id);
@@ -44,11 +44,14 @@ function LocationNoteEditor() {
             setAreaName(an || info.areaName);
             setMapNote(info.mapNote);
 
-            loadNote(id);
-            setShow(true);
+            try {
+                await loadNote(id);
+            } finally {
+                setShow(true);
+            }
         };
 
-        const handleOpen = ({ roomId: id }: ClientEvents['locationNote.open']) => {
+        const handleOpen = async ({ roomId: id }: ClientEvents['locationNote.open']) => {
             setRoomId(id);
 
             const info = lookupRoomInfo(id);
@@ -56,8 +59,11 @@ function LocationNoteEditor() {
             setAreaName(info.areaName);
             setMapNote(info.mapNote);
 
-            loadNote(id);
-            setShow(true);
+            try {
+                await loadNote(id);
+            } finally {
+                setShow(true);
+            }
         };
 
         const unsubEdit = eventBus.on('locationNote.edit', handleEdit);

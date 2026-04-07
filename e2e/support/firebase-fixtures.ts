@@ -25,8 +25,8 @@ import { installMockFirebase } from './firebase-mocks';
  */
 const test = base.extend({
     context: async ({ context }, use) => {
-        // Block Google Analytics network requests
-        await context.route(/googletagmanager\.com|google-analytics\.com/, route => route.abort());
+        // Block external network requests that can stall page load
+        await context.route(/googletagmanager\.com|google-analytics\.com|buycoffee\.to|fonts\.googleapis\.com|fonts\.gstatic\.com/, route => route.abort());
 
         // Disable Google Analytics but NOT Firebase
         await context.addInitScript(() => {
