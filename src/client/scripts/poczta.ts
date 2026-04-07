@@ -230,8 +230,9 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         return null;
     }, tag);
 
-    client.Triggers.registerTrigger(/./, (line) => {
-        if (!isReadingLetter || !currentLetter || !currentLetter.date) return line;
+    client.Triggers.registerTrigger(/^/, (line) => {
+        if (!isReadingLetter || !currentLetter) return line;
+        if (!currentLetter.date) return null;
 
         letterBodyLines.push(line.text);
         return null;
