@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
-import {gmcp} from "../gmcp";
+import {gmcp, setGmcp} from "../gmcp";
 import { createAttackController } from "../utils/attackController";
 import eventBus from "@modules/core/eventBus";
 import initAllyProtection from "./allyProtection";
@@ -300,9 +300,12 @@ export default function initObjectAliases(
             pattern: /^\/za([234]) ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
                 const original = gmcp?.char?.options?.group_cover;
-                client.sendGMCP('char.options', {group_cover: parseInt(m[1], 10)});
+                const coverValue = parseInt(m[1], 10);
+                client.sendGMCP('char.options', {group_cover: coverValue});
+                setGmcp('char.options.group_cover', coverValue);
                 shield(m[2]);
                 client.sendGMCP('char.options', {group_cover: original});
+                setGmcp('char.options.group_cover', original);
             }
         });
         aliases.push({
@@ -397,4 +400,13 @@ export default function initObjectAliases(
             callback: () => eventBus.emit("objectListDemo.popup.open")
         });
     }
+
+    client.registerCommandHook('objectAliases.groupCoverSuffix', (command) => {
+        if (/^zaslon /.test(command)) {
+            const groupCover = gmcp?.char?.options?.group_cover;
+            if (typeof groupCover === 'number' && groupCover > 1) {
+                return `${command} <${groupCover}>`;
+            }
+        }
+    });
 }
