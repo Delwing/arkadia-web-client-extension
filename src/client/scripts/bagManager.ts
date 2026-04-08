@@ -114,11 +114,14 @@ export function containerAction(
         return;
     }
     const forms = getBagForms(bag);
+    const settings = characterStorage.get("settings");
+    const shouldOpen = settings?.containerOpen !== false;
+    const shouldClose = settings?.containerClose !== false;
     const items = item
         .split(",")
         .map((i) => i.trim())
         .filter((i) => i.length);
-    client.sendCommand(`otworz ${forms.pronoun_b} ${forms.biernik}`);
+    if (shouldOpen) client.sendCommand(`otworz ${forms.pronoun_b} ${forms.biernik}`);
     items.forEach((it) =>
         client.sendCommand(
             action === "put"
@@ -126,7 +129,7 @@ export function containerAction(
                 : `wez ${it} ze ${forms.pronoun_d} ${forms.dopelniacz}`
         )
     );
-    client.sendCommand(`zamknij ${forms.pronoun_b} ${forms.biernik}`);
+    if (shouldClose) client.sendCommand(`zamknij ${forms.pronoun_b} ${forms.biernik}`);
 }
 
 export function takeFromBag(

@@ -19,6 +19,8 @@ export interface Settings {
     shortenExits: boolean;
     prettyContainers: boolean;
     containerColumns: number;
+    containerOpen: boolean;
+    containerClose: boolean;
     collectMode: number;
     collectTiming: number;
     collectCopper: boolean;
@@ -67,6 +69,8 @@ export const defaultSettings: Settings = {
     shortenExits: false,
     prettyContainers: true,
     containerColumns: 2,
+    containerOpen: true,
+    containerClose: true,
     collectMode: 1,
     collectTiming: 1,
     collectCopper: true,

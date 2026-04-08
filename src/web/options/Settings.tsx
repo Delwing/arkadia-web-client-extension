@@ -278,6 +278,22 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                     style={{width: '100%', maxWidth: '4rem'}}
                                 />
                             </Form.Group>
+                            <Form.Check
+                                type="checkbox"
+                                id="containerOpen"
+                                label="Otwieraj pojemnik"
+                                checked={settings.containerOpen}
+                                onChange={e => onChangeSetting(s => s.containerOpen = e.target.checked)}
+                                className="me-2"
+                            />
+                            <Form.Check
+                                type="checkbox"
+                                id="containerClose"
+                                label="Zamykaj pojemnik"
+                                checked={settings.containerClose}
+                                onChange={e => onChangeSetting(s => s.containerClose = e.target.checked)}
+                                className="me-2"
+                            />
                         </div>
                     </section>
                     <section className="character-settings-section">
