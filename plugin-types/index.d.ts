@@ -807,6 +807,8 @@ export interface ClientEvents {
   "herbManagerOpen": void;
   /** Play sound effect */
   "sound:play": { key: string };
+  /** Play sound for a named category */
+  "sound:category": 'attack' | 'hp' | 'fishing' | 'lamp' | 'gear' | 'transport' | 'spell' | 'block' | 'weapon' | 'stun';
   /** Play beep sound */
   "playBeep": void;
   /** Line start marker */

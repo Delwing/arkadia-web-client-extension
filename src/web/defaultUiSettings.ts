@@ -1,3 +1,8 @@
+import type { SoundCategory } from '@shared/events/clientEvents.ts';
+
+// string = custom sound key, null = disabled, missing key = default beep
+export type SoundCategories = Partial<Record<SoundCategory, string | null>>;
+
 type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
 
 type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
@@ -86,6 +91,7 @@ export interface UiSettings {
     barOrder: string[];
     colorTheme: ColorTheme;
     customThemeColor?: string;
+    soundCategories?: SoundCategories;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -138,4 +144,5 @@ export const defaultUiSettings: UiSettings = {
     alwaysVisibleBars: [],
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
     colorTheme: 'default',
+    soundCategories: {},
 };

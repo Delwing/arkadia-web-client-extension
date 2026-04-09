@@ -1,3 +1,15 @@
+export type SoundCategory =
+    | 'attack'
+    | 'hp'
+    | 'fishing'
+    | 'lamp'
+    | 'gear'
+    | 'transport'
+    | 'spell'
+    | 'block'
+    | 'weapon'
+    | 'stun';
+
 import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
 import {LetterSubmitPayload} from "@client/types/letter.ts";
 import {TransportTimerPayload, TransportRoutePayload} from "@client/types/transport.ts";
@@ -198,6 +210,7 @@ export interface KnownEvents {
     "herbTextWindowClose": void;
     "sound:play": { key: string };
     "sound:muted": boolean;
+    "sound:category": SoundCategory;
     "playBeep": void;
     "line-start": void;
     "mobileButtonsSettings": unknown;
