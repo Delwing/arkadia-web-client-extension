@@ -607,9 +607,21 @@ export default async function initUiSettings() {
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
     const categoryFileInput = modalEl.querySelector('#ui-sound-category-file') as HTMLInputElement | null;
     const categorySelects: Partial<Record<SoundCategory, HTMLSelectElement>> = {};
+    const categoryPlayButtons: Partial<Record<SoundCategory, HTMLButtonElement>> = {};
     ALL_SOUND_CATEGORIES.forEach(cat => {
         const el = modalEl.querySelector(`#ui-sound-category-${cat}`) as HTMLSelectElement | null;
-        if (el) categorySelects[cat] = el;
+        if (!el) return;
+        categorySelects[cat] = el;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'd-flex gap-1 align-items-center';
+        el.parentNode?.insertBefore(wrapper, el);
+        wrapper.appendChild(el);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-secondary flex-shrink-0';
+        btn.textContent = '▶';
+        wrapper.appendChild(btn);
+        categoryPlayButtons[cat] = btn;
     });
     const mapRoomSizeInput = modalEl.querySelector('#ui-map-room-size') as HTMLInputElement;
     const mapRoomSizeValue = modalEl.querySelector('#ui-map-room-size-value') as HTMLSpanElement;
@@ -848,6 +860,25 @@ export default async function initUiSettings() {
                 select.value = currentValue;
             }
         });
+    };
+
+    const previewCategorySound = async (key: string) => {
+        try {
+            const { Howl } = await import('howler');
+            let soundData: string | undefined;
+            if (key === 'beep') {
+                const { beepSound } = await import('../client/sounds');
+                soundData = beepSound;
+            } else {
+                soundData = customSoundsRef.current.find(s => s.key === key)?.data;
+            }
+            if (!soundData) return;
+            const howl = new Howl({ src: [soundData], preload: true });
+            howl.once('load', () => howl.play());
+            howl.load();
+        } catch (error) {
+            console.error('Failed to preview sound', error);
+        }
     };
 
     const handleCustomBeepFileChange = (e: Event) => {
@@ -1485,6 +1516,17 @@ export default async function initUiSettings() {
     if (categoryFileInput) {
         categoryFileInput.addEventListener('change', handleCategoryFileChange);
     }
+
+    ALL_SOUND_CATEGORIES.forEach(cat => {
+        const btn = categoryPlayButtons[cat];
+        const select = categorySelects[cat];
+        if (!btn || !select) return;
+        btn.addEventListener('click', () => {
+            const soundKey = select.value || 'beep';
+            if (soundKey === '__disabled__' || soundKey === '__upload__') return;
+            void previewCategorySound(soundKey);
+        });
+    });
 
     // Mount Bar Order Settings React component
     const barOrderContainer = modalEl.querySelector('#ui-bar-order-settings') as HTMLElement | null;
