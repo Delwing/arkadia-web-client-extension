@@ -605,6 +605,7 @@ export default async function initUiSettings() {
     const outputBottomPaddingInput = modalEl.querySelector('#ui-output-bottom-padding') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
+    const categoryFileInput = modalEl.querySelector('#ui-sound-category-file') as HTMLInputElement | null;
     const categorySelects: Partial<Record<SoundCategory, HTMLSelectElement>> = {};
     ALL_SOUND_CATEGORIES.forEach(cat => {
         const el = modalEl.querySelector(`#ui-sound-category-${cat}`) as HTMLSelectElement | null;
@@ -839,6 +840,10 @@ export default async function initUiSettings() {
                 option.textContent = sound.name;
                 select.appendChild(option);
             });
+            const uploadOption = document.createElement('option');
+            uploadOption.value = '__upload__';
+            uploadOption.textContent = 'Dodaj dźwięk…';
+            select.appendChild(uploadOption);
             if (currentValue) {
                 select.value = currentValue;
             }
@@ -901,6 +906,57 @@ export default async function initUiSettings() {
             if (customBeepSoundInput) {
                 customBeepSoundInput.value = current.customBeepSoundKey || '';
             }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    let pendingUploadCategory: SoundCategory | null = null;
+
+    const handleCategoryFileChange = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0] ?? null;
+        target.value = '';
+        const cat = pendingUploadCategory;
+        pendingUploadCategory = null;
+        if (!cat) return;
+        const select = categorySelects[cat];
+        if (!file) {
+            if (select) select.value = (current.soundCategories?.[cat] === null ? '__disabled__' : current.soundCategories?.[cat] || '');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result;
+            if (typeof result !== 'string') {
+                if (select) select.value = (current.soundCategories?.[cat] === null ? '__disabled__' : current.soundCategories?.[cat] || '');
+                return;
+            }
+            const baseName = file.name.replace(/\.[^/.]+$/, '') || file.name;
+            const existingKeys = new Set(customSoundsRef.current.map(sound => sound.key));
+            const slug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const prefix = slug ? `user:${slug}` : `user:${Date.now()}`;
+            let key = prefix;
+            let counter = 1;
+            while (existingKeys.has(key)) {
+                key = `${prefix}-${counter++}`;
+            }
+            const sound: CustomSound = { key, name: baseName, data: result };
+            const nextSounds = [...customSoundsRef.current, sound];
+            customSoundsRef.current = nextSounds;
+            customSounds = nextSounds;
+            void saveCustomSounds(nextSounds)
+                .then(() => {
+                    populateCustomBeepOptions();
+                    populateCategoryOptions();
+                    if (select) select.value = sound.key;
+                    current = { ...current, soundCategories: { ...current.soundCategories, [cat]: sound.key } };
+                })
+                .catch(() => {
+                    if (select) select.value = (current.soundCategories?.[cat] === null ? '__disabled__' : current.soundCategories?.[cat] || '');
+                });
+        };
+        reader.onerror = () => {
+            if (select) select.value = (current.soundCategories?.[cat] === null ? '__disabled__' : current.soundCategories?.[cat] || '');
         };
         reader.readAsDataURL(file);
     };
@@ -1415,6 +1471,21 @@ export default async function initUiSettings() {
         customBeepFileInput.addEventListener('change', handleCustomBeepFileChange);
     }
 
+    ALL_SOUND_CATEGORIES.forEach(cat => {
+        const select = categorySelects[cat];
+        if (!select) return;
+        select.addEventListener('change', () => {
+            if (select.value === '__upload__') {
+                pendingUploadCategory = cat;
+                categoryFileInput?.click();
+            }
+        });
+    });
+
+    if (categoryFileInput) {
+        categoryFileInput.addEventListener('change', handleCategoryFileChange);
+    }
+
     // Mount Bar Order Settings React component
     const barOrderContainer = modalEl.querySelector('#ui-bar-order-settings') as HTMLElement | null;
     let barOrderRoot: Root | null = null;
@@ -1450,6 +1521,12 @@ export default async function initUiSettings() {
         if (customBeepSoundInput) {
             customBeepSoundInput.value = current.customBeepSoundKey || '';
         }
+        ALL_SOUND_CATEGORIES.forEach(cat => {
+            const select = categorySelects[cat];
+            if (!select) return;
+            const catValue = current.soundCategories?.[cat];
+            select.value = catValue === null ? '__disabled__' : catValue || '';
+        });
     });
 
     function refreshExplorationStats() {
