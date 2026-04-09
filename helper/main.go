@@ -86,6 +86,12 @@ func main() {
 		return handleMessage(env, hotkeyMgr, focusMonitor, detector, srv)
 	})
 
+	// Clear browser focus hint when all clients disconnect (browser closed/navigated away).
+	// Falls back to window title polling until a new client reconnects and sends its state.
+	srv.OnDisconnectAll(func() {
+		hotkeyMgr.ClearBrowserFocusedHint()
+	})
+
 	shutdown := func() {
 		log.Println("Shutting down...")
 		hotkeyMgr.Stop()
@@ -156,6 +162,15 @@ func handleMessage(env protocol.Envelope, hotkeyMgr *hk.Manager, focusMonitor *w
 		}
 		focusMonitor.SetPatterns(msg.Patterns)
 		log.Printf("Window match patterns updated: %v", msg.Patterns)
+
+	case protocol.TypeSetBrowserFocused:
+		var msg protocol.SetBrowserFocusedMsg
+		if err := json.Unmarshal(env.Raw, &msg); err != nil {
+			log.Printf("invalid set_browser_focused message: %v", err)
+			return nil
+		}
+		hotkeyMgr.SetBrowserFocusedHint(msg.Focused)
+		log.Printf("Browser focus hint: %v", msg.Focused)
 
 	case protocol.TypeStartCapture:
 		log.Println("Starting key capture...")

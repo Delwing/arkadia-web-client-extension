@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {colorTokenInLine} from "@modules/core/Colors";
 import loadMagics from "./magicsLoader";
-import {MAGICS_COLOR} from "../constants/colors";
+import { getMagicsColorFormat } from "./prettyContainers";
 
 export default async function initMagics(client: Client) {
     const tag = "magics";
@@ -9,7 +9,7 @@ export default async function initMagics(client: Client) {
         const magics = await loadMagics();
         magics.forEach((pattern: string) => {
             client.Triggers.registerTokenTrigger(pattern, (line) => {
-                return colorTokenInLine(line, pattern, MAGICS_COLOR);
+                return colorTokenInLine(line, pattern, getMagicsColorFormat());
             }, tag, {caseInsensitive: true});
         });
     } catch (e) {

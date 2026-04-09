@@ -28,11 +28,12 @@ type registration struct {
 // Manager handles hotkey registration, mode filtering, and event dispatch.
 // On Windows, it uses a low-level keyboard hook to intercept and suppress keys.
 type Manager struct {
-	mu             sync.RWMutex
-	registrations  map[string]*registration
-	browserFocused bool
-	callback       EventCallback
-	focusCallback  FocusCallback
+	mu                  sync.RWMutex
+	registrations       map[string]*registration
+	browserFocused      bool  // from window title polling
+	browserFocusedHint  *bool // from web client via WS; takes precedence over polling
+	callback            EventCallback
+	focusCallback       FocusCallback
 }
 
 // NewManager creates a new HotkeyManager.
@@ -64,11 +65,26 @@ func (m *Manager) Stop() {
 	UninstallHook()
 }
 
-// SetBrowserFocused updates the browser focus state.
+// SetBrowserFocused updates the browser focus state from window title polling.
 func (m *Manager) SetBrowserFocused(focused bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.browserFocused = focused
+}
+
+// SetBrowserFocusedHint sets the focus hint from the web client.
+// This takes precedence over window title polling for browser_only key filtering.
+func (m *Manager) SetBrowserFocusedHint(focused bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.browserFocusedHint = &focused
+}
+
+// ClearBrowserFocusedHint removes the web client hint, falling back to window polling.
+func (m *Manager) ClearBrowserFocusedHint() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.browserFocusedHint = nil
 }
 
 // Register registers a hotkey binding.
@@ -159,7 +175,11 @@ func (m *Manager) handleKeyEvent(event KeyEvent) bool {
 
 // shouldFire determines if a hotkey event should be forwarded based on bind mode and browser focus.
 func (m *Manager) shouldFire(bind protocol.Bind) bool {
+	// Web client hint takes precedence over window title polling.
 	focused := m.browserFocused
+	if m.browserFocusedHint != nil {
+		focused = *m.browserFocusedHint
+	}
 
 	switch bind.Mode {
 	case protocol.ModeBrowserOnly:

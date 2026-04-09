@@ -27,6 +27,11 @@ export interface SetWindowMatchMsg {
     patterns: string[];
 }
 
+export interface SetBrowserFocusedMsg {
+    type: 'set_browser_focused';
+    focused: boolean;
+}
+
 export interface StartCaptureMsg {
     type: 'start_capture';
 }
@@ -35,7 +40,7 @@ export interface PingMsg {
     type: 'ping';
 }
 
-export type OutboundMsg = RegisterBindsMsg | UnregisterBindMsg | SetWindowMatchMsg | StartCaptureMsg | PingMsg;
+export type OutboundMsg = RegisterBindsMsg | UnregisterBindMsg | SetWindowMatchMsg | SetBrowserFocusedMsg | StartCaptureMsg | PingMsg;
 
 export interface HotkeyMsg {
     type: 'hotkey';

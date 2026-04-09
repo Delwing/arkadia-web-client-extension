@@ -50,6 +50,8 @@ export interface Settings {
     enemyBindsEnabledSlots: [boolean, boolean, boolean];
     favoriteMagicTypes?: string[];
     favoriteMagicKeys?: string[];
+    magicsColor?: string;
+    magicKeysColor?: string;
     cuttingPreAction?: string;
     cuttingPostAction?: string;
     sunTracker: boolean;
@@ -116,6 +118,8 @@ export const defaultSettings: Settings = {
     enemyBindsEnabledSlots: [true, true, true],
     favoriteMagicTypes: [],
     favoriteMagicKeys: [],
+    magicsColor: '#d75f5f',
+    magicKeysColor: '#00ff87',
     cuttingPreAction: '',
     cuttingPostAction: '',
     sunTracker: false,

@@ -6190,6 +6190,10 @@ body.mobile-command-radial-active {
   margin-top: 1rem;
 }
 
+.character-settings-section--full:first-child {
+  margin-top: 0;
+}
+
 .ui-settings-section .form-check,
 .character-settings-section .form-check {
   margin: 0;

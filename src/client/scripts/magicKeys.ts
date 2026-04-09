@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {colorTokenInLine} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
-import {MAGIC_KEYS_COLOR as KEYS_COLOR} from "../constants/colors";
+import { getMagicKeysColorFormat } from "./prettyContainers";
 
 export default async function initMagicKeys(client: Client) {
     const tag = "magicKeys";
@@ -9,7 +9,7 @@ export default async function initMagicKeys(client: Client) {
         const keys = await loadMagicKeys();
         keys.forEach((pattern: string) => {
             client.Triggers.registerTokenTrigger(pattern, (line) => {
-                return colorTokenInLine(line, pattern, KEYS_COLOR);
+                return colorTokenInLine(line, pattern, getMagicKeysColorFormat());
             }, tag, { caseInsensitive: true });
         });
     } catch (e) {

@@ -4,11 +4,12 @@ import "encoding/json"
 
 // Inbound message types (web app → helper)
 const (
-	TypeRegisterBinds  = "register_binds"
-	TypeUnregisterBind = "unregister_bind"
-	TypeSetWindowMatch = "set_window_match"
-	TypeStartCapture   = "start_capture"
-	TypePing           = "ping"
+	TypeRegisterBinds      = "register_binds"
+	TypeUnregisterBind     = "unregister_bind"
+	TypeSetWindowMatch     = "set_window_match"
+	TypeSetBrowserFocused  = "set_browser_focused"
+	TypeStartCapture       = "start_capture"
+	TypePing               = "ping"
 )
 
 // Outbound message types (helper → web app)
@@ -75,6 +76,13 @@ type UnregisterBindMsg struct {
 type SetWindowMatchMsg struct {
 	Type     string   `json:"type"`
 	Patterns []string `json:"patterns"`
+}
+
+// SetBrowserFocusedMsg is sent by the web app when the browser gains or loses focus.
+// This overrides window title polling for browser_only hotkey filtering.
+type SetBrowserFocusedMsg struct {
+	Type    string `json:"type"`
+	Focused bool   `json:"focused"`
 }
 
 // HotkeyMsg is sent to the web app when a registered hotkey is pressed.

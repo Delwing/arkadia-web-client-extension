@@ -108,6 +108,9 @@ func (s *Server) removeClient(c *wsConn) {
 
 	log.Printf("Client disconnected, %d remaining", remaining)
 	if remaining == 0 {
+		if s.onDisconnectAll != nil {
+			s.onDisconnectAll()
+		}
 		s.resetIdleTimer(idleTimeout)
 	}
 }

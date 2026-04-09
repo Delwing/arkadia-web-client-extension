@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Form, Badge } from "react-bootstrap";
+import { Form, Badge, Button } from "react-bootstrap";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
@@ -12,6 +12,8 @@ interface MagikiSettingsProps {
 function MagikiSettings({ registerSave }: MagikiSettingsProps) {
     const [favoriteMagicTypes, setFavoriteMagicTypes] = useState<string[]>(defaultSettings.favoriteMagicTypes || []);
     const [favoriteMagics, setFavoriteMagics] = useState<string[]>(defaultSettings.favoriteMagicKeys || []);
+    const [magicsColor, setMagicsColor] = useState<string>(defaultSettings.magicsColor!);
+    const [magicKeysColor, setMagicKeysColor] = useState<string>(defaultSettings.magicKeysColor!);
     const [magicTypes, setMagicTypes] = useState<string[]>([]);
     const [allMagics, setAllMagics] = useState<string[]>([]);
     const [searchInput, setSearchInput] = useState<string>("");
@@ -27,6 +29,8 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
             const settings = (characterStorage.get("settings") || {}) as BaseSettings;
             setFavoriteMagicTypes(settings.favoriteMagicTypes || []);
             setFavoriteMagics(settings.favoriteMagicKeys || []);
+            setMagicsColor(settings.magicsColor ?? defaultSettings.magicsColor!);
+            setMagicKeysColor(settings.magicKeysColor ?? defaultSettings.magicKeysColor!);
             setLoaded(true);
         };
 
@@ -89,9 +93,11 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
             if (loaded) {
                 settings.favoriteMagicTypes = favoriteMagicTypes;
                 settings.favoriteMagicKeys = favoriteMagics;
+                settings.magicsColor = magicsColor;
+                settings.magicKeysColor = magicKeysColor;
             }
         });
-    }, [registerSave, favoriteMagicTypes, favoriteMagics, loaded]);
+    }, [registerSave, favoriteMagicTypes, favoriteMagics, magicsColor, magicKeysColor, loaded]);
 
     const [locked, setLocked] = useState(!characterStorage.getCharacter());
 
@@ -104,9 +110,53 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         <div className="p-2 h-100">
             <fieldset disabled={locked} className="p-0 border-0 m-0">
                 <div className="character-settings-layout">
+                    <section className="character-settings-section">
+                        <h5 className="character-settings-section-title">Kolory</h5>
+                        <div className="d-flex align-items-center gap-2">
+                            <Form.Label className="mb-0" htmlFor="magics-color">Magiki</Form.Label>
+                            <Form.Control
+                                type="color"
+                                id="magics-color"
+                                value={magicsColor}
+                                onChange={(e) => setMagicsColor(e.target.value)}
+                                className="form-control-color"
+                                style={{ width: '3rem' }}
+                            />
+                            <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                onClick={() => setMagicsColor(defaultSettings.magicsColor!)}
+                                title="Przywróć domyślny kolor"
+                                style={{ padding: "0.25rem 0.5rem" }}
+                            >
+                                ↺
+                            </Button>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                            <Form.Label className="mb-0" htmlFor="magic-keys-color">Klucze</Form.Label>
+                            <Form.Control
+                                type="color"
+                                id="magic-keys-color"
+                                value={magicKeysColor}
+                                onChange={(e) => setMagicKeysColor(e.target.value)}
+                                className="form-control-color"
+                                style={{ width: '3rem' }}
+                            />
+                            <Button
+                                size="sm"
+                                variant="outline-secondary"
+                                onClick={() => setMagicKeysColor(defaultSettings.magicKeysColor!)}
+                                title="Przywróć domyślny kolor"
+                                style={{ padding: "0.25rem 0.5rem" }}
+                            >
+                                ↺
+                            </Button>
+                        </div>
+                    </section>
+
                     <section className="character-settings-section character-settings-section--full">
                         <h5 className="character-settings-section-title">Ulubione magiki</h5>
-                        <p className="text-muted small mb-3">
+                        <p className="text-muted small mb-0">
                             Wybierz ulubione typy magików lub dodaj konkretne magiki. Będą one oznaczone zieloną gwiazdką w pojemnikach.
                         </p>
 

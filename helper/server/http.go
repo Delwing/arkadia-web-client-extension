@@ -25,15 +25,21 @@ type MessageHandler func(msg protocol.Envelope) []any
 
 // Server holds the HTTP + WebSocket server state.
 type Server struct {
-	version   string
-	mux       *http.ServeMux
-	listener  net.Listener
-	handler   MessageHandler
-	clientsMu sync.RWMutex
-	clients   []*wsConn
-	onIdle    func()
-	idleTimer *time.Timer
-	idleMu    sync.Mutex
+	version          string
+	mux              *http.ServeMux
+	listener         net.Listener
+	handler          MessageHandler
+	clientsMu        sync.RWMutex
+	clients          []*wsConn
+	onIdle           func()
+	onDisconnectAll  func()
+	idleTimer        *time.Timer
+	idleMu           sync.Mutex
+}
+
+// OnDisconnectAll sets a callback called immediately when the last client disconnects.
+func (s *Server) OnDisconnectAll(cb func()) {
+	s.onDisconnectAll = cb
 }
 
 // OnIdle sets a callback called when no clients are connected for the given duration.

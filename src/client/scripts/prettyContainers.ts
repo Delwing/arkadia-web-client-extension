@@ -13,8 +13,6 @@ import {
     GOLD_COLOR,
     SILVER_COLOR,
     COPPER_COLOR,
-    MAGIC_KEYS_COLOR,
-    MAGICS_COLOR
 } from "../constants/colors";
 import { polishNumberWords, polishNumberPattern } from "./polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
@@ -417,6 +415,8 @@ const defaultTransforms: TransformDefinition[] = [
 let favoriteMagicTypes: string[] = [];
 let favoriteMagicKeys: string[] = [];
 let magicsData: MagicsFile | undefined = undefined;
+let magicsColor: string = defaultSettings.magicsColor!;
+let magicKeysColor: string = defaultSettings.magicKeysColor!;
 
 // Module-level filters for magic keys and magics (populated after async load)
 let keyFilter: ((name: string) => boolean) | null = null;
@@ -434,10 +434,10 @@ export function getItemCssColor(name: string): string | undefined {
     if (/miedzian\w+ monet/.test(name)) return '#875f00';
 
     // Magic keys
-    if (keyFilter?.(name)) return '#00ff87';
+    if (keyFilter?.(name)) return magicKeysColor;
 
     // Magics
-    if (magicFilter?.(name)) return '#d75f5f';
+    if (magicFilter?.(name)) return magicsColor;
 
     // Favorite magics get a special highlight
     if (magicFilter?.(name) && isFavoriteMagic(name)) return '#00ff00';
@@ -473,6 +473,14 @@ export function getItemCssColor(name: string): string | undefined {
 
 export function isItemMagicOrKey(name: string): boolean {
     return !!(keyFilter?.(name) || magicFilter?.(name));
+}
+
+export function getMagicsColorFormat() {
+    return createColorFormat(magicsColor);
+}
+
+export function getMagicKeysColorFormat() {
+    return createColorFormat(magicKeysColor);
 }
 
 // API functions for plugin access
@@ -584,7 +592,7 @@ async function loadMagicAndKeysFilter(client: Client) {
         defaultTransforms.push({
             transform: (buffer, item) => {
                 if (keyRegexp(item.name)) {
-                    buffer.color([0, item.name.length], MAGIC_KEYS_COLOR);
+                    buffer.color([0, item.name.length], createColorFormat(magicKeysColor));
                     if (plugLinks) {
                         buffer.createLink([0, item.name.length], {
                             onClick: () => client.sendCommand(`wybierz ${item.name}`),
@@ -600,7 +608,7 @@ async function loadMagicAndKeysFilter(client: Client) {
         defaultTransforms.push({
             transform: (buffer, item) => {
                 if (magicRegexp(item.name)) {
-                    buffer.color([0, item.name.length], MAGICS_COLOR);
+                    buffer.color([0, item.name.length], createColorFormat(magicsColor));
                     if (plugLinks) {
                         buffer.createLink([0, item.name.length], {
                             onClick: () => client.sendCommand(`wybierz ${item.name}`),
@@ -740,10 +748,14 @@ export default function initContainers(client: Client) {
             prettyContainers?: boolean;
             favoriteMagicTypes?: string[];
             favoriteMagicKeys?: string[];
+            magicsColor?: string;
+            magicKeysColor?: string;
         };
         columns = detail.containerColumns ?? columns;
         favoriteMagicTypes = detail.favoriteMagicTypes ?? favoriteMagicTypes;
         favoriteMagicKeys = detail.favoriteMagicKeys ?? favoriteMagicKeys;
+        magicsColor = detail.magicsColor ?? defaultSettings.magicsColor!;
+        magicKeysColor = detail.magicKeysColor ?? defaultSettings.magicKeysColor!;
         const shouldEnable = !!detail.prettyContainers;
         if (shouldEnable && !enabled) {
             enabled = true;

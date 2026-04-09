@@ -24,6 +24,7 @@ export class HelperConnection {
     private bindResultListeners: BindResultListener[] = [];
     private keyCapturedListeners: KeyCapturedListener[] = [];
     private stateListeners: StateChangeListener[] = [];
+    private focusListenersAttached = false;
 
     async probe(): Promise<HelperStatus | null> {
         try {
@@ -55,6 +56,9 @@ export class HelperConnection {
         this.ws.onopen = () => {
             this.setState('connected');
             this.startPing();
+            this.attachFocusListeners();
+            // Send current focus state immediately so helper is in sync.
+            this.sendBrowserFocused(!document.hidden && document.hasFocus());
         };
 
         this.ws.onmessage = (event) => {
@@ -164,5 +168,22 @@ export class HelperConnection {
                 return;
             }
         }
+    }
+
+    private sendBrowserFocused(focused: boolean): void {
+        this.send({ type: 'set_browser_focused', focused });
+    }
+
+    private attachFocusListeners(): void {
+        if (this.focusListenersAttached) return;
+        this.focusListenersAttached = true;
+
+        const onFocus = () => this.sendBrowserFocused(true);
+        const onBlur = () => this.sendBrowserFocused(false);
+        const onVisibility = () => this.sendBrowserFocused(!document.hidden && document.hasFocus());
+
+        window.addEventListener('focus', onFocus);
+        window.addEventListener('blur', onBlur);
+        document.addEventListener('visibilitychange', onVisibility);
     }
 }
