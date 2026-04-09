@@ -211,7 +211,7 @@ export interface KnownEvents {
     "sound:play": { key: string };
     "sound:muted": boolean;
     "sound:category": SoundCategory;
-    "playBeep": void;
+    "playSound": SoundCategory;
     "line-start": void;
     "mobileButtonsSettings": unknown;
     "desktopButtonsSettings": unknown;
