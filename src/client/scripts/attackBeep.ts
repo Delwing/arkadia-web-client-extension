@@ -69,7 +69,7 @@ export default function initAttackBeep(client: Client) {
         const attackerName = matches?.groups?.name
 
         if (attackerName && shouldBeep(attackerName)) {
-            client.sendEvent("sound:play", { key: "beep" });
+            client.sendEvent("sound:category", "attack");
         }
 
         const upper = matches?.groups?.upper

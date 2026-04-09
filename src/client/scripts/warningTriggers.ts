@@ -20,7 +20,7 @@ export default function initWarningTriggers(client: Client) {
 
     // Kompas breaking - red warning with beep and [SPRZET] prefix
     client.Triggers.registerTrigger(/^Widzisz jak .* kompasu peka, a cale urzadzenie po prostu rozpada ci sie w rekach\.$/, (line) => {
-        client.sendEvent("sound:play", { key: "beep" });
+        client.sendEvent("sound:category", "gear");
         const result = new AnsiAwareBuffer();
         result.append("[ SPRZET ] ", RED);
         result.appendBuffer(line.color([0, line.length], RED));

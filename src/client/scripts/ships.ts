@@ -12,7 +12,7 @@ const BOARD_LABEL = BOARD_CMDS.join(";");
 
 function bindShip(client: Client, commands: string[], label: string, beep: boolean) {
     if (beep) {
-        client.sendEvent("sound:play", { key: "beep" });
+        client.sendEvent("sound:category", "transport");
     }
     client.FunctionalBind.setCategory('transport', label, () => {
         commands.forEach(cmd => client.sendCommand(cmd));

@@ -37,9 +37,9 @@ describe('ships triggers', () => {
 
   test('boarding trigger binds command and beeps', () => {
     parse('Tratwa przybija do brzegu.');
-    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
     expect(beepCalls).toHaveLength(1);
-    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
+    expect(beepCalls[0][1]).toBe('transport');
     expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
     const [category, label, callback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
     expect(category).toBe('transport');
@@ -53,7 +53,7 @@ describe('ships triggers', () => {
 
   test('galeon boarding trigger binds command without beep', () => {
     parse('Wielki trojmasztowy galeon.', 'room.contents.object');
-    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:category', expect.anything());
     expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
     const [category, label] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
     expect(category).toBe('transport');
@@ -63,7 +63,7 @@ describe('ships triggers', () => {
   test('statki trigger binds without beep', () => {
     client.sendEvent.mockClear();
     parse('Tajemniczy okret', 'room.contents.object');
-    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:play', expect.anything());
+    expect(client.sendEvent).not.toHaveBeenCalledWith('sound:category', expect.anything());
     expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
     const [category, label, callback] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
     expect(category).toBe('transport');
@@ -128,9 +128,9 @@ describe('ships triggers', () => {
 
   test('prom without punctuation binds and beeps', () => {
     parse('Szeroki zielony prom.');
-    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
     expect(beepCalls).toHaveLength(1);
-    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
+    expect(beepCalls[0][1]).toBe('transport');
     expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
     const [category, label] = (client.FunctionalBind.setCategory as jest.Mock).mock.calls[0];
     expect(category).toBe('transport');

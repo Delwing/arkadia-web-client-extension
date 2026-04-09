@@ -24,9 +24,9 @@ describe('break item triggers', () => {
   test('replaces line and beeps', () => {
     const line = 'Nagle topor rozpruwa sie.';
     const result = parse(line);
-    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
     expect(beepCalls).toHaveLength(1);
-    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
+    expect(beepCalls[0][1]).toBe('gear');
     expect(client.sendEvent).toHaveBeenCalledWith('breakItem', { text: line, command: undefined });
     expect(result?.text).toContain('[  SPRZET  ]');
     expect(result?.text).toContain(line);
@@ -59,7 +59,7 @@ describe('break item triggers', () => {
     const line = 'Czarna blyszczaca zbroja plytowa Apoliosa rozpada sie!';
     const result = parse(line);
     expect(result?.text).toContain('[  SPRZET  ]');
-    expect(client.sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
+    expect(client.sendEvent).toHaveBeenCalledWith('sound:category', 'gear');
     expect(client.sendEvent).not.toHaveBeenCalledWith('breakItem', expect.anything());
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });
@@ -68,7 +68,7 @@ describe('break item triggers', () => {
     const line = 'Stalowy miecz Apoliosa peka!';
     const result = parse(line);
     expect(result?.text).toContain('[  SPRZET  ]');
-    expect(client.sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
+    expect(client.sendEvent).toHaveBeenCalledWith('sound:category', 'gear');
     expect(client.sendEvent).not.toHaveBeenCalledWith('breakItem', expect.anything());
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
   });

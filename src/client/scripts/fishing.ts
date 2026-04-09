@@ -139,7 +139,7 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
         // Set functional bind to strike the fish
         client.FunctionalBind.set("zatnij rybe na wedce", undefined, true);
         // Play beep sound
-        client.sendEvent("sound:play", { key: "beep" });
+        client.sendEvent("sound:category", "fishing");
         line.color([0, line.length], COLOR_BITING);
         return line;
     }, 'fishing');

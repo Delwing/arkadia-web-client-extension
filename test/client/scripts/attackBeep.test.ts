@@ -63,9 +63,9 @@ describe('attack beep triggers', () => {
 
   test('beeps and highlights on attack', () => {
     const result = parse('Intia atakuje cie!');
-    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
     expect(beepCalls).toHaveLength(1);
-    expect(beepCalls[0][1]).toEqual({ key: 'beep' });
+    expect(beepCalls[0][1]).toBe('attack');
     expect(result.text).toContain('Intia ATAKUJE CIE!');
     // Check that text is colored red
     const segments = (result as any).getSegments();
@@ -83,7 +83,7 @@ describe('attack beep triggers', () => {
 
   test('does not beep on plain phrase trigger', () => {
     const result = parse('atakuje cie!');
-    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:play');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
     expect(beepCalls).toHaveLength(0);
     expect(result.text).toContain('ATAKUJE CIE');
     expect(result?.text.endsWith('!')).toBe(true);

@@ -380,7 +380,7 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         "Twoje dlonie zaczynaja dretwiec z zimna. Powoli tracisz w nich czucie, mimowolnie wypuszczajac dzierzona bron.",
         (line) => {
-            client.sendEvent("sound:play", { key: "beep" });
+            client.sendEvent("sound:category", "weapon");
             client.sendEvent("weaponKnockedOff" as any);
             client.sendEvent("weapon_state" as any, false);
 
@@ -578,7 +578,7 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^Wokol (?<mag>.+?) zaczyna gestniec krwawa poswiata, z ktorej w twoja strone zaczyna formowac sie strumien czarnej energii\.$/,
         (line) => {
-            client.sendEvent("sound:play", { key: "beep" });
+            client.sendEvent("sound:category", "spell");
 
             const result = formatSpellOnMe(line, "AURA BOLU");
             result.append("\t\t\t");
@@ -592,7 +592,7 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^Miedzy toba a (?<mag>.+?) formuje sie strumien czarnej energii\.$/,
         (line) => {
-            client.sendEvent("sound:play", { key: "beep" });
+            client.sendEvent("sound:category", "spell");
 
             const result = formatSpellOnMe(line, "AURA BOLU");
             result.append("\t\t\t");
@@ -606,7 +606,7 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^Krwawa poswiata laczy cie z .+?\. (?:Jego|Jej) bol staje sie twoim\.$/,
         (line) => {
-            client.sendEvent("sound:play", { key: "beep" });
+            client.sendEvent("sound:category", "spell");
 
             const result = formatSpellOnMe(line, "AURA BOLU");
             result.append("\t\t\t");
@@ -662,7 +662,7 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         "wznosi dlon, a ze skierowanych w twoja strone szponiastych palcow zaczyna wydobywac sie promien trupiobladego swiatla.",
         (line) => {
-            client.sendEvent("sound:play", { key: "beep" });
+            client.sendEvent("sound:category", "spell");
 
             const result = formatSpellOnMe(line, "PROMIEN MROZU");
             result.append("\t\t\t");
