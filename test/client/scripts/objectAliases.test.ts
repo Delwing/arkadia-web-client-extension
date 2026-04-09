@@ -35,6 +35,7 @@ class FakeClient {
     isLeader: jest.fn(() => true),
   };
   sendCommand = jest.fn();
+  registerCommandHook = jest.fn();
   releaseGuard = jest.fn(() => this.sendCommand('przestan zaslaniac'));
   goOutOfGuard = jest.fn(() => this.sendCommand('przestan kryc sie za zaslona'));
   sendGMCP = jest.fn();
