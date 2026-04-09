@@ -1,4 +1,5 @@
 import Triggers, {Trigger} from "../Triggers";
+import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import gagsData from "./gags_lua.json";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
@@ -481,9 +482,9 @@ export default function registerLuaGagTriggers(client: Client) {
 
 
     (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
-    client.on("playBeep", () => {
-        client.sendEvent("sound:play", { key: "beep" })
-    })
+    client.on("playSound", (category: string) => {
+        client.sendEvent("sound:category", category as SoundCategory);
+    });
 
     const {global, luaEnv, resetSelection, gagsTable: gagsTableRef} = createLuaEnv();
     gagsTable = gagsTableRef;
