@@ -3,6 +3,8 @@ import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader
 import eventBus from "@modules/core/eventBus";
 import {createRoot, type Root} from "react-dom/client";
 import {createElement} from "react";
+import type { SoundCategory } from '@shared/events/clientEvents.ts';
+import type { SoundCategories } from './defaultUiSettings';
 
 import {CustomSound, getCustomSounds, saveCustomSounds} from "@modules/core/customSounds";
 import {loadLayoutState, resetLayoutState, saveLayoutState} from "@web/layout";
@@ -20,6 +22,11 @@ import {applyCustomTheme, computeAccentHex, generateRandomColor, removeCustomThe
 
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
+
+const ALL_SOUND_CATEGORIES: SoundCategory[] = [
+    'attack', 'hp', 'fishing', 'lamp', 'gear',
+    'transport', 'spell', 'block', 'weapon', 'stun',
+];
 
 function hexAlphaToRgba(hex: string, alpha: number): string {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -420,6 +427,17 @@ function load(): UiSettings {
             const customBeepSoundKey = typeof parsed.customBeepSoundKey === 'string'
                 ? parsed.customBeepSoundKey || undefined
                 : defaultUiSettings.customBeepSoundKey;
+            const soundCategories: SoundCategories = {};
+            if (parsed?.soundCategories && typeof parsed.soundCategories === 'object') {
+                ALL_SOUND_CATEGORIES.forEach(cat => {
+                    const val = (parsed.soundCategories as any)[cat];
+                    if (val === null) {
+                        soundCategories[cat] = null;
+                    } else if (typeof val === 'string' && val) {
+                        soundCategories[cat] = val;
+                    }
+                });
+            }
             const mapRoomSize = typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0
                 ? parsed.mapRoomSize
                 : defaultUiSettings.mapRoomSize;
@@ -503,6 +521,7 @@ function load(): UiSettings {
                 customFontFamily,
                 autoLowercaseCommands,
                 customBeepSoundKey,
+                soundCategories,
                 mapRoomSize,
                 mapLineWidth,
                 mapPlayerMarkerStrokeColor,
@@ -586,6 +605,11 @@ export default async function initUiSettings() {
     const outputBottomPaddingInput = modalEl.querySelector('#ui-output-bottom-padding') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
+    const categorySelects: Partial<Record<SoundCategory, HTMLSelectElement>> = {};
+    ALL_SOUND_CATEGORIES.forEach(cat => {
+        const el = modalEl.querySelector(`#ui-sound-category-${cat}`) as HTMLSelectElement | null;
+        if (el) categorySelects[cat] = el;
+    });
     const mapRoomSizeInput = modalEl.querySelector('#ui-map-room-size') as HTMLInputElement;
     const mapRoomSizeValue = modalEl.querySelector('#ui-map-room-size-value') as HTMLSpanElement;
     const mapLineWidthInput = modalEl.querySelector('#ui-map-line-width') as HTMLInputElement;
@@ -775,6 +799,7 @@ export default async function initUiSettings() {
             customSounds = await getCustomSounds();
             customSoundsRef.current = customSounds;
             populateCustomBeepOptions();
+            populateCategoryOptions();
         } catch (error) {
             console.error('Failed to load custom sounds', error);
         }
@@ -797,6 +822,27 @@ export default async function initUiSettings() {
         if (currentValue) {
             customBeepSoundInput.value = currentValue;
         }
+    };
+
+    const populateCategoryOptions = () => {
+        ALL_SOUND_CATEGORIES.forEach(cat => {
+            const select = categorySelects[cat];
+            if (!select) return;
+            const currentValue = select.value;
+            // Remove existing custom sound options (keep first two: default + disabled)
+            while (select.options.length > 2) {
+                select.remove(2);
+            }
+            customSounds.forEach(sound => {
+                const option = document.createElement('option');
+                option.value = sound.key;
+                option.textContent = sound.name;
+                select.appendChild(option);
+            });
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        });
     };
 
     const handleCustomBeepFileChange = (e: Event) => {
@@ -836,6 +882,7 @@ export default async function initUiSettings() {
                 .then(() => {
                     // Repopulate options with the new sound
                     populateCustomBeepOptions();
+                    populateCategoryOptions();
                     // Select the newly uploaded sound immediately
                     if (customBeepSoundInput) {
                         customBeepSoundInput.value = sound.key;
@@ -895,6 +942,18 @@ export default async function initUiSettings() {
         if (customBeepSoundInput) {
             customBeepSoundInput.value = settings.customBeepSoundKey || '';
         }
+        ALL_SOUND_CATEGORIES.forEach(cat => {
+            const select = categorySelects[cat];
+            if (!select) return;
+            const catValue = settings.soundCategories?.[cat];
+            if (catValue === null) {
+                select.value = '__disabled__';
+            } else if (typeof catValue === 'string' && catValue) {
+                select.value = catValue;
+            } else {
+                select.value = '';
+            }
+        });
         mapRoomSizeInput.value = String(settings.mapRoomSize);
         mapRoomSizeValue.textContent = String(settings.mapRoomSize);
         mapLineWidthInput.value = String(settings.mapLineWidth);
@@ -1445,6 +1504,21 @@ export default async function initUiSettings() {
             drinkableAsFunctionalBind: drinkableAsFunctionalBindInput.checked,
             wakeLock: wakeLockInput.checked,
             customBeepSoundKey: customBeepSoundInput?.value || undefined,
+            soundCategories: (() => {
+                const result: SoundCategories = {};
+                ALL_SOUND_CATEGORIES.forEach(cat => {
+                    const select = categorySelects[cat];
+                    if (!select) return;
+                    const value = select.value;
+                    if (value === '__disabled__') {
+                        result[cat] = null;
+                    } else if (value && value !== '') {
+                        result[cat] = value;
+                    }
+                    // empty string = omit = default beep
+                });
+                return result;
+            })(),
             mapRoomSize: parseFloat(mapRoomSizeInput.value) || defaultUiSettings.mapRoomSize,
             mapLineWidth: parseFloat(mapLineWidthInput.value) || defaultUiSettings.mapLineWidth,
             mapPlayerMarkerStrokeColor: mapPlayerMarkerStrokeColorInput.value || defaultUiSettings.mapPlayerMarkerStrokeColor,
@@ -1692,6 +1766,7 @@ export default async function initUiSettings() {
                         }
 
                         populateCustomBeepOptions();
+                        populateCategoryOptions();
                         void renderSoundsList();
                     } catch (error) {
                         console.error('Failed to delete custom sound', error);
