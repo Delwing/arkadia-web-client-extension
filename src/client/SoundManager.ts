@@ -2,6 +2,8 @@ import type {Howl, Howler as HowlerType} from "howler";
 import { globalStorage } from "@modules/core/storage";
 import { getCustomSound } from "@modules/core/customSounds";
 import type Client from "./Client";
+import type { SoundCategory } from '@shared/events/clientEvents.ts';
+import type { SoundCategories } from '@web/defaultUiSettings.ts';
 
 export type SoundKey = string;
 
@@ -62,6 +64,9 @@ export default class SoundManager {
             if (typeof key === "string" && key) {
                 void this.play(key);
             }
+        });
+        this.client.on("sound:category", (category) => {
+            void this.playCategory(category);
         });
     }
 
@@ -136,6 +141,13 @@ export default class SoundManager {
                         keys.add(typeof macro.soundKey === "string" && macro.soundKey ? macro.soundKey : "beep");
                     }
                 });
+            });
+
+            const soundCategories: SoundCategories = (uiSettings as any)?.soundCategories ?? {};
+            Object.values(soundCategories).forEach((key) => {
+                if (typeof key === "string" && key) {
+                    keys.add(key);
+                }
             });
         } catch (error) {
             console.error("Failed to determine sounds to preload", error);
@@ -224,6 +236,23 @@ export default class SoundManager {
             }
         } catch (error) {
             console.error("Failed to play sound", error);
+        }
+    }
+
+    private async playCategory(category: SoundCategory): Promise<void> {
+        if (this.muted) return;
+
+        resumeAudioContext();
+
+        const uiSettings = globalStorage.get("uiSettings");
+        const soundCategories: SoundCategories = (uiSettings as any)?.soundCategories ?? {};
+
+        if (category in soundCategories) {
+            const key = soundCategories[category];
+            if (key === null) return; // disabled — silence
+            void this.play(key);     // custom sound
+        } else {
+            void this.play("beep");  // default beep (respects customBeepSoundKey)
         }
     }
 }

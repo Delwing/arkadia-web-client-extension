@@ -16,7 +16,7 @@ jest.mock('@client/main', () => ({
 
 import Client from '@client/Client';
 import { mudletColorLine } from '@modules/core/Colors';
-import { characterStorage } from '@modules/core/storage';
+import { characterStorage, globalStorage } from '@modules/core/storage';
 import { Howl } from 'howler';
 
 jest.mock('@client/sounds', () => ({
@@ -24,15 +24,20 @@ jest.mock('@client/sounds', () => ({
   beepSound: 'mock-sound',
 }));
 
+jest.mock('@modules/core/customSounds', () => ({
+  __esModule: true,
+  getCustomSound: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('howler', () => {
-  const instance = {
+  const makeInstance = () => ({
     state: jest.fn(() => 'loaded'),
     play: jest.fn(),
     stop: jest.fn(),
     once: jest.fn(),
     load: jest.fn(),
-  };
-  return { Howl: jest.fn(() => instance) };
+  });
+  return { Howl: jest.fn(() => makeInstance()) };
 });
 
 jest.mock('@client/Triggers', () => {
@@ -86,6 +91,7 @@ beforeEach(() => {
   (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn();
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn(), shouldEchoCommand: jest.fn(() => false), flushMessageBuffer: jest.fn(), emit: jest.fn() };
+  jest.clearAllMocks();
 });
 
 afterEach(() => {
@@ -269,6 +275,55 @@ test('sound playback restarts when triggered twice', async () => {
 
   expect(sound.stop).toHaveBeenCalledTimes(2);
   expect(sound.play).toHaveBeenCalledTimes(2);
+});
+
+test('sound:category with no config plays default beep', async () => {
+  const client = new Client((global as any).clientAdapterMock as any);
+  await client.prepareSounds();
+  const sound = (Howl as jest.Mock).mock.results[0].value;
+
+  client.sendEvent('sound:category', 'attack');
+
+  expect(sound.stop).toHaveBeenCalledTimes(1);
+  expect(sound.play).toHaveBeenCalledTimes(1);
+});
+
+test('sound:category with null config is silenced', async () => {
+  globalStorage.set('uiSettings', {
+    ...globalStorage.get('uiSettings'),
+    soundCategories: { attack: null },
+  } as any);
+  const client = new Client((global as any).clientAdapterMock as any);
+  await client.prepareSounds();
+  const sound = (Howl as jest.Mock).mock.results[0].value;
+
+  client.sendEvent('sound:category', 'attack');
+
+  expect(sound.play).not.toHaveBeenCalled();
+});
+
+test('sound:category with custom key plays that sound', async () => {
+  globalStorage.set('uiSettings', {
+    ...globalStorage.get('uiSettings'),
+    soundCategories: { attack: 'my-sound' },
+  } as any);
+  // mock getCustomSound to return data for 'my-sound'
+  const { getCustomSound } = await import('@modules/core/customSounds');
+  (getCustomSound as jest.Mock).mockResolvedValueOnce({ data: 'data:audio/mp3;base64,abc', key: 'my-sound', name: 'My Sound' });
+
+  const client = new Client((global as any).clientAdapterMock as any);
+  await client.prepareSounds();
+
+  // Trigger category play
+  client.sendEvent('sound:category', 'attack');
+  // Wait for async sound creation
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  const calls = (Howl as jest.Mock).mock.calls;
+  const customSoundCall = calls.find(c => Array.isArray(c[0]?.src)
+    ? c[0].src.includes('data:audio/mp3;base64,abc')
+    : c[0]?.src === 'data:audio/mp3;base64,abc');
+  expect(customSoundCall).toBeDefined();
 });
 
 test('updateContentWidth measures characters per line', () => {
