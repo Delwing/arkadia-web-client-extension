@@ -167,16 +167,23 @@ jobs:
           key: ${{ runner.os }}-dependencies-${{ hashFiles('package.json', 'yarn.lock') }}
           restore-keys: |
             key: ${{ runner.os }}-dependencies-
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Cache Playwright browsers
-        if: matrix.install_browsers == true
+        id: playwright-cache
         uses: actions/cache@v5
         with:
           path: .cache/ms-playwright
-          key: ${{ runner.os }}-playwright-browsers
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: yarn playwright install --with-deps chromium
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: yarn playwright install-deps chromium
       - name: Run e2e tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         env:
           CI: '1'
