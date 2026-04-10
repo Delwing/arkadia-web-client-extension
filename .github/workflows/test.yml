@@ -9,6 +9,8 @@ permissions:
   pages: write
   id-token: write
   checks: write
+  attestations: write
+  contents: read
 
 jobs:
   build:
@@ -129,6 +131,11 @@ jobs:
             LDFLAGS="$LDFLAGS -H windowsgui"
           fi
           go build -ldflags="$LDFLAGS" -o ../arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} .
+      - name: Attest helper binary
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
       - name: Upload helper artifact
         uses: actions/upload-artifact@v6
         with:
