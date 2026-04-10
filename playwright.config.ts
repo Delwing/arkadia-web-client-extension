@@ -17,9 +17,10 @@ export default defineConfig({
         trace: 'on-first-retry',
     },
     webServer: {
-        command: 'yarn dev --host 127.0.0.1 --port ' + PORT + ' --strictPort',
+        command: 'yarn build && yarn preview --host 127.0.0.1 --port ' + PORT + ' --strictPort',
         url: `http://127.0.0.1:${PORT}/`,
         reuseExistingServer: !process.env.CI,
+        timeout: 180 * 1000,
         stdout: 'pipe',
         stderr: 'pipe',
     },
