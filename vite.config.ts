@@ -42,11 +42,17 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./test/vitest.setup.ts'],
         include: ['test/**/*.test.{ts,tsx}'],
-        // Worker threads share V8 state across test files, so jsdom + Vite
-        // transform startup amortizes across the ~140 test files instead of
-        // being paid per-file like the default `forks` pool. Restores CI
-        // unit-test runtime after the Jest→Vitest migration.
-        pool: 'threads',
+        // `vmThreads` isolates each test file in a fresh `vm.createContext()`
+        // within a pooled worker thread, instead of spinning up a new
+        // `worker_threads.Worker` per file the way `threads`/`forks` do when
+        // `isolate: true`. The Worker-per-file model was the Jest→Vitest CI
+        // regression: spawning a Worker forces a fresh `import('jsdom')`
+        // (~3.5s cold load) on every one of the ~140 test files, which on a
+        // 4-core CI runner serialised into ~170s of pure environment startup.
+        // `vmThreads` re-uses the jsdom module load across files in the same
+        // thread, bringing CI runtime back in line with the old Jest setup
+        // without dropping per-file isolation.
+        pool: 'vmThreads',
         // Suppress console output from tests that pass (source scripts under
         // test occasionally log). Logs from failing tests still surface so
         // debugging isn't hindered.
