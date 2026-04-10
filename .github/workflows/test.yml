@@ -180,10 +180,7 @@ jobs:
             ${{ runner.os }}-playwright-
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: yarn playwright install --with-deps chromium
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: yarn playwright install-deps chromium
+        run: yarn playwright install chromium
       - name: Run e2e tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         env:
           CI: '1'
