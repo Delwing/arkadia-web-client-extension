@@ -42,6 +42,15 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./test/vitest.setup.ts'],
         include: ['test/**/*.test.{ts,tsx}'],
+        // Worker threads share V8 state between files, so jsdom + transform
+        // startup amortizes across the ~140 test files instead of being paid
+        // per-file like the default `forks` pool. Combined with `isolate: false`
+        // (which keeps a single jsdom per worker instead of recreating it for
+        // every file), this brings CI runtime back in line with the old Jest
+        // setup. Tests in this repo already clean up shared state in
+        // `beforeEach`, so dropping isolation is safe.
+        pool: 'threads',
+        isolate: false,
         // Suppress console output from tests that pass (source scripts under
         // test occasionally log). Logs from failing tests still surface so
         // debugging isn't hindered.
