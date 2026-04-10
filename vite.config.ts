@@ -1,7 +1,6 @@
-import {defineConfig, type PluginOption} from 'vite'
+import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react'
 import {resolve} from "path";
-import tsconfigPaths from "vite-tsconfig-paths";
 import {execSync} from 'child_process';
 
 const resolveGitInfo = (command: string, fallback: string) => {
@@ -18,9 +17,9 @@ const commitDate = resolveGitInfo('git log -1 --format=%cd --date=short', 'unkno
 export default defineConfig({
     plugins: [
         react(),
-        tsconfigPaths()
-    ] as unknown as PluginOption[],
+    ],
     resolve: {
+        tsconfigPaths: true,
         alias: {
             "@client": resolve("./src/client"),
             "@web": resolve("./src/web"),
