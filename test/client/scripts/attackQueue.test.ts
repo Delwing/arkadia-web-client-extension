@@ -1,6 +1,7 @@
 import initAttackQueue from '@client/scripts/attackQueue';
+import { characterStorage } from '@modules/core/storage';
 
-jest.mock('@modules/core/storage', () => {
+vi.mock('@modules/core/storage', () => {
   const typedStorage = {
     get: jest.fn(() => undefined),
     set: jest.fn(),
@@ -17,7 +18,7 @@ jest.mock('@modules/core/storage', () => {
   };
 });
 
-jest.mock('@modules/data/peopleLoader', () => ({
+vi.mock('@modules/data/peopleLoader', () => ({
   subscribeMerged: jest.fn(),
   refresh: jest.fn(() => Promise.resolve()),
 }));
@@ -43,7 +44,6 @@ describe('attack queue aliases', () => {
   let aliases: { pattern: RegExp; callback: (matches: RegExpMatchArray) => void }[];
 
   beforeEach(() => {
-    const { characterStorage } = require('@modules/core/storage');
     (characterStorage.onChange as jest.Mock).mockClear();
     client = new FakeClient();
     aliases = [];
@@ -179,7 +179,6 @@ describe('attack queue aliases', () => {
   });
 
   test('kills next enemy using attack command from settings', () => {
-    const { characterStorage } = require('@modules/core/storage');
     const alias = aliases.find(a => a.pattern.test('/nn'))!;
     const settingsListenerCall = (characterStorage.onChange as jest.Mock).mock.calls.find(
       (call: any[]) => call[0] === 'settings',

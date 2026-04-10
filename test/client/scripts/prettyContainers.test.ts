@@ -1,6 +1,6 @@
-jest.mock('@client/scripts/magicKeyLoader', () => jest.fn().mockResolvedValue(['przedmiot', 'rzecz']));
-jest.mock('@client/scripts/magicsLoader', () => jest.fn().mockResolvedValue([]));
-jest.mock('@modules/data/dataStores/magicsStore', () => ({
+vi.mock('@client/scripts/magicKeyLoader', () => ({ default: jest.fn().mockResolvedValue(['przedmiot', 'rzecz']) }));
+vi.mock('@client/scripts/magicsLoader', () => ({ default: jest.fn().mockResolvedValue([]) }));
+vi.mock('@modules/data/dataStores/magicsStore', () => ({
   getMagicsStore: jest.fn(() => ({
     getSnapshot: jest.fn().mockResolvedValue({
       data: {

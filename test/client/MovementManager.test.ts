@@ -9,17 +9,17 @@
 };
 (globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 
-jest.mock('@client/main', () => ({ __esModule: true }));
+vi.mock('@client/main', () => ({ __esModule: true }));
 
 import Client from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
 
-jest.mock('@client/sounds', () => ({
+vi.mock('@client/sounds', () => ({
   __esModule: true,
   beepSound: 'mock-sound',
 }));
 
-jest.mock('howler', () => {
+vi.mock('howler', () => {
   const instance = {
     state: jest.fn(() => 'loaded'),
     play: jest.fn(),
@@ -27,52 +27,58 @@ jest.mock('howler', () => {
     once: jest.fn(),
     load: jest.fn(),
   };
-  return { Howl: jest.fn(() => instance) };
+  return { Howl: jest.fn(function () { return instance; }) };
 });
 
-jest.mock('@client/Triggers', () => {
-  const { AnsiAwareBuffer } = require('@client/ansi/FormatState');
+vi.mock('@client/Triggers', async () => {
+  const { AnsiAwareBuffer } = await vi.importActual<typeof import('@client/ansi/FormatState')>('@client/ansi/FormatState');
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      parseLine: jest.fn((l: any) => {
-        if (typeof l === 'string') return new AnsiAwareBuffer(l);
-        return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
-      }),
-      parseMultiline: jest.fn((l: any) => {
-        if (typeof l === 'string') return new AnsiAwareBuffer(l);
-        return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
-      }),
-    })),
+    default: jest.fn(function () {
+      return {
+        parseLine: jest.fn((l: any) => {
+          if (typeof l === 'string') return new AnsiAwareBuffer(l);
+          return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
+        }),
+        parseMultiline: jest.fn((l: any) => {
+          if (typeof l === 'string') return new AnsiAwareBuffer(l);
+          return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
+        }),
+      };
+    }),
   };
 });
-jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('@client/scripts/functionalBind', () => ({
-  FunctionalBindManager: jest.fn().mockImplementation(() => ({
-    set: jest.fn(),
-    setCategory: jest.fn(),
-    clear: jest.fn(),
-    clearCategory: jest.fn(),
-    newMessage: jest.fn(),
-    getLabel: jest.fn(() => ']'),
-    getCategoryLabel: jest.fn(() => ']'),
-    updateOptions: jest.fn(),
-  })),
+vi.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
+vi.mock('@client/scripts/functionalBind', () => ({
+  FunctionalBindManager: jest.fn(function () {
+    return {
+      set: jest.fn(),
+      setCategory: jest.fn(),
+      clear: jest.fn(),
+      clearCategory: jest.fn(),
+      newMessage: jest.fn(),
+      getLabel: jest.fn(() => ']'),
+      getCategoryLabel: jest.fn(() => ']'),
+      updateOptions: jest.fn(),
+    };
+  }),
   formatLabel: jest.fn((opts: any) => opts.key || ''),
 }));
 
 import { isDirection } from '@shared/map/directions';
 const moveFn = jest.fn((dir: string) => ({ direction: dir, moved: isDirection(dir), suppress: false }));
 
-jest.mock('@shared/map/MapHelper', () => {
+vi.mock('@shared/map/MapHelper', () => {
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      parseCommand: jest.fn((cmd: string) => cmd),
-      move: moveFn,
-      followMove: jest.fn(),
-      setBlockable: jest.fn(),
-    })),
+    default: jest.fn(function () {
+      return {
+        parseCommand: jest.fn((cmd: string) => cmd),
+        move: moveFn,
+        followMove: jest.fn(),
+        setBlockable: jest.fn(),
+      };
+    }),
   };
 });
 

@@ -1,4 +1,4 @@
-jest.mock('@client/scripts/magicsLoader', () => jest.fn().mockResolvedValue(['magiczny miecz', 'rogat[aey] tarcz[aey]']));
+vi.mock('@client/scripts/magicsLoader', () => ({ default: jest.fn().mockResolvedValue(['magiczny miecz', 'rogat[aey] tarcz[aey]']) }));
 
 import initOdlozMagie from '@client/scripts/odlozMagie';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';

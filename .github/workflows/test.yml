@@ -66,7 +66,7 @@ jobs:
       - name: Run unit tests
         env:
           CI: '1'
-        run: yarn test
+        run: yarn test --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
       - name: Upload unit test results
         if: always()
         uses: actions/upload-artifact@v6
@@ -238,13 +238,13 @@ jobs:
         with:
           name: unit-test-results
           path: test-results/unit
-      - name: Jest test report
+      - name: Unit test report
         if: always()
         uses: dorny/test-reporter@v3
         with:
-          name: Jest Tests
+          name: Unit Tests
           path: test-results/unit/junit.xml
-          reporter: jest-junit
+          reporter: java-junit
       - name: Playwright test report
         if: always()
         uses: dorny/test-reporter@v3

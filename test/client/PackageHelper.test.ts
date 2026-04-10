@@ -1,4 +1,4 @@
-jest.mock('../../src/web/dataStores/npcStore', () => ({
+vi.mock('../../src/web/dataStores/npcStore', () => ({
   addLocalNpc: jest.fn().mockResolvedValue(undefined),
 }));
 

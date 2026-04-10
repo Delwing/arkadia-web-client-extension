@@ -1,6 +1,6 @@
 import initIdz from '@client/scripts/idz';
 
-jest.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
+vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
 describe('idz walking', () => {
   beforeEach(() => {

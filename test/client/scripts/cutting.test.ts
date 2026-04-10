@@ -4,7 +4,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
 
-jest.mock('@client/scripts/bagManager', () => ({
+vi.mock('@client/scripts/bagManager', () => ({
     containerAction: jest.fn(),
 }));
 

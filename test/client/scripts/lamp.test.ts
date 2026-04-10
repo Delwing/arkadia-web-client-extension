@@ -3,7 +3,7 @@ import Triggers from '@client/Triggers';
 import { takeFromBag } from '@client/scripts/bagManager';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
-jest.mock('@client/scripts/bagManager', () => ({
+vi.mock('@client/scripts/bagManager', () => ({
   takeFromBag: jest.fn(),
 }));
 

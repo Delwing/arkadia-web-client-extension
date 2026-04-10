@@ -82,8 +82,6 @@ describe('AnsiAwareBuffer color handling', () => {
     expect(buffer.text).toBe('Colored Uncolored');
 
     const segments = buffer.getSegments();
-    // Check actual behavior - segments may be normalized/merged
-    console.log('Segments:', JSON.stringify(segments, null, 2));
 
     // The buffer should contain all the text
     expect(segments.map(s => s.text).join('')).toBe('Colored Uncolored');
@@ -129,10 +127,6 @@ describe('AnsiAwareBuffer color handling', () => {
       expect(buffer.text).toBe('Clickable Normal text');
 
       const segments = buffer.getSegments();
-      console.log('Link test segments:', JSON.stringify(segments.map(s => ({
-        text: s.text,
-        hasLink: !!s.state?.hyperlink
-      })), null, 2));
 
       expect(segments).toHaveLength(2);
       expect(segments[0].state?.hyperlink).toBeDefined();
@@ -182,11 +176,6 @@ describe('AnsiAwareBuffer color handling', () => {
       expect(buffer1.text).toBe('Clickable Normal');
 
       const segments = buffer1.getSegments();
-      console.log('Append to link buffer segments:', JSON.stringify(segments.map(s => ({
-        text: s.text,
-        hasLink: !!s.state?.hyperlink,
-        color: s.state?.foreground
-      })), null, 2));
 
       expect(segments[0].state?.hyperlink).toBeDefined();
       expect(segments[0].state?.hyperlink?.title).toBe('Original');

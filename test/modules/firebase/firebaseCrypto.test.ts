@@ -1,6 +1,5 @@
-/**
- * @jest-environment node
- */
+// @vitest-environment node
+
 import { encrypt, decrypt, calculateChecksum, isEncryptedData } from '@modules/firebase/firebaseCrypto';
 
 describe('firebaseCrypto', () => {

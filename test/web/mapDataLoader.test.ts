@@ -18,7 +18,7 @@ const mockMapColorsStore = {
   subscribe: jest.fn(),
 };
 
-jest.mock('@web/dataStores/mapStore', () => ({
+vi.mock('@web/dataStores/mapStore', () => ({
   getMapDataStore: jest.fn(() => mockMapDataStore),
   getMapColorsStore: jest.fn(() => mockMapColorsStore),
 }));

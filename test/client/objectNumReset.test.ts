@@ -13,30 +13,34 @@ import { characterStorage } from '@modules/core/storage';
 (globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
-jest.mock('@client/Triggers', () => ({
+vi.mock('@client/Triggers', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    parseLine: jest.fn((l: string) => l),
-    parseMultiline: jest.fn((l: string) => l),
-  })),
+  default: jest.fn(function () {
+    return {
+      parseLine: jest.fn((l: string) => l),
+      parseMultiline: jest.fn((l: string) => l),
+    };
+  }),
 }));
 
-jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('@client/scripts/functionalBind', () => ({
-  FunctionalBindManager: jest.fn().mockImplementation(() => ({
-    set: jest.fn(),
-    setCategory: jest.fn(),
-    clear: jest.fn(),
-    clearCategory: jest.fn(),
-    newMessage: jest.fn(),
-    getLabel: jest.fn(() => ']'),
-    getCategoryLabel: jest.fn(() => ']'),
-    updateOptions: jest.fn(),
-  })),
+vi.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
+vi.mock('@client/scripts/functionalBind', () => ({
+  FunctionalBindManager: jest.fn(function () {
+    return {
+      set: jest.fn(),
+      setCategory: jest.fn(),
+      clear: jest.fn(),
+      clearCategory: jest.fn(),
+      newMessage: jest.fn(),
+      getLabel: jest.fn(() => ']'),
+      getCategoryLabel: jest.fn(() => ']'),
+      updateOptions: jest.fn(),
+    };
+  }),
   formatLabel: jest.fn((opts: any) => opts.key || ''),
 }));
 
-jest.mock('howler', () => {
+vi.mock('howler', () => {
   const instance = {
     state: jest.fn(() => 'loaded'),
     play: jest.fn(),
@@ -44,16 +48,18 @@ jest.mock('howler', () => {
     once: jest.fn(),
     load: jest.fn(),
   };
-  return { Howl: jest.fn(() => instance) };
+  return { Howl: jest.fn(function () { return instance; }) };
 });
 
-jest.mock('@shared/map/MapHelper', () => ({
+vi.mock('@shared/map/MapHelper', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    parseCommand,
-    move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
-    followMove: jest.fn(),
-  })),
+  default: jest.fn(function () {
+    return {
+      parseCommand,
+      move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
+      followMove: jest.fn(),
+    };
+  }),
 }));
 
 describe('object_num persistence and reset event', () => {

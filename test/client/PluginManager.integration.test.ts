@@ -12,7 +12,7 @@
 // External module mocks (must appear before any imports that pull them in)
 // ============================================================================
 
-jest.mock('@modules/core/eventBus', () => ({
+vi.mock('@modules/core/eventBus', () => ({
   __esModule: true,
   default: {
     emit: jest.fn(),
@@ -21,13 +21,13 @@ jest.mock('@modules/core/eventBus', () => ({
   },
 }));
 
-jest.mock('@client/utils/pluginStorage', () => ({
+vi.mock('@client/utils/pluginStorage', () => ({
   isStoredPluginId: jest.fn(() => false),
   getPluginScript: jest.fn(),
   updatePluginScript: jest.fn(),
 }));
 
-jest.mock('@modules/core/pluginButtonMacroRegistry', () => ({
+vi.mock('@modules/core/pluginButtonMacroRegistry', () => ({
   registerButtonMacro: jest.fn(),
   unregisterButtonMacro: jest.fn(),
   updateButtonMacroPluginName: jest.fn(),
@@ -37,20 +37,20 @@ jest.mock('@modules/core/pluginButtonMacroRegistry', () => ({
   getButtonMacroById: jest.fn(),
 }));
 
-jest.mock('@modules/core/pluginTriggerMacroRegistry', () => ({
+vi.mock('@modules/core/pluginTriggerMacroRegistry', () => ({
   registerTriggerMacro: jest.fn(),
   unregisterTriggerMacro: jest.fn(),
   updateTriggerMacroPluginName: jest.fn(),
 }));
 
-jest.mock('@modules/core/pluginFooterRegistry', () => ({
+vi.mock('@modules/core/pluginFooterRegistry', () => ({
   registerFooterComponent: jest.fn(),
   unregisterFooterComponent: jest.fn(),
   updateFooterComponent: jest.fn(),
   setFooterComponentVisible: jest.fn(),
 }));
 
-jest.mock('@modules/core/pluginLocationNotesRegistry', () => ({
+vi.mock('@modules/core/pluginLocationNotesRegistry', () => ({
   setPluginLocationNote: jest.fn(),
   removePluginLocationNote: jest.fn(),
   removeAllPluginNotes: jest.fn(),
@@ -58,7 +58,7 @@ jest.mock('@modules/core/pluginLocationNotesRegistry', () => ({
   updatePluginNotesName: jest.fn(),
 }));
 
-jest.mock('@modules/core/pluginUiRegistry', () => ({
+vi.mock('@modules/core/pluginUiRegistry', () => ({
   registerPopupMenuEntry: jest.fn(),
   unregisterPopupMenuEntry: jest.fn(),
   updatePopupMenuEntryLabel: jest.fn(),
@@ -68,7 +68,7 @@ jest.mock('@modules/core/pluginUiRegistry', () => ({
   updateContextMenuEntry: jest.fn(),
 }));
 
-jest.mock('@modules/core/storage', () => ({
+vi.mock('@modules/core/storage', () => ({
   characterStorage: {
     get: jest.fn(),
     set: jest.fn(),
@@ -81,15 +81,15 @@ jest.mock('@modules/core/storage', () => ({
   },
 }));
 
-jest.mock('@modules/core/defaultSettings', () => ({
+vi.mock('@modules/core/defaultSettings', () => ({
   defaultSettings: {},
 }));
 
-jest.mock('@web/defaultUiSettings', () => ({
+vi.mock('@web/defaultUiSettings', () => ({
   defaultUiSettings: {},
 }));
 
-jest.mock('@web/layout/pluginPopupRegistry', () => ({
+vi.mock('@web/layout/pluginPopupRegistry', () => ({
   registerPluginPopup: jest.fn(),
   unregisterPluginPopup: jest.fn(),
   updatePluginPopup: jest.fn(),
@@ -98,42 +98,42 @@ jest.mock('@web/layout/pluginPopupRegistry', () => ({
   getPluginPopup: jest.fn(),
 }));
 
-jest.mock('@web/layout/utils/layoutStorage', () => ({
+vi.mock('@web/layout/utils/layoutStorage', () => ({
   shouldPopupAutoOpen: jest.fn(() => false),
   getPopupPinnedState: jest.fn(() => false),
 }));
 
-jest.mock('@client/scripts/prettyContainers', () => ({
+vi.mock('@client/scripts/prettyContainers', () => ({
   addGroupDefinition: jest.fn(),
   addTransformDefinition: jest.fn(),
   getGroupDefinitions: jest.fn(() => []),
   getTransformDefinitions: jest.fn(() => []),
 }));
 
-jest.mock('@client/scripts/bagManager', () => ({
+vi.mock('@client/scripts/bagManager', () => ({
   containerAction: jest.fn(),
   getContainer: jest.fn(),
   getContainerForms: jest.fn(),
 }));
 
-jest.mock('@client/scripts/magicsLoader', () => ({
+vi.mock('@client/scripts/magicsLoader', () => ({
   __esModule: true,
   default: jest.fn(),
   loadMagicsRaw: jest.fn(),
 }));
 
-jest.mock('@client/scripts/magicKeyLoader', () => ({
+vi.mock('@client/scripts/magicKeyLoader', () => ({
   __esModule: true,
   default: jest.fn(),
   loadMagicKeysRaw: jest.fn(),
 }));
 
-jest.mock('@client/scripts/herbsLoader', () => ({
+vi.mock('@client/scripts/herbsLoader', () => ({
   __esModule: true,
   default: jest.fn(),
 }));
 
-jest.mock('@web/objectListFilters', () => ({
+vi.mock('@web/objectListFilters', () => ({
   objectListFilters: {
     register: jest.fn(),
     unregister: jest.fn(),
@@ -142,11 +142,11 @@ jest.mock('@web/objectListFilters', () => ({
   },
 }));
 
-jest.mock('@client/gmcp', () => ({
+vi.mock('@client/gmcp', () => ({
   gmcp: {},
 }));
 
-jest.mock('@modules/data/peopleLoader', () => ({
+vi.mock('@modules/data/peopleLoader', () => ({
   addLocalPerson: jest.fn(),
   editPerson: jest.fn(),
   deleteLocalPerson: jest.fn(),

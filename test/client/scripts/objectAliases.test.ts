@@ -1,7 +1,7 @@
 import initObjectAliases from '@client/scripts/objectAliases';
 import { gmcp } from '@client/gmcp';
 
-jest.mock('@modules/core/storage', () => {
+vi.mock('@modules/core/storage', () => {
   const typedStorage = {
     get: jest.fn(() => undefined),
     set: jest.fn(),
@@ -18,7 +18,7 @@ jest.mock('@modules/core/storage', () => {
   };
 });
 
-jest.mock('@modules/data/peopleLoader', () => ({
+vi.mock('@modules/data/peopleLoader', () => ({
   subscribeMerged: jest.fn(),
   refresh: jest.fn(() => Promise.resolve()),
 }));

@@ -1,9 +1,9 @@
-jest.mock('sql.js/dist/sql-wasm.js', () => ({
+vi.mock('sql.js/dist/sql-wasm.js', () => ({
     __esModule: true,
     default: jest.fn(),
 }));
 
-jest.mock('sql.js/dist/sql-wasm.wasm?url', () => ({
+vi.mock('sql.js/dist/sql-wasm.wasm?url', () => ({
     __esModule: true,
     default: 'sql-wasm.wasm',
 }));
@@ -92,7 +92,7 @@ describe('parseMultibindsDatabase', () => {
         });
 
         mockedInitSqlJs.mockImplementation(async () => ({
-            Database: jest.fn(() => database),
+            Database: jest.fn(function () { return database; }),
         }));
 
         const result = await parseMultibindsDatabase(new ArrayBuffer(0));
@@ -116,7 +116,7 @@ describe('parseMultibindsDatabase', () => {
         });
 
         mockedInitSqlJs.mockImplementation(async () => ({
-            Database: jest.fn(() => database),
+            Database: jest.fn(function () { return database; }),
         }));
 
         await expect(parseMultibindsDatabase(new ArrayBuffer(0))).rejects.toThrow('Tabela "multibinds" nie została znaleziona.');

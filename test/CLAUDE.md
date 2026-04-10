@@ -1,6 +1,15 @@
 # Unit Tests
 
-Unit tests use **Jest** with a **jsdom** environment. Configuration is in `jest.config.cjs`.
+Unit tests use **Vitest** with a **jsdom** environment. Configuration lives in the `test` block of `vite.config.ts`.
+
+Tests still use Jest-style API calls (`jest.fn()`, `jest.mock()`, `jest.spyOn()`, etc.). These work because `test/vitest.setup.ts` aliases `globalThis.jest = vi` at runtime and `@types/jest` is kept as a dev dep for type references. New tests may use either `jest.*` or `vi.*` — both work.
+
+**Vitest-specific caveats when writing new tests:**
+- `vi.mock(...)` is **hoisted** by Vitest's transformer. `jest.mock(...)` is **not** hoisted (the shim is runtime-only), so top-level module mocks **must** use `vi.mock`, otherwise imports fire before the mock registers.
+- `vi.importActual(...)` is **async** (unlike jest's sync `jest.requireActual`). Factories that call it must be `async`.
+- When mocking a class/constructor, pass a regular `function` (not an arrow) to `jest.fn(...)` — Vitest throws "X is not a constructor" for arrow implementations used with `new`.
+- Mock factories must return an **object** matching the module shape. Factories that return a bare `jest.fn()` need `{ default: jest.fn() }` for default-exported modules.
+- Vitest is strict about accessed exports — if the source code reads `module.Foo` and the mock doesn't declare `Foo`, the test throws. Add stubs for all accessed exports.
 
 ## Structure
 
@@ -33,7 +42,7 @@ test/
 - **Location**: Place test files in the directory that mirrors the source module
 - **Path aliases**: Same aliases as source code (`@client`, `@web`, `@shared`, `@modules`, `@web-ui`)
 
-## Global Setup (`jest.setup.js`)
+## Global Setup (`vitest.setup.ts`)
 
 The setup file provides these globals automatically:
 - **IndexedDB**: In-memory via `fake-indexeddb/auto`
@@ -114,9 +123,9 @@ test('loads fresh module', async () => {
 ## Running Tests
 
 ```bash
-yarn test                          # Run all unit tests
-yarn test -- --watch               # Watch mode
-yarn test -- Triggers              # Run tests matching "Triggers"
-yarn test -- --testPathPattern=client  # Run only client/ tests
-yarn test:coverage                 # Generate coverage report
+yarn test                          # Run all unit tests (vitest run)
+yarn test:watch                    # Watch mode (vitest)
+yarn test Triggers                 # Run tests matching "Triggers"
+yarn test test/client              # Run only client/ tests
+yarn test:coverage                 # Generate coverage report (v8)
 ```

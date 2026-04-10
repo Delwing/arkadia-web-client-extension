@@ -5,7 +5,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
 
-jest.mock('@modules/data/peopleStore', () => ({
+vi.mock('@modules/data/peopleStore', () => ({
   subscribe: jest.fn(),
   refresh: jest.fn(),
 }));

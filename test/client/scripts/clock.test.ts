@@ -714,7 +714,7 @@ describe('ArkadiaTime - Clock System', () => {
             // BUG: calculatePrecision sets this.precision = 60 BEFORE calculating
             // Expected: precision should be min(0, 5) = 0 or properly calculated
             // Actual: precision becomes min(60, 5) = 5 because it modified this.precision first
-            console.log('Precision after mismatch from 0:', snapshot.precision);
+            expect(snapshot.precision).toBeDefined();
 
             // This test documents the bug - precision should remain tight when we had 0
             // but instead it gets worse
@@ -744,8 +744,8 @@ describe('ArkadiaTime - Clock System', () => {
             // BUG: handleMismatch sees currentHour=0 vs intHour=0 - should match!
             // But before that, calculated time would be 23:50 + 12min = 00:02
             // When checking at hour 0, it should recognize this is correct, not a mismatch
-            console.log('Precision after midnight check:', snapshot.precision);
-            console.log('Hour:', snapshot.hours);
+            expect(snapshot.precision).toBeDefined();
+            expect(snapshot.hours).toBeDefined();
 
             // Expected: precision should stay at 5 or improve
             // Actual: might reset to 60 if mismatch detection is broken
@@ -773,7 +773,6 @@ describe('ArkadiaTime - Clock System', () => {
             // After 2.5 minutes, we're at 6:02.5
             // New precision should be 60 - 2.5 = 57.5
             // Result should be min(10, 57.5) = 10
-            console.log('Precision after 5 seconds:', snapshot.precision);
 
             // Expected: precision stays at 10 (doesn't get worse)
             expect(snapshot.precision).toBeLessThanOrEqual(10);

@@ -1,5 +1,5 @@
-jest.mock('@client/scripts/prettyContainers', () => {
-  const actual = jest.requireActual('@client/scripts/prettyContainers');
+vi.mock('@client/scripts/prettyContainers', async () => {
+  const actual = await vi.importActual<typeof import('@client/scripts/prettyContainers')>('@client/scripts/prettyContainers');
   return { ...actual, prettyPrintContainer: jest.fn(() => 'table') };
 });
 

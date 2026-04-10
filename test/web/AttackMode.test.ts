@@ -1,13 +1,13 @@
 import { act } from "react";
 import eventBus from "@modules/core/eventBus";
-jest.mock("@web-ui/components/panels/PackageStatus", () => ({
+vi.mock("@web-ui/components/panels/PackageStatus", () => ({
     __esModule: true,
     PackageStatus: () => null,
 }));
 
 import mountStatusIndicators from "../../src/web/statusIndicators";
 
-jest.mock("@modules/core/storage", () => {
+vi.mock("@modules/core/storage", () => {
     const store: Record<string, any> = {};
     const listeners = new Map<string, Set<Function>>();
     const typedStorage = {

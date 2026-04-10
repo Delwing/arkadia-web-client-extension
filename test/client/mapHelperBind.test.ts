@@ -1,6 +1,6 @@
 import MapHelper from '@shared/map/MapHelper';
 
-jest.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
+vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
 // ---------------------------------------------------------------------------
 // Helpers

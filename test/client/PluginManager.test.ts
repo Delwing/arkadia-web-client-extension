@@ -3,7 +3,7 @@ import Client from '@client/Client';
 import eventBus from '@modules/core/eventBus';
 
 // Mock eventBus
-jest.mock('@modules/core/eventBus', () => ({
+vi.mock('@modules/core/eventBus', () => ({
   __esModule: true,
   default: {
     emit: jest.fn(),

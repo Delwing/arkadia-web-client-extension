@@ -3,7 +3,7 @@ import { globalStorage } from '@modules/core/storage';
 import ObjectManager from '@client/ObjectManager';
 import { EventEmitter } from 'events';
 
-jest.mock('@modules/core/storage', () => {
+vi.mock('@modules/core/storage', () => {
   const listeners = new Map<string, Set<Function>>();
   const typedStorage = {
     get: jest.fn(),

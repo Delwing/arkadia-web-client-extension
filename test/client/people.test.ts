@@ -19,7 +19,7 @@ function countColoredOccurrences(buffer: AnsiAwareBuffer | null, text: string): 
   return segments.filter(seg => seg.text.includes(text) && seg.state?.foreground).length;
 }
 
-jest.mock('@modules/data/peopleStore', () => ({
+vi.mock('@modules/data/peopleStore', () => ({
   subscribe: jest.fn(),
   refresh: jest.fn(),
   forceRefresh: jest.fn(),

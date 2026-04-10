@@ -2,7 +2,7 @@ import ObjectManager from '@client/ObjectManager';
 import { EventEmitter } from 'events';
 import { globalStorage } from '@modules/core/storage';
 
-jest.mock('@modules/core/storage', () => {
+vi.mock('@modules/core/storage', () => {
   const mockStorage = {
     get: jest.fn(() => undefined),
     set: jest.fn(),

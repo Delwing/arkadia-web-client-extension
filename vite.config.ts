@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react'
 import {resolve} from "path";
@@ -35,6 +36,16 @@ export default defineConfig({
     define: {
         __COMMIT_SHA__: JSON.stringify(commitSha),
         __COMMIT_DATE__: JSON.stringify(commitDate),
+    },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: ['./test/vitest.setup.ts'],
+        include: ['test/**/*.test.{ts,tsx}'],
+        // Suppress console output from tests that pass (source scripts under
+        // test occasionally log). Logs from failing tests still surface so
+        // debugging isn't hindered.
+        silent: 'passed-only',
     },
     build: {
         minify: true,

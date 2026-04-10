@@ -7,33 +7,33 @@
  */
 
 // Mock IndexedDB-dependent and external modules before importing exportUtils
-jest.mock('@web/dataStores/multibindStore', () => ({
+vi.mock('@web/dataStores/multibindStore', () => ({
     getSnapshot: jest.fn().mockResolvedValue([]),
     replaceAll: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('@web/options/recordingStorage', () => ({}));
+vi.mock('@web/options/recordingStorage', () => ({}));
 
-jest.mock('@web/options/locationNotesStorage', () => ({
+vi.mock('@web/options/locationNotesStorage', () => ({
     exportNotes: jest.fn().mockResolvedValue([]),
     importNotes: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('@client/scripts/killLifetimeStorage.ts', () => ({
+vi.mock('@client/scripts/killLifetimeStorage.ts', () => ({
     exportAllKillRecords: jest.fn().mockResolvedValue([]),
     importAllKillRecords: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('@client/scripts/profession', () => ({
+vi.mock('@client/scripts/profession', () => ({
     mergeProfessionStates: jest.fn((_local: unknown, cloud: unknown) => cloud),
 }));
 
-jest.mock('@modules/core/eventBus', () => ({
+vi.mock('@modules/core/eventBus', () => ({
     __esModule: true,
     default: { emit: jest.fn() },
 }));
 
-jest.mock('@modules/device', () => ({
+vi.mock('@modules/device', () => ({
     getDeviceInfo: jest.fn(() => ({
         id: 'test-device',
         name: 'Test Device',

@@ -9,18 +9,18 @@
 };
 (globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 
-jest.mock('@client/main', () => ({
+vi.mock('@client/main', () => ({
   __esModule: true
 }));
 
 import Client from '@client/Client';
 
-jest.mock('@client/sounds', () => ({
+vi.mock('@client/sounds', () => ({
   __esModule: true,
   beepSound: 'mock-sound',
 }));
 
-jest.mock('howler', () => {
+vi.mock('howler', () => {
   const instance = {
     state: jest.fn(() => 'loaded'),
     play: jest.fn(),
@@ -28,40 +28,46 @@ jest.mock('howler', () => {
     once: jest.fn(),
     load: jest.fn(),
   };
-  return { Howl: jest.fn(() => instance) };
+  return { Howl: jest.fn(function () { return instance; }) };
 });
 
-jest.mock('@client/Triggers', () => ({
+vi.mock('@client/Triggers', () => ({
   __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    parseLine: jest.fn((l: any) => l),
-    parseMultiline: jest.fn((l: any) => l),
-  })),
+  default: jest.fn(function () {
+    return {
+      parseLine: jest.fn((l: any) => l),
+      parseMultiline: jest.fn((l: any) => l),
+    };
+  }),
 }));
-jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('@client/scripts/functionalBind', () => ({
-  FunctionalBindManager: jest.fn().mockImplementation(() => ({
-    set: jest.fn(),
-    setCategory: jest.fn(),
-    clear: jest.fn(),
-    clearCategory: jest.fn(),
-    newMessage: jest.fn(),
-    getLabel: jest.fn(() => ']'),
-    getCategoryLabel: jest.fn(() => ']'),
-    updateOptions: jest.fn(),
-  })),
+vi.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
+vi.mock('@client/scripts/functionalBind', () => ({
+  FunctionalBindManager: jest.fn(function () {
+    return {
+      set: jest.fn(),
+      setCategory: jest.fn(),
+      clear: jest.fn(),
+      clearCategory: jest.fn(),
+      newMessage: jest.fn(),
+      getLabel: jest.fn(() => ']'),
+      getCategoryLabel: jest.fn(() => ']'),
+      updateOptions: jest.fn(),
+    };
+  }),
   formatLabel: jest.fn((opts: any) => opts.key || ''),
   LINE_START_EVENT: 'lineStart',
 }));
 
-jest.mock('@shared/map/MapHelper', () => {
+vi.mock('@shared/map/MapHelper', () => {
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      parseCommand: jest.fn((cmd: string) => cmd),
-      move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
-      followMove: jest.fn(),
-    })),
+    default: jest.fn(function () {
+      return {
+        parseCommand: jest.fn((cmd: string) => cmd),
+        move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
+        followMove: jest.fn(),
+      };
+    }),
   };
 });
 

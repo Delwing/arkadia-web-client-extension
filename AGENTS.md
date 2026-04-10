@@ -19,7 +19,7 @@ Arkadia Web Client Extension is a browser-based client for the Arkadia MUD (Mult
 - **Code Editor**: Monaco Editor with Shiki syntax highlighting
 - **Backend**: Firebase
 - **Special**: lua-in-js (Lua interpreter), sql.js (SQLite in WASM), esbuild-wasm
-- **Testing**: Jest (unit) + Playwright (e2e)
+- **Testing**: Vitest (unit) + Playwright (e2e)
 
 ## Directory Structure
 
@@ -55,7 +55,7 @@ helper/               # Native helper app (Go) — system tray, hotkeys, window 
 plugin-types/         # Auto-generated TypeScript types for plugin API
 examples/             # Example plugins
 docs/                 # User-facing documentation
-test/                 # Jest unit tests (mirrors src/ structure)
+test/                 # Vitest unit tests (mirrors src/ structure)
 e2e/                  # Playwright end-to-end tests (100+ specs)
 data/                 # Game data (DO NOT MODIFY)
 ```
@@ -74,7 +74,7 @@ Use these TypeScript path aliases (defined in `tsconfig.base.json`):
 ```bash
 yarn dev          # Start dev server
 yarn build        # Production build (Vite)
-yarn test         # Run unit tests (Jest)
+yarn test         # Run unit tests (Vitest)
 yarn test:e2e     # Run end-to-end tests (Playwright)
 yarn lint         # Run ESLint
 yarn preview      # Preview production build
@@ -99,7 +99,7 @@ On master, plugin types are built (`yarn build:types`) and everything deploys to
 
 - **Unit tests** (`test/`): mirror the `src/` directory structure. E.g., `src/client/Triggers.ts` → `test/client/Triggers.test.ts`
 - **E2E tests** (`e2e/`): flat directory, one `*.spec.ts` per feature
-- **Mocks**: `test/__mocks__/` for module mocks, `jest.setup.js` for global setup
+- **Mocks**: `test/__mocks__/` for module mocks, `test/vitest.setup.ts` for global setup
 - Test environment: jsdom for unit tests, Chromium for e2e
 
 ### E2E Tests Details

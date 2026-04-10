@@ -10,7 +10,7 @@
 (globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
-jest.mock('@client/main', () => ({
+vi.mock('@client/main', () => ({
   __esModule: true
 }));
 
@@ -19,17 +19,17 @@ import { mudletColorLine } from '@modules/core/Colors';
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import { Howl } from 'howler';
 
-jest.mock('@client/sounds', () => ({
+vi.mock('@client/sounds', () => ({
   __esModule: true,
   beepSound: 'mock-sound',
 }));
 
-jest.mock('@modules/core/customSounds', () => ({
+vi.mock('@modules/core/customSounds', () => ({
   __esModule: true,
   getCustomSound: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('howler', () => {
+vi.mock('howler', () => {
   const makeInstance = () => ({
     state: jest.fn(() => 'loaded'),
     play: jest.fn(),
@@ -37,49 +37,58 @@ jest.mock('howler', () => {
     once: jest.fn(),
     load: jest.fn(),
   });
-  return { Howl: jest.fn(() => makeInstance()) };
-});
-
-jest.mock('@client/Triggers', () => {
-  const { AnsiAwareBuffer } = require('@client/ansi/FormatState');
   return {
-    __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      parseLine: jest.fn((l: string | typeof AnsiAwareBuffer) => {
-        if (typeof l === 'string') return new AnsiAwareBuffer(l);
-        return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
-      }),
-      parseMultiline: jest.fn((l: string | typeof AnsiAwareBuffer) => {
-        if (typeof l === 'string') return new AnsiAwareBuffer(l);
-        return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
-      }),
-    })),
+    Howl: jest.fn(function () { return makeInstance(); }),
+    Howler: { volume: jest.fn(), stop: jest.fn() },
   };
 });
-jest.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('@client/scripts/functionalBind', () => ({
-  FunctionalBindManager: jest.fn().mockImplementation(() => ({
-    set: jest.fn(),
-    setCategory: jest.fn(),
-    clear: jest.fn(),
-    clearCategory: jest.fn(),
-    newMessage: jest.fn(),
-    getLabel: jest.fn(() => ']'),
-    getCategoryLabel: jest.fn(() => ']'),
-    updateOptions: jest.fn(),
-  })),
+
+vi.mock('@client/Triggers', async () => {
+  const { AnsiAwareBuffer } = await vi.importActual<typeof import('@client/ansi/FormatState')>('@client/ansi/FormatState');
+  return {
+    __esModule: true,
+    default: jest.fn(function () {
+      return {
+        parseLine: jest.fn((l: string | typeof AnsiAwareBuffer) => {
+          if (typeof l === 'string') return new AnsiAwareBuffer(l);
+          return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
+        }),
+        parseMultiline: jest.fn((l: string | typeof AnsiAwareBuffer) => {
+          if (typeof l === 'string') return new AnsiAwareBuffer(l);
+          return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
+        }),
+      };
+    }),
+  };
+});
+vi.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
+vi.mock('@client/scripts/functionalBind', () => ({
+  FunctionalBindManager: jest.fn(function () {
+    return {
+      set: jest.fn(),
+      setCategory: jest.fn(),
+      clear: jest.fn(),
+      clearCategory: jest.fn(),
+      newMessage: jest.fn(),
+      getLabel: jest.fn(() => ']'),
+      getCategoryLabel: jest.fn(() => ']'),
+      updateOptions: jest.fn(),
+    };
+  }),
   formatLabel: jest.fn((opts: any) => opts.key || ''),
 }));
 
 
-jest.mock('@shared/map/MapHelper', () => {
+vi.mock('@shared/map/MapHelper', () => {
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      parseCommand,
-      move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
-      followMove: jest.fn(),
-    })),
+    default: jest.fn(function () {
+      return {
+        parseCommand,
+        move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
+        followMove: jest.fn(),
+      };
+    }),
   };
 });
 
