@@ -21,11 +21,14 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
     const [loaded, setLoaded] = useState<boolean>(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        const char = characterStorage.getCharacter();
-        if (!char) return;
+    // Updated directly during render (not in useEffect) so the ref is always
+    // current by the time any event handler reads it — avoids save-race condition.
+    const saveStateRef = useRef({ favoriteMagicTypes, favoriteMagics, magicsColor, magicKeysColor, loaded });
+    saveStateRef.current = { favoriteMagicTypes, favoriteMagics, magicsColor, magicKeysColor, loaded };
 
+    useEffect(() => {
         const loadSettings = () => {
+            if (!characterStorage.getCharacter()) return;
             const settings = (characterStorage.get("settings") || {}) as BaseSettings;
             setFavoriteMagicTypes(settings.favoriteMagicTypes || []);
             setFavoriteMagics(settings.favoriteMagicKeys || []);
@@ -36,9 +39,8 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
 
         loadSettings();
 
-        const unsub = characterStorage.onChange('settings', () => {
-            loadSettings();
-        });
+        const unsubSettings = characterStorage.onChange('settings', loadSettings);
+        const unsubChar = characterStorage.onCharacterChange(loadSettings);
 
         const unsubscribeTypes = subscribeToMagicTypes((types) => {
             if (types) {
@@ -53,7 +55,8 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         });
 
         return () => {
-            unsub();
+            unsubSettings();
+            unsubChar();
             unsubscribeTypes();
             unsubscribeMagics();
         };
@@ -89,15 +92,15 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
 
     useEffect(() => {
         registerSave((settings: any) => {
-            // Only overwrite if settings have been loaded to prevent race condition
-            if (loaded) {
-                settings.favoriteMagicTypes = favoriteMagicTypes;
-                settings.favoriteMagicKeys = favoriteMagics;
-                settings.magicsColor = magicsColor;
-                settings.magicKeysColor = magicKeysColor;
+            const s = saveStateRef.current;
+            if (s.loaded) {
+                settings.favoriteMagicTypes = s.favoriteMagicTypes;
+                settings.favoriteMagicKeys = s.favoriteMagics;
+                settings.magicsColor = s.magicsColor;
+                settings.magicKeysColor = s.magicKeysColor;
             }
         });
-    }, [registerSave, favoriteMagicTypes, favoriteMagics, magicsColor, magicKeysColor, loaded]);
+    }, [registerSave]);
 
     const [locked, setLocked] = useState(!characterStorage.getCharacter());
 
