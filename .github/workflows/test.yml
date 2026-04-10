@@ -114,7 +114,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24'
           cache-dependency-path: helper/go.sum
@@ -133,7 +133,7 @@ jobs:
           go build -ldflags="$LDFLAGS" -o ../arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} .
       - name: Attest helper binary
         if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
       - name: Upload helper artifact
@@ -240,14 +240,14 @@ jobs:
           path: test-results/unit
       - name: Jest test report
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: Jest Tests
           path: test-results/unit/junit.xml
           reporter: jest-junit
       - name: Playwright test report
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: Playwright Tests
           path: test-results/e2e-junit.xml
@@ -282,11 +282,11 @@ jobs:
         if: steps.download-helpers.outcome == 'success'
         run: echo "$(git rev-parse --short HEAD)" > dist/helper/version.txt
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './dist'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
