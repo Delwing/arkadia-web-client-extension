@@ -119,7 +119,7 @@ const KNOWLEDGE_PROMPT_PATTERN =
 const KNOWLEDGE_TICK_PATTERN =
     /^Wydaje ci sie, ze twoja wiedza (.+) wzrosla .*\.$/;
 const KNOWLEDGE_BOOK_START_PATTERN =
-    /^Zaczynasz zglebiac (.+?), probujac dowiedziec sie czegos wiecej o (.*)\.$/;
+    /^Zaczynasz zglebiac (?!tutejsze zasoby,)(.+?), probujac dowiedziec sie czegos wiecej o (.*)\.$/;
 const KNOWLEDGE_BOOK_COMPLETE_PATTERN =
     /^Masz wrazenie, ze z (.+?) nie dowiesz sie juz niczego wiecej (.*)\.$/;
 const WIEDZA_TOTAL_LEVEL_PATTERN =
