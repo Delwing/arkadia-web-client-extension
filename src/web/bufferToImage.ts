@@ -1,5 +1,6 @@
 import {AnsiAwareBuffer, FormatColor} from "@client/ansi/FormatState";
 import {colorCodes} from "@modules/core/Colors";
+import {copyCanvasToClipboard} from "@shared/dom/copyCanvasToClipboard.ts";
 
 export interface BufferToImageOptions {
     /** Background color (default: from output window) */
@@ -57,13 +58,10 @@ function colorToHex(color: FormatColor): string {
     return "#000000";
 }
 
-/**
- * Converts an AnsiAwareBuffer to a PNG image blob.
- */
-export async function bufferToImage(
+function bufferToCanvas(
     buffer: AnsiAwareBuffer,
     options: BufferToImageOptions = {}
-): Promise<Blob> {
+): HTMLCanvasElement {
     const outputStyles = getOutputWindowStyles();
     const {
         backgroundColor = outputStyles.backgroundColor,
@@ -195,6 +193,17 @@ export async function bufferToImage(
         }
     }
 
+    return canvas;
+}
+
+/**
+ * Converts an AnsiAwareBuffer to a PNG image blob.
+ */
+export function bufferToImage(
+    buffer: AnsiAwareBuffer,
+    options: BufferToImageOptions = {}
+): Promise<Blob> {
+    const canvas = bufferToCanvas(buffer, options);
     return new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(
             (blob) => {
@@ -212,12 +221,10 @@ export async function bufferToImage(
 /**
  * Converts an AnsiAwareBuffer to a PNG image and copies it to clipboard.
  */
-export async function copyBufferAsImage(
+export function copyBufferAsImage(
     buffer: AnsiAwareBuffer,
     options: BufferToImageOptions = {}
 ): Promise<void> {
-    const blob = await bufferToImage(buffer, options);
-    await navigator.clipboard.write([
-        new ClipboardItem({'image/png': blob}),
-    ]);
+    const canvas = bufferToCanvas(buffer, options);
+    return copyCanvasToClipboard(canvas);
 }

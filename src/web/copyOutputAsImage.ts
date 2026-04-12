@@ -1,4 +1,5 @@
 import {areOutputTimestampsVisible} from "@shared/dom/outputMessageHandler";
+import {copyCanvasToClipboard} from "@shared/dom/copyCanvasToClipboard.ts";
 
 type UnderlineStyle = 'solid' | 'dotted';
 
@@ -448,22 +449,7 @@ export async function copyOutputAsImage(): Promise<void> {
         }
     }
 
-    const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-            b => {
-                if (b) {
-                    resolve(b);
-                } else {
-                    reject(new Error('Nie udało się utworzyć obrazu'));
-                }
-            },
-            'image/png',
-        );
-    });
-
-    await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob }),
-    ]);
+    await copyCanvasToClipboard(canvas);
 }
 
 export async function saveOutputAsHtml(): Promise<void> {

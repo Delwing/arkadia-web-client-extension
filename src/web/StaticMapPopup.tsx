@@ -7,6 +7,7 @@ import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { openMapContextMenu } from '@modules/core/contextMenus';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
 
 interface StaticMapInstance {
@@ -875,18 +876,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 ctx.drawImage(canvas, 0, 0);
             }
 
-            const blob = await new Promise<Blob>((resolve, reject) => {
-                compositeCanvas.toBlob(
-                    (b) => {
-                        if (b) resolve(b);
-                        else reject(new Error('Failed to create image blob'));
-                    },
-                    'image/png'
-                );
-            });
-            await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': blob }),
-            ]);
+            await copyCanvasToClipboard(compositeCanvas);
         } catch (err) {
             console.error('Failed to copy map as image:', err);
         }

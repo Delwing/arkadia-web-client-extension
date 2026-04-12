@@ -85,8 +85,12 @@ export function showContextMenu(
             btn.appendChild(item.label.cloneNode(true));
         }
         btn.onclick = () => {
-            hideContextMenu();
+            // Run action BEFORE hiding the menu. hideContextMenu() destroys the
+            // clicked button via innerHTML='', which in Safari invalidates the
+            // transient user activation — clipboard.write() and similar APIs
+            // that require a user gesture would then fail with NotAllowedError.
             item.action();
+            hideContextMenu();
             const input = document.getElementById('message-input') as HTMLTextAreaElement | null;
             if (input) {
                 input.focus();
