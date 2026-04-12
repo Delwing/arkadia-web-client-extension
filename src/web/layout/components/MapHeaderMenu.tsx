@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
+import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { getPopupSetting, setPopupSetting } from '../../layout/utils/layoutStorage';
 
 interface MapHeaderMenuProps {
@@ -288,8 +289,6 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     const canvases = mapContainer.querySelectorAll('canvas');
     if (canvases.length === 0) return;
 
-    closeMenu();
-
     try {
       // Get dimensions from the first canvas
       const width = canvases[0].width;
@@ -311,21 +310,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
         ctx.drawImage(canvas, 0, 0);
       }
 
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        compositeCanvas.toBlob(
-          (b) => {
-            if (b) resolve(b);
-            else reject(new Error('Failed to create image blob'));
-          },
-          'image/png'
-        );
-      });
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob }),
-      ]);
+      // clipboard.write() must be called before closeMenu() — closing the
+      // menu triggers a React re-render that can invalidate the transient
+      // user activation required by Safari for clipboard access.
+      await copyCanvasToClipboard(compositeCanvas);
     } catch (err) {
       console.error('Failed to copy map as image:', err);
     }
+    closeMenu();
   }, [closeMenu]);
 
   return (
