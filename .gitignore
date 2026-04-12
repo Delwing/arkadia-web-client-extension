@@ -12,5 +12,8 @@ playwright-report/
 blob-report/
 test-results/
 coverage/
-.claude
+.claude/
+!/.claude/
+/.claude/*
+!/.claude/skills/
 /data
