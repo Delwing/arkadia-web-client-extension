@@ -56,6 +56,15 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | Komenda | Opis |
 |---------|------|
 | `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |
+| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |
+| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |
+| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |
+| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |
+| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |
+| `/hp -` | Wyczysc cala liste zapamietanych kondycji |
+| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |
+
+> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).
 
 ## Przedstawieni
 
