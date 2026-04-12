@@ -172,5 +172,3 @@ Common substitutions:
 | `db:like(scripts.people.db.people.short, x)` | filter `peopleLoader` snapshot by `description` (case-insensitive) |
 | `scripts:print_log(s)` | `client.println(s)` |
 | `package.loaded[...] = nil; require(...)` | drop entirely — no module reload needed |
-
-If the Lua references something specific to Mudlet's Arkadia bundle (e.g. `KeyMobs`, `arkadia-mc.*`), confirm with the user whether to port or drop it. Don't invent stand-ins.
