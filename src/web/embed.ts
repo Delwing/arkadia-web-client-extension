@@ -299,7 +299,10 @@ export class EmbeddedMap {
             && room.y >= bounds.minY && room.y <= bounds.maxY;
 
         if (!isVisible) {
-            this.setViewingPlayerPosition(false, room.area, room.z);
+            // Panning within the player's own area — leave area/z unset so the
+            // map panel title keeps showing the current location label instead
+            // of switching to "(AreaName)".
+            this.setViewingPlayerPosition(false);
         }
     }
 
