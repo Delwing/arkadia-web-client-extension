@@ -38,6 +38,12 @@ func main() {
 		}
 	}
 
+	// On macOS, URL scheme launches deliver the URL via Apple Events,
+	// not as a command-line argument. Detect app bundle launch instead.
+	if !launchedFromProtocol && execPath != "" {
+		launchedFromProtocol = isInsideAppBundle(execPath)
+	}
+
 	// First run / --install: register and exit
 	if *installFlag || !launchedFromProtocol {
 		fmt.Println("Protocol handler registered. You can now launch the helper from the web app.")

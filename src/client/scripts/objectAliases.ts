@@ -59,16 +59,17 @@ export default function initObjectAliases(
     }
 
     function breakDefenseTarget(short?: string) {
-        let id: number | string | undefined;
+        let id: number | undefined;
         if (short) {
             const obj = findByShortcut(short);
-            id = obj?.num?.toString();
+            id = obj?.num;
         } else {
             id = client.TeamManager.getAttackTargetId();
         }
         if (id) {
             client.sendCommand("przestan kryc sie za zaslona");
             client.sendCommand(`przelam obrone ob_${id}`);
+            attackById(id);
         }
     }
 
