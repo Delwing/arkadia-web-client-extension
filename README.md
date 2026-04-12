@@ -12,11 +12,13 @@ Przeglądarkowy klient Arkadii (MUD) z wbudowaną mapą, systemem pluginów, wł
 | `src/modules` | Moduły odpowiedzialne za usługi (event bus, storage, Firebase, zarządzanie urządzeniami). |
 | `editor` | Edytor pluginów oparty na Monaco Editor. |
 | `viewer` | Przeglądarka logów sesji. |
+| `log-viewer` | Samodzielna przeglądarka logów (oddzielny entry point). |
+| `helper` | Natywna aplikacja pomocnicza (Go) — system tray, hotkeye, zarządzanie oknem. |
 | `examples` | Przykładowe pluginy z serwerem deweloperskim. |
 | `docs` | Dokumentacja funkcjonalności (aliasy, bindy, walka, nawigacja, pluginy i inne). |
 | `plugin-types` | Definicje typów TypeScript dla API pluginów. |
 | `e2e` | Testy end-to-end używające Playwright. |
-| `test` | Testy jednostkowe (Jest). |
+| `test` | Testy jednostkowe (Vitest). |
 | `scripts` | Skrypty pomocnicze do generowania danych dla projektu. |
 | `public` | Zasoby statyczne, manifest PWA i ikony. |
 
@@ -27,7 +29,7 @@ Przeglądarkowy klient Arkadii (MUD) z wbudowaną mapą, systemem pluginów, wł
 - **React-Bootstrap 2** / **Bootstrap 5**
 - **Monaco Editor** (edytor pluginów)
 - **Firebase** (synchronizacja danych)
-- **Jest 30** (testy jednostkowe) + **Playwright** (testy e2e)
+- **Vitest** (testy jednostkowe) + **Playwright** (testy e2e)
 - **Lua-in-js** (wsparcie skryptów Lua)
 
 ## Instalacja
@@ -115,6 +117,7 @@ Szczegółowa dokumentacja znajduje się w katalogu [`docs/`](docs/):
 - [Zioła](docs/HERBS.md) — system ziół
 - [Śledzenie](docs/TRACKING.md) — śledzenie postępów
 - [Skróty](docs/SHORTCUTS.md) — skróty i komendy
+- [Synchronizacja](docs/SYNCHRONIZACJA.md) — synchronizacja ustawień między urządzeniami
 - [Pluginy](docs/PLUGINS.md) — tworzenie pluginów
 - [Testowanie skryptów](docs/SCRIPT_TESTING.md) — jak testować skrypty
 
