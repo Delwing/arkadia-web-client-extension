@@ -441,7 +441,7 @@ export interface Room {
   /** Room weight for pathfinding */
   weight: number;
   /** Room symbol */
-  roomChar: string;
+  symbol: string;
   /** User-defined data */
   userData: Record<string, string>;
   /** Custom lines */
@@ -789,6 +789,8 @@ export interface ClientEvents {
   "refreshPositionWhenAble": void;
   /** Knowledge report */
   "knowledgeReport": unknown | null;
+  /** Open knowledge report popup */
+  "knowledgeReport.popup.open": void;
   /** Knowledge details report */
   "knowledgeDetailsReport": unknown | null;
   /** Open knowledge details popup */
@@ -807,10 +809,8 @@ export interface ClientEvents {
   "herbManagerOpen": void;
   /** Play sound effect */
   "sound:play": { key: string };
-  /** Play sound for a named category */
-  "sound:category": 'attack' | 'hp' | 'fishing' | 'lamp' | 'gear' | 'transport' | 'spell' | 'block' | 'weapon' | 'stun';
-  /** Lua bridge: play sound for a named category */
-  "playSound": 'attack' | 'hp' | 'fishing' | 'lamp' | 'gear' | 'transport' | 'spell' | 'block' | 'weapon' | 'stun';
+  /** Play beep sound */
+  "playBeep": void;
   /** Line start marker */
   "line-start": void;
   /** Storage value changed */
@@ -1135,6 +1135,20 @@ export interface MapApi {
      * });
      */
     getAreas(): AreaInfo[];
+    /**
+     * Find shortest path between two rooms
+     * @param fromId - Starting room ID
+     * @param toId - Destination room ID
+     * @returns Array of room IDs representing the path, or null if no path exists
+     *
+     * @example
+     * const path = api.map.findPath(100, 200);
+     * if (path) {
+     *   console.log(`Path length: ${path.length - 1} steps`);
+     *   console.log(`Route: ${path.join(" -> ")}`);
+     * }
+     */
+    findPath(fromId: number, toId: number): number[] | null;
     /**
      * Set map location programmatically
      * @param roomId - Room ID to navigate to
@@ -2396,23 +2410,6 @@ export interface ObjectListFiltersApi {
      * ```
      */
     clear(): void;
-}
-
-/**
- * Settings for a single mobile button
- */
-export interface MobileButtonSetting {
-    macroType: string;
-    label: string;
-    color: string;
-    fontColor?: string;
-    command?: string;
-    direction?: string;
-    activeColor?: string;
-    syncWithDirections?: boolean;
-    holdEnabled?: boolean;
-    hold?: { macroType: string; command?: string; direction?: string };
-    steps?: Array<{ macroType: string; command?: string; direction?: string }>;
 }
 
 /**

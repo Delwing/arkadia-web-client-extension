@@ -90,6 +90,7 @@ interface FormatStateSnapshot {
     rapidBlink?: boolean;
     dim?: DimEffect;
     hyperlink?: FormatHyperlink;
+    cssClass?: string;
 }
 
 interface BufferSegment {
@@ -312,7 +313,11 @@ interface AreaInfo {
 interface MapApi {
   getRoom(): MapData.Room | undefined;
 
+  getRoomById(roomId: number): MapData.Room | null;
+
   getAreas(): AreaInfo[];
+
+  findPath(fromId: number, toId: number): number[] | null;
 
   setLocation(roomId: number): void;
 
@@ -658,6 +663,37 @@ interface MagicKeysApi {
 }
 
 /**
+ * Container type for bag assignment
+ * - "money" - money container
+ * - "gems" - gems container
+ * - "food" - food container
+ * - "other" - general items container
+ */
+type ContainerType = "money" | "gems" | "food" | "other";
+
+/**
+ * Grammatical forms for a container bag name
+ */
+interface ContainerForms {
+  mianownik: string;
+  dopelniacz: string;
+  biernik: string;
+}
+
+/**
+ * Containers API - Put items into and take items from assigned bags
+ */
+interface ContainersApi {
+  getContainer(type: ContainerType): string;
+
+  getContainerForms(type: ContainerType): ContainerForms | null;
+
+  put(type: ContainerType, item: string): void;
+
+  take(type: ContainerType, item: string): void;
+}
+
+/**
  * Herbs API - Access herb inventory in bags
  */
 interface HerbsApi {
@@ -691,23 +727,6 @@ interface ObjectListFiltersApi {
   getFilterNames(): string[];
 
   clear(): void;
-}
-
-/**
- * Settings for a single mobile button
- */
-interface MobileButtonSetting {
-  macroType: string;
-  label: string;
-  color: string;
-  fontColor?: string;
-  command?: string;
-  direction?: string;
-  activeColor?: string;
-  syncWithDirections?: boolean;
-  holdEnabled?: boolean;
-  hold?: { macroType: string; command?: string; direction?: string };
-  steps?: Array<{ macroType: string; command?: string; direction?: string }>;
 }
 
 /**
@@ -923,6 +942,7 @@ interface PluginApi {
   command: CommandApi;
   commandHooks: CommandHooksApi;
   prettyContainers: PrettyContainersApi;
+  containers: ContainersApi;
   magics: MagicsApi;
   magicKeys: MagicKeysApi;
   herbs: HerbsApi;

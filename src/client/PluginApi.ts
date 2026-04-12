@@ -494,6 +494,21 @@ export interface MapApi {
   getAreas(): AreaInfo[];
 
   /**
+   * Find shortest path between two rooms
+   * @param fromId - Starting room ID
+   * @param toId - Destination room ID
+   * @returns Array of room IDs representing the path, or null if no path exists
+   *
+   * @example
+   * const path = api.map.findPath(100, 200);
+   * if (path) {
+   *   console.log(`Path length: ${path.length - 1} steps`);
+   *   console.log(`Route: ${path.join(" -> ")}`);
+   * }
+   */
+  findPath(fromId: number, toId: number): number[] | null;
+
+  /**
    * Set map location programmatically
    * @param roomId - Room ID to navigate to
    *
@@ -2589,6 +2604,10 @@ export class PluginApiImpl implements PluginApi {
           areaName: area.getAreaName(),
           rooms: area.getRooms()
         }));
+      },
+
+      findPath: (fromId: number, toId: number) => {
+        return this.client.Map.findPath(fromId, toId);
       },
 
       setLocation: (roomId: number) => {
