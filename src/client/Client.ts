@@ -7,7 +7,7 @@ import type { CommandHookCallback } from "./CommandProcessor";
 import {FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
-import {attachGmcpListener} from "./gmcp";
+import {attachGmcpListener, gmcp} from "./gmcp";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import eventBus from "@modules/core/eventBus";
@@ -227,7 +227,11 @@ export default class Client {
     }
 
     echoCommand(command: string): void {
-        const display = this.ObjectManager.resolveObjectIds(command);
+        let display = this.ObjectManager.resolveObjectIds(command);
+        const groupCover = gmcp?.char?.options?.group_cover;
+        if (/^zaslon /.test(command) && typeof groupCover === 'number' && groupCover > 1) {
+            display += ` &lt;${groupCover}&gt;`;
+        }
         this.clientAdapter.output("→ " + display, 'command');
     }
 

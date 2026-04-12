@@ -401,12 +401,4 @@ export default function initObjectAliases(
         });
     }
 
-    client.registerCommandHook('objectAliases.groupCoverSuffix', (command) => {
-        if (/^zaslon /.test(command)) {
-            const groupCover = gmcp?.char?.options?.group_cover;
-            if (typeof groupCover === 'number' && groupCover > 1) {
-                return `${command} <${groupCover}>`;
-            }
-        }
-    });
 }
