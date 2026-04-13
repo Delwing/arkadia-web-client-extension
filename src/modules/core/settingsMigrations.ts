@@ -78,6 +78,17 @@ const migrations: Migration[] = [
         description: 'Rename macro to macroType in mobileButtonSettings (handled by migrateMobileButtonMacroField)',
         migrate: settings => settings,
     },
+    {
+        version: 7,
+        description: 'Rename guild color key PE to BK',
+        migrate: (settings) => {
+            if (settings.guildColors && 'PE' in settings.guildColors) {
+                const { PE, ...rest } = settings.guildColors;
+                return { ...settings, guildColors: { ...rest, BK: PE } };
+            }
+            return settings;
+        },
+    },
 ];
 
 /**
