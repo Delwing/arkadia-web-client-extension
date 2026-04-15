@@ -9511,6 +9511,10 @@
                   {
                     "pattern": "^[ >]*.* (unosi|zastawia sie) swoja .* i szybko przesuwa sie za ciebie, kryjac.*",
                     "type": 1
+                  },
+                  {
+                    "pattern": "^[ >]*Sprytnie manewrujac .+ kryje sie za twoimi plecami przed atakami",
+                    "type": 1
                   }
                 ],
                 "script": "trigger_func_skrypty_ui_gags_color_color_zaslony_udane_wycofanie_za_ciebie()"
@@ -9521,6 +9525,10 @@
                   {
                     "pattern": "[ >]*Unosisz swoja .* i (?:szybko )?przesuwasz sie za .*, kryjac sie przed atakami",
                     "type": 1
+                  },
+                  {
+                    "pattern": "^[ >]*Sprytnie manewrujac kryjesz sie za plecami .+ przed atakami",
+                    "type": 1
                   }
                 ],
                 "script": "trigger_func_skrypty_ui_gags_color_color_zaslony_udane_wycofanie_sie_ty()"
@@ -9530,6 +9538,10 @@
                 "patterns": [
                   {
                     "pattern": "(?:(?:unosi|zastawia sie) swoja .+? i |)szybko przesuwa sie za (?!ciebie).+?, (?:kryjac sie przed atakami .+?|uciekajac przed twoimi ciosami)\\.$",
+                    "type": 1
+                  },
+                  {
+                    "pattern": "^[ >]*Sprytnie manewrujac .+ kryje sie za plecami (?!twoimi).+? przed atakami",
                     "type": 1
                   }
                 ],
