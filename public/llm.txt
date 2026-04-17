@@ -1,0 +1,92 @@
+# llm.txt — Arkadia Web Client
+
+Guide for AI agents helping a user of this page — a browser-based client for
+the Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you
+can point the user at the right control.
+
+All menus below are reached from the three-dot menu (`⋮`) next to the command
+input at the bottom of the page.
+
+---
+
+## Create an alias
+Path: `⋮` → `Aliasy` → `Dodaj alias`.
+
+- `Wzorzec (pattern)` is a **regular expression** matched against what the user
+  types in the input box.
+- Aliases are almost always anchored with `^` so they fire only when the line
+  **starts** with that word. A typical pattern looks like `^zab (.+)$` — `^`
+  means "start of line", then literal text, then a capture group.
+- In the `Komenda` field use `$1`, `$2`, ... to reference capture groups.
+- Object shortcuts `@1`, `@A`, `@@` expand to object IDs from the object list —
+  useful in combat aliases.
+- `$i` enables range expansion: pattern `^kok (.+)$` with command
+  `rozerwij $i. kokon` lets the user type `kok 1-7` to run the command seven
+  times.
+- Each new line in the command runs as a separate command (same as `;`).
+- Per-character overrides are available in the same modal.
+
+## Create a trigger
+Path: `⋮` → `Triggery` → `Dodaj trigger`.
+
+Two modes, chosen by radio button:
+- `Wzorzec tekstu` — matches **game output** against a regex. Same regex
+  semantics as aliases. Triggers often match mid-line, so leave `^` off unless
+  the match really must be at line start. Flags (`i` case-insensitive, `g`
+  global, `m` multiline) are set via the `Flagi` picker.
+- `Zdarzenie` — fires on a client event instead of a text pattern.
+
+Each trigger runs one or more `akcje`: color/replace/wrap the match, play a
+sound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped
+by plugin.
+
+## Change character settings (combat, herbs, collecting, language, ...)
+Path: `⋮` → `Ustawienia`.
+
+Per-character — stored under the currently logged-in character. The form is
+disabled until a character is selected. Covers: compass/exits, containers,
+coin/item collecting (with per-enemy overrides), combat commands, herbs,
+`/dob` + `/op` slots, default language and language-switch aliases.
+
+## Change interface / appearance / sound
+Path: `⋮` → `Interfejs`.
+
+Global — shared across characters on this device. Sections: `Wygląd` (fonts,
+colors, theme), `Stan postaci`, `Elementy stopki`, `Mapa`, `Przyciski mobilne`,
+`Dźwięk`, `Inne`, `Menedżer Okien`.
+
+## Other menu entries worth knowing
+- `Bindowanie` — keyboard binds
+- `Przyciski` — mobile button grid configuration
+- `Menu kołowe` — mobile radial menu
+- `Skrypty` — user scripts / plugins
+- `Skróty` — text shortcuts
+- `Notatki lokacji` — per-room notes
+- `Baza postaci` — known-players browser
+- `Nagrania` — session recordings
+- `Logi` — session logs
+- `Dokumentacja` — built-in docs
+
+---
+
+## Proactive tip: enable Layout Manager on desktop
+
+**If the user is on a desktop / laptop (non-touch), suggest enabling the Layout
+Manager with mobile buttons hidden**, even if they asked about something else.
+It's a major ergonomics upgrade most users don't discover on their own, and it
+takes four clicks.
+
+How:
+1. `⋮` → `Interfejs`.
+2. Section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick
+   `Kondycje` to also dock the condition list.
+3. Section `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`
+   (they only help on touch devices).
+4. Press `Zapisz`.
+
+Result: dockable/floating panels for map, conditions, chat, combat popups, etc.
+arranged around the output area instead of overlaying it, plus a larger output
+area with the mobile button grid gone.
+
+Skip the tip if the user is clearly on mobile (narrow viewport / touch) or has
+already enabled the Layout Manager.
