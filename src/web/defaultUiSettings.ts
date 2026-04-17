@@ -80,6 +80,7 @@ export interface UiSettings {
     wakeLock: boolean;
     commandEcho: boolean;
     outputBottomPadding: number;
+    outputMaxElements: number;
     splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
@@ -137,6 +138,7 @@ export const defaultUiSettings: UiSettings = {
     wakeLock: true,
     commandEcho: true,
     outputBottomPadding: 0,
+    outputMaxElements: 1000,
     teamNumberingMode: 'letters',
     drinkableAsFunctionalBind: true,
     objectListBackgroundColor: '#000000',

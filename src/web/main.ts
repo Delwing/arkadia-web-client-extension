@@ -30,6 +30,7 @@ import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import initUiSettings from "./uiSettings";
+import {defaultUiSettings} from "./defaultUiSettings";
 
 import "@client/main.ts"
 import {getActiveKeymapId, switchKeymap} from "@modules/core/keymapStorage";
@@ -774,6 +775,7 @@ setupOutputMessageHandler(arkadiaClient, {
     stickyArea,
     isSplitView: () => isSplitView,
     stickyLines: STICKY_LINES,
+    maxElements: () => globalStorage.get('uiSettings')?.outputMaxElements ?? defaultUiSettings.outputMaxElements,
     suppressSplitView: (durationMs: number) => {
         suppressSplitViewUntil = Date.now() + durationMs;
     },

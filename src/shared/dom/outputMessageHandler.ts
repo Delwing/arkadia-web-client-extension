@@ -11,7 +11,10 @@ type OutputHandlerOptions = {
     stickyArea: HTMLElement;
     isSplitView: () => boolean;
     stickyLines: number;
-    maxElements?: number;
+    // Either a fixed cap or a getter resolved on each message, so the setting
+    // can be changed at runtime without tearing down the handler.
+    maxElements?: number | (() => number);
+    trimSlack?: number;
     suppressSplitView?: (durationMs: number) => void;
 };
 
@@ -116,6 +119,7 @@ export function setupOutputMessageHandler(
         isSplitView,
         stickyLines,
         maxElements = 1000,
+        trimSlack = 100,
         suppressSplitView,
     }: OutputHandlerOptions,
 ) {
@@ -134,19 +138,30 @@ export function setupOutputMessageHandler(
 
         outputWrapper.insertBefore(wrapper, splitBottom);
 
-        while (outputWrapper.childElementCount - 1 > maxElements) {
-            const first = outputWrapper.firstElementChild;
-            if (first === splitBottom) {
-                const second = first.nextElementSibling;
-                if (second) {
-                    outputWrapper.removeChild(second);
+        const maxElementsValue = typeof maxElements === 'function' ? maxElements() : maxElements;
+
+        // Trim in batches, and only while the user is not scrolled up into
+        // split view — otherwise removing the oldest nodes would shift the
+        // content they are reading. When split view closes, the accumulated
+        // excess drains on the next message via the `> maxElements + trimSlack`
+        // check. The user ends up at the bottom anyway thanks to the
+        // requestAnimationFrame(scrollToBottom) below, so no scrollTop
+        // compensation is needed here.
+        if (!isSplitView() && outputWrapper.childElementCount - 1 > maxElementsValue + trimSlack) {
+            while (outputWrapper.childElementCount - 1 > maxElementsValue) {
+                const first = outputWrapper.firstElementChild;
+                if (first === splitBottom) {
+                    const second = first.nextElementSibling;
+                    if (second) {
+                        outputWrapper.removeChild(second);
+                    } else {
+                        break;
+                    }
+                } else if (first) {
+                    outputWrapper.removeChild(first);
                 } else {
                     break;
                 }
-            } else if (first) {
-                outputWrapper.removeChild(first);
-            } else {
-                break;
             }
         }
 

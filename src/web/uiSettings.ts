@@ -490,6 +490,9 @@ function load(): UiSettings {
             const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
                 ? parsed.outputBottomPadding
                 : defaultUiSettings.outputBottomPadding;
+            const outputMaxElements = typeof parsed.outputMaxElements === 'number' && parsed.outputMaxElements >= 100
+                ? Math.floor(parsed.outputMaxElements)
+                : defaultUiSettings.outputMaxElements;
             const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'custom-dark'].includes(parsed.colorTheme))
                 ? parsed.colorTheme as ColorTheme
                 : defaultUiSettings.colorTheme;
@@ -540,6 +543,7 @@ function load(): UiSettings {
                 wakeLock,
                 commandEcho,
                 outputBottomPadding,
+                outputMaxElements,
                 splitViewHeight,
                 objectListBackgroundColor,
                 objectListBackgroundAlpha,
@@ -603,6 +607,7 @@ export default async function initUiSettings() {
     const wakeLockInput = modalEl.querySelector('#ui-wake-lock') as HTMLInputElement;
     const commandEchoInput = modalEl.querySelector('#ui-command-echo') as HTMLInputElement;
     const outputBottomPaddingInput = modalEl.querySelector('#ui-output-bottom-padding') as HTMLInputElement;
+    const outputMaxElementsInput = modalEl.querySelector('#ui-output-max-elements') as HTMLInputElement;
     const customBeepSoundInput = modalEl.querySelector('#ui-custom-beep-sound') as HTMLSelectElement;
     const customBeepFileInput = modalEl.querySelector('#ui-custom-beep-file') as HTMLInputElement;
     const categoryFileInput = modalEl.querySelector('#ui-sound-category-file') as HTMLInputElement | null;
@@ -1026,6 +1031,7 @@ export default async function initUiSettings() {
         wakeLockInput.checked = settings.wakeLock;
         commandEchoInput.checked = settings.commandEcho;
         outputBottomPaddingInput.value = String(settings.outputBottomPadding);
+        outputMaxElementsInput.value = String(settings.outputMaxElements);
         if (customBeepSoundInput) {
             customBeepSoundInput.value = settings.customBeepSoundKey || '';
         }
@@ -1664,6 +1670,7 @@ export default async function initUiSettings() {
             footerComponents: [...footerComponentsConfig],
             commandEcho: commandEchoInput.checked,
             outputBottomPadding: Math.max(0, parseInt(outputBottomPaddingInput.value) || 0),
+            outputMaxElements: Math.max(100, parseInt(outputMaxElementsInput.value) || defaultUiSettings.outputMaxElements),
             splitViewHeight: current.splitViewHeight,
             objectListBackgroundColor: /^#[0-9a-f]{6}$/i.test(objectListBgColorInput.value)
                 ? objectListBgColorInput.value
