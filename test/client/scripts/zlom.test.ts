@@ -8,6 +8,9 @@ import initZlom, {
     ShieldEntry,
     ArmorEntry,
 } from '@client/scripts/zlom';
+import initWeaponEvaluation from '@client/scripts/weaponEvaluation';
+import initArmorEvaluation from '@client/scripts/armorEvaluation';
+import initParryShieldEvaluation from '@client/scripts/parryShieldEvaluation';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
@@ -362,6 +365,61 @@ describe('zlom script', () => {
       const state = buf.getStateAt(buf.text.indexOf('krasnoludzki'));
       expect(state?.bold).toBe(true);
       expect(state?.underline).toBeFalsy();
+    });
+  });
+
+  describe('co-existence with eval scripts that gag lines', () => {
+    test('weapon is saved when weaponEvaluation runs alongside zlom (zlom registered first)', () => {
+      // Match production wiring order from main.ts: zlom first, then evaluation scripts.
+      const c = new FakeClient();
+      initZlom((c as unknown) as any, c.aliases);
+      initWeaponEvaluation((c as unknown) as any);
+
+      const send = (line: string) =>
+        Triggers.prototype.parseLine.call(c.Triggers, new AnsiAwareBuffer(line), '');
+
+      send('Oceniasz starannie krasnoludzki asymetryczny topor bojowy.');
+      send('Na trzystopowoym stylisku wykonanym z twardego drewna.');
+      send('Wyglada na to, ze liczne walki wyryly na nim swoje pietno.');
+      send('');
+      send('Oceniasz, ze krasnoludzki asymetryczny topor bojowy wazy 5500 gramow, zas jego objetosc wynosi 980 mililitrow.');
+      send('Wydaje ci sie, ze jest wart okolo 880 miedziakow.');
+      send('');
+      send('Zauwazasz, iz topor jest przystosowany do chwytania w dowolnej rece.');
+      send('Za jego pomoca mozna zadawac rany ciete.');
+      send('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na topor jest on bardzo dobrze wywazony i niezwykle skuteczny.');
+      send('Do wykonania tej broni uzyto srebra, bedzie wiec ona skuteczna przeciw wrogom odpornym na zwykle obrazenia.');
+
+      const entry = loadZlomSnapshot().bronie['krasnoludzki asymetryczny topor bojowy'];
+      expect(entry).toBeDefined();
+      expect(entry.typ).toBe('topor');
+      expect(entry.srebro).toBe(1);
+      expect(entry.wywazenie).toBe(11);
+      expect(entry.parowanie).toBe(11);
+    });
+
+    test('armor and shield evals do not get gagged before zlom sees them', () => {
+      const c = new FakeClient();
+      initZlom((c as unknown) as any, c.aliases);
+      initArmorEvaluation((c as unknown) as any);
+      initParryShieldEvaluation((c as unknown) as any);
+
+      const send = (line: string) =>
+        Triggers.prototype.parseLine.call(c.Triggers, new AnsiAwareBuffer(line), '');
+
+      send('Oceniasz starannie lekka kolczuga.');
+      send('Misternie zszyta kolczuga.');
+      send('Wyglada na to, ze jest w kiepskim stanie.');
+      send('');
+      send('Oceniasz, ze lekka kolczuga wazy 4000 gramow, zas jej objetosc wynosi 3000 mililitrow.');
+      send('Wydaje ci sie, ze jest warta okolo 300 miedziakow.');
+      send('Zaklada sie ja na tulow.');
+      send('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na lekka zbroje chroni ona dobrze przed obrazeniami cietymi, przyzwoicie przed klutymi i dobrze przed obuchowymi.');
+
+      const armor = loadZlomSnapshot().zbroje['lekka kolczuga'];
+      expect(armor).toBeDefined();
+      expect(armor.typ).toBe('lekka');
+      expect(armor.oslona).toBe('tulow');
     });
   });
 });

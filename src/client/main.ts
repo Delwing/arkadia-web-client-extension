@@ -290,6 +290,7 @@ export function registerScripts(client: Client) {
     pluginManager = initExternalScripts(client)
     initUserAliases(client, aliases)
     initUserTriggers(client)
+    initZlom(client, aliases)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)
@@ -327,6 +328,5 @@ export function registerScripts(client: Client) {
     initTcolor(client, aliases)
     initOpal(client)
     initLastSeen(client, aliases)
-    initZlom(client, aliases)
 
 }
