@@ -140,6 +140,7 @@ import initDataRefresh from './scripts/dataRefresh'
 import initTcolor from './scripts/tcolor'
 import initOpal from './scripts/opal'
 import initLastSeen from './scripts/lastSeen'
+import initZlom from './scripts/zlom'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -289,6 +290,7 @@ export function registerScripts(client: Client) {
     pluginManager = initExternalScripts(client)
     initUserAliases(client, aliases)
     initUserTriggers(client)
+    initZlom(client, aliases)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)

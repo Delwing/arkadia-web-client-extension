@@ -287,6 +287,9 @@ export interface KnownEvents {
     "postepy.popup.open": void;
     "postepy2.updated": void;
     "postepy2.popup.open": void;
+    "zlom.updated": void;
+    "zlom.snapshotReplaced": void;
+    "zlom.popup.open": void;
     "zabici.updated": unknown;
     "zabici.popup.open": void;
     "zabici2.updated": unknown;

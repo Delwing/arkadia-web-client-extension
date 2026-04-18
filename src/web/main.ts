@@ -650,6 +650,13 @@ outputWrapper.addEventListener('contextmenu', event => {
             },
             opensWindow: true,
         },
+        {
+            label: 'Zlom',
+            action: () => {
+                eventBus.emit('zlom.popup.open');
+            },
+            opensWindow: true,
+        },
     );
     getPluginContextMenuEntries().forEach(entry => {
         items.push(entry);

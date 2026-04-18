@@ -55,6 +55,10 @@ export interface Settings {
     cuttingPreAction?: string;
     cuttingPostAction?: string;
     sunTracker: boolean;
+    zlomSilver?: {
+        color: string;
+        off?: boolean;
+    };
     dobCommand1: string;
     dobCommand2: string;
     dobCommand3: string;
@@ -123,6 +127,7 @@ export const defaultSettings: Settings = {
     cuttingPreAction: '',
     cuttingPostAction: '',
     sunTracker: false,
+    zlomSilver: { color: '#dadada' },
     dobCommand1: '',
     dobCommand2: '',
     dobCommand3: '',

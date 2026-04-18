@@ -31,7 +31,8 @@ export type BuiltInPopupType =
   | 'packageReceiver'
   | 'profession'
   | 'sunTracker'
-  | 'transport-route';
+  | 'transport-route'
+  | 'zlom';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;
