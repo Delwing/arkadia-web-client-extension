@@ -2,6 +2,7 @@ import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "@client/ansi/FormatState";
 import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
+import eventBus from "@modules/core/eventBus";
 
 export interface WeaponEntry {
     short: string;
@@ -117,6 +118,56 @@ export function loadZlomSnapshot(): ZlomSnapshot {
 
 export function saveZlomSnapshot(s: ZlomSnapshot): void {
     characterStorage.set(ZLOM_STORAGE_KEY, s);
+    eventBus.emit("zlom.updated");
+}
+
+function emitSnapshotReplaced(): void {
+    eventBus.emit("zlom.snapshotReplaced");
+}
+
+export type ZlomMergeMode = 'replace' | 'keep';
+
+export interface ZlomImportPayload {
+    bronie: WeaponEntry[];
+    tarcze: ShieldEntry[];
+    zbroje: ArmorEntry[];
+}
+
+export interface ZlomImportCounts {
+    bronie: number;
+    tarcze: number;
+    zbroje: number;
+}
+
+export function mergeZlomData(data: ZlomImportPayload, mode: ZlomMergeMode = 'replace'): ZlomImportCounts {
+    const snap = loadZlomSnapshot();
+    let b = 0, t = 0, z = 0;
+    for (const e of data.bronie) {
+        if (!e.short) continue;
+        if (mode === 'keep' && snap.bronie[e.short]) continue;
+        snap.bronie[e.short] = e;
+        b++;
+    }
+    for (const e of data.tarcze) {
+        if (!e.short) continue;
+        if (mode === 'keep' && snap.tarcze[e.short]) continue;
+        snap.tarcze[e.short] = e;
+        t++;
+    }
+    for (const e of data.zbroje) {
+        if (!e.short) continue;
+        if (mode === 'keep' && snap.zbroje[e.short]) continue;
+        snap.zbroje[e.short] = e;
+        z++;
+    }
+    saveZlomSnapshot(snap);
+    emitSnapshotReplaced();
+    return { bronie: b, tarcze: t, zbroje: z };
+}
+
+export function clearZlomData(): void {
+    saveZlomSnapshot(emptySnapshot());
+    emitSnapshotReplaced();
 }
 
 function parseWeightObj(waga: string, wagaJ: string, obj: string, objJ: string): { waga: number; obj: number } {
@@ -479,6 +530,11 @@ export default function initZlom(
         PARSER_TAG,
     );
 
+    eventBus.on("zlom.snapshotReplaced", () => {
+        snap = loadZlomSnapshot();
+        reinstallHighlights(client, snap);
+    });
+
     if (aliases) {
         aliases.push({
             pattern: /^\/zlom(?:\s+(bronie|tarcze|zbroje))?$/,
@@ -504,14 +560,16 @@ export default function initZlom(
         });
 
         aliases.push({
+            pattern: /^\/zlomw$/,
+            callback: () => eventBus.emit("zlom.popup.open"),
+        });
+
+        aliases.push({
             pattern: /^\/zlom-reset$/,
             callback: () => {
-                snap = emptySnapshot();
-                saveZlomSnapshot(snap);
-                client.Triggers.removeByTag(HIGHLIGHT_TAG);
+                clearZlomData();
                 client.println("Baza zlomu wyczyszczona.");
             },
         });
     }
-
 }

@@ -1,4 +1,11 @@
-import initZlom, { loadZlomSnapshot } from '@client/scripts/zlom';
+import initZlom, {
+    loadZlomSnapshot,
+    mergeZlomData,
+    clearZlomData,
+    WeaponEntry,
+    ShieldEntry,
+    ArmorEntry,
+} from '@client/scripts/zlom';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
@@ -166,5 +173,118 @@ describe('zlom script', () => {
     expect(entry.ciete).toBe(9); // dobrze
     expect(entry.klute).toBe(6); // przyzwoicie
     expect(entry.obuch).toBe(9); // dobrze
+  });
+
+  describe('import / merge', () => {
+    function makeWeapon(partial: Partial<WeaponEntry>): WeaponEntry {
+      return {
+        short: '',
+        typ: '',
+        rodzaj: '',
+        klute: 0,
+        obuch: 0,
+        ciete: 0,
+        chwyt: '',
+        magik: 0,
+        srebro: 0,
+        opis: '',
+        waga: 0,
+        obj: 0,
+        cena: 0,
+        wywazenie: 0,
+        parowanie: 0,
+        roomId: null,
+        ...partial,
+      };
+    }
+
+    test('replace mode overwrites existing entries and adds new', () => {
+      feedWeapon();
+      const existing = loadZlomSnapshot().bronie['krasnoludzki asymetryczny topor bojowy'];
+      expect(existing.cena).toBe(880);
+
+      const counts = mergeZlomData(
+        {
+          bronie: [
+            makeWeapon({ short: 'krasnoludzki asymetryczny topor bojowy', cena: 1000, typ: 'topor' }),
+            makeWeapon({ short: 'nowy miecz', cena: 200, typ: 'miecz' }),
+          ],
+          tarcze: [],
+          zbroje: [],
+        },
+        'replace',
+      );
+
+      expect(counts.bronie).toBe(2);
+      const snap = loadZlomSnapshot();
+      expect(snap.bronie['krasnoludzki asymetryczny topor bojowy'].cena).toBe(1000);
+      expect(snap.bronie['nowy miecz'].typ).toBe('miecz');
+    });
+
+    test('keep mode only adds new entries', () => {
+      feedWeapon();
+      const counts = mergeZlomData(
+        {
+          bronie: [
+            makeWeapon({ short: 'krasnoludzki asymetryczny topor bojowy', cena: 1, typ: 'zmieniony' }),
+            makeWeapon({ short: 'unikatowy sztylet', cena: 77, typ: 'sztylet' }),
+          ],
+          tarcze: [],
+          zbroje: [],
+        },
+        'keep',
+      );
+      expect(counts.bronie).toBe(1);
+      const snap = loadZlomSnapshot();
+      expect(snap.bronie['krasnoludzki asymetryczny topor bojowy'].cena).toBe(880);
+      expect(snap.bronie['unikatowy sztylet'].typ).toBe('sztylet');
+    });
+
+    test('clearZlomData empties snapshot', () => {
+      feedWeapon();
+      expect(Object.keys(loadZlomSnapshot().bronie)).toHaveLength(1);
+      clearZlomData();
+      const snap = loadZlomSnapshot();
+      expect(snap.bronie).toEqual({});
+      expect(snap.tarcze).toEqual({});
+      expect(snap.zbroje).toEqual({});
+    });
+
+    test('merge imports shields and armors too', () => {
+      const shield: ShieldEntry = {
+        short: 'zelazny puklerz',
+        klute: 3,
+        obuch: 4,
+        ciete: 3,
+        magik: 0,
+        opis: '',
+        waga: 1500,
+        obj: 700,
+        cena: 120,
+        parowanie: 5,
+        oslona: 'lewa reka',
+        roomId: null,
+      };
+      const armor: ArmorEntry = {
+        short: 'skorzany pancerz',
+        typ: 'lekka',
+        klute: 2,
+        obuch: 2,
+        ciete: 3,
+        magik: 0,
+        opis: '',
+        waga: 2000,
+        obj: 1500,
+        cena: 80,
+        oslona: 'tulow',
+        roomId: null,
+      };
+      const counts = mergeZlomData({ bronie: [], tarcze: [shield], zbroje: [armor] }, 'replace');
+      expect(counts.tarcze).toBe(1);
+      expect(counts.zbroje).toBe(1);
+      const snap = loadZlomSnapshot();
+      expect(snap.tarcze['zelazny puklerz'].parowanie).toBe(5);
+      expect(snap.zbroje['skorzany pancerz'].typ).toBe('lekka');
+    });
   });
 });

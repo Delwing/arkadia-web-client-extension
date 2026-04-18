@@ -32,6 +32,7 @@ import LootPopup from '../LootPopup';
 import ProfessionPopup from '../ProfessionPopup';
 import SunTrackerPopup from '../SunTrackerPopup';
 import TransportRoutePopup from '../TransportRoutePopup';
+import ZlomPopup from '../ZlomPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -98,6 +99,7 @@ export function LayoutManagerWrapper({
       <ProfessionPopup />
       <SunTrackerPopup />
       <TransportRoutePopup />
+      <ZlomPopup />
       <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />

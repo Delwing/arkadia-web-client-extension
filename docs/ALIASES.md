@@ -134,6 +134,7 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |
 | `/zlom tarcze` | Wyswietl zapisane tarcze |
 | `/zlom zbroje` | Wyswietl zapisane zbroje |
+| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |
 | `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |
 
-> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem).
+> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Okno `/zlomw` pozwala zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).
