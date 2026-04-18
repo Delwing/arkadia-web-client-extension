@@ -10757,6 +10757,8 @@ body.layout-manager-enabled #notification-center {
   margin-left: 0.25rem;
   border-radius: 0.2rem;
   font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .zlom-tag--silver {
