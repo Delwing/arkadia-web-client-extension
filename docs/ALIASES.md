@@ -126,3 +126,14 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |
 
 > **Wskazowka:** Gdy ryba bierze, kliknij przycisk "Zatnij rybe" lub uzyj funkcjonalnego bindu (domyslnie `]`).
+
+## Zlom (baza ocenionych przedmiotow)
+
+| Komenda | Opis |
+|---------|------|
+| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |
+| `/zlom tarcze` | Wyswietl zapisane tarcze |
+| `/zlom zbroje` | Wyswietl zapisane zbroje |
+| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |
+
+> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem).
