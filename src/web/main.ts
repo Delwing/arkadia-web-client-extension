@@ -525,133 +525,133 @@ outputWrapper.addEventListener('contextmenu', event => {
     }
     items.push(
         {
-            label: 'Wiedza',
+            label: '📚 Wiedza',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/wiedza'});
             },
             opensWindow: true,
         },
         {
-            label: 'Biblioteki',
+            label: '🏛️ Biblioteki',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/biblioteki'});
             },
             opensWindow: true,
         },
         {
-            label: 'Zioła',
+            label: '🌿 Zioła',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/ziola'});
             },
             opensWindow: true,
         },
         {
-            label: 'Zioła (tekst)',
+            label: '📝 Zioła (tekst)',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/ziola2'});
             },
             opensWindow: true,
         },
         {
-            label: 'Zlecenia',
+            label: '📜 Zlecenia',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/zlecenia'});
             },
             opensWindow: true,
         },
         {
-            label: 'Skróty',
+            label: '⚡ Skróty',
             action: () => {
                 eventBus.emit('skroty.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Zegar',
+            label: '🕰️ Zegar',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/czas'});
             },
             opensWindow: true,
         },
         {
-            label: 'Chat',
+            label: '💬 Chat',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/chatw'});
             },
             opensWindow: true,
         },
         {
-            label: 'Walka',
+            label: '⚔️ Walka',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/walkaw'});
             },
             opensWindow: true,
         },
         {
-            label: 'Postepy',
+            label: '📈 Postepy',
             action: () => {
                 eventBus.emit('postepy.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Postepy 2',
+            label: '📊 Postepy 2',
             action: () => {
                 eventBus.emit('postepy2.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Zabici',
+            label: '💀 Zabici',
             action: () => {
                 eventBus.emit('zabici.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Zabici 2',
+            label: '⚰️ Zabici 2',
             action: () => {
                 eventBus.emit('zabici2.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Poczta',
+            label: '✉️ Poczta',
             action: () => {
                 eventBus.emit('poczta.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Depozyty',
+            label: '💰 Depozyty',
             action: () => {
                 eventBus.emit('deposits.popup.open', {});
             },
             opensWindow: true,
         },
         {
-            label: 'Wedka',
+            label: '🎣 Wedka',
             action: () => {
                 eventBus.emit('sendCommand', {command: '/wedka'});
             },
             opensWindow: true,
         },
         {
-            label: 'Kalendarz',
+            label: '📅 Kalendarz',
             action: () => {
                 eventBus.emit('sunTracker.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Zawod',
+            label: '🛠️ Zawod',
             action: () => {
                 eventBus.emit('profession.popup.open');
             },
             opensWindow: true,
         },
         {
-            label: 'Zlom',
+            label: '🛡️ Zlom',
             action: () => {
                 eventBus.emit('zlom.popup.open');
             },
