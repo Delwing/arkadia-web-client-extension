@@ -24,6 +24,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [labelVisible, setLabelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
   const [alwaysShowNote, setAlwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
   const [showGrid, setShowGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
+  const [showAreaExitLabels, setShowAreaExitLabels] = useBuiltInPanelSetting('map', 'showAreaExitLabels', true);
   const [hintsEnabled, setHintsEnabled] = useState(() =>
     getPopupSetting('popup:knowledgeDetails', 'showHints', false)
   );
@@ -53,6 +54,13 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     if (embedded?.settings) embedded.settings.gridEnabled = showGrid;
     eventBus.emit('mapShowGrid', showGrid);
   }, [showGrid, getEmbedded]);
+
+  // Emit showAreaExitLabels state on mount and when it changes
+  useEffect(() => {
+    const embedded = getEmbedded();
+    if (embedded?.settings) embedded.settings.areaExitLabels = showAreaExitLabels;
+    eventBus.emit('mapShowAreaExitLabels', showAreaExitLabels);
+  }, [showAreaExitLabels, getEmbedded]);
 
   // Keep hintsEnabled and showCompleted in sync with KnowledgeDetailsReport
   useEffect(() => {
@@ -272,6 +280,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [setShowGrid, closeMenu]);
 
+  const handleToggleAreaExitLabels = useCallback(() => {
+    setShowAreaExitLabels((prev) => !prev);
+    closeMenu();
+  }, [setShowAreaExitLabels, closeMenu]);
+
   const handleToggleShowCompleted = useCallback(() => {
     const newShowCompleted = !showCompleted;
     setShowCompleted(newShowCompleted);
@@ -468,6 +481,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 <span className={`map-header-menu__checkbox${showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
                 Siatka
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item map-header-menu__item--checkbox"
+                onClick={handleToggleAreaExitLabels}
+              >
+                <span className={`map-header-menu__checkbox${showAreaExitLabels ? ' map-header-menu__checkbox--checked' : ''}`} />
+                Etykiety wyjsc obszaru
               </button>
               {hintsEnabled && (
                 <button

@@ -303,6 +303,7 @@ export interface KnownEvents {
     "mapLabelVisibility": boolean;
     "mapAlwaysShowNote": boolean;
     "mapShowGrid": boolean;
+    "mapShowAreaExitLabels": boolean;
     "objectListViewMode": "list" | "card" | "compact" | "compact-dots";
     "objectList.showWeaponState": boolean;
     "objectList.showCoverTimer": boolean;

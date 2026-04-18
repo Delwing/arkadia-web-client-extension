@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Renderer, RoomContextMenuEventDetail, type RoomClickEventDetail } from 'mudlet-map-renderer';
+import { MapRenderer, RoomContextMenuEventDetail, type RoomClickEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
@@ -26,6 +26,7 @@ interface StaticMapState {
     titleAreaName: string;
     followPlayer: boolean;
     showGrid: boolean;
+    showAreaExitLabels: boolean;
 }
 
 type SubmenuType = 'none' | 'areas' | 'levels';
@@ -39,7 +40,7 @@ function StaticMapMenu({
     loadLevels,
     renderPathsAndHighlights,
 }: {
-    rendererRef: React.MutableRefObject<Renderer | null>;
+    rendererRef: React.MutableRefObject<MapRenderer | null>;
     state: StaticMapState;
     setState: React.Dispatch<React.SetStateAction<StaticMapState>>;
     loadLevels: (areaId: number) => void;
@@ -324,6 +325,17 @@ function StaticMapMenu({
         closeMenu();
     }, [state.showGrid, getEmbedded, rendererRef, setState, closeMenu]);
 
+    const handleToggleAreaExitLabels = useCallback(() => {
+        const newValue = !state.showAreaExitLabels;
+        const embedded = getEmbedded();
+        if (embedded?.settings) embedded.settings.areaExitLabels = newValue;
+        setBuiltInPanelSetting('map', 'showAreaExitLabels', newValue);
+        eventBus.emit('mapShowAreaExitLabels', newValue);
+        rendererRef.current?.refresh();
+        setState(s => ({ ...s, showAreaExitLabels: newValue }));
+        closeMenu();
+    }, [state.showAreaExitLabels, getEmbedded, rendererRef, setState, closeMenu]);
+
     return (
         <div ref={menuRef} className="map-header-menu">
             <button
@@ -398,6 +410,14 @@ function StaticMapMenu({
                                 <span className={`map-header-menu__checkbox${state.showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
                                 Siatka
                             </button>
+                            <button
+                                type="button"
+                                className="map-header-menu__item map-header-menu__item--checkbox"
+                                onClick={handleToggleAreaExitLabels}
+                            >
+                                <span className={`map-header-menu__checkbox${state.showAreaExitLabels ? ' map-header-menu__checkbox--checked' : ''}`} />
+                                Etykiety wyjsc obszaru
+                            </button>
                         </>
                     )}
                 </div>
@@ -410,7 +430,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     const popupId = `popup:staticmap:${instance.id}`;
 
     const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
-    const rendererRef = useRef<Renderer | null>(null);
+    const rendererRef = useRef<MapRenderer | null>(null);
     const [isOpen, setIsOpen] = useState(true);
     const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(popupId));
     const [isLocked, setIsLocked] = useState(() => getPopupLockedState(popupId));
@@ -424,6 +444,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         titleAreaName: '',
         followPlayer: false,
         showGrid: (globalThis as any).embedded?.settings?.gridEnabled ?? false,
+        showAreaExitLabels: (globalThis as any).embedded?.settings?.areaExitLabels ?? true,
     });
     const [note, setNote] = useState<LocationNote | null>(null);
     const [mapNote, setMapNote] = useState<string | null>(null);
@@ -494,6 +515,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let settingsHandler: (() => void) | null = null;
         let settingsUnsubscribe: (() => void) | null = null;
         let gridHandler: ((value: boolean) => void) | null = null;
+        let areaExitLabelsHandler: ((value: boolean) => void) | null = null;
         let dataChangedHandler: (() => void) | null = null;
 
         const initTimeout = requestAnimationFrame(() => {
@@ -504,7 +526,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             container.style.touchAction = 'none';
             parentContainer.appendChild(container);
 
-            const renderer = new Renderer(container, embedded.reader, embedded.settings);
+            const renderer = new MapRenderer(embedded.reader, embedded.settings, container);
             rendererRef.current = renderer;
 
             renderer.centerOnResize = false;
@@ -776,6 +798,15 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 setState(s => ({ ...s, showGrid: value }));
             };
 
+            areaExitLabelsHandler = (value: boolean) => {
+                const renderer = rendererRef.current;
+                if (!renderer) return;
+                const embedded = getEmbedded();
+                if (embedded?.settings) embedded.settings.areaExitLabels = value;
+                renderer.refresh();
+                setState(s => ({ ...s, showAreaExitLabels: value }));
+            };
+
             dataChangedHandler = () => {
                 const renderer = rendererRef.current;
                 const embedded = getEmbedded();
@@ -799,6 +830,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             eventBus.on('enterLocation', moveHandler);
             settingsUnsubscribe = globalStorage.onChange('uiSettings', settingsHandler);
             eventBus.on('mapShowGrid', gridHandler);
+            eventBus.on('mapShowAreaExitLabels', areaExitLabelsHandler);
             eventBus.on('mapDataChanged', dataChangedHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
             container.addEventListener('roomclick', roomClickHandler);
@@ -823,6 +855,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (moveHandler) eventBus.off('enterLocation', moveHandler);
             if (settingsUnsubscribe) settingsUnsubscribe();
             if (gridHandler) eventBus.off('mapShowGrid', gridHandler);
+            if (areaExitLabelsHandler) eventBus.off('mapShowAreaExitLabels', areaExitLabelsHandler);
             if (dataChangedHandler) eventBus.off('mapDataChanged', dataChangedHandler);
             if (container && contextMenuHandler) {
                 container.removeEventListener('roomcontextmenu', contextMenuHandler);
@@ -838,6 +871,8 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 if (resizeObserver) resizeObserver.disconnect();
                 container.remove();
             }
+            const renderer = rendererRef.current;
+            renderer?.destroy();
             rendererRef.current = null;
         };
     }, [isOpen, containerEl, getEmbedded, instance.initialRoomId, instance.initialAreaId, renderPathsAndHighlights, loadLevels]);

@@ -1,12 +1,11 @@
 import {
     MapReader,
-    Renderer,
     createSettings,
     type Settings,
     RoomContextMenuEventDetail,
     type RoomClickEventDetail,
     type PanEventDetail,
-    LabelRenderMode
+    LabelRenderMode, MapRenderer
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
@@ -73,7 +72,7 @@ async function saveVisitedRooms(rooms: number[]): Promise<void> {
 export class EmbeddedMap {
     private readonly map: HTMLDivElement;
     public reader: MapReader;
-    public renderer: Renderer;
+    public renderer: MapRenderer;
     public readonly settings: Settings;
     public currentRoom: any;
     private zoom: number;
@@ -150,6 +149,7 @@ export class EmbeddedMap {
         settings.playerMarker.dash = [0.05, 0.05]
         settings.gridColor = 'rgba(255, 255, 255, 0.1)';
         settings.gridEnabled = getBuiltInPanelSetting('map', 'showGrid', false);
+        settings.areaExitLabels = getBuiltInPanelSetting('map', 'showAreaExitLabels', true);
         settings.areaName = false
         const isLayoutManagerEnabled = loadLayoutState().enabled;
         if (mapPosition.includes('overlay') && !isLayoutManagerEnabled) {
@@ -208,7 +208,7 @@ export class EmbeddedMap {
         }
 
         this.settings = settings;
-        this.renderer = new Renderer(this.map, this.reader, settings);
+        this.renderer = new MapRenderer(this.reader, settings, this.map);
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
         this.setHighlightCurrentRoom(highlightCurrentRoom);
@@ -253,6 +253,11 @@ export class EmbeddedMap {
 
         eventBus.on('mapShowGrid', (value: boolean) => {
             this.settings.gridEnabled = value;
+            this.refreshRender();
+        });
+
+        eventBus.on('mapShowAreaExitLabels', (value: boolean) => {
+            this.settings.areaExitLabels = value;
             this.refreshRender();
         });
 
@@ -587,7 +592,7 @@ export class EmbeddedMap {
             (this.renderer as any).destroy();
         }
 
-        this.renderer = new Renderer(this.map, this.reader, this.settings);
+        this.renderer = new MapRenderer(this.reader, this.settings, this.map);
 
         this.reader.addVisitedRooms(Array.from(this.visited));
 

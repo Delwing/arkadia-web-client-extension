@@ -36,7 +36,7 @@
     "lua-in-js": "^2.2.5",
     "marked": "^16.0.0",
     "monaco-editor": "^0.55.1",
-    "mudlet-map-renderer": "0.27.1-konva",
+    "mudlet-map-renderer": "0.37.2-konva",
     "nosleep.js": "^0.12.0",
     "pako": "^2.1.0",
     "react": "^19.1.0",
