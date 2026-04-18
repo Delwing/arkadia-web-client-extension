@@ -2,6 +2,8 @@ import initZlom, {
     loadZlomSnapshot,
     mergeZlomData,
     clearZlomData,
+    setZlomColor,
+    getZlomFormatting,
     WeaponEntry,
     ShieldEntry,
     ArmorEntry,
@@ -9,6 +11,7 @@ import initZlom, {
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
+import { setTestSettings } from '../helpers/testSettings';
 
 class FakeMap {
   currentRoom: { id: number } | null = { id: 42 };
@@ -285,6 +288,80 @@ describe('zlom script', () => {
       const snap = loadZlomSnapshot();
       expect(snap.tarcze['zelazny puklerz'].parowanie).toBe(5);
       expect(snap.zbroje['skorzany pancerz'].typ).toBe('lekka');
+    });
+  });
+
+  describe('color formatting', () => {
+    test('setZlomColor persists color on entry', () => {
+      feedWeapon();
+      setZlomColor('bronie', 'krasnoludzki asymetryczny topor bojowy', '#ff8080');
+      expect(loadZlomSnapshot().bronie['krasnoludzki asymetryczny topor bojowy'].color).toBe('#ff8080');
+    });
+
+    test('setZlomColor with undefined clears color', () => {
+      feedWeapon();
+      setZlomColor('bronie', 'krasnoludzki asymetryczny topor bojowy', '#ff8080');
+      setZlomColor('bronie', 'krasnoludzki asymetryczny topor bojowy', undefined);
+      expect(loadZlomSnapshot().bronie['krasnoludzki asymetryczny topor bojowy'].color).toBeUndefined();
+    });
+
+    test('color survives re-evaluation of same weapon', () => {
+      feedWeapon();
+      setZlomColor('bronie', 'krasnoludzki asymetryczny topor bojowy', '#abcdef');
+      feedWeapon();
+      expect(loadZlomSnapshot().bronie['krasnoludzki asymetryczny topor bojowy'].color).toBe('#abcdef');
+    });
+
+    test('getZlomFormatting returns color + underline for silver weapon', () => {
+      feedWeapon();
+      setZlomColor('bronie', 'krasnoludzki asymetryczny topor bojowy', '#abcdef');
+      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy');
+      expect(f).toBeDefined();
+      expect(f!.color).toBe('#abcdef');
+      expect(f!.underline).toBe(true);
+      expect(f!.title).toContain('topor');
+      expect(f!.title).toContain('srebro');
+    });
+
+    test('getZlomFormatting honors colorSilver=false', () => {
+      feedWeapon();
+      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy', { colorSilver: false });
+      expect(f!.underline).toBe(false);
+    });
+
+    test('getZlomFormatting matches substring within longer text', () => {
+      feedWeapon();
+      const f = getZlomFormatting('stary krasnoludzki asymetryczny topor bojowy w pochwie');
+      expect(f).toBeDefined();
+      expect(f!.title).toContain('topor');
+    });
+
+    test('highlight applies user color to in-game line', () => {
+      feedWeapon();
+      setZlomColor('bronie', 'krasnoludzki asymetryczny topor bojowy', '#aabbcc');
+      // Reinitialize triggers so the new color is picked up
+      client.Triggers.removeByTag('zlom-highlight');
+      client.Triggers.removeByTag('zlom-parser');
+      initZlom((client as unknown) as any, client.aliases);
+
+      const buf = new AnsiAwareBuffer('Trzymasz krasnoludzki asymetryczny topor bojowy w prawej rece.');
+      Triggers.prototype.parseLine.call(client.Triggers, buf, '');
+      const state = buf.getStateAt(buf.text.indexOf('krasnoludzki'));
+      expect(state?.foreground).toEqual({ space: 'hex', color: '#aabbcc' });
+    });
+
+    test('zlomColorSilver=false disables underline on highlight', () => {
+      feedWeapon();
+      setTestSettings({ zlomColorSilver: false });
+      client.Triggers.removeByTag('zlom-highlight');
+      client.Triggers.removeByTag('zlom-parser');
+      initZlom((client as unknown) as any, client.aliases);
+
+      const buf = new AnsiAwareBuffer('Trzymasz krasnoludzki asymetryczny topor bojowy w prawej rece.');
+      Triggers.prototype.parseLine.call(client.Triggers, buf, '');
+      const state = buf.getStateAt(buf.text.indexOf('krasnoludzki'));
+      expect(state?.bold).toBe(true);
+      expect(state?.underline).toBeFalsy();
     });
   });
 });

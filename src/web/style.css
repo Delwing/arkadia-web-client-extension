@@ -10768,3 +10768,47 @@ body.layout-manager-enabled #notification-center {
   color: #ff7cff;
   background-color: rgba(255, 124, 255, 0.15);
 }
+
+.zlom-cell--color {
+  width: 4rem;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.zlom-color-input {
+  width: 1.75rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 0.2rem;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.zlom-color-clear {
+  margin-left: 0.25rem;
+  padding: 0 0.3rem;
+  font-size: 0.75rem;
+  border: none;
+  background: none;
+  color: var(--popup-text-dim);
+  cursor: pointer;
+}
+
+.zlom-color-clear:hover {
+  color: var(--popup-danger-light);
+}
+
+.zlom-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--popup-text-subtle);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.zlom-toggle input {
+  cursor: pointer;
+}

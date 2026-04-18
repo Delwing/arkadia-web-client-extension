@@ -8,12 +8,15 @@ import {
     loadZlomSnapshot,
     mergeZlomData,
     clearZlomData,
+    setZlomColor,
     ZlomSnapshot,
     WeaponEntry,
     ShieldEntry,
     ArmorEntry,
     ZlomMergeMode,
+    ZlomKind,
 } from '../client/scripts/zlom';
+import { defaultSettings } from '@modules/core/defaultSettings';
 import type {
     ZlomDbResult,
     ZlomDbWorkerRequest,
@@ -155,6 +158,54 @@ const ZlomPopup: React.FC = () => {
         clearZlomData();
     }, []);
 
+    const [colorSilver, setColorSilver] = useState<boolean>(() => {
+        const v = characterStorage.get('settings')?.zlomColorSilver;
+        return v !== false;
+    });
+
+    useEffect(() => {
+        const unsub = characterStorage.onChange('settings', (v) => {
+            const next = v?.zlomColorSilver;
+            setColorSilver(next !== false);
+        });
+        return unsub;
+    }, []);
+
+    const toggleColorSilver = useCallback(() => {
+        const current = characterStorage.get('settings') ?? defaultSettings;
+        characterStorage.set('settings', { ...current, zlomColorSilver: !colorSilver });
+    }, [colorSilver]);
+
+    const handleColorChange = useCallback((kind: ZlomKind, short: string, value: string) => {
+        setZlomColor(kind, short, value || undefined);
+    }, []);
+
+    const handleColorClear = useCallback((kind: ZlomKind, short: string) => {
+        setZlomColor(kind, short, undefined);
+    }, []);
+
+    const renderColorCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => (
+        <td className="zlom-cell zlom-cell--color">
+            <input
+                type="color"
+                className="zlom-color-input"
+                value={entry.color ?? '#ffffff'}
+                onChange={(e) => handleColorChange(kind, entry.short, e.target.value)}
+                title={entry.color ? `Kolor: ${entry.color}` : 'Ustaw kolor'}
+            />
+            {entry.color && (
+                <button
+                    type="button"
+                    className="zlom-color-clear"
+                    onClick={() => handleColorClear(kind, entry.short)}
+                    title="Usun kolor"
+                >
+                    x
+                </button>
+            )}
+        </td>
+    );
+
     const entries = useMemo(() => {
         const raw: (WeaponEntry | ShieldEntry | ArmorEntry)[] =
             activeTab === 'bronie' ? Object.values(snap.bronie)
@@ -175,7 +226,10 @@ const ZlomPopup: React.FC = () => {
 
     const renderWeapon = (e: WeaponEntry, i: number) => (
         <tr key={e.short} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short">
+            <td
+                className="zlom-cell zlom-cell--short"
+                style={e.color ? { color: e.color, textDecoration: e.srebro && colorSilver ? 'underline' : undefined } : undefined}
+            >
                 {e.short}
                 {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro"> Ag</span> : null}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia"> M</span> : null}
@@ -186,12 +240,13 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            {renderColorCell('bronie', e)}
         </tr>
     );
 
     const renderShield = (e: ShieldEntry, i: number) => (
         <tr key={e.short} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short">
+            <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia"> M</span> : null}
             </td>
@@ -200,12 +255,13 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            {renderColorCell('tarcze', e)}
         </tr>
     );
 
     const renderArmor = (e: ArmorEntry, i: number) => (
         <tr key={e.short} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short">
+            <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia"> M</span> : null}
             </td>
@@ -214,20 +270,21 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            {renderColorCell('zbroje', e)}
         </tr>
     );
 
     const tableHead = activeTab === 'bronie' ? (
         <tr>
-            <th>Short</th><th>Typ</th><th>K/O/C</th><th>Wyw.</th><th>Par.</th><th>Cena</th><th>Waga</th>
+            <th>Short</th><th>Typ</th><th>K/O/C</th><th>Wyw.</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th>
         </tr>
     ) : activeTab === 'tarcze' ? (
         <tr>
-            <th>Short</th><th>Oslona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th>
+            <th>Short</th><th>Oslona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th>
         </tr>
     ) : (
         <tr>
-            <th>Short</th><th>Typ</th><th>Oslona</th><th>K/O/C</th><th>Cena</th><th>Waga</th>
+            <th>Short</th><th>Typ</th><th>Oslona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th>
         </tr>
     );
 
@@ -251,6 +308,10 @@ const ZlomPopup: React.FC = () => {
                     </span>
                 )}
                 <div className="zlom-header-actions">
+                    <label className="zlom-toggle" title="Podkreslaj bronie ze srebrem">
+                        <input type="checkbox" checked={colorSilver} onChange={toggleColorSilver} />
+                        <span>Srebro</span>
+                    </label>
                     <input
                         type="text"
                         className="zlom-filter"

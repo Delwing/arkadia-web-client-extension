@@ -17,6 +17,7 @@ import {
 import { polishNumberWords, polishNumberPattern } from "./polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import { getZlomFormatting } from "./zlom";
 
 const GROUP_NAME_COLOR = createColorFormat('#557C99');
 
@@ -409,6 +410,18 @@ const defaultTransforms: TransformDefinition[] = [
             buffer.color([0, buffer.length], COPPER_COLOR);
         }
         return buffer;
+    }},
+    { transform: (buffer, item) => {
+        const colorSilver = characterStorage.get('settings')?.zlomColorSilver !== false;
+        const zlom = getZlomFormatting(item.name, { colorSilver });
+        if (!zlom) return buffer;
+        if (zlom.color) {
+            buffer.applyFormat([0, buffer.length], { foreground: { space: 'hex', color: zlom.color } });
+        }
+        if (zlom.underline) {
+            buffer.applyFormat([0, buffer.length], { underline: true });
+        }
+        return buffer;
     }}
 ]
 
@@ -427,6 +440,10 @@ let magicFilter: ((name: string) => boolean) | null = null;
  * (coins, magic keys, magics, item categories).
  */
 export function getItemCssColor(name: string): string | undefined {
+    // User-assigned zlom color wins
+    const zlomColor = getZlomFormatting(name)?.color;
+    if (zlomColor) return zlomColor;
+
     // Coin colors (highest priority)
     if (/mithryl\w+ monet/.test(name)) return '#afeeee';
     if (/zlot\w+ monet/.test(name)) return '#ffd700';

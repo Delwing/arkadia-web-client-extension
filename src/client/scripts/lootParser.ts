@@ -3,6 +3,8 @@ import { parseItems, ContainerItem, getItemCssColor, isItemMagicOrKey } from "./
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import { createColorFormat } from "@modules/core/Colors";
 import eventBus from "@modules/core/eventBus";
+import { getZlomFormatting } from "./zlom";
+import { characterStorage } from "@modules/core/storage";
 
 export type LootPopupPayload = {
     description: string;
@@ -15,6 +17,8 @@ export type LootItem = ContainerItem & {
     color?: string;
     fullName: string;
     special?: boolean;
+    underline?: boolean;
+    title?: string;
 };
 
 let popupMode = false;
@@ -92,11 +96,13 @@ function splitRawParts(content: string): string[] {
 function enrichItems(rawText: string): LootItem[] {
     const items = parseItems(rawText);
     const originalParts = splitRawParts(rawText);
+    const colorSilver = characterStorage.get('settings')?.zlomColorSilver !== false;
     return items.map((item, i) => {
-        const color = getItemCssColor(item.name);
+        const zlom = getZlomFormatting(item.name, { colorSilver });
+        const color = zlom?.color ?? getItemCssColor(item.name);
         const fullName = originalParts[i] ?? item.name;
         const special = isItemMagicOrKey(item.name);
-        return { ...item, color, fullName, special };
+        return { ...item, color, fullName, special, underline: zlom?.underline, title: zlom?.title };
     });
 }
 
@@ -211,17 +217,18 @@ export default function initLootParser(client: Client) {
 
                 // Color items first
                 for (const item of items) {
-                    if (item.color) {
-                        const colorFormat = createColorFormat(item.color);
-                        const haystack = buffer.text.toLowerCase();
-                        const needle = item.fullName.toLowerCase();
-                        let searchStart = 0;
-                        while (searchStart <= buffer.text.length - needle.length) {
-                            const idx = haystack.indexOf(needle, searchStart);
-                            if (idx === -1) break;
-                            buffer.color([idx, idx + item.fullName.length], colorFormat);
-                            searchStart = idx + item.fullName.length;
-                        }
+                    if (!item.color && !item.underline) continue;
+                    const fmt = item.color
+                        ? { ...createColorFormat(item.color), underline: item.underline ? true : undefined }
+                        : { underline: true };
+                    const haystack = buffer.text.toLowerCase();
+                    const needle = item.fullName.toLowerCase();
+                    let searchStart = 0;
+                    while (searchStart <= buffer.text.length - needle.length) {
+                        const idx = haystack.indexOf(needle, searchStart);
+                        if (idx === -1) break;
+                        buffer.applyFormat([idx, idx + item.fullName.length], fmt);
+                        searchStart = idx + item.fullName.length;
                     }
                 }
 

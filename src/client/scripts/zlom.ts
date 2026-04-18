@@ -21,6 +21,7 @@ export interface WeaponEntry {
     wywazenie: number;
     parowanie: number;
     roomId: number | null;
+    color?: string;
 }
 
 export interface ArmorEntry {
@@ -36,6 +37,7 @@ export interface ArmorEntry {
     cena: number;
     oslona: string;
     roomId: number | null;
+    color?: string;
 }
 
 export interface ShieldEntry {
@@ -51,7 +53,11 @@ export interface ShieldEntry {
     parowanie: number;
     oslona: string;
     roomId: number | null;
+    color?: string;
 }
+
+export type ZlomEntry = WeaponEntry | ShieldEntry | ArmorEntry;
+export type ZlomKind = 'bronie' | 'tarcze' | 'zbroje';
 
 export interface ZlomSnapshot {
     bronie: Record<string, WeaponEntry>;
@@ -119,6 +125,54 @@ export function loadZlomSnapshot(): ZlomSnapshot {
 export function saveZlomSnapshot(s: ZlomSnapshot): void {
     characterStorage.set(ZLOM_STORAGE_KEY, s);
     eventBus.emit("zlom.updated");
+}
+
+export function setZlomColor(kind: ZlomKind, short: string, color: string | undefined): void {
+    const snap = loadZlomSnapshot();
+    const entry = (snap[kind] as Record<string, ZlomEntry>)[short];
+    if (!entry) return;
+    if (color) entry.color = color;
+    else delete entry.color;
+    saveZlomSnapshot(snap);
+    eventBus.emit("zlom.snapshotReplaced");
+}
+
+export interface ZlomFormatting {
+    color?: string;
+    underline: boolean;
+    title?: string;
+}
+
+/**
+ * Returns the zlom-driven formatting for an item name, or undefined if no saved entry matches.
+ * Uses character's zlom snapshot plus zlomColorSilver setting for silver underline.
+ */
+export function getZlomFormatting(name: string, opts: { colorSilver?: boolean } = {}): ZlomFormatting | undefined {
+    if (!name) return undefined;
+    const snap = loadZlomSnapshot();
+    const lower = name.toLowerCase();
+    const scan = (records: Record<string, ZlomEntry>): ZlomEntry | undefined => {
+        if (records[name]) return records[name];
+        for (const key of Object.keys(records)) {
+            if (lower.includes(key.toLowerCase())) return records[key];
+        }
+        return undefined;
+    };
+    const entry = scan(snap.bronie) ?? scan(snap.tarcze) ?? scan(snap.zbroje);
+    if (!entry) return undefined;
+    const silver = (entry as WeaponEntry).srebro === 1;
+    const magic = entry.magik === 1;
+    const underline = silver && (opts.colorSilver ?? true);
+    const titleParts: string[] = [];
+    if ((entry as WeaponEntry).typ) titleParts.push((entry as WeaponEntry).typ);
+    else if ((entry as ShieldEntry).oslona) titleParts.push('tarcza');
+    if (silver) titleParts.push(SILVER_TYP_TOOLTIP);
+    if (magic) titleParts.push('magia');
+    return {
+        color: entry.color,
+        underline,
+        title: titleParts.length ? titleParts.join(' / ') : undefined,
+    };
 }
 
 function emitSnapshotReplaced(): void {
@@ -246,7 +300,8 @@ function extractArmorProtection(text: string): { prot: ArmorProtection; parry?: 
     return undefined;
 }
 
-function registerHighlight(client: Client, short: string, typ: string | undefined, silver: boolean) {
+function registerHighlight(client: Client, entry: ZlomEntry) {
+    const short = entry.short;
     if (!short) return;
     client.Triggers.registerTrigger(
         new RegExp(escapeRegex(short)),
@@ -254,11 +309,14 @@ function registerHighlight(client: Client, short: string, typ: string | undefine
             const idx = line.text.indexOf(short);
             if (idx === -1) return line;
             const end = idx + short.length;
+            const silverOn = characterStorage.get('settings')?.zlomColorSilver !== false;
+            const silver = (entry as WeaponEntry).srebro === 1;
             const fmt: FormatStateSnapshot = { bold: true };
-            if (silver) fmt.underline = true;
+            if (silver && silverOn) fmt.underline = true;
+            if (entry.color) fmt.foreground = { space: 'hex', color: entry.color };
             line.applyFormat([idx, end], fmt);
             line.createLink([idx, end], {
-                title: buildHint(typ, silver),
+                title: buildHintForEntry(entry),
                 onClick: () => {},
             });
             return line;
@@ -267,11 +325,13 @@ function registerHighlight(client: Client, short: string, typ: string | undefine
     );
 }
 
-function buildHint(typ: string | undefined, silver: boolean): string {
+function buildHintForEntry(entry: ZlomEntry): string {
     const parts: string[] = [];
+    const typ = (entry as WeaponEntry).typ || (entry as ShieldEntry).oslona || '';
     if (typ) parts.push(typ);
-    if (silver) parts.push(SILVER_TYP_TOOLTIP);
-    return parts.join(" / ");
+    if ((entry as WeaponEntry).srebro === 1) parts.push(SILVER_TYP_TOOLTIP);
+    if (entry.magik === 1) parts.push('magia');
+    return parts.join(' / ');
 }
 
 function escapeRegex(s: string): string {
@@ -281,13 +341,13 @@ function escapeRegex(s: string): string {
 function reinstallHighlights(client: Client, snap: ZlomSnapshot) {
     client.Triggers.removeByTag(HIGHLIGHT_TAG);
     for (const b of Object.values(snap.bronie)) {
-        registerHighlight(client, b.short, b.typ, b.srebro > 0);
+        registerHighlight(client, b);
     }
     for (const t of Object.values(snap.tarcze)) {
-        registerHighlight(client, t.short, "tarcza", false);
+        registerHighlight(client, t);
     }
     for (const z of Object.values(snap.zbroje)) {
-        registerHighlight(client, z.short, z.typ, false);
+        registerHighlight(client, z);
     }
 }
 
@@ -322,9 +382,11 @@ export default function initZlom(
             parowanie: ctx.parowanie ?? 0,
             roomId: roomId(),
         };
+        const prev = snap.bronie[entry.short];
+        if (prev?.color) entry.color = prev.color;
         snap.bronie[entry.short] = entry;
         saveZlomSnapshot(snap);
-        registerHighlight(client, entry.short, entry.typ, entry.srebro > 0);
+        registerHighlight(client, entry);
     };
 
     const persistZbroja = () => {
@@ -343,9 +405,11 @@ export default function initZlom(
             oslona: ctx.oslona ?? "",
             roomId: roomId(),
         };
+        const prev = snap.zbroje[entry.short];
+        if (prev?.color) entry.color = prev.color;
         snap.zbroje[entry.short] = entry;
         saveZlomSnapshot(snap);
-        registerHighlight(client, entry.short, entry.typ, false);
+        registerHighlight(client, entry);
     };
 
     const persistTarcza = () => {
@@ -364,9 +428,11 @@ export default function initZlom(
             oslona: ctx.oslona ?? "",
             roomId: roomId(),
         };
+        const prev = snap.tarcze[entry.short];
+        if (prev?.color) entry.color = prev.color;
         snap.tarcze[entry.short] = entry;
         saveZlomSnapshot(snap);
-        registerHighlight(client, entry.short, "tarcza", false);
+        registerHighlight(client, entry);
     };
 
     client.Triggers.registerTrigger(
