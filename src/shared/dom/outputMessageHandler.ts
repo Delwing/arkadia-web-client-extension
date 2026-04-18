@@ -19,8 +19,10 @@ type OutputHandlerOptions = {
 };
 
 const TIMESTAMP_CLASS = 'output-show-timestamps';
+const MESSAGE_TYPE_CLASS = 'output-show-message-types';
 
 let timestampsVisible = false;
+let messageTypesVisible = false;
 let currentOutputWrapper: HTMLElement | null = null;
 let currentStickyArea: HTMLElement | null = null;
 
@@ -42,6 +44,15 @@ function applyTimestampVisibility() {
     }
 }
 
+function applyMessageTypeVisibility() {
+    if (currentOutputWrapper) {
+        currentOutputWrapper.classList.toggle(MESSAGE_TYPE_CLASS, messageTypesVisible);
+    }
+    if (currentStickyArea) {
+        currentStickyArea.classList.toggle(MESSAGE_TYPE_CLASS, messageTypesVisible);
+    }
+}
+
 function createTimestampElement(timestamp: number): HTMLSpanElement {
     const timestampEl = document.createElement('span');
     timestampEl.classList.add('output-timestamp');
@@ -49,6 +60,16 @@ function createTimestampElement(timestamp: number): HTMLSpanElement {
     timestampEl.dataset.timestamp = `${timestamp}`;
     timestampEl.title = new Date(timestamp).toLocaleString();
     return timestampEl;
+}
+
+function createMessageTypeElement(type: string | undefined): HTMLSpanElement {
+    const typeEl = document.createElement('span');
+    typeEl.classList.add('output-message-type');
+    const label = type && type.length > 0 ? type : '—';
+    typeEl.textContent = label;
+    typeEl.dataset.messageType = type ?? '';
+    typeEl.title = type ? `Typ wiadomości: ${type}` : 'Brak typu wiadomości';
+    return typeEl;
 }
 
 export function areOutputTimestampsVisible() {
@@ -62,6 +83,19 @@ export function setOutputTimestampVisibility(visible: boolean) {
 
 export function toggleOutputTimestampVisibility() {
     setOutputTimestampVisibility(!timestampsVisible);
+}
+
+export function areOutputMessageTypesVisible() {
+    return messageTypesVisible;
+}
+
+export function setOutputMessageTypeVisibility(visible: boolean) {
+    messageTypesVisible = visible;
+    applyMessageTypeVisibility();
+}
+
+export function toggleOutputMessageTypeVisibility() {
+    setOutputMessageTypeVisibility(!messageTypesVisible);
 }
 
 function createMessageWrapper(
@@ -80,6 +114,7 @@ function createMessageWrapper(
     wrapper.dataset.timestamp = `${timestamp}`;
 
     const timestampEl = createTimestampElement(timestamp);
+    const typeEl = createMessageTypeElement(type);
     const contentSpan = document.createElement('span');
     contentSpan.classList.add('output_msg_content');
 
@@ -104,6 +139,7 @@ function createMessageWrapper(
     contentSpan.style.whiteSpace = 'pre-wrap';
 
     messageDiv.appendChild(timestampEl);
+    messageDiv.appendChild(typeEl);
     messageDiv.appendChild(contentSpan);
     wrapper.appendChild(messageDiv);
 
@@ -126,6 +162,7 @@ export function setupOutputMessageHandler(
     currentOutputWrapper = outputWrapper;
     currentStickyArea = stickyArea;
     applyTimestampVisibility();
+    applyMessageTypeVisibility();
 
     const handleMessage = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
         // Allow empty strings to render as empty lines, but skip undefined/null

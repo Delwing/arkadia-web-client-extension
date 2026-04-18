@@ -71,6 +71,8 @@ import {
 import {
     areOutputTimestampsVisible,
     setOutputTimestampVisibility,
+    areOutputMessageTypesVisible,
+    setOutputMessageTypeVisibility,
     setupOutputMessageHandler,
 } from "@shared/dom/outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
@@ -498,11 +500,16 @@ outputWrapper.addEventListener('contextmenu', event => {
     }
     event.preventDefault();
     const isVisible = areOutputTimestampsVisible();
+    const areTypesVisible = areOutputMessageTypesVisible();
     const hasSelection = !window.getSelection()?.isCollapsed;
     const items: ContextMenuEntry[] = [
         {
             label: isVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
             action: () => setOutputTimestampVisibility(!isVisible),
+        },
+        {
+            label: areTypesVisible ? 'Ukryj typy wiadomości' : 'Pokaż typy wiadomości',
+            action: () => setOutputMessageTypeVisibility(!areTypesVisible),
         },
     ];
     if (hasSelection) {

@@ -6347,6 +6347,24 @@ body.mobile-command-radial-active {
   display: inline;
 }
 
+.output-message-type {
+  display: none;
+  color: mediumpurple;
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: 0.85em;
+  user-select: none;
+  flex: 0 0 auto;
+  width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#main_text_output_msg_wrapper.output-show-message-types .output-message-type,
+#sticky-area.output-show-message-types .output-message-type {
+  display: inline-block;
+}
+
 .logo {
   width: auto;
   height: auto;
