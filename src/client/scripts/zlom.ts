@@ -3,69 +3,30 @@ import { characterStorage } from "@modules/core/storage";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "@client/ansi/FormatState";
 import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
 import eventBus from "@modules/core/eventBus";
+import {
+    ensureZlomLoaded,
+    getZlomSnapshot,
+    subscribeZlom,
+    updateZlomSnapshot,
+    clearZlomStore,
+    upsertByOpis,
+    type WeaponEntry,
+    type ArmorEntry,
+    type ShieldEntry,
+    type ZlomEntry,
+    type ZlomKind,
+    type ZlomSnapshot,
+} from "@modules/data/zlomStore";
 
-export interface WeaponEntry {
-    short: string;
-    typ: string;
-    rodzaj: string;
-    klute: number;
-    obuch: number;
-    ciete: number;
-    chwyt: string;
-    magik: 0 | 1;
-    srebro: 0 | 1;
-    opis: string;
-    waga: number;
-    obj: number;
-    cena: number;
-    wywazenie: number;
-    parowanie: number;
-    roomId: number | null;
-    color?: string;
-}
+export type {
+    WeaponEntry,
+    ArmorEntry,
+    ShieldEntry,
+    ZlomEntry,
+    ZlomKind,
+    ZlomSnapshot,
+};
 
-export interface ArmorEntry {
-    short: string;
-    typ: string;
-    klute: number;
-    obuch: number;
-    ciete: number;
-    magik: 0 | 1;
-    opis: string;
-    waga: number;
-    obj: number;
-    cena: number;
-    oslona: string;
-    roomId: number | null;
-    color?: string;
-}
-
-export interface ShieldEntry {
-    short: string;
-    klute: number;
-    obuch: number;
-    ciete: number;
-    magik: 0 | 1;
-    opis: string;
-    waga: number;
-    obj: number;
-    cena: number;
-    parowanie: number;
-    oslona: string;
-    roomId: number | null;
-    color?: string;
-}
-
-export type ZlomEntry = WeaponEntry | ShieldEntry | ArmorEntry;
-export type ZlomKind = 'bronie' | 'tarcze' | 'zbroje';
-
-export interface ZlomSnapshot {
-    bronie: Record<string, WeaponEntry>;
-    tarcze: Record<string, ShieldEntry>;
-    zbroje: Record<string, ArmorEntry>;
-}
-
-export const ZLOM_STORAGE_KEY = "zlom";
 const HIGHLIGHT_TAG = "zlom-highlight";
 const PARSER_TAG = "zlom-parser";
 
@@ -106,122 +67,6 @@ interface ArmorProtection {
     klute: number;
     ciete: number;
     obuch: number;
-}
-
-function emptySnapshot(): ZlomSnapshot {
-    return { bronie: {}, tarcze: {}, zbroje: {} };
-}
-
-export function loadZlomSnapshot(): ZlomSnapshot {
-    const stored = characterStorage.get(ZLOM_STORAGE_KEY) as ZlomSnapshot | undefined;
-    if (!stored) return emptySnapshot();
-    return {
-        bronie: stored.bronie ?? {},
-        tarcze: stored.tarcze ?? {},
-        zbroje: stored.zbroje ?? {},
-    };
-}
-
-export function saveZlomSnapshot(s: ZlomSnapshot): void {
-    characterStorage.set(ZLOM_STORAGE_KEY, s);
-    eventBus.emit("zlom.updated");
-}
-
-export function setZlomColor(kind: ZlomKind, short: string, color: string | undefined): void {
-    const snap = loadZlomSnapshot();
-    const entry = (snap[kind] as Record<string, ZlomEntry>)[short];
-    if (!entry) return;
-    if (color) entry.color = color;
-    else delete entry.color;
-    saveZlomSnapshot(snap);
-    eventBus.emit("zlom.snapshotReplaced");
-}
-
-export interface ZlomFormatting {
-    color?: string;
-    underline: boolean;
-    title?: string;
-}
-
-/**
- * Returns the zlom-driven formatting for an item name, or undefined if no saved entry matches.
- * Uses character's zlom snapshot plus zlomColorSilver setting for silver underline.
- */
-export function getZlomFormatting(name: string, opts: { colorSilver?: boolean } = {}): ZlomFormatting | undefined {
-    if (!name) return undefined;
-    const snap = loadZlomSnapshot();
-    const lower = name.toLowerCase();
-    const scan = (records: Record<string, ZlomEntry>): ZlomEntry | undefined => {
-        if (records[name]) return records[name];
-        for (const key of Object.keys(records)) {
-            if (lower.includes(key.toLowerCase())) return records[key];
-        }
-        return undefined;
-    };
-    const entry = scan(snap.bronie) ?? scan(snap.tarcze) ?? scan(snap.zbroje);
-    if (!entry) return undefined;
-    const silver = (entry as WeaponEntry).srebro === 1;
-    const magic = entry.magik === 1;
-    const underline = silver && (opts.colorSilver ?? true);
-    const titleParts: string[] = [];
-    if ((entry as WeaponEntry).typ) titleParts.push((entry as WeaponEntry).typ);
-    else if ((entry as ShieldEntry).oslona) titleParts.push('tarcza');
-    if (silver) titleParts.push(SILVER_TYP_TOOLTIP);
-    if (magic) titleParts.push('magia');
-    return {
-        color: entry.color,
-        underline,
-        title: titleParts.length ? titleParts.join(' / ') : undefined,
-    };
-}
-
-function emitSnapshotReplaced(): void {
-    eventBus.emit("zlom.snapshotReplaced");
-}
-
-export type ZlomMergeMode = 'replace' | 'keep';
-
-export interface ZlomImportPayload {
-    bronie: WeaponEntry[];
-    tarcze: ShieldEntry[];
-    zbroje: ArmorEntry[];
-}
-
-export interface ZlomImportCounts {
-    bronie: number;
-    tarcze: number;
-    zbroje: number;
-}
-
-export function mergeZlomData(data: ZlomImportPayload, mode: ZlomMergeMode = 'replace'): ZlomImportCounts {
-    const snap = loadZlomSnapshot();
-    let b = 0, t = 0, z = 0;
-    for (const e of data.bronie) {
-        if (!e.short) continue;
-        if (mode === 'keep' && snap.bronie[e.short]) continue;
-        snap.bronie[e.short] = e;
-        b++;
-    }
-    for (const e of data.tarcze) {
-        if (!e.short) continue;
-        if (mode === 'keep' && snap.tarcze[e.short]) continue;
-        snap.tarcze[e.short] = e;
-        t++;
-    }
-    for (const e of data.zbroje) {
-        if (!e.short) continue;
-        if (mode === 'keep' && snap.zbroje[e.short]) continue;
-        snap.zbroje[e.short] = e;
-        z++;
-    }
-    saveZlomSnapshot(snap);
-    emitSnapshotReplaced();
-    return { bronie: b, tarcze: t, zbroje: z };
-}
-
-export function clearZlomData(): void {
-    saveZlomSnapshot(emptySnapshot());
-    emitSnapshotReplaced();
 }
 
 function parseWeightObj(waga: string, wagaJ: string, obj: string, objJ: string): { waga: number; obj: number } {
@@ -300,8 +145,125 @@ function extractArmorProtection(text: string): { prot: ArmorProtection; parry?: 
     return undefined;
 }
 
-function registerHighlight(client: Client, entry: ZlomEntry) {
-    const short = entry.short;
+export type ZlomMergeMode = 'replace' | 'keep';
+
+export interface ZlomImportPayload {
+    bronie: WeaponEntry[];
+    tarcze: ShieldEntry[];
+    zbroje: ArmorEntry[];
+}
+
+export interface ZlomImportCounts {
+    bronie: number;
+    tarcze: number;
+    zbroje: number;
+}
+
+export async function mergeZlomData(
+    data: ZlomImportPayload,
+    mode: ZlomMergeMode = 'replace',
+): Promise<ZlomImportCounts> {
+    let counts: ZlomImportCounts = { bronie: 0, tarcze: 0, zbroje: 0 };
+    await updateZlomSnapshot(current => {
+        const merge = <T extends ZlomEntry>(dst: T[], src: T[]): { list: T[]; count: number } => {
+            let list = dst.slice();
+            let count = 0;
+            for (const e of src) {
+                if (!e.opis) continue;
+                const idx = list.findIndex(x => x.opis === e.opis);
+                if (idx >= 0) {
+                    if (mode === 'keep') continue;
+                    const prev = list[idx];
+                    const merged: T = { ...e };
+                    if (!merged.color && prev.color) merged.color = prev.color;
+                    list[idx] = merged;
+                } else {
+                    list.push(e);
+                }
+                count++;
+            }
+            return { list, count };
+        };
+        const b = merge(current.bronie, data.bronie);
+        const t = merge(current.tarcze, data.tarcze);
+        const z = merge(current.zbroje, data.zbroje);
+        counts = { bronie: b.count, tarcze: t.count, zbroje: z.count };
+        return { bronie: b.list, tarcze: t.list, zbroje: z.list };
+    });
+    eventBus.emit('zlom.snapshotReplaced');
+    return counts;
+}
+
+export async function clearZlomData(): Promise<void> {
+    await clearZlomStore();
+    eventBus.emit('zlom.snapshotReplaced');
+}
+
+export async function setZlomColor(
+    kind: ZlomKind,
+    opis: string,
+    color: string | undefined,
+): Promise<void> {
+    await updateZlomSnapshot(current => {
+        const list = (current[kind] as ZlomEntry[]).map(e => {
+            if (e.opis !== opis) return e;
+            if (color) return { ...e, color };
+            const { color: _, ...rest } = e;
+            return rest as ZlomEntry;
+        });
+        return { ...current, [kind]: list } as ZlomSnapshot;
+    });
+    eventBus.emit('zlom.snapshotReplaced');
+}
+
+export interface ZlomFormatting {
+    color?: string;
+    underline: boolean;
+    title?: string;
+}
+
+function findEntryByShort(name: string): ZlomEntry | undefined {
+    if (!name) return undefined;
+    const snap = getZlomSnapshot();
+    const lower = name.toLowerCase();
+    const scan = (list: ZlomEntry[]): ZlomEntry | undefined => {
+        for (const e of list) {
+            if (!e.short) continue;
+            if (e.short === name) return e;
+        }
+        for (const e of list) {
+            if (!e.short) continue;
+            if (lower.includes(e.short.toLowerCase())) return e;
+        }
+        return undefined;
+    };
+    return scan(snap.bronie as ZlomEntry[])
+        ?? scan(snap.tarcze as ZlomEntry[])
+        ?? scan(snap.zbroje as ZlomEntry[]);
+}
+
+export function getZlomFormatting(
+    name: string,
+    opts: { colorSilver?: boolean } = {},
+): ZlomFormatting | undefined {
+    const entry = findEntryByShort(name);
+    if (!entry) return undefined;
+    const silver = (entry as WeaponEntry).srebro === 1;
+    const magic = entry.magik === 1;
+    const underline = silver && (opts.colorSilver ?? true);
+    const parts: string[] = [];
+    if ((entry as WeaponEntry).typ) parts.push((entry as WeaponEntry).typ);
+    else if ((entry as ShieldEntry).oslona) parts.push('tarcza');
+    if (silver) parts.push(SILVER_TYP_TOOLTIP);
+    if (magic) parts.push('magia');
+    return {
+        color: entry.color,
+        underline,
+        title: parts.length ? parts.join(' / ') : undefined,
+    };
+}
+
+function registerHighlight(client: Client, short: string) {
     if (!short) return;
     client.Triggers.registerTrigger(
         new RegExp(escapeRegex(short)),
@@ -310,13 +272,14 @@ function registerHighlight(client: Client, entry: ZlomEntry) {
             if (idx === -1) return line;
             const end = idx + short.length;
             const silverOn = characterStorage.get('settings')?.zlomColorSilver !== false;
-            const silver = (entry as WeaponEntry).srebro === 1;
-            const fmt: FormatStateSnapshot = { bold: true };
-            if (silver && silverOn) fmt.underline = true;
-            if (entry.color) fmt.foreground = { space: 'hex', color: entry.color };
-            line.applyFormat([idx, end], fmt);
+            const fmt = getZlomFormatting(short, { colorSilver: silverOn });
+            if (!fmt) return line;
+            const applied: FormatStateSnapshot = { bold: true };
+            if (fmt.underline) applied.underline = true;
+            if (fmt.color) applied.foreground = { space: 'hex', color: fmt.color };
+            line.applyFormat([idx, end], applied);
             line.createLink([idx, end], {
-                title: buildHintForEntry(entry),
+                title: fmt.title,
                 onClick: () => {},
             });
             return line;
@@ -325,29 +288,22 @@ function registerHighlight(client: Client, entry: ZlomEntry) {
     );
 }
 
-function buildHintForEntry(entry: ZlomEntry): string {
-    const parts: string[] = [];
-    const typ = (entry as WeaponEntry).typ || (entry as ShieldEntry).oslona || '';
-    if (typ) parts.push(typ);
-    if ((entry as WeaponEntry).srebro === 1) parts.push(SILVER_TYP_TOOLTIP);
-    if (entry.magik === 1) parts.push('magia');
-    return parts.join(' / ');
-}
-
 function escapeRegex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function reinstallHighlights(client: Client, snap: ZlomSnapshot) {
+function collectShorts(snap: ZlomSnapshot): string[] {
+    const set = new Set<string>();
+    for (const e of snap.bronie) if (e.short) set.add(e.short);
+    for (const e of snap.tarcze) if (e.short) set.add(e.short);
+    for (const e of snap.zbroje) if (e.short) set.add(e.short);
+    return Array.from(set);
+}
+
+function reinstallHighlights(client: Client) {
     client.Triggers.removeByTag(HIGHLIGHT_TAG);
-    for (const b of Object.values(snap.bronie)) {
-        registerHighlight(client, b);
-    }
-    for (const t of Object.values(snap.tarcze)) {
-        registerHighlight(client, t);
-    }
-    for (const z of Object.values(snap.zbroje)) {
-        registerHighlight(client, z);
+    for (const s of collectShorts(getZlomSnapshot())) {
+        registerHighlight(client, s);
     }
 }
 
@@ -355,15 +311,18 @@ export default function initZlom(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[],
 ): void {
-    let snap = loadZlomSnapshot();
-    reinstallHighlights(client, snap);
+    // Load the snapshot from IndexedDB, then install highlight triggers.
+    ensureZlomLoaded().then(() => reinstallHighlights(client));
+
+    subscribeZlom(() => reinstallHighlights(client));
+    eventBus.on('zlom.snapshotReplaced', () => reinstallHighlights(client));
 
     let ctx: PendingEval | null = null;
 
     const roomId = (): number | null => client.Map?.currentRoom?.id ?? null;
 
     const persistBron = () => {
-        if (!ctx || ctx.kind !== "bron" || !ctx.short) return;
+        if (!ctx || ctx.kind !== "bron" || !ctx.short || !ctx.opis) return;
         const entry: WeaponEntry = {
             short: ctx.short,
             typ: ctx.typ ?? "",
@@ -374,7 +333,7 @@ export default function initZlom(
             chwyt: ctx.chwyt ?? "",
             magik: ctx.magik ?? 0,
             srebro: ctx.srebro ?? 0,
-            opis: ctx.opis ?? "",
+            opis: ctx.opis,
             waga: ctx.waga ?? 0,
             obj: ctx.obj ?? 0,
             cena: ctx.cena ?? 0,
@@ -382,15 +341,11 @@ export default function initZlom(
             parowanie: ctx.parowanie ?? 0,
             roomId: roomId(),
         };
-        const prev = snap.bronie[entry.short];
-        if (prev?.color) entry.color = prev.color;
-        snap.bronie[entry.short] = entry;
-        saveZlomSnapshot(snap);
-        registerHighlight(client, entry);
+        void updateZlomSnapshot(s => ({ ...s, bronie: upsertByOpis(s.bronie, entry) }));
     };
 
     const persistZbroja = () => {
-        if (!ctx || ctx.kind !== "zbroja" || !ctx.short) return;
+        if (!ctx || ctx.kind !== "zbroja" || !ctx.short || !ctx.opis) return;
         const entry: ArmorEntry = {
             short: ctx.short,
             typ: ctx.armorType ?? "",
@@ -398,29 +353,25 @@ export default function initZlom(
             obuch: ctx.obuch ?? 0,
             ciete: ctx.ciete ?? 0,
             magik: ctx.magik ?? 0,
-            opis: ctx.opis ?? "",
+            opis: ctx.opis,
             waga: ctx.waga ?? 0,
             obj: ctx.obj ?? 0,
             cena: ctx.cena ?? 0,
             oslona: ctx.oslona ?? "",
             roomId: roomId(),
         };
-        const prev = snap.zbroje[entry.short];
-        if (prev?.color) entry.color = prev.color;
-        snap.zbroje[entry.short] = entry;
-        saveZlomSnapshot(snap);
-        registerHighlight(client, entry);
+        void updateZlomSnapshot(s => ({ ...s, zbroje: upsertByOpis(s.zbroje, entry) }));
     };
 
     const persistTarcza = () => {
-        if (!ctx || ctx.kind !== "tarcza" || !ctx.short) return;
+        if (!ctx || ctx.kind !== "tarcza" || !ctx.short || !ctx.opis) return;
         const entry: ShieldEntry = {
             short: ctx.short,
             klute: ctx.klute ?? 0,
             obuch: ctx.obuch ?? 0,
             ciete: ctx.ciete ?? 0,
             magik: ctx.magik ?? 0,
-            opis: ctx.opis ?? "",
+            opis: ctx.opis,
             waga: ctx.waga ?? 0,
             obj: ctx.obj ?? 0,
             cena: ctx.cena ?? 0,
@@ -428,11 +379,7 @@ export default function initZlom(
             oslona: ctx.oslona ?? "",
             roomId: roomId(),
         };
-        const prev = snap.tarcze[entry.short];
-        if (prev?.color) entry.color = prev.color;
-        snap.tarcze[entry.short] = entry;
-        saveZlomSnapshot(snap);
-        registerHighlight(client, entry);
+        void updateZlomSnapshot(s => ({ ...s, tarcze: upsertByOpis(s.tarcze, entry) }));
     };
 
     client.Triggers.registerTrigger(
@@ -596,20 +543,12 @@ export default function initZlom(
         PARSER_TAG,
     );
 
-    eventBus.on("zlom.snapshotReplaced", () => {
-        snap = loadZlomSnapshot();
-        reinstallHighlights(client, snap);
-    });
-
     if (aliases) {
         aliases.push({
             pattern: /^\/zlom(?:\s+(bronie|tarcze|zbroje))?$/,
             callback: (m: RegExpMatchArray) => {
-                snap = loadZlomSnapshot();
-                const kind = m[1] ?? "bronie";
-                const entries: (WeaponEntry | ShieldEntry | ArmorEntry)[] = Object.values(
-                    (snap as any)[kind] ?? {},
-                );
+                const kind = (m[1] ?? 'bronie') as ZlomKind;
+                const entries: ZlomEntry[] = getZlomSnapshot()[kind] as ZlomEntry[];
                 if (entries.length === 0) {
                     client.println(`Brak zapisanych pozycji w tabeli ${kind}.`);
                     return;
@@ -627,14 +566,14 @@ export default function initZlom(
 
         aliases.push({
             pattern: /^\/zlomw$/,
-            callback: () => eventBus.emit("zlom.popup.open"),
+            callback: () => eventBus.emit('zlom.popup.open'),
         });
 
         aliases.push({
             pattern: /^\/zlom-reset$/,
             callback: () => {
-                clearZlomData();
-                client.println("Baza zlomu wyczyszczona.");
+                void clearZlomData();
+                client.println('Baza zlomu wyczyszczona.');
             },
         });
     }

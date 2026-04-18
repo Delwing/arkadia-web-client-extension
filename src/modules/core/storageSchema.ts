@@ -17,7 +17,6 @@ import type { UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { ShortcutEntry } from '@client/scripts/shortcuts';
 import type { ContractsSnapshot } from '@client/scripts/contracts';
-import type { ZlomSnapshot } from '@client/scripts/zlom';
 import type { AttackMode } from '@client/utils/attackController';
 import type { CharGender } from '@shared/events/gmcpTypes';
 
@@ -51,7 +50,6 @@ export interface CharacterStorageSchema {
     attack_mode: AttackMode;
     chat_history: any[]; // TODO: use serialized ChatEntry[] type
     gender: CharGender;
-    zlom: ZlomSnapshot;
 }
 
 /**
@@ -144,7 +142,6 @@ export const characterStorageKeys = [
     'attack_mode',
     'chat_history',
     'gender',
-    'zlom',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */

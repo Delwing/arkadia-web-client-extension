@@ -1,11 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import { characterStorage } from '@modules/core/storage';
 import {
-    loadZlomSnapshot,
     mergeZlomData,
     clearZlomData,
     setZlomColor,
@@ -16,6 +14,11 @@ import {
     ZlomMergeMode,
     ZlomKind,
 } from '../client/scripts/zlom';
+import {
+    ensureZlomLoaded,
+    getZlomSnapshot,
+    subscribeZlom,
+} from '@modules/data/zlomStore';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import type {
     ZlomDbResult,
@@ -28,7 +31,7 @@ const POPUP_ID = 'popup:zlom';
 type TabType = 'bronie' | 'tarcze' | 'zbroje';
 
 function emptySnapshot(): ZlomSnapshot {
-    return { bronie: {}, tarcze: {}, zbroje: {} };
+    return { bronie: [], tarcze: [], zbroje: [] };
 }
 
 function protectionText(k: number, o: number, c: number): string {
@@ -62,22 +65,23 @@ const ZlomPopup: React.FC = () => {
         };
     }, []);
 
-    const reload = useCallback(() => {
-        setSnap(loadZlomSnapshot());
+    useEffect(() => {
+        let active = true;
+        ensureZlomLoaded().then(() => {
+            if (active) setSnap(getZlomSnapshot());
+        });
+        const unsub = subscribeZlom((s) => {
+            if (active) setSnap(s);
+        });
+        return () => {
+            active = false;
+            unsub();
+        };
     }, []);
 
     useEffect(() => {
-        if (isOpen) reload();
-    }, [isOpen, reload]);
-
-    useEffect(() => {
-        const unsubUpdated = eventBus.on('zlom.updated', reload);
-        const unsubReplaced = eventBus.on('zlom.snapshotReplaced', reload);
-        return () => {
-            unsubUpdated();
-            unsubReplaced();
-        };
-    }, [reload]);
+        if (isOpen) setSnap(getZlomSnapshot());
+    }, [isOpen]);
 
     const parseInWorker = useCallback(async (buffer: ArrayBuffer): Promise<ZlomDbResult> => {
         if (!workerRef.current) {
@@ -142,11 +146,15 @@ const ZlomPopup: React.FC = () => {
         }
     }, [parseInWorker]);
 
-    const handleImportConfirm = useCallback(() => {
+    const handleImportConfirm = useCallback(async () => {
         if (importState.phase !== 'preview') return;
-        const counts = mergeZlomData(importState.parsed, importState.mergeMode);
-        const msg = `Zaimportowano: ${counts.bronie} broni, ${counts.tarcze} tarcz, ${counts.zbroje} zbroi.`;
-        setImportState({ phase: 'done', message: msg });
+        try {
+            const counts = await mergeZlomData(importState.parsed, importState.mergeMode);
+            const msg = `Zaimportowano: ${counts.bronie} broni, ${counts.tarcze} tarcz, ${counts.zbroje} zbroi.`;
+            setImportState({ phase: 'done', message: msg });
+        } catch (err) {
+            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Blad importu.' });
+        }
     }, [importState]);
 
     const handleImportCancel = useCallback(() => {
@@ -155,7 +163,7 @@ const ZlomPopup: React.FC = () => {
 
     const handleReset = useCallback(() => {
         if (!window.confirm('Wyczyscic cala baze zlomu?')) return;
-        clearZlomData();
+        void clearZlomData();
     }, []);
 
     const [colorSilver, setColorSilver] = useState<boolean>(() => {
@@ -176,12 +184,12 @@ const ZlomPopup: React.FC = () => {
         characterStorage.set('settings', { ...current, zlomColorSilver: !colorSilver });
     }, [colorSilver]);
 
-    const handleColorChange = useCallback((kind: ZlomKind, short: string, value: string) => {
-        setZlomColor(kind, short, value || undefined);
+    const handleColorChange = useCallback((kind: ZlomKind, opis: string, value: string) => {
+        void setZlomColor(kind, opis, value || undefined);
     }, []);
 
-    const handleColorClear = useCallback((kind: ZlomKind, short: string) => {
-        setZlomColor(kind, short, undefined);
+    const handleColorClear = useCallback((kind: ZlomKind, opis: string) => {
+        void setZlomColor(kind, opis, undefined);
     }, []);
 
     const renderColorCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => (
@@ -190,14 +198,14 @@ const ZlomPopup: React.FC = () => {
                 type="color"
                 className="zlom-color-input"
                 value={entry.color ?? '#ffffff'}
-                onChange={(e) => handleColorChange(kind, entry.short, e.target.value)}
+                onChange={(e) => handleColorChange(kind, entry.opis, e.target.value)}
                 title={entry.color ? `Kolor: ${entry.color}` : 'Ustaw kolor'}
             />
             {entry.color && (
                 <button
                     type="button"
                     className="zlom-color-clear"
-                    onClick={() => handleColorClear(kind, entry.short)}
+                    onClick={() => handleColorClear(kind, entry.opis)}
                     title="Usun kolor"
                 >
                     x
@@ -208,24 +216,22 @@ const ZlomPopup: React.FC = () => {
 
     const entries = useMemo(() => {
         const raw: (WeaponEntry | ShieldEntry | ArmorEntry)[] =
-            activeTab === 'bronie' ? Object.values(snap.bronie)
-                : activeTab === 'tarcze' ? Object.values(snap.tarcze)
-                    : Object.values(snap.zbroje);
+            activeTab === 'bronie' ? snap.bronie
+                : activeTab === 'tarcze' ? snap.tarcze
+                    : snap.zbroje;
         const needle = filter.trim().toLowerCase();
         const filtered = needle ? raw.filter(e => e.short.toLowerCase().includes(needle)) : raw;
         return [...filtered].sort((a, b) => a.short.localeCompare(b.short));
     }, [snap, activeTab, filter]);
 
-    const characterName = characterStorage.getCharacter();
-
     const total = {
-        bronie: Object.keys(snap.bronie).length,
-        tarcze: Object.keys(snap.tarcze).length,
-        zbroje: Object.keys(snap.zbroje).length,
+        bronie: snap.bronie.length,
+        tarcze: snap.tarcze.length,
+        zbroje: snap.zbroje.length,
     };
 
     const renderWeapon = (e: WeaponEntry, i: number) => (
-        <tr key={e.short} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
+        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td
                 className="zlom-cell zlom-cell--short"
                 style={e.color ? { color: e.color, textDecoration: e.srebro && colorSilver ? 'underline' : undefined } : undefined}
@@ -245,7 +251,7 @@ const ZlomPopup: React.FC = () => {
     );
 
     const renderShield = (e: ShieldEntry, i: number) => (
-        <tr key={e.short} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
+        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">&nbsp;M</span> : null}
@@ -260,7 +266,7 @@ const ZlomPopup: React.FC = () => {
     );
 
     const renderArmor = (e: ArmorEntry, i: number) => (
-        <tr key={e.short} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
+        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">&nbsp;M</span> : null}
@@ -301,12 +307,6 @@ const ZlomPopup: React.FC = () => {
             bodyClassName="zlom-popup-body postepy2-popup-body"
         >
             <div className="postepy2-header">
-                {characterName && (
-                    <span>
-                        <span className="postepy2-header__label">Postac:</span>
-                        <span className="postepy2-header__name">{characterName}</span>
-                    </span>
-                )}
                 <div className="zlom-header-actions">
                     <label className="zlom-toggle" title="Podkreslaj bronie ze srebrem">
                         <input type="checkbox" checked={colorSilver} onChange={toggleColorSilver} />

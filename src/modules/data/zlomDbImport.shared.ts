@@ -1,4 +1,4 @@
-import type { WeaponEntry, ArmorEntry, ShieldEntry } from '@client/scripts/zlom';
+import type { WeaponEntry, ArmorEntry, ShieldEntry } from './zlomStore';
 
 export interface ZlomDbResult {
     bronie: WeaponEntry[];

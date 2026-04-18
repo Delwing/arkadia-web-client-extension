@@ -1,7 +1,7 @@
 import type { SqlJsStatic, Database } from 'sql.js';
 import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import type { WeaponEntry, ArmorEntry, ShieldEntry } from '@client/scripts/zlom';
+import type { WeaponEntry, ArmorEntry, ShieldEntry } from './zlomStore';
 import type {
     ZlomDbResult,
     ZlomDbWorkerRequest,
