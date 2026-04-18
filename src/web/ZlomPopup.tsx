@@ -237,8 +237,8 @@ const ZlomPopup: React.FC = () => {
                 style={e.color ? { color: e.color, textDecoration: e.srebro && colorSilver ? 'underline' : undefined } : undefined}
             >
                 {e.short}
-                {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro">&nbsp;Ag</span> : null}
-                {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">&nbsp;M</span> : null}
+                {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro">Ag</span> : null}
+                {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.typ}</td>
             <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
@@ -254,7 +254,7 @@ const ZlomPopup: React.FC = () => {
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
                 {e.short}
-                {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">&nbsp;M</span> : null}
+                {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.oslona}</td>
             <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
@@ -269,7 +269,7 @@ const ZlomPopup: React.FC = () => {
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
                 {e.short}
-                {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">&nbsp;M</span> : null}
+                {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.typ}</td>
             <td className="zlom-cell">{e.oslona}</td>
