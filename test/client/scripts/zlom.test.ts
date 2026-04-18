@@ -153,7 +153,7 @@ describe('zlom script', () => {
     expect(entry.obuch).toBe(0);
   });
 
-  test('registers highlight trigger that underlines silver weapons on subsequent lines', async () => {
+  test('registers highlight trigger that auto-colors silver weapons on subsequent lines', async () => {
     feedWeapon();
     await flush();
 
@@ -162,10 +162,73 @@ describe('zlom script', () => {
 
     const idx = buf.text.indexOf('krasnoludzki');
     const state = buf.getStateAt(idx);
-    expect(state?.bold).toBe(true);
-    expect(state?.underline).toBe(true);
-    expect(state?.hyperlink?.title).toContain('topor');
-    expect(state?.hyperlink?.title).toContain('srebro');
+    expect(state?.bold).toBeFalsy();
+    expect(state?.underline).toBeFalsy();
+    expect(state?.foreground).toEqual({ space: 'hex', color: '#dadada' });
+    expect(state?.hyperlink).toBeUndefined();
+  });
+
+  test('highlight trigger matches case-insensitively (e.g. sentence-start capitalization)', async () => {
+    feedWeapon();
+    await flush();
+
+    const buf = new AnsiAwareBuffer('Krasnoludzki asymetryczny topor bojowy.');
+    Triggers.prototype.parseLine.call(client.Triggers, buf, '');
+
+    const idx = buf.text.toLowerCase().indexOf('krasnoludzki');
+    const state = buf.getStateAt(idx);
+    expect(state?.foreground).toEqual({ space: 'hex', color: '#dadada' });
+  });
+
+  test('parser captures accusative short as shortAlt', async () => {
+    parse('Oceniasz starannie szeroka posrebrzana glewie.');
+    parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.');
+    parse('');
+    parse('Oceniasz, ze szeroka posrebrzana glewia wazy 5200 gramow, zas jego objetosc wynosi 2000 mililitrow.');
+    parse('Wydaje ci sie, ze jest warta okolo 460 miedziakow.');
+    parse('');
+    parse('Zauwazasz, iz glewia jest przystosowana do chwytania w dowolnej rece.');
+    parse('Za jej pomoca mozna zadawac rany ciete i klute.');
+    parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na glewia jest ona bardzo dobrze wywazona i niezwykle skuteczna.');
+    parse('Do wykonania tej broni uzyto srebra, bedzie wiec ona skuteczna przeciw wrogom odpornym na zwykle obrazenia.');
+    await flush();
+
+    const entry = findWeapon('szeroka posrebrzana glewia');
+    expect(entry).toBeDefined();
+    expect(entry!.shortAlt).toBe('szeroka posrebrzana glewie');
+    expect(entry!.srebro).toBe(1);
+  });
+
+  test('highlight fires on the accusative form', async () => {
+    parse('Oceniasz starannie szeroka posrebrzana glewie.');
+    parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.');
+    parse('');
+    parse('Oceniasz, ze szeroka posrebrzana glewia wazy 5200 gramow, zas jego objetosc wynosi 2000 mililitrow.');
+    parse('Wydaje ci sie, ze jest warta okolo 460 miedziakow.');
+    parse('');
+    parse('Zauwazasz, iz glewia jest przystosowana do chwytania w dowolnej rece.');
+    parse('Za jej pomoca mozna zadawac rany ciete i klute.');
+    parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na glewia jest ona bardzo dobrze wywazona i niezwykle skuteczna.');
+    parse('Do wykonania tej broni uzyto srebra, bedzie wiec ona skuteczna przeciw wrogom odpornym na zwykle obrazenia.');
+    await flush();
+
+    const buf = new AnsiAwareBuffer('Szeroka posrebrzana glewie.');
+    Triggers.prototype.parseLine.call(client.Triggers, buf, '');
+    const idx = buf.text.toLowerCase().indexOf('szeroka');
+    const state = buf.getStateAt(idx);
+    expect(state?.foreground).toEqual({ space: 'hex', color: '#dadada' });
+  });
+
+  test('highlight trigger skips combat messages', async () => {
+    feedWeapon();
+    await flush();
+
+    const buf = new AnsiAwareBuffer('Ranisz krasnoludzki asymetryczny topor bojowy.');
+    Triggers.prototype.parseLine.call(client.Triggers, buf, 'combat.avatar');
+
+    const idx = buf.text.indexOf('krasnoludzki');
+    const state = buf.getStateAt(idx);
+    expect(state?.foreground).toBeUndefined();
   });
 
   test('/zlom alias lists saved weapons', async () => {
@@ -192,6 +255,26 @@ describe('zlom script', () => {
     reset!.callback('/zlom-reset'.match(reset!.pattern)!);
     await flush();
     expect(getZlomSnapshot().bronie).toHaveLength(0);
+  });
+
+  test('parses parry-only shield (puklerz)', async () => {
+    parse('Oceniasz starannie starozytny piecioboczny puklerz.');
+    parse('Bogato zdobiona powierzchnia tej malej tarczy mieni sie srebrzysto-zlotym blaskiem.');
+    parse('Wyglada na to, ze jest w znakomitym stanie.');
+    parse('');
+    parse('Oceniasz, ze starozytny piecioboczny puklerz wazy 2500 gramow, zas jego objetosc wynosi 1200 mililitrow.');
+    parse('Wydaje ci sie, ze jest wart okolo 5100 miedziakow.');
+    parse('Wyglada na to, ze moglby ci jeszcze raczej dlugo sluzyc.');
+    parse('Zalozony oslania jedno z ramion.');
+    parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest on fantastycznie skuteczny w parowaniu ciosow.');
+    parse('Sadzac po delikatnym drzeniu w zbroi tej zostala zakleta jakas magia.');
+    await flush();
+
+    const entry = getZlomSnapshot().tarcze.find(e => e.short === 'starozytny piecioboczny puklerz');
+    expect(entry).toBeDefined();
+    expect(entry!.oslona).toBe('jedno z ramion');
+    expect(entry!.parowanie).toBeGreaterThan(0);
+    expect(entry!.magik).toBe(1);
   });
 
   test('parses armor evaluation', async () => {
@@ -345,7 +428,7 @@ describe('zlom script', () => {
       expect(findWeapon('krasnoludzki asymetryczny topor bojowy')!.color).toBe('#abcdef');
     });
 
-    test('getZlomFormatting returns color + underline for silver weapon', async () => {
+    test('getZlomFormatting returns user color over silver auto-color', async () => {
       feedWeapon();
       await flush();
       const opis = findWeapon('krasnoludzki asymetryczny topor bojowy')!.opis;
@@ -353,16 +436,56 @@ describe('zlom script', () => {
       const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy');
       expect(f).toBeDefined();
       expect(f!.color).toBe('#abcdef');
-      expect(f!.underline).toBe(true);
       expect(f!.title).toContain('topor');
       expect(f!.title).toContain('srebro');
     });
 
-    test('getZlomFormatting honors colorSilver=false', async () => {
+    test('getZlomFormatting applies silver auto-color when no user color', async () => {
       feedWeapon();
       await flush();
-      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy', { colorSilver: false });
-      expect(f!.underline).toBe(false);
+      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy');
+      expect(f!.color).toBe('#dadada');
+    });
+
+    test('silver coloring is on by default when no user color set', async () => {
+      feedWeapon();
+      await flush();
+      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy');
+      expect(f!.color).toBe('#dadada');
+    });
+
+    test('zlomSilver.off=true disables silver coloring', async () => {
+      feedWeapon();
+      await flush();
+      setTestSettings({ zlomSilver: { color: '#dadada', off: true } });
+      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy');
+      expect(f).toBeUndefined();
+    });
+
+    test('getZlomFormatting uses configured silver color', async () => {
+      feedWeapon();
+      await flush();
+      setTestSettings({ zlomSilver: { color: '#ff00ff' } });
+      const f = getZlomFormatting('krasnoludzki asymetryczny topor bojowy');
+      expect(f!.color).toBe('#ff00ff');
+    });
+
+    test('getZlomFormatting skips magic items entirely', async () => {
+      parse('Oceniasz starannie blyszczacy miecz.');
+      parse('Drobne znamiona swietego symbolu zdobia glownie.');
+      parse('');
+      parse('Oceniasz, ze blyszczacy miecz wazy 2000 gramow, zas jego objetosc wynosi 500 mililitrow.');
+      parse('Wydaje ci sie, ze jest wart okolo 500 miedziakow.');
+      parse('');
+      parse('Zauwazasz, iz miecz jest przystosowany do chwytania w dowolnej rece.');
+      parse('Za jego pomoca mozna zadawac rany ciete i klute.');
+      parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na miecz jest on przyzwoicie wywazony i dosyc skuteczny.');
+      parse('Sadzac po delikatnym drzeniu w broni tej zostala zakleta jakas magia, bedzie wiec ona skuteczna przeciw wrogom odpornym na zwykle obrazenia.');
+      await flush();
+
+      const opis = findWeapon('blyszczacy miecz')!.opis;
+      await setZlomColor('bronie', opis, '#abcdef');
+      expect(getZlomFormatting('blyszczacy miecz')).toBeUndefined();
     });
 
     test('getZlomFormatting matches substring within longer text', async () => {
@@ -373,10 +496,10 @@ describe('zlom script', () => {
       expect(f!.title).toContain('topor');
     });
 
-    test('zlomColorSilver=false disables underline on highlight', async () => {
+    test('zlomSilver.off skips registering silver-only triggers', async () => {
       feedWeapon();
       await flush();
-      setTestSettings({ zlomColorSilver: false });
+      setTestSettings({ zlomSilver: { color: '#dadada', off: true } });
       client.Triggers.removeByTag('zlom-highlight');
       client.Triggers.removeByTag('zlom-parser');
       initZlom((client as unknown) as any, client.aliases);
@@ -385,8 +508,25 @@ describe('zlom script', () => {
       const buf = new AnsiAwareBuffer('Trzymasz krasnoludzki asymetryczny topor bojowy w prawej rece.');
       Triggers.prototype.parseLine.call(client.Triggers, buf, '');
       const state = buf.getStateAt(buf.text.indexOf('krasnoludzki'));
-      expect(state?.bold).toBe(true);
+      expect(state?.foreground).toBeUndefined();
       expect(state?.underline).toBeFalsy();
+    });
+
+    test('user-colored entry still registers even when silver coloring is off', async () => {
+      feedWeapon();
+      await flush();
+      const opis = findWeapon('krasnoludzki asymetryczny topor bojowy')!.opis;
+      await setZlomColor('bronie', opis, '#abcdef');
+      setTestSettings({ zlomSilver: { color: '#dadada', off: true } });
+      client.Triggers.removeByTag('zlom-highlight');
+      client.Triggers.removeByTag('zlom-parser');
+      initZlom((client as unknown) as any, client.aliases);
+      await ensureZlomLoaded();
+
+      const buf = new AnsiAwareBuffer('Trzymasz krasnoludzki asymetryczny topor bojowy w prawej rece.');
+      Triggers.prototype.parseLine.call(client.Triggers, buf, '');
+      const state = buf.getStateAt(buf.text.indexOf('krasnoludzki'));
+      expect(state?.foreground).toEqual({ space: 'hex', color: '#abcdef' });
     });
   });
 

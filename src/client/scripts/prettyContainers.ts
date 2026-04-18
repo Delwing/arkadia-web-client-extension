@@ -412,14 +412,16 @@ const defaultTransforms: TransformDefinition[] = [
         return buffer;
     }},
     { transform: (buffer, item) => {
-        const colorSilver = characterStorage.get('settings')?.zlomColorSilver !== false;
-        const zlom = getZlomFormatting(item.name, { colorSilver });
+        const zlom = getZlomFormatting(item.name);
         if (!zlom) return buffer;
         if (zlom.color) {
             buffer.applyFormat([0, buffer.length], { foreground: { space: 'hex', color: zlom.color } });
         }
-        if (zlom.underline) {
-            buffer.applyFormat([0, buffer.length], { underline: true });
+        if (zlom.silver) {
+            const badge = ' [Ag]';
+            const start = buffer.length;
+            buffer.append(badge, {});
+            buffer.applyFormat([start, buffer.length], { foreground: { space: 'hex', color: '#dadada' } });
         }
         return buffer;
     }}

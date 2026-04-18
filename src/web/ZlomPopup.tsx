@@ -5,8 +5,8 @@ import { usePopupSetting } from './hooks/usePopupSetting';
 import { characterStorage } from '@modules/core/storage';
 import {
     mergeZlomData,
-    clearZlomData,
     setZlomColor,
+    setZlomNote,
     ZlomSnapshot,
     WeaponEntry,
     ShieldEntry,
@@ -47,6 +47,7 @@ const ZlomPopup: React.FC = () => {
     const [filter, setFilter] = useState('');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const jsonInputRef = useRef<HTMLInputElement>(null);
     const workerRef = useRef<Worker | null>(null);
     const [importState, setImportState] = useState<
         | { phase: 'idle' }
@@ -161,28 +162,70 @@ const ZlomPopup: React.FC = () => {
         setImportState({ phase: 'idle' });
     }, []);
 
-    const handleReset = useCallback(() => {
-        if (!window.confirm('Wyczyscic cala baze zlomu?')) return;
-        void clearZlomData();
+    const handleExport = useCallback(() => {
+        const payload = {
+            bronie: snap.bronie,
+            tarcze: snap.tarcze,
+            zbroje: snap.zbroje,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `zlom-${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [snap]);
+
+    const handleJsonImportClick = useCallback(() => {
+        jsonInputRef.current?.click();
     }, []);
 
-    const [colorSilver, setColorSilver] = useState<boolean>(() => {
-        const v = characterStorage.get('settings')?.zlomColorSilver;
-        return v !== false;
-    });
+    const handleJsonFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (e.target) e.target.value = '';
+        if (!file) return;
+        setImportState({ phase: 'loading' });
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+            const payload: ZlomDbResult = {
+                bronie: Array.isArray(parsed?.bronie) ? parsed.bronie : [],
+                tarcze: Array.isArray(parsed?.tarcze) ? parsed.tarcze : [],
+                zbroje: Array.isArray(parsed?.zbroje) ? parsed.zbroje : [],
+            };
+            if (payload.bronie.length + payload.tarcze.length + payload.zbroje.length === 0) {
+                setImportState({ phase: 'error', message: 'Plik nie zawiera danych zlomu.' });
+                return;
+            }
+            setImportState({ phase: 'preview', parsed: payload, mergeMode: 'replace' });
+        } catch (err) {
+            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Blad parsowania JSON.' });
+        }
+    }, []);
+
+    const readSilver = () => {
+        const s = characterStorage.get('settings')?.zlomSilver ?? defaultSettings.zlomSilver;
+        return { color: s?.color ?? '#dadada', off: s?.off === true };
+    };
+
+    const [silver, setSilver] = useState<{ color: string; off: boolean }>(readSilver);
 
     useEffect(() => {
         const unsub = characterStorage.onChange('settings', (v) => {
-            const next = v?.zlomColorSilver;
-            setColorSilver(next !== false);
+            const s = v?.zlomSilver ?? defaultSettings.zlomSilver;
+            setSilver({ color: s?.color ?? '#dadada', off: s?.off === true });
         });
         return unsub;
     }, []);
 
-    const toggleColorSilver = useCallback(() => {
+    const updateSilver = useCallback((patch: { color?: string; off?: boolean }) => {
         const current = characterStorage.get('settings') ?? defaultSettings;
-        characterStorage.set('settings', { ...current, zlomColorSilver: !colorSilver });
-    }, [colorSilver]);
+        const prevSilver = current.zlomSilver ?? defaultSettings.zlomSilver ?? { color: '#dadada' };
+        const nextSilver = { ...prevSilver, ...patch };
+        characterStorage.set('settings', { ...current, zlomSilver: nextSilver });
+    }, []);
 
     const handleColorChange = useCallback((kind: ZlomKind, opis: string, value: string) => {
         void setZlomColor(kind, opis, value || undefined);
@@ -191,6 +234,78 @@ const ZlomPopup: React.FC = () => {
     const handleColorClear = useCallback((kind: ZlomKind, opis: string) => {
         void setZlomColor(kind, opis, undefined);
     }, []);
+
+    const [noteEditor, setNoteEditor] = useState<
+        | { kind: ZlomKind; opis: string; value: string }
+        | null
+    >(null);
+    const noteEditorRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!noteEditor) return;
+        const onDown = (ev: MouseEvent) => {
+            const el = noteEditorRef.current;
+            const target = ev.target as Node | null;
+            if (el && target && !el.contains(target)) {
+                setNoteEditor(null);
+            }
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [noteEditor]);
+
+    const openNoteEditor = useCallback((kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => {
+        setNoteEditor({ kind, opis: entry.opis, value: entry.note ?? '' });
+    }, []);
+
+    const saveNoteEditor = useCallback(() => {
+        if (!noteEditor) return;
+        void setZlomNote(noteEditor.kind, noteEditor.opis, noteEditor.value || undefined);
+        setNoteEditor(null);
+    }, [noteEditor]);
+
+    const renderNoteCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => {
+        const hasNote = !!entry.note;
+        const isOpen = noteEditor?.kind === kind && noteEditor.opis === entry.opis;
+        return (
+            <td className="zlom-cell zlom-cell--note">
+                <div className="zlom-note-wrap">
+                    <button
+                        type="button"
+                        className={`zlom-note-btn${hasNote ? ' zlom-note-btn--has' : ''}`}
+                        onClick={() => openNoteEditor(kind, entry)}
+                        title={hasNote ? entry.note : 'Dodaj notatke'}
+                    >
+                        {hasNote ? '●' : '+'}
+                    </button>
+                    {isOpen && (
+                        <div className="zlom-note-popover" ref={noteEditorRef}>
+                            <textarea
+                                className="zlom-note-textarea"
+                                autoFocus
+                                value={noteEditor!.value}
+                                onChange={(e) => setNoteEditor({ ...noteEditor!, value: e.target.value })}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        setNoteEditor(null);
+                                    } else if ((e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+                                        e.preventDefault();
+                                        saveNoteEditor();
+                                    }
+                                }}
+                                placeholder="Notatka..."
+                            />
+                            <div className="zlom-note-popover__actions">
+                                <button type="button" className="zlom-header-btn" onClick={() => setNoteEditor(null)}>Anuluj</button>
+                                <button type="button" className="zlom-header-btn" onClick={saveNoteEditor}>Zapisz</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </td>
+        );
+    };
 
     const renderColorCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => (
         <td className="zlom-cell zlom-cell--color">
@@ -201,16 +316,15 @@ const ZlomPopup: React.FC = () => {
                 onChange={(e) => handleColorChange(kind, entry.opis, e.target.value)}
                 title={entry.color ? `Kolor: ${entry.color}` : 'Ustaw kolor'}
             />
-            {entry.color && (
-                <button
-                    type="button"
-                    className="zlom-color-clear"
-                    onClick={() => handleColorClear(kind, entry.opis)}
-                    title="Usun kolor"
-                >
-                    x
-                </button>
-            )}
+            <button
+                type="button"
+                className="zlom-color-clear"
+                onClick={() => handleColorClear(kind, entry.opis)}
+                title="Usun kolor"
+                style={entry.color ? undefined : { visibility: 'hidden' }}
+            >
+                x
+            </button>
         </td>
     );
 
@@ -230,11 +344,17 @@ const ZlomPopup: React.FC = () => {
         zbroje: snap.zbroje.length,
     };
 
-    const renderWeapon = (e: WeaponEntry, i: number) => (
+    const effectiveSilverColor = silver.off ? undefined : silver.color;
+
+    const renderWeapon = (e: WeaponEntry, i: number) => {
+        const effectiveColor = e.magik
+            ? undefined
+            : e.color ?? (e.srebro && effectiveSilverColor ? effectiveSilverColor : undefined);
+        return (
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td
                 className="zlom-cell zlom-cell--short"
-                style={e.color ? { color: e.color, textDecoration: e.srebro && colorSilver ? 'underline' : undefined } : undefined}
+                style={effectiveColor ? { color: effectiveColor } : undefined}
             >
                 {e.short}
                 {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro">Ag</span> : null}
@@ -247,12 +367,14 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
             {renderColorCell('bronie', e)}
+            {renderNoteCell('bronie', e)}
         </tr>
-    );
+        );
+    };
 
     const renderShield = (e: ShieldEntry, i: number) => (
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
+            <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
@@ -262,12 +384,13 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
             {renderColorCell('tarcze', e)}
+            {renderNoteCell('tarcze', e)}
         </tr>
     );
 
     const renderArmor = (e: ArmorEntry, i: number) => (
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
+            <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
@@ -277,21 +400,68 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
             {renderColorCell('zbroje', e)}
+            {renderNoteCell('zbroje', e)}
         </tr>
     );
 
     const tableHead = activeTab === 'bronie' ? (
         <tr>
-            <th>Short</th><th>Typ</th><th>K/O/C</th><th>Wyw.</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th>
+            <th>Short</th><th>Typ</th><th>K/O/C</th><th>Wyw.</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
         </tr>
     ) : activeTab === 'tarcze' ? (
         <tr>
-            <th>Short</th><th>Oslona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th>
+            <th>Short</th><th>Oslona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
         </tr>
     ) : (
         <tr>
-            <th>Short</th><th>Typ</th><th>Oslona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th>
+            <th>Short</th><th>Typ</th><th>Oslona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
         </tr>
+    );
+
+    const headerActions = (
+        <>
+            <button
+                type="button"
+                className="zlom-header-btn"
+                onClick={handleExport}
+                title="Zapisz baze do pliku JSON"
+                disabled={importState.phase === 'loading'}
+            >
+                Export
+            </button>
+            <button
+                type="button"
+                className="zlom-header-btn"
+                onClick={handleJsonImportClick}
+                title="Wczytaj baze z pliku JSON"
+                disabled={importState.phase === 'loading'}
+            >
+                Import
+            </button>
+            <button
+                type="button"
+                className="zlom-header-btn"
+                onClick={handleImportClick}
+                title="Importuj baze z pliku Mudleta"
+                disabled={importState.phase === 'loading'}
+            >
+                Import z Mudleta
+            </button>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".db,.sqlite"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+            />
+            <input
+                ref={jsonInputRef}
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={handleJsonFileChange}
+            />
+        </>
     );
 
     return (
@@ -301,16 +471,38 @@ const ZlomPopup: React.FC = () => {
             title="Zlom"
             minWidth={480}
             minHeight={280}
-            initialWidth={720}
+            initialWidth={792}
             initialHeight={520}
             className="zlom-popup postepy2-popup"
             bodyClassName="zlom-popup-body postepy2-popup-body"
+            headerActions={headerActions}
         >
             <div className="postepy2-header">
                 <div className="zlom-header-actions">
-                    <label className="zlom-toggle" title="Podkreslaj bronie ze srebrem">
-                        <input type="checkbox" checked={colorSilver} onChange={toggleColorSilver} />
+                    <label className="zlom-toggle" title="Kolor dla broni ze srebrem (x aby wylaczyc)">
                         <span>Srebro</span>
+                        <span className="zlom-silver-swatch">
+                            <input
+                                type="color"
+                                className="zlom-color-input"
+                                value={silver.color}
+                                onMouseDown={() => {
+                                    if (silver.off) updateSilver({ off: false });
+                                }}
+                                onChange={(e) => updateSilver({ color: e.target.value, off: false })}
+                                style={silver.off ? { opacity: 0.4 } : undefined}
+                            />
+                            {silver.off && <span className="zlom-silver-swatch__cross">×</span>}
+                        </span>
+                        <button
+                            type="button"
+                            className="zlom-color-clear"
+                            onClick={() => updateSilver({ off: true })}
+                            title="Nie koloruj srebra"
+                            style={silver.off ? { visibility: 'hidden' } : undefined}
+                        >
+                            x
+                        </button>
                     </label>
                     <input
                         type="text"
@@ -318,29 +510,6 @@ const ZlomPopup: React.FC = () => {
                         placeholder="Filtruj..."
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                    />
-                    <button
-                        type="button"
-                        className="postepy2-import-button"
-                        onClick={handleImportClick}
-                        disabled={importState.phase === 'loading'}
-                    >
-                        Import z Mudleta
-                    </button>
-                    <button
-                        type="button"
-                        className="postepy2-import-button"
-                        onClick={handleReset}
-                        title="Wyczysc baze"
-                    >
-                        Reset
-                    </button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".db,.sqlite"
-                        style={{ display: 'none' }}
-                        onChange={handleFileChange}
                     />
                 </div>
             </div>

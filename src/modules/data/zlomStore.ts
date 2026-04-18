@@ -7,6 +7,7 @@ import {
 
 export interface WeaponEntry {
     short: string;
+    shortAlt?: string;
     typ: string;
     rodzaj: string;
     klute: number;
@@ -23,10 +24,12 @@ export interface WeaponEntry {
     parowanie: number;
     roomId: number | null;
     color?: string;
+    note?: string;
 }
 
 export interface ArmorEntry {
     short: string;
+    shortAlt?: string;
     typ: string;
     klute: number;
     obuch: number;
@@ -39,10 +42,12 @@ export interface ArmorEntry {
     oslona: string;
     roomId: number | null;
     color?: string;
+    note?: string;
 }
 
 export interface ShieldEntry {
     short: string;
+    shortAlt?: string;
     klute: number;
     obuch: number;
     ciete: number;
@@ -55,6 +60,7 @@ export interface ShieldEntry {
     oslona: string;
     roomId: number | null;
     color?: string;
+    note?: string;
 }
 
 export type ZlomEntry = WeaponEntry | ShieldEntry | ArmorEntry;
@@ -196,6 +202,8 @@ export function upsertByOpis<T extends ZlomEntry>(list: T[], entry: T): T[] {
         const prev = list[idx];
         const merged: T = { ...entry };
         if (!merged.color && prev.color) merged.color = prev.color;
+        if (!merged.note && prev.note) merged.note = prev.note;
+        if (!merged.shortAlt && prev.shortAlt) merged.shortAlt = prev.shortAlt;
         const next = list.slice();
         next[idx] = merged;
         return next;
