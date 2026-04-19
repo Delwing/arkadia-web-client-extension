@@ -567,9 +567,14 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                     renderer.setPosition(closestRoom.id); // Center on this room
                 }
 
-                // Show player marker if in this area
-                if (actualPlayerRoom) {
+                // Show player marker only if the player is in this area/level
+                const playerRoomObj = actualPlayerRoom
+                    ? embedded.reader.getRoom(actualPlayerRoom)
+                    : null;
+                if (playerRoomObj && playerRoomObj.area === areaId && playerRoomObj.z === 0) {
                     renderer.updatePositionMarker(actualPlayerRoom);
+                } else {
+                    renderer.clearPosition();
                 }
 
                 setState(s => ({
@@ -606,10 +611,18 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                         initialHighlightRoomRef.current = initialRoom;
                         renderer.renderHighlight(initialRoom, '#ffcc00');
 
-                        // If the requested room is different from actual player position,
-                        // update marker to show actual player (or hide if not on same area/level)
-                        if (actualPlayerRoom && actualPlayerRoom !== initialRoom) {
+                        // Show the player marker only if the player is in the viewed area/level;
+                        // otherwise clear it so it doesn't render at stale coordinates.
+                        const playerRoomObj = actualPlayerRoom
+                            ? embedded.reader.getRoom(actualPlayerRoom)
+                            : null;
+                        const playerInViewedArea = !!playerRoomObj
+                            && playerRoomObj.area === room.area
+                            && playerRoomObj.z === room.z;
+                        if (playerInViewedArea && actualPlayerRoom !== initialRoom) {
                             renderer.updatePositionMarker(actualPlayerRoom);
+                        } else if (!playerInViewedArea) {
+                            renderer.clearPosition();
                         }
 
                         // Get area name for title
@@ -681,9 +694,18 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                         renderPathsAndHighlights();
                     }
                 } else {
-                    // Static mode: just update the marker
-                    renderer.updatePositionMarker(ev.id);
-                    setState(currentState => ({ ...currentState, currentRoom: ev.id }));
+                    // Static mode: only show the marker if the player's new room is in the viewed area/level
+                    const newRoom = embedded.reader.getRoom(ev.id);
+                    setState(currentState => {
+                        if (newRoom
+                            && newRoom.area === currentState.viewedAreaId
+                            && newRoom.z === currentState.viewedLevel) {
+                            renderer.updatePositionMarker(ev.id);
+                        } else {
+                            renderer.clearPosition();
+                        }
+                        return { ...currentState, currentRoom: ev.id };
+                    });
                 }
             };
 
@@ -703,8 +725,16 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 renderer.renderHighlight(roomId, '#ffcc00');
 
                 const actualPlayerRoom = embedded.currentRoom;
-                if (actualPlayerRoom && actualPlayerRoom !== roomId) {
+                const actualPlayerRoomObj = actualPlayerRoom
+                    ? embedded.reader.getRoom(actualPlayerRoom)
+                    : null;
+                const playerInViewedArea = !!actualPlayerRoomObj
+                    && actualPlayerRoomObj.area === room.area
+                    && actualPlayerRoomObj.z === room.z;
+                if (playerInViewedArea && actualPlayerRoom !== roomId) {
                     renderer.updatePositionMarker(actualPlayerRoom);
+                } else if (!playerInViewedArea) {
+                    renderer.clearPosition();
                 }
 
                 const area = embedded.reader.getArea?.(room.area);

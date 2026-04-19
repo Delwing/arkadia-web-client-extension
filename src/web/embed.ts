@@ -487,8 +487,8 @@ export class EmbeddedMap {
             // Draw the area at the specified level
             this.renderer.drawArea(areaId, z);
 
-            // Update player marker - will hide since player is not on this area/level
-            this.renderer.updatePositionMarker(this.currentRoom);
+            // Hide the player marker since the player is not on this area/level
+            this.renderer.clearPosition();
 
             // Find center of rooms at this level
             const area = this.reader.getArea?.(areaId);
@@ -536,14 +536,20 @@ export class EmbeddedMap {
         }
 
         const playerRoom = this.reader.getRoom(this.currentRoom);
-        if (!playerRoom) return;
+        if (!playerRoom) {
+            this.renderer.clearPosition();
+            return;
+        }
 
         const isPlayerVisible = playerRoom.area === this._viewedAreaId && playerRoom.z === this._viewedZ;
 
         if (isPlayerVisible) {
             this.renderer.setPosition(this.currentRoom);
+        } else {
+            // The renderer re-applies positionRoomId at the room's raw coords on area
+            // change (ignoring area match), so an explicit clear is needed to hide it.
+            this.renderer.clearPosition();
         }
-        // When player is not visible, the position marker is simply not rendered
     }
 
     /**
