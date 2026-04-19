@@ -27,6 +27,7 @@ import type {
 } from '@modules/data/zlomDbImport.shared';
 
 const POPUP_ID = 'popup:zlom';
+const PAGE_SIZE = 100;
 
 type TabType = 'bronie' | 'tarcze' | 'zbroje';
 
@@ -45,6 +46,11 @@ const ZlomPopup: React.FC = () => {
     const [snap, setSnap] = useState<ZlomSnapshot>(emptySnapshot);
     const [activeTab, setActiveTab] = usePopupSetting<TabType>(POPUP_ID, 'activeTab', 'bronie');
     const [filter, setFilter] = useState('');
+    const [page, setPage] = useState(0);
+
+    useEffect(() => {
+        setPage(0);
+    }, [activeTab, filter]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const jsonInputRef = useRef<HTMLInputElement>(null);
@@ -338,6 +344,13 @@ const ZlomPopup: React.FC = () => {
         return [...filtered].sort((a, b) => a.short.localeCompare(b.short));
     }, [snap, activeTab, filter]);
 
+    const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+    const currentPage = Math.min(page, totalPages - 1);
+    const pagedEntries = useMemo(
+        () => entries.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE),
+        [entries, currentPage],
+    );
+
     const total = {
         bronie: snap.bronie.length,
         tarcze: snap.tarcze.length,
@@ -345,6 +358,19 @@ const ZlomPopup: React.FC = () => {
     };
 
     const effectiveSilverColor = silver.off ? undefined : silver.color;
+
+    const renderAltWarning = (e: WeaponEntry | ShieldEntry | ArmorEntry) => {
+        const hasAlt = !!e.shortAlt && e.shortAlt.trim() !== '';
+        if (hasAlt) return null;
+        return (
+            <span
+                className="zlom-tag zlom-tag--warn"
+                title="Brak alternatywnego shorta (biernika)"
+            >
+                ⚠
+            </span>
+        );
+    };
 
     const renderWeapon = (e: WeaponEntry, i: number) => {
         const effectiveColor = e.magik
@@ -357,6 +383,7 @@ const ZlomPopup: React.FC = () => {
                 style={effectiveColor ? { color: effectiveColor } : undefined}
             >
                 {e.short}
+                {renderAltWarning(e)}
                 {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro">Ag</span> : null}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
@@ -376,6 +403,7 @@ const ZlomPopup: React.FC = () => {
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
+                {renderAltWarning(e)}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.oslona}</td>
@@ -392,6 +420,7 @@ const ZlomPopup: React.FC = () => {
         <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
             <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
+                {renderAltWarning(e)}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.typ}</td>
@@ -529,6 +558,7 @@ const ZlomPopup: React.FC = () => {
                         >
                             <option value="replace">Nadpisz istniejace</option>
                             <option value="keep">Zachowaj istniejace, dodaj nowe</option>
+                            <option value="unique-short">Dodaj tylko nowe shorty</option>
                         </select>
                     </div>
                     <div className="postepy2-import-panel__info">
@@ -583,13 +613,53 @@ const ZlomPopup: React.FC = () => {
                     <table className="zlom-table">
                         <thead>{tableHead}</thead>
                         <tbody>
-                            {activeTab === 'bronie' && entries.map((e, i) => renderWeapon(e as WeaponEntry, i))}
-                            {activeTab === 'tarcze' && entries.map((e, i) => renderShield(e as ShieldEntry, i))}
-                            {activeTab === 'zbroje' && entries.map((e, i) => renderArmor(e as ArmorEntry, i))}
+                            {activeTab === 'bronie' && pagedEntries.map((e, i) => renderWeapon(e as WeaponEntry, i))}
+                            {activeTab === 'tarcze' && pagedEntries.map((e, i) => renderShield(e as ShieldEntry, i))}
+                            {activeTab === 'zbroje' && pagedEntries.map((e, i) => renderArmor(e as ArmorEntry, i))}
                         </tbody>
                     </table>
                 )}
             </div>
+
+            {totalPages > 1 && (
+                <div className="zlom-pagination">
+                    <button
+                        type="button"
+                        onClick={() => setPage(0)}
+                        disabled={currentPage === 0}
+                        title="Pierwsza strona"
+                    >
+                        &laquo;
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        disabled={currentPage === 0}
+                        title="Poprzednia strona"
+                    >
+                        &lsaquo;
+                    </button>
+                    <span className="zlom-pagination-info">
+                        Strona {currentPage + 1} z {totalPages} ({entries.length})
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                        disabled={currentPage >= totalPages - 1}
+                        title="Nastepna strona"
+                    >
+                        &rsaquo;
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPage(totalPages - 1)}
+                        disabled={currentPage >= totalPages - 1}
+                        title="Ostatnia strona"
+                    >
+                        &raquo;
+                    </button>
+                </div>
+            )}
         </DockablePopupWrapper>
     );
 };

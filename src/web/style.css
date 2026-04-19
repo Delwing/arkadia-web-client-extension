@@ -10749,13 +10749,50 @@ body.layout-manager-enabled #notification-center {
 .zlom-table thead th {
   position: sticky;
   top: 0;
-  background-color: var(--popup-subtle-bg);
+  z-index: 2;
+  background-color: var(--popup-bg);
   color: var(--popup-text-medium);
   text-align: left;
   padding: 0.25rem 0.5rem;
   border-bottom: 1px solid var(--popup-border);
   font-weight: 500;
   white-space: nowrap;
+}
+
+.zlom-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border-top: 1px solid var(--popup-border);
+}
+
+.zlom-pagination button {
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-subtle);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zlom-pagination button:hover:not(:disabled) {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-strong);
+}
+
+.zlom-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zlom-pagination-info {
+  margin: 0 0.5rem;
+  font-size: 0.7rem;
+  color: var(--popup-text-dim);
 }
 
 .zlom-row:hover {
@@ -10829,6 +10866,12 @@ body.layout-manager-enabled #notification-center {
 .zlom-tag--magic {
   color: #ff7cff;
   background-color: rgba(255, 124, 255, 0.15);
+}
+
+.zlom-tag--warn {
+  color: var(--popup-warning-light, #fbbf24);
+  background-color: var(--popup-warning-bg, rgba(245, 158, 11, 0.2));
+  cursor: help;
 }
 
 .zlom-cell--color {

@@ -155,7 +155,7 @@ function extractArmorProtection(text: string): { prot: ArmorProtection; parry?: 
     return undefined;
 }
 
-export type ZlomMergeMode = 'replace' | 'keep';
+export type ZlomMergeMode = 'replace' | 'keep' | 'unique-short';
 
 export interface ZlomImportPayload {
     bronie: WeaponEntry[];
@@ -178,6 +178,22 @@ export async function mergeZlomData(
         const merge = <T extends ZlomEntry>(dst: T[], src: T[]): { list: T[]; count: number } => {
             let list = dst.slice();
             let count = 0;
+            if (mode === 'unique-short') {
+                const seen = new Set(
+                    list
+                        .map(x => x.short?.trim().toLowerCase())
+                        .filter((s): s is string => !!s),
+                );
+                for (const e of src) {
+                    if (!e.opis) continue;
+                    const key = e.short?.trim().toLowerCase();
+                    if (!key || seen.has(key)) continue;
+                    seen.add(key);
+                    list.push(e);
+                    count++;
+                }
+                return { list, count };
+            }
             for (const e of src) {
                 if (!e.opis) continue;
                 const idx = list.findIndex(x => x.opis === e.opis);
