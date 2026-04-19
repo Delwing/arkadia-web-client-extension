@@ -10,6 +10,7 @@ import initGates from './scripts/gates'
 import initSeat from './scripts/seat'
 import initAttackBeep from './scripts/attackBeep'
 import initWarningTriggers from './scripts/warningTriggers'
+import initLostTeamMates from './scripts/lostTeamMates'
 import initAttackQueue from './scripts/attackQueue'
 import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
@@ -204,6 +205,7 @@ export function registerScripts(client: Client) {
     initSeat(client)
     initAttackBeep(client)
     initWarningTriggers(client)
+    initLostTeamMates(client)
     initAttackQueue(client, aliases)
     initAttackModeAlias(client, aliases)
     initLamp(client)

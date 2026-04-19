@@ -147,9 +147,11 @@ export interface KnownEvents {
     "tripPlanner.popup.open": void;
     "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
     "mapHighlights": [{ roomId: number; color: string }[]];
+    "mapLostRooms": [number[]];
     "mapLocationLabel": string;
     "requestMapLocationLabel": void;
     "requestMapHighlights": void;
+    "requestMapLostRooms": void;
     "requestMapPath": void;
     "notify": NotificationPayload;
     "lampTimer": number | null;

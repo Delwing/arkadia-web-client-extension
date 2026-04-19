@@ -38,6 +38,34 @@ describe('TeamManager', () => {
     expect(manager.isInTeam('Pablo')).toBe(true);
   });
 
+  test('renames member when partial gmcp update changes desc (introduction)', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'masywny ponury krasnolud', living: true, team: true },
+    });
+    expect(manager.isInTeam('masywny ponury krasnolud')).toBe(true);
+
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Delwing' },
+    });
+    expect(manager.isInTeam('Delwing')).toBe(true);
+    expect(manager.isInTeam('masywny ponury krasnolud')).toBe(false);
+    expect(manager.getTeamMemberObjectId('Delwing')).toBe(1);
+  });
+
+  test('renames leader on partial desc update', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'zakapturzony elf', living: true, team: true, team_leader: true },
+    });
+    expect(manager.getLeader()).toBe('zakapturzony elf');
+
+    client.sendEvent('gmcp.objects.data', {
+      '5': { desc: 'Vesper' },
+    });
+    expect(manager.getLeader()).toBe('Vesper');
+    expect(manager.getLeaderId()).toBe(5);
+    expect(manager.isInTeam('Vesper')).toBe(true);
+  });
+
   test('removes member on leave message', () => {
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Vesper', living: true, team: true },

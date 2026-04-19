@@ -12,6 +12,9 @@ import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
 import { openMapContextMenu } from "@modules/core/contextMenus";
+import { PulseOverlay } from "./pulseOverlay";
+
+const LOST_ROOMS_OVERLAY_ID = "lost-rooms";
 
 const MIN_ZOOM = 0.01;
 
@@ -81,6 +84,7 @@ export class EmbeddedMap {
     private totalRooms: number;
     private currentPath: { segments: Array<{ path: number[]; color: string }> } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
+    private lostRoomsOverlay: PulseOverlay | null = null;
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
     private _viewedZ: number | null = null;
@@ -231,8 +235,14 @@ export class EmbeddedMap {
             this.currentHighlights = data;
             this.renderCurrentPathAndHighlights();
         });
+
+        eventBus.on('mapLostRooms', (roomIds: number[]) => {
+            this.updateLostRoomsOverlay(roomIds);
+        });
+
         // Request current highlights and path in case they were created before map loaded
         eventBus.emit('requestMapHighlights');
+        eventBus.emit('requestMapLostRooms');
         eventBus.emit('requestMapPath');
 
         eventBus.on('map.centerOn', (data: { roomId: number }) => {
@@ -592,6 +602,8 @@ export class EmbeddedMap {
             (this.renderer as any).destroy();
         }
 
+        this.lostRoomsOverlay = null;
+
         this.renderer = new MapRenderer(this.reader, this.settings, this.map);
 
         this.reader.addVisitedRooms(Array.from(this.visited));
@@ -602,6 +614,22 @@ export class EmbeddedMap {
 
         if (typeof this.currentRoom === 'number') {
             this.renderRoom(this.currentRoom);
+        }
+    }
+
+    private updateLostRoomsOverlay(roomIds: number[]) {
+        if (!roomIds || roomIds.length === 0) {
+            if (this.lostRoomsOverlay) {
+                this.renderer.removeSceneOverlay(LOST_ROOMS_OVERLAY_ID);
+                this.lostRoomsOverlay = null;
+            }
+            return;
+        }
+        if (!this.lostRoomsOverlay) {
+            this.lostRoomsOverlay = new PulseOverlay({ roomIds });
+            this.renderer.addSceneOverlay(LOST_ROOMS_OVERLAY_ID, this.lostRoomsOverlay);
+        } else {
+            this.lostRoomsOverlay.setRoomIds(roomIds);
         }
     }
 }
