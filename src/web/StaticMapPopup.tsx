@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MapRenderer, RoomContextMenuEventDetail, type RoomClickEventDetail } from 'mudlet-map-renderer';
+import { MapRenderer, RoomContextMenuEventDetail, type RoomClickEventDetail, type AreaExitClickEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
@@ -511,6 +511,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let moveHandler: ((ev: { id: number }) => void) | null = null;
         let contextMenuHandler: ((ev: Event) => void) | null = null;
         let roomClickHandler: ((ev: Event) => void) | null = null;
+        let areaExitClickHandler: ((ev: Event) => void) | null = null;
         let zoomHandler: (() => void) | null = null;
         let settingsHandler: (() => void) | null = null;
         let settingsUnsubscribe: (() => void) | null = null;
@@ -758,6 +759,14 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 }
             };
 
+            areaExitClickHandler = (ev: Event) => {
+                const customEv = ev as CustomEvent<AreaExitClickEventDetail>;
+                const targetRoomId = customEv.detail.targetRoomId;
+                if (typeof targetRoomId === 'number') {
+                    navigateToRoom(targetRoomId);
+                }
+            };
+
             zoomHandler = () => {
                 if (rendererRef.current) {
                     const newZoom = rendererRef.current.getZoom();
@@ -834,6 +843,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             eventBus.on('mapDataChanged', dataChangedHandler);
             container.addEventListener('roomcontextmenu', contextMenuHandler);
             container.addEventListener('roomclick', roomClickHandler);
+            container.addEventListener('areaexitclick', areaExitClickHandler);
             container.addEventListener('zoom', zoomHandler);
 
             const resizeObserver = new ResizeObserver(() => {
@@ -862,6 +872,9 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             }
             if (container && roomClickHandler) {
                 container.removeEventListener('roomclick', roomClickHandler);
+            }
+            if (container && areaExitClickHandler) {
+                container.removeEventListener('areaexitclick', areaExitClickHandler);
             }
             if (container && zoomHandler) {
                 container.removeEventListener('zoom', zoomHandler);

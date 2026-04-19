@@ -4,6 +4,7 @@ import {
     type Settings,
     RoomContextMenuEventDetail,
     type RoomClickEventDetail,
+    type AreaExitClickEventDetail,
     type PanEventDetail,
     LabelRenderMode, MapRenderer
 } from "mudlet-map-renderer";
@@ -96,6 +97,7 @@ export class EmbeddedMap {
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));
         this.map.addEventListener('roomclick', (ev: CustomEvent<RoomClickEventDetail>) => this.onRoomClick(ev));
+        this.map.addEventListener('areaexitclick', (ev: CustomEvent<AreaExitClickEventDetail>) => this.onAreaExitClick(ev));
         this.map.addEventListener('pan', (ev: CustomEvent<PanEventDetail>) => this.onPan(ev));
         this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
@@ -345,6 +347,12 @@ export class EmbeddedMap {
         const viewportY = ev.detail.position.y + mapRect.top;
         const mapNote = this.reader.getRoom(roomId)?.userData?.note;
         showMapNoteTooltipForRoom(roomId, viewportX, viewportY, mapNote);
+    }
+
+    private onAreaExitClick(ev: CustomEvent<AreaExitClickEventDetail>) {
+        const targetRoomId = ev.detail.targetRoomId;
+        if (typeof targetRoomId !== 'number') return;
+        eventBus.emit('map.centerOn', { roomId: targetRoomId });
     }
 
     renderRoomById(id: number) {
