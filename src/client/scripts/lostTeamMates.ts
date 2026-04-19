@@ -9,14 +9,6 @@ const LOST_TIMEOUT_MS = 120_000;
 interface LostEntry {
     roomId: number;
     timer: ReturnType<typeof setTimeout>;
-    candidateIds: Set<number>;
-}
-
-function parseLostNames(list: string): string[] {
-    return list
-        .split(/,\s*| i /)
-        .map(s => s.trim())
-        .filter(Boolean);
 }
 
 export default function initLostTeamMates(client: Client) {
@@ -24,42 +16,33 @@ export default function initLostTeamMates(client: Client) {
 
     let currentRoomId: number | null = null;
     let previousRoomId: number | null = null;
-    const lostMembers = new Map<string, LostEntry>();
+    const lostMembers = new Map<number, LostEntry>();
     let visibleNums = new Set<number>();
+    // Set by the Gubisz trigger; the next objects.nums consumes it and marks any
+    // team members that disappeared in that update as lost in this room.
+    let pendingGubiszRoom: number | null = null;
 
     const emitLostRooms = () => {
         const ids = Array.from(new Set(Array.from(lostMembers.values()).map(e => e.roomId)));
         client.sendEvent("mapLostRooms", ids);
     };
 
-    const clearLost = (name: string) => {
-        const entry = lostMembers.get(name);
+    const clearLost = (id: number) => {
+        const entry = lostMembers.get(id);
         if (!entry) return;
         clearTimeout(entry.timer);
-        lostMembers.delete(name);
+        lostMembers.delete(id);
         emitLostRooms();
     };
 
-    const markLost = (name: string, roomId: number, candidateIds: Set<number>) => {
-        const existing = lostMembers.get(name);
+    const markLost = (id: number, roomId: number) => {
+        const existing = lostMembers.get(id);
         if (existing) {
             clearTimeout(existing.timer);
         }
-        const timer = setTimeout(() => clearLost(name), LOST_TIMEOUT_MS);
-        lostMembers.set(name, {roomId, timer, candidateIds});
+        const timer = setTimeout(() => clearLost(id), LOST_TIMEOUT_MS);
+        lostMembers.set(id, {roomId, timer});
         emitLostRooms();
-    };
-
-    const missingTeamIds = (): Set<number> => {
-        const missing = new Set<number>();
-        const data = client.TeamManager?.getAccumulatedObjectsData?.();
-        if (!data) return missing;
-        for (const [id, obj] of data.entries()) {
-            if (obj?.team && !visibleNums.has(id)) {
-                missing.add(id);
-            }
-        }
-        return missing;
     };
 
     currentRoomId = client.Map.currentRoom?.id ?? null;
@@ -71,43 +54,44 @@ export default function initLostTeamMates(client: Client) {
             previousRoomId = currentRoomId;
             currentRoomId = id;
         }
-        for (const name of Array.from(lostMembers.keys())) {
-            if (lostMembers.get(name)!.roomId === id) {
-                clearLost(name);
-            }
-        }
     });
 
     client.on("gmcp.objects.nums", detail => {
         const nums = Array.isArray(detail) ? detail : (detail as { nums?: unknown })?.nums;
         if (!Array.isArray(nums)) return;
-        visibleNums = new Set(nums.map(Number));
-        for (const [name, entry] of Array.from(lostMembers.entries())) {
-            if (entry.candidateIds.size === 0) continue;
-            for (const id of entry.candidateIds) {
-                if (visibleNums.has(id)) {
-                    clearLost(name);
-                    break;
+        const previousVisible = visibleNums;
+        const newVisible = new Set(nums.map(Number));
+
+        if (pendingGubiszRoom != null) {
+            const data = client.TeamManager?.getAccumulatedObjectsData?.();
+            const lostRoomId = pendingGubiszRoom;
+            pendingGubiszRoom = null;
+            if (data) {
+                for (const id of previousVisible) {
+                    if (!newVisible.has(id) && data.get(id)?.team) {
+                        markLost(id, lostRoomId);
+                    }
                 }
             }
+        }
+
+        visibleNums = newVisible;
+
+        for (const id of Array.from(lostMembers.keys())) {
+            if (visibleNums.has(id)) clearLost(id);
         }
     });
 
     client.on("requestMapLostRooms", () => emitLostRooms());
 
-    client.Triggers.registerTrigger(/^Gubisz gdzies za soba (.+)\.$/, (line, matches) => {
+    client.Triggers.registerTrigger(/^Gubisz gdzies za soba .+\.$/, line => {
         const result = new AnsiAwareBuffer();
         result.append("\n");
         result.append("==> ", YELLOW);
         result.appendBuffer(line.color([0, line.length], YELLOW));
         result.append("\n\n");
-
-        if (matches && previousRoomId != null) {
-            const names = parseLostNames(matches[1]);
-            const candidates = missingTeamIds();
-            for (const name of names) {
-                markLost(name, previousRoomId, new Set(candidates));
-            }
+        if (previousRoomId != null) {
+            pendingGubiszRoom = previousRoomId;
         }
         return result;
     }, tag);
@@ -121,8 +105,7 @@ export default function initLostTeamMates(client: Client) {
                 const stayed = /Mimo to/.test(matches[0]);
                 if (!stayed && currentRoomId != null && client.TeamManager?.isInTeam?.(name)) {
                     const id = client.TeamManager.getTeamMemberObjectId(name);
-                    const candidates = id !== undefined ? new Set([id]) : new Set<number>();
-                    markLost(name, currentRoomId, candidates);
+                    if (id !== undefined) markLost(id, currentRoomId);
                 }
             }
             return line;
@@ -134,7 +117,8 @@ export default function initLostTeamMates(client: Client) {
         /^([A-Z][a-z]+) odzyskuje kontakt z rzeczywistoscia\.$/,
         (line, matches) => {
             if (matches) {
-                clearLost(matches[1]);
+                const id = client.TeamManager?.getTeamMemberObjectId?.(matches[1]);
+                if (id !== undefined) clearLost(id);
             }
             return line;
         },

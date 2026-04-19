@@ -62,143 +62,178 @@ describe('lostTeamMates', () => {
         jest.useRealTimers();
     });
 
-    test('parses single name from "Gubisz gdzies za soba"', () => {
-        client.sendEvent('enterLocation', { id: 100 });
-        client.sendEvent('enterLocation', { id: 200 });
+    describe('Gubisz', () => {
+        beforeEach(() => {
+            client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([
+                [1, { team: true, desc: 'You' }],
+                [2, { team: true, desc: 'Pabel' }],
+            ]));
+        });
 
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+        test('marks previous room when a team member disappears after Gubisz', () => {
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
 
-        expect(client.lastLostRooms()).toEqual([100]);
+            fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            client.sendEvent('gmcp.objects.nums', [1]);
+
+            expect(client.lastLostRooms()).toEqual([100]);
+        });
+
+        test('clears mark when disappeared member reappears', () => {
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+            fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            client.sendEvent('gmcp.objects.nums', [1]);
+            expect(client.lastLostRooms()).toEqual([100]);
+
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+            expect(client.lastLostRooms()).toEqual([]);
+        });
+
+        test('disappearance without preceding Gubisz does not mark', () => {
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+
+            client.sendEvent('gmcp.objects.nums', [1]);
+
+            expect(client.lastLostRooms()).toBeNull();
+        });
+
+        test('Gubisz with no subsequent disappearance marks nothing', () => {
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+
+            fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+
+            expect(client.lastLostRooms()).toBeNull();
+        });
+
+        test('tracks multiple disappeared team members and clears each independently', () => {
+            client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([
+                [1, { team: true }],
+                [2, { team: true }],
+                [3, { team: true }],
+            ]));
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2, 3]);
+
+            fireTrigger(client, 'Gubisz gdzies za soba Pabla i Vesper.');
+            client.sendEvent('gmcp.objects.nums', [1]);
+            expect(client.lastLostRooms()).toEqual([100]);
+
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+            expect(client.lastLostRooms()).toEqual([100]);
+
+            client.sendEvent('gmcp.objects.nums', [1, 2, 3]);
+            expect(client.lastLostRooms()).toEqual([]);
+        });
+
+        test('clears mark after 120s timeout', () => {
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+            fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            client.sendEvent('gmcp.objects.nums', [1]);
+            expect(client.lastLostRooms()).toEqual([100]);
+
+            jest.advanceTimersByTime(120_000);
+            expect(client.lastLostRooms()).toEqual([]);
+        });
+
+        test('re-entering the marked room does not clear on its own', () => {
+            client.sendEvent('enterLocation', { id: 100 });
+            client.sendEvent('enterLocation', { id: 200 });
+            client.sendEvent('gmcp.objects.nums', [1, 2]);
+            fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            client.sendEvent('gmcp.objects.nums', [1]);
+            expect(client.lastLostRooms()).toEqual([100]);
+
+            client.sendEvent('enterLocation', { id: 100 });
+            expect(client.lastLostRooms()).toEqual([100]);
+        });
     });
 
-    test('parses comma-and-i-separated names into single location', () => {
-        client.sendEvent('enterLocation', { id: 10 });
-        client.sendEvent('enterLocation', { id: 20 });
+    describe('traci kontakt', () => {
+        test('marks current room when name is team member', () => {
+            client.TeamManager.isInTeam.mockImplementation((name: string) => name === 'Dur');
+            client.TeamManager.getTeamMemberObjectId.mockImplementation((name: string) =>
+                name === 'Dur' ? 77 : undefined,
+            );
+            client.sendEvent('enterLocation', { id: 500 });
 
-        fireTrigger(client, 'Gubisz gdzies za soba Szturmixa, Pabla i Vesper.');
+            fireTrigger(client, 'Dur traci kontakt z rzeczywistoscia.');
 
-        expect(client.lastLostRooms()).toEqual([10]);
-    });
+            expect(client.lastLostRooms()).toEqual([500]);
+        });
 
-    test('marks previous location (move happens before trigger)', () => {
-        client.sendEvent('enterLocation', { id: 50 });
-        client.sendEvent('enterLocation', { id: 60 });
+        test('does not mark when name is not a team member', () => {
+            client.TeamManager.isInTeam.mockReturnValue(false);
+            client.sendEvent('enterLocation', { id: 500 });
 
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            fireTrigger(client, 'Obcy traci kontakt z rzeczywistoscia.');
 
-        expect(client.lastLostRooms()).toEqual([50]);
-    });
+            expect(client.lastLostRooms()).toBeNull();
+        });
 
-    test('clears mark when re-entering the marked room', () => {
-        client.sendEvent('enterLocation', { id: 1 });
-        client.sendEvent('enterLocation', { id: 2 });
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
-        expect(client.lastLostRooms()).toEqual([1]);
+        test('"Mimo to" variant never marks but still colors', () => {
+            client.TeamManager.isInTeam.mockReturnValue(true);
+            client.sendEvent('enterLocation', { id: 500 });
 
-        client.sendEvent('enterLocation', { id: 1 });
-        expect(client.lastLostRooms()).toEqual([]);
-    });
+            const result = fireTrigger(
+                client,
+                'Dur traci kontakt z rzeczywistoscia. Mimo to, nie opuszcza swiata Arkadii.',
+            );
 
-    test('clears mark after 120s timeout', () => {
-        client.sendEvent('enterLocation', { id: 1 });
-        client.sendEvent('enterLocation', { id: 2 });
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+            expect(result).not.toBeNull();
+            expect(client.lastLostRooms()).toBeNull();
+        });
 
-        jest.advanceTimersByTime(120_000);
-        expect(client.lastLostRooms()).toEqual([]);
-    });
+        test('"odzyskuje kontakt" clears the matching lost entry', () => {
+            client.TeamManager.isInTeam.mockReturnValue(true);
+            client.TeamManager.getTeamMemberObjectId.mockReturnValue(77);
+            client.sendEvent('enterLocation', { id: 42 });
+            fireTrigger(client, 'Dur traci kontakt z rzeczywistoscia.');
+            expect(client.lastLostRooms()).toEqual([42]);
 
-    test('keeps room in list while another lost member still references it', () => {
-        client.sendEvent('enterLocation', { id: 1 });
-        client.sendEvent('enterLocation', { id: 2 });
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla i Vesper.');
+            fireTrigger(client, 'Dur odzyskuje kontakt z rzeczywistoscia.');
+            expect(client.lastLostRooms()).toEqual([]);
+        });
 
-        jest.advanceTimersByTime(60_000);
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+        test('reappearance of object id in objects.nums clears traci-kontakt mark', () => {
+            client.TeamManager.isInTeam.mockReturnValue(true);
+            client.TeamManager.getTeamMemberObjectId.mockReturnValue(77);
+            client.sendEvent('enterLocation', { id: 42 });
+            fireTrigger(client, 'Dur traci kontakt z rzeczywistoscia.');
+            expect(client.lastLostRooms()).toEqual([42]);
 
-        jest.advanceTimersByTime(60_001);
-        expect(client.lastLostRooms()).toEqual([1]);
-    });
-
-    test('traci kontakt marks current room when name is team member', () => {
-        client.TeamManager.isInTeam.mockImplementation((name: string) => name === 'Dur');
-        client.sendEvent('enterLocation', { id: 500 });
-
-        fireTrigger(client, 'Dur traci kontakt z rzeczywistoscia.');
-
-        expect(client.lastLostRooms()).toEqual([500]);
-    });
-
-    test('traci kontakt does not mark when name is not a team member', () => {
-        client.TeamManager.isInTeam.mockReturnValue(false);
-        client.sendEvent('enterLocation', { id: 500 });
-
-        fireTrigger(client, 'Obcy traci kontakt z rzeczywistoscia.');
-
-        expect(client.lastLostRooms()).toBeNull();
-    });
-
-    test('"Mimo to" variant never marks but still colors', () => {
-        client.TeamManager.isInTeam.mockReturnValue(true);
-        client.sendEvent('enterLocation', { id: 500 });
-
-        const result = fireTrigger(
-            client,
-            'Dur traci kontakt z rzeczywistoscia. Mimo to, nie opuszcza swiata Arkadii.',
-        );
-
-        expect(result).not.toBeNull();
-        expect(client.lastLostRooms()).toBeNull();
+            client.sendEvent('gmcp.objects.nums', [77, 99]);
+            expect(client.lastLostRooms()).toEqual([]);
+        });
     });
 
     test('responds to requestMapLostRooms by re-emitting current state', () => {
+        client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([
+            [1, { team: true }],
+            [2, { team: true }],
+        ]));
         client.sendEvent('enterLocation', { id: 1 });
         client.sendEvent('enterLocation', { id: 2 });
+        client.sendEvent('gmcp.objects.nums', [1, 2]);
         fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
+        client.sendEvent('gmcp.objects.nums', [1]);
+        expect(client.lastLostRooms()).toEqual([1]);
 
         const before = client.sentEvents.filter(e => e.type === 'mapLostRooms').length;
         client.sendEvent('requestMapLostRooms');
         const after = client.sentEvents.filter(e => e.type === 'mapLostRooms').length;
         expect(after).toBeGreaterThan(before);
         expect(client.lastLostRooms()).toEqual([1]);
-    });
-
-    test('"odzyskuje kontakt" clears the matching lost entry', () => {
-        client.TeamManager.isInTeam.mockReturnValue(true);
-        client.sendEvent('enterLocation', { id: 42 });
-        fireTrigger(client, 'Dur traci kontakt z rzeczywistoscia.');
-        expect(client.lastLostRooms()).toEqual([42]);
-
-        fireTrigger(client, 'Dur odzyskuje kontakt z rzeczywistoscia.');
-        expect(client.lastLostRooms()).toEqual([]);
-    });
-
-    test('reappearance of object id in objects.nums clears traci-kontakt mark', () => {
-        client.TeamManager.isInTeam.mockReturnValue(true);
-        client.TeamManager.getTeamMemberObjectId.mockReturnValue(77);
-        client.sendEvent('enterLocation', { id: 42 });
-        fireTrigger(client, 'Dur traci kontakt z rzeczywistoscia.');
-        expect(client.lastLostRooms()).toEqual([42]);
-
-        client.sendEvent('gmcp.objects.nums', [77, 99]);
-        expect(client.lastLostRooms()).toEqual([]);
-    });
-
-    test('reappearance of any missing team id clears Gubisz marks', () => {
-        // Team has IDs 10 and 20, both visible; then 10 disappears and Gubisz fires.
-        client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([
-            [10, { team: true, desc: 'Pabel' }],
-            [20, { team: true, desc: 'Vesper' }],
-        ]));
-
-        client.sendEvent('enterLocation', { id: 1 });
-        client.sendEvent('enterLocation', { id: 2 });
-        client.sendEvent('gmcp.objects.nums', [20]); // 10 is missing
-
-        fireTrigger(client, 'Gubisz gdzies za soba Pabla.');
-        expect(client.lastLostRooms()).toEqual([1]);
-
-        client.sendEvent('gmcp.objects.nums', [10, 20]); // 10 back
-        expect(client.lastLostRooms()).toEqual([]);
     });
 });

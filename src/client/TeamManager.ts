@@ -164,11 +164,15 @@ export default class TeamManager {
     }
 
     private checkTeam(obj: ObjectData, id: number) {
-        if (!obj || obj.team === undefined) {
+        if (!obj) {
+            return;
+        }
+        const isKnownTeamMember = this.teamMemberDescriptions.has(id);
+        if (obj.team === undefined && !isKnownTeamMember) {
             return;
         }
 
-        if (!obj.team) {
+        if (obj.team === false) {
             const name = this.teamMemberDescriptions.get(id);
             if (name) {
                 this.teamMemberDescriptions.delete(id);
@@ -203,6 +207,10 @@ export default class TeamManager {
         const previousName = this.teamMemberDescriptions.get(id);
         if (previousName && previousName !== name) {
             this.members.delete(previousName);
+            if (this.leader === previousName) {
+                this.leader = name;
+                this.client.sendEvent('teamChange');
+            }
         }
 
         this.teamMemberDescriptions.set(id, name);
