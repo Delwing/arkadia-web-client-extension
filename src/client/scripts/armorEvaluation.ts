@@ -103,8 +103,16 @@ export default function initArmorEvaluation(client: Client) {
       const c = ARMOR_QUALITY[prot.ciete.toLowerCase()];
       const o = ARMOR_QUALITY[prot.obuchowe.toLowerCase()];
       if (!k || !c || !o) return null;
-      const sum = k.value + c.value + o.value;
-      const avg = Math.round((sum / 3) * 100) / 100;
+      let parryValue: { value: number; label: string } | undefined;
+      if (parry) {
+        const parryKey = Object.keys(EFFECTIVENESS).find((pk) =>
+          parry.toLowerCase().startsWith(pk),
+        );
+        if (parryKey) parryValue = EFFECTIVENESS[parryKey];
+      }
+      const sum = k.value + c.value + o.value + (parryValue?.value ?? 0);
+      const divisor = parryValue ? 4 : 3;
+      const avg = Math.round((sum / divisor) * 100) / 100;
       const pad = 15;
 
       const output = new AnsiAwareBuffer();
@@ -124,15 +132,9 @@ export default function initArmorEvaluation(client: Client) {
       output.append(`: ${o.label}\n`, {});
 
       // Optional parry line
-      if (parry) {
-        const key = Object.keys(EFFECTIVENESS).find((k) =>
-          parry.toLowerCase().startsWith(k),
-        );
-        if (key) {
-          const p = EFFECTIVENESS[key];
-          output.append("Parowanie", LABEL_COLOR);
-          output.append(`: ${p.label}\n`, {});
-        }
+      if (parryValue) {
+        output.append("Parowanie", LABEL_COLOR);
+        output.append(`: ${parryValue.label}\n`, {});
       }
 
       // Empty line
