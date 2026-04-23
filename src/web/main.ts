@@ -1584,6 +1584,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.enabled = true;
                 saveLayoutState(state);
                 invalidateLayoutCache();
+                const uiSettings = { ...defaultUiSettings, ...(globalStorage.get('uiSettings') ?? {}) };
+                uiSettings.showButtons = false;
+                globalStorage.set('uiSettings', uiSettings);
                 suggestionEl.style.display = 'none';
             });
 
