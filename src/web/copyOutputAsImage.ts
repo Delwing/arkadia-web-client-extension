@@ -1,4 +1,4 @@
-import {areOutputTimestampsVisible} from "@shared/dom/outputMessageHandler";
+import {areOutputTimestampsVisible, areOutputMessageTypesVisible} from "@shared/dom/outputMessageHandler";
 import {copyCanvasToClipboard} from "@shared/dom/copyCanvasToClipboard.ts";
 
 type UnderlineStyle = 'solid' | 'dotted';
@@ -17,8 +17,9 @@ const BLOCK_ELEMENTS = new Set([
 ]);
 
 const TIMESTAMP_COLOR = 'darkorange';
+const MESSAGE_TYPE_COLOR = 'mediumpurple';
 
-function extractStyledText(node: Node, defaultColor: string, includeTimestamps: boolean): StyledSpan[] {
+function extractStyledText(node: Node, defaultColor: string, includeTimestamps: boolean, includeMessageTypes: boolean): StyledSpan[] {
     const spans: StyledSpan[] = [];
 
     function walk(n: Node, inheritedColor: string, inheritedBgColor: string | undefined, inheritedBold: boolean, inheritedUnderline: UnderlineStyle | undefined) {
@@ -37,6 +38,17 @@ function extractStyledText(node: Node, defaultColor: string, includeTimestamps: 
                     const text = el.textContent || '';
                     if (text) {
                         spans.push({ text: text + ' ', color: TIMESTAMP_COLOR, backgroundColor: undefined, bold: false });
+                    }
+                }
+                return;
+            }
+
+            if (el.classList.contains('output-message-type')) {
+                if (includeMessageTypes) {
+                    const text = el.textContent || '';
+                    if (text) {
+                        const truncated = text.length > 12 ? text.substring(0, 12) : text.padEnd(12, ' ');
+                        spans.push({ text: truncated + ' ', color: MESSAGE_TYPE_COLOR, backgroundColor: undefined, bold: false });
                     }
                 }
                 return;
@@ -131,10 +143,28 @@ function findFirstLineTimestamp(range: Range): string | null {
     return null;
 }
 
-function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; firstLineCharOffset: number; firstLineHasPrependedTimestamp: boolean } {
+function findFirstLineMessageType(range: Range): string | null {
+    let node: Node | null = range.startContainer;
+    while (node && node !== document.body) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            if (el.classList.contains('output_msg')) {
+                const typeEl = el.querySelector('.output-message-type');
+                if (typeEl) {
+                    return typeEl.textContent || null;
+                }
+                return null;
+            }
+        }
+        node = node.parentNode;
+    }
+    return null;
+}
+
+function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; firstLineCharOffset: number; prependedPrefixCount: number } {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
-        return { spans: [], hasSelection: false, firstLineCharOffset: 0, firstLineHasPrependedTimestamp: false };
+        return { spans: [], hasSelection: false, firstLineCharOffset: 0, prependedPrefixCount: 0 };
     }
 
     const range = selection.getRangeAt(0);
@@ -154,7 +184,8 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; fir
     const bodyStyle = window.getComputedStyle(document.body);
     const defaultColor = bodyStyle.color || '#ffffff';
     const includeTimestamps = areOutputTimestampsVisible();
-    const spans = extractStyledText(container, defaultColor, includeTimestamps);
+    const includeMessageTypes = areOutputMessageTypesVisible();
+    const spans = extractStyledText(container, defaultColor, includeTimestamps, includeMessageTypes);
 
     // Apply ancestor color only to initial consecutive default-colored spans (first line content)
     // Stop as soon as we hit a span with explicit color - that span came from
@@ -172,29 +203,46 @@ function getSelectedContent(): { spans: StyledSpan[]; hasSelection: boolean; fir
         }
     }
 
-    // If timestamps are visible and the first line doesn't have a timestamp,
-    // try to find and prepend it (timestamps have user-select: none so they're not in the selection)
-    let firstLineHasPrependedTimestamp = false;
+    // If timestamps/message types are visible and the first line is missing them,
+    // try to find and prepend them (they have user-select: none so they're not in the selection)
+    let prependedPrefixCount = 0;
+
     if (includeTimestamps && spans.length > 0) {
         const hasTimestampAtStart = spans[0].color === TIMESTAMP_COLOR;
         if (!hasTimestampAtStart) {
             const firstLineTimestamp = findFirstLineTimestamp(range);
             if (firstLineTimestamp) {
                 spans.unshift({ text: firstLineTimestamp + ' ', color: TIMESTAMP_COLOR, bold: false });
-                firstLineHasPrependedTimestamp = true;
+                prependedPrefixCount++;
+            }
+        }
+    }
+
+    if (includeMessageTypes && spans.length > 0) {
+        // Insert message type after timestamp (if present), otherwise at start
+        const insertIdx = (spans[0].color === TIMESTAMP_COLOR) ? 1 : 0;
+        const hasMessageTypeAt = spans.length > insertIdx && spans[insertIdx].color === MESSAGE_TYPE_COLOR;
+        if (!hasMessageTypeAt) {
+            const firstLineMessageType = findFirstLineMessageType(range);
+            if (firstLineMessageType !== null) {
+                const truncated = firstLineMessageType.length > 12 ? firstLineMessageType.substring(0, 12) : firstLineMessageType.padEnd(12, ' ');
+                spans.splice(insertIdx, 0, { text: truncated + ' ', color: MESSAGE_TYPE_COLOR, bold: false });
+                prependedPrefixCount++;
             }
         }
     }
 
     document.body.removeChild(container);
-    return { spans, hasSelection: true, firstLineCharOffset, firstLineHasPrependedTimestamp };
+    return { spans, hasSelection: true, firstLineCharOffset, prependedPrefixCount };
 }
 
 export async function copyOutputAsImage(): Promise<void> {
-    const { spans, hasSelection, firstLineCharOffset, firstLineHasPrependedTimestamp } = getSelectedContent();
+    const { spans, hasSelection, firstLineCharOffset, prependedPrefixCount } = getSelectedContent();
     if (!hasSelection || spans.length === 0) {
         throw new Error('Brak zaznaczenia');
     }
+
+    const firstLineHasPrependedPrefix = prependedPrefixCount > 0;
 
     const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
     const bgColor = outputWrapper?.style.backgroundColor || '#242424';
@@ -251,38 +299,48 @@ export async function copyOutputAsImage(): Promise<void> {
         logicalLines.push(currentLine);
     }
 
-    // Calculate first line pixel offset (only if multiple lines and first line has prepended timestamp)
-    // Only apply offset if we prepended a timestamp (meaning selection started mid-content)
-    const firstLinePixelOffset = (logicalLines.length > 1 && firstLineHasPrependedTimestamp)
+    // Calculate first line pixel offset (only if multiple lines and first line has prepended prefix)
+    // Only apply offset if we prepended prefix(es) (meaning selection started mid-content)
+    const firstLinePixelOffset = (logicalLines.length > 1 && firstLineHasPrependedPrefix)
         ? domMeasureText(' '.repeat(firstLineCharOffset), false)
         : 0;
 
-    // Check if we have any timestamps - if so, lines without timestamps need to be indented
+    // Check if we have any timestamps or message types — lines without them need indentation
     const hasAnyTimestamp = logicalLines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
-    // Timestamp format is "HH:MM:SS.mmm " (13 chars including space)
+    const hasAnyMessageType = logicalLines.some(line => {
+        const afterTimestamp = (line.length > 0 && line[0].color === TIMESTAMP_COLOR) ? 1 : 0;
+        return line.length > afterTimestamp && line[afterTimestamp].color === MESSAGE_TYPE_COLOR;
+    });
+
+    // Timestamp format: "HH:MM:SS.mmm " = 13 chars; message type: padded to 12 chars + space = 13 chars
     const timestampIndent = hasAnyTimestamp ? domMeasureText(' '.repeat(13), false) : 0;
+    const messageTypeIndent = hasAnyMessageType ? domMeasureText(' '.repeat(13), false) : 0;
+    const totalPrefixIndent = timestampIndent + messageTypeIndent;
 
     // Wrap lines to fit container width
     const lines: StyledSpan[][] = [];
 
     for (let logicalLineIndex = 0; logicalLineIndex < logicalLines.length; logicalLineIndex++) {
         const logicalLine = logicalLines[logicalLineIndex];
-        const lineHasTimestamp = logicalLine.length > 0 && logicalLine[0].color === TIMESTAMP_COLOR;
+        const lineHasPrefix = logicalLine.length > 0 && (logicalLine[0].color === TIMESTAMP_COLOR || logicalLine[0].color === MESSAGE_TYPE_COLOR);
 
         // Calculate initial offset for this logical line
         let initialOffset: number;
-        if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp) {
-            initialOffset = 0; // Timestamp will be rendered first, offset applied after
-        } else if (!lineHasTimestamp && hasAnyTimestamp) {
-            initialOffset = timestampIndent;
+        if (logicalLineIndex === 0 && firstLineHasPrependedPrefix) {
+            initialOffset = 0; // Prefix will be rendered first, offset applied after
+        } else if (!lineHasPrefix && totalPrefixIndent > 0) {
+            initialOffset = totalPrefixIndent;
         } else {
             initialOffset = 0;
         }
 
-        // For first line with prepended timestamp, add timestamp width + firstLinePixelOffset
+        // For first line with prepended prefix, set currentX to account for all prefix spans + offset
         let currentX = initialOffset;
-        if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp && logicalLine.length > 0 && logicalLine[0].color === TIMESTAMP_COLOR) {
-            currentX += domMeasureText(logicalLine[0].text, false) + firstLinePixelOffset;
+        if (logicalLineIndex === 0 && firstLineHasPrependedPrefix) {
+            for (let pi = 0; pi < prependedPrefixCount && pi < logicalLine.length; pi++) {
+                currentX += domMeasureText(logicalLine[pi].text, false);
+            }
+            currentX += firstLinePixelOffset;
         }
 
         let wrappedLine: StyledSpan[] = [];
@@ -290,8 +348,8 @@ export async function copyOutputAsImage(): Promise<void> {
         for (let spanIndex = 0; spanIndex < logicalLine.length; spanIndex++) {
             const span = logicalLine[spanIndex];
 
-            // Skip timestamp processing for first span if it's already accounted for
-            if (logicalLineIndex === 0 && firstLineHasPrependedTimestamp && spanIndex === 0 && span.color === TIMESTAMP_COLOR) {
+            // Skip prepended prefix spans on first line — their width is already in currentX
+            if (logicalLineIndex === 0 && spanIndex < prependedPrefixCount) {
                 wrappedLine.push(span);
                 continue;
             }
@@ -347,7 +405,7 @@ export async function copyOutputAsImage(): Promise<void> {
                         // This handles breaks between styled spans (e.g., ", " followed by a name)
                         lines.push(wrappedLine);
                         wrappedLine = [];
-                        currentX = hasAnyTimestamp ? timestampIndent : 0;
+                        currentX = totalPrefixIndent;
                         continue;
                     }
                     // If line is empty and no space, break mid-word (very long words)
@@ -364,8 +422,8 @@ export async function copyOutputAsImage(): Promise<void> {
                         lines.push(wrappedLine);
                     }
                     wrappedLine = [];
-                    // Continuation lines get timestamp indent if there are timestamps
-                    currentX = hasAnyTimestamp ? timestampIndent : 0;
+                    // Continuation lines get full prefix indent
+                    currentX = totalPrefixIndent;
                 }
             }
         }
@@ -400,15 +458,15 @@ export async function copyOutputAsImage(): Promise<void> {
 
     for (let i = 0; i < lines.length; i++) {
         const y = padding + i * lineHeightPx + (lineHeightPx - fontSize) / 2;
-        const lineHasTimestamp = lines[i].length > 0 && lines[i][0].color === TIMESTAMP_COLOR;
-        // Calculate x offset based on line position and timestamp presence
+        const lineHasPrefix = lines[i].length > 0 && (lines[i][0].color === TIMESTAMP_COLOR || lines[i][0].color === MESSAGE_TYPE_COLOR);
+        // Calculate x offset based on line position and prefix presence
         let x: number;
-        if (i === 0 && firstLineHasPrependedTimestamp) {
-            // First line with prepended timestamp starts at padding, timestamp renders first,
-            // then offset is applied after timestamp for the content
+        if (i === 0 && firstLineHasPrependedPrefix) {
+            // First line with prepended prefix starts at padding, prefix renders first,
+            // then offset is applied after the last prefix span
             x = padding;
-        } else if (!lineHasTimestamp && hasAnyTimestamp) {
-            x = padding + timestampIndent;
+        } else if (!lineHasPrefix && totalPrefixIndent > 0) {
+            x = padding + totalPrefixIndent;
         } else {
             x = padding;
         }
@@ -442,8 +500,9 @@ export async function copyOutputAsImage(): Promise<void> {
 
             x += textWidth;
 
-            // After rendering the timestamp on first line with prepended timestamp, add the offset
-            if (i === 0 && firstLineHasPrependedTimestamp && j === 0 && span.color === TIMESTAMP_COLOR) {
+            // After rendering the last prepended prefix span on the first line, apply content offset
+            if (i === 0 && firstLineHasPrependedPrefix && j === prependedPrefixCount - 1 &&
+                (span.color === TIMESTAMP_COLOR || span.color === MESSAGE_TYPE_COLOR)) {
                 x += firstLinePixelOffset;
             }
         }
@@ -484,16 +543,20 @@ export async function saveOutputAsHtml(): Promise<void> {
         logicalLines.push(currentLine);
     }
 
-    // Check if we have any timestamps - if so, lines without timestamps need to be indented
-    // Timestamp format is "HH:MM:SS.mmm " (13 chars including space)
+    // Check if we have any timestamps or message types — drives indent class and CSS
     const hasAnyTimestamp = logicalLines.some(line => line.length > 0 && line[0].color === TIMESTAMP_COLOR);
+    const hasAnyMessageType = logicalLines.some(line => {
+        const afterTimestamp = (line.length > 0 && line[0].color === TIMESTAMP_COLOR) ? 1 : 0;
+        return line.length > afterTimestamp && line[afterTimestamp].color === MESSAGE_TYPE_COLOR;
+    });
+    const totalPrefixCh = (hasAnyTimestamp ? 13 : 0) + (hasAnyMessageType ? 13 : 0);
 
     // Build HTML content with inline styles
-    // Use divs with hanging indent so wrapped lines maintain the timestamp column
+    // Use divs with hanging indent so wrapped lines maintain the prefix column
     const htmlLines: string[] = [];
 
     for (const line of logicalLines) {
-        const lineHasTimestamp = line.length > 0 && line[0].color === TIMESTAMP_COLOR;
+        const lineHasPrefix = line.length > 0 && (line[0].color === TIMESTAMP_COLOR || line[0].color === MESSAGE_TYPE_COLOR);
         let lineHtml = '';
 
         for (const span of line) {
@@ -514,16 +577,13 @@ export async function saveOutputAsHtml(): Promise<void> {
         }
 
         // Wrap in div with appropriate class for styling
-        if (hasAnyTimestamp) {
-            if (lineHasTimestamp) {
-                // Line with timestamp: use hanging indent (negative text-indent + padding)
-                htmlLines.push(`<div class="line-with-ts">${lineHtml}</div>`);
+        if (totalPrefixCh > 0) {
+            if (lineHasPrefix) {
+                htmlLines.push(`<div class="line-with-prefix">${lineHtml}</div>`);
             } else {
-                // Line without timestamp: just padding
-                htmlLines.push(`<div class="line-no-ts">${lineHtml}</div>`);
+                htmlLines.push(`<div class="line-no-prefix">${lineHtml}</div>`);
             }
         } else {
-            // No timestamps at all, no special styling needed
             htmlLines.push(`<div>${lineHtml}</div>`);
         }
     }
@@ -547,12 +607,12 @@ div {
     white-space: pre-wrap;
     word-wrap: break-word;
 }
-.line-with-ts {
-    padding-left: 13ch;
-    text-indent: -13ch;
+.line-with-prefix {
+    padding-left: ${totalPrefixCh}ch;
+    text-indent: -${totalPrefixCh}ch;
 }
-.line-no-ts {
-    padding-left: 13ch;
+.line-no-prefix {
+    padding-left: ${totalPrefixCh}ch;
 }
 </style>
 </head>

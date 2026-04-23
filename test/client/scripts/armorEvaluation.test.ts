@@ -43,7 +43,7 @@ describe("armor evaluation trigger", () => {
     expect(output).toContain("Ciete:     [11/12]");
     expect(output).toContain("Obuchowe: [11/12]");
     expect(output).toContain("Parowanie: [10/14]");
-    expect(output).toContain("Suma: 33");
-    expect(output).toContain("Srednia: 11");
+    expect(output).toContain("Suma: 43");
+    expect(output).toContain("Srednia: 10.75");
   });
 });
