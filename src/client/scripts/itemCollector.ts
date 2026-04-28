@@ -176,7 +176,6 @@ export default class ItemCollector {
 
     private collectGemstones(from: string): boolean {
         this.client.sendCommand(`wez kamienie z ${from}`);
-        this.client.sendCommand("ocen kamienie");
         return true;
     }
 
@@ -331,6 +330,9 @@ export default class ItemCollector {
             // Collect from this body (always use "ciala" without index for the most recent)
             const target = this.formatBodyTarget();
             const result = this.collectBody(target, record.enemyDesc, null);
+            if (result.gems) {
+                this.client.sendCommand("ocen kamienie");
+            }
             this.depositCollected(result.money, result.gems, result.extras);
             record.collected = true;
 
@@ -411,6 +413,9 @@ export default class ItemCollector {
         }
 
         if (collectedAny) {
+            if (aggregated.gems) {
+                this.client.sendCommand("ocen kamienie");
+            }
             this.depositCollected(aggregated.money, aggregated.gems, aggregated.extras);
         }
 
