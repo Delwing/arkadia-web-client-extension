@@ -31,6 +31,27 @@ export default function initMove(client: Client) {
         return line
     }, tag)
 
+    client.Triggers.registerTrigger(/^Wraz z .* pomagacie .* przeniesc .* (?:na|do) (?<direction>.*)\.$/, (line, matches) => {
+        if (matches?.groups?.direction) {
+            client.Map.followMove((matches.groups as any).direction)
+        }
+        return line
+    }, tag)
+
+    client.Triggers.registerTrigger(/^Pomagasz .* przeniesc .* (?:na|do) (?<direction>.*)\.$/, (line, matches) => {
+        if (matches?.groups?.direction) {
+            client.Map.followMove((matches.groups as any).direction)
+        }
+        return line
+    }, tag)
+
+    client.Triggers.registerTrigger(/^.* kieruje lodz na (?<direction>.*)\.$/, (line, matches) => {
+        if (matches?.groups?.direction) {
+            client.Map.followMove((matches.groups as any).direction)
+        }
+        return line
+    }, tag)
+
     const idzTrigger = client.Triggers.registerTrigger([
         /^Wykonuje komende 'idz /
     ], (line) => {
