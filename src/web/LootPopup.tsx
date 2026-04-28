@@ -17,10 +17,11 @@ interface SpecialItem {
 }
 
 function lootCommand(itemName: string, body: BodyEntry): string {
+    const name = itemName.toLowerCase();
     if (body.stertyIndex != null) {
-        return `wez ${itemName} z ${body.stertyIndex}. sterty`;
+        return `wez ${name} z ${body.stertyIndex}. sterty`;
     }
-    return `wez ${itemName} z ciala ${body.description}`;
+    return `wez ${name} z ciala ${body.description}`;
 }
 
 const POPUP_ID = 'popup:loot';
