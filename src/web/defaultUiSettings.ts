@@ -52,7 +52,7 @@ export interface UiSettings {
     explorationMode: boolean;
     instantMove: boolean;
     highlightCurrentRoom: boolean;
-    labelRenderMode: 'image' | 'data';
+    labelRenderMode: 'image' | 'data' | 'none';
     transparentLabels: boolean;
     outputBackground: string;
     clearInputOnSend: boolean;

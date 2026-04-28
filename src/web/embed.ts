@@ -125,7 +125,7 @@ export class EmbeddedMap {
                 if (typeof parsed.highlightCurrentRoom === 'boolean') {
                     highlightCurrentRoom = parsed.highlightCurrentRoom;
                 }
-                if (parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data') {
+                if (parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data' || parsed.labelRenderMode === 'none') {
                     labelRenderMode = parsed.labelRenderMode;
                 }
                 if (typeof parsed.transparentLabels === 'boolean') {

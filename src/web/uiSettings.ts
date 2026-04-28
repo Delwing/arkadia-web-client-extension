@@ -381,7 +381,7 @@ function load(): UiSettings {
             const transparentLabels = typeof parsed.transparentLabels === 'boolean'
                 ? parsed.transparentLabels
                 : defaultUiSettings.transparentLabels;
-            const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data'
+            const labelRenderMode = parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data' || parsed.labelRenderMode === 'none'
                 ? parsed.labelRenderMode
                 : defaultUiSettings.labelRenderMode;
             const effectiveLabelRenderMode = transparentLabels ? 'data' : labelRenderMode;
@@ -1614,7 +1614,7 @@ export default async function initUiSettings() {
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
             highlightCurrentRoom: highlightCurrentRoomInput.checked,
-            labelRenderMode: (labelRenderModeInput.value === 'data' ? 'data' : 'image'),
+            labelRenderMode: (['data', 'image', 'none'].includes(labelRenderModeInput.value) ? labelRenderModeInput.value : 'data') as 'data' | 'image' | 'none',
             transparentLabels: transparentLabelsInput.checked,
             outputBackground: backgroundValue,
             clearInputOnSend: clearInputOnSendInput.checked,
