@@ -292,7 +292,8 @@ class FormatState {
                     const isForeground = code === 38;
                     const mode = params[i + 1];
                     if (mode === 5 && typeof params[i + 2] === "number") {
-                        const color: HexColor = {space: "hex", color: colorCodes.xterm[params[i + 2] - 1]};
+                        const color: HexColor = {space: "hex", color: colorCodes.xterm[params[i + 2]]};
+                        console.log(params[i+2], color.color)
                         if (isForeground) {
                             this.foreground = color;
                         } else {
@@ -977,7 +978,7 @@ export class AnsiAwareBuffer {
             return `#${r}${g}${b}`;
         }
         if (color.space === "indexed") {
-            return colorCodes.xterm[color.index - 1] || "#000000";
+            return colorCodes.xterm[color.index] || "#000000";
         }
         return "#000000";
     }

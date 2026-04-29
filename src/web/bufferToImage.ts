@@ -53,7 +53,7 @@ function colorToHex(color: FormatColor): string {
         return `#${r}${g}${b}`;
     }
     if (color.space === "indexed") {
-        return colorCodes.xterm[color.index - 1] || "#000000";
+        return colorCodes.xterm[color.index] || "#000000";
     }
     return "#000000";
 }

@@ -130,13 +130,13 @@ test.describe('Xterm palette switching', () => {
         // Arkadia index 1 (palette index 0 in xterm is index 0, palette index 1 is index 0 in the array after offset +1)
         // Wait, xterm indices are 1-based in the escape code, so index 1 means colorCodes.xterm[1-1] = colorCodes.xterm[0]
         // Arkadia index 0: #bb0000 = rgb(187, 0, 0) - red
-        await pushText(page, '\x1b[38;5;1mArkadia Color 1\x1b[0m');
+        await pushText(page, '\x1b[38;5;16mArkadia Color 16\x1b[0m');
 
         // Wait for text to appear
-        await expect(output, 'should display colored text in arkadia').toContainText('Arkadia Color 1');
+        await expect(output, 'should display colored text in arkadia').toContainText('Arkadia Color 16');
 
         // Check the color of the rendered text in arkadia palette
-        const arkadiaColoredText = output.locator('span').filter({hasText: 'Arkadia Color 1'}).last();
+        const arkadiaColoredText = output.locator('span').filter({hasText: 'Arkadia Color 16'}).last();
         const arkadiaColor = await arkadiaColoredText.evaluate(el => {
             return window.getComputedStyle(el).color;
         });
@@ -146,12 +146,12 @@ test.describe('Xterm palette switching', () => {
 
         // Send same xterm color index
         // Proper index 0: #000000 = rgb(0, 0, 0) - black
-        await pushText(page, '\x1b[38;5;1mProper Color 1\x1b[0m');
+        await pushText(page, '\x1b[38;5;16mProper Color 16\x1b[0m');
 
-        await waitForOutputContaining(page, 'Proper Color 1');
+        await waitForOutputContaining(page, 'Proper Color 16');
 
         // Check the color of the rendered text in proper palette
-        const properColoredText = output.locator('span').filter({hasText: 'Proper Color 1'}).last();
+        const properColoredText = output.locator('span').filter({hasText: 'Proper Color 16'}).last();
         const properColor = await properColoredText.evaluate(el => {
             return window.getComputedStyle(el).color;
         });
@@ -160,10 +160,10 @@ test.describe('Xterm palette switching', () => {
         expect(arkadiaColor, `Arkadia (${arkadiaColor}) and proper (${properColor}) should render same index with different colors`).not.toBe(properColor);
 
         // Verify the specific colors match the palette definitions
-        // Arkadia palette index 0: #bb0000 = rgb(187, 0, 0)
-        expect(arkadiaColor, 'Arkadia xterm color 1 should be rgb(187, 0, 0)').toBe('rgb(187, 0, 0)');
-        // Proper palette index 0: #000000 = rgb(0, 0, 0)
-        expect(properColor, 'Proper xterm color 1 should be rgb(0, 0, 0)').toBe('rgb(0, 0, 0)');
+        // Arkadia palette index 16: #ffffff = rgb(255, 255, 255)
+        expect(arkadiaColor, 'Arkadia xterm color 16 should be rgb(255, 255, 255)').toBe('rgb(255, 255, 255)');
+        // Proper palette index 16: #000000 = rgb(0, 0, 0)
+        expect(properColor, 'Proper xterm color 16 should be rgb(0, 0, 0)').toBe('rgb(0, 0, 0)');
 
         // Clean up
         await setPalette(page, 'arkadia');
