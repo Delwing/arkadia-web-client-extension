@@ -363,6 +363,7 @@ export interface KnownEvents {
     "flushLines": [{ text: string; type: string }[]];
     "socket.incoming": string;
     "socket.outgoing": string;
+    "telnet.echo": boolean;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];
     "helperHotkey": [id: string, key: string];
     /** Helper system only */
@@ -400,7 +401,6 @@ type GmcpMsgEvents = {
 };
 
 export type ClientEvents = KnownEvents & GmcpMsgEvents & {
-    "client.server": void,
     "gmcp.objects.data": Map<number, ObjectData>
     "gmcp.objects.nums": [number[]];
     "gmcp.char.info": GmcpCharInfo;

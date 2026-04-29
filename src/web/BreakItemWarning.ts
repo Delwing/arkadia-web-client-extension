@@ -1,4 +1,4 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import mudClient from "./MudClient.ts";
 
 interface Data {
   text: string;
@@ -7,9 +7,9 @@ interface Data {
 
 export default class BreakItemWarning {
   private container: HTMLElement | null;
-  private client: typeof ArkadiaClient;
+  private client: typeof mudClient;
   private command: string | null = null;
-  constructor(client: typeof ArkadiaClient) {
+  constructor(client: typeof mudClient) {
     this.client = client;
     this.container = document.getElementById("break-item-warning");
     if (this.container) {

@@ -11,7 +11,7 @@ class RecordingManager {
     private autoRecorder: Recorder<CommandOptions> | null = null;
     private readonly activeRecorders = new Set<Recorder<CommandOptions>>();
     private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
-    private receivedFirstGmcp = false;
+    private seenEchoSuppression = false;
 
     constructor() {
         this.recorder = this.createRecorder(false);
@@ -24,15 +24,17 @@ class RecordingManager {
             this.recordOutgoing(message);
         });
 
-        eventBus.on('gmcp.char.info', () => {
-            if (!this.receivedFirstGmcp) {
-                this.receivedFirstGmcp = true;
+        eventBus.on('telnet.echo', (serverEchoing: boolean) => {
+            if (serverEchoing) {
+                this.seenEchoSuppression = true;
+            } else if (this.seenEchoSuppression) {
+                this.seenEchoSuppression = false;
                 this.maybeStartAutoRecording();
             }
         });
 
         eventBus.on('client.connect', () => {
-            this.receivedFirstGmcp = false;
+            this.seenEchoSuppression = false;
         });
 
         eventBus.on('client.disconnect', () => {

@@ -11,9 +11,9 @@ import {
 } from '@modules/data/dataStore/strategies/VersionCheckingLoader';
 import { RefreshMetadata } from '@modules/data/dataStore/types';
 
-export const MAP_DATA_URL = 'https://delwing.github.io/arkadia-mapa/data/mapExport.json';
-export const MAP_COLORS_URL = 'https://delwing.github.io/arkadia-mapa/data/colors.json';
-export const MAP_RELEASE_URL = GITHUB_RELEASES_LATEST_URL('Delwing', 'arkadia-mapa');
+export const MAP_DATA_URL = import.meta.env.VITE_MAP_DATA_URL ?? 'https://delwing.github.io/arkadia-mapa/data/mapExport.json';
+export const MAP_COLORS_URL = import.meta.env.VITE_MAP_COLORS_URL ?? 'https://delwing.github.io/arkadia-mapa/data/colors.json';
+export const MAP_RELEASE_URL = import.meta.env.VITE_MAP_RELEASE_URL ?? GITHUB_RELEASES_LATEST_URL('Delwing', 'arkadia-mapa');
 
 const FALLBACK_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days - used only when GitHub API is unavailable
 

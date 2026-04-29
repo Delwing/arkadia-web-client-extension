@@ -1,4 +1,4 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import eventBus from "@modules/core/eventBus";
 import {globalStorage} from "@modules/core/storage";
 
 export default class FightTitle {
@@ -9,15 +9,14 @@ export default class FightTitle {
   private readonly idlePrefix = "ㅤ ";
   private enabled = true;
 
-  constructor(client: typeof ArkadiaClient) {
+  constructor() {
     this.baseTitle = document.title;
     this.originalTitle = this.baseTitle;
     this.updateTitle(false, true);
-    // Listen to centralized combat state event
-    client.on("combatState", (fighting: boolean) => {
+    eventBus.on("combatState", (fighting: boolean) => {
       this.updateTitle(fighting);
     });
-    client.on("client.disconnect", () => this.reset());
+    eventBus.on("client.disconnect", () => this.reset());
     const initialUi = globalStorage.get('uiSettings');
     if (initialUi && typeof initialUi.fightTitleIcon === "boolean") {
       this.enabled = initialUi.fightTitleIcon;

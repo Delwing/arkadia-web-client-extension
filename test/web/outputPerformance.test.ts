@@ -1,4 +1,4 @@
-import arkadiaClient from '@web/ArkadiaClient';
+import arkadiaClient from '@web/MudClient';
 import {setupOutputMessageHandler} from '@shared/dom/outputMessageHandler';
 
 describe('output performance measurements', () => {

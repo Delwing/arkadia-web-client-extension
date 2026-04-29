@@ -23,8 +23,7 @@ export const stripTelnetSequences = (data: string, handler: TelnetOptionHandler)
 
 const parseGmcpPayload = (
     data: string,
-    onMessage: (type: string, payload: unknown, isFirstCharInfo: boolean) => void,
-    trackFirst?: { received: boolean },
+    onMessage: (type: string, payload: unknown) => void,
 ): void => {
     if (data.length === 0) return;
 
@@ -43,16 +42,12 @@ const parseGmcpPayload = (
     let payload = gmcpData.substring(spaceIndex + 1);
 
     if (type === "gmcp_msgs") {
-        payload = payload.replace(/\u001b/g, "\\u001B");
+        payload = payload.replace(//g, "\\u001B");
     }
 
     try {
         const gmcp = JSON.parse(payload);
-        const isFirst = type === "char.info" && !trackFirst?.received;
-        if (trackFirst) {
-            trackFirst.received = trackFirst.received || type === "char.info";
-        }
-        onMessage(type, gmcp, isFirst);
+        onMessage(type, gmcp);
     } catch (error) {
         console.error("Error parsing GMCP JSON:", error);
     }
@@ -66,17 +61,14 @@ export const encodeGmcp = (path: string, payload: unknown): string => {
 export const createGmcpStream = ({
     onEnvelope,
     onMessage,
-    onFirstCharInfo,
 }: {
     onEnvelope: (payload: GmcpEnvelope) => void;
     onMessage: (text: string, type: string) => void;
-    onFirstCharInfo?: () => void;
 }) => {
-    const state = { received: false };
     return (data: string) => {
         parseGmcpPayload(
             data,
-            (type, payload, isFirst) => {
+            (type, payload) => {
                 if (type === "gmcp_msgs") {
                     const msgType = (payload as { type: string }).type ?? "";
                     const binaryString = atob((payload as { text: string }).text ?? "");
@@ -86,12 +78,8 @@ export const createGmcpStream = ({
                     onMessage(text, msgType);
                     return;
                 }
-                if (isFirst) {
-                    onFirstCharInfo?.();
-                }
                 onEnvelope({ path: type, value: payload });
             },
-            state,
         );
     };
 };

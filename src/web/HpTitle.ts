@@ -1,18 +1,16 @@
-import ArkadiaClient from "./ArkadiaClient.ts";
+import eventBus from "@modules/core/eventBus";
 import FightTitle from "./FightTitle.ts";
 import type {GmcpCharState} from "@shared/events";
 
 export default class HpTitle {
-  private client: typeof ArkadiaClient;
-  private fightTitle: FightTitle;
+  private readonly fightTitle: FightTitle;
   private readonly originalTitle: string;
 
-  constructor(client: typeof ArkadiaClient, fightTitle: FightTitle) {
-    this.client = client;
+  constructor(fightTitle: FightTitle) {
     this.fightTitle = fightTitle;
     this.originalTitle = fightTitle.getOriginalTitle();
-    this.client.on("gmcp.char.state", (state) => this.handleState(state));
-    this.client.on("client.disconnect", () => this.reset());
+    eventBus.on("gmcp.char.state", (state) => this.handleState(state));
+    eventBus.on("client.disconnect", () => this.reset());
   }
 
   private reset() {

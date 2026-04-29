@@ -4501,7 +4501,8 @@ h1 {
   z-index: 1001;
 }
 
-#message-input {
+#message-input,
+#message-input-password {
   flex: 1 1 0;
   min-width: 0;
   padding: 0.75vh 1.25vh;
@@ -4514,14 +4515,18 @@ h1 {
   -webkit-user-select: text;
   user-select: text;
   touch-action: manipulation;
+  line-height: 1.2;
+}
+
+#message-input {
   resize: none;
   overflow-y: auto;
-  line-height: 1.2;
   field-sizing: content;
   max-height: 6em;
 }
 
-#message-input:focus {
+#message-input:focus,
+#message-input-password:focus {
   outline: none;
   border-color: var(--footer-input-focus-border);
 }
@@ -4908,7 +4913,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   z-index: 1001;
   }
 
-  #message-input {
+  #message-input,
+  #message-input-password {
   padding: 0.75vh;
   font-size: 1rem; /* Prevents iOS zoom on focus */
   }

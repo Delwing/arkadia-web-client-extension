@@ -2,12 +2,13 @@ import type {CommandOptions} from "@client/scripts/commandPreserveCaseMode";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
+    passwordInput: HTMLInputElement;
     outputWrapper: HTMLElement;
     sendButton: HTMLButtonElement;
     historyUpButton: HTMLButtonElement | null;
     historyDownButton: HTMLButtonElement | null;
     sendCommand: (command: string, echo: boolean, options?: CommandOptions, skipMapParse?: boolean, fromUserInput?: boolean) => void;
-    hasReceivedFirstGmcp: () => boolean;
+    isPasswordMode: () => boolean;
     getCommandLineSuggestions: () => string[];
     getClearInputOnSend: () => boolean;
 }
@@ -51,6 +52,20 @@ export class CommandInputController {
         (window as any).__historyDebug = () => this.getDebugState();
     }
 
+    setPasswordMode(enabled: boolean): void {
+        if (enabled) {
+            this.input.value = '';
+            this.input.style.display = 'none';
+            this.deps.passwordInput.style.display = '';
+            this.deps.passwordInput.focus();
+        } else {
+            this.deps.passwordInput.value = '';
+            this.deps.passwordInput.style.display = 'none';
+            this.input.style.display = '';
+            this.input.focus();
+        }
+    }
+
     // ── Lifecycle ──────────────────────────────────────────────────────
 
     attach(): void {
@@ -60,6 +75,13 @@ export class CommandInputController {
         const o = {signal: ac.signal};
 
         this.deps.sendButton.addEventListener('click', () => this.submit(false), o);
+
+        this.deps.passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submit();
+            }
+        }, o);
 
         document.addEventListener('keydown', (e) => this.handleGlobalKeyDown(e), o);
         this.input.addEventListener('keydown', (e) => this.handleKeyDown(e), o);
@@ -129,13 +151,15 @@ export class CommandInputController {
     // ── Submit ─────────────────────────────────────────────────────────
 
     submit(focus = true): void {
-        const rawValue = this.input.value;
+        const rawValue = this.deps.isPasswordMode()
+            ? this.deps.passwordInput.value
+            : this.input.value;
         const lines = rawValue.split('\n');
         const commands = lines.map(l => l.trim()).filter(l => l.length > 0);
         const clearInputOnSend = this.deps.getClearInputOnSend();
 
         if (commands.length > 0) {
-            if (this.deps.hasReceivedFirstGmcp()) {
+            if (!this.deps.isPasswordMode()) {
                 // Store the full input as a single history entry
                 const historyEntry = rawValue.trim();
 
@@ -163,12 +187,12 @@ export class CommandInputController {
 
                 this.saveHistory();
             } else {
-                // No GMCP yet: just send and clear
+                // Password mode: send and clear
                 for (const command of commands) {
                     this.deps.sendCommand(command, true, undefined, false, true);
                 }
-                this.input.value = '';
-                if (focus) this.input.focus();
+                this.deps.passwordInput.value = '';
+                if (focus) this.deps.passwordInput.focus();
             }
         } else {
             // Empty input: send empty command
@@ -186,7 +210,7 @@ export class CommandInputController {
     // ── History Navigation ─────────────────────────────────────────────
 
     historyMove(direction: 'up' | 'down'): void {
-        if (!this.deps.hasReceivedFirstGmcp()) return;
+        if (this.deps.isPasswordMode()) return;
         if (this.historyList.length === 0) return;
 
         this.resetTabCompletionState();

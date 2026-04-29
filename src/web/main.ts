@@ -8,7 +8,7 @@ import './themes/dark-neutral.css'
 import './themes/light-parchment.css'
 import './themes/light-silver.css'
 import './layout/layout.css'
-import arkadiaClient from "./ArkadiaClient.ts";
+import mudClient from "./MudClient.ts";
 import recordingManager from "./RecordingManager.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
@@ -78,8 +78,8 @@ import {
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 import {CommandInputController} from "./commandInput/CommandInputController";
 
-initSessionLogger(arkadiaClient).catch(err => console.error('Logger init failed', err));
-initLogFileSaver(arkadiaClient).catch(err => console.error('File saver init failed', err));
+initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));
+initLogFileSaver(mudClient).catch(err => console.error('File saver init failed', err));
 
 // Run migrations before initializing the client
 migrateNewlyCharacterScopedKeys();
@@ -116,7 +116,7 @@ let mobileRadial: MobileCommandRadial | null = null;
 // the user opens Bindowanie and clicks Zapisz).
 switchKeymap(getActiveKeymapId());
 
-const client = new Client(arkadiaClient);
+const client = new Client(mudClient);
 registerScripts(client);
 
 // Helper connection (optional companion app)
@@ -783,7 +783,7 @@ Promise.all([mapDataPromise, colorsPromise])
 
 
 // Set up message event listener for UI updates
-setupOutputMessageHandler(arkadiaClient, {
+setupOutputMessageHandler(mudClient, {
     outputWrapper,
     splitBottom,
     stickyArea,
@@ -872,7 +872,7 @@ function updateConnectButtons() {
 }
 
 // Handle client connect event
-arkadiaClient.on('client.connect', () => {
+mudClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     isDisconnecting = false;
@@ -886,7 +886,7 @@ arkadiaClient.on('client.connect', () => {
 });
 
 // Handle client disconnect event
-arkadiaClient.on('client.disconnect', () => {
+mudClient.on('client.disconnect', () => {
     isConnected = false;
     isConnecting = false;
     isDisconnecting = false;
@@ -903,7 +903,7 @@ document.addEventListener('visibilitychange', () => {
         // Suppress split view checks during tab reactivation reflow
         suppressSplitViewUntil = Date.now() + 500;
 
-        const socketOpen = arkadiaClient.isSocketOpen();
+        const socketOpen = mudClient.isSocketOpen();
         if (socketOpen && !isConnected) {
             isConnected = true;
             updateConnectButtons();
@@ -1084,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
+    const passwordInput = document.getElementById('message-input-password') as HTMLInputElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     const uiSettingsData = globalStorage.get('uiSettings');
     let clearInputOnSend = !!uiSettingsData?.clearInputOnSend;
@@ -1166,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.hidden) return;
         messageInput.focus();
     };
-    arkadiaClient.on('client.connect', focusCommandInputOnConnect);
+    mudClient.on('client.connect', focusCommandInputOnConnect);
 
     if (contentArea) {
         const focusMessageInput = (target: EventTarget | null) => {
@@ -1261,10 +1262,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 isDisconnecting = true;
                 updateConnectButtons();
-                arkadiaClient.disconnect();
+                mudClient.disconnect();
                 // Fallback: ensure state updates after a delay if disconnect event doesn't fire
                 setTimeout(() => {
-                    if (isDisconnecting && !arkadiaClient.isSocketOpen()) {
+                    if (isDisconnecting && !mudClient.isSocketOpen()) {
                         isConnected = false;
                         isDisconnecting = false;
                         updateConnectButtons();
@@ -1279,7 +1280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastSystemLoginMessage = null;
                 updateConnectButtons();
                 void client.prepareSounds();
-                arkadiaClient.connect();
+                mudClient.connect();
             }
         });
     }
@@ -1470,24 +1471,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    arkadiaClient.on('recording.start', () => {
+    mudClient.on('recording.start', () => {
         if (recordingButton) recordingButton.style.display = 'block';
     });
-    arkadiaClient.on('recording.stop', () => {
+    mudClient.on('recording.stop', () => {
         if (recordingButton) recordingButton.style.display = 'none';
     });
 
-    arkadiaClient.on('recording.loaded', () => {
+    mudClient.on('recording.loaded', () => {
         playbackMode = true;
         updateConnectButtons();
     });
 
-    arkadiaClient.on('playback.start', () => {
+    mudClient.on('playback.start', () => {
         playbackMode = true;
         updateConnectButtons();
     });
 
-    arkadiaClient.on('playback.stop', () => {
+    mudClient.on('playback.stop', () => {
         playbackMode = false;
         updateConnectButtons();
     });
@@ -1503,46 +1504,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (loginForm) {
+        let unsubLoginMessage: (() => void) | null = null;
+        let unsubLoginEcho: (() => void) | null = null;
+
+        const clearPendingLogin = () => {
+            unsubLoginMessage?.();
+            unsubLoginEcho?.();
+            unsubLoginMessage = null;
+            unsubLoginEcho = null;
+        };
+
+        mudClient.on('client.disconnect', clearPendingLogin);
+
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            clearPendingLogin();
             preloadHowler();
             resumeAudioContext();
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
-            const unsubscribe = eventBus.on('client.server', () => {
-                unsubscribe();
-                if (character) client.send(character);
-                if (password) client.send(password, false, {preserveCase: true});
-            });
+            if (character) {
+                unsubLoginMessage = eventBus.on('socket.incoming', () => {
+                    unsubLoginMessage?.();
+                    unsubLoginMessage = null;
+                    client.send(character);
+                });
+            }
+
+            if (password) {
+                unsubLoginEcho = eventBus.on('telnet.echo', (serverEchoing: boolean) => {
+                    if (serverEchoing) {
+                        unsubLoginEcho?.();
+                        unsubLoginEcho = null;
+                        client.send(password, false, {preserveCase: true});
+                    }
+                });
+            }
 
             if (!isConnected) {
                 isConnecting = true;
                 lastSystemLoginMessage = null;
                 updateConnectButtons();
                 void client.prepareSounds();
-                arkadiaClient.connect();
+                mudClient.connect();
             }
         });
     }
 
     const commandInputController = new CommandInputController({
         messageInput,
+        passwordInput,
         outputWrapper,
         sendButton,
         historyUpButton,
         historyDownButton,
         sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
-        hasReceivedFirstGmcp: () => arkadiaClient.hasReceivedFirstGmcp(),
+        isPasswordMode: () => mudClient.isPasswordMode(),
         getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
         getClearInputOnSend: () => clearInputOnSend,
     });
     commandInputController.attach();
 
+    eventBus.on('telnet.echo', (serverEchoing) => {
+        commandInputController.setPasswordMode(serverEchoing);
+    });
+
     // Handle connect/disconnect button click
     const handleConnect = () => {
         if (isConnected) {
-            arkadiaClient.disconnect();
+            mudClient.disconnect();
         } else {
             preloadHowler();
             resumeAudioContext();
@@ -1550,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lastSystemLoginMessage = null;
             updateConnectButtons();
             void client.prepareSounds();
-            arkadiaClient.connect();
+            mudClient.connect();
         }
     };
     connectButton?.addEventListener('click', handleConnect);
@@ -1558,9 +1589,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const mccpCheckbox = document.getElementById('mccp-enabled') as HTMLInputElement | null;
     if (mccpCheckbox) {
-        mccpCheckbox.checked = arkadiaClient.isMccpEnabled();
+        mccpCheckbox.checked = mudClient.isMccpEnabled();
         mccpCheckbox.addEventListener('change', () => {
-            arkadiaClient.setMccpEnabled(mccpCheckbox.checked);
+            mudClient.setMccpEnabled(mccpCheckbox.checked);
         });
     }
 
@@ -1616,8 +1647,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mount React components
     mountMigratedComponents();
-    const fightTitle = new FightTitle(arkadiaClient);
-    new HpTitle(arkadiaClient, fightTitle);
+    const fightTitle = new FightTitle();
+    new HpTitle(fightTitle);
     registerEnemyStatusFilter(client);
     new ObjectList(client);
 
@@ -1731,4 +1762,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-window.client = arkadiaClient;
+window.client = mudClient;

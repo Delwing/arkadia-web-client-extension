@@ -7,7 +7,10 @@ import PingTracker from "./PingTracker";
 import {
     createGmcpStream,
     createTelnetOptionParser,
+    EchoHandler,
     encodeGmcp,
+    GMCP_DO,
+    GMCP_WILL,
     MccpHandler,
     stripTelnetSequences,
 } from "@shared/socket";
@@ -21,17 +24,17 @@ type Params<T> = [T] extends [void]
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
 
 // WebSocket configuration
-const WEBSOCKET_URL = 'wss://arkadia.rpg.pl/wss';
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL ?? 'wss://arkadia.rpg.pl/wss';
 const MCCP_STORAGE_KEY = 'mccpEnabled';
 
-class ArkadiaClient implements ClientAdapter {
+class MudClient implements ClientAdapter {
     private socket!: WebSocket;
-    private receivedFirstGmcp: boolean = false;
     private pingTracker: PingTracker;
     private messageBuffer: { text: string, type: string }[] = []
     private readonly gmcpStream: (data: string) => void;
     private readonly telnetOptionHandler: (optionData: string) => string;
     private readonly mccpHandler: MccpHandler;
+    private readonly echoHandler: EchoHandler;
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
 
@@ -39,28 +42,20 @@ class ArkadiaClient implements ClientAdapter {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
-                if (path === "client.connect") {
-                    this.emit('client.server');
-                    return;
-                }
-                if (path === "char.info" && !this.receivedFirstGmcp) {
-                    this.receivedFirstGmcp = true;
-                }
                 this.emit(`gmcp.${path}`, value);
                 this.emit('gmcp', {path, value});
             },
             onMessage: (text, type) => {
                 this.messageBuffer.push({text, type});
             },
-            onFirstCharInfo: () => {
-                if (!this.receivedFirstGmcp) {
-                    this.receivedFirstGmcp = true;
-                }
-            },
         });
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
+        this.echoHandler = new EchoHandler(
+            (data) => this.sendRaw(data),
+            (serverEchoing) => this.emit('telnet.echo', serverEchoing),
+        );
         addEventListener("beforeunload", (event) => {
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 event.preventDefault();
@@ -127,8 +122,6 @@ class ArkadiaClient implements ClientAdapter {
      */
     connect(): void {
         try {
-            // Reset the flag when connecting
-            this.receivedFirstGmcp = false;
             this.socket = new WebSocket(WEBSOCKET_URL, []);
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
@@ -136,6 +129,10 @@ class ArkadiaClient implements ClientAdapter {
                     const decodedData = atob(event.data);
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
+                    if (data.includes(GMCP_WILL)) {
+                        this.sendRaw(GMCP_DO);
+                    }
+                    this.echoHandler.processData(data);
                     this.emit('socket.incoming', data);
                     try {
                         this.processIncomingData(data);
@@ -157,6 +154,7 @@ class ArkadiaClient implements ClientAdapter {
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
                 this.mccpHandler.reset();
+                this.echoHandler.reset();
             };
 
             this.socket.onopen = (event: Event) => {
@@ -186,12 +184,8 @@ class ArkadiaClient implements ClientAdapter {
         return !!this.socket && this.socket.readyState === WebSocket.OPEN;
     }
 
-    /**
-     * Returns true when history/echo should be active:
-     * available before connection, disabled after connect until gmcp.char.info
-     */
-    hasReceivedFirstGmcp(): boolean {
-        return !this.isSocketOpen() || this.receivedFirstGmcp;
+    isPasswordMode(): boolean {
+        return this.isSocketOpen() && this.echoHandler.serverEchoing;
     }
 
     send(message: string, _echo?: boolean, options?: CommandOptions): void {
@@ -199,8 +193,7 @@ class ArkadiaClient implements ClientAdapter {
             return;
         }
 
-        if (this.receivedFirstGmcp) {
-            // Pass autoLowercaseCommands setting to normalizeCommand
+        if (!this.echoHandler.serverEchoing) {
             const normalizeOptions = {
                 ...options,
                 autoLowercaseCommands: this.autoLowercaseCommands
@@ -219,7 +212,7 @@ class ArkadiaClient implements ClientAdapter {
 
     shouldEchoCommand(): boolean {
         if (!this.isSocketOpen()) return true;
-        return this.receivedFirstGmcp && this.commandEcho;
+        return !this.echoHandler.serverEchoing && this.commandEcho;
     }
 
     /**
@@ -297,4 +290,4 @@ class ArkadiaClient implements ClientAdapter {
 
 }
 
-export default new ArkadiaClient();
+export default new MudClient();
