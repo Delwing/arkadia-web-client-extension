@@ -803,14 +803,14 @@ let playbackMode = false;
 let authClosed = false;
 let lastSystemLoginMessage: string | null = null;
 
-eventBus.on('flushLines', (groups: { text: string; type: string }[]) => {
-    const loginMsg = groups.find(g => g.type === 'system.login');
+eventBus.on('gmcp_msg.system.login', (args) => {
+    const loginMsg = args.text
     if (loginMsg) {
-        lastSystemLoginMessage = loginMsg.text.trim();
+        lastSystemLoginMessage = loginMsg.trim()
     }
 });
 
-client.on('gmcp.char.info', () => {
+client.on('gmcp_msg.room.long', () => {
     lastSystemLoginMessage = null;
 });
 

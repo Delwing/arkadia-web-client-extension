@@ -293,7 +293,6 @@ class FormatState {
                     const mode = params[i + 1];
                     if (mode === 5 && typeof params[i + 2] === "number") {
                         const color: HexColor = {space: "hex", color: colorCodes.xterm[params[i + 2]]};
-                        console.log(params[i+2], color.color)
                         if (isForeground) {
                             this.foreground = color;
                         } else {
