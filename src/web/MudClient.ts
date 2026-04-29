@@ -121,8 +121,20 @@ class MudClient implements ClientAdapter {
      * Connect to the WebSocket server
      */
     connect(): void {
+        // Detach handlers from any previous socket so its pending async
+        // callbacks (onmessage, onclose) can't corrupt the new connection's
+        // protocol state.  Reset before creating the new socket.
+        if (this.socket) {
+            this.socket.onmessage = null;
+            this.socket.onclose = null;
+            this.socket.onerror = null;
+            this.socket.onopen = null;
+        }
+        this.mccpHandler.reset();
+        this.echoHandler.reset();
         try {
             this.socket = new WebSocket(WEBSOCKET_URL, []);
+
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
                     if (event.data.length === 0) return;

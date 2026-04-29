@@ -186,4 +186,33 @@ describe('MccpHandler', () => {
         expect(result).toBe(data);
         expect(handler.isActive()).toBe(false);
     });
+
+    it('should correctly re-negotiate MCCP after reset (reconnect scenario)', () => {
+        // Simulate first session: MCCP negotiated and active
+        const compressor1 = createStreamingCompressor();
+        handler.processData(`${IAC_WILL_COMPRESS2}${IAC_SB_COMPRESS2_SE}${compressor1.push('session 1\r\n')}`);
+        expect(handler.isActive()).toBe(true);
+
+        // Simulate disconnect: reset is called
+        handler.reset();
+        expect(handler.isActive()).toBe(false);
+
+        // Simulate reconnect: fresh MCCP negotiation on a new connection.
+        // The very first data on the new connection is uncompressed telnet negotiation,
+        // NOT compressed — this used to fail with "invalid block type" if the handler
+        // was still in compressing=true state.
+        sentData = [];
+        const compressor2 = createStreamingCompressor();
+        const result1 = handler.processData(`Welcome back${IAC_WILL_COMPRESS2}`);
+        expect(sentData).toEqual([IAC_DO_COMPRESS2]);
+        expect(result1).toBe(`Welcome back${IAC_WILL_COMPRESS2}`);
+        expect(handler.isActive()).toBe(false);
+
+        const compressed = compressor2.push('session 2 data\r\n');
+        handler.processData(IAC_SB_COMPRESS2_SE + compressed);
+        expect(handler.isActive()).toBe(true);
+
+        const result2 = handler.processData(compressor2.push('more session 2\r\n'));
+        expect(result2).toBe('more session 2\r\n');
+    });
 });
