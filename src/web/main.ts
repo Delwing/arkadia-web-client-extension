@@ -810,6 +810,10 @@ eventBus.on('flushLines', (groups: { text: string; type: string }[]) => {
     }
 });
 
+client.on('gmcp.char.info', () => {
+    lastSystemLoginMessage = null;
+});
+
 // Function to update the connect button state
 function updateConnectButtons() {
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
