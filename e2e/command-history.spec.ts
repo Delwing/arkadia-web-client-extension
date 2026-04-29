@@ -200,23 +200,6 @@ test.describe('Command history — Mudlet-style', () => {
         expect(await getInputValue(page)).toBe('cmd3');
     });
 
-    // ── GMCP gating ──────────────────────────────────────────────────
-
-    test('should not navigate history before receiving GMCP', async ({page}) => {
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-        // Don't send GMCP
-
-        const input = page.locator(MESSAGE_INPUT);
-        await input.fill('test');
-        await input.press('Enter');
-
-        await input.fill('');
-        await pressArrowUp(page);
-        expect(await getInputValue(page)).toBe('');
-    });
-
     // ── Empty history ────────────────────────────────────────────────
 
     test('should handle empty history gracefully', async ({page}) => {

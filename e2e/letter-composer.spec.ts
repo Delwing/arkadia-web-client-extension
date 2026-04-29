@@ -121,7 +121,7 @@ test.describe('Letter composer', () => {
         expect(lastCommand, 'should send "napisz list" command').not.toBeNull();
     });
 
-    test('submits with Ctrl+Enter shortcut', async ({page}) => {
+    test('submits with Ctrl+Enter shortcut from content area', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -139,7 +139,27 @@ test.describe('Letter composer', () => {
         await page.keyboard.press('Control+Enter');
 
         // Modal should close
-        await expect(composer, 'should close composer on Ctrl+Enter').not.toBeVisible();
+        await expect(composer, 'should close composer on Ctrl+Enter from content area').not.toBeVisible();
+    });
+
+    test('submits with Ctrl+Enter shortcut from other fields', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+
+        // Fill in form
+        await composer.locator('#letter-to').fill('Gandalf');
+        await composer.locator('#letter-subject').fill('Test');
+        await composer.locator('#letter-content').fill('Szybka wiadomosc');
+
+        // Focus "To" field and press Ctrl+Enter
+        await composer.locator('#letter-to').focus();
+        await page.keyboard.press('Control+Enter');
+
+        // Modal should close
+        await expect(composer, 'should close composer on Ctrl+Enter from To field').not.toBeVisible();
     });
 
     test('preview button keeps composer open', async ({page}) => {

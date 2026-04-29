@@ -147,6 +147,7 @@ const LetterComposer: React.FC = () => {
     const handleKeyDown = useCallback((ev: React.KeyboardEvent) => {
         if (ev.key === 'Enter' && ev.ctrlKey) {
             ev.preventDefault();
+            ev.stopPropagation();
             const payload = getPayload();
             eventBus.emit("letterComposer.submit", payload);
             close();
@@ -238,7 +239,7 @@ const LetterComposer: React.FC = () => {
                     </div>
                 </div>
                 <div className="window-body letter-composer-body">
-                    <form className="letter-composer-form" onSubmit={handleSubmit}>
+                    <form className="letter-composer-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
                         <div className="letter-composer-field">
                             <label htmlFor="letter-to" className="form-label">Do:</label>
                             <input
@@ -295,7 +296,6 @@ const LetterComposer: React.FC = () => {
                                 name="letter-content"
                                 className="form-control"
                                 onChange={handleContentChange}
-                                onKeyDown={handleKeyDown}
                                 tabIndex={3}
                             />
                         </div>
