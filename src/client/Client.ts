@@ -232,6 +232,7 @@ export default class Client {
         if (/^zaslon /.test(command) && typeof groupCover === 'number' && groupCover > 1) {
             display += ` &lt;${groupCover}&gt;`;
         }
+        if (display == "") return
         this.clientAdapter.output("→ " + display, 'command');
     }
 

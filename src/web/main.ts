@@ -1532,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 unsubLoginMessage = eventBus.on('socket.incoming', () => {
                     unsubLoginMessage?.();
                     unsubLoginMessage = null;
-                    client.send(character);
+                    client.send(character, false);
                 });
             }
 
