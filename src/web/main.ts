@@ -801,6 +801,14 @@ let isConnecting = false;
 let isDisconnecting = false;
 let playbackMode = false;
 let authClosed = false;
+let lastSystemLoginMessage: string | null = null;
+
+eventBus.on('flushLines', (groups: { text: string; type: string }[]) => {
+    const loginMsg = groups.find(g => g.type === 'system.login');
+    if (loginMsg) {
+        lastSystemLoginMessage = loginMsg.text.trim();
+    }
+});
 
 // Function to update the connect button state
 function updateConnectButtons() {
@@ -850,6 +858,15 @@ function updateConnectButtons() {
         } else {
             disconnectButton.textContent = 'Połącz';
             disconnectButton.disabled = isConnecting;
+        }
+    }
+
+    const systemLoginMessageEl = document.getElementById('system-login-message');
+    if (systemLoginMessageEl) {
+        if (!isConnected && !isConnecting && lastSystemLoginMessage) {
+            systemLoginMessageEl.textContent = lastSystemLoginMessage;
+        } else {
+            systemLoginMessageEl.textContent = '';
         }
     }
 }
@@ -1259,6 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 isConnecting = true;
+                lastSystemLoginMessage = null;
                 updateConnectButtons();
                 void client.prepareSounds();
                 arkadiaClient.connect();
@@ -1492,20 +1510,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
-            const sendCreds = () => {
+            const unsubscribe = eventBus.on('client.server', () => {
+                unsubscribe();
                 if (character) client.send(character);
                 if (password) client.send(password, false, {preserveCase: true});
-                arkadiaClient.off('client.connect', sendCreds);
-            };
+            });
 
             if (!isConnected) {
-                arkadiaClient.on('client.connect', sendCreds);
                 isConnecting = true;
+                lastSystemLoginMessage = null;
                 updateConnectButtons();
                 void client.prepareSounds();
                 arkadiaClient.connect();
-            } else {
-                sendCreds();
             }
         });
     }
@@ -1531,6 +1547,7 @@ document.addEventListener('DOMContentLoaded', () => {
             preloadHowler();
             resumeAudioContext();
             isConnecting = true;
+            lastSystemLoginMessage = null;
             updateConnectButtons();
             void client.prepareSounds();
             arkadiaClient.connect();

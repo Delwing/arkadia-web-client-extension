@@ -78,8 +78,12 @@ export const createGmcpStream = ({
             data,
             (type, payload, isFirst) => {
                 if (type === "gmcp_msgs") {
-                    const text = atob((payload as { text: string }).text ?? "");
-                    onMessage(text, (payload as { type: string }).type ?? "");
+                    const msgType = (payload as { type: string }).type ?? "";
+                    const binaryString = atob((payload as { text: string }).text ?? "");
+                    const text = msgType === "system.login"
+                        ? new TextDecoder('utf-8').decode(Uint8Array.from(binaryString, c => c.charCodeAt(0)))
+                        : binaryString;
+                    onMessage(text, msgType);
                     return;
                 }
                 if (isFirst) {

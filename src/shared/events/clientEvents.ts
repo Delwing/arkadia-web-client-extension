@@ -400,6 +400,7 @@ type GmcpMsgEvents = {
 };
 
 export type ClientEvents = KnownEvents & GmcpMsgEvents & {
+    "client.server": void,
     "gmcp.objects.data": Map<number, ObjectData>
     "gmcp.objects.nums": [number[]];
     "gmcp.char.info": GmcpCharInfo;
