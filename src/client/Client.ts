@@ -4,6 +4,7 @@ import {Colors, setXtermPalette} from "@modules/core/Colors";
 import MovementManager from "./MovementManager";
 import CommandProcessor from "./CommandProcessor";
 import type { CommandHookCallback } from "./CommandProcessor";
+import type { AliasList } from "./AliasList";
 import {FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
@@ -76,8 +77,8 @@ export default class Client {
     public readonly movementManager = new MovementManager(this);
     public readonly commandProcessor = new CommandProcessor(this);
 
-    get aliases() { return this.commandProcessor.aliases; }
-    set aliases(v) { this.commandProcessor.aliases = v; }
+    get aliases(): AliasList { return this.commandProcessor.aliases; }
+    set aliases(v: AliasList) { this.commandProcessor.aliases = v; }
     attackCommand = DEFAULT_ATTACK_COMMAND;
     drawWeaponCommand = DEFAULT_DRAW_WEAPON_COMMAND;
 

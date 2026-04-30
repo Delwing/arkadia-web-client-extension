@@ -27,18 +27,26 @@ function getVisitedKey() {
     return char ? `${char}:${VISITED_STORE_NAME}` : VISITED_STORE_NAME;
 }
 
-async function openVisitedDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(VISITED_DB_NAME, 1);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(VISITED_STORE_NAME)) {
-                db.createObjectStore(VISITED_STORE_NAME, {keyPath: 'id'});
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(new Error('Failed to open IndexedDB'));
-    });
+let visitedDbPromise: Promise<IDBDatabase> | null = null;
+
+function openVisitedDB(): Promise<IDBDatabase> {
+    if (!visitedDbPromise) {
+        visitedDbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(VISITED_DB_NAME, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(VISITED_STORE_NAME)) {
+                    db.createObjectStore(VISITED_STORE_NAME, {keyPath: 'id'});
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => {
+                visitedDbPromise = null;
+                reject(new Error('Failed to open IndexedDB'));
+            };
+        });
+    }
+    return visitedDbPromise;
 }
 
 async function loadVisitedRooms(): Promise<number[]> {
@@ -89,6 +97,7 @@ export class EmbeddedMap {
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
     private _viewedZ: number | null = null;
+    private _saveVisitedTimer: ReturnType<typeof setTimeout> | undefined;
     private viewChangeListeners: Set<(isViewing: boolean, areaName?: string) => void> = new Set();
 
     constructor(reader: MapReader, startId?: number) {
@@ -224,18 +233,24 @@ export class EmbeddedMap {
             this.visited.add(id);
             this.reader.addVisitedRoom(id);
             characterStorage.set('mapperRoomId', id);
-            saveVisitedRooms(Array.from(this.visited));
+            this.scheduleSaveVisitedRooms();
             this.renderRoomById(id);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                this.flushVisitedRooms();
+            }
         });
 
         eventBus.on('mapPath', (data: { segments: Array<{ path: number[]; color: string }> } | null) => {
             this.currentPath = data;
-            this.renderCurrentPathAndHighlights();
+            this.schedulePathHighlightRender();
         });
 
         eventBus.on('mapHighlights', (data: { roomId: number; color: string }[]) => {
             this.currentHighlights = data;
-            this.renderCurrentPathAndHighlights();
+            this.schedulePathHighlightRender();
         });
 
         eventBus.on('mapLostRooms', (roomIds: number[]) => {
@@ -355,6 +370,18 @@ export class EmbeddedMap {
         eventBus.emit('map.centerOn', { roomId: targetRoomId });
     }
 
+    private scheduleSaveVisitedRooms() {
+        clearTimeout(this._saveVisitedTimer);
+        this._saveVisitedTimer = setTimeout(() => {
+            saveVisitedRooms(Array.from(this.visited));
+        }, 10_000);
+    }
+
+    private flushVisitedRooms() {
+        clearTimeout(this._saveVisitedTimer);
+        saveVisitedRooms(Array.from(this.visited));
+    }
+
     renderRoomById(id: number) {
         this.renderRoom(id);
         if (!this._isViewingPlayerPosition) {
@@ -368,7 +395,18 @@ export class EmbeddedMap {
         this.renderer.setZoom(this.zoom);
         this.currentRoom = roomId;
 
-        this.renderCurrentPathAndHighlights();
+        this.schedulePathHighlightRender();
+    }
+
+    private _pathHighlightRenderPending = false;
+
+    private schedulePathHighlightRender() {
+        if (this._pathHighlightRenderPending) return;
+        this._pathHighlightRenderPending = true;
+        queueMicrotask(() => {
+            this._pathHighlightRenderPending = false;
+            this.renderCurrentPathAndHighlights();
+        });
     }
 
     private renderCurrentPathAndHighlights() {

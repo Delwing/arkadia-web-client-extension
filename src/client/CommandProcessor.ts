@@ -2,6 +2,7 @@ import type Client from "./Client";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 import { stripPolishCharacters } from "./stripPolishCharacters";
 import { mudletColorLine } from "@modules/core/Colors";
+import { AliasList } from "./AliasList";
 
 export type CommandHookCallback = (
     command: string,
@@ -16,7 +17,7 @@ export interface CommandHook {
 }
 
 export default class CommandProcessor {
-    aliases: { pattern: RegExp; callback: Function }[] = [];
+    aliases: AliasList = new AliasList();
     private commandHooks: CommandHook[] = [];
     private client: Client;
 
@@ -62,7 +63,7 @@ export default class CommandProcessor {
             return;
         }
 
-        for (const alias of this.aliases) {
+        for (const alias of this.aliases.forCommand(command)) {
             const matches = command.match(alias.pattern);
             if (matches) {
                 const result = alias.callback(matches);

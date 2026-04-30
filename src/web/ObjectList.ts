@@ -31,7 +31,6 @@ export default class ObjectList {
     private pipLocationText = "";
     private pipCoverTimerText = "";
     private pipLastOutputHtml = "";
-    private cachedPipHtml = "";
     private attackController: ReturnType<typeof createAttackController>;
     private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
     private viewMode: 'list' | 'card' | 'compact' | 'compact-dots' = 'list';
@@ -1371,8 +1370,7 @@ export default class ObjectList {
                 this.pipContent.addEventListener("contextmenu", this.onContextMenu);
             }
             this.injectPictureInPictureStyles();
-            this.pipContent.innerHTML = this.cachedPipHtml;
-            this.syncPictureInPictureStyles();
+            this.rebuildPictureInPictureHtml();
             this.observePictureInPictureStyles();
             this.updatePictureInPictureButton(true);
         } catch (err) {
@@ -1664,11 +1662,11 @@ html, body {
     }
 
     private rebuildPictureInPictureHtml() {
-        this.cachedPipHtml = this.buildPictureInPictureHtml();
-        if (this.pipContent) {
-            this.pipContent.innerHTML = this.cachedPipHtml;
-            this.syncPictureInPictureStyles();
+        if (!this.pipContent) {
+            return;
         }
+        this.pipContent.innerHTML = this.buildPictureInPictureHtml();
+        this.syncPictureInPictureStyles();
     }
 
     private buildPictureInPictureHtml() {
