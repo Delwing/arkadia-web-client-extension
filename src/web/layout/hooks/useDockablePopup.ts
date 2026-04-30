@@ -67,6 +67,7 @@ export function useDockablePopup({
 
   // Track if we've added to floating panels for this open session
   const addedToFloatingRef = useRef(false);
+  const lastSavedFloatingRef = useRef<{ x: number; y: number; width: number; height: number | undefined } | null>(null);
 
   // Use refs to keep current values without triggering re-registration
   const renderContentRef = useRef(renderContent);
@@ -281,16 +282,26 @@ export function useDockablePopup({
 
     const saveInterval = setInterval(() => {
       const current = findFloatingPanel?.(popupId);
-      if (current) {
-        updatePopupDockState?.(popupId, {
-          floatingState: {
-            x: current.x,
-            y: current.y,
-            width: current.width,
-            height: current.height,
-          },
-        });
+      if (!current) return;
+
+      const last = lastSavedFloatingRef.current;
+      if (last &&
+          last.x === current.x &&
+          last.y === current.y &&
+          last.width === current.width &&
+          last.height === current.height) {
+        return;
       }
+
+      lastSavedFloatingRef.current = { x: current.x, y: current.y, width: current.width, height: current.height };
+      updatePopupDockState?.(popupId, {
+        floatingState: {
+          x: current.x,
+          y: current.y,
+          width: current.width,
+          height: current.height,
+        },
+      });
     }, 1000);
 
     return () => clearInterval(saveInterval);

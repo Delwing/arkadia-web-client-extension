@@ -259,12 +259,23 @@ export default function initLootParser(client: Client) {
     );
 
     client.on('enterLocation', () => {
+        const hadData = popupMode ||
+            bodyExtras.size > 0 ||
+            pendingBodyNumbers.length > 0 ||
+            stertyCounter > 0 ||
+            roomContents.bodies > 0 ||
+            roomContents.sterta > 0 ||
+            roomContents.groundItems.length > 0;
+
         popupMode = false;
         bodyExtras.clear();
         pendingBodyNumbers.length = 0;
         stertyCounter = 0;
         roomContents = { bodies: 0, sterta: 0, groundItems: [] };
-        client.sendEvent('loot.cleared');
+
+        if (hadData) {
+            client.sendEvent('loot.cleared');
+        }
     });
 
     eventBus.on('loot.popup.closed', () => {

@@ -100,7 +100,7 @@ export function DockablePopupWrapper({
     disableLayoutManagement,
   });
 
-  // Notify registry when children change so LayoutContent re-renders with fresh content
+  // Notify this popup's content subscriber so its FloatingPanel re-renders with fresh content
   useLayoutEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
     // Skip first render - the popup registration already triggers LayoutContent render
@@ -108,8 +108,8 @@ export function DockablePopupWrapper({
       isFirstRenderRef.current = false;
       return;
     }
-    // Children changed, trigger refresh so LayoutContent picks up new content from ref
-    refreshPopupContent();
+    // Children changed, notify only this popup's FloatingPanel
+    refreshPopupContent(popupId);
   });
 
   // Reset first render flag when popup closes

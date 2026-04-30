@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DockZone } from './components/DockZone';
 import { DockDropIndicator } from './components/DockDropIndicator';
 import { FloatingPanel } from './components/FloatingPanel';
@@ -6,7 +6,24 @@ import { MapPanel } from './panels/MapPanel';
 import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
 import { PanelId } from './types';
-import { getRegisteredPopups, subscribeToRegistry, RegisteredPopup } from './popupRegistry';
+import { getRegisteredPopups, subscribeToRegistry, subscribeToPopupContent, RegisteredPopup } from './popupRegistry';
+
+// Renders a single popup's content and subscribes to per-popup content refresh signals.
+// Using a dedicated component prevents a single popup's content change from forcing
+// all other popups' FloatingPanels to re-render.
+function PopupContentRenderer({ popup }: { popup: RegisteredPopup }) {
+  const popupRef = useRef(popup);
+  popupRef.current = popup;
+  const [, setVersion] = useState(0);
+
+  useEffect(() => {
+    return subscribeToPopupContent(popup.id, () => setVersion((v) => v + 1));
+  }, [popup.id]);
+
+  const content = popupRef.current.renderContent();
+  const bodyClass = popupRef.current.config.bodyClassName;
+  return bodyClass ? <div className={bodyClass}>{content}</div> : <>{content}</>;
+}
 
 interface LayoutContentProps {
   mapElement: HTMLElement | null;
@@ -59,12 +76,7 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
           // Check if this is a popup panel
           const popup = popupMap.get(panelId);
           if (popup) {
-            const bodyClass = popup.config.bodyClassName;
-            return bodyClass ? (
-              <div className={bodyClass}>{popup.renderContent()}</div>
-            ) : (
-              popup.renderContent()
-            );
+            return <PopupContentRenderer popup={popup} />;
           }
           return <div>Unknown panel: {panelId}</div>;
       }

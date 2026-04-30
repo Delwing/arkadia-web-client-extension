@@ -17,6 +17,7 @@ export interface RegisteredPopup {
 // Registry singleton
 const popupRegistry = new Map<string, RegisteredPopup>();
 const listeners = new Set<() => void>();
+const contentListeners = new Map<string, Set<() => void>>();
 
 function notifyListeners(): void {
   listeners.forEach((listener) => {
@@ -84,11 +85,27 @@ export function updatePopup(id: string, updates: Partial<Pick<RegisteredPopup, '
   }
 }
 
+export function subscribeToPopupContent(popupId: string, listener: () => void): () => void {
+  if (!contentListeners.has(popupId)) {
+    contentListeners.set(popupId, new Set());
+  }
+  contentListeners.get(popupId)!.add(listener);
+  return () => {
+    contentListeners.get(popupId)?.delete(listener);
+  };
+}
+
 /**
- * Force a refresh of popup content rendering.
- * This notifies listeners without changing the registry data,
- * which causes LayoutContent to re-render and pick up updated content from refs.
+ * Force a refresh of a single popup's content rendering.
+ * Only notifies the specific popup's content subscribers, avoiding
+ * a global re-render of all FloatingPanel instances.
  */
-export function refreshPopupContent(): void {
-  notifyListeners();
+export function refreshPopupContent(popupId: string): void {
+  contentListeners.get(popupId)?.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {
+      console.error('Popup content listener error:', e);
+    }
+  });
 }

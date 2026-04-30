@@ -60,9 +60,9 @@ export function usePopupData<T, K extends keyof ClientEvents = keyof ClientEvent
     }
   }, [isOpen, getInitialData]);
 
-  // Subscribe to update event
+  // Subscribe to update event — only while popup is open to avoid updating hidden state
   useEffect(() => {
-    if (!updateEvent) return;
+    if (!updateEvent || !isOpen) return;
 
     const handler = ((eventData: ClientEvents[K]) => {
       if (transformUpdate) {
@@ -78,7 +78,7 @@ export function usePopupData<T, K extends keyof ClientEvents = keyof ClientEvent
     }) as any;
 
     return eventBus.on(updateEvent, handler);
-  }, [updateEvent, transformUpdate]);
+  }, [isOpen, updateEvent, transformUpdate]);
 
   // Subscribe to clear event
   useEffect(() => {

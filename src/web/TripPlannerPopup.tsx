@@ -215,7 +215,7 @@ const TripPlannerPopup: React.FC = () => {
     const [selectedRoute, setSelectedRoute] = useState('');
     const [currentRoomId, setCurrentRoomId] = useState<number | null>(getCurrentRoomId());
 
-    const { wrapperProps } = usePopup(POPUP_ID, {
+    const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
         openEvent: 'tripPlanner.popup.open',
     });
 
@@ -224,13 +224,14 @@ const TripPlannerPopup: React.FC = () => {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    // Update current room when location changes
+    // Update current room when location changes — only while popup is open
     useEffect(() => {
+        if (!isOpen) return;
         const handleEnterLocation = (payload: { id: number }) => {
             setCurrentRoomId(payload.id);
         };
         return eventBus.on('enterLocation', handleEnterLocation);
-    }, []);
+    }, [isOpen]);
 
     // Refresh current room ID and populate stops from active destinations when popup opens
     useEffect(() => {

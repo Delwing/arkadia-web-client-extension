@@ -298,6 +298,7 @@ const HerbManager = () => {
     }, []);
 
     useEffect(() => {
+        if (!isOpen) return;
         const unsubscribe = eventBus.on("herbCounts", (detail) => {
             if (detail && typeof detail === "object") {
                 setError(null);
@@ -305,8 +306,8 @@ const HerbManager = () => {
             }
         });
         return () => unsubscribe();
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- Mount-only effect, eventBus is stable singleton
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuildBags is stable
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -500,8 +501,7 @@ const HerbManager = () => {
         return undefined; // Use CSS default
     }, [bags.length]);
 
-    // Header action toggles for compact mode and effects visibility
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <>
             <button
                 type="button"
@@ -520,7 +520,7 @@ const HerbManager = () => {
                 Kompaktowy
             </button>
         </>
-    );
+    ), [showEffects, isCompact, setShowEffects, setIsCompact]);
 
     const handleBackdropClick = () => {
         if (isPinned) {
