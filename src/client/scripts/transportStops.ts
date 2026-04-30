@@ -484,7 +484,7 @@ class TransportTracker {
                 this.markOutOfTransport();
                 return;
             }
-            if (this.isMovementCommand(normalized) && !this.currentJourney?.onBoard) {
+            if (this.currentJourney && !this.currentJourney.onBoard && this.isMovementCommand(normalized)) {
                 this.clearJourney();
             }
         });
