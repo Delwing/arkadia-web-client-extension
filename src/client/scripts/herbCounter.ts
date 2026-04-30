@@ -76,15 +76,13 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     };
 
     const requestBagsIfNeeded = () => {
-        if (Object.keys(storedBags).length > 0) {
-            broadcastBags();
-        } else {
+        if (Object.keys(storedBags).length === 0) {
             const stored = characterStorage.get(STORAGE_KEY);
             if (stored) {
                 storedBags = normalizeHerbBagsState(stored);
-                broadcastBags();
             }
         }
+        broadcastBags();
     };
 
     const initialHerbs = characterStorage.get(STORAGE_KEY);

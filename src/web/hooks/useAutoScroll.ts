@@ -40,6 +40,10 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
   const { threshold = 50, deps = [] } = options;
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  // Ref updated synchronously so rAF callbacks see the latest value
+  // without waiting for React's async state propagation.
+  const autoScrollRef = useRef(true);
+  autoScrollRef.current = autoScroll;
 
   // Auto-scroll to bottom when content changes
   // Uses useLayoutEffect to run synchronously after DOM mutations
@@ -48,10 +52,19 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
       const container = containerRef.current;
       // Immediate scroll for regular mode
       container.scrollTop = container.scrollHeight;
-      // Deferred scroll for managed layout mode where height calc may be delayed
+      // Deferred scroll for managed layout mode where height calc may be delayed.
+      // Each rAF checks the ref so a user scroll between the effect and the rAF
+      // won't be overridden.
       requestAnimationFrame(() => {
-        if (containerRef.current) {
+        if (containerRef.current && autoScrollRef.current) {
           containerRef.current.scrollTop = containerRef.current.scrollHeight;
+          // Second rAF handles managed layout where the first frame may still
+          // have stale dimensions.
+          requestAnimationFrame(() => {
+            if (containerRef.current && autoScrollRef.current) {
+              containerRef.current.scrollTop = containerRef.current.scrollHeight;
+            }
+          });
         }
       });
     }
@@ -64,6 +77,9 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     // If user is near bottom, enable auto-scroll
     const isNearBottom = scrollHeight - scrollTop - clientHeight < threshold;
+    // Update ref immediately so any pending rAFs see the updated value before
+    // React's async state propagation completes.
+    autoScrollRef.current = isNearBottom;
     setAutoScroll(isNearBottom);
   }, [threshold]);
 
