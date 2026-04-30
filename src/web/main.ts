@@ -916,7 +916,12 @@ document.addEventListener('visibilitychange', () => {
             isConnecting = false;
             isDisconnecting = false;
             updateConnectButtons();
+        } else if (socketOpen && isConnected) {
+            mudClient.sendGmcp('core.keepalive', {disabled: false});
+            mudClient.checkConnection();
         }
+    } else if (isConnected) {
+        mudClient.sendGmcp('core.keepalive', {disabled: true});
     }
 });
 

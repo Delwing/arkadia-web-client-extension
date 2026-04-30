@@ -37,6 +37,7 @@ class MudClient implements ClientAdapter {
     private readonly echoHandler: EchoHandler;
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
+    private connectionCheckTimeout: number | null = null;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -138,6 +139,10 @@ class MudClient implements ClientAdapter {
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
                     if (event.data.length === 0) return;
+                    if (this.connectionCheckTimeout !== null) {
+                        clearTimeout(this.connectionCheckTimeout);
+                        this.connectionCheckTimeout = null;
+                    }
                     const decodedData = atob(event.data);
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
@@ -162,6 +167,10 @@ class MudClient implements ClientAdapter {
             };
 
             this.socket.onclose = (event: CloseEvent) => {
+                if (this.connectionCheckTimeout !== null) {
+                    clearTimeout(this.connectionCheckTimeout);
+                    this.connectionCheckTimeout = null;
+                }
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
@@ -198,6 +207,17 @@ class MudClient implements ClientAdapter {
 
     isPasswordMode(): boolean {
         return this.isSocketOpen() && this.echoHandler.serverEchoing;
+    }
+
+    checkConnection(): void {
+        if (!this.isSocketOpen() || this.connectionCheckTimeout !== null) return;
+        this.sendGmcp('core.ping');
+        this.connectionCheckTimeout = window.setTimeout(() => {
+            this.connectionCheckTimeout = null;
+            if (this.isSocketOpen()) {
+                this.socket.close();
+            }
+        }, 5000);
     }
 
     send(message: string, _echo?: boolean, options?: CommandOptions): void {
