@@ -197,12 +197,13 @@ const SunTrackerPopup: React.FC = () => {
     // Track clock data for next sun event display
     useEffect(() => {
         return eventBus.on("clock.update", (data) => {
+            if (!wrapperProps.isOpen) return;
             setClockData(prev => ({
                 ...prev,
                 [data.domain]: { domain: data.domain as Domain, hours: data.hours, minutes: data.minutes, sunrise: data.sunrise, sunset: data.sunset, dayOfYear: data.dayOfYear },
             }));
         });
-    }, []);
+    }, [wrapperProps.isOpen]);
 
     // Track active domain from clock system
     useEffect(() => {
