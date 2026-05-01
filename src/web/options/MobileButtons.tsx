@@ -77,6 +77,11 @@ type SettingsMap = Record<string, MobileButtonSetting>;
 
 const modes: Mode[] = ['solo', 'team', 'leader'];
 
+function getCurrentMode(): Mode {
+    const { isInAnyTeam, isLeader } = getTeamState();
+    return isLeader ? 'leader' : isInAnyTeam ? 'team' : 'solo';
+}
+
 function MobileButtons() {
     const [settings, setSettings] = useState<Settings>({
         solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
@@ -91,7 +96,7 @@ function MobileButtons() {
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
-    const [view, setView] = useState<Mode>('solo');
+    const [view, setView] = useState<Mode>(() => getCurrentMode());
     const [isMobile, setIsMobile] = useState(false);
     const [configOpen, setConfigOpen] = useState(false);
     const soloRef = useRef<HTMLDivElement>(null);
@@ -327,6 +332,14 @@ function MobileButtons() {
         setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
     }
 
+    // Reset all overrides for the current view: makes it inherit from base (solo) entirely.
+    function resetOverrides() {
+        if (view === 'solo') return;
+        setSettings(prev => ({ ...prev, [view]: JSON.parse(JSON.stringify(prev.solo)) }));
+        setActive(null);
+        setConfigOpen(false);
+    }
+
     function save() {
         saveSettings(settings);
         const { isInAnyTeam, isLeader } = getTeamState();
@@ -337,6 +350,8 @@ function MobileButtons() {
     const activeCfg = active ? (settings[active.set].buttons[active.id] || defaultSettings[active.id] || emptySetting) : null;
     const currentBackground = settings[view].background || defaultBackground;
     const { hex: backgroundHex, alpha: backgroundAlpha } = parseBackgroundColor(currentBackground);
+    const currentMode = getCurrentMode();
+    const isOverrideMode = view !== 'solo';
 
     return (
         <div onClick={close} className="w-100 position-relative">
@@ -346,22 +361,25 @@ function MobileButtons() {
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
                         onClick={() => changeView('solo')}
+                        title={currentMode === 'solo' ? 'Aktualny tryb' : undefined}
                     >
-                        Bez druzyny
+                        Bazowy{currentMode === 'solo' ? ' •' : ''}
                     </Button>
                     <Button
                         size="sm"
                         variant={view === 'team' ? 'primary' : 'secondary'}
                         onClick={() => changeView('team')}
+                        title={currentMode === 'team' ? 'Aktualny tryb' : undefined}
                     >
-                        W druzynie
+                        W druzynie{currentMode === 'team' ? ' •' : ''}
                     </Button>
                     <Button
                         size="sm"
                         variant={view === 'leader' ? 'primary' : 'secondary'}
                         onClick={() => changeView('leader')}
+                        title={currentMode === 'leader' ? 'Aktualny tryb' : undefined}
                     >
-                        Prowadzacy
+                        Prowadzacy{currentMode === 'leader' ? ' •' : ''}
                     </Button>
                 </div>
                 <div className="d-flex align-items-center gap-2">
@@ -378,6 +396,12 @@ function MobileButtons() {
                     />
                 </div>
             </div>
+
+            {isOverrideMode && (
+                <div className="alert alert-info py-2 px-3 small mb-2" onClick={ev => ev.stopPropagation()}>
+                    Ten tryb dziedziczy z trybu Bazowy. Zmiany ponizej sa zapisywane jako nadpisania. Uzyj "Resetuj nadpisania", aby przywrocic pelne dziedziczenie.
+                </div>
+            )}
 
             {/* Button size and gap section */}
             <div
@@ -717,13 +741,18 @@ function MobileButtons() {
                 <Button size="sm" variant="outline-secondary" onClick={() => restoreDefaults(view)}>
                     Domyslne
                 </Button>
+                {isOverrideMode && (
+                    <Button size="sm" variant="outline-secondary" onClick={resetOverrides} title="Wyczysc nadpisania i odziedzicz wszystko z trybu Bazowy">
+                        Resetuj nadpisania
+                    </Button>
+                )}
                 <Form.Select
                     size="sm"
                     value={copyFrom}
                     onChange={e => setCopyFrom(e.target.value as Mode)}
                     style={{ width: 'auto', minWidth: '120px' }}
                 >
-                    <option value="solo">Bez druzyny</option>
+                    <option value="solo">Bazowy</option>
                     <option value="team">W druzynie</option>
                     <option value="leader">Prowadzacy</option>
                 </Form.Select>

@@ -121,6 +121,11 @@ const migrations: Migration[] = [
         description: 'Split uiSettings into shell/render/map/behavior keys (handled by migrateUiSettingsSplit)',
         migrate: settings => settings, // No-op for core Settings; actual migration is below
     },
+    {
+        version: 11,
+        description: 'Convert mobileButtonSettings team/leader to sparse overrides over solo base (handled by migrateMobileButtonOverrides)',
+        migrate: settings => settings,
+    },
 ];
 
 /**
@@ -520,6 +525,124 @@ export async function migrateLayoutManagerState(): Promise<void> {
         console.log('[SettingsMigrations] Migrated layoutManagerState to flat-windows shape');
     } catch (e) {
         console.error('[SettingsMigrations] Failed to migrate layoutManagerState:', e);
+    }
+}
+
+/**
+ * Convert legacy mobileButtonSettings storage from three full LayoutSettings
+ * (solo, team, leader) to base (solo) + sparse overrides for team/leader.
+ * This is migration version 11.
+ */
+export function migrateMobileButtonOverrides(): void {
+    const currentVersion = getMigrationsVersion();
+
+    if (currentVersion >= 11) {
+        return;
+    }
+
+    try {
+        const raw: any = globalStorage.get('mobileButtonSettings');
+        if (!raw || typeof raw !== 'object') return;
+        if (raw.format === 2) return;
+        if (!raw.solo || typeof raw.solo !== 'object') return;
+
+        const base = raw.solo;
+        const baseButtons: Record<string, any> = (base.buttons && typeof base.buttons === 'object') ? base.buttons : {};
+        const baseOrder: string[] = Array.isArray(base.order) ? base.order : [];
+        const baseCols: number | undefined = typeof base.cols === 'number' ? base.cols : undefined;
+        const baseBackground: string | undefined = typeof base.background === 'string' ? base.background : undefined;
+
+        const ALL_FIELDS = [
+            'macroType', 'command', 'direction', 'enemySlot', 'pluginConfig', 'steps',
+            'label', 'color', 'fontColor', 'holdEnabled', 'hold', 'activeColor', 'syncWithDirections',
+        ];
+
+        function buttonDiff(newCfg: any, baseCfg: any): any | null {
+            if (!newCfg || typeof newCfg !== 'object') return null;
+            if (!baseCfg || typeof baseCfg !== 'object') {
+                return { ...newCfg };
+            }
+            const diff: Record<string, any> = {};
+            let changed = false;
+            const keys = new Set<string>([...Object.keys(newCfg), ...Object.keys(baseCfg), ...ALL_FIELDS]);
+            keys.forEach(k => {
+                const a = newCfg[k];
+                const b = baseCfg[k];
+                if (a === undefined && b === undefined) return;
+                if (JSON.stringify(a) !== JSON.stringify(b)) {
+                    diff[k] = a;
+                    changed = true;
+                }
+            });
+            return changed ? diff : null;
+        }
+
+        function layoutDiff(layout: any): any | null {
+            if (!layout || typeof layout !== 'object') return null;
+            const override: any = {};
+            let hasChange = false;
+            if (typeof layout.cols === 'number' && layout.cols !== baseCols) {
+                override.cols = layout.cols;
+                hasChange = true;
+            }
+            if (typeof layout.background === 'string' && layout.background !== baseBackground) {
+                override.background = layout.background;
+                hasChange = true;
+            }
+            const order: string[] = Array.isArray(layout.order) ? layout.order : [];
+            const sameLength = order.length === baseOrder.length;
+            let orderDiffers = !sameLength;
+            if (sameLength) {
+                for (let i = 0; i < order.length; i++) {
+                    if (order[i] !== baseOrder[i]) { orderDiffers = true; break; }
+                }
+            }
+            if (orderDiffers) {
+                if (sameLength) {
+                    override.order = order.map((id, i) => id === baseOrder[i] ? null : id);
+                } else {
+                    override.order = [...order];
+                }
+                hasChange = true;
+            }
+            const buttonsObj = (layout.buttons && typeof layout.buttons === 'object') ? layout.buttons : {};
+            const overrideButtons: Record<string, any> = {};
+            let anyButtonDiff = false;
+            const ids = new Set<string>(order);
+            ids.forEach(id => {
+                const newCfg = buttonsObj[id];
+                if (!newCfg) return;
+                const d = buttonDiff(newCfg, baseButtons[id]);
+                if (d) {
+                    overrideButtons[id] = d;
+                    anyButtonDiff = true;
+                }
+            });
+            if (anyButtonDiff) {
+                override.buttons = overrideButtons;
+                hasChange = true;
+            }
+            return hasChange ? override : null;
+        }
+
+        const teamOverride = layoutDiff(raw.team);
+        const leaderOverride = layoutDiff(raw.leader);
+
+        const next: Record<string, any> = {
+            format: 2,
+            solo: base,
+            locked: !!raw.locked,
+            radial: raw.radial,
+        };
+        if (teamOverride) next.team = teamOverride;
+        if (leaderOverride) next.leader = leaderOverride;
+        if (raw.buttonSize !== undefined) next.buttonSize = raw.buttonSize;
+        if (raw.buttonGap !== undefined) next.buttonGap = raw.buttonGap;
+
+        globalStorage.set('mobileButtonSettings', next);
+        console.log('[SettingsMigrations] Converted mobileButtonSettings team/leader to sparse overrides');
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to migrate mobileButtonSettings overrides:', e);
     }
 }
 

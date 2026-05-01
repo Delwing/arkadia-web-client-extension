@@ -11,6 +11,7 @@ import {
     migrateFooterComponentVisibility,
     migrateLayoutManagerState,
     migrateMobileButtonMacroField,
+    migrateMobileButtonOverrides,
     migrateUiSettingsSplit,
     runAllSettingsMigrations,
 } from "@modules/core/settingsMigrations";
@@ -38,6 +39,11 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // read settings during setup, so they must see migrated data.
     migrateNewlyCharacterScopedKeys();
     migrateMobileButtonMacroField();
+    // Collapse the three full mobile-button layouts into solo + sparse
+    // team/leader overrides. Must run before runAllSettingsMigrations() bumps
+    // the version counter past this migration's gate, and after the macro-field
+    // rename so the diff compares already-normalised button configs.
+    migrateMobileButtonOverrides();
     // Split uiSettings into concern-scoped keys before runAllSettingsMigrations()
     // bumps the version counter past this migration's gate.
     migrateUiSettingsSplit();

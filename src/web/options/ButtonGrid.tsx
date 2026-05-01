@@ -16,11 +16,23 @@ interface Props {
     activeButtonId?: string | null;
 }
 
+function buttonsEqual(a: MobileButtonSetting | undefined, b: MobileButtonSetting | undefined): boolean {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    try {
+        return JSON.stringify(a) === JSON.stringify(b);
+    } catch {
+        return false;
+    }
+}
+
 export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef, activeButtonId }: Props) {
     const set = settings[mode];
     const bgColor = set.background || defaultBackground;
     const buttonSize = settings.buttonSize ?? defaultButtonSize;
     const buttonGap = settings.buttonGap ?? defaultButtonGap;
+    const baseSet = settings.solo;
+    const isOverrideMode = mode !== 'solo';
     return (
         <div
             ref={gridRef}
@@ -33,7 +45,7 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 gap: buttonGap + 'px',
             }}
         >
-            {set.order.map(id => {
+            {set.order.map((id, idx) => {
                 const cfg = set.buttons[id] || defaultSettings[id] || emptySetting;
                 let classes = 'mobile-button';
                 const isText = cfg.macroType !== 'kierunek';
@@ -46,6 +58,14 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 if (isEmpty) classes += ' empty';
                 const isActive = activeButtonId === id;
                 if (isActive) classes += ' editing';
+                let inherited = false;
+                if (isOverrideMode) {
+                    const baseId = baseSet.order[idx];
+                    const baseCfg = baseId !== undefined ? baseSet.buttons[baseId] : undefined;
+                    inherited = baseId === id && buttonsEqual(cfg, baseCfg);
+                    if (inherited) classes += ' inherited';
+                    else classes += ' overridden';
+                }
                 const handle = notEditable.includes(id)
                     ? undefined
                     : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(mode, id, ev);
@@ -62,6 +82,10 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                     style.backgroundColor = cfg.color;
                     style.color = cfg.fontColor || defaultFontColor;
                 }
+                if (isOverrideMode && !inherited) {
+                    style.outline = '2px solid #ffc107';
+                    style.outlineOffset = '-2px';
+                }
                 return (
                     <button
                         key={id}
@@ -69,6 +93,7 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                         className={classes}
                         style={style}
                         onClick={handle}
+                        title={isOverrideMode ? (inherited ? 'Dziedziczy z trybu Bazowy' : 'Nadpisanie wzgledem trybu Bazowy') : undefined}
                     >
                         {isEmpty ? '' : cfg.label}
                     </button>

@@ -160,6 +160,16 @@ export interface LayoutSettings {
     background: string;
 }
 
+export interface LayoutOverride {
+    cols?: number;
+    background?: string;
+    // Aligned with base order by index. null/undefined at index i = inherit base.order[i].
+    // Length may differ from base for mode-specific extra cells.
+    order?: (string | null)[];
+    // Sparse field overrides keyed by button id. Buttons with no entry inherit the base config fully.
+    buttons?: Record<string, Partial<MobileButtonSetting>>;
+}
+
 export interface Settings {
     solo: LayoutSettings;
     team: LayoutSettings;
@@ -172,6 +182,128 @@ export interface Settings {
 
 export function createDefaultLayout(): LayoutSettings {
     return { buttons: { ...defaultSettings }, order: [...defaultOrder], cols: defaultCols, background: defaultBackground };
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    try {
+        return JSON.stringify(a) === JSON.stringify(b);
+    } catch {
+        return false;
+    }
+}
+
+export function resolveLayout(base: LayoutSettings, override?: LayoutOverride | null): LayoutSettings {
+    if (!override) {
+        return {
+            buttons: { ...base.buttons },
+            order: [...base.order],
+            cols: base.cols,
+            background: base.background,
+        };
+    }
+    const cols = typeof override.cols === 'number' && override.cols > 0 ? override.cols : base.cols;
+    const background = typeof override.background === 'string' && override.background ? override.background : base.background;
+    const order: string[] = [];
+    if (Array.isArray(override.order)) {
+        for (let i = 0; i < override.order.length; i++) {
+            const o = override.order[i];
+            if (typeof o === 'string') {
+                order.push(o);
+            } else if (i < base.order.length) {
+                order.push(base.order[i]);
+            }
+        }
+    } else {
+        for (const id of base.order) order.push(id);
+    }
+    const buttons: Record<string, MobileButtonSetting> = {};
+    const ids = new Set<string>([...order, ...Object.keys(base.buttons), ...Object.keys(override.buttons || {})]);
+    ids.forEach(id => {
+        const baseCfg = base.buttons[id];
+        const overrideCfg = override.buttons?.[id];
+        if (baseCfg && overrideCfg) {
+            buttons[id] = { ...baseCfg, ...overrideCfg };
+        } else if (baseCfg) {
+            buttons[id] = baseCfg;
+        } else if (overrideCfg) {
+            buttons[id] = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor, ...overrideCfg } as MobileButtonSetting;
+        }
+    });
+    return { buttons, order, cols, background };
+}
+
+const ALL_BUTTON_FIELDS: (keyof MobileButtonSetting)[] = [
+    'macroType', 'command', 'direction', 'enemySlot', 'pluginConfig', 'steps',
+    'label', 'color', 'fontColor', 'holdEnabled', 'hold', 'activeColor', 'syncWithDirections',
+];
+
+function diffButton(newCfg: MobileButtonSetting, baseCfg: MobileButtonSetting | undefined): Partial<MobileButtonSetting> | null {
+    if (!baseCfg) {
+        // Brand-new mode-specific button: store full config
+        return { ...newCfg };
+    }
+    const diff: Partial<MobileButtonSetting> = {};
+    let changed = false;
+    for (const key of ALL_BUTTON_FIELDS) {
+        const a = (newCfg as any)[key];
+        const b = (baseCfg as any)[key];
+        if (!deepEqual(a, b)) {
+            (diff as any)[key] = a;
+            changed = true;
+        }
+    }
+    return changed ? diff : null;
+}
+
+export function diffLayout(newLayout: LayoutSettings, base: LayoutSettings): LayoutOverride | null {
+    const override: LayoutOverride = {};
+    let hasChange = false;
+    if (newLayout.cols !== base.cols) {
+        override.cols = newLayout.cols;
+        hasChange = true;
+    }
+    if (newLayout.background !== base.background) {
+        override.background = newLayout.background;
+        hasChange = true;
+    }
+    // Order diff: aligned by index where possible
+    const sameLength = newLayout.order.length === base.order.length;
+    let orderDiffers = !sameLength;
+    if (sameLength) {
+        for (let i = 0; i < newLayout.order.length; i++) {
+            if (newLayout.order[i] !== base.order[i]) { orderDiffers = true; break; }
+        }
+    }
+    if (orderDiffers) {
+        if (sameLength) {
+            const sparse: (string | null)[] = newLayout.order.map((id, i) => id === base.order[i] ? null : id);
+            override.order = sparse;
+        } else {
+            override.order = [...newLayout.order];
+        }
+        hasChange = true;
+    }
+    // Button diffs: only for buttons that appear in the new layout
+    const overrideButtons: Record<string, Partial<MobileButtonSetting>> = {};
+    let anyButtonDiff = false;
+    const ids = new Set(newLayout.order);
+    ids.forEach(id => {
+        const newCfg = newLayout.buttons[id];
+        if (!newCfg) return;
+        const baseCfg = base.buttons[id];
+        const d = diffButton(newCfg, baseCfg);
+        if (d) {
+            overrideButtons[id] = d;
+            anyButtonDiff = true;
+        }
+    });
+    if (anyButtonDiff) {
+        override.buttons = overrideButtons;
+        hasChange = true;
+    }
+    return hasChange ? override : null;
 }
 
 const emptyButton: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
@@ -264,6 +396,35 @@ function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout())
     return { buttons, order, cols, background };
 }
 
+function parseStoredOverride(raw: any): LayoutOverride | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const override: LayoutOverride = {};
+    if (typeof raw.cols === 'number' && raw.cols > 0) override.cols = raw.cols;
+    if (typeof raw.background === 'string' && raw.background) override.background = raw.background;
+    if (Array.isArray(raw.order)) {
+        override.order = raw.order.map((entry: unknown) =>
+            typeof entry === 'string' ? entry : null,
+        );
+    }
+    if (raw.buttons && typeof raw.buttons === 'object') {
+        const buttons: Record<string, Partial<MobileButtonSetting>> = {};
+        Object.keys(raw.buttons).forEach(id => {
+            const value = raw.buttons[id];
+            if (value && typeof value === 'object') {
+                // Migrate legacy `macro` field on partial overrides
+                if (typeof (value as any).macro === 'string' && typeof value.macroType !== 'string') {
+                    value.macroType = (value as any).macro;
+                    delete (value as any).macro;
+                }
+                buttons[id] = value as Partial<MobileButtonSetting>;
+            }
+        });
+        if (Object.keys(buttons).length > 0) override.buttons = buttons;
+    }
+    const empty = override.cols === undefined && override.background === undefined && !override.order && !override.buttons;
+    return empty ? null : override;
+}
+
 function parseRadialSettings(raw: any): RadialSettings {
     if (!raw || typeof raw !== 'object') {
         return { enabled: true, commands: cloneDefaultRadialCommands() };
@@ -301,57 +462,15 @@ function parseRadialSettings(raw: any): RadialSettings {
 export function loadSettings(): Settings {
     try {
         const raw = globalStorage.get('mobileButtonSettings') as any;
-        if (raw) {
+        if (raw && raw.solo && (raw.solo.buttons || raw.solo.order)) {
             const locked = !!raw.locked;
             const buttonSize = typeof raw.buttonSize === 'number' && raw.buttonSize > 0 ? raw.buttonSize : defaultButtonSize;
             const buttonGap = typeof raw.buttonGap === 'number' && raw.buttonGap >= 0 ? raw.buttonGap : defaultButtonGap;
-            if (raw.solo && raw.team && raw.leader && (raw.solo.buttons || raw.team.buttons || raw.leader.buttons)) {
-                return {
-                    solo: parseLayout(raw.solo),
-                    team: parseLayout(raw.team),
-                    leader: parseLayout(raw.leader),
-                    locked,
-                    radial: parseRadialSettings(raw.radial),
-                    buttonSize,
-                    buttonGap,
-                };
-            }
-            const order = Array.isArray(raw.order) ? raw.order : [...defaultOrder];
-            const cols = typeof raw.cols === 'number' && raw.cols > 0 ? raw.cols : defaultCols;
-            const soloBackground = typeof raw?.solo?.background === 'string' && raw.solo.background
-                ? raw.solo.background
-                : defaultBackground;
-            const teamBackground = typeof raw?.team?.background === 'string' && raw.team.background
-                ? raw.team.background
-                : typeof raw?.solo?.background === 'string' && raw.solo.background
-                    ? raw.solo.background
-                    : defaultBackground;
-            const leaderBackground = typeof raw?.leader?.background === 'string' && raw.leader.background
-                ? raw.leader.background
-                : typeof raw?.team?.background === 'string' && raw.team.background
-                    ? raw.team.background
-                    : typeof raw?.solo?.background === 'string' && raw.solo.background
-                        ? raw.solo.background
-                        : defaultBackground;
+            const base = parseLayout(raw.solo);
             return {
-                solo: {
-                    buttons: mergeMobileButtonSettings(extractButtons(raw.solo)),
-                    order: [...order],
-                    cols,
-                    background: soloBackground,
-                },
-                team: {
-                    buttons: mergeMobileButtonSettings(extractButtons(raw.team || raw.solo)),
-                    order: [...order],
-                    cols,
-                    background: teamBackground,
-                },
-                leader: {
-                    buttons: mergeMobileButtonSettings(extractButtons(raw.leader || raw.team || raw.solo)),
-                    order: [...order],
-                    cols,
-                    background: leaderBackground,
-                },
+                solo: base,
+                team: resolveLayout(base, parseStoredOverride(raw.team)),
+                leader: resolveLayout(base, parseStoredOverride(raw.leader)),
                 locked,
                 radial: parseRadialSettings(raw.radial),
                 buttonSize,
@@ -371,7 +490,19 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings) {
-    globalStorage.set('mobileButtonSettings', settings);
+    const teamOverride = diffLayout(settings.team, settings.solo);
+    const leaderOverride = diffLayout(settings.leader, settings.solo);
+    const stored: Record<string, unknown> = {
+        format: 2,
+        solo: settings.solo,
+        locked: settings.locked,
+        radial: settings.radial,
+    };
+    if (teamOverride) stored.team = teamOverride;
+    if (leaderOverride) stored.leader = leaderOverride;
+    if (settings.buttonSize !== undefined) stored.buttonSize = settings.buttonSize;
+    if (settings.buttonGap !== undefined) stored.buttonGap = settings.buttonGap;
+    globalStorage.set('mobileButtonSettings', stored);
 }
 
 export function extractAlpha(color: string): number {
