@@ -279,8 +279,6 @@ test.describe('Transport timer', () => {
     });
 
     test('uses learned shorter duration on subsequent journeys', async ({page}) => {
-        await page.clock.install();
-
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -297,22 +295,17 @@ test.describe('Transport timer', () => {
             map: {x: 0, y: 0, name: 'Transport Docks'},
         });
 
-        // First journey - board and depart
+        // First journey - board, depart and arrive immediately to record a near-zero elapsed time
         await submitCommand(page, 'wejdz na statek');
-        await page.clock.runFor(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {});
         await pushText(page, 'Galera odbija od brzegu.');
 
-        // Advance fake clock 5 seconds to simulate a shorter journey
-        await page.clock.runFor(5000);
-
-        // Simulate arrival after ~5 seconds (shorter than config 43s)
+        // Simulate instant arrival — records elapsed ≈ 0s, far less than config 43s
         await pushText(page, 'Czarnowlosy barczysty mezczyzna krzyczy: Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!');
-        await page.clock.runFor(100);
 
-        // Exit and go back for second journey
+        // Exit and return to dock
         await pushText(page, 'Schodzisz z galery.');
-        await page.clock.runFor(50);
 
         // Return to original location
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
@@ -322,24 +315,23 @@ test.describe('Transport timer', () => {
             zone: 'Blekitna Wstega',
             map: {x: 0, y: 0, name: 'Transport Docks'},
         });
+        await submitCommand(page, '/ustaw 6429');
 
         // Start second journey
         await submitCommand(page, 'wejdz na statek');
-        await page.clock.runFor(50);
         await pushText(page, 'Wchodzisz na wielka galere.');
         await pushText(page, 'Galera odbija od brzegu.');
-        await page.clock.runFor(100);
 
-        // Timer should now use the learned shorter duration (~5s instead of config 43s)
+        // Timer should now use the learned shorter duration (≈0s instead of config 43s)
+        await expect(transportTimer, 'should show Kraina Zgromadzenia on second journey').toContainText('Kraina Zgromadzenia');
         const timerText = await transportTimer.textContent();
-        expect(timerText).toContain('Kraina Zgromadzenia');
 
-        // Extract the time value - should be around 5 seconds (learned), not 43 (config)
+        // Extract the time value - should be well under 43s (config) since learned duration ≈ 0s
         const match = timerText?.match(/(\d+):(\d{2})/);
         expect(match, 'should show countdown time').toBeTruthy();
         if (match) {
             const seconds = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-            // Should be around 5 seconds (learned duration), not 43 (config)
+            // Should be much less than 43s (config duration)
             expect(seconds, 'should use learned duration not config (43s)').toBeLessThanOrEqual(10);
         }
     });

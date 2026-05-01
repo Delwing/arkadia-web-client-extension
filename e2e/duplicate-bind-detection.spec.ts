@@ -130,8 +130,8 @@ test.describe('Functional bind categories with separate keys', () => {
         await pushText(page, 'A moze najpierw gdzies usiadziesz?');
         await expect(output).toContainText('usiadz');
 
-        // Trigger transport category (dylizans)
-        await pushText(page, 'Drewniany dylizans powoli zatrzymuje sie obok ciebie.');
+        // Trigger transport category via standing pattern (room.contents.object GMCP)
+        await pushText(page, 'czarny stojacy dylizans', { type: 'room.contents.object' });
         await expect(output).toContainText('bind');
 
         // Press the default key (]) — should fire the default (seat) category only

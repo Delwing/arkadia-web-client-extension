@@ -38,8 +38,8 @@ test.describe('Multi-functional Bind Categories', () => {
     test('transport category bind fires when triggered', async ({page}) => {
         const output = page.locator('#main_text_output_msg_wrapper');
 
-        // Trigger dylizans transport (transport category)
-        await pushText(page, 'Drewniany dylizans powoli zatrzymuje sie obok ciebie.');
+        // Trigger dylizans transport via standing pattern (room.contents.object GMCP)
+        await pushText(page, 'czarny stojacy dylizans', { type: 'room.contents.object' });
         await expect(output).toContainText('bind');
 
         await resetCommandLog(page);
@@ -97,8 +97,8 @@ test.describe('Multi-functional Bind Categories', () => {
         await pushText(page, 'A moze najpierw gdzies usiadziesz?');
         await expect(output).toContainText('usiadz');
 
-        // Then trigger transport — transport should win
-        await pushText(page, 'Drewniany dylizans powoli zatrzymuje sie obok ciebie.');
+        // Then trigger transport via standing pattern — transport should win
+        await pushText(page, 'czarny stojacy dylizans', { type: 'room.contents.object' });
         await expect(output).toContainText('bind');
 
         await resetCommandLog(page);
