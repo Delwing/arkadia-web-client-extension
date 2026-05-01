@@ -143,6 +143,39 @@ describe('diffLayout', () => {
         expect(diff!.buttons && Object.keys(diff!.buttons).every(k => prependIds.includes(k))).toBe(true);
     });
 
+    it('captures structural divergence (e.g. column add) as replaceOrder, not duplicated prepend', () => {
+        const base = makeBase();
+        // Simulate adding a column on the right: each row gets one new cell.
+        // Base default has cols=4 and 5 rows of 4 (20 cells). New cols=5, 5 rows of 5 (25 cells).
+        const cols = base.cols;
+        const rows = base.order.length / cols;
+        const newCellIds = Array.from({ length: rows }, (_, r) => `col-${r}`);
+        const newOrder: string[] = [];
+        const newButtons = { ...base.buttons } as Record<string, any>;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                newOrder.push(base.order[r * cols + c]);
+            }
+            newOrder.push(newCellIds[r]);
+            newButtons[newCellIds[r]] = { macroType: 'command', label: `C${r}`, color: '#fff', command: `c${r}` };
+        }
+        const modified: LayoutSettings = { ...base, cols: cols + 1, order: newOrder, buttons: newButtons };
+        const diff = diffLayout(modified, base);
+        expect(diff).not.toBeNull();
+        expect(diff!.cols).toBe(cols + 1);
+        expect(diff!.replaceOrder).toEqual(newOrder);
+        expect(diff!.prepend).toBeUndefined();
+        expect(diff!.append).toBeUndefined();
+        expect(diff!.order).toBeUndefined();
+        // Only the new column buttons should appear in override.buttons (base buttons inherited).
+        expect(diff!.buttons && Object.keys(diff!.buttons).every(k => newCellIds.includes(k))).toBe(true);
+
+        // Round-trip via resolve: result should not duplicate the base region.
+        const resolved = resolveLayout(base, diff);
+        expect(resolved.order).toEqual(newOrder);
+        expect(resolved.cols).toBe(cols + 1);
+    });
+
     it('captures appended rows as `append`', () => {
         const base = makeBase();
         const appendIds = ['y1', 'y2', 'y3', 'y4'];
@@ -272,6 +305,47 @@ describe('save/load round-trip', () => {
         expect(reloaded.team.order.slice(0, 4)).toEqual(prependIds);
         // Base region intact in resolved order
         expect(reloaded.team.order.slice(4)).toEqual(newBase.order);
+    });
+
+    it('column-add round-trip preserves base inheritance for unchanged buttons', () => {
+        const base = createDefaultLayout();
+        const cols = base.cols;
+        const rows = base.order.length / cols;
+        const newCellIds = Array.from({ length: rows }, (_, r) => `col-${r}`);
+        const teamOrder: string[] = [];
+        const teamButtons: Record<string, any> = { ...base.buttons };
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) teamOrder.push(base.order[r * cols + c]);
+            teamOrder.push(newCellIds[r]);
+            teamButtons[newCellIds[r]] = { macroType: 'command', label: `C${r}`, color: '#fff', command: `c${r}` };
+        }
+        const team: LayoutSettings = { ...base, cols: cols + 1, order: teamOrder, buttons: teamButtons };
+        const settings: Settings = {
+            solo: base, team, leader: createDefaultLayout(),
+            locked: false, radial: { enabled: true, commands: [] },
+        };
+        saveSettings(settings);
+
+        // User changes a base button color afterwards
+        const newBase: LayoutSettings = {
+            ...base,
+            buttons: { ...base.buttons, 'go-button': { ...base.buttons['go-button'], color: '#abcdef' } },
+        };
+        const updatedTeam: LayoutSettings = {
+            ...team,
+            buttons: { ...team.buttons, 'go-button': { ...team.buttons['go-button'], color: '#abcdef' } },
+        };
+        saveSettings({ ...settings, solo: newBase, team: updatedTeam });
+
+        const reloaded = loadSettings();
+        // Team's base cells inherit the new color
+        expect(reloaded.team.buttons['go-button'].color).toBe('#abcdef');
+        // Mode-specific column cells preserved
+        expect(reloaded.team.order.length).toBe(teamOrder.length);
+        expect(reloaded.team.cols).toBe(cols + 1);
+        for (const id of newCellIds) {
+            expect(reloaded.team.buttons[id]).toBeDefined();
+        }
     });
 
     it('changes to base propagate to inherited team buttons after reload', () => {

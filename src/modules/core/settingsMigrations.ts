@@ -621,7 +621,7 @@ export function migrateMobileButtonOverrides(): void {
                     override.order = order.map((id, i) => id === baseOrder[i] ? null : id);
                     hasChange = true;
                 } else {
-                    override.prepend = [...order];
+                    override.replaceOrder = [...order];
                     hasChange = true;
                 }
             }

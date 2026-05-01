@@ -163,6 +163,9 @@ export interface LayoutSettings {
 export interface LayoutOverride {
     cols?: number;
     background?: string;
+    // When set, fully replaces base.order. Used when a shape change (e.g. adding a column)
+    // breaks positional alignment with base. prepend/append/order are ignored if this is set.
+    replaceOrder?: string[];
     // Cells inserted before the base layout (negative-indexed positions).
     // Their button configs go in `buttons`.
     prepend?: string[];
@@ -200,11 +203,6 @@ function deepEqual(a: unknown, b: unknown): boolean {
     }
 }
 
-/**
- * Resolves the runtime layout for a mode by applying its sparse override on top of the base.
- * Final order is: [...prepend, ...positional inheritance from base + override.order, ...append].
- * Returns the offset where base cells start in the resolved order (= prepend.length).
- */
 export function resolveLayout(base: LayoutSettings, override?: LayoutOverride | null): LayoutSettings {
     if (!override) {
         return {
@@ -217,16 +215,20 @@ export function resolveLayout(base: LayoutSettings, override?: LayoutOverride | 
     const cols = typeof override.cols === 'number' && override.cols > 0 ? override.cols : base.cols;
     const background = typeof override.background === 'string' && override.background ? override.background : base.background;
     const order: string[] = [];
-    if (Array.isArray(override.prepend)) {
-        for (const id of override.prepend) order.push(id);
-    }
-    for (let i = 0; i < base.order.length; i++) {
-        const o = override.order?.[i];
-        if (typeof o === 'string') order.push(o);
-        else order.push(base.order[i]);
-    }
-    if (Array.isArray(override.append)) {
-        for (const id of override.append) order.push(id);
+    if (Array.isArray(override.replaceOrder)) {
+        for (const id of override.replaceOrder) order.push(id);
+    } else {
+        if (Array.isArray(override.prepend)) {
+            for (const id of override.prepend) order.push(id);
+        }
+        for (let i = 0; i < base.order.length; i++) {
+            const o = override.order?.[i];
+            if (typeof o === 'string') order.push(o);
+            else order.push(base.order[i]);
+        }
+        if (Array.isArray(override.append)) {
+            for (const id of override.append) order.push(id);
+        }
     }
     const buttons: Record<string, MobileButtonSetting> = {};
     const ids = new Set<string>([...order, ...Object.keys(base.buttons), ...Object.keys(override.buttons || {})]);
@@ -318,8 +320,9 @@ export function diffLayout(newLayout: LayoutSettings, base: LayoutSettings): Lay
             override.order = newLayout.order.map((id, i) => id === base.order[i] ? null : id);
             hasChange = true;
         } else {
-            // Layout diverges structurally; full prepend stores the entire order.
-            override.prepend = [...newLayout.order];
+            // Layout diverges structurally (e.g. column added). Store the resulting order
+            // verbatim; per-button inheritance still works through id-keyed buttons.
+            override.replaceOrder = [...newLayout.order];
             hasChange = true;
         }
     }
@@ -440,6 +443,10 @@ function parseStoredOverride(raw: any): LayoutOverride | null {
     const override: LayoutOverride = {};
     if (typeof raw.cols === 'number' && raw.cols > 0) override.cols = raw.cols;
     if (typeof raw.background === 'string' && raw.background) override.background = raw.background;
+    if (Array.isArray(raw.replaceOrder)) {
+        const replaceOrder = raw.replaceOrder.filter((e: unknown): e is string => typeof e === 'string');
+        if (replaceOrder.length > 0) override.replaceOrder = replaceOrder;
+    }
     if (Array.isArray(raw.prepend)) {
         const prepend = raw.prepend.filter((e: unknown): e is string => typeof e === 'string');
         if (prepend.length > 0) override.prepend = prepend;
@@ -469,7 +476,7 @@ function parseStoredOverride(raw: any): LayoutOverride | null {
         if (Object.keys(buttons).length > 0) override.buttons = buttons;
     }
     const empty = override.cols === undefined && override.background === undefined
-        && !override.prepend && !override.append && !override.order && !override.buttons;
+        && !override.replaceOrder && !override.prepend && !override.append && !override.order && !override.buttons;
     return empty ? null : override;
 }
 
