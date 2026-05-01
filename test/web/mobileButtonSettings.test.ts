@@ -119,6 +119,50 @@ describe('diffLayout', () => {
         }
         expect(diff!.order![0]).toBe(reorderedOrder[0]);
     });
+
+    it('captures prepended rows as `prepend` and keeps base region inherited', () => {
+        const base = makeBase();
+        const prependIds = ['x1', 'x2', 'x3', 'x4'];
+        const modified: LayoutSettings = {
+            ...base,
+            buttons: {
+                ...base.buttons,
+                x1: { macroType: 'command', label: 'X1', color: '#fff', command: 'x1' },
+                x2: { macroType: 'command', label: 'X2', color: '#fff', command: 'x2' },
+                x3: { macroType: 'command', label: 'X3', color: '#fff', command: 'x3' },
+                x4: { macroType: 'command', label: 'X4', color: '#fff', command: 'x4' },
+            },
+            order: [...prependIds, ...base.order],
+        };
+        const diff = diffLayout(modified, base);
+        expect(diff).not.toBeNull();
+        expect(diff!.prepend).toEqual(prependIds);
+        expect(diff!.append).toBeUndefined();
+        expect(diff!.order).toBeUndefined();
+        // No base buttons should appear in the override.buttons
+        expect(diff!.buttons && Object.keys(diff!.buttons).every(k => prependIds.includes(k))).toBe(true);
+    });
+
+    it('captures appended rows as `append`', () => {
+        const base = makeBase();
+        const appendIds = ['y1', 'y2', 'y3', 'y4'];
+        const modified: LayoutSettings = {
+            ...base,
+            buttons: {
+                ...base.buttons,
+                y1: { macroType: 'command', label: 'Y1', color: '#fff', command: 'y1' },
+                y2: { macroType: 'command', label: 'Y2', color: '#fff', command: 'y2' },
+                y3: { macroType: 'command', label: 'Y3', color: '#fff', command: 'y3' },
+                y4: { macroType: 'command', label: 'Y4', color: '#fff', command: 'y4' },
+            },
+            order: [...base.order, ...appendIds],
+        };
+        const diff = diffLayout(modified, base);
+        expect(diff).not.toBeNull();
+        expect(diff!.append).toEqual(appendIds);
+        expect(diff!.prepend).toBeUndefined();
+        expect(diff!.order).toBeUndefined();
+    });
 });
 
 describe('save/load round-trip', () => {
@@ -174,6 +218,60 @@ describe('save/load round-trip', () => {
         expect(reloaded.team.buttons['go-button'].label).toBe('GO!');
         // Other fields inherited
         expect(reloaded.team.buttons['go-button'].command).toBe(base.buttons['go-button'].command);
+    });
+
+    it('prepended row preserves inheritance for base cells after reload', () => {
+        const base = createDefaultLayout();
+        const prependIds = ['x1', 'x2', 'x3', 'x4'];
+        const team: LayoutSettings = {
+            ...base,
+            buttons: {
+                ...base.buttons,
+                x1: { macroType: 'command', label: 'X1', color: '#fff', command: 'x1' },
+                x2: { macroType: 'command', label: 'X2', color: '#fff', command: 'x2' },
+                x3: { macroType: 'command', label: 'X3', color: '#fff', command: 'x3' },
+                x4: { macroType: 'command', label: 'X4', color: '#fff', command: 'x4' },
+            },
+            order: [...prependIds, ...base.order],
+        };
+        const settings: Settings = {
+            solo: base,
+            team,
+            leader: createDefaultLayout(),
+            locked: false,
+            radial: { enabled: true, commands: [] },
+        };
+        saveSettings(settings);
+        const stored: any = JSON.parse(localStorage.getItem('mobileButtonSettings')!);
+        expect(stored.team.prepend).toEqual(prependIds);
+        // The base region should NOT be stored: only the prepend cells are.
+        expect(stored.team.order).toBeUndefined();
+
+        // User changes a base button color afterwards
+        const newBase: LayoutSettings = {
+            ...base,
+            buttons: {
+                ...base.buttons,
+                'go-button': { ...base.buttons['go-button'], color: '#ff00ff' },
+            },
+        };
+        // Mirror the change in the runtime team layout (would happen naturally since buttons are inherited at load)
+        const updatedTeam: LayoutSettings = {
+            ...team,
+            buttons: {
+                ...team.buttons,
+                'go-button': { ...team.buttons['go-button'], color: '#ff00ff' },
+            },
+        };
+        saveSettings({ ...settings, solo: newBase, team: updatedTeam });
+
+        const reloaded = loadSettings();
+        // Team's go-button (from inherited base region) should reflect the new base color
+        expect(reloaded.team.buttons['go-button'].color).toBe('#ff00ff');
+        // Prepended cells still present
+        expect(reloaded.team.order.slice(0, 4)).toEqual(prependIds);
+        // Base region intact in resolved order
+        expect(reloaded.team.order.slice(4)).toEqual(newBase.order);
     });
 
     it('changes to base propagate to inherited team buttons after reload', () => {

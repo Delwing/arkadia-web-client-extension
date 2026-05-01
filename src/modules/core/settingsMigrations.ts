@@ -577,6 +577,18 @@ export function migrateMobileButtonOverrides(): void {
             return changed ? diff : null;
         }
 
+        function findBaseOffset(newOrder: string[]): number {
+            if (baseOrder.length === 0) return newOrder.length === 0 ? 0 : -1;
+            const limit = newOrder.length - baseOrder.length;
+            outer: for (let off = 0; off <= limit; off++) {
+                for (let i = 0; i < baseOrder.length; i++) {
+                    if (newOrder[off + i] !== baseOrder[i]) continue outer;
+                }
+                return off;
+            }
+            return -1;
+        }
+
         function layoutDiff(layout: any): any | null {
             if (!layout || typeof layout !== 'object') return null;
             const override: any = {};
@@ -598,12 +610,20 @@ export function migrateMobileButtonOverrides(): void {
                 }
             }
             if (orderDiffers) {
-                if (sameLength) {
+                const offset = findBaseOffset(order);
+                if (offset >= 0) {
+                    const prepend = order.slice(0, offset);
+                    const append = order.slice(offset + baseOrder.length);
+                    if (prepend.length > 0) override.prepend = prepend;
+                    if (append.length > 0) override.append = append;
+                    hasChange = true;
+                } else if (sameLength) {
                     override.order = order.map((id, i) => id === baseOrder[i] ? null : id);
+                    hasChange = true;
                 } else {
-                    override.order = [...order];
+                    override.prepend = [...order];
+                    hasChange = true;
                 }
-                hasChange = true;
             }
             const buttonsObj = (layout.buttons && typeof layout.buttons === 'object') ? layout.buttons : {};
             const overrideButtons: Record<string, any> = {};
@@ -639,7 +659,7 @@ export function migrateMobileButtonOverrides(): void {
         if (raw.buttonSize !== undefined) next.buttonSize = raw.buttonSize;
         if (raw.buttonGap !== undefined) next.buttonGap = raw.buttonGap;
 
-        globalStorage.set('mobileButtonSettings', next);
+        globalStorage.set('mobileButtonSettings', next as any);
         console.log('[SettingsMigrations] Converted mobileButtonSettings team/leader to sparse overrides');
     } catch (e) {
         console.error('[SettingsMigrations] Failed to migrate mobileButtonSettings overrides:', e);

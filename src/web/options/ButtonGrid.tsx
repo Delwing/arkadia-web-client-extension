@@ -26,6 +26,22 @@ function buttonsEqual(a: MobileButtonSetting | undefined, b: MobileButtonSetting
     }
 }
 
+/**
+ * Find the offset where baseOrder appears as a contiguous subsequence in newOrder, or -1.
+ * Used to keep inheritance indicators correct after rows have been prepended/appended.
+ */
+function findBaseOffset(newOrder: string[], baseOrder: string[]): number {
+    if (baseOrder.length === 0) return newOrder.length === 0 ? 0 : -1;
+    const limit = newOrder.length - baseOrder.length;
+    outer: for (let off = 0; off <= limit; off++) {
+        for (let i = 0; i < baseOrder.length; i++) {
+            if (newOrder[off + i] !== baseOrder[i]) continue outer;
+        }
+        return off;
+    }
+    return -1;
+}
+
 export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef, activeButtonId }: Props) {
     const set = settings[mode];
     const bgColor = set.background || defaultBackground;
@@ -33,6 +49,7 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
     const buttonGap = settings.buttonGap ?? defaultButtonGap;
     const baseSet = settings.solo;
     const isOverrideMode = mode !== 'solo';
+    const baseOffset = isOverrideMode ? findBaseOffset(set.order, baseSet.order) : -1;
     return (
         <div
             ref={gridRef}
@@ -60,9 +77,15 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 if (isActive) classes += ' editing';
                 let inherited = false;
                 if (isOverrideMode) {
-                    const baseId = baseSet.order[idx];
-                    const baseCfg = baseId !== undefined ? baseSet.buttons[baseId] : undefined;
-                    inherited = baseId === id && buttonsEqual(cfg, baseCfg);
+                    // Map this cell's index back to a base position (accounts for prepended rows).
+                    const basePos = baseOffset >= 0 && idx >= baseOffset && idx < baseOffset + baseSet.order.length
+                        ? idx - baseOffset
+                        : -1;
+                    if (basePos >= 0) {
+                        const baseId = baseSet.order[basePos];
+                        const baseCfg = baseSet.buttons[baseId];
+                        inherited = baseId === id && buttonsEqual(cfg, baseCfg);
+                    }
                     if (inherited) classes += ' inherited';
                     else classes += ' overridden';
                 }
