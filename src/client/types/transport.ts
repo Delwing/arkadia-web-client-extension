@@ -17,3 +17,12 @@ export interface TransportRoutePayload {
     onBoard: boolean;
     loop: boolean;
 }
+
+export interface TransportDebugState {
+    kind: string;
+    def?: string;
+    next?: string;
+    leg?: string;
+    locationId: number | null;
+    pendingDefs?: string;
+}

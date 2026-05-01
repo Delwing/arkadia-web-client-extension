@@ -3,20 +3,30 @@
     "exit": "Schodzisz z drakkara.",
     "start": "Drakkar odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Smukly drakkar"
+    ],
     "stops": [
         {
             "start": 4060,
             "destination": 6428,
             "time": 174,
-            "stop_pattern": "^(?:Sniady spokojny mezczyzna|Jacob) krzyczy: Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!",
-            "label" : "Blekitna Wstega"
+            "stop_pattern": "^(?:(?:Jacob|Sniady spokojny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na drakkarze): Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!$",
+            "label": "Blekitna Wstega"
         },
         {
             "start": 6428,
             "destination": 4060,
             "time": 174,
-            "stop_pattern": "^(?:Sniady spokojny mezczyzna|Jacob) krzyczy: Doplynelismy do przystani w Blaviken! Mozna wysiadac!",
-            "label" : "Blaviken"
+            "stop_pattern": "^(?:(?:Jacob|Sniady spokojny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na drakkarze): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
+            "label": "Blaviken"
         }
     ]
 }

@@ -1,7 +1,9 @@
 import Client from "../Client";
+import { isType } from "../Triggers";
 import { isDirection } from "@shared/map";
 import type { TransportTimerPayload, TransportRoutePayload, TransportRouteStop } from "../types/transport";
 import type { GmcpRoomInfo } from "@shared/events";
+import { gmcp } from "../gmcp";
 import { getAllTransportSegments, recordTransportSegment } from "../utils/transportStats";
 import type { StoredTransportSegmentRecord } from "../utils/transportStats";
 
@@ -43,8 +45,10 @@ import MariborObawa from "./other/Maribor - Obawa.json";
 import Salignac from "./other/Salignac - Nuln.json";
 import NulnBlekitnaWstega from "./other/Nuln - Blekitna Wstega.json";
 import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
+import NovigradOxenfurt from "./other/Novigrad - Oxenfurt.json";
 import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
 import QuenellesMontlacMerceauxDesclouxParravon from "./other/Quenelles - Montlac - Merceaux-Descloux - Parravon.json";
+import UrbimoToscania from "./other/Urbimo - Toscania.json";
 
 const BOARD_COMMANDS = new Set([
     "wsiadz na statek",
@@ -73,7 +77,7 @@ interface RawTransportStop {
     start: number;
     destination: number;
     time?: number;
-    stop_pattern: string;
+    stop_pattern?: string;
     set_pattern?: string;
     label?: string;
 }
@@ -82,9 +86,12 @@ interface RawTransportDefinition {
     enter?: string;
     exit?: string;
     start?: string;
+    stop_pattern?: string;
     bind?: string;
     exit_command?: string;
     show_path?: boolean;
+    board_commands?: string[];
+    standing_patterns?: string[];
     stops: RawTransportStop[];
 }
 
@@ -126,18 +133,20 @@ const RAW_DEFINITION_ENTRIES: Array<[string, RawTransportDefinition]> = [
     ["Salignac - Nuln", Salignac as RawTransportDefinition],
     ["Nuln - Blekitna Wstega", NulnBlekitnaWstega as RawTransportDefinition],
     ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
+    ["Novigrad - Oxenfurt", NovigradOxenfurt as RawTransportDefinition],
     ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
     [
         "Quenelles - Montlac - Merceaux-Descloux - Parravon",
         QuenellesMontlacMerceauxDesclouxParravon as RawTransportDefinition,
     ],
+    ["Urbimo - Toscania", UrbimoToscania as RawTransportDefinition],
 ];
 
 type TimerHandle = ReturnType<typeof setInterval>;
 type TimeoutHandle = ReturnType<typeof setTimeout>;
 
 interface CompiledTransportStop extends RawTransportStop {
-    stopRegex: RegExp;
+    stopRegex?: RegExp;
     setRegex?: RegExp;
     patternKey: string;
 }
@@ -198,13 +207,17 @@ function loadDefinitions(): CompiledTransportDefinition[] {
                 locationLabels.set(stop.start, String(stop.start));
             }
         }
-        const compiledStops = data.stops.map(stop => ({
-            ...stop,
-            label: (stop.label ?? "").trim() || undefined,
-            stopRegex: new RegExp(stop.stop_pattern),
-            setRegex: stop.set_pattern ? new RegExp(stop.set_pattern) : undefined,
-            patternKey: stop.stop_pattern,
-        }));
+        const compiledStops = data.stops.map(stop => {
+            const resolvedPattern = stop.stop_pattern ?? data.stop_pattern;
+            return {
+                ...stop,
+                stop_pattern: resolvedPattern,
+                label: (stop.label ?? "").trim() || undefined,
+                stopRegex: resolvedPattern ? new RegExp(resolvedPattern) : undefined,
+                setRegex: stop.set_pattern ? new RegExp(stop.set_pattern) : undefined,
+                patternKey: resolvedPattern ?? "",
+            };
+        });
         const stopPatternGroups = new Map<string, number[]>();
         const setPatternGroups = new Map<string, number[]>();
         compiledStops.forEach((stop, index) => {
@@ -292,6 +305,7 @@ class TransportTracker {
                 .filter((cmd): cmd is string => typeof cmd === "string" && cmd.length > 0)
         );
         this.registerTriggers();
+        this.registerStandingPatternTriggers();
         this.registerExitFailureTriggers();
         this.registerAbortTriggers();
         this.registerFollowExitTriggers();
@@ -384,8 +398,12 @@ class TransportTracker {
         });
         this.client.on("gmcp.room.info", (detail) => {
             const info = detail as GmcpRoomInfo;
-            if (info?.map && this.currentJourney) {
-                this.clearJourney();
+            if (info?.map) {
+                if (this.currentJourney) {
+                    this.clearJourney();
+                }
+            } else if (!this.currentJourney) {
+                this.log("No map data and no active journey — may or may not be on transport.");
             }
         });
         this.client.on("reset", () => {
@@ -415,10 +433,12 @@ class TransportTracker {
                 }, "transport-tracker");
             }
             definition.stops.forEach((stop, index) => {
-                this.client.Triggers.registerTrigger(stop.stopRegex, () => {
-                    this.handleStop(definition, index);
-                    return undefined;
-                }, "transport-tracker");
+                if (stop.stopRegex) {
+                    this.client.Triggers.registerTrigger(stop.stopRegex, () => {
+                        this.handleStop(definition, index);
+                        return undefined;
+                    }, "transport-tracker");
+                }
                 if (stop.setRegex) {
                     this.client.Triggers.registerTrigger(stop.setRegex, () => {
                         this.handleSet(definition, index);
@@ -427,6 +447,57 @@ class TransportTracker {
                 }
             });
         });
+    }
+
+    private setBoardBind(definition: CompiledTransportDefinition, sound = false): void {
+        const cmds = definition.board_commands;
+        if (!cmds?.length) return;
+        if (sound) {
+            this.client.sendEvent("sound:category", "transport");
+        }
+        const label = cmds.join(';');
+        this.client.FunctionalBind.setCategory('transport', label, () => {
+            cmds.forEach(cmd => this.client.sendCommand(cmd));
+        }, false);
+    }
+
+    private setExitBind(definition: CompiledTransportDefinition): void {
+        const cmd = definition.exitCommand;
+        if (!cmd) return;
+        this.client.sendEvent("sound:category", "transport");
+        this.client.FunctionalBind.setCategory('transport', cmd, () => {
+            this.client.sendCommand(cmd);
+        }, false);
+    }
+
+    private registerStandingPatternTriggers() {
+        const definitionsWithStanding = this.definitions.filter(d => d.standing_patterns?.length);
+        if (definitionsWithStanding.length === 0) return;
+
+        const patternToDefinitions = new Map<string, CompiledTransportDefinition[]>();
+        for (const definition of definitionsWithStanding) {
+            for (const pattern of definition.standing_patterns!) {
+                const key = pattern.toLowerCase();
+                const existing = patternToDefinitions.get(key);
+                if (existing) {
+                    existing.push(definition);
+                } else {
+                    patternToDefinitions.set(key, [definition]);
+                }
+            }
+        }
+
+        const parent = this.client.Triggers.registerTrigger(isType("room.contents.object"), undefined, "transport-tracker");
+        for (const [pattern, definitions] of patternToDefinitions) {
+            parent.registerChild(pattern, (triggerLine) => {
+                const locationId = this.currentLocationId ?? this.previousLocationId;
+                const matched = typeof locationId === "number"
+                    ? definitions.find(d => d.stops.some(s => s.start === locationId))
+                    : undefined;
+                this.setBoardBind(matched ?? definitions[0]);
+                return triggerLine;
+            }, "transport-tracker", { caseInsensitive: true });
+        }
     }
 
     private registerExitFailureTriggers() {
@@ -565,7 +636,7 @@ class TransportTracker {
         }
         journey.onBoard = true;
         this.cancelExitTimeout(journey);
-        this.pendingCandidates.delete(definition);
+        this.pendingCandidates.clear();
         this.log(`Entered ${definition.name}. Candidate stops: ${this.describeCandidates(journey)}`);
         this.refreshTimer(journey);
         this.emitRoute();
@@ -645,7 +716,7 @@ class TransportTracker {
             const locationId = this.currentLocationId ?? this.previousLocationId ?? null;
             const setGroup = stop.set_pattern ? definition.setPatternGroups.get(stop.set_pattern) : undefined;
             if (typeof locationId !== "number") {
-                if (!this.currentJourney) {
+                if (!this.currentJourney && this.pendingCandidates.has(definition)) {
                     this.adoptFromSetPattern(definition, index);
                     return;
                 }
@@ -660,6 +731,12 @@ class TransportTracker {
             if (stop.start !== locationId) {
                 this.log(
                     `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – current location ${resolveLocationLabel(definition, locationId)} does not match start ${resolveLocationLabel(definition, stop.start)}.`
+                );
+                return;
+            }
+            if (!isCurrentJourney && !this.pendingCandidates.has(definition)) {
+                this.log(
+                    `Ignoring set pattern on ${definition.name} for ${formatLabel(definition, stop)} – not current journey and no pending candidates.`
                 );
                 return;
             }
@@ -696,11 +773,13 @@ class TransportTracker {
                     // Same starting location, different destination - correct the candidate
                     const oldStartedAt = journey.startTimes.get(currentCandidateIndex);
                     this.applyCandidateIndexes(journey, [index], false);
-                    journey.activeIndex = index;
                     this.pendingCandidates.delete(definition);
                     if (typeof oldStartedAt === "number") {
                         journey.startTimes.set(index, oldStartedAt);
+                        journey.activeIndex = index;
                         this.startCountdown(journey, index, oldStartedAt);
+                    } else {
+                        journey.activeIndex = undefined;
                     }
                     this.log(`Set pattern corrected direction on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
                     this.refreshTimer(journey);
@@ -713,11 +792,13 @@ class TransportTracker {
             const nextIndex = (index + 1) % definition.stops.length;
             if (journey.candidateIndexes.has(nextIndex)) {
                 this.applyCandidateIndexes(journey, [nextIndex], false);
-                journey.activeIndex = nextIndex;
                 this.pendingCandidates.delete(definition);
                 const startedAt = journey.startTimes.get(nextIndex);
                 if (typeof startedAt === "number") {
+                    journey.activeIndex = nextIndex;
                     this.startCountdown(journey, nextIndex, startedAt);
+                } else {
+                    journey.activeIndex = undefined;
                 }
                 this.log(`Set pattern resolved direction on ${definition.name}. Active stop: ${formatLabel(definition, definition.stops[nextIndex])}`);
                 this.refreshTimer(journey);
@@ -738,11 +819,13 @@ class TransportTracker {
         }
 
         this.applyCandidateIndexes(journey, [index], false);
-        journey.activeIndex = index;
         this.pendingCandidates.delete(definition);
         const startedAt = journey.startTimes.get(index);
         if (typeof startedAt === "number") {
+            journey.activeIndex = index;
             this.startCountdown(journey, index, startedAt);
+        } else {
+            journey.activeIndex = undefined;
         }
         this.log(`Set pattern matched on ${definition.name}. Active stop: ${formatLabel(definition, stop)}`);
         this.refreshTimer(journey);
@@ -815,6 +898,12 @@ class TransportTracker {
         journey.candidateIndexes = new Set([nextIndex]);
 
         this.log(`Arrived at ${formatLabel(definition, stop)} on ${definition.name}. Next candidate: ${this.describeCandidates(journey)}`);
+        if (journey.onBoard) {
+            this.client.Map.setMapRoomById(stop.destination);
+            this.setExitBind(definition);
+        } else {
+            this.setBoardBind(definition, true);
+        }
         this.refreshTimer(journey);
         this.emitRoute();
         this.client.sendEvent("transportArrival", index);
@@ -834,14 +923,20 @@ class TransportTracker {
             return;
         }
         const stop = definition.stops[index];
-        const siblingIndexes = definition.stopPatternGroups.get(stop.patternKey) ?? [index];
 
+        if (gmcp.room?.info?.map) {
+            this.setBoardBind(definition, true);
+            return;
+        }
+
+        this.client.Map.setMapRoomById(stop.destination);
+        this.setExitBind(definition);
+
+        const siblingIndexes = definition.stopPatternGroups.get(stop.patternKey) ?? [index];
         const journey = this.ensureJourney(definition);
         journey.onBoard = true;
 
         if (siblingIndexes.length > 1) {
-            // Ambiguous stop pattern — store all possible next stops as candidates
-            // and wait for the set_pattern to disambiguate
             const nextIndexes = siblingIndexes.map(i => (i + 1) % definition.stops.length);
             journey.candidateIndexes = new Set(nextIndexes);
             journey.activeIndex = undefined;
@@ -860,6 +955,10 @@ class TransportTracker {
 
     private adoptFromSetPattern(definition: CompiledTransportDefinition, index: number) {
         if (this.currentJourney) {
+            return;
+        }
+        if (gmcp.room?.info?.map) {
+            // Player is outside the transport — ignore set pattern.
             return;
         }
         const stop = definition.stops[index];
@@ -1040,6 +1139,21 @@ class TransportTracker {
             return null;
         }
         const { definition, activeIndex, onBoard } = this.currentJourney;
+        const { candidateIndexes } = this.currentJourney;
+        const numStops = definition.stops.length;
+
+        let displayActiveIndex: number | undefined;
+        if (activeIndex !== undefined) {
+            // Traveling — show the destination of the active leg
+            displayActiveIndex = activeIndex;
+        } else if (candidateIndexes.size === 1) {
+            // Waiting at a stop — show the stop we just arrived at (one before next candidate)
+            const nextIdx = candidateIndexes.values().next().value as number;
+            displayActiveIndex = (nextIdx - 1 + numStops) % numStops;
+        } else {
+            displayActiveIndex = undefined;
+        }
+
         const stops: TransportRouteStop[] = definition.stops.map(stop => ({
             label: resolveDestinationLabel(definition, stop),
             durationSeconds: typeof stop.time === "number" && !Number.isNaN(stop.time) ? stop.time : null,
@@ -1051,7 +1165,7 @@ class TransportTracker {
             transportName: definition.name,
             originLabel,
             stops,
-            activeStopIndex: activeIndex,
+            activeStopIndex: displayActiveIndex,
             onBoard,
             loop,
         };

@@ -3,35 +3,45 @@
     "exit": "Schodzisz z promu.",
     "start": "Prom odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Szeroki plaskodenny prom"
+    ],
     "stops": [
         {
             "start": 7903,
             "destination": 10486,
             "time": 30,
-            "stop_pattern": "^(?:Dojrzaly markotny mezczyzna|Elich) krzyczy: Doplynelismy do przystani stoczni w Novigradzie! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Elich|Dojrzaly markotny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na promie): Doplynelismy do przystani stoczni w Novigradzie! Mozna wysiadac!$",
             "label": "Stocznia w Novigradzie"
         },
         {
             "start": 10486,
             "destination": 3583,
             "time": 28,
-            "stop_pattern": "^(?:Dojrzaly markotny mezczyzna|Elich) krzyczy: Doplynelismy do przystani we wsi Nadrzecze! Mozna wysiadac!$",
-            "set_pattern": "^(?:Dojrzaly markotny mezczyzna|Elich) mowi do ciebie: Nastepnym portem bedzie przystan we wsi Nadrzecze\\.$",
+            "stop_pattern": "^(?:(?:Elich|Dojrzaly markotny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na promie): Doplynelismy do przystani we wsi Nadrzecze! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan we wsi Nadrzecze\\.$",
             "label": "Nadrzecze"
         },
         {
             "start": 3583,
             "destination": 10486,
             "time": 26,
-            "stop_pattern": "^(?:Dojrzaly markotny mezczyzna|Elich) krzyczy: Doplynelismy do przystani stoczni w Novigradzie! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Elich|Dojrzaly markotny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na promie): Doplynelismy do przystani stoczni w Novigradzie! Mozna wysiadac!$",
             "label": "Stocznia w Novigradzie"
         },
         {
             "start": 10486,
             "destination": 7903,
             "time": 26,
-            "stop_pattern": "^(?:Dojrzaly markotny mezczyzna|Elich) krzyczy: Doplynelismy do przystani nad Pontarem w Novigradzie! Mozna wysiadac!$",
-            "set_pattern": "^(?:Dojrzaly markotny mezczyzna|Elich) mowi do ciebie: Nastepnym portem bedzie przystan nad Pontarem w Novigradzie\\.$",
+            "stop_pattern": "^(?:(?:Elich|Dojrzaly markotny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na promie): Doplynelismy do przystani nad Pontarem w Novigradzie! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan nad Pontarem w Novigradzie\\.$",
             "label": "Novigrad"
         }
     ]

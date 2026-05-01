@@ -3,51 +3,61 @@
     "exit": "Schodzisz z galery.",
     "start": "Galera odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Wielka galera"
+    ],
     "stops": [
         {
             "start": 6429,
             "destination": 6621,
             "time": 43,
-            "stop_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!$",
-            "label" : "Kraina Zgromadzenia"
+            "stop_pattern": "^(?:(?:Ancelmus|Czarnowlosy barczysty mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galerze): Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!$",
+            "label": "Kraina Zgromadzenia"
         },
         {
             "start": 6621,
             "destination": 7233,
             "time": 44,
-            "stop_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Doplynelismy do wschodniego nabrzeza w Nuln! Mozna wysiadac!$",
-            "set_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Nastepnym portem bedzie wschodnie nabrzeze w Nuln!$",
+            "stop_pattern": "^(?:(?:Ancelmus|Czarnowlosy barczysty mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galerze): Doplynelismy do wschodniego nabrzeza w Nuln! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie wschodnie nabrzeze w Nuln!$",
             "label": "Nuln"
         },
         {
             "start": 7233,
             "destination": 5207,
             "time": 43,
-            "stop_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Doplynelismy do przystani w Kreutzhofen! Mozna wysiadac!$",
-            "set_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Nastepnym portem bedzie przystan w Kreutzhofen!$",
+            "stop_pattern": "^(?:(?:Ancelmus|Czarnowlosy barczysty mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galerze): Doplynelismy do przystani w Kreutzhofen! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan w Kreutzhofen!$",
             "label": "Kreutzhofen"
         },
         {
             "start": 5207,
             "destination": 7233,
             "time": 40,
-            "stop_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Doplynelismy do wschodniego nabrzeza w Nuln! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Ancelmus|Czarnowlosy barczysty mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galerze): Doplynelismy do wschodniego nabrzeza w Nuln! Mozna wysiadac!$",
             "label": "Nuln"
         },
         {
             "start": 7233,
             "destination": 6621,
             "time": 40,
-            "stop_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!$",
-            "set_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Nastepnym portem bedzie przystan w Krainie Zgromadzenia!$",
+            "stop_pattern": "^(?:(?:Ancelmus|Czarnowlosy barczysty mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galerze): Doplynelismy do przystani w Krainie Zgromadzenia! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan w Krainie Zgromadzenia!$",
             "label": "Kraina Zgromadzenia"
         },
         {
             "start": 6621,
             "destination": 6429,
             "time": 40,
-            "stop_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!$",
-            "set_pattern": "^(?:Czarnowlosy barczysty mezczyzna|Ancelmus) krzyczy: Nastepnym portem bedzie przystan na Blekitnej Wstedze!$",
+            "stop_pattern": "^(?:(?:Ancelmus|Czarnowlosy barczysty mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galerze): Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan na Blekitnej Wstedze!$",
             "label": "Blekitna Wstega"
         }
     ]

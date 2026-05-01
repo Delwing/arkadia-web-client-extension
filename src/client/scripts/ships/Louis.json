@@ -1,22 +1,29 @@
 {
     "enter": "Wchodzisz na rzeczna tratwe.",
-    "start": "Tratwa odbija od brzegu.",
     "exit": "Schodzisz z tratwy.",
+    "start": "Tratwa odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wsiadz na statek"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Rzeczna tratwa"
+    ],
     "stops": [
         {
             "start": 7732,
             "destination": 7733,
             "time": 25,
-            "stop_pattern": "^(?:Smagly przygarbiony mezczyzna|Louis) krzyczy: Doplynelismy do przystani na poludniowym brzegu Grismerie! Mozna wysiadac!",
-            "label" : "Parravon"
+            "stop_pattern": "^(?:(?:Louis|Smagly przygarbiony mezczyzna) krzyczy|Jakis mezczyzna krzyczy na tratwie): Doplynelismy do przystani na poludniowym brzegu Grismerie! Mozna wysiadac!$",
+            "label": "Parravon"
         },
         {
             "start": 7733,
             "destination": 7732,
             "time": 25,
-            "stop_pattern": "^(?:Smagly przygarbiony mezczyzna|Louis) krzyczy: Doplynelismy do przystani na polnocnym brzegu Grismerie! Mozna wysiadac!",
-            "label" : "Bretonia"
+            "stop_pattern": "^(?:(?:Louis|Smagly przygarbiony mezczyzna) krzyczy|Jakis mezczyzna krzyczy na tratwie): Doplynelismy do przystani na polnocnym brzegu Grismerie! Mozna wysiadac!$",
+            "label": "Bretonia"
         }
     ]
 }

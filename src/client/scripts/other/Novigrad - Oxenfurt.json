@@ -1,0 +1,31 @@
+{
+    "enter": "Oplacasz podroz u woznicy i wsiadasz na otwarty stojacy powoz.",
+    "start": "Woznica donosnym glosem oznajmia odjazd.",
+    "bind": "wyjscie",
+    "board_commands": [
+        "wem",
+        "wsiadz do powozu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "otwarty stojacy powoz"
+    ],
+    "show_path": true,
+    "stops": [
+        {
+            "start": 829,
+            "destination": 804,
+            "time": 20,
+            "stop_pattern": "^Woznica oznajmia glosno: Postoj, droga opodal Oxenfurtu\\.$",
+            "label": "Oxenfurt"
+        },
+        {
+            "start": 804,
+            "destination": 829,
+            "time": 20,
+            "stop_pattern": "^Woznica oznajmia glosno: Postoj, droga kolo Novigradu\\.$",
+            "label": "Novigrad"
+        }
+    ]
+}

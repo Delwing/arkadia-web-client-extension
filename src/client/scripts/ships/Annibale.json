@@ -3,19 +3,29 @@
     "exit": "Schodzisz z galeonu.",
     "start": "Zaloga szybko odcumowuje statek, ktory powoli, majestatycznie zaczyna oddalac sie od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Wielki trojmasztowy galeon"
+    ],
     "stops": [
         {
             "start": 5947,
             "destination": 7909,
             "time": 199,
-            "stop_pattern": "^(?:Wysoki kruczowlosy mezczyzna|Annibale) krzyczy: Doplynelismy do poludniowego nabrzeza w Novigradzie! Mozna wysiadac!",
+            "stop_pattern": "^(?:(?:Annibale|Wysoki kruczowlosy mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galeonie): Doplynelismy do poludniowego nabrzeza w Novigradzie! Mozna wysiadac!$",
             "label": "Novigrad"
         },
         {
             "start": 7909,
             "destination": 5947,
             "time": 199,
-            "stop_pattern": "^(?:Wysoki kruczowlosy mezczyzna|Annibale) krzyczy: Doplynelismy do przystani w Urbimo! Mozna wysiadac!",
+            "stop_pattern": "^(?:(?:Annibale|Wysoki kruczowlosy mezczyzna) krzyczy|Jakis mezczyzna krzyczy na galeonie): Doplynelismy do przystani w Urbimo! Mozna wysiadac!$",
             "label": "Urbimo"
         }
     ]

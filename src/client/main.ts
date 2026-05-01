@@ -3,9 +3,7 @@ import registerLuaGagTriggers from "./scripts/luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
 import initPausers from './scripts/pausers'
-import initShips from './scripts/ships'
-import initTransportStops from './scripts/transportStops'
-import initBuses from './scripts/buses'
+import initTransportTracker from './scripts/transportTracker'
 import initGates from './scripts/gates'
 import initSeat from './scripts/seat'
 import initAttackBeep from './scripts/attackBeep'
@@ -84,7 +82,6 @@ import initGuildPostfix from './scripts/guildPostfix'
 import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
-import initShipLocalizers from './scripts/shipLocalizers'
 import initMapAliases from './scripts/mapAliases'
 import { registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
 import { registerCurrentRoomProvider } from '@modules/core/currentRoomProvider'
@@ -198,9 +195,7 @@ export function registerScripts(client: Client) {
         return null
     })
 
-    initShips(client)
-    initTransportStops(client)
-    initBuses(client)
+    initTransportTracker(client)
     initGates(client)
     initSeat(client)
     initAttackBeep(client)
@@ -231,7 +226,6 @@ export function registerScripts(client: Client) {
     initTracking(client)
     initGps(client)
     initLocalizers(client)
-    initShipLocalizers(client)
     initFollowSpecialExits(client)
     initTropBind(client)
     initMountain(client)

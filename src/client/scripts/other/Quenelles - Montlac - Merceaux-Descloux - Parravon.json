@@ -1,56 +1,64 @@
 {
     "enter": "Oplacasz podroz u woznicy i wsiadasz do blekitnego stojacego dylizansu.",
     "start": "Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.",
-    "exit_command": "wyjscie",
     "bind": "wyjrzyj przez okno",
+    "board_commands": [
+        "wem",
+        "wsiadz do dylizansu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "blekitny stojacy dylizans"
+    ],
     "show_path": true,
     "stops": [
         {
             "start": 4659,
             "destination": 7786,
             "time": 44,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Merceaux-Descloux!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, centrum wioski Montlac\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Merceaux-Descloux!$",
             "label": "Montlac"
         },
         {
             "start": 7786,
             "destination": 7744,
             "time": 7,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - most pod Parravon!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, w wiosce Merceaux-Descloux\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - most pod Parravon!$",
             "label": "Merceaux-Descloux"
         },
         {
             "start": 7744,
             "destination": 26659,
             "time": 7,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac przed zajazdem\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Merceaux-Descloux!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, plac przed zajazdem\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Merceaux-Descloux!$",
             "label": "Parravon"
         },
         {
             "start": 26659,
             "destination": 7744,
             "time": 7,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, w wiosce Merceaux-Descloux\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Montlac!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, w wiosce Merceaux-Descloux\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Montlac!$",
             "label": "Merceaux-Descloux"
         },
         {
             "start": 7744,
             "destination": 7786,
             "time": 16,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Quenelles!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, centrum wioski Montlac\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Quenelles!$",
             "label": "Montlac"
         },
         {
             "start": 7786,
             "destination": 4659,
             "time": 44,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac Gillesa le Breton\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Montlac!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, plac Gillesa le Breton\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Montlac!$",
             "label": "Quenelles"
         }
     ]

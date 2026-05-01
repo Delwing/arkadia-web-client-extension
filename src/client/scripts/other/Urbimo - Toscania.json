@@ -1,0 +1,65 @@
+{
+    "enter": "Oplacasz podroz u woznicy i wsiadasz do starego stojacego dylizansu.",
+    "start": "Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.",
+    "bind": "wyjrzyj przez okno",
+    "board_commands": [
+        "wem",
+        "wsiadz do dylizansu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "Stary stojacy dylizans"
+    ],
+    "show_path": true,
+    "stops": [
+        {
+            "start": 5887,
+            "destination": 5439,
+            "time": 47,
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Miragliano!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per incrocio alla Miragliano in qualche minuti!$",
+            "label": "Incrocio alla Miragliano"
+        },
+        {
+            "start": 5439,
+            "destination": 5373,
+            "time": 14,
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - Ebino!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Ebino in qualche minuti!$",
+            "label": "Ebino"
+        },
+        {
+            "start": 5373,
+            "destination": 5308,
+            "time": 27,
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - Toscania!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Toscania in qualche minuti!$",
+            "label": "Toscania"
+        },
+        {
+            "start": 5308,
+            "destination": 5373,
+            "time": 28,
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - Ebino!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Ebino in qualche minuti!$",
+            "label": "Ebino"
+        },
+        {
+            "start": 5373,
+            "destination": 5439,
+            "time": 14,
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Miragliano!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per incrocio alla Miragliano in qualche minuti!$",
+            "label": "Incrocio alla Miragliano"
+        },
+        {
+            "start": 5439,
+            "destination": 5887,
+            "time": 47,
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - Urbimo!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Urbimo in qualche minuti!$",
+            "label": "Urbimo"
+        }
+    ]
+}

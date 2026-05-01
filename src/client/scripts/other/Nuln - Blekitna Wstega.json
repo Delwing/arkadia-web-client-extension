@@ -1,90 +1,97 @@
 {
     "enter": "Oplacasz podroz u woznicy i wsiadasz do ciemnego stojacego dylizansu.",
     "start": "Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.",
-    "exit_command": "wyjscie",
     "bind": "wyjrzyj przez okno",
+    "board_commands": [
+        "wem",
+        "wsiadz do dylizansu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "ciemny stojacy dylizans"
+    ],
     "show_path": true,
     "stops": [
         {
             "start": 6879,
             "destination": 7131,
             "time": 19,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, przed karczma\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Tadrig!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, przed karczma\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Tadrig!$",
             "label": "Tadrig"
         },
         {
             "start": 7131,
             "destination": 7086,
             "time": 21,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, skrzyzowanie traktow w miasteczku Heideck\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Heideck!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, skrzyzowanie traktow w miasteczku Heideck\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Heideck!$",
             "label": "Heideck"
         },
         {
             "start": 7086,
             "destination": 6520,
             "time": 14,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na rynku przed gospoda\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Averheim!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na rynku przed gospoda\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Averheim!$",
             "label": "Averheim"
         },
         {
             "start": 6520,
             "destination": 6448,
             "time": 13,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, nieduzy placyk\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - podzamcze twierdzy Sigmarytow!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, nieduzy placyk\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - podzamcze twierdzy Sigmarytow!$",
             "label": "Podzamcze twierdzy Sigmarytow"
         },
         {
             "start": 6448,
             "destination": 6430,
             "time": 13,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, dziedziniec zajazdu kompanii Cztery Pory Roku\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - przystan na Blekitnej Wstedze!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, dziedziniec zajazdu kompanii Cztery Pory Roku\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - przystan na Blekitnej Wstedze!$",
             "label": "Przystan na Blekitnej Wstedze"
         },
         {
             "start": 6430,
             "destination": 6448,
             "time": 13,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, nieduzy placyk\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - podzamcze twierdzy Sigmarytow!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, nieduzy placyk\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - podzamcze twierdzy Sigmarytow!$",
             "label": "Podzamcze twierdzy Sigmarytow"
         },
         {
             "start": 6448,
             "destination": 6520,
             "time": 13,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na rynku przed gospoda\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Averheim!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na rynku przed gospoda\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Averheim!$",
             "label": "Averheim"
         },
         {
             "start": 6520,
             "destination": 7086,
             "time": 14,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, skrzyzowanie traktow w miasteczku Heideck\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Heideck!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, skrzyzowanie traktow w miasteczku Heideck\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Heideck!$",
             "label": "Heideck"
         },
         {
             "start": 7086,
             "destination": 7131,
             "time": 21,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, przed karczma\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Tadrig!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, przed karczma\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Tadrig!$",
             "label": "Tadrig"
         },
         {
             "start": 7131,
             "destination": 6879,
             "time": 19,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, ulica Krancowa\\.$",
-            "set_pattern": "^Woznica.* wola: Nastepny postoj - Nuln!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, ulica Krancowa\\.$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Nuln!$",
             "label": "Nuln"
         }
     ]
 }
-

@@ -12,7 +12,7 @@ export type SoundCategory =
 
 import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
 import {LetterSubmitPayload} from "@client/types/letter.ts";
-import {TransportTimerPayload, TransportRoutePayload} from "@client/types/transport.ts";
+import {TransportTimerPayload, TransportRoutePayload, TransportDebugState} from "@client/types/transport.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
@@ -173,6 +173,8 @@ export interface KnownEvents {
     "ping": number | null;
     "transportTimer": TransportTimerPayload | null;
     "transportRoute": TransportRoutePayload | null;
+    "transportDebug": TransportDebugState | null;
+    "transportDebug.toggle": void;
     "transportArrival": number;
     "transportDeparture": void;
     "transport.popup.open": void;

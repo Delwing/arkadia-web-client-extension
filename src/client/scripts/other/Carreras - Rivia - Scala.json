@@ -1,7 +1,12 @@
 {
     "start": "Woznica siedzacy na kozle chrapliwym glosem oznajmia odjazd.",
-    "exit_command": "wyjscie",
     "bind": "wyjscie",
+    "board_commands": [
+        "wem",
+        "wsiadz do dylizansu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
     "show_path": true,
     "stops": [
         {

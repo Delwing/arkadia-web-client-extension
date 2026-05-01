@@ -3,20 +3,30 @@
     "exit": "Schodzisz z barkasa.",
     "start": "Barkas odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Nieduzy barkas"
+    ],
     "stops": [
         {
             "start": 10314,
             "destination": 23678,
             "time": 25,
-            "stop_pattern": "^(?:Rudobrody rozmowny mezczyzna|Olaf) krzyczy: Doplynelismy do przystani na wyspie Hindarsfjall! Mozna wysiadac!$",
-            "label" : "Hindarsfjall"
+            "stop_pattern": "^(?:(?:Olaf|Rudobrody rozmowny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na barkasie): Doplynelismy do przystani na wyspie Hindarsfjall! Mozna wysiadac!$",
+            "label": "Hindarsfjall"
         },
         {
             "start": 23678,
             "destination": 10314,
             "time": 28,
-            "stop_pattern": "^(?:Rudobrody rozmowny mezczyzna|Olaf) krzyczy: Doplynelismy do zachodniego nabrzeza na wyspie Ard Skellig! Mozna wysiadac!$",
-            "label" : "Ard Skellig"
+            "stop_pattern": "^(?:(?:Olaf|Rudobrody rozmowny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na barkasie): Doplynelismy do zachodniego nabrzeza na wyspie Ard Skellig! Mozna wysiadac!$",
+            "label": "Ard Skellig"
         }
     ]
 }

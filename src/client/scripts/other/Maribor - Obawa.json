@@ -1,48 +1,56 @@
 {
     "enter": "Placisz woznicy i wspinasz sie na otwarty stojacy powoz.",
-    "exit_command": "wyjscie",
     "start": "Woznica oznajmia odjazd.",
     "bind": "wyjrzyj na zewnatrz",
+    "board_commands": [
+        "wem",
+        "wsiadz do powozu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "otwarty stojacy powoz"
+    ],
     "show_path": true,
     "stops": [
         {
             "start": 180,
             "destination": 536,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, lesne rozdroze\\.$",
-            "set_pattern": "^Siedzacy na kozle woznica krzyczy: Za kilka chwil ruszamy w kierunku Twierdzy Bodrog!$",
+            "stop_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Postoj, lesne rozdroze\\.$",
+            "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Za kilka chwil ruszamy w kierunku Twierdzy Bodrog!$",
             "label": "Brugge"
         },
         {
             "start": 536,
             "destination": 3043,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, przed zajazdem\\.$",
-            "set_pattern": "^Siedzacy na kozle woznica krzyczy: Za kilka chwil ruszamy w kierunku Twierdzy Bodrog!$",
+            "stop_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Postoj, przed zajazdem\\.$",
+            "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Za kilka chwil ruszamy w kierunku Twierdzy Bodrog!$",
             "label": "Bialy Kiel"
         },
         {
             "start": 3043,
             "destination": 3221,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, placyk w centrum wsi\\.$",
+            "stop_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Postoj, placyk w centrum wsi\\.$",
             "label": "Obawa"
         },
         {
             "start": 3221,
             "destination": 3043,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, przed zajazdem\\.$",
-            "set_pattern": "^Siedzacy na kozle woznica krzyczy: Za kilka chwil ruszamy w kierunku Mariboru!$",
+            "stop_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Postoj, przed zajazdem\\.$",
+            "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Za kilka chwil ruszamy w kierunku Mariboru!$",
             "label": "Bialy Kiel"
         },
         {
             "start": 3043,
             "destination": 536,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, lesne rozdroze\\.$",
-            "set_pattern": "^Siedzacy na kozle woznica krzyczy: Za kilka chwil ruszamy w kierunku Mariboru!$",
+            "stop_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Postoj, lesne rozdroze\\.$",
+            "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Za kilka chwil ruszamy w kierunku Mariboru!$",
             "label": "Brugge"
         },
         {
             "start": 536,
             "destination": 180,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, przystan powozowa\\.$",
+            "stop_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Postoj, przystan powozowa\\.$",
             "label": "Maribor"
         }
     ]

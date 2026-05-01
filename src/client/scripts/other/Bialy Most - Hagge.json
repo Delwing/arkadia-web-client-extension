@@ -1,57 +1,60 @@
 {
-  "enter": "Oplacasz podroz u woznicy, po stopniach wchodzisz do kupieckiego stojacego wozu i siadasz tuz za kozlem.",
-  "start": "Trzaskaja lejce i woz rusza, ospale kolyszac sie na boki.",
-  "exit_command": "wyjscie",
-  "bind": "wyjscie",
-  "show_path": true,
-  "stops": [
-    {
-      "start": 2188,
-      "destination": 1998,
-      "time": 33,
-      "set_pattern": "^Woznica wola: Za chwile ruszamy w kierunku miasta Rinde!$",
-      "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, Plac Ratuszowy w Rinde\\. Nastepny przystanek Murivel\\.$",
-      "label": "Rinde"
-    },
-    {
-      "start": 1998,
-      "destination": 1896,
-      "time": 35,
-      "set_pattern": "^Woznica wola: Za chwile ruszamy w kierunku miasta Murivel!$",
-      "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj pod brama miasta Murivel\\. Nastepny przystanek Twierdza Hagge\\.$",
-      "label": "Murivel"
-    },
-    {
-      "start": 1896,
-      "destination": 9990,
-      "time": 37,
-      "set_pattern": "^Woznica wola: Za chwile ruszamy w kierunku twierdzy Hagge!$",
-      "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, Twierdza Hagge\\. Nastepny przystanek Murivel\\.$",
-      "label": "Hagge"
-    },
-    {
-      "start": 9990,
-      "destination": 1896,
-      "time": 39,
-      "set_pattern": "^Woznica wola: Za chwile ruszamy w kierunku miasta Murivel!$",
-      "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj pod brama miasta Murivel\\. Nastepny przystanek Plac Ratuszowy w Rinde\\.$",
-      "label": "Murivel"
-    },
-    {
-      "start": 1896,
-      "destination": 1998,
-      "time": 35,
-      "set_pattern": "^Woznica wola: Za chwile ruszamy w kierunku miasta Rinde!$",
-      "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, Plac Ratuszowy w Rinde\\. Nastepny przystanek Bialy Most\\.$",
-      "label": "Rinde"
-    },
-    {
-      "start": 1998,
-      "destination": 2188,
-      "time": 33,
-      "set_pattern": "^Woznica wola: Za chwile ruszamy w kierunku osady Bialy Most!$",
-      "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj przed brama Bialego Mostu\\. Nastepny przystanek Plac Ratuszowy w Rinde\\.$",
-      "label": "Bialy Most"
-    }
-  ]
+    "enter": "Oplacasz podroz u woznicy, po stopniach wchodzisz do kupieckiego stojacego wozu i siadasz tuz za kozlem.",
+    "start": "Trzaskaja lejce i woz rusza, ospale kolyszac sie na boki.",
+    "bind": "wyjscie",
+    "board_commands": [
+        "wem",
+        "wsiadz do wozu",
+        "wsiadz do powozu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "kupiecki stojacy woz"
+    ],
+    "show_path": true,
+    "stops": [
+        {
+            "start": 2188,
+            "destination": 1998,
+            "time": 33,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, Plac Ratuszowy w Rinde\\. Nastepny przystanek Murivel\\.$",
+            "label": "Rinde"
+        },
+        {
+            "start": 1998,
+            "destination": 1896,
+            "time": 35,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj pod brama miasta Murivel\\. Nastepny przystanek Twierdza Hagge\\.$",
+            "label": "Murivel"
+        },
+        {
+            "start": 1896,
+            "destination": 9990,
+            "time": 37,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, Twierdza Hagge\\. Nastepny przystanek Murivel\\.$",
+            "label": "Hagge"
+        },
+        {
+            "start": 9990,
+            "destination": 1896,
+            "time": 39,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj pod brama miasta Murivel\\. Nastepny przystanek Plac Ratuszowy w Rinde\\.$",
+            "label": "Murivel"
+        },
+        {
+            "start": 1896,
+            "destination": 1998,
+            "time": 35,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, Plac Ratuszowy w Rinde\\. Nastepny przystanek Bialy Most\\.$",
+            "label": "Rinde"
+        },
+        {
+            "start": 1998,
+            "destination": 2188,
+            "time": 33,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj przed brama Bialego Mostu\\. Nastepny przystanek Plac Ratuszowy w Rinde\\.$",
+            "label": "Bialy Most"
+        }
+    ]
 }

@@ -1,8 +1,17 @@
 {
     "enter": "Placisz kupcowi i wspinasz sie do wnetrza kupieckiego stojacego wozu z plandeka.",
-    "exit_command": "wyjscie",
     "start": "Woznica oznajmia odjazd.",
     "bind": "wyjrzyj przez okno",
+    "board_commands": [
+        "wem",
+        "wsiadz do wozu",
+        "wsiadz do powozu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "kupiecki stojacy woz z plandeka"
+    ],
     "show_path": true,
     "stops": [
         {

@@ -1,71 +1,79 @@
 {
     "enter": "Oplacasz podroz u woznicy i wsiadasz do szarego stojacego dylizansu.",
-    "exit_command": "wyjscie",
     "start": "Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.",
     "bind": "wyjrzyj przez okno",
+    "board_commands": [
+        "wem",
+        "wsiadz do dylizansu",
+        "wlm"
+    ],
+    "exit_command": "wyjscie",
+    "standing_patterns": [
+        "szary stojacy dylizans"
+    ],
     "show_path": true,
     "stops": [
         {
             "start": 5468,
             "destination": 5439,
             "time": 25,
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - incrocio alla Miragliano!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Miragliano!$",
             "label": "Miragliano"
         },
         {
             "start": 5439,
             "destination": 5625,
             "time": 15,
-            "set_pattern": "^(?:Woznica|Z zewnatrz).*: Partire per Varieno in qualche minuti!$",
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - incrocio alla Viadaza!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Viadaza!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Varieno in qualche minuti!$",
             "label": "Viadaza"
         },
         {
             "start": 5625,
             "destination": 5842,
             "time": 15,
-            "set_pattern": "^(?:Woznica|Z zewnatrz).*: Partire per Varieno in qualche minuti!$",
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - incrocio alla Urbimo!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Urbimo!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Varieno in qualche minuti!$",
             "label": "Urbimo"
         },
         {
             "start": 5842,
             "destination": 5985,
             "time": 25,
-            "set_pattern": "^(?:Woznica|Z zewnatrz).*: Partire per Varieno in qualche minuti!$",
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - Varieno!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - Varieno!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Varieno in qualche minuti!$",
             "label": "Varieno"
         },
         {
             "start": 5985,
             "destination": 5842,
             "time": 25,
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - incrocio alla Urbimo!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Urbimo!$",
             "label": "Urbimo"
         },
         {
             "start": 5842,
             "destination": 5625,
             "time": 15,
-            "set_pattern": "^(?:Woznica|Z zewnatrz).*: Partire per Campogrotta in qualche minuti!$",
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - incrocio alla Viadaza!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Viadaza!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Campogrotta in qualche minuti!$",
             "label": "Viadaza"
         },
         {
             "start": 5625,
             "destination": 5439,
             "time": 15,
-            "set_pattern": "^(?:Woznica|Z zewnatrz).*: Partire per Campogrotta in qualche minuti!$",
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - incrocio alla Miragliano!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - incrocio alla Miragliano!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Campogrotta in qualche minuti!$",
             "label": "Miragliano"
         },
         {
             "start": 5439,
             "destination": 5468,
             "time": 25,
-            "set_pattern": "^(?:Woznica|Z zewnatrz).*: Partire per Campogrotta in qualche minuti!$",
-            "stop_pattern": "^Z zewnatrz slyszysz glos woznicy: Fermata - Campogrotta!$",
+            "stop_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Fermata - Campogrotta!$",
+            "set_pattern": "^(?:Z zewnatrz slyszysz glos woznicy|Woznica dylizansu glosno wola): Partire per Campogrotta in qualche minuti!$",
             "label": "Campogrotta"
-        } 
+        }
     ]
 }

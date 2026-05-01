@@ -3,20 +3,27 @@
     "exit": "Schodzisz z tratwy.",
     "start": "Tratwa odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wsiadz na statek"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "^(?!.*rzeczna).*tratwa"
+    ],
     "stops": [
         {
             "start": 5206,
             "destination": 5601,
             "time": 49,
-            "stop_pattern": "^(?:Luiggi|Lysawy gruby mezczyzna) krzyczy: Doplynelismy do przystani w Alimento! Mozna wysiadac!$",
-            "label" : "Alimento"
+            "stop_pattern": "^(?:(?:Luiggi|Lysawy gruby mezczyzna) krzyczy|Jakis mezczyzna krzyczy na tratwie): Doplynelismy do przystani w Alimento! Mozna wysiadac!$",
+            "label": "Alimento"
         },
         {
             "start": 5601,
             "destination": 5206,
             "time": 68,
-            "stop_pattern": "^(?:Luiggi|Lysawy gruby mezczyzna) krzyczy: Doplynelismy do przystani w Kreutzhofen! Mozna wysiadac!$",
-            "label" : "Kreutzhofen"
+            "stop_pattern": "^(?:(?:Luiggi|Lysawy gruby mezczyzna) krzyczy|Jakis mezczyzna krzyczy na tratwie): Doplynelismy do przystani w Kreutzhofen! Mozna wysiadac!$",
+            "label": "Kreutzhofen"
         }
     ]
 }

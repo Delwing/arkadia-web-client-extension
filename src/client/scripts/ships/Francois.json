@@ -3,19 +3,28 @@
     "exit": "Schodzisz z brygu.",
     "start": "Zaloga odcumowuje statek, ktory powoli zaczyna odplywac od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Smukly bryg"
+    ],
+    "stop_pattern": "^Bryg z wolna doplywa do brzegu\\.$",
     "stops": [
         {
             "start": 4651,
             "destination": 3251,
             "time": 179,
-            "stop_pattern": "^Bryg z wolna doplywa do brzegu\\.",
             "label": "Obawa"
         },
         {
             "start": 3251,
             "destination": 4651,
             "time": 179,
-            "stop_pattern": "^Bryg z wolna doplywa do brzegu\\.",
             "label": "Quenelles"
         }
     ]

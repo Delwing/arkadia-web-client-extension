@@ -3,33 +3,43 @@
     "exit": "Schodzisz z feluki.",
     "start": "Feluka odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Mala feluka"
+    ],
     "stops": [
         {
             "start": 2223,
             "destination": 4061,
             "time": 45,
-            "stop_pattern": "^(?:Jasnowlosy sniady elf|Flavius) krzyczy: Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
             "label": "Blaviken"
         },
         {
             "start": 4061,
             "destination": 11690,
             "time": 42,
-            "stop_pattern": "^(?:Jasnowlosy sniady elf|Flavius) krzyczy: Doplynelismy do przystani w Daevon! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do przystani w Daevon! Mozna wysiadac!$",
             "label": "Daevon"
         },
         {
             "start": 11690,
             "destination": 4058,
             "time": 55,
-            "stop_pattern": "^(?:Jasnowlosy sniady elf|Flavius) krzyczy: Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
             "label": "Blaviken"
         },
         {
             "start": 4058,
             "destination": 2223,
             "time": 55,
-            "stop_pattern": "^(?:Jasnowlosy sniady elf|Flavius) krzyczy: Doplynelismy do polnocnego nabrzeza w Novigradzie! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do polnocnego nabrzeza w Novigradzie! Mozna wysiadac!$",
             "label": "Novigrad"
         }
     ]

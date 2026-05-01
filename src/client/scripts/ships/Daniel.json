@@ -3,19 +3,26 @@
     "exit": "Schodzisz z promu.",
     "start": "Prom odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wsiadz na statek"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "^(?!.*(?:plaskodenny|drewniany|solidny)).*prom"
+    ],
     "stops": [
         {
             "start": 4841,
             "destination": 4824,
             "time": 30,
-            "stop_pattern": "^(?:Wysoki muskularny mezczyzna|Daniel) krzyczy: Doplynelismy do przystani na polnocnym brzegu Brienne! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Daniel|Wysoki muskularny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na promie): Doplynelismy do przystani na polnocnym brzegu Brienne! Mozna wysiadac!$",
             "label": "Zachod Quenelles"
         },
         {
             "start": 4824,
             "destination": 4841,
             "time": 30,
-            "stop_pattern": "^(?:Wysoki muskularny mezczyzna|Daniel) krzyczy: Doplynelismy do przystani na poludniowym brzegu Brienne! Mozna wysiadac!$",
+            "stop_pattern": "^(?:(?:Daniel|Wysoki muskularny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na promie): Doplynelismy do przystani na poludniowym brzegu Brienne! Mozna wysiadac!$",
             "label": "Laki pod Quenelles"
         }
     ]

@@ -3,20 +3,30 @@
     "exit": "Schodzisz ze szkuty.",
     "start": "Szkuta odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Stara szkuta"
+    ],
     "stops": [
         {
             "start": 2574,
             "destination": 4059,
             "time": 55,
-            "stop_pattern": "^(?:Malacius|Starszy spokojny mezczyzna krzyczy): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
-            "label" : "Blaviken"
+            "stop_pattern": "^(?:(?:Malacius|Starszy spokojny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na szkucie): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
+            "label": "Blaviken"
         },
         {
             "start": 4059,
             "destination": 2574,
             "time": 55,
-            "stop_pattern": "^(?:Malacius|Starszy spokojny mezczyzna krzyczy): Doplynelismy do czwartego pomostu w Oxenfurcie! Mozna wysiadac!$",
-            "label" : "Oxenfurt"
+            "stop_pattern": "^(?:(?:Malacius|Starszy spokojny mezczyzna) krzyczy|Jakis mezczyzna krzyczy na szkucie): Doplynelismy do czwartego pomostu w Oxenfurcie! Mozna wysiadac!$",
+            "label": "Oxenfurt"
         }
     ]
 }

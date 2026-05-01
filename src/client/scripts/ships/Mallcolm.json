@@ -3,20 +3,30 @@
     "exit": "Schodzisz ze statku.",
     "start": "Statek odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Rzeczny statek"
+    ],
     "stops": [
         {
             "start": 15409,
             "destination": 6428,
             "time": 41,
-            "stop_pattern": "^(?:Ciemnowlosy przyjacielski mezczyzna|Mallcolm) krzyczy: Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!$",
-            "label" : "Blekitna Wstega"
+            "stop_pattern": "^(?:(?:Mallcolm|Ciemnowlosy przyjacielski mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!$",
+            "label": "Blekitna Wstega"
         },
         {
             "start": 6427,
             "destination": 15409,
             "time": 40,
-            "stop_pattern": "^(?:Ciemnowlosy przyjacielski mezczyzna|Mallcolm) krzyczy: Doplynelismy do przystani w twierdzy Karak Varn! Mozna wysiadac!$",
-            "label" : "Karak Varn"
+            "stop_pattern": "^(?:(?:Mallcolm|Ciemnowlosy przyjacielski mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do przystani w twierdzy Karak Varn! Mozna wysiadac!$",
+            "label": "Karak Varn"
         }
     ]
 }

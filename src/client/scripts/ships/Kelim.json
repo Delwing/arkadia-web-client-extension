@@ -3,34 +3,44 @@
     "exit": "Schodzisz ze statku.",
     "start": "Statek odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Niewielki dwumasztowy statek"
+    ],
     "stops": [
         {
             "start": 3247,
             "destination": 7912,
             "time": 73,
-            "stop_pattern": "^(?:Zarosniety smierdzacy mezczyzna|Kelim) krzyczy: Doplynelismy do poludniowego nabrzeza w Novigradzie! Mozna wysiadac!$",
-            "label" : "Novigrad"
+            "stop_pattern": "^(?:(?:Kelim|Zarosniety smierdzacy mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do poludniowego nabrzeza w Novigradzie! Mozna wysiadac!$",
+            "label": "Novigrad"
         },
         {
             "start": 7912,
             "destination": 3248,
             "time": 58,
-            "stop_pattern": "^(?:Zarosniety smierdzacy mezczyzna|Kelim) krzyczy: Doplynelismy do srodkowego pomostu w Obawie! Mozna wysiadac!$",
-            "label" : "Obawa srod."
+            "stop_pattern": "^(?:(?:Kelim|Zarosniety smierdzacy mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do srodkowego pomostu w Obawie! Mozna wysiadac!$",
+            "label": "Obawa srod."
         },
         {
             "start": 3248,
             "destination": 927,
             "time": 56,
-            "stop_pattern": "^(?:Zarosniety smierdzacy mezczyzna|Kelim) krzyczy: Doplynelismy do przystani w twierdzy Scala! Mozna wysiadac!$",
-            "label" : "Scala"
+            "stop_pattern": "^(?:(?:Kelim|Zarosniety smierdzacy mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do przystani w twierdzy Scala! Mozna wysiadac!$",
+            "label": "Scala"
         },
         {
             "start": 927,
             "destination": 3247,
             "time": 77,
-            "stop_pattern": "^(?:Zarosniety smierdzacy mezczyzna|Kelim) krzyczy: Doplynelismy do zachodniego pomostu w Obawie! Mozna wysiadac!$",
-            "label" : "Obawa zach."
+            "stop_pattern": "^(?:(?:Kelim|Zarosniety smierdzacy mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do zachodniego pomostu w Obawie! Mozna wysiadac!$",
+            "label": "Obawa zach."
         }
     ]
 }

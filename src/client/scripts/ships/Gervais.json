@@ -3,19 +3,29 @@
     "exit": "Schodzisz z barki.",
     "start": "Barka odbija od brzegu.",
     "bind": "ob widok",
+    "board_commands": [
+        "wem",
+        "kup bilet",
+        "wsiadz na statek",
+        "wlm"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Barka"
+    ],
     "stops": [
         {
             "start": 4653,
             "destination": 4890,
             "time": 33,
-            "stop_pattern": "^(?:Opalony wytatuowany mezczyzna|Gervais) krzyczy: Doplynelismy do przystani w Marguilles! Mozna wysiadac!",
+            "stop_pattern": "^(?:(?:Gervais|Opalony wytatuowany mezczyzna) krzyczy|Jakis mezczyzna krzyczy na barce): Doplynelismy do przystani w Marguilles! Mozna wysiadac!$",
             "label": "Marguilles"
         },
         {
             "start": 4890,
             "destination": 4653,
             "time": 29,
-            "stop_pattern": "^(?:Opalony wytatuowany mezczyzna|Gervais) krzyczy: Doplynelismy do poludniowego nabrzeza w Quenelles! Mozna wysiadac!",
+            "stop_pattern": "^(?:(?:Gervais|Opalony wytatuowany mezczyzna) krzyczy|Jakis mezczyzna krzyczy na barce): Doplynelismy do poludniowego nabrzeza w Quenelles! Mozna wysiadac!$",
             "label": "Quenelles"
         }
     ]
