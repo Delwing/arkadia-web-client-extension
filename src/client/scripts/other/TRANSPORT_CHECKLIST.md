@@ -105,28 +105,28 @@ Key things to check per ship:
 
 - [ ] Ancelmus
 - [x] Annibale — `Jakis mezczyzna krzyczy na galeonie:` ✅
-- [ ] Asa
+- [x] Asa — `(?:Asa|Mlody zylasty mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na skeidzie:` outside ✅ confirmed
 - [ ] Batista
-- [ ] Bjorn
+- [x] Bjorn — `Jakis mezczyzna krzyczy na statku:` outside ✅ confirmed
 - [x] Cern *(standing: "Tajemniczy okret" 🔗 Gvidon)* · outside: `krzyczy na okrecie:` ✅ · stop text confirmed
 - [x] Charonda — `Jakis mezczyzna krzyczy na statku:` ✅ (confirms Batista, Bjorn, Kelim, Mallcolm)
 - [ ] Creyard
 - [x] Daniel — standing: `Prom.` (non-paid, no kup bilet) ✅
 - [ ] Elich
 - [ ] Flavius
-- [ ] Francois
+- [x] Francois — `(?:Francois|Dumny wysoki mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na brygu:` outside ✅ · both stops confirmed
 - [ ] Gervais
 - [ ] Gmeath
 - [x] Gvidon *(standing: "Tajemniczy okret" 🔗 Cern)* · outside: `krzyczy na okrecie:` ✅
 - [x] Hallgerda — `Jakas kobieta krzyczy na knarze:` ✅
 - [x] Haming — per-stop patterns with `(?:... krzyczy|Jakis mezczyzna krzyczy na statku):` inside/outside alternation · set_patterns on Hagge stops for two-way disambiguation · Stare Buki/Piana outside form ⚠️ unverified
 - [ ] Jacob
-- [ ] Kelim
+- [x] Kelim — `(?:Kelim|Zarosniety smierdzacy mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na statku:` outside ✅ confirmed
 - [x] Louis — `(?:Louis|Smagly przygarbiony mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na tratwie:` outside ✅ confirmed
 - [x] Luiggi — `(?:Luiggi|Lysawy gruby mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na tratwie:` outside ✅
 - [x] Malacius *(stop_pattern regex fixed)* ✅
 - [ ] Mallcolm
-- [ ] Olaf
+- [x] Olaf — `(?:Olaf|Rudobrody rozmowny mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na barkasie:` outside ✅ confirmed
 - [x] Pluskolec — `Jakis mezczyzna krzyczy na szkucie:` ✅
 - [ ] Rygwit
 - [x] Strag — outside form `Jakis mezczyzna krzyczy na promie:` ✅ (prom, not statek)

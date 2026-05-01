@@ -13,18 +13,19 @@
     "standing_patterns": [
         "Smukly bryg"
     ],
-    "stop_pattern": "^Bryg z wolna doplywa do brzegu\\.$",
     "stops": [
         {
             "start": 4651,
             "destination": 3251,
             "time": 179,
+            "stop_pattern": "^(?:(?:Francois|Dumny wysoki mezczyzna) krzyczy|Jakis mezczyzna krzyczy na brygu): Doplynelismy do wschodniego pomostu w Obawie! Mozna wysiadac!$",
             "label": "Obawa"
         },
         {
             "start": 3251,
             "destination": 4651,
             "time": 179,
+            "stop_pattern": "^(?:(?:Francois|Dumny wysoki mezczyzna) krzyczy|Jakis mezczyzna krzyczy na brygu): Doplynelismy do poludniowego nabrzeza w Quenelles! Mozna wysiadac!$",
             "label": "Quenelles"
         }
     ]
