@@ -95,6 +95,7 @@ export default class MapHelper {
     private gmcpPosition!: Position;
     public paused = false;
     private savedRoomId: number | null = null;
+    private onTransport = false;
     private lastMoveDirection: string | null = null;
     private areas: Record<string, string> = {};
     private mapReadyCallbacks: ((mapData: MapData.Map, colors: any) => void)[] = [];
@@ -126,6 +127,7 @@ export default class MapHelper {
 
         this.client.on("enterLocation", detail => this.handleNewLocation(detail as { room: any }));
         this.client.on("stepBack", () => this.pendingBindAbort?.abort());
+        this.client.on("transport.onBoard", (v: boolean) => { this.onTransport = v; });
 
         this.client.on("renderMapLocation", (ev: { locationId: number }) => {
             this.renderRoomByIdSilently(ev.locationId);
@@ -595,7 +597,7 @@ export default class MapHelper {
                         printable,
                         () => this.executeBind(bindStr)
                     );
-                } else if (room?.userData?.drinkable && this.client.shouldSetDrinkableBind?.() !== false) {
+                } else if (room?.userData?.drinkable && !this.onTransport && this.client.shouldSetDrinkableBind?.() !== false) {
                     this.client.functionalBind?.set(
                         "napij sie do syta wody",
                         () => this.client.sendCommand("napij sie do syta wody")

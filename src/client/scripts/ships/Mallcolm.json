@@ -1,4 +1,5 @@
 {
+    "label": "Karak Varn - Blekitna Wstega",
     "enter": "Wchodzisz na rzeczny statek.",
     "exit": "Schodzisz ze statku.",
     "start": "Statek odbija od brzegu.",
@@ -16,7 +17,7 @@
     "stops": [
         {
             "start": 15409,
-            "destination": 6428,
+            "destination": 6427,
             "time": 41,
             "stop_pattern": "^(?:(?:Mallcolm|Ciemnowlosy przyjacielski mezczyzna) krzyczy|Jakis mezczyzna krzyczy na statku): Doplynelismy do przystani na Blekitnej Wstedze! Mozna wysiadac!$",
             "label": "Blekitna Wstega"

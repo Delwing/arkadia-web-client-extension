@@ -1,16 +1,16 @@
 {
-    "enter": "Oplacasz podroz u woznicy, po stopniach wchodzisz do kupieckiego stojacego wozu i siadasz tuz za kozlem.",
+    "label": "Bialy Most - Hagge",
+    "enter": "Oplacasz podroz u woznicy, po stopniach wchodzisz do kupieckiego stojacego wozu i siadasz",
     "start": "Trzaskaja lejce i woz rusza, ospale kolyszac sie na boki.",
     "bind": "wyjscie",
     "board_commands": [
         "wem",
         "wsiadz do wozu",
-        "wsiadz do powozu",
         "wlm"
     ],
     "exit_command": "wyjscie",
     "standing_patterns": [
-        "kupiecki stojacy woz"
+        "^kupiecki stojacy woz(?! z plandeka)"
     ],
     "show_path": true,
     "stops": [

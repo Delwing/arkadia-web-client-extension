@@ -4,7 +4,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
-  Map = { setMapRoomById: jest.fn() } as any;
+  Map = { setMapRoomById: jest.fn(), refreshPosition: false } as any;
   sendEvent = jest.fn();
 }
 
@@ -17,17 +17,16 @@ describe('localizers triggers', () => {
     initLocalizers(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.clearAllMocks();
+    client.Map.refreshPosition = false;
   });
 
-  test('single line localizer sets map location', () => {
-    parse('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, placyk w Grabowej Buchcie');
-    expect(client.Map.setMapRoomById).toHaveBeenCalledWith(3525);
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: localizer 3525' });
+  test('klatka drzwi trigger sets refreshPosition', () => {
+    parse('Otworzyly sie drzwi klatki.');
+    expect(client.Map.refreshPosition).toBe(true);
   });
 
-  test('single line localizer without proper parent does not move map', () => {
-    parse('Postoj, placyk w Grabowej Buchcie');
-    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
-    expect(client.sendEvent).not.toHaveBeenCalled();
+  test('unrelated line does not set refreshPosition', () => {
+    parse('Cos innego sie wydarzylo.');
+    expect(client.Map.refreshPosition).toBe(false);
   });
 });

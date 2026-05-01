@@ -1,13 +1,11 @@
 {
+    "label": "Novigrad - Nadrzecze",
     "enter": "Wchodzisz na szeroki plaskodenny prom.",
     "exit": "Schodzisz z promu.",
     "start": "Prom odbija od brzegu.",
     "bind": "ob widok",
     "board_commands": [
-        "wem",
-        "kup bilet",
-        "wsiadz na statek",
-        "wlm"
+        "wsiadz na statek"
     ],
     "exit_command": "zejdz ze statku",
     "standing_patterns": [

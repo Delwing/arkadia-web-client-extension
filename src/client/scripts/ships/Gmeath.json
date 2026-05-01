@@ -1,12 +1,10 @@
 {
+    "label": "Poludniowy brzeg Pontaru - Polnocny brzeg Pontaru",
     "enter": "Wchodzisz na szeroki drewniany prom.",
     "exit": "Schodzisz z promu.",
     "start": "Prom odbija od brzegu.",
     "board_commands": [
-        "wem",
-        "kup bilet",
-        "wsiadz na statek",
-        "wlm"
+        "wsiadz na statek"
     ],
     "exit_command": "zejdz ze statku",
     "standing_patterns": [

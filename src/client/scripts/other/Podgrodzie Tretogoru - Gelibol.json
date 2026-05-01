@@ -1,11 +1,11 @@
 {
+    "label": "Podgrodzie Tretogoru - Gelibol",
     "enter": "Placisz kupcowi i wspinasz sie do wnetrza kupieckiego stojacego wozu z plandeka.",
     "start": "Woznica oznajmia odjazd.",
     "bind": "wyjrzyj przez okno",
     "board_commands": [
         "wem",
         "wsiadz do wozu",
-        "wsiadz do powozu",
         "wlm"
     ],
     "exit_command": "wyjscie",
@@ -17,28 +17,28 @@
         {
             "start": 3926,
             "destination": 4092,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, srodek niewielkiej osady\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, srodek niewielkiej osady\\.$",
             "set_pattern": "^Siedzacy na kozle wozu kupiec wola donosnym glosem: Za chwile ruszamy w kierunku miasta Gelibol!$",
             "label": "Sucha Kepa"
         },
         {
             "start": 4092,
             "destination": 4163,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, glowny plac miasta\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, glowny plac miasta\\.$",
             "set_pattern": "^Siedzacy na kozle wozu kupiec wola donosnym glosem: Za chwile ruszamy w kierunku miasta stolecznego Tretogoru!$",
             "label": "Gelibol"
         },
         {
             "start": 4163,
             "destination": 4092,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, srodek niewielkiej osady\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, srodek niewielkiej osady\\.$",
             "set_pattern": "^Siedzacy na kozle wozu kupiec wola donosnym glosem: Za chwile ruszamy w kierunku miasta stolecznego Tretogoru!$",
             "label": "Sucha Kepa"
         },
         {
             "start": 4092,
             "destination": 3926,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, podgrodzie Tretogoru\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, podgrodzie Tretogoru\\.$",
             "set_pattern": "^Siedzacy na kozle wozu kupiec wola donosnym glosem: Za chwile ruszamy w kierunku miasta Gelibol!$",
             "label": "Podgrodzie Tretogoru"
         }

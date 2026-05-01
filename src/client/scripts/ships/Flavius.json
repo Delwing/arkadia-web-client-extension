@@ -1,4 +1,5 @@
 {
+    "label": "Novigrad - Blaviken - Daevon",
     "enter": "Wchodzisz na mala feluke.",
     "exit": "Schodzisz z feluki.",
     "start": "Feluka odbija od brzegu.",
@@ -19,6 +20,7 @@
             "destination": 4061,
             "time": 45,
             "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan w Blaviken!$",
             "label": "Blaviken"
         },
         {
@@ -26,6 +28,7 @@
             "destination": 11690,
             "time": 42,
             "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do przystani w Daevon! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan w Daevon!$",
             "label": "Daevon"
         },
         {
@@ -33,6 +36,7 @@
             "destination": 4058,
             "time": 55,
             "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do przystani w Blaviken! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie przystan w Blaviken!$",
             "label": "Blaviken"
         },
         {
@@ -40,6 +44,7 @@
             "destination": 2223,
             "time": 55,
             "stop_pattern": "^(?:(?:Flavius|Jasnowlosy sniady elf) krzyczy|Jakis elf krzyczy na feluce): Doplynelismy do polnocnego nabrzeza w Novigradzie! Mozna wysiadac!$",
+            "set_pattern": "^.*: Nastepnym portem bedzie polnocne nabrzeze w Novigradzie!$",
             "label": "Novigrad"
         }
     ]

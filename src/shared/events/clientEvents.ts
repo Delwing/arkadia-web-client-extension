@@ -178,6 +178,7 @@ export interface KnownEvents {
     "transportArrival": number;
     "transportDeparture": void;
     "transport.popup.open": void;
+    "transport.onBoard": boolean;
     "combatTimer": number | null;
     "worldDestructionTimer": number | null;
     "combatState": boolean;

@@ -1,4 +1,5 @@
 {
+    "label": "Maribor - Grabowa Buchta",
     "enter": "Oplacasz podroz u woznicy i wsiadasz do drewnianego stojacego wozu.",
     "start": "Woznica donosnym glosem oznajmia odjazd.",
     "bind": "wyjrzyj na zewnatrz",
@@ -17,14 +18,14 @@
             "start": 3525,
             "destination": 3457,
             "time": 22,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centralny plac wioski\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, centralny plac wioski\\.$",
             "label": "Kocie Pole"
         },
         {
             "start": 3457,
             "destination": 3343,
             "time": 38,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na dziedzincu zajazdu\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na dziedzincu zajazdu\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku Mariboru!$",
             "label": "Zajazd u Marfa"
         },
@@ -32,7 +33,10 @@
             "start": 3343,
             "destination": 180,
             "time": 43,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, przystan powozowa\\.$",
+            "stop_pattern": [
+                "^(?:Drewniany jadacy woz powoli zatrzymuje sie|Woz cicho skrzypiac zatrzymuje sie)\\.$",
+                "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, przystan powozowa\\.$"
+            ],
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku Mariboru!$",
             "label": "Maribor"
         },
@@ -40,14 +44,14 @@
             "start": 180,
             "destination": 3343,
             "time": 42,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na dziedzincu zajazdu\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na dziedzincu zajazdu\\.$",
             "label": "Zajazd u Marfa"
         },
         {
             "start": 3343,
             "destination": 3457,
             "time": 38,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centralny plac wioski\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, centralny plac wioski\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku Grabowej Buchty!$",
             "label": "Kocie Pole"
         },
@@ -55,7 +59,7 @@
             "start": 3457,
             "destination": 3525,
             "time": 21,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, placyk w Grabowej Buchcie\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, placyk w Grabowej Buchcie\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku Grabowej Buchty!$",
             "label": "Grabowa Buchta"
         }

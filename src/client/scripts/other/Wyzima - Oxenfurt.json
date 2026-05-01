@@ -1,14 +1,14 @@
 {
+    "label": "Wyzima - Oxenfurt",
     "enter": "Placisz woznicy i wspinasz sie na czarny stojacy dylizans.",
+    "exit_command": "wyjscie",
     "start": "Woznica oznajmia odjazd.",
-    "stop_pattern": "^Monotonne kolysanie ustaje w koncu i woz zatrzymuje sie\\.$",
     "bind": "wyjrzyj przez okno",
     "board_commands": [
         "wem",
         "wsiadz do dylizansu",
         "wlm"
     ],
-    "exit_command": "wyjscie",
     "standing_patterns": [
         "czarny stojacy dylizans"
     ],
@@ -18,13 +18,14 @@
             "start": 729,
             "destination": 3760,
             "time": 19,
-            "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Niedlugo wyruszamy w kierunku Oxenfurtu w Redanii!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - wies Anchor\\. Nastepny przystanek - Bialy Most\\.$",
             "label": "Anchor"
         },
         {
             "start": 3760,
             "destination": 746,
             "time": 23,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - plac w centrum Bialego Mostu\\. Nastepny przystanek - rozdroza niedaleko Piany\\.$",
             "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Niedlugo wyruszamy w kierunku Oxenfurtu w Redanii!$",
             "label": "Bialy Most"
         },
@@ -32,6 +33,7 @@
             "start": 746,
             "destination": 764,
             "time": 15,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - rozdroza niedaleko Piany\\. Nastepny przystanek - wies na podgrodziu Oxenfurtu\\.$",
             "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Niedlugo wyruszamy w kierunku Oxenfurtu w Redanii!$",
             "label": "Piana"
         },
@@ -39,6 +41,7 @@
             "start": 764,
             "destination": 790,
             "time": 21,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - wies na podgrodziu Oxenfurtu\\. Nastepny przystanek - rozdroza niedaleko Piany\\.$",
             "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Niedlugo wyruszamy w kierunku Oxenfurtu w Redanii!$",
             "label": "Podgrodzie Oxenfurtu"
         },
@@ -46,13 +49,14 @@
             "start": 790,
             "destination": 764,
             "time": 22,
-            "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Wkrotce wyruszamy w kierunku stolicy Temerii - Wyzimy!$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - rozdroza niedaleko Piany\\. Nastepny przystanek - Bialy Most\\.$",
             "label": "Piana"
         },
         {
             "start": 764,
             "destination": 746,
             "time": 15,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - plac w centrum Bialego Mostu\\. Nastepny przystanek - wies Anchor\\.$",
             "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Wkrotce wyruszamy w kierunku stolicy Temerii - Wyzimy!$",
             "label": "Bialy Most"
         },
@@ -60,6 +64,7 @@
             "start": 746,
             "destination": 3760,
             "time": 23,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - wies Anchor\\. Nastepny przystanek - Wyzima\\.$",
             "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Wkrotce wyruszamy w kierunku stolicy Temerii - Wyzimy!$",
             "label": "Anchor"
         },
@@ -67,6 +72,7 @@
             "start": 3760,
             "destination": 729,
             "time": 18,
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj - pod Wyzima\\. Nastepny przystanek - wies Anchor\\.$",
             "set_pattern": "^Siedzacy na kozle woznica krzyczy(?: glosno)?: Wkrotce wyruszamy w kierunku stolicy Temerii - Wyzimy!$",
             "label": "Wyzima"
         }

@@ -144,11 +144,18 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         }));
     }
 
+    let onTransport = false;
+    client.on('transport.onBoard', (v) => {
+        onTransport = v;
+        if (!v) sendUpdate(getRoomId());
+    });
+
     function sendUpdate(roomId: number | null) {
         let payload = roomId === null ? [] : toDisplay(roomId);
 
         // Add userData.bind and/or drinkable if present in the room being displayed
-        if (roomId !== null) {
+        // Skip while player is physically on a transport — map room is the stop destination, not the player's location
+        if (roomId !== null && !onTransport) {
             const room = client.Map.currentRoom as any;
             if (room?.id === roomId) {
                 const additionalBinds: DisplayMultibind[] = [];

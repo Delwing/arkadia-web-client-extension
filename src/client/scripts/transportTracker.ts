@@ -53,7 +53,7 @@ interface RawTransportStop {
     start: number;
     destination: number;
     time?: number;
-    stop_pattern?: string;
+    stop_pattern?: string | string[];
     stop_pattern_outside?: string;
     stop_pattern_inside?: string;
     set_pattern?: string;
@@ -61,10 +61,11 @@ interface RawTransportStop {
 }
 
 interface RawTransportDefinition {
+    label?: string;
     enter?: string;
     exit?: string;
     start?: string;
-    stop_pattern?: string;
+    stop_pattern?: string | string[];
     bind?: string;
     exit_command?: string;
     show_path?: boolean;
@@ -75,6 +76,7 @@ interface RawTransportDefinition {
 
 interface CompiledStop extends RawTransportStop {
     stopRegex?: RegExp;
+    stopSequence?: RegExp[];
     stopRegexOutside?: RegExp;
     stopRegexInside?: RegExp;
     setRegex?: RegExp;
@@ -151,7 +153,8 @@ const RAW: Array<[string, RawTransportDefinition]> = [
     ["Urbimo - Toscania", UrbimoToscania as RawTransportDefinition],
 ];
 
-function compile(name: string, raw: RawTransportDefinition): Def {
+function compile(fileKey: string, raw: RawTransportDefinition): Def {
+    const name = raw.label ?? fileKey;
     const locationLabels = new Map<number, string>();
     for (const s of raw.stops) {
         const label = (s.label ?? "").trim();
@@ -163,14 +166,17 @@ function compile(name: string, raw: RawTransportDefinition): Def {
 
     const stops: CompiledStop[] = raw.stops.map(s => {
         const pat = s.stop_pattern ?? raw.stop_pattern;
+        const isSeq = Array.isArray(pat);
+        const lastPat = isSeq ? pat[pat.length - 1] : pat;
         return {
             ...s,
             label: (s.label ?? "").trim() || undefined,
-            stopRegex: pat ? new RegExp(pat) : undefined,
+            stopRegex: (!isSeq && pat) ? new RegExp(pat as string) : undefined,
+            stopSequence: isSeq ? (pat as string[]).map(p => new RegExp(p)) : undefined,
             stopRegexOutside: s.stop_pattern_outside ? new RegExp(s.stop_pattern_outside) : undefined,
             stopRegexInside: s.stop_pattern_inside ? new RegExp(s.stop_pattern_inside) : undefined,
             setRegex: s.set_pattern ? new RegExp(s.set_pattern) : undefined,
-            patternKey: pat ?? s.stop_pattern_inside ?? "",
+            patternKey: lastPat ?? s.stop_pattern_inside ?? "",
         };
     });
 
@@ -246,7 +252,12 @@ class Tracker {
             clearTimeout(this.exitTimeout);
             this.exitTimeout = undefined;
         }
+        const wasOnBoard = this.state.kind === 'on_board' || this.state.kind === 'exiting';
         this.state = next;
+        const isOnBoard = next.kind === 'on_board' || next.kind === 'exiting';
+        if (isOnBoard !== wasOnBoard) {
+            this.client.sendEvent('transport.onBoard', isOnBoard);
+        }
         this.emit();
         this.emitDebug();
     }
@@ -368,7 +379,10 @@ class Tracker {
 
         if (this.state.kind === 'idle' || this.state.kind === 'pending') {
             if (isOutside) {
-                this.setBoardBind(def);
+                this.setBoardBind(def, true);
+                // Stage the next leg — stop pattern already tells us which direction is next
+                const nextIdx = (stopIdx + 1) % def.stops.length;
+                this.stagedSet.set(def, nextIdx);
                 return;
             }
             // On board with no map — adopt this definition
@@ -377,7 +391,7 @@ class Tracker {
             const next = new Set(siblings.map(i => (i + 1) % n));
             this.go({ kind: 'on_board', def, next });
             this.client.Map.setMapRoomById(def.stops[stopIdx].destination);
-            this.setExitBind(def);
+            this.setExitBind(def, stopIdx);
             this.client.sendEvent('transportArrival', stopIdx);
             console.log(`${LOG} Adopted ${def.name} from stop pattern at ${stopIdx}`);
             return;
@@ -406,11 +420,11 @@ class Tracker {
 
         if (onBoard) {
             this.client.Map.setMapRoomById(def.stops[stopIdx].destination);
-            this.setExitBind(def);
+            this.setExitBind(def, stopIdx);
         } else {
             // Was exiting but received stop pattern — back on board
             this.client.Map.setMapRoomById(def.stops[stopIdx].destination);
-            this.setExitBind(def);
+            this.setExitBind(def, stopIdx);
         }
         this.client.sendEvent('transportArrival', stopIdx);
         console.log(`${LOG} Arrived at stop ${stopIdx} on ${def.name}`);
@@ -463,7 +477,7 @@ class Tracker {
                 if (!gmcp.room?.info?.map) {
                     // On board after login, set pattern arrived before stop pattern
                     this.go({ kind: 'on_board', def, next: new Set([stopIdx]) });
-                    this.setExitBind(def);
+                    this.setExitBind(def, stopIdx);
                     console.log(`${LOG} Adopted ${def.name} from set pattern`);
                 } else {
                     // Board command issued but not yet entered — narrow the pending candidate
@@ -628,17 +642,18 @@ class Tracker {
         const cmds = def.board_commands;
         if (!cmds?.length) return;
         if (sound) this.client.sendEvent('sound:category', 'transport');
-        const label = cmds.join(';');
+        const label = `${cmds.join(';')} [${def.name}]`;
         this.client.FunctionalBind.setCategory('transport', label, () => {
             cmds.forEach(cmd => this.client.sendCommand(cmd));
         }, false);
     }
 
-    private setExitBind(def: Def): void {
+    private setExitBind(def: Def, stopIdx: number): void {
         const cmd = def.exitCommand;
         if (!cmd) return;
         this.client.sendEvent('sound:category', 'transport');
-        this.client.FunctionalBind.setCategory('transport', cmd, () => {
+        const label = `${cmd} [${destLabel(def, stopIdx)}]`;
+        this.client.FunctionalBind.setCategory('transport', label, () => {
             this.client.sendCommand(cmd);
         }, false);
     }
@@ -770,6 +785,13 @@ class Tracker {
                             return undefined;
                         }, 'transport');
                     }
+                } else if (stop.stopSequence && stop.stopSequence.length >= 2) {
+                    const [first, ...rest] = stop.stopSequence;
+                    const parent = this.client.Triggers.registerTrigger(first, undefined, 'transport', { stayOpenLines: 1 });
+                    parent.registerChild(rest[rest.length - 1], () => {
+                        this.onStop(def, i);
+                        return undefined;
+                    }, 'transport');
                 } else if (stop.stopRegex) {
                     this.client.Triggers.registerTrigger(stop.stopRegex, () => {
                         this.onStop(def, i);

@@ -1,53 +1,58 @@
 {
+    "label": "Carreras - Rivia - Scala",
+    "enter": "Oplacasz podroz u woznicy i wspinasz sie na tyly kupieckiego stojacego powozu, znajdujac tam miejsce dla siebie.",
     "start": "Woznica siedzacy na kozle chrapliwym glosem oznajmia odjazd.",
     "bind": "wyjscie",
     "board_commands": [
         "wem",
-        "wsiadz do dylizansu",
+        "wsiadz do powozu",
         "wlm"
     ],
     "exit_command": "wyjscie",
+    "standing_patterns": [
+        "kupiecki stojacy powoz"
+    ],
     "show_path": true,
     "stops": [
         {
             "start": 860,
             "destination": 680,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, pod murem zajazdu\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, pod murem zajazdu\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku lyrijskiej twierdzy Sp[a-z]+!$",
             "label": "Scala - zajazd"
         },
         {
             "start": 680,
             "destination": 860,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na rogatkach\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na rogatkach\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku lyrijskiej twierdzy Scali!$",
             "label": "Scala - rogatki"
         },
         {
             "start": 860,
             "destination": 994,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, gosciniec rivski\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, gosciniec rivski\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku miasta Rivii, stolicy Rivii!$",
             "label": "Gosciniec Rivski"
         },
         {
             "start": 994,
             "destination": 266,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na przeleczy\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na przeleczy\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku temerskiego miasta Carreras!$",
             "label": "Przelecz"
         },
         {
             "start": 266,
             "destination": 994,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, gosciniec rivski\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, gosciniec rivski\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku miasta Rivii, stolicy Rivii!$",
             "label": "Gosciniec Rivski"
         },
         {
             "start": 994,
             "destination": 860,
-            "stop_pattern": "^Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, na rogatkach\\.$",
+            "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, na rogatkach\\.$",
             "set_pattern": "^Woznica.*wola: Za chwile ruszamy w kierunku lyrijskiej twierdzy Scali!$",
             "label": "Scala - rogatki"
         }
