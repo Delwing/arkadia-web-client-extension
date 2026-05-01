@@ -106,8 +106,8 @@ Key things to check per ship:
 - [ ] Ancelmus
 - [x] Annibale — `Jakis mezczyzna krzyczy na galeonie:` ✅
 - [x] Asa — `(?:Asa|Mlody zylasty mezczyzna) krzyczy` on board · `Jakis mezczyzna krzyczy na skeidzie:` outside ✅ confirmed
-- [ ] Batista
-- [x] Bjorn — `Jakis mezczyzna krzyczy na statku:` outside ✅ confirmed
+- [x] Batista — split stop_pattern_outside/inside ✅ · Mekan has no map coverage, uses explicit source detection
+- [x] Bjorn — split stop_pattern_outside/inside ✅ · Mekan has no map coverage, uses explicit source detection
 - [x] Cern *(standing: "Tajemniczy okret" 🔗 Gvidon)* · outside: `krzyczy na okrecie:` ✅ · stop text confirmed
 - [x] Charonda — `Jakis mezczyzna krzyczy na statku:` ✅ (confirms Batista, Bjorn, Kelim, Mallcolm)
 - [ ] Creyard

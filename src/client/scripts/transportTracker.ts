@@ -54,6 +54,8 @@ interface RawTransportStop {
     destination: number;
     time?: number;
     stop_pattern?: string;
+    stop_pattern_outside?: string;
+    stop_pattern_inside?: string;
     set_pattern?: string;
     label?: string;
 }
@@ -73,6 +75,8 @@ interface RawTransportDefinition {
 
 interface CompiledStop extends RawTransportStop {
     stopRegex?: RegExp;
+    stopRegexOutside?: RegExp;
+    stopRegexInside?: RegExp;
     setRegex?: RegExp;
     patternKey: string;
 }
@@ -163,8 +167,10 @@ function compile(name: string, raw: RawTransportDefinition): Def {
             ...s,
             label: (s.label ?? "").trim() || undefined,
             stopRegex: pat ? new RegExp(pat) : undefined,
+            stopRegexOutside: s.stop_pattern_outside ? new RegExp(s.stop_pattern_outside) : undefined,
+            stopRegexInside: s.stop_pattern_inside ? new RegExp(s.stop_pattern_inside) : undefined,
             setRegex: s.set_pattern ? new RegExp(s.set_pattern) : undefined,
-            patternKey: pat ?? "",
+            patternKey: pat ?? s.stop_pattern_inside ?? "",
         };
     });
 
@@ -355,10 +361,13 @@ class Tracker {
         console.log(`${LOG} Departed ${def.name}`);
     }
 
-    private onStop(def: Def, stopIdx: number): void {
+    private onStop(def: Def, stopIdx: number, source?: 'outside' | 'inside'): void {
+        const isOutside = source === 'outside' ? true
+            : source === 'inside' ? false
+            : !!gmcp.room?.info?.map;
+
         if (this.state.kind === 'idle' || this.state.kind === 'pending') {
-            // Logged in on board, or outside
-            if (gmcp.room?.info?.map) {
+            if (isOutside) {
                 this.setBoardBind(def);
                 return;
             }
@@ -735,7 +744,9 @@ class Tracker {
             }
             if (def.exitPattern) {
                 this.client.Triggers.registerTrigger(def.exitPattern, line => {
-                    this.onExit(def);
+                    if ((this.state.kind === 'on_board' || this.state.kind === 'exiting') && this.state.def === def) {
+                        this.goIdle();
+                    }
                     return line;
                 }, 'transport');
             }
@@ -746,7 +757,20 @@ class Tracker {
                 }, 'transport');
             }
             for (const [i, stop] of def.stops.entries()) {
-                if (stop.stopRegex) {
+                if (stop.stopRegexOutside || stop.stopRegexInside) {
+                    if (stop.stopRegexOutside) {
+                        this.client.Triggers.registerTrigger(stop.stopRegexOutside, () => {
+                            this.onStop(def, i, 'outside');
+                            return undefined;
+                        }, 'transport');
+                    }
+                    if (stop.stopRegexInside) {
+                        this.client.Triggers.registerTrigger(stop.stopRegexInside, () => {
+                            this.onStop(def, i, 'inside');
+                            return undefined;
+                        }, 'transport');
+                    }
+                } else if (stop.stopRegex) {
                     this.client.Triggers.registerTrigger(stop.stopRegex, () => {
                         this.onStop(def, i);
                         return undefined;
@@ -799,7 +823,7 @@ class Tracker {
 
         // Follow-exit (following someone off)
         this.client.Triggers.registerTrigger(FOLLOW_EXIT_RE, line => {
-            if (this.state.kind === 'on_board') this.onExit(this.state.def);
+            if (this.state.kind === 'on_board' || this.state.kind === 'exiting') this.goIdle();
             return line;
         }, 'transport');
 
