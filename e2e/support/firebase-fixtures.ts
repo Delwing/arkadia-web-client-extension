@@ -34,6 +34,23 @@ const test = base.extend({
             window.__DISABLE_GA__ = true;
         });
 
+        // Disable Bootstrap modal CSS transitions so show/hide animations complete
+        // instantly, eliminating _isTransitioning race conditions in CI.
+        await context.addInitScript(() => {
+            function injectNoTransitions() {
+                const style = document.createElement('style');
+                style.textContent =
+                    '.modal.fade .modal-dialog { transition: none !important; }' +
+                    '.modal-backdrop { transition: none !important; }';
+                document.head.appendChild(style);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', injectNoTransitions, {once: true});
+            } else {
+                injectNoTransitions();
+            }
+        });
+
         // Install mock Firebase
         await installMockFirebase(context);
 
