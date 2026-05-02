@@ -56,6 +56,15 @@ async function waitForChatMessages(page: Page, minCount: number): Promise<void> 
     );
 }
 
+async function waitForScrolledToBottom(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const container = document.querySelector('.chat-popup__messages');
+        if (!container) return false;
+        const {scrollHeight, scrollTop, clientHeight} = container as HTMLElement;
+        return scrollHeight - scrollTop - clientHeight < 5;
+    }, undefined, {timeout: 5000});
+}
+
 test.describe('Chat popup scroll', () => {
     test('scrolls to bottom when new messages arrive', async ({page}) => {
         await prepareClient(page);
@@ -180,19 +189,15 @@ test.describe('Chat popup scroll', () => {
         const messageCount = await messagesContainer.locator('.chat-popup__message').count();
         expect(messageCount).toBeGreaterThanOrEqual(20);
 
-        // Check that container is scrolled to bottom
-        const isAtBottom = await messagesContainer.evaluate((el) => {
-            return el.scrollHeight - el.scrollTop - el.clientHeight < 5;
-        });
-        expect(isAtBottom, 'should be scrolled to bottom in managed layout').toBe(true);
+        // Poll until scroll settles — in managed layout mode the scroll is corrected
+        // via requestAnimationFrame after PopupContentRenderer commits the new DOM,
+        // so a one-shot check races against that rAF callback.
+        await waitForScrolledToBottom(page);
 
         // Send more messages and verify it keeps scrolling
         await sendChatMessage(page, 'Another message in managed layout');
         await waitForChatMessages(page, 21);
 
-        const isStillAtBottom = await messagesContainer.evaluate((el) => {
-            return el.scrollHeight - el.scrollTop - el.clientHeight < 5;
-        });
-        expect(isStillAtBottom, 'should remain scrolled to bottom after new message in managed layout').toBe(true);
+        await waitForScrolledToBottom(page);
     });
 });

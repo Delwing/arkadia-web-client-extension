@@ -437,12 +437,7 @@ export async function mockGithubDeployments(
 export async function waitForCommandInput(page: Page): Promise<void> {
     const overlay = page.locator('#auth-overlay');
     if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
-        const closeButton = overlay.locator('#auth-close');
-        if ((await closeButton.count()) > 0 && (await closeButton.first().isVisible())) {
-            await closeButton.first().click();
-        } else {
-            await page.keyboard.press('Escape');
-        }
+        await page.keyboard.press('Escape');
         try {
             await overlay.waitFor({state: 'hidden', timeout: 2000});
         } catch {
@@ -527,7 +522,7 @@ export async function ensureGameSocket(page: Page): Promise<void> {
             const sockets: any[] = (window as any).__mockSockets ?? [];
             return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
         },
-        {timeout: 15000}
+        {timeout: 5000}
     );
 
     await page.evaluate(() => {

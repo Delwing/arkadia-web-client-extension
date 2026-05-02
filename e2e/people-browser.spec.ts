@@ -29,7 +29,7 @@ async function waitForPeopleLoaded(page: Page): Promise<void> {
     const popup = peopleBrowserPopup(page);
     await expect(popup).toBeVisible();
     // Wait for loading to finish - either items appear or "Brak danych" shows
-    await expect(popup.locator('.people-browser__loading')).not.toBeVisible({timeout: 15000});
+    await expect(popup.locator('.people-browser__loading')).not.toBeVisible({timeout: 5000});
 }
 
 async function addLocalPerson(

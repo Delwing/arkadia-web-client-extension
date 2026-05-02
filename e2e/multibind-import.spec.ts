@@ -77,7 +77,7 @@ test.describe('Multibind import', () => {
 
         await importModal.getByRole('button', { name: 'Importuj' }).click();
         await expect(importModal.getByText('Importowanie…'), 'should show import in progress').toBeVisible();
-        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible({ timeout: 10_000 });
+        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible({ timeout: 5000 });
         await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible();
         await expect(importModal, 'should reiterate new entries count after import').toContainText('Nowe wpisy: 3');
         await expect(importModal, 'should reiterate updated entries count after import').toContainText('Zaktualizowane: 0');

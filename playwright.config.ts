@@ -11,6 +11,7 @@ export default defineConfig({
     reporter: process.env.CI
         ? [['blob'], ['junit', { outputFile: 'test-results/e2e-junit.xml' }]]
         : [['list'], ['html', { open: 'never' }]],
+    timeout: 10 * 1000,
     globalTimeout: 10 * 60 * 1000,
     use: {
         baseURL: `http://127.0.0.1:${PORT}`,
