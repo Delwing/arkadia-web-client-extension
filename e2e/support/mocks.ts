@@ -500,23 +500,25 @@ export async function ensureGameSocket(page: Page): Promise<void> {
     });
 
     if (!alreadyConnected) {
-        // Wait for either connect button to be visible and click it
-        const connectButton = page.locator('#connect-button');
-        const connectButtonInline = page.locator('#connect-button-inline');
+        // Race both buttons and auto-connect in parallel to avoid sequential 5s+5s timeouts
+        const autoConnect = page.waitForFunction(
+            () => {
+                const sockets: any[] = (window as any).__mockSockets ?? [];
+                return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
+            },
+            {timeout: 2000}
+        ).catch(() => null);
 
-        try {
-            // Try the main connect button first
-            await connectButton.waitFor({state: 'visible', timeout: 5000});
-            await connectButton.click();
-        } catch {
-            // Fall back to inline connect button
-            try {
-                await connectButtonInline.waitFor({state: 'visible', timeout: 5000});
-                await connectButtonInline.click();
-            } catch {
-                // Neither button found - might already be connected or auto-connect is enabled
-            }
-        }
+        const clickButton = Promise.race([
+            page.locator('#connect-button').waitFor({state: 'visible', timeout: 2000})
+                .then(() => page.locator('#connect-button').click())
+                .catch(() => null),
+            page.locator('#connect-button-inline').waitFor({state: 'visible', timeout: 2000})
+                .then(() => page.locator('#connect-button-inline').click())
+                .catch(() => null),
+        ]);
+
+        await Promise.race([autoConnect, clickButton]);
     }
 
     // Wait for socket connection with explicit timeout
