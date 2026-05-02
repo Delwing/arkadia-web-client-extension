@@ -14,9 +14,21 @@ const UI_MODAL = '#ui-settings-modal';
 
 async function openUiSettings(page: Page) {
     await page.click(MENU_BUTTON);
+    // Wait for any in-progress hide animation to complete before opening
+    await page.waitForFunction(() => {
+        const el = document.getElementById('ui-settings-modal');
+        return !el || window.getComputedStyle(el).display === 'none';
+    });
     await page.click(UI_SETTINGS_BUTTON);
     const modal = page.locator(UI_MODAL);
     await expect(modal, 'should open UI settings modal').toBeVisible();
+    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
+    await page.waitForFunction(() => {
+        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
+        if (!d) return false;
+        const t = window.getComputedStyle(d).transform;
+        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+    });
     return modal;
 }
 
@@ -25,7 +37,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('UI settings', () => {
-    test('apply changes across all controls', async ({page}) => {
+    test('apply changes across all controls', { timeout: 30000 }, async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
