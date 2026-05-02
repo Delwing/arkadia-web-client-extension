@@ -12,8 +12,20 @@ async function login(page: Page): Promise<void> {
 
 async function openUiSettingsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
+    // Wait for any in-progress close animation to finish before opening
+    await page.waitForFunction(() => {
+        const el = document.getElementById('ui-settings-modal');
+        return !el || window.getComputedStyle(el).display === 'none';
+    });
     await page.click('#ui-settings-button');
     await page.waitForSelector('#ui-settings-modal.show', {timeout: 5000});
+    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
+    await page.waitForFunction(() => {
+        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
+        if (!d) return false;
+        const t = window.getComputedStyle(d).transform;
+        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+    });
 }
 
 async function closeUiSettingsModal(page: Page): Promise<void> {
@@ -76,7 +88,7 @@ test.describe('Layout persistence', () => {
         await closeUiSettingsModal(page);
     });
 
-    test('disabling layout manager persists after page reload', async ({page}) => {
+    test('disabling layout manager persists after page reload', { timeout: 30000 }, async ({page}) => {
         // First enable, then disable layout manager
         await enableLayoutManager(page);
         await disableLayoutManager(page);
@@ -100,7 +112,7 @@ test.describe('Layout persistence', () => {
         await closeUiSettingsModal(page);
     });
 
-    test('object list panel toggle state persists', async ({page}) => {
+    test('object list panel toggle state persists', { timeout: 30000 }, async ({page}) => {
         // Enable layout manager first
         await enableLayoutManager(page);
 

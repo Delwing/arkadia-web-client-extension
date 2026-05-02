@@ -8,9 +8,21 @@ import type {Page} from '@playwright/test';
 
 async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
+    // Wait for any in-progress close animation to finish before opening
+    await page.waitForFunction(() => {
+        const el = document.getElementById('binds-modal');
+        return !el || window.getComputedStyle(el).display === 'none';
+    });
     await page.click('#binds-button');
     await page.waitForSelector('#binds-modal.show', {timeout: 5000});
     await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
+    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
+    await page.waitForFunction(() => {
+        const d = document.querySelector('#binds-modal .modal-dialog') as HTMLElement | null;
+        if (!d) return false;
+        const t = window.getComputedStyle(d).transform;
+        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+    });
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
