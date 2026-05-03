@@ -3,9 +3,9 @@ import {colorTokenInLine, createColorFormat} from "@modules/core/Colors";
 import {printArrow} from "./printArrow";
 import {FormatStateSnapshot} from "@client/ansi/FormatState";
 
-const SURE_WITH_TRACE_COLOR = createColorFormat('#4169e1'); // royal blue
+const SURE_WITH_TRACE_COLOR = createColorFormat('#00ff00'); // green
 const UNSURE_COLOR = createColorFormat('#ffff00'); // yellow
-const SURE_COLOR = createColorFormat('#00ff00'); // green
+const SURE_COLOR = createColorFormat('#4169e1'); // royal blue
 const NOT_FOUND_COLOR = createColorFormat('#ff0000'); // red
 
 // Helper to prepend colored text to a DOM container

@@ -41,7 +41,7 @@ describe('tracking triggers', () => {
     };
   });
 
-  test('highlights direction only with royal blue for sure tracking with trace', () => {
+  test('highlights direction only with green for sure tracking with trace', () => {
     const result = parse('Jestes w stanie wyroznic kilka sladow na ziemi. Najswiezsze zostaly pozostawione przez jakiegos orka i prowadza na wschod.');
     expect(result?.text).toBe('Jestes w stanie wyroznic kilka sladow na ziemi. Najswiezsze zostaly pozostawione przez jakiegos orka i prowadza na wschod.');
     const segments = result?.getSegments();
@@ -61,7 +61,7 @@ describe('tracking triggers', () => {
     ]);
   });
 
-  test('highlights direction only with royal blue for sure tracking with trace (prawdopodobnie)', () => {
+  test('highlights direction only with green for sure tracking with trace (prawdopodobnie)', () => {
     const result = parse('Jestes w stanie wyroznic kilka sladow na ziemi. Najswiezsze zostaly pozostawione prawdopodobnie przez jakiegos orka i prowadza na polnoc.');
     expect(result?.text).toBe('Jestes w stanie wyroznic kilka sladow na ziemi. Najswiezsze zostaly pozostawione prawdopodobnie przez jakiegos orka i prowadza na polnoc.');
     const segments = result?.getSegments();
@@ -99,7 +99,7 @@ describe('tracking triggers', () => {
     ]);
   });
 
-  test('highlights direction only with green for sure tracking', () => {
+  test('highlights direction only with royal blue for sure tracking', () => {
     const result = parse('Jestes w stanie wyroznic kilka sladow na ziemi. Najswiezsze prowadza na poludnie.');
     expect(result?.text).toBe('Jestes w stanie wyroznic kilka sladow na ziemi. Najswiezsze prowadza na poludnie.');
     const segments = result?.getSegments();
@@ -156,7 +156,7 @@ describe('tracking triggers', () => {
     ]);
   });
 
-  test('handles "Jest on" alternate form with sure (green)', () => {
+  test('handles "Jest on" alternate form with sure (royal blue)', () => {
     const result = parse('Jest on bardzo wyrazny. Najswiezsze prowadza na wschod.');
     expect(result?.text).toBe('Jest on bardzo wyrazny. Najswiezsze prowadza na wschod.');
     const segments = result?.getSegments();
@@ -175,7 +175,7 @@ describe('tracking triggers', () => {
     ]);
   });
 
-  test('handles "Jest ona" with race info (royal blue)', () => {
+  test('handles "Jest ona" with race info (green)', () => {
     const result = parse('Jest ona bardzo wyrazna. Najswiezsze zostaly pozostawione przez jakiegos orka i prowadza na polnoc.');
     expect(result?.text).toBe('Jest ona bardzo wyrazna. Najswiezsze zostaly pozostawione przez jakiegos orka i prowadza na polnoc.');
     const segments = result?.getSegments();
