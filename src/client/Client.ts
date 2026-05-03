@@ -65,6 +65,8 @@ export default class Client {
         },
         functionalBind: this.FunctionalBind,
         shouldSetDrinkableBind: () => globalStorage.get('uiSettings')?.drinkableAsFunctionalBind !== false,
+        setPreWalkCommands: (cmds: string[]) => { this.movementManager.preWalkCommands = cmds; },
+        setPostWalkCommands: (cmds: string[]) => { this.movementManager.postWalkCommands = cmds; },
     });
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);

@@ -41,6 +41,9 @@ export interface MapHelperClient {
     functionalBind?: MapFunctionalBind;
 
     shouldSetDrinkableBind?(): boolean;
+
+    setPreWalkCommands?(cmds: string[]): void;
+    setPostWalkCommands?(cmds: string[]): void;
 }
 
 export interface MapStorage {
@@ -576,6 +579,19 @@ export default class MapHelper {
     }
 
     handleNewLocation({room}: { room: MapData.Room }) {
+        if (room?.userData?.walk_pre_cmd !== undefined) {
+            const val: string = room.userData.walk_pre_cmd;
+            this.client.setPreWalkCommands?.(
+                val === '<reset>' ? [] : val.split('#').map((s: string) => s.trim()).filter(Boolean)
+            );
+        }
+        if (room?.userData?.walk_post_cmd !== undefined) {
+            const val: string = room.userData.walk_post_cmd;
+            this.client.setPostWalkCommands?.(
+                val === '<reset>' ? [] : val.split('#').map((s: string) => s.trim()).filter(Boolean)
+            );
+        }
+
         const abortController = new AbortController();
         this.pendingBindAbort = abortController;
         const roomId = room?.id;

@@ -373,3 +373,100 @@ describe('MapHelper executeBind (via handleNewLocation)', () => {
         expect(client.functionalBind.set).not.toHaveBeenCalled();
     });
 });
+
+// ---------------------------------------------------------------------------
+// walk_pre_cmd / walk_post_cmd — applied immediately on handleNewLocation
+// ---------------------------------------------------------------------------
+
+describe('MapHelper handleNewLocation — walk_pre_cmd / walk_post_cmd', () => {
+    function createWalkClient() {
+        const { client } = createClient();
+        let preWalkCommands: string[] = [];
+        let postWalkCommands: string[] = [];
+        client.setPreWalkCommands = jest.fn((cmds: string[]) => { preWalkCommands = cmds; });
+        client.setPostWalkCommands = jest.fn((cmds: string[]) => { postWalkCommands = cmds; });
+        client._getPreWalkCommands = () => preWalkCommands;
+        client._getPostWalkCommands = () => postWalkCommands;
+        return client;
+    }
+
+    it('sets preWalkCommands from walk_pre_cmd userdata', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: { walk_pre_cmd: 'schowaj wszystko#wyjmij bron' } };
+        map.handleNewLocation({ room });
+
+        expect(client.setPreWalkCommands).toHaveBeenCalledWith(['schowaj wszystko', 'wyjmij bron']);
+    });
+
+    it('sets postWalkCommands from walk_post_cmd userdata', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: { walk_post_cmd: 'rozejrzyj sie' } };
+        map.handleNewLocation({ room });
+
+        expect(client.setPostWalkCommands).toHaveBeenCalledWith(['rozejrzyj sie']);
+    });
+
+    it('resets preWalkCommands when walk_pre_cmd is <reset>', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: { walk_pre_cmd: '<reset>' } };
+        map.handleNewLocation({ room });
+
+        expect(client.setPreWalkCommands).toHaveBeenCalledWith([]);
+    });
+
+    it('resets postWalkCommands when walk_post_cmd is <reset>', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: { walk_post_cmd: '<reset>' } };
+        map.handleNewLocation({ room });
+
+        expect(client.setPostWalkCommands).toHaveBeenCalledWith([]);
+    });
+
+    it('does not call setPreWalkCommands when walk_pre_cmd is absent', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: {} };
+        map.handleNewLocation({ room });
+
+        expect(client.setPreWalkCommands).not.toHaveBeenCalled();
+    });
+
+    it('does not call setPostWalkCommands when walk_post_cmd is absent', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: {} };
+        map.handleNewLocation({ room });
+
+        expect(client.setPostWalkCommands).not.toHaveBeenCalled();
+    });
+
+    it('applies walk commands immediately without waiting for output-sent', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: { walk_pre_cmd: 'schowaj wszystko' } };
+        map.handleNewLocation({ room });
+
+        expect(client.setPreWalkCommands).toHaveBeenCalledTimes(1);
+    });
+
+    it('trims whitespace from commands in walk_pre_cmd', () => {
+        const client = createWalkClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+
+        const room: any = { id: 1, userData: { walk_pre_cmd: ' schowaj  # wyjmij bron ' } };
+        map.handleNewLocation({ room });
+
+        expect(client.setPreWalkCommands).toHaveBeenCalledWith(['schowaj', 'wyjmij bron']);
+    });
+});

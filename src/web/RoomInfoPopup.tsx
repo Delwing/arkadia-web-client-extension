@@ -194,8 +194,10 @@ const RoomInfoPopup: React.FC = () => {
     const drinkable = roomData.userData.drinkable;
     const gpsRaw = roomData.userData.gps;
     const teamFollowLink = roomData.userData.team_follow_link;
+    const walkPreCmd = roomData.userData.walk_pre_cmd;
+    const walkPostCmd = roomData.userData.walk_post_cmd;
 
-    const KNOWN_USERDATA_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link']);
+    const KNOWN_USERDATA_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link', 'walk_pre_cmd', 'walk_post_cmd']);
     const otherUserDataEntries = Object.entries(roomData.userData).filter(([key]) => !KNOWN_USERDATA_KEYS.has(key));
 
     // Parse dir_bind: "north=n&south=s" -> [["north", "n"], ["south", "s"]]
@@ -401,6 +403,25 @@ const RoomInfoPopup: React.FC = () => {
                             <div className="room-info-popup__row">
                                 <span className="room-info-popup__label">drinkable:</span>
                                 <span className="room-info-popup__value">tak</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Walk Commands */}
+                {(walkPreCmd != null || walkPostCmd != null) && (
+                    <div className="room-info-popup__section">
+                        <div className="room-info-popup__section-title">Komendy chodzenia</div>
+                        {walkPreCmd != null && (
+                            <div className="room-info-popup__row">
+                                <span className="room-info-popup__label">pre:</span>
+                                <span className="room-info-popup__value">{walkPreCmd}</span>
+                            </div>
+                        )}
+                        {walkPostCmd != null && (
+                            <div className="room-info-popup__row">
+                                <span className="room-info-popup__label">post:</span>
+                                <span className="room-info-popup__value">{walkPostCmd}</span>
                             </div>
                         )}
                     </div>

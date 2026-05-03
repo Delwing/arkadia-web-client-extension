@@ -259,7 +259,13 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     output.append(`  ${description.split('\\n').join('\n  ')}\n`);
                 }
 
-                const KNOWN_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link']);
+                if ((userData.walk_pre_cmd != null && userData.walk_pre_cmd !== '') || (userData.walk_post_cmd != null && userData.walk_post_cmd !== '')) {
+                    output.append('Komendy chodzenia\n', gray);
+                    if (userData.walk_pre_cmd != null && userData.walk_pre_cmd !== '') row('  pre', userData.walk_pre_cmd);
+                    if (userData.walk_post_cmd != null && userData.walk_post_cmd !== '') row('  post', userData.walk_post_cmd);
+                }
+
+                const KNOWN_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link', 'walk_pre_cmd', 'walk_post_cmd']);
                 const otherEntries = Object.entries(userData).filter(([key]) => !KNOWN_KEYS.has(key));
                 if (otherEntries.length > 0) {
                     output.append('Dane uzytkownika\n', gray);
