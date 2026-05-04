@@ -205,7 +205,47 @@ export const polishNumberWords: Record<string, number> = {
     'dziewiecdziesiat osiem': 98,
     'dziewiecdziesieciu osmiu': 98,
     'dziewiecdziesiat dziewiec': 99,
-    'dziewiecdziesieciu dziewieciu': 99
+    'dziewiecdziesieciu dziewieciu': 99,
+    // collective numerals (liczebniki zbiorowe): nominative
+    'dwoje': 2,
+    'troje': 3,
+    'czworo': 4,
+    'piecioro': 5,
+    'szescioro': 6,
+    'siedmioro': 7,
+    'osmioro': 8,
+    'dziewiecioro': 9,
+    'dziesiecioro': 10,
+    // genitive
+    'dwojga': 2,
+    'trojga': 3,
+    'czworga': 4,
+    'pieciorga': 5,
+    'szesciorga': 6,
+    'siedmiorga': 7,
+    'osmiorga': 8,
+    'dziewieciorga': 9,
+    'dziesieciorga': 10,
+    // dative/locative
+    'dwojgu': 2,
+    'trojgu': 3,
+    'czworgu': 4,
+    'pieciorgu': 5,
+    'szesciorgu': 6,
+    'siedmiorgu': 7,
+    'osmiorgu': 8,
+    'dziewieciorgu': 9,
+    'dziesieciorgu': 10,
+    // instrumental
+    'dwojgiem': 2,
+    'trojgiem': 3,
+    'czworgiem': 4,
+    'pieciorgiem': 5,
+    'szesciorgiem': 6,
+    'siedmiorgiem': 7,
+    'osmiorgiem': 8,
+    'dziewieciorgiem': 9,
+    'dziesieciorgiem': 10
 };
 
 /**

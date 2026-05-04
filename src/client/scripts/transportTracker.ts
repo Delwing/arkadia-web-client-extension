@@ -379,7 +379,17 @@ class Tracker {
 
         if (this.state.kind === 'idle' || this.state.kind === 'pending') {
             if (isOutside) {
-                this.setBoardBind(def, true);
+                const locId = this.locationId ?? this.prevLocationId;
+                const stop = def.stops[stopIdx];
+                if (typeof locId !== 'number') {
+                    this.setBoardBind(def, true, true);
+                } else if (stop.destination === locId || stop.start === locId) {
+                    this.setBoardBind(def, true);
+                } else if (!this.anyTransportAtLocation(locId)) {
+                    // Location is not a stop for any transport — show bind with (?) as fallback
+                    this.setBoardBind(def, true, true);
+                }
+                // else: another transport docks here and its pattern matched — skip to prevent double-bind
                 // Stage the next leg — stop pattern already tells us which direction is next
                 const nextIdx = (stopIdx + 1) % def.stops.length;
                 this.stagedSet.set(def, nextIdx);
@@ -638,14 +648,23 @@ class Tracker {
 
     // ── binds ─────────────────────────────────────────────────────────────────
 
-    private setBoardBind(def: Def, sound = false): void {
+    private setBoardBind(def: Def, sound = false, uncertain = false): void {
         const cmds = def.board_commands;
         if (!cmds?.length) return;
         if (sound) this.client.sendEvent('sound:category', 'transport');
-        const label = `${cmds.join(';')} [${def.name}]`;
+        const name = uncertain ? `${def.name} (?)` : def.name;
+        const label = `${cmds.join(';')} [${name}]`;
         this.client.FunctionalBind.setCategory('transport', label, () => {
             cmds.forEach(cmd => this.client.sendCommand(cmd));
         }, false);
+    }
+
+    private locationMatchesDef(locId: number, def: Def): boolean {
+        return def.stops.some(s => s.start === locId);
+    }
+
+    private anyTransportAtLocation(locId: number): boolean {
+        return this.defs.some(d => this.locationMatchesDef(locId, d));
     }
 
     private setExitBind(def: Def, stopIdx: number): void {
@@ -823,10 +842,18 @@ class Tracker {
             const trigger = isRegex ? new RegExp(pattern, 'i') : pattern;
             standingParent.registerChild(trigger, triggerLine => {
                 const locId = this.locationId ?? this.prevLocationId;
-                const matched = typeof locId === 'number'
-                    ? defs.find(d => d.stops.some(s => s.start === locId))
-                    : undefined;
-                this.setBoardBind(matched ?? defs[0]);
+                if (typeof locId === 'number') {
+                    const matched = defs.find(d => this.locationMatchesDef(locId, d));
+                    if (matched) {
+                        this.setBoardBind(matched);
+                    } else if (!this.anyTransportAtLocation(locId)) {
+                        // Location is not a stop for any known transport — show bind with (?) as fallback
+                        this.setBoardBind(defs[0], false, true);
+                    }
+                    // else: another transport docks here — its own trigger will fire the correct bind
+                } else {
+                    this.setBoardBind(defs[0]);
+                }
                 return triggerLine;
             }, 'transport', isRegex ? undefined : { caseInsensitive: true });
         }
