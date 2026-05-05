@@ -16,6 +16,6 @@ export default function initCarriage(client: Client) {
         }
         return line;
     };
-    client.Triggers.registerTrigger(/^Siadasz w (.*) bryczce\.$/, enable, "carriageMode");
-    client.Triggers.registerTrigger(/^Zsiadasz z (.*) bryczki\.$/, disable, "carriageMode");
+    client.Triggers.registerTrigger(/^Siadasz w (.*) (dylizansie|wozie|bryczce)\.$/, enable, "carriageMode");
+    client.Triggers.registerTrigger(/^Zsiadasz z (.*) (dylizansu|wozu|bryczki)\.$/, disable, "carriageMode");
 }
