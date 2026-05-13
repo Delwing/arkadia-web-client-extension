@@ -434,9 +434,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
                     });
                 }
                 lines.forEach(line => {
-                    if (line.length > 0) {
-                        client.sendCommand(line, true, {preserveCase: true});
-                    }
+                    client.sendCommand(line, true, {preserveCase: true});
                 });
                 client.sendCommand("**");
                 return line;

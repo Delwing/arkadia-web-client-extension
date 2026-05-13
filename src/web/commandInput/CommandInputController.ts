@@ -154,14 +154,13 @@ export class CommandInputController {
         const rawValue = this.deps.isPasswordMode()
             ? this.deps.passwordInput.value
             : this.input.value;
-        const lines = rawValue.split('\n');
-        const commands = lines.map(l => l.trim()).filter(l => l.length > 0);
+        const commands = rawValue.split('\n');
         const clearInputOnSend = this.deps.getClearInputOnSend();
 
-        if (commands.length > 0) {
+        if (rawValue.length > 0) {
             if (!this.deps.isPasswordMode()) {
                 // Store the full input as a single history entry
-                const historyEntry = rawValue.trim();
+                const historyEntry = rawValue;
 
                 // Remove old sentinels and deduplicate
                 this.historyList = this.historyList.filter(h => h !== '' && h !== historyEntry);
