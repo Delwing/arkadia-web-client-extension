@@ -902,14 +902,6 @@ mudClient.on('client.disconnect', () => {
 });
 
 // Ensure button state is correct when returning to the tab
-let lastUserKeepalive: number | null = null;
-eventBus.on('gmcp.char.options', (options) => {
-    if (document.hidden) return;
-    const value = (options as { keepalive?: unknown })?.keepalive;
-    if (typeof value === 'number') {
-        lastUserKeepalive = value;
-    }
-});
 document.addEventListener('visibilitychange', () => {
     if (isConnected) {
         mudClient.checkConnection();
@@ -929,10 +921,10 @@ document.addEventListener('visibilitychange', () => {
             isDisconnecting = false;
             updateConnectButtons();
         } else if (socketOpen && isConnected) {
-            mudClient.sendGmcp('core.keepalive', lastUserKeepalive ?? 2);
+            mudClient.sendGmcp('core.keepalive', {disabled: false});
         }
     } else if (isConnected) {
-        mudClient.sendGmcp('core.keepalive', 0);
+        mudClient.sendGmcp('core.keepalive', {disabled: true});
     }
 });
 
