@@ -34,36 +34,20 @@ class PingTracker {
     }
 
     private sendPing() {
-        if (this.lastSentAt !== null) {
-            const outstanding = performance.now() - this.lastSentAt;
-            console.warn(`[ping] sending new ping while previous still outstanding for ${outstanding.toFixed(0)}ms`);
-        }
         this.lastSentAt = performance.now();
-        console.log('[ping] -> core.ping');
         this.sendPingCommand();
     }
 
     private handlePingResponse = () => {
         if (this.lastSentAt === null) {
-            console.log('[ping] <- core.ping response (no outstanding ping recorded)');
             return;
         }
 
         const duration = performance.now() - this.lastSentAt;
         this.lastSentAt = null;
         this.lastDuration = duration;
-        console.log(`[ping] <- core.ping response in ${duration.toFixed(0)}ms`);
         eventBus.emit("ping", duration);
     };
-
-    debugSnapshot() {
-        return {
-            timerActive: this.timer !== null,
-            lastSentAt: this.lastSentAt,
-            lastDuration: this.lastDuration,
-            outstandingPingMs: this.lastSentAt !== null ? performance.now() - this.lastSentAt : null,
-        };
-    }
 }
 
 export default PingTracker;

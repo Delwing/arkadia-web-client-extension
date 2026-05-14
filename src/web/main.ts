@@ -902,18 +902,24 @@ mudClient.on('client.disconnect', () => {
 });
 
 // Ensure button state is correct when returning to the tab
-let tabHiddenAt: number | null = null;
-let tabVisibleAt: number | null = null;
+let lastUserKeepalive: number | null = null;
+eventBus.on('gmcp.char.options', (options) => {
+    if (document.hidden) return;
+    const value = (options as { keepalive?: unknown })?.keepalive;
+    if (typeof value === 'number') {
+        lastUserKeepalive = value;
+    }
+});
 document.addEventListener('visibilitychange', () => {
+    if (isConnected) {
+        mudClient.checkConnection();
+    }
+
     if (!document.hidden) {
         // Suppress split view checks during tab reactivation reflow
         suppressSplitViewUntil = Date.now() + 500;
 
         const socketOpen = mudClient.isSocketOpen();
-        const hiddenForMs = tabHiddenAt !== null ? Date.now() - tabHiddenAt : null;
-        tabVisibleAt = Date.now();
-        tabHiddenAt = null;
-        console.log(`[visibilitychange] tab visible — socketOpen=${socketOpen} isConnected=${isConnected} hiddenForMs=${hiddenForMs}`);
         if (socketOpen && !isConnected) {
             isConnected = true;
             updateConnectButtons();
@@ -923,20 +929,11 @@ document.addEventListener('visibilitychange', () => {
             isDisconnecting = false;
             updateConnectButtons();
         } else if (socketOpen && isConnected) {
-            console.log('[visibilitychange] enabling keepalive + running checkConnection');
-            mudClient.sendGmcp('core.keepalive', {disabled: false});
-            mudClient.checkConnection();
+            mudClient.sendGmcp('core.keepalive', lastUserKeepalive ?? 2);
         }
     } else if (isConnected) {
-        tabHiddenAt = Date.now();
-        console.log('[visibilitychange] tab hidden — disabling keepalive');
-        mudClient.sendGmcp('core.keepalive', {disabled: true});
+        mudClient.sendGmcp('core.keepalive', 0);
     }
-});
-
-mudClient.on('close', (event: CloseEvent) => {
-    const sinceVisibleMs = tabVisibleAt !== null ? Date.now() - tabVisibleAt : null;
-    console.log(`[close-debug] code=${event.code} wasClean=${event.wasClean} msSinceTabVisible=${sinceVisibleMs}`);
 });
 
 

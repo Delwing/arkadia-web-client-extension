@@ -38,10 +38,6 @@ class MudClient implements ClientAdapter {
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
     private connectionCheckTimeout: number | null = null;
-    private lastIncomingAt: number | null = null;
-    private lastOutgoingAt: number | null = null;
-    private incomingCount: number = 0;
-    private outgoingCount: number = 0;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -143,10 +139,7 @@ class MudClient implements ClientAdapter {
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
                     if (event.data.length === 0) return;
-                    this.lastIncomingAt = Date.now();
-                    this.incomingCount++;
                     if (this.connectionCheckTimeout !== null) {
-                        console.log('[checkConnection] incoming data — clearing pending timeout');
                         clearTimeout(this.connectionCheckTimeout);
                         this.connectionCheckTimeout = null;
                     }
@@ -174,12 +167,7 @@ class MudClient implements ClientAdapter {
             };
 
             this.socket.onclose = (event: CloseEvent) => {
-                const now = Date.now();
-                const msSinceIncoming = this.lastIncomingAt !== null ? now - this.lastIncomingAt : null;
-                const msSinceOutgoing = this.lastOutgoingAt !== null ? now - this.lastOutgoingAt : null;
-                console.log(`[socket.onclose] code=${event.code} reason="${event.reason}" wasClean=${event.wasClean} msSinceLastIncoming=${msSinceIncoming} msSinceLastOutgoing=${msSinceOutgoing} totalIn=${this.incomingCount} totalOut=${this.outgoingCount} ping=`, this.pingTracker.debugSnapshot());
                 if (this.connectionCheckTimeout !== null) {
-                    console.log('[socket.onclose] clearing pending connection check timeout');
                     clearTimeout(this.connectionCheckTimeout);
                     this.connectionCheckTimeout = null;
                 }
@@ -222,25 +210,12 @@ class MudClient implements ClientAdapter {
     }
 
     checkConnection(): void {
-        if (!this.isSocketOpen()) {
-            console.log('[checkConnection] skipped: socket not open');
-            return;
-        }
-        if (this.connectionCheckTimeout !== null) {
-            console.log('[checkConnection] skipped: check already in progress');
-            return;
-        }
-        const startedAt = Date.now();
-        console.log('[checkConnection] sending core.ping, arming 5s timeout');
+        if (!this.isSocketOpen() || this.connectionCheckTimeout !== null) return;
         this.sendGmcp('core.ping');
         this.connectionCheckTimeout = window.setTimeout(() => {
             this.connectionCheckTimeout = null;
-            const elapsed = Date.now() - startedAt;
             if (this.isSocketOpen()) {
-                console.warn(`[checkConnection] timed out after ${elapsed}ms with no incoming data — closing socket`);
                 this.socket.close();
-            } else {
-                console.log(`[checkConnection] timed out after ${elapsed}ms but socket already closed`);
             }
         }, 5000);
     }
@@ -261,8 +236,6 @@ class MudClient implements ClientAdapter {
 
         try {
             this.socket.send(btoa(message + "\r\n"));
-            this.lastOutgoingAt = Date.now();
-            this.outgoingCount++;
         } catch (error) {
             console.error('Error sending message:', error);
             this.emit('error', error);
@@ -284,8 +257,6 @@ class MudClient implements ClientAdapter {
         }
         try {
             this.socket.send(btoa(data));
-            this.lastOutgoingAt = Date.now();
-            this.outgoingCount++;
         } catch (error) {
             console.error('Error sending raw data:', error);
         }
@@ -298,8 +269,6 @@ class MudClient implements ClientAdapter {
         try {
             const gmcpMessage = encodeGmcp(path, payload);
             this.socket.send(btoa(gmcpMessage));
-            this.lastOutgoingAt = Date.now();
-            this.outgoingCount++;
         } catch (error) {
             console.error('Error sending GMCP message:', error);
             this.emit('error', error);
