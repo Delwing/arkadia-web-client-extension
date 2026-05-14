@@ -140,6 +140,7 @@ class MudClient implements ClientAdapter {
                 try {
                     if (event.data.length === 0) return;
                     if (this.connectionCheckTimeout !== null) {
+                        console.log('[checkConnection] incoming data — clearing pending timeout');
                         clearTimeout(this.connectionCheckTimeout);
                         this.connectionCheckTimeout = null;
                     }
@@ -167,7 +168,9 @@ class MudClient implements ClientAdapter {
             };
 
             this.socket.onclose = (event: CloseEvent) => {
+                console.log(`[socket.onclose] code=${event.code} reason="${event.reason}" wasClean=${event.wasClean}`);
                 if (this.connectionCheckTimeout !== null) {
+                    console.log('[socket.onclose] clearing pending connection check timeout');
                     clearTimeout(this.connectionCheckTimeout);
                     this.connectionCheckTimeout = null;
                 }
@@ -210,12 +213,25 @@ class MudClient implements ClientAdapter {
     }
 
     checkConnection(): void {
-        if (!this.isSocketOpen() || this.connectionCheckTimeout !== null) return;
+        if (!this.isSocketOpen()) {
+            console.log('[checkConnection] skipped: socket not open');
+            return;
+        }
+        if (this.connectionCheckTimeout !== null) {
+            console.log('[checkConnection] skipped: check already in progress');
+            return;
+        }
+        const startedAt = Date.now();
+        console.log('[checkConnection] sending core.ping, arming 5s timeout');
         this.sendGmcp('core.ping');
         this.connectionCheckTimeout = window.setTimeout(() => {
             this.connectionCheckTimeout = null;
+            const elapsed = Date.now() - startedAt;
             if (this.isSocketOpen()) {
+                console.warn(`[checkConnection] timed out after ${elapsed}ms with no incoming data — closing socket`);
                 this.socket.close();
+            } else {
+                console.log(`[checkConnection] timed out after ${elapsed}ms but socket already closed`);
             }
         }, 5000);
     }

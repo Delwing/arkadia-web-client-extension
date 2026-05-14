@@ -908,6 +908,7 @@ document.addEventListener('visibilitychange', () => {
         suppressSplitViewUntil = Date.now() + 500;
 
         const socketOpen = mudClient.isSocketOpen();
+        console.log(`[visibilitychange] tab visible — socketOpen=${socketOpen} isConnected=${isConnected}`);
         if (socketOpen && !isConnected) {
             isConnected = true;
             updateConnectButtons();
@@ -917,10 +918,12 @@ document.addEventListener('visibilitychange', () => {
             isDisconnecting = false;
             updateConnectButtons();
         } else if (socketOpen && isConnected) {
+            console.log('[visibilitychange] enabling keepalive + running checkConnection');
             mudClient.sendGmcp('core.keepalive', {disabled: false});
             mudClient.checkConnection();
         }
     } else if (isConnected) {
+        console.log('[visibilitychange] tab hidden — disabling keepalive');
         mudClient.sendGmcp('core.keepalive', {disabled: true});
     }
 });
