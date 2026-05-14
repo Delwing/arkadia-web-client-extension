@@ -902,13 +902,18 @@ mudClient.on('client.disconnect', () => {
 });
 
 // Ensure button state is correct when returning to the tab
+let tabHiddenAt: number | null = null;
+let tabVisibleAt: number | null = null;
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
         // Suppress split view checks during tab reactivation reflow
         suppressSplitViewUntil = Date.now() + 500;
 
         const socketOpen = mudClient.isSocketOpen();
-        console.log(`[visibilitychange] tab visible — socketOpen=${socketOpen} isConnected=${isConnected}`);
+        const hiddenForMs = tabHiddenAt !== null ? Date.now() - tabHiddenAt : null;
+        tabVisibleAt = Date.now();
+        tabHiddenAt = null;
+        console.log(`[visibilitychange] tab visible — socketOpen=${socketOpen} isConnected=${isConnected} hiddenForMs=${hiddenForMs}`);
         if (socketOpen && !isConnected) {
             isConnected = true;
             updateConnectButtons();
@@ -923,9 +928,15 @@ document.addEventListener('visibilitychange', () => {
             mudClient.checkConnection();
         }
     } else if (isConnected) {
+        tabHiddenAt = Date.now();
         console.log('[visibilitychange] tab hidden — disabling keepalive');
         mudClient.sendGmcp('core.keepalive', {disabled: true});
     }
+});
+
+mudClient.on('close', (event: CloseEvent) => {
+    const sinceVisibleMs = tabVisibleAt !== null ? Date.now() - tabVisibleAt : null;
+    console.log(`[close-debug] code=${event.code} wasClean=${event.wasClean} msSinceTabVisible=${sinceVisibleMs}`);
 });
 
 
