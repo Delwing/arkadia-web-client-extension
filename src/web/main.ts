@@ -901,6 +901,12 @@ mudClient.on('client.disconnect', () => {
     console.log('Client disconnected from Arkadia server.');
 });
 
+// `core.keepalive` toggling is only useful on Safari (where the original user
+// reported background-tab disconnects). On Chromium/Firefox it causes the
+// opposite problem: telling the server to stop sending data lets the idle TCP
+// connection get killed by browser/server/proxy timeouts.
+const isSafari = /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.userAgent);
+
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
     if (isConnected) {
@@ -920,10 +926,10 @@ document.addEventListener('visibilitychange', () => {
             isConnecting = false;
             isDisconnecting = false;
             updateConnectButtons();
-        } else if (socketOpen && isConnected) {
+        } else if (socketOpen && isConnected && isSafari) {
             mudClient.sendGmcp('core.keepalive', {disabled: false});
         }
-    } else if (isConnected) {
+    } else if (isConnected && isSafari) {
         mudClient.sendGmcp('core.keepalive', {disabled: true});
     }
 });
