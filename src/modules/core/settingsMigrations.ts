@@ -89,6 +89,11 @@ const migrations: Migration[] = [
             return settings;
         },
     },
+    {
+        version: 8,
+        description: 'Migrate layoutManagerState from nested-slots to flat windows (handled by migrateLayoutManagerState)',
+        migrate: settings => settings, // No-op for core Settings, actual migration is below
+    },
 ];
 
 /**
@@ -349,6 +354,42 @@ export function migrateMobileButtonMacroField(): void {
         }
     } catch (e) {
         console.error('[SettingsMigrations] Failed to migrate mobileButtonSettings macro field:', e);
+    }
+}
+
+/**
+ * Migrate the persisted layoutManagerState from the nested-slots shape
+ * (docks.{side}.slots[].panels[] + floatingPanels[]) to the flat-windows
+ * shape (windows: Record<id, WindowRecord>). Pre-version-8 data uses the
+ * old shape; the new components require the flat shape.
+ */
+export async function migrateLayoutManagerState(): Promise<void> {
+    const currentVersion = getMigrationsVersion();
+
+    // This is migration version 8
+    if (currentVersion >= 8) {
+        return;
+    }
+
+    try {
+        const raw = localStorage.getItem('layoutManagerState');
+        if (!raw) return;
+
+        const stored = JSON.parse(raw);
+
+        // Already in new shape — nothing to do.
+        if (stored && typeof stored === 'object' && 'windows' in stored && typeof stored.windows === 'object') {
+            return;
+        }
+
+        // Dynamic import keeps this module's load time independent of the
+        // layout module (which pulls in eventBus, react-bootstrap, etc.).
+        const { migrateLayoutState } = await import('@web/layout/utils/layoutStorage');
+        const migrated = migrateLayoutState(stored);
+        localStorage.setItem('layoutManagerState', JSON.stringify(migrated));
+        console.log('[SettingsMigrations] Migrated layoutManagerState to flat-windows shape');
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to migrate layoutManagerState:', e);
     }
 }
 

@@ -12,6 +12,8 @@ export interface RegisteredPopup {
   setIsLocked: (locked: boolean) => void;
   onReset: () => void;
   headerActions?: ReactNode;
+  /** Popup-specific class applied to the outer shell (e.g. "contracts-window"). */
+  panelClassName?: string;
 }
 
 // Registry singleton

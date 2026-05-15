@@ -1,256 +1,182 @@
-import { ReactNode, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
-import { FloatingPanelState, PANEL_CONFIGS } from '../types';
-import { useLayoutManager } from '@web/layout';
-import { useDockablePanel } from '@web/layout';
-import { getPopup } from '../popupRegistry';
-import { MapHeaderMenu } from './MapHeaderMenu';
-import { ObjectListHeaderActions } from './ObjectListHeaderActions';
-
-type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null;
+import { useLayoutEffect, useRef } from 'react';
+import type { DragState, WindowRecord } from '../types';
+import type { WindowManager } from '../WindowManager';
+import { PanelHeader, usePanelChrome } from './PanelHeader';
+import { startFloatingDrag } from '../utils/dragHandlers';
 
 interface FloatingPanelProps {
-  panel: FloatingPanelState;
-  children: ReactNode;
+  window: WindowRecord;
+  manager: WindowManager;
+  onDragStateChange: (s: DragState | null) => void;
+  onTitlebarContextMenu?: (e: React.MouseEvent) => void;
+  /** When true, dragging never docks (used when layout manager is disabled). */
+  disableDocking?: boolean;
 }
 
-export function FloatingPanel({ panel, children }: FloatingPanelProps) {
-  const { updateFloatingPanel, dragState, getBuiltInPanelState, updateBuiltInPanelState } = useLayoutManager();
-  const { handleDragStart } = useDockablePanel({ panelId: panel.id });
-  const config = PANEL_CONFIGS[panel.id];
+type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
-  // Check if this is a popup panel or built-in panel
-  const isPopup = panel.id.startsWith('popup:');
-  const isBuiltIn = panel.id === 'map' || panel.id === 'objectList';
-  const popupInfo = isPopup ? getPopup(panel.id) : null;
-  const builtInState = isBuiltIn ? getBuiltInPanelState(panel.id) : undefined;
+const ALL_DIRECTIONS: ResizeDirection[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
-  // Get title - built-in panels can have dynamic title via builtInState
-  const title = builtInState?.title ?? popupInfo?.config.title ?? config?.title ?? panel.id;
-  const isLocked = isPopup ? (popupInfo?.isLocked ?? false) : (builtInState?.isLocked ?? false);
+export function FloatingPanel({
+  window: w,
+  manager,
+  onDragStateChange,
+  onTitlebarContextMenu,
+  disableDocking = false,
+}: FloatingPanelProps) {
+  const windowRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const chrome = usePanelChrome(w);
 
-  const panelRef = useRef<HTMLDivElement>(null);
-  const resizeDir = useRef<ResizeDirection>(null);
-  const startPos = useRef({ x: 0, y: 0 });
-  const startBounds = useRef({ x: 0, y: 0, width: 0, height: 0 });
-
-  const isBeingDragged = dragState?.panelId === panel.id;
-  const isCtrlHeld = isBeingDragged && dragState?.ctrlHeld;
-
-  useEffect(() => {
-    const handleMove = (e: PointerEvent) => {
-      if (!resizeDir.current) return;
-
-      const dx = e.clientX - startPos.current.x;
-      const dy = e.clientY - startPos.current.y;
-      const minWidth = popupInfo?.config.minWidth ?? config?.minWidth ?? 150;
-      const minHeight = popupInfo?.config.minHeight ?? config?.minHeight ?? 100;
-      const dir = resizeDir.current;
-
-      const updates: Partial<FloatingPanelState> = {};
-
-      // Handle horizontal resizing
-      if (dir.includes('e')) {
-        updates.width = Math.max(minWidth, startBounds.current.width + dx);
-      } else if (dir.includes('w')) {
-        const newWidth = Math.max(minWidth, startBounds.current.width - dx);
-        const widthDelta = startBounds.current.width - newWidth;
-        updates.width = newWidth;
-        updates.x = startBounds.current.x + widthDelta;
-      }
-
-      // Handle vertical resizing
-      if (dir.includes('s')) {
-        updates.height = Math.max(minHeight, startBounds.current.height + dy);
-      } else if (dir.includes('n')) {
-        const newHeight = Math.max(minHeight, startBounds.current.height - dy);
-        const heightDelta = startBounds.current.height - newHeight;
-        updates.height = newHeight;
-        updates.y = startBounds.current.y + heightDelta;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        updateFloatingPanel(panel.id, updates);
-      }
-    };
-
-    const handleEnd = () => {
-      resizeDir.current = null;
-    };
-
-    window.addEventListener('pointermove', handleMove);
-    window.addEventListener('pointerup', handleEnd);
-
+  useLayoutEffect(() => {
+    const slot = contentRef.current;
+    const target = manager.getPortalTarget(w.id);
+    if (!slot || !target) return;
+    slot.appendChild(target);
     return () => {
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleEnd);
+      if (target.parentNode === slot) slot.removeChild(target);
     };
-  }, [panel.id, updateFloatingPanel, config, popupInfo]);
+  }, [manager, w.id]);
 
-  const handleResizeStart = useCallback(
-    (direction: ResizeDirection) => (e: React.PointerEvent) => {
-      // Don't allow resizing when locked
-      if (isLocked) return;
-      resizeDir.current = direction;
-      startPos.current = { x: e.clientX, y: e.clientY };
-      // For auto-height panels, capture the actual rendered height from the DOM
-      const actualHeight = panel.height ?? panelRef.current?.getBoundingClientRect().height ?? 100;
-      startBounds.current = { x: panel.x, y: panel.y, width: panel.width, height: actualHeight };
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  const handleTitlebarPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    if ((e.target as Element).closest('.panel-button, .script-window-btn')) return;
+    if (chrome.isLocked) return;
+    e.preventDefault();
+    manager.bringToFront(w.id);
+    if (!windowRef.current) return;
+    if (disableDocking) {
+      // Simple drag — no dock detection.
+      const startOffsetX = e.clientX - windowRef.current.offsetLeft;
+      const startOffsetY = e.clientY - windowRef.current.offsetTop;
+      let lastX = windowRef.current.offsetLeft;
+      let lastY = windowRef.current.offsetTop;
+      const el = windowRef.current;
+      const onMove = (ev: PointerEvent) => {
+        lastX = ev.clientX - startOffsetX;
+        lastY = ev.clientY - startOffsetY;
+        el.style.left = `${lastX}px`;
+        el.style.top = `${lastY}px`;
+      };
+      const onUp = () => {
+        manager.setPosition(w.id, lastX, lastY);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      return;
+    }
+    startFloatingDrag({
+      id: w.id,
+      manager,
+      windowEl: windowRef.current,
+      clickClientX: e.clientX,
+      clickClientY: e.clientY,
+      onDragStateChange,
+      ctrlForcesFloat: true,
+    });
+  };
+
+  const makeResizeHandler =
+    (dir: ResizeDirection) => (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      if (chrome.isLocked) return;
       e.preventDefault();
       e.stopPropagation();
-    },
-    [panel.x, panel.y, panel.width, panel.height, isLocked]
-  );
+      manager.bringToFront(w.id);
+      const el = windowRef.current;
+      if (!el) return;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = el.offsetWidth;
+      const startH = el.offsetHeight;
+      const startLeft = el.offsetLeft;
+      const startTop = el.offsetTop;
+      let lastW = startW;
+      let lastH = startH;
+      let lastLeft = startLeft;
+      let lastTop = startTop;
 
-  // Wrap drag start to check for locked state
-  const handleDragStartWrapper = useCallback(
-    (e: React.PointerEvent) => {
-      if (isLocked) return;
-      handleDragStart(e);
-    },
-    [handleDragStart, isLocked]
-  );
+      const onMove = (ev: PointerEvent) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        if (dir.includes('e')) lastW = Math.max(150, startW + dx);
+        if (dir.includes('w')) {
+          const nw = Math.max(150, startW - dx);
+          lastLeft = startLeft + startW - nw;
+          lastW = nw;
+        }
+        if (dir.includes('s')) lastH = Math.max(80, startH + dy);
+        if (dir.includes('n')) {
+          const nh = Math.max(80, startH - dy);
+          lastTop = startTop + startH - nh;
+          lastH = nh;
+        }
+        el.style.width = `${lastW}px`;
+        el.style.height = `${lastH}px`;
+        el.style.left = `${lastLeft}px`;
+        el.style.top = `${lastTop}px`;
+      };
+      const onUp = () => {
+        manager.setSize(w.id, lastW, lastH);
+        if (dir.includes('w') || dir.includes('n')) {
+          manager.setPosition(w.id, lastLeft, lastTop);
+        }
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    };
 
-  const handleClose = useCallback(() => {
-    popupInfo?.onClose();
-  }, [popupInfo]);
-
-  const handleTogglePin = useCallback(() => {
-    popupInfo?.setIsPinned(!popupInfo.isPinned);
-  }, [popupInfo]);
-
-  const handleToggleLock = useCallback(() => {
-    if (isPopup) {
-      popupInfo?.setIsLocked(!popupInfo.isLocked);
-    } else if (isBuiltIn) {
-      updateBuiltInPanelState(panel.id, { isLocked: !builtInState?.isLocked });
-    }
-  }, [isPopup, isBuiltIn, popupInfo, builtInState, panel.id, updateBuiltInPanelState]);
-
-  const handleReset = useCallback(() => {
-    if (!popupInfo) return;
-
-    // Reset to initial centered position and size
-    const initialWidth = popupInfo.config.initialWidth ?? 500;
-    const initialHeight = popupInfo.config.initialHeight;
-    const initialY = initialHeight !== undefined
-      ? Math.max(16, (window.innerHeight - initialHeight) / 2)
-      : Math.max(16, window.innerHeight * 0.1);
-
-    updateFloatingPanel(panel.id, {
-      x: Math.max(16, (window.innerWidth - initialWidth) / 2),
-      y: initialY,
-      width: initialWidth,
-      height: initialHeight,
-    });
-
-    // Also call the popup's onReset to notify the component
-    popupInfo.onReset();
-  }, [popupInfo, panel.id, updateFloatingPanel]);
-
-  const isAutoHeight = panel.height === undefined;
-
-  // Constrain auto-height panels to fit above the input area, centered vertically
-  useLayoutEffect(() => {
-    if (panel.height !== undefined || !panelRef.current) return;
-    const inputArea = document.getElementById('input-area');
-    const bottomLimit = inputArea ? inputArea.getBoundingClientRect().top : window.innerHeight;
-    const margin = 50;
-    const availableH = bottomLimit - 2 * margin;
-    const actualH = panelRef.current.offsetHeight;
-
-    if (actualH > availableH) {
-      // Too tall: cap height and center
-      updateFloatingPanel(panel.id, { height: availableH, y: margin });
-    } else if (panel.y + actualH > bottomLimit - margin) {
-      // Overflows bottom: center in available space
-      updateFloatingPanel(panel.id, { y: Math.max(margin, (bottomLimit - actualH) / 2) });
-    }
-  });
+  const panelClass = [
+    'managed-panel',
+    'floating-panel',
+    `floating-panel--${w.id}`,
+    'script-window',
+    chrome.isPopup ? 'floating-panel--popup' : '',
+    chrome.isLocked ? 'managed-panel--locked floating-panel--locked' : '',
+    w.height === undefined ? 'floating-panel--auto-height' : '',
+    chrome.panelClassName ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
-      ref={panelRef}
-      className={`managed-panel floating-panel floating-panel--${panel.id}${isBeingDragged ? ' floating-panel--dragging' : ''}${isPopup ? ' floating-panel--popup' : ''}${isAutoHeight ? ' floating-panel--auto-height' : ''}${isLocked ? ' managed-panel--locked floating-panel--locked' : ''}`}
+      ref={windowRef}
+      className={panelClass}
+      data-window-id={w.id}
+      data-panel-id={w.id}
       style={{
-        left: panel.x,
-        top: panel.y,
-        width: panel.width,
-        ...(panel.height !== undefined && { height: panel.height }),
+        left: w.x,
+        top: w.y,
+        width: w.width,
+        ...(w.height !== undefined && { height: w.height }),
+        zIndex: w.zIndex,
+        display: w.visible ? 'flex' : 'none',
       }}
+      onPointerDown={() => manager.bringToFront(w.id)}
     >
+      <PanelHeader
+        chrome={chrome}
+        variant="floating"
+        onPointerDown={handleTitlebarPointerDown}
+        onContextMenu={onTitlebarContextMenu}
+      />
       <div
-        className={`managed-panel__header floating-panel__header${isLocked ? ' floating-panel__header--locked' : ''}`}
-        onPointerDown={handleDragStartWrapper}
-      >
-        <span className="managed-panel__title floating-panel__title">{title}</span>
-        <span
-          className={`floating-panel__drag-hint${isCtrlHeld ? ' floating-panel__drag-hint--active' : ''}${!isBeingDragged ? ' floating-panel__drag-hint--hidden' : ''}`}
-        >
-          {isCtrlHeld ? 'Docking disabled' : 'Ctrl = prevent dock'}
-        </span>
-        <div className="managed-panel__header-actions floating-panel__header-actions" onPointerDown={(e) => e.stopPropagation()}>
-          {/* Popup-specific header actions */}
-          {popupInfo?.headerActions}
-          {isPopup && popupInfo && (
-            <>
-              <button
-                type="button"
-                className="panel-button panel-button--reset floating-panel__reset-button"
-                onClick={handleReset}
-                title="Przywroc domyslna pozycje i rozmiar"
-              />
-              <button
-                type="button"
-                className={`panel-button panel-button--lock floating-panel__lock-button${popupInfo.isLocked ? ' is-active floating-panel__lock-button--active' : ''}`}
-                onClick={handleToggleLock}
-                title={popupInfo.isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
-              />
-              <button
-                type="button"
-                className={`panel-button panel-button--pin floating-panel__pin-button${popupInfo.isPinned ? ' is-active floating-panel__pin-button--active' : ''}`}
-                onClick={handleTogglePin}
-                title={popupInfo.isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-              />
-              <button
-                type="button"
-                className="panel-button panel-button--close floating-panel__close-button"
-                onClick={handleClose}
-                title="Zamknij"
-              />
-            </>
-          )}
-          {/* Built-in panel header actions */}
-          {panel.id === 'map' && <MapHeaderMenu />}
-          {panel.id === 'objectList' && <ObjectListHeaderActions />}
-          {/* Built-in panel lock button */}
-          {isBuiltIn && (
-            <button
-              type="button"
-              className={`panel-button panel-button--lock floating-panel__lock-button${isLocked ? ' is-active floating-panel__lock-button--active' : ''}`}
-              onClick={handleToggleLock}
-              title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
-            />
-          )}
-        </div>
-      </div>
-      <div className="managed-panel__content floating-panel__content">{children}</div>
-
-      {/* Edge resize handles - hidden when locked */}
-      {!isLocked && (
-        <>
-          <div className="floating-panel__edge floating-panel__edge--n" onPointerDown={handleResizeStart('n')} />
-          <div className="floating-panel__edge floating-panel__edge--s" onPointerDown={handleResizeStart('s')} />
-          <div className="floating-panel__edge floating-panel__edge--e" onPointerDown={handleResizeStart('e')} />
-          <div className="floating-panel__edge floating-panel__edge--w" onPointerDown={handleResizeStart('w')} />
-
-          {/* Corner resize handles */}
-          <div className="floating-panel__corner floating-panel__corner--ne" onPointerDown={handleResizeStart('ne')} />
-          <div className="floating-panel__corner floating-panel__corner--nw" onPointerDown={handleResizeStart('nw')} />
-          <div className="floating-panel__corner floating-panel__corner--se" onPointerDown={handleResizeStart('se')} />
-          <div className="floating-panel__corner floating-panel__corner--sw" onPointerDown={handleResizeStart('sw')} />
-        </>
-      )}
+        className="managed-panel__content floating-panel__content script-window-content"
+        ref={contentRef}
+      />
+      {!chrome.isLocked &&
+        ALL_DIRECTIONS.map(dir => (
+          <div
+            key={dir}
+            className={`floating-panel__edge floating-panel__edge--${dir} script-window-resize-${dir}`}
+            onPointerDown={makeResizeHandler(dir)}
+          />
+        ))}
     </div>
   );
 }

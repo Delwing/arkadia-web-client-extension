@@ -1,29 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DockZone } from './components/DockZone';
-import { DockDropIndicator } from './components/DockDropIndicator';
-import { FloatingPanel } from './components/FloatingPanel';
+import { useCallback, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { DockArea } from './components/DockArea';
+import { FloatingWindowLayer } from './components/FloatingWindowLayer';
 import { MapPanel } from './panels/MapPanel';
 import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
-import { PanelId } from './types';
-import { getRegisteredPopups, subscribeToRegistry, subscribeToPopupContent, RegisteredPopup } from './popupRegistry';
-
-// Renders a single popup's content and subscribes to per-popup content refresh signals.
-// Using a dedicated component prevents a single popup's content change from forcing
-// all other popups' FloatingPanels to re-render.
-function PopupContentRenderer({ popup }: { popup: RegisteredPopup }) {
-  const popupRef = useRef(popup);
-  popupRef.current = popup;
-  const [, setVersion] = useState(0);
-
-  useEffect(() => {
-    return subscribeToPopupContent(popup.id, () => setVersion((v) => v + 1));
-  }, [popup.id]);
-
-  const content = popupRef.current.renderContent();
-  const bodyClass = popupRef.current.config.bodyClassName;
-  return bodyClass ? <div className={bodyClass}>{content}</div> : <>{content}</>;
-}
+import type { DockSide } from './types';
 
 interface LayoutContentProps {
   mapElement: HTMLElement | null;
@@ -31,127 +13,192 @@ interface LayoutContentProps {
 }
 
 export function LayoutContent({ mapElement, objectListElement }: LayoutContentProps) {
-  const { layoutState, isLayoutMode, dragState } = useLayoutManager();
-  const [registeredPopups, setRegisteredPopups] = useState<RegisteredPopup[]>(() => getRegisteredPopups());
+  const {
+    manager,
+    layoutState,
+    loadVersion,
+    dragState,
+    isLayoutMode,
+    updateDragState,
+  } = useLayoutManager();
 
-  // Subscribe to popup registry changes
+  // Open built-in panel records as needed (managed by enabledPanels flag).
+  // Built-ins must NOT be open in WindowManager when layout mode is off, because
+  // the map/objects-list DOM elements need to stay in their legacy containers.
   useEffect(() => {
-    return subscribeToRegistry(() => {
-      setRegisteredPopups(getRegisteredPopups());
-    });
-  }, []);
-
-  // Create a map of popup ID to popup for quick lookup
-  const popupMap = useMemo(() => {
-    const map = new Map<string, RegisteredPopup>();
-    for (const popup of registeredPopups) {
-      map.set(popup.id, popup);
+    if (!isLayoutMode) {
+      if (manager.has('map')) manager.close('map');
+      if (manager.has('objectList')) manager.close('objectList');
+      return;
     }
-    return map;
-  }, [registeredPopups]);
+    manager.open('map', { title: 'Mapa' });
+    if (layoutState.enabledPanels.objectList) {
+      manager.open('objectList', { title: 'Kondycje' });
+    } else if (manager.has('objectList')) {
+      manager.close('objectList');
+    }
+    // loadVersion in deps so Restore Default / device-sync import re-opens
+    // built-ins after the manager's live-windows map is cleared by loadState.
+  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion]);
 
-  // Check if a panel is enabled for layout management
-  const isPanelEnabled = useCallback(
-    (panelId: PanelId) => {
-      // Map is always enabled when layout manager is on
-      if (panelId === 'map') return true;
-      if (panelId === 'objectList') return layoutState.enabledPanels.objectList;
-      // Popup panels are only enabled if they're registered
-      if (panelId.startsWith('popup:')) {
-        return popupMap.has(panelId);
-      }
-      return true; // Future non-popup panels default to enabled
-    },
-    [layoutState.enabledPanels, popupMap]
-  );
-
-  const renderPanel = useCallback(
-    (panelId: string) => {
-      switch (panelId) {
-        case 'map':
-          return <MapPanel mapElement={mapElement} />;
-        case 'objectList':
-          return <ObjectListPanel objectListElement={objectListElement} />;
-        default:
-          // Check if this is a popup panel
-          const popup = popupMap.get(panelId);
-          if (popup) {
-            return <PopupContentRenderer popup={popup} />;
-          }
-          return <div>Unknown panel: {panelId}</div>;
-      }
-    },
-    [mapElement, objectListElement, popupMap]
-  );
-
-  // Get popup info for a panel (used by DockZone to pass popup-specific props)
-  const getPopupInfo = useCallback(
-    (panelId: string) => {
-      return popupMap.get(panelId) || null;
-    },
-    [popupMap]
-  );
-
-  // Filter floating panels to only show enabled ones
-  const enabledFloatingPanels = useMemo(
-    () => layoutState.floatingPanels.filter((p) => isPanelEnabled(p.id)),
-    [layoutState.floatingPanels, isPanelEnabled]
-  );
-
-  // Apply CSS variables to #content-area for the grid to work
+  // Apply CSS variables to #content-area for the grid to work.
+  // Critical: a drag-target side must size the grid column even when it has
+  // no windows yet — otherwise the empty DockArea renders at 0 width and
+  // dockDetect's bounding-rect test rejects it as out-of-bounds.
+  // Bottom dock is NOT part of the grid (it's portaled below #input-area).
   useEffect(() => {
     const contentArea = document.getElementById('content-area');
     if (!contentArea) return;
-
-    if (isLayoutMode) {
-      const { docks } = layoutState;
-      // Filter slots by enabled panels
-      const leftHasEnabled = docks.left.slots.some((slot) =>
-        slot.panels.some((p) => isPanelEnabled(p.id))
-      );
-      const topHasEnabled = docks.top.slots.some((slot) =>
-        slot.panels.some((p) => isPanelEnabled(p.id))
-      );
-      const rightHasEnabled = docks.right.slots.some((slot) =>
-        slot.panels.some((p) => isPanelEnabled(p.id))
-      );
-
-      contentArea.style.setProperty(
-        '--dock-left-size',
-        leftHasEnabled ? `${docks.left.size}px` : '0px'
-      );
-      contentArea.style.setProperty(
-        '--dock-top-size',
-        topHasEnabled ? `${docks.top.size}px` : '0px'
-      );
-      contentArea.style.setProperty(
-        '--dock-right-size',
-        rightHasEnabled ? `${docks.right.size}px` : '0px'
-      );
-    } else {
+    if (!isLayoutMode) {
       contentArea.style.removeProperty('--dock-left-size');
       contentArea.style.removeProperty('--dock-top-size');
       contentArea.style.removeProperty('--dock-right-size');
+      return;
     }
-  }, [layoutState, isLayoutMode, isPanelEnabled]);
+    const sideHasContent = (side: DockSide) =>
+      Object.values(layoutState.windows).some(
+        w => w.docked === side && w.visible
+      );
+    const sideIsDragTarget = (side: DockSide) =>
+      dragState?.potentialDock === side;
+    const sizeFor = (side: DockSide) =>
+      sideHasContent(side) || sideIsDragTarget(side)
+        ? `${layoutState.dockExtents[side]}px`
+        : '0px';
+    contentArea.style.setProperty('--dock-left-size', sizeFor('left'));
+    contentArea.style.setProperty('--dock-top-size', sizeFor('top'));
+    contentArea.style.setProperty('--dock-right-size', sizeFor('right'));
+  }, [layoutState, isLayoutMode, dragState]);
+
+  const setExtent = useCallback(
+    (side: DockSide, n: number) => manager.setDockExtent(side, n),
+    [manager]
+  );
+
+  const visibleWindows = useMemo(
+    () => Object.values(layoutState.windows).filter(w => w.visible),
+    [layoutState.windows]
+  );
+
+  // Compute which dock areas to render (only sides with content OR active drag target).
+  const showSide = (side: DockSide): boolean => {
+    if (visibleWindows.some(w => w.docked === side)) return true;
+    if (dragState?.potentialDock === side) return true;
+    return false;
+  };
 
   if (!isLayoutMode) {
-    return null;
+    // Floating-only mode: render the floating layer for any open popups.
+    // Map/objectList stay in their legacy DOM containers (#iframe-container,
+    // #objects-list) — they're not opened in the WindowManager.
+    return (
+      <FloatingWindowLayer
+        windows={visibleWindows}
+        manager={manager}
+        onDragStateChange={updateDragState}
+        disableDocking
+      />
+    );
   }
 
   return (
-    <div className="layout-manager">
-      <DockZone position="TOP" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} getPopupInfo={getPopupInfo} />
-      <DockZone position="LEFT" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} getPopupInfo={getPopupInfo} />
-      <div className="dock-zone dock-zone--main" id="layout-main-content" />
-      <DockZone position="RIGHT" renderPanel={renderPanel} isPanelEnabled={isPanelEnabled} getPopupInfo={getPopupInfo} />
-      {/* Floating panels */}
-      {enabledFloatingPanels.map((panel) => (
-        <FloatingPanel key={panel.id} panel={panel}>
-          {renderPanel(panel.id)}
-        </FloatingPanel>
-      ))}
-      {dragState && <DockDropIndicator />}
-    </div>
+    <>
+      {/* Dock areas — each gets grid-area: left/top/right/bottom via CSS so they
+          land in the correct slot of #content-area's grid template. */}
+      <div className="layout-manager">
+        {showSide('top') && (
+          <DockArea
+            side="top"
+            windows={visibleWindows}
+            extent={layoutState.dockExtents.top}
+            dragState={dragState}
+            manager={manager}
+            onSetExtent={setExtent}
+            onDragStateChange={updateDragState}
+          />
+        )}
+        {showSide('left') && (
+          <DockArea
+            side="left"
+            windows={visibleWindows}
+            extent={layoutState.dockExtents.left}
+            dragState={dragState}
+            manager={manager}
+            onSetExtent={setExtent}
+            onDragStateChange={updateDragState}
+          />
+        )}
+        {showSide('right') && (
+          <DockArea
+            side="right"
+            windows={visibleWindows}
+            extent={layoutState.dockExtents.right}
+            dragState={dragState}
+            manager={manager}
+            onSetExtent={setExtent}
+            onDragStateChange={updateDragState}
+          />
+        )}
+      </div>
+
+      {/* Bottom dock lives below #input-area, outside #content-area's grid. */}
+      {showSide('bottom') && (
+        <BottomDockPortal>
+          <DockArea
+            side="bottom"
+            windows={visibleWindows}
+            extent={layoutState.dockExtents.bottom}
+            dragState={dragState}
+            manager={manager}
+            onSetExtent={setExtent}
+            onDragStateChange={updateDragState}
+          />
+        </BottomDockPortal>
+      )}
+
+      {/* Content pool — each built-in panel renders into its portal target
+          via the BuiltInPortal helper. The portal target is then attached to
+          whichever shell currently owns it. Popups portal themselves through
+          DockablePopupWrapper. */}
+      {mapElement && manager.has('map') && (
+        <BuiltInPortal id="map" manager={manager}>
+          <MapPanel mapElement={mapElement} />
+        </BuiltInPortal>
+      )}
+      {objectListElement && manager.has('objectList') && (
+        <BuiltInPortal id="objectList" manager={manager}>
+          <ObjectListPanel objectListElement={objectListElement} />
+        </BuiltInPortal>
+      )}
+
+      <FloatingWindowLayer
+        windows={visibleWindows}
+        manager={manager}
+        onDragStateChange={updateDragState}
+      />
+    </>
   );
+}
+
+/** Renders a built-in panel's React content into its persistent portal-target
+ *  div. The div is moved around by shells but the React subtree never unmounts. */
+function BuiltInPortal({
+  id,
+  manager,
+  children,
+}: {
+  id: string;
+  manager: ReturnType<typeof useLayoutManager>['manager'];
+  children: React.ReactNode;
+}) {
+  return createPortal(<>{children}</>, manager.getOrCreatePortalTarget(id));
+}
+
+/** Portals the bottom DockArea into #layout-bottom-dock-host so it sits below
+ *  #input-area in DOM order (and therefore below it visually inside the
+ *  column-flex #main-container). */
+function BottomDockPortal({ children }: { children: React.ReactNode }) {
+  const host = document.getElementById('layout-bottom-dock-host');
+  if (!host) return null;
+  return createPortal(<>{children}</>, host);
 }

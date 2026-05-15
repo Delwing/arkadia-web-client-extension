@@ -1,110 +1,81 @@
-import { ReactNode, useCallback } from 'react';
-import { PanelId, PANEL_CONFIGS } from '../types';
-import { useDockablePanel } from '@web/layout';
-import { useLayoutManager } from '@web/layout';
+import { useLayoutEffect, useRef } from 'react';
+import type { DragState, WindowRecord } from '../types';
+import type { WindowManager } from '../WindowManager';
+import { PanelHeader, usePanelChrome } from './PanelHeader';
+import { startUndockableDrag } from '../utils/dragHandlers';
 
 interface DockedPanelProps {
-  panelId: PanelId;
-  children: ReactNode;
-  style?: React.CSSProperties;
-  // Popup-specific props
-  title?: string;
-  onClose?: () => void;
-  onPin?: () => void;
-  isPinned?: boolean;
-  onLock?: () => void;
-  isLocked?: boolean;
-  onReset?: () => void;
-  headerActions?: ReactNode;
-  isPopup?: boolean;
+  window: WindowRecord;
+  manager: WindowManager;
+  onDragStateChange: (s: DragState | null) => void;
+  onTitlebarContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export function DockedPanel({
-  panelId,
-  children,
-  style,
-  title: titleProp,
-  onClose,
-  onPin,
-  isPinned,
-  onLock,
-  isLocked,
-  onReset,
-  headerActions,
-  isPopup,
+  window,
+  manager,
+  onDragStateChange,
+  onTitlebarContextMenu,
 }: DockedPanelProps) {
-  const { handleDragStart } = useDockablePanel({ panelId });
-  const { getBuiltInPanelState } = useLayoutManager();
-  const config = PANEL_CONFIGS[panelId];
-  const isBuiltIn = panelId === 'map' || panelId === 'objectList';
-  const builtInState = isBuiltIn ? getBuiltInPanelState(panelId) : undefined;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const chrome = usePanelChrome(window);
 
-  // Get title - built-in panels can have dynamic title via builtInState
-  const title = builtInState?.title ?? titleProp ?? config?.title ?? panelId;
-  const closable = isPopup || config?.closable !== false;
+  // Attach the window's persistent portal-target div into our content slot.
+  useLayoutEffect(() => {
+    const slot = contentRef.current;
+    const target = manager.getPortalTarget(window.id);
+    if (!slot || !target) return;
+    slot.appendChild(target);
+    return () => {
+      if (target.parentNode === slot) slot.removeChild(target);
+    };
+  }, [manager, window.id]);
 
-  // Wrap drag start to check for locked state
-  const handleDragStartWrapper = useCallback(
-    (e: React.PointerEvent) => {
-      if (isLocked) return;
-      handleDragStart(e);
-    },
-    [handleDragStart, isLocked]
-  );
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    if ((e.target as Element).closest('.panel-button, .script-window-btn')) return;
+    if (chrome.isLocked) return;
+    e.preventDefault();
+    startUndockableDrag({
+      id: window.id,
+      manager,
+      sourceEl: panelRef.current,
+      clickClientX: e.clientX,
+      clickClientY: e.clientY,
+      onDragStateChange,
+      ctrlForcesFloat: true,
+    });
+  };
 
-  const panelClassName = isPopup
-    ? `managed-panel docked-panel docked-panel--${panelId} docked-panel--popup${isLocked ? ' managed-panel--locked docked-panel--locked' : ''}`
-    : `managed-panel docked-panel docked-panel--${panelId}${isLocked ? ' managed-panel--locked docked-panel--locked' : ''}`;
+  const panelClass = [
+    'managed-panel',
+    'docked-panel',
+    `docked-panel--${window.id}`,
+    chrome.isPopup ? 'docked-panel--popup' : '',
+    chrome.isLocked ? 'managed-panel--locked docked-panel--locked' : '',
+    chrome.panelClassName ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={panelClassName} style={style} data-panel-id={panelId}>
+    <div
+      ref={panelRef}
+      className={panelClass}
+      data-panel-id={window.id}
+      style={{ flex: 1, minHeight: 0, minWidth: 0 }}
+    >
+      <PanelHeader
+        chrome={chrome}
+        variant="docked"
+        onPointerDown={handlePointerDown}
+        onContextMenu={onTitlebarContextMenu}
+      />
       <div
-        className={`managed-panel__header docked-panel__header${isLocked ? ' docked-panel__header--locked' : ''}`}
-        onPointerDown={handleDragStartWrapper}
-      >
-        <span className="managed-panel__title docked-panel__title">{title}</span>
-        {(headerActions || onReset || onLock || onPin || (closable && onClose)) && (
-          <div
-            className="managed-panel__header-actions docked-panel__header-actions"
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {headerActions}
-            {onReset && (
-              <button
-                type="button"
-                className="panel-button panel-button--reset docked-panel__reset-btn"
-                onClick={onReset}
-                title="Przywroc domyslna pozycje i rozmiar"
-              />
-            )}
-            {onLock && (
-              <button
-                type="button"
-                className={`panel-button panel-button--lock docked-panel__lock-btn${isLocked ? ' is-active docked-panel__lock-btn--active' : ''}`}
-                onClick={onLock}
-                title={isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
-              />
-            )}
-            {onPin && (
-              <button
-                type="button"
-                className={`panel-button panel-button--pin docked-panel__pin-btn${isPinned ? ' is-active docked-panel__pin-btn--active' : ''}`}
-                onClick={onPin}
-                title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-              />
-            )}
-            {closable && onClose && (
-              <button
-                type="button"
-                className="panel-button panel-button--close docked-panel__close-btn"
-                onClick={onClose}
-                title="Zamknij"
-              />
-            )}
-          </div>
-        )}
-      </div>
-      <div className="managed-panel__content docked-panel__content">{children}</div>
+        className="managed-panel__content docked-panel__content docked-panel-content"
+        ref={contentRef}
+      />
     </div>
   );
 }

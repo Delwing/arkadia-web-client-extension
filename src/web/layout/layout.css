@@ -10,6 +10,12 @@ body.layout-manager-enabled #content-area {
   grid-template-rows: var(--dock-top-size, 0px) 1fr;
 }
 
+/* Bottom dock host lives below #input-area as a sibling in #main-container's
+ * column flex, so the BOTTOM DockArea visually appears below the input bar. */
+#layout-bottom-dock-host {
+  display: contents;
+}
+
 /* Hide original map and object list when their layout panels are enabled */
 body.layout-map-enabled #iframe-container {
   display: none !important;
@@ -55,6 +61,13 @@ body.layout-objectlist-enabled #objects-list {
   grid-area: right;
   flex-direction: column;
   border-left: 1px solid var(--surface-border, #333);
+}
+
+.dock-zone--bottom {
+  /* Lives in #layout-bottom-dock-host (sibling of #input-area), not in the grid. */
+  flex-direction: row;
+  border-top: 1px solid var(--surface-border, #333);
+  width: 100%;
 }
 
 .dock-zone--main {
@@ -1069,3 +1082,257 @@ body.layout-manager-enabled .compass-rose-box {
 .object-list-timers-bar__value--off {
   color: #888;
 }
+
+/* ============================================================================
+   Mudix-derived dock areas + tab/split groups + floating script-windows.
+   These classes are added by the new DockArea/DockedPanel/TabGroupPanel/
+   SplitGroupPanel/FloatingPanel/FloatingWindowLayer components alongside the
+   existing dock-zone / docked-panel / floating-panel classes.
+   ============================================================================ */
+
+/* Dock area sizing — outer flex layout */
+.dock-area {
+  display: flex;
+  flex-shrink: 0;
+  position: relative;
+  background: var(--surface-ground, #1a1a1a);
+  overflow: hidden;
+}
+.dock-area-left,
+.dock-area-right {
+  flex-direction: column;
+}
+.dock-area-top,
+.dock-area-bottom {
+  flex-direction: row;
+}
+
+/* Dock slot — wraps a single panel, a tab group, or a split group. */
+.dock-panel-slot {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.dock-area-top .dock-panel-slot,
+.dock-area-bottom .dock-panel-slot {
+  flex-direction: row;
+}
+
+/* Splitter between adjacent slots within a dock area. */
+.dock-panel-splitter {
+  background: var(--surface-border, #333);
+  flex-shrink: 0;
+  transition: background 0.12s;
+  z-index: 5;
+}
+.dock-panel-splitter:hover,
+.dock-panel-splitter:active {
+  background: var(--bs-primary, #589aff);
+}
+.dock-panel-splitter-h {
+  height: 1px;
+  cursor: ns-resize;
+  width: 100%;
+}
+.dock-panel-splitter-v {
+  width: 1px;
+  cursor: ew-resize;
+  height: 100%;
+}
+
+/* Edge splitter — between the dock area and the main viewport. */
+.dock-edge-splitter {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+  transition: background 0.12s;
+}
+.dock-edge-splitter:hover,
+.dock-edge-splitter:active {
+  background: var(--bs-primary, #589aff);
+}
+.dock-edge-splitter-left   { top: 0; right: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+.dock-edge-splitter-right  { top: 0; left: 0;  bottom: 0; width: 5px; cursor: ew-resize; }
+.dock-edge-splitter-top    { left: 0; right: 0; bottom: 0; height: 5px; cursor: ns-resize; }
+.dock-edge-splitter-bottom { left: 0; right: 0; top: 0;    height: 5px; cursor: ns-resize; }
+
+/* Inline drop-preview ghost (used by both outer slot ghosts and inner split ghosts). */
+.dock-drop-preview {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  background: var(--bs-primary, #589aff);
+  opacity: 0.18;
+  border: 2px dashed var(--bs-primary, #589aff);
+  animation: dock-drop-preview-pulse 1.2s ease-in-out infinite;
+}
+.dock-panel-slot--preview {
+  pointer-events: none;
+}
+
+@keyframes dock-drop-preview-pulse {
+  0%, 100% { opacity: 0.14; }
+  50%      { opacity: 0.26; }
+}
+
+/* Stack-target highlight (center-drop tab stacking). */
+.dock-panel-slot--stack-target .docked-panel,
+.dock-panel-slot--stack-target .tab-group-panel {
+  outline: 2px dashed var(--bs-primary, #589aff);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--bs-primary, #589aff) 8%, var(--surface-ground, #1a1a1a));
+}
+
+/* ── Tab group ──────────────────────────────────────────────────────────── */
+.tab-group-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tab-group-tabbar {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex-shrink: 0;
+  background: var(--popup-control-bg, var(--surface-raised, #252525));
+  border-bottom: 1px solid var(--surface-border, #333);
+  height: 28px;
+}
+
+/* Tabs scroll horizontally if there are too many, but actions stay pinned right. */
+.tab-group-tabs {
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  gap: 1px;
+}
+.tab-group-tabs::-webkit-scrollbar { display: none; }
+
+.tab-group-active-actions {
+  display: flex;
+  /* JSX order is [pin, lock, reset, headerActions] but the visual order is
+   * the original [headerActions, reset, lock, pin] left-to-right thanks to
+   * row-reverse. The benefit: with overflow:hidden, content overflows on the
+   * LEFT (main-end), so headerActions (the wide custom widget) clips first
+   * while pin/lock/reset on the right stay visible. */
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 0.2rem;
+  /* Heavy flex-shrink so actions yield space to tabs when the tabbar is
+   * narrow — tabs (flex-shrink:1) barely shrink, actions shrink ~100x faster. */
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 0.4rem;
+}
+.tab-group-active-actions > * {
+  flex-shrink: 0; /* individual buttons stay full-size — container clips them */
+}
+
+.dock-area-left   .tab-group-panel { border-right:  1px solid var(--surface-border, #333); }
+.dock-area-right  .tab-group-panel { border-left:   1px solid var(--surface-border, #333); }
+.dock-area-top    .tab-group-panel { border-bottom: 1px solid var(--surface-border, #333); }
+.dock-area-bottom .tab-group-panel { border-top:    1px solid var(--surface-border, #333); }
+
+.tab-group-tab {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 0 6px 0 12px;
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+  border-right: 1px solid var(--surface-border, #333);
+  background: transparent;
+  transition: background 0.1s;
+}
+.tab-group-tab:active { cursor: grabbing; }
+.tab-group-tab:hover  { background: var(--surface-ground, #1a1a1a); }
+.tab-group-tab--active {
+  background: var(--surface-ground, #1a1a1a);
+  border-bottom: 2px solid var(--bs-primary, #589aff);
+}
+.tab-group-tab--locked { cursor: default; }
+
+.tab-group-tab-title {
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.7rem;
+  color: var(--popup-text-medium, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tab-group-tab--active .tab-group-tab-title {
+  color: var(--popup-text-bright, #ccc);
+}
+
+/* ── Split group ────────────────────────────────────────────────────────── */
+.split-group-panel {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
+.split-group-panel--col { flex-direction: column; }
+.split-group-panel--row { flex-direction: row; }
+
+.split-group-slot {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.split-group-splitter {
+  background: var(--surface-border, #333);
+  flex-shrink: 0;
+  transition: background 0.12s;
+  z-index: 5;
+}
+.split-group-splitter:hover,
+.split-group-splitter:active {
+  background: var(--bs-primary, #589aff);
+}
+.split-group-splitter--h { height: 1px; cursor: ns-resize; width: 100%; }
+.split-group-splitter--v { width: 1px; cursor: ew-resize; height: 100%; }
+
+/* ── Floating script-window (mudix-style resize handles + portal layer) ─── */
+/* z-index sits above #input-area (1001) so dragging floats over the input bar
+ * keeps the float on top. Below modal dialogs (Bootstrap modals: 1055). */
+.floating-window-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1040;
+  overflow: visible;
+}
+.floating-window-root > * {
+  pointer-events: auto;
+}
+
+/* Mudix-named edge resize handles on .script-window (alongside arkadia's
+   floating-panel__edge classes). They share the same geometry so dragging
+   either selector resizes. */
+.script-window-resize-n  { position: absolute; top: 0;    left: 8px;  right: 8px;  height: 5px; cursor: n-resize;  z-index: 10; }
+.script-window-resize-s  { position: absolute; bottom: 0; left: 8px;  right: 8px;  height: 5px; cursor: s-resize;  z-index: 10; }
+.script-window-resize-e  { position: absolute; right: 0;  top: 8px;   bottom: 8px; width: 5px;  cursor: e-resize;  z-index: 10; }
+.script-window-resize-w  { position: absolute; left: 0;   top: 8px;   bottom: 8px; width: 5px;  cursor: w-resize;  z-index: 10; }
+.script-window-resize-ne { position: absolute; top: 0;    right: 0;   width: 10px; height: 10px; cursor: ne-resize; z-index: 11; }
+.script-window-resize-nw { position: absolute; top: 0;    left: 0;    width: 10px; height: 10px; cursor: nw-resize; z-index: 11; }
+.script-window-resize-se { position: absolute; bottom: 0; right: 0;   width: 10px; height: 10px; cursor: se-resize; z-index: 11; }
+.script-window-resize-sw { position: absolute; bottom: 0; left: 0;    width: 10px; height: 10px; cursor: sw-resize; z-index: 11; }

@@ -1,77 +1,182 @@
-import { LayoutState, DockState, DEFAULT_LAYOUT, migrateLegacyDockState } from '../types';
+import {
+  BuiltInPanelState,
+  DEFAULT_DOCK_EXTENTS,
+  DEFAULT_LAYOUT,
+  DockSide,
+  generateSplitGroupId,
+  LayoutState,
+  LegacyDockState,
+  LegacyDockSlot,
+  LegacyLayoutState,
+  PANEL_CONFIGS,
+  PopupPanelDockState,
+  WindowRecord,
+} from '../types';
 import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 
-/**
- * Migrate a dock from legacy format (flat panels) to new format (slots).
- * If the dock already has slots, return as-is.
- */
-function migrateDock(stored: unknown, defaultDock: DockState): DockState {
-  if (!stored || typeof stored !== 'object') {
-    return defaultDock;
-  }
+// ─── Migration ────────────────────────────────────────────────────────────
 
-  const dock = stored as Record<string, unknown>;
+/** True when the stored object already uses the new flat-windows shape. */
+export function isNewLayoutShape(obj: unknown): obj is Partial<LayoutState> {
+  return (
+    obj != null &&
+    typeof obj === 'object' &&
+    'windows' in (obj as Record<string, unknown>) &&
+    typeof (obj as { windows?: unknown }).windows === 'object'
+  );
+}
 
-  // Check if already in new format (has slots array)
-  if (Array.isArray(dock.slots)) {
-    return {
-      size: typeof dock.size === 'number' ? dock.size : defaultDock.size,
-      slots: dock.slots,
+function migrateSide(
+  side: DockSide,
+  dock: LegacyDockState | undefined,
+  windows: Record<string, WindowRecord>,
+  baseZ: { z: number }
+): number {
+  if (!dock) return DEFAULT_DOCK_EXTENTS[side];
+
+  // Legacy-legacy: flat `panels` array, no slots — treat each as a single slot.
+  const slots: LegacyDockSlot[] =
+    dock.slots ??
+    (dock.panels?.map((p, i) => ({
+      id: `legacy-${side}-${i}-${p.id}`,
+      panels: [{ ...p, size: 100 }],
+      size: 100,
+    })) ??
+      []);
+
+  slots.forEach((slot, slotIdx) => {
+    const slotPanels = slot.panels ?? [];
+    const multi = slotPanels.length > 1;
+    const splitGroupId = multi
+      ? slot.id || generateSplitGroupId()
+      : undefined;
+
+    slotPanels.forEach((p, j) => {
+      const panelConfig = PANEL_CONFIGS[p.id];
+      const w: WindowRecord = {
+        id: p.id,
+        title: panelConfig?.title ?? p.id,
+        visible: true,
+        x: 0,
+        y: 0,
+        width: panelConfig?.minWidth ?? 320,
+        height: panelConfig?.minHeight ?? 240,
+        zIndex: ++baseZ.z,
+        docked: side,
+        dockOrder: slotIdx,
+        dockFlex: (slot.size ?? 100) / 100,
+      };
+      if (multi) {
+        w.splitGroup = splitGroupId;
+        w.splitOrder = j;
+        w.splitFlex = (p.size ?? 100) / 100;
+      }
+      windows[p.id] = w;
+    });
+  });
+
+  return typeof dock.size === 'number'
+    ? dock.size
+    : DEFAULT_DOCK_EXTENTS[side];
+}
+
+export function migrateLayoutState(legacy: LegacyLayoutState): LayoutState {
+  const windows: Record<string, WindowRecord> = {};
+  const baseZ = { z: 10 };
+
+  const dockExtents: Record<DockSide, number> = {
+    left: migrateSide('left', legacy.docks?.left, windows, baseZ),
+    right: migrateSide('right', legacy.docks?.right, windows, baseZ),
+    top: migrateSide('top', legacy.docks?.top, windows, baseZ),
+    bottom: migrateSide('bottom', legacy.docks?.bottom, windows, baseZ),
+  };
+
+  // Floating panels — only emit if not already in `windows` (a panel can't be
+  // simultaneously docked and floating).
+  for (const f of legacy.floatingPanels ?? []) {
+    if (windows[f.id]) continue;
+    const panelConfig = PANEL_CONFIGS[f.id];
+    windows[f.id] = {
+      id: f.id,
+      title: panelConfig?.title ?? f.id,
+      visible: true,
+      x: f.x,
+      y: f.y,
+      width: f.width,
+      height: f.height,
+      zIndex: ++baseZ.z,
     };
   }
 
-  // Legacy format: has panels array, migrate to slots
-  if (Array.isArray(dock.panels) && dock.panels.length > 0) {
-    return migrateLegacyDockState({
-      size: typeof dock.size === 'number' ? dock.size : defaultDock.size,
-      panels: dock.panels,
-    });
+  // Ensure built-ins always have a record (so they can be opened/closed without
+  // creating defaults each time).
+  for (const id of ['map', 'objectList'] as const) {
+    if (!windows[id]) {
+      windows[id] = { ...DEFAULT_LAYOUT.windows[id] };
+    }
   }
 
-  // Empty dock
   return {
-    size: typeof dock.size === 'number' ? dock.size : defaultDock.size,
-    slots: [],
+    enabled: !!legacy.enabled,
+    enabledPanels: {
+      objectList: legacy.enabledPanels?.objectList ?? true,
+    },
+    windows,
+    dockExtents,
+    popupPanels: legacy.popupPanels ?? {},
+    builtInPanels: legacy.builtInPanels ?? {},
   };
 }
+
+function ensureBuiltIns(state: LayoutState): LayoutState {
+  for (const id of ['map', 'objectList'] as const) {
+    if (!state.windows[id]) {
+      state.windows[id] = { ...DEFAULT_LAYOUT.windows[id] };
+    }
+  }
+  return state;
+}
+
+// ─── Loading / saving ─────────────────────────────────────────────────────
 
 export function loadLayoutState(): LayoutState {
   try {
     const stored = globalStorage.get('layoutManagerState');
-    if (stored) {
-      if (typeof stored === 'object') {
-        return {
-          ...DEFAULT_LAYOUT,
-          ...stored,
-          enabledPanels: {
-            ...DEFAULT_LAYOUT.enabledPanels,
-            ...stored.enabledPanels,
-          },
-          docks: {
-            left: migrateDock(stored.docks?.left, DEFAULT_LAYOUT.docks.left),
-            top: migrateDock(stored.docks?.top, DEFAULT_LAYOUT.docks.top),
-            right: migrateDock(stored.docks?.right, DEFAULT_LAYOUT.docks.right),
-          },
-          // Ensure floatingPanels is always an array (for backwards compatibility)
-          floatingPanels: Array.isArray(stored.floatingPanels)
-            ? stored.floatingPanels
-            : DEFAULT_LAYOUT.floatingPanels,
-          // Ensure popupPanels is always an object (for backwards compatibility)
-          popupPanels: stored.popupPanels && typeof stored.popupPanels === 'object'
-            ? stored.popupPanels
-            : DEFAULT_LAYOUT.popupPanels,
-          // Ensure builtInPanels is always an object (for backwards compatibility)
-          builtInPanels: stored.builtInPanels && typeof stored.builtInPanels === 'object'
-            ? stored.builtInPanels
-            : DEFAULT_LAYOUT.builtInPanels,
-        };
-      }
+    if (!stored) return cloneDefault();
+
+    if (isNewLayoutShape(stored)) {
+      const state: LayoutState = {
+        enabled: !!stored.enabled,
+        enabledPanels: {
+          objectList: stored.enabledPanels?.objectList ?? true,
+        },
+        windows: { ...stored.windows },
+        dockExtents: { ...DEFAULT_DOCK_EXTENTS, ...stored.dockExtents },
+        popupPanels: stored.popupPanels ?? {},
+        builtInPanels: stored.builtInPanels ?? {},
+      };
+      return ensureBuiltIns(state);
     }
+
+    // Legacy: migrate.
+    return ensureBuiltIns(migrateLayoutState(stored as LegacyLayoutState));
   } catch (e) {
     console.error('Failed to load layout state:', e);
+    return cloneDefault();
   }
-  return { ...DEFAULT_LAYOUT };
+}
+
+function cloneDefault(): LayoutState {
+  return {
+    ...DEFAULT_LAYOUT,
+    windows: Object.fromEntries(
+      Object.entries(DEFAULT_LAYOUT.windows).map(([k, v]) => [k, { ...v }])
+    ),
+    dockExtents: { ...DEFAULT_LAYOUT.dockExtents },
+    popupPanels: {},
+    builtInPanels: {},
+  };
 }
 
 export function saveLayoutState(state: LayoutState): void {
@@ -85,9 +190,7 @@ export function saveLayoutState(state: LayoutState): void {
 let saveTimeout: number | null = null;
 
 export function saveLayoutStateDebounced(state: LayoutState, delay = 300): void {
-  if (saveTimeout !== null) {
-    clearTimeout(saveTimeout);
-  }
+  if (saveTimeout !== null) clearTimeout(saveTimeout);
   saveTimeout = window.setTimeout(() => {
     saveLayoutState(state);
     saveTimeout = null;
@@ -95,28 +198,24 @@ export function saveLayoutStateDebounced(state: LayoutState, delay = 300): void 
 }
 
 export function resetLayoutState(): LayoutState {
-  const resetState = { ...DEFAULT_LAYOUT, enabled: true };
+  const resetState: LayoutState = { ...cloneDefault(), enabled: true };
   saveLayoutState(resetState);
   return resetState;
 }
 
-// Cached parsed layout state for efficient repeated access during initialization
-let cachedLayoutState: ReturnType<typeof loadLayoutState> | null = null;
-let cacheTimestamp = 0;
-const CACHE_TTL = 100; // Cache valid for 100ms (covers component initialization)
+// ─── Cache for popup helpers (called frequently during init) ──────────────
 
-/**
- * Invalidate the layout state cache.
- * Call this after programmatically updating localStorage to ensure fresh reads.
- */
+let cachedLayoutState: LayoutState | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 100;
+
 export function invalidateLayoutCache(): void {
   cachedLayoutState = null;
   cacheTimestamp = 0;
-  // Notify LayoutContext to reload state
   eventBus.emit('layoutManagerStateChanged');
 }
 
-function getCachedLayoutState(): ReturnType<typeof loadLayoutState> {
+function getCachedLayoutState(): LayoutState {
   const now = Date.now();
   if (!cachedLayoutState || now - cacheTimestamp > CACHE_TTL) {
     cachedLayoutState = loadLayoutState();
@@ -125,104 +224,58 @@ function getCachedLayoutState(): ReturnType<typeof loadLayoutState> {
   return cachedLayoutState;
 }
 
+// ─── Popup helpers used by popup components on mount ──────────────────────
+
 /**
- * Check if a popup should auto-open on page load.
- * This is used by popup components to restore their open state after reload.
- * Returns true if the popup was pinned OR docked.
+ * Returns true if this popup should auto-open on page load — either it was
+ * pinned, or it was last seen docked, or it currently appears as a docked
+ * WindowRecord in the persisted layout.
  */
 export function shouldPopupAutoOpen(popupId: string): boolean {
   try {
     const stored = getCachedLayoutState();
-    if (!stored?.enabled) return false;
+    if (!stored.enabled) return false;
 
-    const popupState = stored?.popupPanels?.[popupId];
+    const popupState = stored.popupPanels[popupId];
+    if (popupState?.persistOpen) return true;
+    if (popupState?.isDocked) return true;
 
-    // Check if popup was explicitly marked as persistOpen (pinned)
-    if (popupState?.persistOpen) {
-      return true;
-    }
-
-    // Check if popup was previously docked (isDocked flag persists even if removed from slots during cleanup)
-    if (popupState?.isDocked) {
-      return true;
-    }
-
-    // Check if popup is docked in any dock zone (check slots structure)
-    const docks = stored?.docks;
-    if (docks) {
-      for (const dockKey of ['left', 'top', 'right'] as const) {
-        const dock = docks[dockKey];
-        // Check new slots structure
-        if (dock?.slots?.some((slot: { panels: Array<{ id: string }> }) =>
-          slot.panels?.some((p) => p.id === popupId)
-        )) {
-          return true;
-        }
-      }
-    }
+    const w = stored.windows[popupId];
+    if (w?.docked) return true;
   } catch {
-    // Ignore errors
+    /* ignore */
   }
   return false;
 }
 
-/**
- * Get the persisted lock state for a popup.
- * Returns the stored isLocked value, or false if not set.
- */
 export function getPopupLockedState(popupId: string): boolean {
   try {
-    const stored = getCachedLayoutState();
-    return stored?.popupPanels?.[popupId]?.isLocked ?? false;
+    return getCachedLayoutState().popupPanels[popupId]?.isLocked ?? false;
   } catch {
-    // Ignore errors
+    return false;
   }
-  return false;
 }
 
-/**
- * Get the persisted pinned state for a popup.
- * Returns true if persistOpen is true (meaning the popup was pinned).
- */
 export function getPopupPinnedState(popupId: string): boolean {
   try {
-    const stored = getCachedLayoutState();
-    return stored?.popupPanels?.[popupId]?.persistOpen ?? false;
+    return getCachedLayoutState().popupPanels[popupId]?.persistOpen ?? false;
   } catch {
-    // Ignore errors
+    return false;
   }
-  return false;
 }
 
-/**
- * Get a specific setting value for a popup.
- * @param popupId The popup identifier
- * @param key The setting key
- * @param defaultValue Default value if setting is not found
- */
 export function getPopupSetting<T>(popupId: string, key: string, defaultValue: T): T {
   try {
-    const stored = getCachedLayoutState();
-    const settings = stored?.popupPanels?.[popupId]?.settings;
-    if (settings && key in settings) {
-      return settings[key] as T;
-    }
+    const settings = getCachedLayoutState().popupPanels[popupId]?.settings;
+    if (settings && key in settings) return settings[key] as T;
   } catch {
-    // Ignore errors
+    /* ignore */
   }
   return defaultValue;
 }
 
-/**
- * Set a specific setting value for a popup.
- * Saves immediately (not debounced) to avoid race conditions with LayoutContext.
- * @param popupId The popup identifier
- * @param key The setting key
- * @param value The value to store
- */
 export function setPopupSetting<T>(popupId: string, key: string, value: T): void {
   try {
-    // Clear cache to ensure we get the latest state
     cachedLayoutState = null;
     const state = loadLayoutState();
     if (!state.popupPanels[popupId]) {
@@ -232,19 +285,13 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
       state.popupPanels[popupId].settings = {};
     }
     state.popupPanels[popupId].settings![key] = value;
-    // Save immediately to avoid race condition with LayoutContext's debounced save
     saveLayoutState(state);
-    // Notify LayoutContext to sync its state
     eventBus.emit('layoutManagerStateChanged');
   } catch (e) {
     console.error('Failed to save popup setting:', e);
   }
 }
 
-/**
- * Save popup floating state (position, size, isLocked) for non-layout mode.
- * This is used by popups when layout manager is disabled.
- */
 export function savePopupFloatingState(
   popupId: string,
   updates: {
@@ -270,119 +317,77 @@ export function savePopupFloatingState(
   }
 }
 
-/**
- * Get popup floating state (position, size) for non-layout mode.
- */
-export function getPopupFloatingState(popupId: string): { x: number; y: number; width: number; height: number } | undefined {
+export function getPopupFloatingState(
+  popupId: string
+): { x: number; y: number; width: number; height: number } | undefined {
   try {
-    const stored = getCachedLayoutState();
-    return stored?.popupPanels?.[popupId]?.floatingState;
+    return getCachedLayoutState().popupPanels[popupId]?.floatingState;
   } catch {
-    // Ignore errors
+    return undefined;
   }
-  return undefined;
 }
 
-/**
- * Get all popup IDs that match a prefix and should auto-open (pinned or docked).
- * Used for restoring dynamic popups like static map windows.
- */
 export function getPinnedPopupsByPrefix(prefix: string): string[] {
   try {
     const stored = getCachedLayoutState();
-    if (!stored?.enabled) return [];
-
+    if (!stored.enabled) return [];
     const result: string[] = [];
-    const popupPanels = stored?.popupPanels;
-    const docks = stored?.docks;
-
-    if (popupPanels) {
-      for (const popupId of Object.keys(popupPanels)) {
-        if (!popupId.startsWith(prefix)) continue;
-
-        const popupState = popupPanels[popupId];
-
-        // Check if pinned
-        if (popupState?.persistOpen) {
-          result.push(popupId);
-          continue;
-        }
-
-        // Check if docked
-        if (popupState?.isDocked) {
-          result.push(popupId);
-          continue;
-        }
-
-        // Check if in dock slots
-        if (docks) {
-          let inDock = false;
-          for (const dockKey of ['left', 'top', 'right'] as const) {
-            const dock = docks[dockKey];
-            if (dock?.slots?.some((slot: { panels: Array<{ id: string }> }) =>
-              slot.panels?.some((p) => p.id === popupId)
-            )) {
-              inDock = true;
-              break;
-            }
-          }
-          if (inDock) {
-            result.push(popupId);
-          }
-        }
+    for (const id of Object.keys(stored.popupPanels)) {
+      if (!id.startsWith(prefix)) continue;
+      const s = stored.popupPanels[id];
+      if (s?.persistOpen || s?.isDocked) {
+        result.push(id);
+        continue;
       }
+      const w = stored.windows[id];
+      if (w?.docked) result.push(id);
     }
-
     return result;
   } catch {
-    // Ignore errors
+    return [];
   }
-  return [];
 }
 
-/**
- * Get a specific setting value for a built-in panel (map, objectList).
- * @param panelId The panel identifier ('map' or 'objectList')
- * @param key The setting key
- * @param defaultValue Default value if setting is not found
- */
-export function getBuiltInPanelSetting<T>(panelId: string, key: string, defaultValue: T): T {
+// ─── Built-in panel helpers (map, objectList) ─────────────────────────────
+
+export function getBuiltInPanelSetting<T>(
+  panelId: string,
+  key: string,
+  defaultValue: T
+): T {
   try {
-    const stored = getCachedLayoutState();
-    const settings = stored?.builtInPanels?.[panelId]?.settings;
-    if (settings && key in settings) {
-      return settings[key] as T;
-    }
+    const settings = getCachedLayoutState().builtInPanels[panelId]?.settings;
+    if (settings && key in settings) return settings[key] as T;
   } catch {
-    // Ignore errors
+    /* ignore */
   }
   return defaultValue;
 }
 
-/**
- * Set a specific setting value for a built-in panel (map, objectList).
- * Saves immediately (not debounced) to avoid race conditions with LayoutContext.
- * @param panelId The panel identifier ('map' or 'objectList')
- * @param key The setting key
- * @param value The value to store
- */
-export function setBuiltInPanelSetting<T>(panelId: string, key: string, value: T): void {
+export function setBuiltInPanelSetting<T>(
+  panelId: string,
+  key: string,
+  value: T
+): void {
   try {
-    // Clear cache to ensure we get the latest state
     cachedLayoutState = null;
     const state = loadLayoutState();
-    if (!state.builtInPanels[panelId]) {
-      state.builtInPanels[panelId] = {};
-    }
+    if (!state.builtInPanels[panelId]) state.builtInPanels[panelId] = {};
     if (!state.builtInPanels[panelId].settings) {
       state.builtInPanels[panelId].settings = {};
     }
     state.builtInPanels[panelId].settings![key] = value;
-    // Save immediately to avoid race condition with LayoutContext's debounced save
     saveLayoutState(state);
-    // Notify LayoutContext to sync its state
     eventBus.emit('layoutManagerStateChanged');
   } catch (e) {
     console.error('Failed to save built-in panel setting:', e);
   }
 }
+
+// Re-exports for compat
+export type {
+  LayoutState,
+  WindowRecord,
+  PopupPanelDockState,
+  BuiltInPanelState,
+};

@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { FloatingPanelState, PopupPanelConfig, PopupType } from '../types';
+import { PopupPanelConfig, PopupType } from '../types';
 import { useLayoutManagerOptional } from './useLayoutManager';
-import { registerPopup, unregisterPopup, updatePopup } from '../popupRegistry';
+import {
+  registerPopup,
+  unregisterPopup,
+  updatePopup,
+} from '../popupRegistry';
+import { windowManager } from '../WindowManager';
 
 interface UseDockablePopupOptions {
   popupId: string;
@@ -21,8 +26,14 @@ interface UseDockablePopupOptions {
   initialHeight?: number;
   renderContent: () => ReactNode;
   headerActions?: ReactNode;
+  /** Class applied to the outer shell — used for popup-specific styling
+   *  hooks like ".contracts-window". Distinct from bodyClassName which
+   *  styles only the inner body. */
+  panelClassName?: string;
   bodyClassName?: string;
-  /** If true, popup will never be managed by layout manager */
+  /** Increments when the user clicks the reset button — triggers geometry reset. */
+  resetCounter?: number;
+  /** If true, popup will not be managed by the layout manager. */
   disableLayoutManagement?: boolean;
 }
 
@@ -31,6 +42,12 @@ export interface UseDockablePopupReturn {
   isManagedByLayout: boolean;
 }
 
+/**
+ * Registers a popup with the popupRegistry and synchronizes its open/close
+ * lifecycle with the WindowManager. Geometry handling, dock placement, and
+ * drag/dock interactions all live in the WindowManager — this hook just
+ * mirrors the popup's external state into both registries.
+ */
 export function useDockablePopup({
   popupId,
   popupType,
@@ -44,32 +61,26 @@ export function useDockablePopup({
   onReset,
   minWidth = 300,
   minHeight = 200,
-  initialWidth = 350,
+  initialWidth,
   initialHeight,
   renderContent,
   headerActions,
+  panelClassName,
   bodyClassName,
+  resetCounter = 0,
   disableLayoutManagement = false,
 }: UseDockablePopupOptions): UseDockablePopupReturn {
-  // Use optional context - may be null if not inside LayoutProvider
   const layoutContext = useLayoutManagerOptional();
-
-  // Extract values from context or use defaults
   const isLayoutMode = layoutContext?.isLayoutMode ?? false;
-  const getPopupDockState = layoutContext?.getPopupDockState;
-  const updatePopupDockState = layoutContext?.updatePopupDockState;
-  const addPopupFloating = layoutContext?.addPopupFloating;
-  const removePopupFloating = layoutContext?.removePopupFloating;
-  const removePopupFromDock = layoutContext?.removePopupFromDock;
-  const findFloatingPanel = layoutContext?.findFloatingPanel;
-  const findPanelDock = layoutContext?.findPanelDock;
-  const dockPopup = layoutContext?.dockPopup;
+  const isManagedByLayout =
+    layoutContext !== null && !disableLayoutManagement;
+  // Bumps when WindowManager.loadState fires (Restore Default, settings
+  // import). Force the register effect to re-fire so manager.open is called
+  // again — otherwise the popup is "open" in React but missing from the
+  // freshly-reset live windows map.
+  const loadVersion = layoutContext?.loadVersion ?? 0;
 
-  // Track if we've added to floating panels for this open session
-  const addedToFloatingRef = useRef(false);
-  const lastSavedFloatingRef = useRef<{ x: number; y: number; width: number; height: number | undefined } | null>(null);
-
-  // Use refs to keep current values without triggering re-registration
+  // Refs to keep registry callbacks current without re-registering.
   const renderContentRef = useRef(renderContent);
   const headerActionsRef = useRef(headerActions);
   const onCloseRef = useRef(onClose);
@@ -79,7 +90,6 @@ export function useDockablePopup({
   const isPinnedRef = useRef(isPinned);
   const isLockedRef = useRef(isLocked);
 
-  // Update refs on each render
   renderContentRef.current = renderContent;
   headerActionsRef.current = headerActions;
   onCloseRef.current = onClose;
@@ -89,13 +99,11 @@ export function useDockablePopup({
   isPinnedRef.current = isPinned;
   isLockedRef.current = isLocked;
 
-  // In layout mode, popup is managed by FloatingPanel (unless disabled)
-  const isManagedByLayout = isLayoutMode && layoutContext !== null && !disableLayoutManagement;
-
-  // Register/unregister popup when open state changes
+  // ── Register / unregister with popupRegistry + WindowManager ───────────
   useEffect(() => {
     if (!isOpen) {
       unregisterPopup(popupId);
+      if (isManagedByLayout) windowManager.close(popupId);
       return;
     }
 
@@ -105,7 +113,7 @@ export function useDockablePopup({
       closable: true,
       type: 'popup',
       popupType,
-      initialWidth,
+      initialWidth: initialWidth ?? 360,
       initialHeight,
       minWidth,
       minHeight,
@@ -123,246 +131,151 @@ export function useDockablePopup({
       setIsLocked: (locked: boolean) => onLockedChangeRef.current?.(locked),
       onReset: () => onResetRef.current?.(),
       headerActions: headerActionsRef.current,
+      panelClassName,
     });
+
+    if (isManagedByLayout) {
+      // Compute a sensible centered initial position if no hint exists.
+      const effectiveWidth = initialWidth ?? 360;
+      const initialY =
+        initialHeight !== undefined
+          ? Math.max(16, (window.innerHeight - initialHeight) / 2)
+          : Math.max(16, window.innerHeight * 0.1);
+      windowManager.open(popupId, {
+        title,
+        x: Math.max(16, (window.innerWidth - effectiveWidth) / 2),
+        y: initialY,
+        width: effectiveWidth,
+        height: initialHeight,
+        isPinned: isPinnedRef.current,
+        isLocked: isLockedRef.current,
+      });
+    }
 
     return () => {
       unregisterPopup(popupId);
+      if (isManagedByLayout) windowManager.close(popupId);
     };
-  }, [isOpen, popupId, title, popupType, initialWidth, initialHeight, minWidth, minHeight, bodyClassName]);
+  }, [
+    isOpen,
+    isManagedByLayout,
+    popupId,
+    title,
+    popupType,
+    initialWidth,
+    initialHeight,
+    minWidth,
+    minHeight,
+    panelClassName,
+    bodyClassName,
+    loadVersion,
+  ]);
 
-  // Update isPinned in registry when it changes
+  // ── Sync mutable fields ─────────────────────────────────────────────────
   useEffect(() => {
-    if (isOpen) {
-      updatePopup(popupId, { isPinned });
-    }
-  }, [isOpen, popupId, isPinned]);
+    if (!isOpen) return;
+    updatePopup(popupId, { isPinned });
+    if (isManagedByLayout) windowManager.setPinned(popupId, isPinned);
+  }, [isOpen, isManagedByLayout, popupId, isPinned]);
 
-  // Update isLocked in registry when it changes
   useEffect(() => {
-    if (isOpen) {
-      updatePopup(popupId, { isLocked });
-    }
-  }, [isOpen, popupId, isLocked]);
+    if (!isOpen) return;
+    updatePopup(popupId, { isLocked });
+    if (isManagedByLayout) windowManager.setLocked(popupId, isLocked);
+  }, [isOpen, isManagedByLayout, popupId, isLocked]);
 
-  // Update headerActions in registry when it changes
   useEffect(() => {
-    if (isOpen) {
-      updatePopup(popupId, { headerActions });
-    }
+    if (!isOpen) return;
+    updatePopup(popupId, { headerActions });
   }, [isOpen, popupId, headerActions]);
 
-  // Update persistOpen when pinned state changes in layout mode
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isManagedByLayout) windowManager.setTitle(popupId, title);
+  }, [isOpen, isManagedByLayout, popupId, title]);
+
+  // ── persistOpen tracking (so we can restore on reload) ──────────────────
   useEffect(() => {
     if (!isManagedByLayout || !isOpen) return;
-
-    // Persist pinned state for reload (both true and false)
-    updatePopupDockState?.(popupId, { persistOpen: isPinned });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    windowManager.updatePopupDockState(popupId, { persistOpen: isPinned });
   }, [isOpen, isPinned, isManagedByLayout, popupId]);
 
-  // Persist isLocked state when it changes in layout mode
   useEffect(() => {
     if (!isManagedByLayout || !isOpen) return;
-
-    updatePopupDockState?.(popupId, { isLocked });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    windowManager.updatePopupDockState(popupId, { isLocked });
   }, [isOpen, isLocked, isManagedByLayout, popupId]);
 
-  // Clear persistOpen and isDocked when popup closes while not pinned
   useEffect(() => {
     if (isOpen) return;
-
-    // Popup is closing, check if it should persist
     if (isManagedByLayout && !isPinnedRef.current) {
-      // Clear both persistOpen and isDocked so popup doesn't auto-reopen or auto-redock
-      updatePopupDockState?.(popupId, { persistOpen: false, isDocked: false });
+      windowManager.updatePopupDockState(popupId, {
+        persistOpen: false,
+        isDocked: false,
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, popupId]);
-
-  // Add to floating panels when popup opens in layout mode
-  useEffect(() => {
-    if (!isOpen || !isManagedByLayout || addedToFloatingRef.current) return;
-
-    addedToFloatingRef.current = true;
-
-    // Check if already docked - don't add to floating panels
-    const dockedIn = findPanelDock?.(popupId);
-    if (dockedIn) return;
-
-    // Get saved state to check if popup should be restored to a dock
-    const savedState = getPopupDockState?.(popupId);
-
-    // If popup was previously docked, restore it to the dock
-    // This handles the case where the popup was removed from docks during page reload cleanup
-    // but should be restored because it was pinned/persisted
-    if (savedState?.isDocked && savedState.dockPosition && dockPopup) {
-      dockPopup(popupId, savedState.dockPosition, savedState.dockOrder ?? 0);
-      return;
-    }
-
-    // Check if already in floating panels
-    const existing = findFloatingPanel?.(popupId);
-    if (existing) return;
-
-    // Get saved floating state - only use if user has explicitly modified position/size
-    const savedFloating = savedState?.userModifiedPosition ? savedState.floatingState : null;
-    // Use a default width if not specified (for auto-sizing popups)
-    const effectiveInitialWidth = initialWidth ?? 500;
-    // For auto-height popups, position near top of screen
-    const initialY = initialHeight !== undefined
-      ? Math.max(16, (window.innerHeight - initialHeight) / 2)
-      : Math.max(16, window.innerHeight * 0.1);
-    const floatingState: FloatingPanelState = savedFloating
-      ? {
-          id: popupId,
-          x: savedFloating.x,
-          y: savedFloating.y,
-          width: savedFloating.width,
-          height: savedFloating.height,
-        }
-      : {
-          id: popupId,
-          x: Math.max(16, (window.innerWidth - effectiveInitialWidth) / 2),
-          y: initialY,
-          width: effectiveInitialWidth,
-          height: initialHeight,
-        };
-
-    addPopupFloating?.(popupId, floatingState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isManagedByLayout, popupId]);
 
-  // Helper function for cleanup (used both on isOpen=false and on unmount)
-  const cleanupPopup = useCallback(() => {
-    addedToFloatingRef.current = false;
-
-    // Save current floating state before removing
-    if (isManagedByLayout) {
-      const current = findFloatingPanel?.(popupId);
-      if (current) {
-        updatePopupDockState?.(popupId, {
-          floatingState: {
-            x: current.x,
-            y: current.y,
-            width: current.width,
-            height: current.height,
-          },
-        });
-      }
-      removePopupFloating?.(popupId);
-      // Also remove from dock if it was docked
-      removePopupFromDock?.(popupId);
-    }
-  }, [isManagedByLayout, findFloatingPanel, popupId, updatePopupDockState, removePopupFloating, removePopupFromDock]);
-
-  // Remove from floating panels and docks when popup closes
-  useEffect(() => {
-    if (isOpen) return;
-    cleanupPopup();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, popupId]);
-
-  // Cleanup on unmount (handles plugin popups that unmount while isOpen=true)
-  useEffect(() => {
-    return () => {
-      // Only cleanup if we were managed by layout and still considered "open"
-      // (i.e., component unmounting without isOpen becoming false)
-      if (isManagedByLayout) {
-        removePopupFloating?.(popupId);
-        removePopupFromDock?.(popupId);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [popupId, isManagedByLayout]);
-
-  // Save floating state periodically when position/size changes (for persistence)
+  // ── Reset geometry (size + position) when the user clicks the reset button ─
+  const lastResetRef = useRef(resetCounter);
   useEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
+    if (resetCounter === lastResetRef.current) return;
+    lastResetRef.current = resetCounter;
 
-    const saveInterval = setInterval(() => {
-      const current = findFloatingPanel?.(popupId);
-      if (!current) return;
+    const effectiveWidth = initialWidth ?? 360;
+    const newX = Math.max(16, (window.innerWidth - effectiveWidth) / 2);
+    const newY =
+      initialHeight !== undefined
+        ? Math.max(16, (window.innerHeight - initialHeight) / 2)
+        : Math.max(16, window.innerHeight * 0.1);
 
-      const last = lastSavedFloatingRef.current;
-      if (last &&
-          last.x === current.x &&
-          last.y === current.y &&
-          last.width === current.width &&
-          last.height === current.height) {
-        return;
-      }
+    const w = windowManager.get(popupId);
+    if (!w) return;
 
-      lastSavedFloatingRef.current = { x: current.x, y: current.y, width: current.width, height: current.height };
-      updatePopupDockState?.(popupId, {
-        floatingState: {
-          x: current.x,
-          y: current.y,
-          width: current.width,
-          height: current.height,
-        },
+    if (w.docked) {
+      windowManager.undock(popupId, effectiveWidth, initialHeight, newX, newY);
+    } else {
+      windowManager.patch(popupId, {
+        x: newX,
+        y: newY,
+        width: effectiveWidth,
+        height: initialHeight,
       });
-    }, 1000);
+    }
+  }, [resetCounter, isOpen, isManagedByLayout, popupId, initialWidth, initialHeight]);
 
-    return () => clearInterval(saveInterval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isManagedByLayout, popupId]);
-
-  // Handle outside click to close (when layout mode is ON and floating)
+  // ── Outside click + Escape closes (layout mode on, floating popups only) ─
   useEffect(() => {
     if (!isOpen || !isManagedByLayout) return;
 
     const handlePointerDown = (event: PointerEvent) => {
-      // Don't close if pinned
       if (isPinnedRef.current) return;
-
-      // Check if popup is docked - docked popups shouldn't close on outside click
-      // This check is inside the handler to handle dynamic dock state changes
-      const dockedIn = findPanelDock?.(popupId);
+      const dockedIn = windowManager.findPanelDock(popupId);
       if (dockedIn) return;
-
       const target = event.target as Element | null;
       if (!target) return;
-
-      // Check if click is inside any popup panel (floating or docked) or context menu
       const floatingPopup = target.closest('.floating-panel--popup');
       const dockedPopup = target.closest('.docked-panel--popup');
       const contextMenu = target.closest('#context-menu');
       if (floatingPopup || dockedPopup || contextMenu) return;
-
-      // Click was outside all popup panels, close this popup
       onCloseRef.current();
     };
 
-    window.addEventListener('pointerdown', handlePointerDown);
-    return () => window.removeEventListener('pointerdown', handlePointerDown);
-  }, [isOpen, isManagedByLayout, popupId, findPanelDock]);
-
-  // Handle Escape key to close (when layout mode is ON and floating)
-  useEffect(() => {
-    if (!isOpen || !isManagedByLayout) return;
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-
-      // Don't close if pinned
       if (isPinnedRef.current) return;
-
-      // Check if popup is docked - docked popups shouldn't close on Escape
-      // This check is inside the handler to handle dynamic dock state changes
-      const dockedIn = findPanelDock?.(popupId);
-      if (dockedIn) return;
-
+      if (windowManager.findPanelDock(popupId)) return;
       event.preventDefault();
       onCloseRef.current();
     };
 
+    window.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isManagedByLayout, popupId, findPanelDock]);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isManagedByLayout, popupId]);
 
-  return {
-    isLayoutMode,
-    isManagedByLayout,
-  };
+  return { isLayoutMode, isManagedByLayout };
 }

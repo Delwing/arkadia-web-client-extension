@@ -65,6 +65,7 @@ import {characterStorage, globalStorage, migrateNewlyCharacterScopedKeys} from "
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
+    migrateLayoutManagerState,
     migrateMobileButtonMacroField,
     runAllSettingsMigrations
 } from "@modules/core/settingsMigrations"
@@ -87,6 +88,7 @@ migrateMobileButtonMacroField();
 runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();
+void migrateLayoutManagerState();
 
 // Initialize Firebase real-time sync listener (skip on localhost)
 if (!(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
