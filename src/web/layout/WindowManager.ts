@@ -318,6 +318,15 @@ export class WindowManager {
     return this.windows.has(id);
   }
 
+  /** Remove a window's last-known geometry hint entirely. Called when a popup
+   *  is closed and not pinned, so `shouldPopupAutoOpen` doesn't see its
+   *  previous dock placement on next page load. */
+  purgeWindowHint(id: string): void {
+    if (this.windowHints.delete(id)) {
+      this.notify();
+    }
+  }
+
   get(id: string): WindowRecord | undefined {
     return this.windows.get(id);
   }

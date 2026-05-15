@@ -212,6 +212,10 @@ export function useDockablePopup({
         persistOpen: false,
         isDocked: false,
       });
+      // Purge the window hint too — otherwise its preserved `docked` field
+      // makes shouldPopupAutoOpen return true on next page load and the
+      // popup we just closed reappears.
+      windowManager.purgeWindowHint(popupId);
     }
   }, [isOpen, isManagedByLayout, popupId]);
 

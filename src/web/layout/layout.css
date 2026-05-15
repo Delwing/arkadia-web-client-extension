@@ -1176,12 +1176,28 @@ body.layout-manager-enabled .compass-rose-box {
   50%      { opacity: 0.26; }
 }
 
-/* Stack-target highlight (center-drop tab stacking). */
-.dock-panel-slot--stack-target .docked-panel,
-.dock-panel-slot--stack-target .tab-group-panel {
-  outline: 2px dashed var(--bs-primary, #589aff);
-  outline-offset: -2px;
-  background: color-mix(in srgb, var(--bs-primary, #589aff) 8%, var(--surface-ground, #1a1a1a));
+/* Stack-target highlight (center-drop tab stacking). Uses a pseudo-element
+ * overlay rather than an outline on the panel, because the panel's children
+ * (tab bar, popup body) have opaque backgrounds that cover inline outlines
+ * with negative offsets — leaving only a sliver of highlight visible. The
+ * overlay sits above all panel content with pointer-events disabled. */
+.dock-panel-slot--stack-target {
+  position: relative;
+}
+.dock-panel-slot--stack-target::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px dashed #87cefa;
+  background: rgba(135, 206, 250, 0.28);
+  pointer-events: none;
+  z-index: 100;
+  animation: dock-stack-target-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes dock-stack-target-pulse {
+  0%, 100% { background: rgba(135, 206, 250, 0.22); }
+  50%      { background: rgba(135, 206, 250, 0.36); }
 }
 
 /* ── Tab group ──────────────────────────────────────────────────────────── */
