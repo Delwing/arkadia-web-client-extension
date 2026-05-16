@@ -13,6 +13,7 @@ const corrections: Record<string, string | false> = {
     "zielonym luskowatym plaszczem": "zielony luskowaty plaszcz",
     "szmaragdowozielonym misternym plaszczem": "szmaragdowozielony misterny plaszcz",
     "luskowata faktura zbroi wykonanej ze skory hydry": "gadzi polyskujacy pancerz",
+    "migocaca diamentowa maska": "migocaca diamentowa maske",
     "dlugi runiczny korbacz": false,
     "dluga czarna szata": "dluga czarna szate",
     "krasnoludzka starozytna korone": false,
