@@ -9,8 +9,7 @@ export default function initBilety(
     aliases.push({
         pattern: /^\/bilety$/,
         callback: async () => {
-            const teammates = client.ObjectManager.getObjectsOnLocation()
-                .filter(o => o.__category === 'team');
+            const teammates = client.TeamManager.getTeamObjectsOnLocation();
 
             if (teammates.length === 0) {
                 client.println("Brak czlonkow druzyny na lokacji.");

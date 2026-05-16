@@ -349,9 +349,15 @@ export default class TeamManager {
     }
 
     getTeamMembersOnLocation(): string[] {
-        return this.client.ObjectManager.getObjectsOnLocation()
-            .filter(o => o.__category === 'team' && o.desc)
+        return this.getTeamObjectsOnLocation()
+            .filter(o => o.desc)
             .map(o => o.desc!);
+    }
+
+    getTeamObjectsOnLocation(): { num: number; desc?: string }[] {
+        return this.client.ObjectManager.getObjectsOnLocation()
+            .filter(o => o.__category === 'team')
+            .map(o => ({ num: o.num, desc: o.desc }));
     }
 
     isInTeam(name: string): boolean {
