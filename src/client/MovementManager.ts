@@ -30,6 +30,15 @@ export default class MovementManager {
 
         const isOriginalDirection = isDirection(direction);
 
+        if (this.carriageMode && isOriginalDirection) {
+            const commandToSend = this.applyMoveModePrefix(direction);
+            if (echo && this.client.clientAdapter.shouldEchoCommand()) {
+                this.client.echoCommand(commandToSend);
+            }
+            this.client.clientAdapter.send(commandToSend, false, options);
+            return;
+        }
+
         const moveRes = this.client.Map.move(direction);
         if (moveRes.suppress) {
             return;
