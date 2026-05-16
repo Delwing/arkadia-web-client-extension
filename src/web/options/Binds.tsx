@@ -1080,6 +1080,18 @@ function Binds() {
                             </td>
                         </tr>
                         <tr>
+                            <td className="w-32">Zerknij</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.directions.zerknij)}
+                                    onKeyDown={ev => handleCaptureDir('zerknij', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
                             <td className="w-32">Specjalne</td>
                             <td>
                                 <Form.Control

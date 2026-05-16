@@ -57,15 +57,6 @@ test.describe('Direction key bindings', () => {
         expect(lastCommand).toBe('zerknij');
     });
 
-    test('NumpadDivide sends "d"', async ({page}) => {
-        await resetCommands(page);
-        await page.locator('#message-input').focus();
-        await pressNumpadKey(page, 'NumpadDivide');
-
-        const lastCommand = await getLastOutgoingCommand(page);
-        expect(lastCommand).toBe('d');
-    });
-
     test('direction keys do NOT fire when a modal is open', async ({page}) => {
         await resetCommands(page);
 

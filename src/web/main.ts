@@ -963,13 +963,9 @@ const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
     se: {key: 'Numpad3'},
     u: {key: 'NumpadMultiply'},
     d: {key: 'NumpadSubtract'},
+    zerknij: {key: 'Numpad5'},
     special: {key: 'Numpad0'},
 };
-
-const CONSTANT_DIRECTION_BINDS: DirectionBinding[] = [
-    {direction: 'd', code: 'NumpadDivide'},
-    {direction: 'zerknij', code: 'Numpad5'},
-];
 
 // Build initial direction bindings from stored binds (if any) so that
 // custom direction keys work immediately after reload without re-saving.
@@ -991,11 +987,7 @@ function buildDirectionBindings(dirs?: Record<string, Partial<RawDirectionBind> 
         };
     });
 
-    if (!resolved.some(bind => bind.code === 'Numpad0')) {
-        resolved.push({direction: 'special', code: 'Numpad0'});
-    }
-
-    return [...resolved, ...CONSTANT_DIRECTION_BINDS];
+    return resolved;
 }
 
 function applyDirectionBinds(dirs: Record<string, Partial<RawDirectionBind> | undefined> | undefined) {

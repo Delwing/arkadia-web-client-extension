@@ -40,6 +40,7 @@ const defaultBinds: BindSettings = {
         se: { key: 'Numpad3' },
         u: { key: 'NumpadMultiply' },
         d: { key: 'NumpadSubtract' },
+        zerknij: { key: 'Numpad5' },
         special: { key: 'Numpad0' },
     },
     custom: [],

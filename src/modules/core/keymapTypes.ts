@@ -35,6 +35,7 @@ export interface DirectionBinds {
     se: Bind;
     u: Bind;
     d: Bind;
+    zerknij: Bind;
     special: Bind;
 }
 
