@@ -56,6 +56,7 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | Komenda | Opis |
 |---------|------|
 | `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |
+| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |
 | `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |
 | `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |
 | `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |

@@ -139,6 +139,7 @@ import initTcolor from './scripts/tcolor'
 import initOpal from './scripts/opal'
 import initLastSeen from './scripts/lastSeen'
 import initZlom from './scripts/zlom'
+import initBilety from './scripts/bilety'
 
 // Global reference to PluginManager
 let pluginManager: ReturnType<typeof initExternalScripts> | null = null;
@@ -324,5 +325,6 @@ export function registerScripts(client: Client) {
     initTcolor(client, aliases)
     initOpal(client)
     initLastSeen(client, aliases)
+    initBilety(client, aliases)
 
 }
