@@ -40,17 +40,6 @@ vi.mock('@client/scripts/functionalBind', () => ({
   formatLabel: jest.fn((opts: any) => opts.key || ''),
 }));
 
-vi.mock('howler', () => {
-  const instance = {
-    state: jest.fn(() => 'loaded'),
-    play: jest.fn(),
-    stop: jest.fn(),
-    once: jest.fn(),
-    load: jest.fn(),
-  };
-  return { Howl: jest.fn(function () { return instance; }) };
-});
-
 vi.mock('@shared/map/MapHelper', () => ({
   __esModule: true,
   default: jest.fn(function () {

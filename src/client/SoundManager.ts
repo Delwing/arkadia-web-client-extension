@@ -1,73 +1,47 @@
-import type {Howl, Howler as HowlerType} from "howler";
 import { globalStorage } from "@modules/core/storage";
-import { getCustomSound } from "@modules/core/customSounds";
+import { getCustomSound, getCustomSounds } from "@modules/core/customSounds";
 import type Client from "./Client";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from '@web/defaultUiSettings.ts';
 
 export type SoundKey = string;
 
-// Global reference to Howler for audio context management
-let howlerGlobal: typeof HowlerType | null = null;
-let howlerModulePromise: Promise<typeof import('howler').Howl> | null = null;
+// Volume used to prime each cached <audio> element on first user gesture.
+// Chrome's autoplay activation is per-element and requires what it considers
+// real audio playback (silent/zero-amplitude data doesn't qualify), so we
+// play each element briefly at audible-but-quiet volume, then pause.
+const PRIMER_VOLUME = 0.1;
 
-function loadHowlerModule(): Promise<typeof import('howler').Howl> {
-    if (!howlerModulePromise) {
-        howlerModulePromise = import('howler').then((module: any) => {
-            if (module?.Howler) {
-                howlerGlobal = module.Howler;
-            } else if (module?.default?.Howler) {
-                howlerGlobal = module.default.Howler;
-            }
-            // Disable auto-suspend to prevent audio context from being suspended after inactivity
-            if (howlerGlobal) {
-                (howlerGlobal as any).autoSuspend = false;
-            }
-            // Try to resume immediately after loading (may work if close to a user gesture)
-            resumeAudioContext();
-            const constructor = module?.Howl ?? module?.default?.Howl ?? module?.default ?? module;
-            return constructor as typeof import('howler').Howl;
-        });
-    }
-    return howlerModulePromise;
-}
-
-/**
- * Start loading Howler eagerly so that the AudioContext exists
- * before the user clicks connect. Call this on first user interaction.
- */
-export function preloadHowler(): void {
-    void loadHowlerModule();
-}
-
-/**
- * Resume the audio context if it's suspended.
- * Should be called on user interaction to ensure sounds can play.
- */
-export function resumeAudioContext(): void {
-    if (!howlerGlobal) return;
-    const ctx = (howlerGlobal as any).ctx as AudioContext | undefined;
-    if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch((err: unknown) => {
-            console.warn('Failed to resume audio context:', err);
-        });
-    }
-}
+// Volume for the continuous keepalive loop. Real audio data played at
+// -60 dB is effectively inaudible but keeps Chrome's "page is actively
+// playing media" state engaged, which bypasses transient-activation
+// expiration so background-tab triggers still produce audible output.
+const KEEPALIVE_VOLUME = 0.001;
 
 export default class SoundManager {
-    private sounds: Partial<Record<SoundKey, Howl>> = {};
-    private soundLoaders: Partial<Record<SoundKey, Promise<Howl | undefined>>> = {};
+    private elements = new Map<SoundKey, HTMLAudioElement>();
+    private elementLoaders = new Map<SoundKey, Promise<HTMLAudioElement | undefined>>();
+    private keepalive: HTMLAudioElement;
+    private primerActivated = false;
     private muted = false;
 
     constructor(private readonly client: Client) {
+        this.keepalive = new Audio();
+        this.keepalive.preload = 'auto';
+        this.keepalive.loop = true;
+
         this.client.on("sound:play", ({ key }) => {
             if (typeof key === "string" && key) {
-                void this.play(key);
+                this.play(key);
             }
         });
         this.client.on("sound:category", (category) => {
-            void this.playCategory(category);
+            this.playCategory(category);
         });
+
+        void this.discoverAndPreload();
+
+        this.installGestureListeners();
     }
 
     get isMuted(): boolean {
@@ -98,36 +72,119 @@ export default class SoundManager {
     }
 
     async prepare(): Promise<void> {
-        const keys = this.getKeysToPreload();
-        await Promise.all(
-            Array.from(keys).map(async key => {
-                const sound = await this.ensureSound(key);
-                sound?.load();
-            })
-        );
-        // Play a near-silent sound to unlock the browser audio context
-        this.playSilent();
+        const keys = await this.getAllKnownSoundKeys();
+        await Promise.all(Array.from(keys).map(key => this.ensureElement(key)));
     }
 
-    private async playSilent(): Promise<void> {
-        try {
-            const HowlConstructor = await this.loadHowler();
-            const silent = new HowlConstructor({
-                src: ['data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='],
-                volume: 0.01,
-                preload: true,
-                onload() {
-                    silent.play();
-                },
+    /**
+     * Public play entry point for UI preview buttons. Synchronous so the
+     * audio.play() call stays inside the click's user-activation stack.
+     */
+    previewKey(key: SoundKey): void {
+        this.play(key);
+    }
+
+    private async discoverAndPreload(): Promise<void> {
+        const keys = await this.getAllKnownSoundKeys();
+        await Promise.all(Array.from(keys).map(key => this.ensureElement(key)));
+    }
+
+    private installGestureListeners(): void {
+        const onGesture = () => {
+            if (this.primerActivated) return;
+            this.activatePrimer();
+        };
+        const opts: AddEventListenerOptions = { capture: true, passive: true };
+        document.addEventListener('click', onGesture, opts);
+        document.addEventListener('keydown', onGesture, opts);
+        document.addEventListener('touchstart', onGesture, opts);
+        document.addEventListener('pointerdown', onGesture, opts);
+    }
+
+    private activatePrimer(): void {
+        if (this.elements.size === 0) {
+            console.warn('[SoundManager] primer skipped: no elements cached yet');
+            return;
+        }
+        this.primerActivated = true;
+
+        // Prime each cached element synchronously within the user gesture so
+        // each gets its per-element autoplay activation.
+        for (const [key, audio] of this.elements) {
+            audio.volume = PRIMER_VOLUME;
+            audio.muted = false;
+            try {
+                audio.currentTime = 0;
+            } catch { /* ignore */ }
+            const result = audio.play();
+            if (result && typeof result.then === 'function') {
+                result.then(() => {
+                    audio.pause();
+                    try { audio.currentTime = 0; } catch { /* ignore */ }
+                    audio.volume = 1.0;
+                }).catch((err) => {
+                    audio.volume = 1.0;
+                    console.warn('[SoundManager] prime failed for', key, err);
+                });
+            }
+        }
+
+        // Start the continuous keepalive loop. Reuses the beep src — the
+        // actual audio content doesn't matter, only that the page is
+        // continuously playing real audio data at non-zero volume.
+        const beepAudio = this.elements.get('beep');
+        if (beepAudio) {
+            this.keepalive.src = beepAudio.src;
+            this.keepalive.volume = KEEPALIVE_VOLUME;
+            this.keepalive.muted = false;
+            this.keepalive.loop = true;
+            this.keepalive.play().catch((err) => {
+                console.warn('[SoundManager] keepalive failed', err);
             });
-        } catch {
-            // best-effort unlock
         }
     }
 
-    private getKeysToPreload(): Set<SoundKey> {
+    private ensureElement(key: SoundKey): Promise<HTMLAudioElement | undefined> {
+        const existing = this.elements.get(key);
+        if (existing) return Promise.resolve(existing);
+
+        let loader = this.elementLoaders.get(key);
+        if (!loader) {
+            loader = (async () => {
+                const src = await this.resolveSrc(key);
+                if (!src) return undefined;
+                const audio = new Audio();
+                audio.preload = 'auto';
+                audio.src = src;
+                this.elements.set(key, audio);
+                return audio;
+            })();
+            this.elementLoaders.set(key, loader);
+        }
+        return loader;
+    }
+
+    private async resolveSrc(key: SoundKey): Promise<string | undefined> {
+        if (key === "beep") {
+            const uiSettings = globalStorage.get("uiSettings");
+            const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
+            if (typeof customBeepKey === "string" && customBeepKey) {
+                const sound = await getCustomSound(customBeepKey);
+                if (sound) return sound.data;
+            }
+            const { beepSound } = await import("./sounds");
+            return beepSound as unknown as string;
+        }
+        const sound = await getCustomSound(key);
+        return sound?.data;
+    }
+
+    private async getAllKnownSoundKeys(): Promise<Set<SoundKey>> {
         const keys = new Set<SoundKey>(["beep"]);
         try {
+            const customSounds = await getCustomSounds();
+            customSounds.forEach(s => keys.add(s.key));
+
             const uiSettings = globalStorage.get("uiSettings");
             const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
             if (typeof customBeepKey === "string" && customBeepKey) {
@@ -150,111 +207,53 @@ export default class SoundManager {
                 }
             });
         } catch (error) {
-            console.error("Failed to determine sounds to preload", error);
+            console.error("Failed to discover sounds", error);
         }
         return keys;
     }
 
-    private loadHowler(): Promise<typeof import('howler').Howl> {
-        return loadHowlerModule();
-    }
-
-    private async ensureSound(key: SoundKey): Promise<Howl | undefined> {
-        const existing = this.sounds[key];
-        if (existing) {
-            return existing;
-        }
-        if (!this.soundLoaders[key]) {
-            this.soundLoaders[key] = this.createSound(key);
-        }
-        return this.soundLoaders[key];
-    }
-
-    private async createSound(key: SoundKey): Promise<Howl | undefined> {
-        const HowlConstructor = await this.loadHowler();
-        switch (key) {
-            case "beep": {
-                const uiSettings = globalStorage.get("uiSettings");
-                const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
-                if (typeof customBeepKey === "string" && customBeepKey) {
-                    return this.createCustomSound(HowlConstructor, customBeepKey);
-                }
-                const {beepSound} = await import("./sounds");
-                const sound = new HowlConstructor({
-                    src: beepSound,
-                    preload: false,
-                    html5: true,
-                });
-                this.sounds[key] = sound;
-                return sound;
-            }
-            default:
-                return this.createCustomSound(HowlConstructor, key);
-        }
-    }
-
-    private async createCustomSound(HowlConstructor: typeof import("howler").Howl, key: SoundKey): Promise<Howl | undefined> {
-        const definition = await getCustomSound(key);
-        if (!definition) {
-            return undefined;
-        }
-        const sound = new HowlConstructor({
-            src: [definition.data],
-            preload: false,
-            html5: true,
-        });
-        this.sounds[key] = sound;
-        return sound;
-    }
-
-    private playLoadedSound(sound: Howl) {
-        const play = () => {
-            sound.stop();
-            sound.play();
-        };
-        if (sound.state() === 'loaded') {
-            play();
-        } else {
-            sound.once('load', play);
-            sound.load();
-        }
-    }
-
-    private async play(key: SoundKey) {
+    private play(key: SoundKey): void {
         if (this.muted) return;
-
-        // Resume audio context if suspended (browser autoplay policy)
-        resumeAudioContext();
-
-        const existing = this.sounds[key];
-        if (existing) {
-            this.playLoadedSound(existing);
+        const cached = this.elements.get(key);
+        if (cached) {
+            this.playElement(cached, key);
             return;
         }
+        // Cache miss — load then play. Loses user activation, so will only
+        // work if the element was already primed somehow.
+        void this.ensureElement(key).then(audio => {
+            if (audio) this.playElement(audio, key);
+        });
+    }
+
+    private playElement(audio: HTMLAudioElement, key: SoundKey): void {
+        audio.volume = 1.0;
+        audio.muted = false;
         try {
-            const sound = await this.ensureSound(key);
-            if (sound) {
-                this.playLoadedSound(sound);
-            }
-        } catch (error) {
-            console.error("Failed to play sound", error);
+            audio.currentTime = 0;
+        } catch {
+            // ignore — readyState may be too low to seek
+        }
+        const result = audio.play();
+        if (result && typeof result.then === 'function') {
+            result.catch(err => {
+                console.warn('[SoundManager] play failed for', key, err);
+            });
         }
     }
 
-    private async playCategory(category: SoundCategory): Promise<void> {
+    private playCategory(category: SoundCategory): void {
         if (this.muted) return;
-
-        resumeAudioContext();
 
         const uiSettings = globalStorage.get("uiSettings");
         const soundCategories: SoundCategories = (uiSettings as any)?.soundCategories ?? {};
 
         if (category in soundCategories) {
             const key = soundCategories[category];
-            if (key === null) return; // disabled — silence
-            void this.play(key);     // custom sound
+            if (key === null) return;
+            this.play(key);
         } else {
-            void this.play("beep");  // default beep (respects customBeepSoundKey)
+            this.play("beep");
         }
     }
 }

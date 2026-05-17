@@ -20,17 +20,6 @@ vi.mock('@client/sounds', () => ({
   beepSound: 'mock-sound',
 }));
 
-vi.mock('howler', () => {
-  const instance = {
-    state: jest.fn(() => 'loaded'),
-    play: jest.fn(),
-    stop: jest.fn(),
-    once: jest.fn(),
-    load: jest.fn(),
-  };
-  return { Howl: jest.fn(function () { return instance; }) };
-});
-
 vi.mock('@client/Triggers', () => ({
   __esModule: true,
   default: jest.fn(function () {

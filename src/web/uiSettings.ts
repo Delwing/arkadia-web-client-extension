@@ -561,7 +561,9 @@ function save(settings: UiSettings) {
     globalStorage.set('uiSettings', settings);
 }
 
-export default async function initUiSettings() {
+export default async function initUiSettings(soundManager: {
+    previewKey: (key: string) => void;
+}) {
     const button = document.getElementById('ui-settings-button') as HTMLButtonElement | null;
     const modalEl = document.getElementById('ui-settings-modal');
     if (!button || !modalEl) return;
@@ -867,23 +869,8 @@ export default async function initUiSettings() {
         });
     };
 
-    const previewCategorySound = async (key: string) => {
-        try {
-            const { Howl } = await import('howler');
-            let soundData: string | undefined;
-            if (key === 'beep') {
-                const { beepSound } = await import('../client/sounds');
-                soundData = beepSound;
-            } else {
-                soundData = customSoundsRef.current.find(s => s.key === key)?.data;
-            }
-            if (!soundData) return;
-            const howl = new Howl({ src: [soundData], preload: true });
-            howl.once('load', () => howl.play());
-            howl.load();
-        } catch (error) {
-            console.error('Failed to preview sound', error);
-        }
+    const previewCategorySound = (key: string) => {
+        void soundManager.previewKey(key);
     };
 
     const handleCustomBeepFileChange = (e: Event) => {
@@ -1776,39 +1763,8 @@ export default async function initUiSettings() {
         const manageSoundsList = document.getElementById('manage-sounds-list');
         const manageSoundsEmpty = document.getElementById('manage-sounds-empty');
 
-        async function playSound(key: string, data?: string) {
-            try {
-                const { Howl } = await import('howler');
-                let soundData: string | undefined = data;
-
-                if (!soundData) {
-                    if (key === 'beep') {
-                        const { beepSound } = await import('../client/sounds');
-                        soundData = beepSound;
-                    } else {
-                        const sound = customSoundsRef.current.find(s => s.key === key);
-                        soundData = sound?.data;
-                    }
-                }
-
-                if (!soundData) {
-                    console.error('Sound data not found for key:', key);
-                    return;
-                }
-
-                const howl = new Howl({
-                    src: [soundData],
-                    preload: true,
-                });
-
-                howl.once('load', () => {
-                    howl.play();
-                });
-
-                howl.load();
-            } catch (error) {
-                console.error('Failed to play sound', error);
-            }
+        function playSound(key: string) {
+            void soundManager.previewKey(key);
         }
 
         async function renderSoundsList() {
@@ -1845,7 +1801,7 @@ export default async function initUiSettings() {
 
             const defaultPlayBtn = defaultBeepItem.querySelector('[data-play-key]');
             defaultPlayBtn?.addEventListener('click', () => {
-                void playSound('beep', defaultBeepData);
+                void playSound('beep');
             });
 
             manageSoundsList.appendChild(defaultBeepItem);
@@ -1868,7 +1824,7 @@ export default async function initUiSettings() {
 
                 const playBtn = item.querySelector('[data-play-key]');
                 playBtn?.addEventListener('click', () => {
-                    void playSound(sound.key, sound.data);
+                    void playSound(sound.key);
                 });
 
                 const deleteBtn = item.querySelector('[data-sound-key]');

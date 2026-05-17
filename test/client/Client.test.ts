@@ -17,7 +17,6 @@ vi.mock('@client/main', () => ({
 import Client from '@client/Client';
 import { mudletColorLine } from '@modules/core/Colors';
 import { characterStorage, globalStorage } from '@modules/core/storage';
-import { Howl } from 'howler';
 
 vi.mock('@client/sounds', () => ({
   __esModule: true,
@@ -27,20 +26,23 @@ vi.mock('@client/sounds', () => ({
 vi.mock('@modules/core/customSounds', () => ({
   __esModule: true,
   getCustomSound: jest.fn().mockResolvedValue(undefined),
+  getCustomSounds: jest.fn().mockResolvedValue([]),
 }));
 
-vi.mock('howler', () => {
-  const makeInstance = () => ({
-    state: jest.fn(() => 'loaded'),
-    play: jest.fn(),
-    stop: jest.fn(),
-    once: jest.fn(),
-    load: jest.fn(),
-  });
-  return {
-    Howl: jest.fn(function () { return makeInstance(); }),
-    Howler: { volume: jest.fn(), stop: jest.fn() },
-  };
+// SoundManager caches one HTMLAudioElement per sound key, primes each one
+// with a brief play() on the first user gesture, and starts a continuous
+// keepalive loop on a separate element. jsdom's HTMLMediaElement.play is a
+// no-op returning undefined; we replace it with a tracked mock so tests can
+// assert on calls. The primer and keepalive only fire on real user gestures,
+// so tests that don't dispatch one only see plays triggered by sendEvent.
+// See docs/AUDIO_SYSTEM.md for the full rationale.
+const audioPlay = jest.fn().mockResolvedValue(undefined);
+const audioPause = jest.fn();
+beforeEach(() => {
+  audioPlay.mockClear();
+  audioPause.mockClear();
+  (HTMLMediaElement.prototype as any).play = audioPlay;
+  (HTMLMediaElement.prototype as any).pause = audioPause;
 });
 
 vi.mock('@client/Triggers', async () => {
@@ -277,24 +279,22 @@ test('sendCommand prints echo commands locally', async () => {
 test('sound playback restarts when triggered twice', async () => {
   const client = new Client((global as any).clientAdapterMock as any);
   await client.prepareSounds();
-  const sound = (Howl as jest.Mock).mock.results[0].value;
 
   client.sendEvent('sound:play', { key: 'beep' });
   client.sendEvent('sound:play', { key: 'beep' });
+  await new Promise(resolve => setTimeout(resolve, 0));
 
-  expect(sound.stop).toHaveBeenCalledTimes(2);
-  expect(sound.play).toHaveBeenCalledTimes(2);
+  expect(audioPlay).toHaveBeenCalledTimes(2);
 });
 
 test('sound:category with no config plays default beep', async () => {
   const client = new Client((global as any).clientAdapterMock as any);
   await client.prepareSounds();
-  const sound = (Howl as jest.Mock).mock.results[0].value;
 
   client.sendEvent('sound:category', 'attack');
+  await new Promise(resolve => setTimeout(resolve, 0));
 
-  expect(sound.stop).toHaveBeenCalledTimes(1);
-  expect(sound.play).toHaveBeenCalledTimes(1);
+  expect(audioPlay).toHaveBeenCalledTimes(1);
 });
 
 test('sound:category with null config is silenced', async () => {
@@ -304,11 +304,32 @@ test('sound:category with null config is silenced', async () => {
   } as any);
   const client = new Client((global as any).clientAdapterMock as any);
   await client.prepareSounds();
-  const sound = (Howl as jest.Mock).mock.results[0].value;
 
   client.sendEvent('sound:category', 'attack');
+  await new Promise(resolve => setTimeout(resolve, 0));
 
-  expect(sound.play).not.toHaveBeenCalled();
+  expect(audioPlay).not.toHaveBeenCalled();
+});
+
+test('first user gesture primes elements and starts keepalive loop', async () => {
+  const client = new Client((global as any).clientAdapterMock as any);
+  await client.prepareSounds();
+  audioPlay.mockClear();
+
+  // Untrusted KeyboardEvent — fine here because we only assert that our
+  // capture-phase listener runs and triggers play() on the cached elements.
+  document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  // Expect at least one play (the beep element's primer) plus the keepalive
+  // loop's own play — both call audio.play() via the prototype mock.
+  expect(audioPlay.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+  audioPlay.mockClear();
+  // Subsequent gestures must NOT re-prime (primerActivated guard).
+  document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(audioPlay).not.toHaveBeenCalled();
 });
 
 test('sound:category with custom key plays that sound', async () => {
@@ -316,23 +337,18 @@ test('sound:category with custom key plays that sound', async () => {
     ...globalStorage.get('uiSettings'),
     soundCategories: { attack: 'my-sound' },
   } as any);
-  // mock getCustomSound to return data for 'my-sound'
   const { getCustomSound } = await import('@modules/core/customSounds');
-  (getCustomSound as jest.Mock).mockResolvedValueOnce({ data: 'data:audio/mp3;base64,abc', key: 'my-sound', name: 'My Sound' });
+  (getCustomSound as jest.Mock).mockResolvedValue({ data: 'data:audio/mp3;base64,abc', key: 'my-sound', name: 'My Sound' });
 
   const client = new Client((global as any).clientAdapterMock as any);
   await client.prepareSounds();
 
-  // Trigger category play
   client.sendEvent('sound:category', 'attack');
-  // Wait for async sound creation
   await new Promise(resolve => setTimeout(resolve, 0));
 
-  const calls = (Howl as jest.Mock).mock.calls;
-  const customSoundCall = calls.find(c => Array.isArray(c[0]?.src)
-    ? c[0].src.includes('data:audio/mp3;base64,abc')
-    : c[0]?.src === 'data:audio/mp3;base64,abc');
-  expect(customSoundCall).toBeDefined();
+  expect(audioPlay).toHaveBeenCalled();
+  const playedElement = audioPlay.mock.contexts[audioPlay.mock.contexts.length - 1] as HTMLAudioElement;
+  expect(playedElement.src).toContain('data:audio/mp3;base64,abc');
 });
 
 test('updateContentWidth measures characters per line', () => {

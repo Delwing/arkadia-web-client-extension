@@ -31,7 +31,6 @@
     "esbuild-wasm": "^0.27.0",
     "file-icons-js": "^1.1.0",
     "firebase": "^10.14.1",
-    "howler": "^2.2.4",
     "jszip": "^3.10.1",
     "lua-in-js": "^2.2.5",
     "lucide-react": "^0.460.0",

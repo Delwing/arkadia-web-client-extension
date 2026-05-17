@@ -1,13 +1,4 @@
 vi.mock('mudlet-map-renderer', () => ({ MapReader: jest.fn() }));
-vi.mock('howler', () => ({
-  Howl: jest.fn().mockImplementation(() => ({
-    load: jest.fn(),
-    once: jest.fn(),
-    play: jest.fn(),
-    stop: jest.fn(),
-    state: jest.fn(() => 'loaded'),
-  })),
-}));
 
 import Client from '@client/Client';
 import initTempBinds from '@client/scripts/tempBinds';

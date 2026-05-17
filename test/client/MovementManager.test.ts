@@ -19,17 +19,6 @@ vi.mock('@client/sounds', () => ({
   beepSound: 'mock-sound',
 }));
 
-vi.mock('howler', () => {
-  const instance = {
-    state: jest.fn(() => 'loaded'),
-    play: jest.fn(),
-    stop: jest.fn(),
-    once: jest.fn(),
-    load: jest.fn(),
-  };
-  return { Howl: jest.fn(function () { return instance; }) };
-});
-
 vi.mock('@client/Triggers', async () => {
   const { AnsiAwareBuffer } = await vi.importActual<typeof import('@client/ansi/FormatState')>('@client/ansi/FormatState');
   return {

@@ -12,7 +12,6 @@ import mudClient from "./MudClient.ts";
 import recordingManager from "./RecordingManager.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import {preloadHowler, resumeAudioContext} from "@client/SoundManager";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {HelperConnection} from "@modules/helper/HelperConnection";
@@ -222,26 +221,6 @@ function preventTabSleep() {
     document.addEventListener('touchstart', enableNoSleep, {once: true});
     document.addEventListener('click', enableNoSleep, {once: true});
 }
-
-// Preload Howler on first user interaction so AudioContext exists before connect
-function setupAudioContextResume() {
-    const resumeOnInteraction = () => {
-        preloadHowler();
-        resumeAudioContext();
-    };
-    document.addEventListener('click', resumeOnInteraction);
-    document.addEventListener('keydown', resumeOnInteraction);
-    document.addEventListener('touchstart', resumeOnInteraction);
-
-    // Also resume when returning to the tab
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            resumeAudioContext();
-        }
-    });
-}
-
-setupAudioContextResume();
 
 function disableTabSleepPrevention() {
     if (!tabSleepPreventionActive) return;
@@ -1340,8 +1319,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearPendingLogin();
-            preloadHowler();
-            resumeAudioContext();
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
@@ -1396,8 +1373,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isConnected) {
             mudClient.disconnect();
         } else {
-            preloadHowler();
-            resumeAudioContext();
             isConnecting = true;
             lastSystemLoginMessage = null;
             updateConnectButtons();
@@ -1485,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLeader = !!client.TeamManager.isLeader?.();
     applyMobileButtonSettings(mobileSettings, inTeam, isLeader);
 
-    initUiSettings();
+    initUiSettings(client.SoundManager);
 
     const fullscreenButton = document.getElementById('fullscreen-button') as HTMLButtonElement | null;
     if (fullscreenButton) {
