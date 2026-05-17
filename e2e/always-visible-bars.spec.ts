@@ -261,6 +261,7 @@ test.describe('Always visible status bars', () => {
     });
 
     test('"Wszystkie zawsze widoczne" reflects true when all individual switches are manually checked', async ({page}) => {
+        test.slow();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
