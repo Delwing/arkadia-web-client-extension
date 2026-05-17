@@ -1,7 +1,7 @@
 import { buildHerbContextMenuItems, openHerbContextMenu } from "@modules/core/contextMenus";
-import { showContextMenu } from "@shared/dom/contextMenu";
+import { showContextMenu } from "@web/contextMenu";
 
-vi.mock("@shared/dom/contextMenu", () => ({
+vi.mock("@web/contextMenu", () => ({
     showContextMenu: jest.fn(),
 }));
 

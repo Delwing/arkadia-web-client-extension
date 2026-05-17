@@ -1,4 +1,4 @@
-import type { ContextMenuEntry } from "@shared/dom/contextMenu";
+import type { ContextMenuEntry } from "@web/contextMenu";
 
 type PopupMenuEntryRecord = {
   id: string;

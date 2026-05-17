@@ -41,7 +41,7 @@ import {
 } from '@modules/core/pluginLocationNotesRegistry';
 import knowledgeData from '../knowledge.json';
 import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
-import { showContextMenu } from '@shared/dom/contextMenu';
+import { showContextMenu } from '@web/contextMenu';
 import {
     addKnowledgeEvent,
     parseDativeCategory,

@@ -1,6 +1,6 @@
 import {mudletColorLine} from "./Colors";
 import type {HerbUse} from "@client/scripts/herbsLoader";
-import {showContextMenu} from "@shared/dom/contextMenu";
+import {showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 
 export interface ContextMenuItem {

@@ -3,7 +3,7 @@ import {globalStorage} from "@modules/core/storage";
 import {createAttackController} from "@client/utils/attackController";
 import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
 import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
-import {hideContextMenu, showContextMenu} from "@shared/dom/contextMenu";
+import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 

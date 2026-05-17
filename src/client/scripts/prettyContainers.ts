@@ -5,7 +5,7 @@ import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
 import {getKnowledgeStore, KnowledgeBookEntry, KnowledgeBookCategoryProgress, DEFAULT_KNOWLEDGE_CHARACTER_KEY} from "@modules/data/dataStores/knowledgeStore";
 import { showBookTooltip, hideBookTooltip } from "@web/bookTooltip";
-import { showContextMenu } from "@shared/dom/contextMenu";
+import { showContextMenu } from "@web/contextMenu";
 import { getDativeCategoryName } from "../knowledgeCategories";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {

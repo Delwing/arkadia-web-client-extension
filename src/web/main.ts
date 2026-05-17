@@ -16,8 +16,7 @@ import {preloadHowler, resumeAudioContext} from "@client/SoundManager";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {HelperConnection} from "@modules/helper/HelperConnection";
-import {type ContextMenuEntry, showContextMenu} from "@shared/dom/contextMenu";
-import {getContextMenuEntries as getPluginContextMenuEntries} from "@modules/core/pluginUiRegistry";
+import {setupOutputContextMenu} from "./outputContextMenu";
 import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
@@ -56,7 +55,6 @@ import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import HelperSettings from "./options/HelperSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
-import {copyOutputAsImage, saveOutputAsHtml} from "./copyOutputAsImage";
 import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
@@ -69,13 +67,7 @@ import {
     migrateMobileButtonMacroField,
     runAllSettingsMigrations
 } from "@modules/core/settingsMigrations"
-import {
-    areOutputTimestampsVisible,
-    setOutputTimestampVisibility,
-    areOutputMessageTypesVisible,
-    setOutputMessageTypeVisibility,
-    setupOutputMessageHandler,
-} from "@shared/dom/outputMessageHandler";
+import {setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 import {CommandInputController} from "./commandInput/CommandInputController";
 
@@ -488,190 +480,7 @@ if (multiBindsElement) {
     resizeObserver.observe(outputWrapper);
 }
 
-outputWrapper.addEventListener('contextmenu', event => {
-    if (event.defaultPrevented) {
-        return;
-    }
-    const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
-    if (isMobileLike) {
-        return;
-    }
-    const target = event.target as HTMLElement | null;
-    if (target && target.closest('a, [data-output-clickable]')) {
-        return;
-    }
-    event.preventDefault();
-    const isVisible = areOutputTimestampsVisible();
-    const areTypesVisible = areOutputMessageTypesVisible();
-    const hasSelection = !window.getSelection()?.isCollapsed;
-    const items: ContextMenuEntry[] = [
-        {
-            label: isVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
-            action: () => setOutputTimestampVisibility(!isVisible),
-        },
-        {
-            label: areTypesVisible ? 'Ukryj typy wiadomości' : 'Pokaż typy wiadomości',
-            action: () => setOutputMessageTypeVisibility(!areTypesVisible),
-        },
-    ];
-    if (hasSelection) {
-        items.push({
-            label: 'Kopiuj jako obraz',
-            action: () => {
-                copyOutputAsImage().catch(err => {
-                    console.error('Failed to copy as image:', err);
-                });
-            },
-        });
-        items.push({
-            label: 'Zapisz jako HTML',
-            action: () => {
-                saveOutputAsHtml().catch(err => {
-                    console.error('Failed to save as HTML:', err);
-                });
-            },
-        });
-    }
-    items.push(
-        {
-            label: '📚 Wiedza',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/wiedza'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '🏛️ Biblioteki',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/biblioteki'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '🌿 Zioła',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/ziola'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '📝 Zioła (tekst)',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/ziola2'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '📜 Zlecenia',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/zlecenia'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '⚡ Skróty',
-            action: () => {
-                eventBus.emit('skroty.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '🕰️ Zegar',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/czas'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '💬 Chat',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/chatw'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '⚔️ Walka',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/walkaw'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '📈 Postepy',
-            action: () => {
-                eventBus.emit('postepy.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '📊 Postepy 2',
-            action: () => {
-                eventBus.emit('postepy2.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '💀 Zabici',
-            action: () => {
-                eventBus.emit('zabici.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '⚰️ Zabici 2',
-            action: () => {
-                eventBus.emit('zabici2.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '✉️ Poczta',
-            action: () => {
-                eventBus.emit('poczta.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '💰 Depozyty',
-            action: () => {
-                eventBus.emit('deposits.popup.open', {});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '🎣 Wedka',
-            action: () => {
-                eventBus.emit('sendCommand', {command: '/wedka'});
-            },
-            opensWindow: true,
-        },
-        {
-            label: '📅 Kalendarz',
-            action: () => {
-                eventBus.emit('sunTracker.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '🛠️ Zawod',
-            action: () => {
-                eventBus.emit('profession.popup.open');
-            },
-            opensWindow: true,
-        },
-        {
-            label: '🛡️ Zlom',
-            action: () => {
-                eventBus.emit('zlom.popup.open');
-            },
-            opensWindow: true,
-        },
-    );
-    getPluginContextMenuEntries().forEach(entry => {
-        items.push(entry);
-    });
-    showContextMenu(items, event.clientX, event.clientY, { columns: 2 });
-});
+setupOutputContextMenu(outputWrapper);
 
 function closeHistoryScrollback() {
     outputWrapper.scrollTop = outputWrapper.scrollHeight;

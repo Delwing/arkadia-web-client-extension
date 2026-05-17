@@ -6,7 +6,7 @@ import { normalizeHerbBagsState } from "@client/types/herbs";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
 import eventBus from "@modules/core/eventBus";
-import { hideContextMenu } from "@shared/dom/contextMenu";
+import { hideContextMenu } from "@web/contextMenu";
 import { getHerbManager } from "@modules/core/herbManagerProvider";
 import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper";
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";

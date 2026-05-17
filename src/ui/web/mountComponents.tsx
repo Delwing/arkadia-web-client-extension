@@ -18,6 +18,7 @@ import {
   WeaponState,
   PlaybackControls
 } from "./components";
+import { ContextMenuHost } from "@web/contextMenu";
 
 type MountResult = {
   destroy: () => void;
@@ -76,6 +77,14 @@ export const mountMigratedComponents = (): MountResult => {
   playbackControlsRoot.render(<PlaybackControls />);
   roots.push(playbackControlsRoot);
 
+  // ContextMenuHost portals its menu directly to document.body
+  const contextMenuContainer = document.createElement("div");
+  contextMenuContainer.style.display = "none";
+  document.body.appendChild(contextMenuContainer);
+  const contextMenuRoot = createRoot(contextMenuContainer);
+  contextMenuRoot.render(<ContextMenuHost />);
+  roots.push(contextMenuRoot);
+
   return {
     destroy: () => {
       roots.forEach((root) => root.unmount());
@@ -84,6 +93,9 @@ export const mountMigratedComponents = (): MountResult => {
       }
       if (playbackControlsContainer.parentNode) {
         playbackControlsContainer.parentNode.removeChild(playbackControlsContainer);
+      }
+      if (contextMenuContainer.parentNode) {
+        contextMenuContainer.parentNode.removeChild(contextMenuContainer);
       }
     },
   };
