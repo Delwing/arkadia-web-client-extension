@@ -39,15 +39,16 @@ beforeEach(() => {
 
 vi.mock('@client/Triggers', async () => {
   const { AnsiAwareBuffer } = await vi.importActual<typeof import('@client/ansi/FormatState')>('@client/ansi/FormatState');
+  type AnsiAwareBufferInstance = InstanceType<typeof AnsiAwareBuffer>;
   return {
     __esModule: true,
     default: jest.fn(function () {
       return {
-        parseLine: jest.fn((l: string | typeof AnsiAwareBuffer) => {
+        parseLine: jest.fn((l: string | AnsiAwareBufferInstance) => {
           if (typeof l === 'string') return new AnsiAwareBuffer(l);
           return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
         }),
-        parseMultiline: jest.fn((l: string | typeof AnsiAwareBuffer) => {
+        parseMultiline: jest.fn((l: string | AnsiAwareBufferInstance) => {
           if (typeof l === 'string') return new AnsiAwareBuffer(l);
           return l instanceof AnsiAwareBuffer ? l : new AnsiAwareBuffer(l);
         }),
