@@ -286,7 +286,6 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
     }
     state.popupPanels[popupId].settings![key] = value;
     saveLayoutState(state);
-    eventBus.emit('layoutManagerStateChanged');
   } catch (e) {
     console.error('Failed to save popup setting:', e);
   }
@@ -378,7 +377,6 @@ export function setBuiltInPanelSetting<T>(
     }
     state.builtInPanels[panelId].settings![key] = value;
     saveLayoutState(state);
-    eventBus.emit('layoutManagerStateChanged');
   } catch (e) {
     console.error('Failed to save built-in panel setting:', e);
   }
