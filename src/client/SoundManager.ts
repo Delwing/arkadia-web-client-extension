@@ -183,6 +183,7 @@ export default class SoundManager {
                 const sound = new HowlConstructor({
                     src: beepSound,
                     preload: false,
+                    html5: true,
                 });
                 this.sounds[key] = sound;
                 return sound;
@@ -200,6 +201,7 @@ export default class SoundManager {
         const sound = new HowlConstructor({
             src: [definition.data],
             preload: false,
+            html5: true,
         });
         this.sounds[key] = sound;
         return sound;
