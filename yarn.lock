@@ -2626,11 +2626,6 @@ hast-util-whitespace@^3.0.0:
   dependencies:
     "@types/hast" "^3.0.0"
 
-howler@^2.2.4:
-  version "2.2.4"
-  resolved "https://registry.yarnpkg.com/howler/-/howler-2.2.4.tgz#bd3df4a4f68a0118a51e4bd84a2bfc2e93e6e5a1"
-  integrity sha512-iARIBPgcQrwtEr+tALF+rapJ8qSc+Set2GJQl7xT1MQzWaVkFebdJhR3alVlSiUf5U7nAANKuj3aWpwerocD5w==
-
 html-encoding-sniffer@^6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/html-encoding-sniffer/-/html-encoding-sniffer-6.0.0.tgz#f8d9390b3b348b50d4f61c16dd2ef5c05980a882"
@@ -3109,11 +3104,6 @@ lucide-react@^0.460.0:
   version "0.460.0"
   resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.460.0.tgz#5681364b6bd94d1d475944f0385239c0b1408e35"
   integrity sha512-BVtq/DykVeIvRTJvRAgCsOwaGL8Un3Bxh8MbDxMhEWlZay3T4IpEKDEpwt5KZ0KJMHzgm6jrltxlT5eXOWXDHg==
-
-lucide@^0.460.0:
-  version "0.460.0"
-  resolved "https://registry.yarnpkg.com/lucide/-/lucide-0.460.0.tgz#94c1e84fb85db2baf4bd7cb3deb89c63abb50d94"
-  integrity sha512-kEqx3yHU+q4S0k7RH183QFaDy6xepEcN3yVjiBhxM1qX/tSMrmOSuUQJCobiIYzB1q9m8RmAN0efPiXZq79JSQ==
 
 magic-string@^0.30.21:
   version "0.30.21"
