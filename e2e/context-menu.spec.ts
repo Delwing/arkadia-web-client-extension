@@ -54,7 +54,7 @@ test.describe('Context menu', () => {
         const firstButton = menu.locator('button').first();
         await firstButton.click();
 
-        await expect(menu).not.toHaveClass(/show/);
+        await expect(menu).not.toBeVisible();
     });
 
     test('clicking Wiedza triggers /wiedza command', async ({page}) => {
@@ -162,22 +162,22 @@ test.describe('Context menu', () => {
         await pushText(page, 'Some selectable text here\n');
         await waitForOutputContaining(page, 'Some selectable text here');
 
-        // Select text and then dispatch contextmenu event in one evaluate
-        // to avoid the selection being cleared by Playwright's click
-        const hasSelectionItems = await page.evaluate((sel) => {
+        // Select text and dispatch contextmenu in one evaluate so Playwright
+        // doesn't clear the selection between the two actions. The menu is
+        // rendered asynchronously by React, so we assert via the Playwright
+        // locator afterwards rather than reading the DOM synchronously here.
+        await page.evaluate((sel) => {
             const output = document.querySelector(sel) as HTMLElement;
-            if (!output) return false;
+            if (!output) return;
 
-            // Create a text selection
             const textNode = output.querySelector('span') ?? output.firstChild;
-            if (!textNode) return false;
+            if (!textNode) return;
             const range = document.createRange();
             range.selectNodeContents(textNode);
             const selection = window.getSelection();
             selection?.removeAllRanges();
             selection?.addRange(range);
 
-            // Dispatch contextmenu event
             const rect = output.getBoundingClientRect();
             const event = new MouseEvent('contextmenu', {
                 bubbles: true,
@@ -187,14 +187,11 @@ test.describe('Context menu', () => {
                 button: 2,
             });
             output.dispatchEvent(event);
-
-            // Check the menu contents
-            const menu = document.querySelector('#context-menu');
-            if (!menu) return false;
-            const html = menu.innerHTML;
-            return html.includes('Kopiuj jako obraz') && html.includes('Zapisz jako HTML');
         }, OUTPUT_SELECTOR);
 
-        expect(hasSelectionItems).toBe(true);
+        const menu = page.locator(CONTEXT_MENU_SELECTOR);
+        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toContainText('Kopiuj jako obraz');
+        await expect(menu).toContainText('Zapisz jako HTML');
     });
 });

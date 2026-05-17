@@ -140,7 +140,7 @@ test.describe('Map context menu', () => {
         const firstButton = menu.locator('button', { hasText: 'Ustaw lokację' });
         await firstButton.click();
 
-        await expect(menu).not.toHaveClass(/show/);
+        await expect(menu).not.toBeVisible();
     });
 
     test('clicking an opens-window button also hides the menu', async ({ page }) => {
@@ -152,7 +152,7 @@ test.describe('Map context menu', () => {
         const shortcutButton = menu.locator('button', { hasText: 'Dodaj skrót' });
         await shortcutButton.click();
 
-        await expect(menu).not.toHaveClass(/show/);
+        await expect(menu).not.toBeVisible();
     });
 
     test('roomId 0 does not open the context menu', async ({ page }) => {
