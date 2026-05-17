@@ -13,7 +13,7 @@ const resolveGitInfo = (command: string, fallback: string) => {
 };
 
 const commitSha = resolveGitInfo('git rev-parse --short HEAD', 'unknown');
-const commitDate = resolveGitInfo('git log -1 --format=%cd --date=short', 'unknown');
+const commitDate = resolveGitInfo('git log -1 --format=%cI', 'unknown');
 
 export default defineConfig({
     plugins: [
