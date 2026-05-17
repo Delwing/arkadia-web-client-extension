@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useClientEvent } from "../../hooks";
+import eventBus from "@modules/core/eventBus";
 
 /**
  * LampTimer component - displays remaining time for lamp
  * Color-coded: red (<30s), yellow (<60s), green (>=60s)
+ * Click to refill lamp
  */
 export const LampTimer: React.FC = () => {
   const [seconds, setSeconds] = useState<number | null>(null);
@@ -30,6 +32,10 @@ export const LampTimer: React.FC = () => {
     }
   }, [seconds]);
 
+  const handleClick = () => {
+    eventBus.emit("sendCommand", { command: "napelnij lampe olejem" });
+  };
+
   if (seconds == null || seconds <= 0) {
     return null;
   }
@@ -40,8 +46,12 @@ export const LampTimer: React.FC = () => {
 
   return (
     <>
-      <span style={{ color: "white" }}>lamp </span>
-      <span>{timeValue}</span>
+      <span style={{ color: "white", cursor: "pointer" }} onClick={handleClick}>
+        lamp{" "}
+      </span>
+      <span style={{ cursor: "pointer" }} onClick={handleClick}>
+        {timeValue}
+      </span>
     </>
   );
 };
