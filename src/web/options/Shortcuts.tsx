@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
-import { TiDelete } from 'react-icons/ti';
+import { Trash2 } from 'lucide-react';
 import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
@@ -100,7 +100,7 @@ function Shortcuts() {
                         <td>{item.label}</td>
                         <td className="d-flex gap-2">
                             <Button size="sm" onClick={() => eventBus.emit('leadTo', item.id)}>Prowadź</Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(item.key)}><TiDelete /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(item.key)}><Trash2 size={16} /></Button>
                         </td>
                     </tr>
                 ))}

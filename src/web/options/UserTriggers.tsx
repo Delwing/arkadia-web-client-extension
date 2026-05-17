@@ -1,6 +1,6 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete, TiEdit, TiFlash } from "react-icons/ti";
+import { Trash2, Pencil, Zap } from "lucide-react";
 import { globalStorage } from "@modules/core/storage";
 import { CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import {
@@ -368,7 +368,7 @@ function UserTriggers() {
                             <div className="alias-entry">
                                 {t.type === 'event' && t.event ? (
                                     <>
-                                        <TiFlash className="text-warning" style={{ flexShrink: 0 }} />
+                                        <Zap size={16} className="text-warning" style={{ flexShrink: 0 }} />
                                         <code className="alias-pattern">
                                             {SUPPORTED_EVENTS.find(e => e.id === t.event)?.label || t.event}
                                         </code>
@@ -388,8 +388,8 @@ function UserTriggers() {
                             </div>
                         </div>
                         <div className="alias-card-actions">
-                            <Button size="sm" variant="secondary" onClick={() => openEdit(t.idx)}><TiEdit /></Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><TiDelete /></Button>
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(t.idx)}><Pencil size={16} /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><Trash2 size={16} /></Button>
                         </div>
                     </div>
                 ))}

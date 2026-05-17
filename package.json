@@ -34,6 +34,7 @@
     "howler": "^2.2.4",
     "jszip": "^3.10.1",
     "lua-in-js": "^2.2.5",
+    "lucide-react": "^0.460.0",
     "marked": "^16.0.0",
     "monaco-editor": "^0.55.1",
     "mudlet-map-renderer": "0.37.2-konva",
@@ -42,7 +43,6 @@
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
-    "react-icons": "^5.5.0",
     "shiki": "^3.15.0",
     "sql.js": "^1.13.0"
   },

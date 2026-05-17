@@ -1,7 +1,7 @@
 import "../style.css";
 import {useEffect, useState} from "react";
 import {Form, Button} from "react-bootstrap";
-import {FiHelpCircle} from "react-icons/fi";
+import {CircleHelp} from "lucide-react";
 import {characterStorage} from "@modules/core/storage";
 import {defaultSettings} from "./defaultSettings";
 import type {Settings as BaseSettings} from "./defaultSettings";
@@ -204,7 +204,7 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             <Form.Check
                                 type="checkbox"
                                 id="fullHpMessage"
-                                label={<>Informacja o pelnym zdrowiu <FiHelpCircle title="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
+                                label={<>Informacja o pelnym zdrowiu <CircleHelp size={14} title="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
                                 checked={settings.fullHpMessage}
                                 onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                                 className="me-2"
@@ -212,7 +212,7 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                             <Form.Check
                                 type="checkbox"
                                 id="sunTracker"
-                                label={<>Ramki wschodu/zachodu <FiHelpCircle title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
+                                label={<>Ramki wschodu/zachodu <CircleHelp size={14} title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}} /></>}
                                 checked={settings.sunTracker}
                                 onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
                                 className="me-2"

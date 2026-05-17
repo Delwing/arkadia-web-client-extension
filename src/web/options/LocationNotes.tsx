@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button, Form, Table } from 'react-bootstrap';
-import { TiDelete } from 'react-icons/ti';
-import { FiEdit2 } from 'react-icons/fi';
+import { Trash2, Pencil } from 'lucide-react';
 import eventBus from "@modules/core/eventBus";
 import { getAllNotes, deleteNote, type LocationNote } from "./locationNotesStorage";
 
@@ -129,7 +128,7 @@ function LocationNotes() {
                                             onClick={() => handleEdit(note)}
                                             title="Edytuj notatke"
                                         >
-                                            <FiEdit2 />
+                                            <Pencil size={16} />
                                         </Button>
                                         <Button
                                             size="sm"
@@ -137,7 +136,7 @@ function LocationNotes() {
                                             onClick={() => handleDelete(note.id)}
                                             title="Usun notatke"
                                         >
-                                            <TiDelete />
+                                            <Trash2 size={16} />
                                         </Button>
                                     </div>
                                 </td>

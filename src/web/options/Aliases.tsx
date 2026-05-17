@@ -1,6 +1,6 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { Button, Form } from "react-bootstrap";
-import { TiDelete, TiEdit } from "react-icons/ti";
+import { Trash2, Pencil } from "lucide-react";
 import { globalStorage } from "@modules/core/storage";
 import { parseBlowtorch, Alias } from "./importBlowtorch";
 import { parseArkadia } from "./importArkadia";
@@ -183,8 +183,8 @@ function Aliases() {
                             )}
                         </div>
                         <div className="alias-card-actions">
-                            <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><TiEdit /></Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><TiDelete /></Button>
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(a.idx)}><Pencil size={16} /></Button>
+                            <Button size="sm" variant="danger" onClick={() => remove(a.idx)}><Trash2 size={16} /></Button>
                         </div>
                     </div>
                 ))}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { Button, Form } from 'react-bootstrap';
-import { TiDelete } from 'react-icons/ti';
+import { Trash2 } from 'lucide-react';
 import { CustomSound } from '@modules/core/customSounds';
 import {
     isTriggerMacroAvailable,
@@ -384,7 +384,7 @@ function MacroEditor({
                     </div>
                 );
             })()}
-            <Button size="sm" variant="secondary" onClick={onRemove}><TiDelete /></Button>
+            <Button size="sm" variant="secondary" onClick={onRemove}><Trash2 size={16} /></Button>
         </div>
     );
 }

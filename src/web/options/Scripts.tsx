@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Button, Form, Badge, Spinner } from "react-bootstrap";
-import { TiDelete } from "react-icons/ti";
-import { FiEdit2, FiExternalLink, FiUpload } from "react-icons/fi";
+import { Trash2, Pencil, ExternalLink, Upload } from "lucide-react";
 import { Modal } from "bootstrap";
 import { globalStorage } from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
@@ -344,11 +343,11 @@ function Scripts() {
                     Wklej kod
                 </Button>
                 <Button size="sm" variant="warning" onClick={() => fileInputRef.current?.click()}>
-                    <FiUpload className="me-1" />
+                    <Upload size={14} className="me-1" />
                     Importuj ZIP
                 </Button>
                 <Button size="sm" variant="info" onClick={openEditor}>
-                    <FiExternalLink className="me-1" />
+                    <ExternalLink size={14} className="me-1" />
                     Edytor
                 </Button>
             </div>
@@ -422,7 +421,7 @@ function Scripts() {
                                             onClick={() => editStoredPlugin(identifier)}
                                             title="Edytuj w edytorze"
                                         >
-                                            <FiEdit2 />
+                                            <Pencil size={16} />
                                         </Button>
                                     )}
                                     <Button
@@ -430,7 +429,7 @@ function Scripts() {
                                         variant="secondary"
                                         onClick={() => remove(identifier)}
                                     >
-                                        <TiDelete />
+                                        <Trash2 size={16} />
                                     </Button>
                                 </div>
                             </div>
