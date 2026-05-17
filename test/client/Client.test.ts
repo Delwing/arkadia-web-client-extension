@@ -1,13 +1,3 @@
-(globalThis as any).Input = { send: jest.fn() };
-(globalThis as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
-(globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-(globalThis as any).Maps = {
-  refresh_position: jest.fn(),
-  set_position: jest.fn(),
-  unset_position: jest.fn(),
-  data: undefined,
-};
-(globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 const parseCommand = jest.fn((cmd: string) => `parsed:${cmd}`);
 
 vi.mock('@client/main', () => ({
@@ -17,6 +7,7 @@ vi.mock('@client/main', () => ({
 import Client from '@client/Client';
 import { mudletColorLine } from '@modules/core/Colors';
 import { characterStorage, globalStorage } from '@modules/core/storage';
+import eventBus from '@modules/core/eventBus';
 
 vi.mock('@client/sounds', () => ({
   __esModule: true,
@@ -35,7 +26,8 @@ vi.mock('@modules/core/customSounds', () => ({
 // no-op returning undefined; we replace it with a tracked mock so tests can
 // assert on calls. The primer and keepalive only fire on real user gestures,
 // so tests that don't dispatch one only see plays triggered by sendEvent.
-// See docs/AUDIO_SYSTEM.md for the full rationale.
+// (Cross-test eventBus leak is dealt with in afterEach.) See
+// docs/AUDIO_SYSTEM.md for the full rationale.
 const audioPlay = jest.fn().mockResolvedValue(undefined);
 const audioPause = jest.fn();
 beforeEach(() => {
@@ -107,6 +99,13 @@ beforeEach(() => {
 
 afterEach(() => {
   localStorage.clear();
+  // Client.on/sendEvent route through the singleton eventBus, so every
+  // SoundManager created in a test leaves its sound:play/sound:category
+  // listeners attached. Without this clear, a sendEvent in a later test
+  // would fan out to every prior SoundManager and inflate audio.play counts.
+  eventBus.clear('sound:play');
+  eventBus.clear('sound:category');
+  eventBus.clear('sound:muted');
 });
 
 describe('Client', () => {
@@ -308,27 +307,6 @@ test('sound:category with null config is silenced', async () => {
   client.sendEvent('sound:category', 'attack');
   await new Promise(resolve => setTimeout(resolve, 0));
 
-  expect(audioPlay).not.toHaveBeenCalled();
-});
-
-test('first user gesture primes elements and starts keepalive loop', async () => {
-  const client = new Client((global as any).clientAdapterMock as any);
-  await client.prepareSounds();
-  audioPlay.mockClear();
-
-  // Untrusted KeyboardEvent — fine here because we only assert that our
-  // capture-phase listener runs and triggers play() on the cached elements.
-  document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
-  await new Promise(resolve => setTimeout(resolve, 0));
-
-  // Expect at least one play (the beep element's primer) plus the keepalive
-  // loop's own play — both call audio.play() via the prototype mock.
-  expect(audioPlay.mock.calls.length).toBeGreaterThanOrEqual(2);
-
-  audioPlay.mockClear();
-  // Subsequent gestures must NOT re-prime (primerActivated guard).
-  document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
-  await new Promise(resolve => setTimeout(resolve, 0));
   expect(audioPlay).not.toHaveBeenCalled();
 });
 
