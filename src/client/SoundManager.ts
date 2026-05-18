@@ -18,6 +18,19 @@ const PRIMER_VOLUME = 0.1;
 // expiration so background-tab triggers still produce audible output.
 const KEEPALIVE_VOLUME = 0.001;
 
+// iOS WebKit ignores HTMLAudioElement.volume (always reads/plays at 1.0),
+// so the keepalive loop — designed to be inaudible at -60 dB — would play
+// the beep at full hardware volume on a loop. iOS also doesn't enforce
+// Chrome's ~5s transient-activation expiration, so the keepalive isn't
+// needed there. Detect iPhone/iPod plus iPadOS 13+ (which reports as
+// MacIntel but has multi-touch).
+function isIOS(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent;
+    if (/iPad|iPhone|iPod/.test(ua)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+}
+
 export default class SoundManager {
     private elements = new Map<SoundKey, HTMLAudioElement>();
     private elementLoaders = new Map<SoundKey, Promise<HTMLAudioElement | undefined>>();
@@ -132,15 +145,19 @@ export default class SoundManager {
         // Start the continuous keepalive loop. Reuses the beep src — the
         // actual audio content doesn't matter, only that the page is
         // continuously playing real audio data at non-zero volume.
-        const beepAudio = this.elements.get('beep');
-        if (beepAudio) {
-            this.keepalive.src = beepAudio.src;
-            this.keepalive.volume = KEEPALIVE_VOLUME;
-            this.keepalive.muted = false;
-            this.keepalive.loop = true;
-            this.keepalive.play().catch((err) => {
-                console.warn('[SoundManager] keepalive failed', err);
-            });
+        // Skipped on iOS where volume is read-only (would loop at full
+        // hardware volume) and isn't needed anyway.
+        if (!isIOS()) {
+            const beepAudio = this.elements.get('beep');
+            if (beepAudio) {
+                this.keepalive.src = beepAudio.src;
+                this.keepalive.volume = KEEPALIVE_VOLUME;
+                this.keepalive.muted = false;
+                this.keepalive.loop = true;
+                this.keepalive.play().catch((err) => {
+                    console.warn('[SoundManager] keepalive failed', err);
+                });
+            }
         }
     }
 

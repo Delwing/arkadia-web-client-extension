@@ -36,6 +36,8 @@ Three pieces, layered:
 
 The visible cost: the tab speaker icon is shown continuously while the keepalive loop runs, and there's a small CPU/battery cost from decoding the looped audio. Both are acceptable trade-offs given the alternative is unreliable audio.
 
+**iOS exception:** The keepalive loop is skipped on iOS. iOS WebKit ignores `HTMLAudioElement.volume` (it always reads/plays at 1.0, under the user's hardware volume control), so a -60 dB loop would actually play the beep at full volume on repeat — the original symptom that motivated this carve-out. iOS also doesn't enforce Chrome's ~5s transient-activation expiration the same way; once an element is primed inside a user gesture, subsequent `play()` calls keep working. `isIOS()` in `SoundManager.ts` covers iPhone/iPod plus iPadOS 13+ (which reports as `MacIntel` but has multi-touch).
+
 ## Code shape
 
 ```text
@@ -46,7 +48,7 @@ constructor
 
 activatePrimer (runs once, in user-gesture stack)
   ├─ for each cached element: volume = 0.1, play(), pause-on-resolve
-  └─ starts the keepalive loop (volume = 0.001, loop = true) on the beep src
+  └─ on non-iOS: starts the keepalive loop (volume = 0.001, loop = true) on the beep src
 
 play(key)
   ├─ cache hit → playElement(audio): volume = 1, currentTime = 0, play()
