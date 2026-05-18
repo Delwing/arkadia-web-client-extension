@@ -399,10 +399,16 @@ export class EmbeddedMap {
     }
 
     renderRoom(roomId: number) {
+        // Assign first so pan events emitted synchronously by the renderer below
+        // see the new room when checking visibility in onPan.
+        this.currentRoom = roomId;
         this.renderer.setPosition(roomId)
         this.renderer.updatePositionMarker(roomId);
-        this.renderer.setZoom(this.zoom);
-        this.currentRoom = roomId;
+        // zoomToCenter (not setZoom) keeps the just-centered room at the visual
+        // centre when the zoom changes — otherwise position is left at the old
+        // zoom's pixel coords and the room slides off-screen, causing the
+        // subsequent pan event to report the room as out of bounds.
+        this.renderer.zoomToCenter(this.zoom);
 
         this.schedulePathHighlightRender();
     }
