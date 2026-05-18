@@ -3878,6 +3878,167 @@ h1 {
   display: none;
 }
 
+/* Raid view - WoW-style grid of cells with full-cell HP background */
+.objects-list-raid-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.objects-list-cards--raid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 3px;
+  padding: 0;
+}
+
+/* Subtle divider between team and enemies sections */
+.objects-list-cards--raid-team + .objects-list-cards--raid-enemies {
+  border-top: 1px dashed var(--popup-border-subtle);
+  padding-top: 8px;
+}
+
+.object-card--raid {
+  position: relative;
+  flex-direction: row;
+  min-height: 44px;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* HP bar fills the entire cell as background */
+.object-card__hp-bar--raid {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.object-card__hp-bar--raid::after {
+  display: none;
+}
+
+.object-card__hp-bar--raid .object-card__hp-fill {
+  height: 100%;
+  opacity: 0.5;
+  transition: width 0.2s ease, opacity 0.15s ease;
+}
+
+.object-card--raid:hover .object-card__hp-bar--raid .object-card__hp-fill {
+  opacity: 0.65;
+}
+
+/* Content stacks above the HP fill with two rows: main + attackers */
+.object-card__raid-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  padding: 0.25em 0.45em;
+  width: 100%;
+  min-height: 44px;
+  pointer-events: none;
+}
+
+.object-card__raid-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  pointer-events: none;
+}
+
+.object-card__raid-row > * {
+  pointer-events: auto;
+}
+
+.object-card__raid-row--attackers {
+  min-height: 1.1em;
+}
+
+.object-card--raid .object-card__number {
+  font-size: 0.8em;
+  min-width: 1.4em;
+  height: 1.4em;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.object-card--raid .object-card__name {
+  font-size: 0.95em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  flex: 1;
+}
+
+.object-card--raid .object-card__attackers-inline {
+  display: flex;
+  gap: 0.15em;
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.object-card--raid .object-card__attacker {
+  min-width: 1.3em;
+  height: 1.3em;
+  font-size: 0.75em;
+}
+
+/* Action icons: hidden by default, on hover overlay the whole cell with equal-width buttons */
+.object-card__icons--raid {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none; /* gap area falls through to HP bar for /prze, /w */
+  transition: opacity 0.15s ease;
+}
+
+.object-card--raid:hover .object-card__icons--raid {
+  opacity: 1;
+}
+
+.object-card--raid .object-card__icons--raid .object-card__icon {
+  flex: 1 1 0;
+  width: auto;
+  height: 100%;
+  min-width: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  background-size: 40% 40%;
+  border-radius: 0;
+  opacity: 0.95;
+  pointer-events: auto;
+}
+
+.object-card--raid .object-card__icons--raid .object-card__icon:hover {
+  background-color: rgba(0, 0, 0, 0.78);
+  opacity: 1;
+  transform: none;
+}
+
+/* Reinforce target/teammate emphasis with a brighter border in raid mode */
+.object-card--raid.object-card--teammate {
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+.object-card--raid.object-card--target {
+  border-color: rgba(255, 170, 170, 0.7);
+  box-shadow: 0 0 10px rgba(255, 170, 170, 0.35);
+}
+
+.object-card--raid.object-card--next-queued {
+  border-color: rgba(255, 215, 0, 0.7);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+
+.object-card--raid.object-card--player {
+  border-color: var(--popup-accent);
+}
+
 /* Object List Demo Popup */
 .object-list-demo-popup__body {
   padding: 0;

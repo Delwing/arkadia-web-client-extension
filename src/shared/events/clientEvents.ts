@@ -313,7 +313,7 @@ export interface KnownEvents {
     "mapAlwaysShowNote": boolean;
     "mapShowGrid": boolean;
     "mapShowAreaExitLabels": boolean;
-    "objectListViewMode": "list" | "card" | "compact" | "compact-dots";
+    "objectListViewMode": "list" | "card" | "compact" | "compact-dots" | "raid";
     "objectList.showWeaponState": boolean;
     "objectList.showCoverTimer": boolean;
     "objectList.showOrderTimer": boolean;
