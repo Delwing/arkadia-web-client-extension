@@ -407,8 +407,8 @@ export default function registerLuaGagTriggers(client: Client) {
             raiseEvent(event: string, ...args: any[]) {
                 client.sendEvent(event, ...args)
             },
-            setFgColor(rgb: number[]) {
-                const hexColor = '#' + rgb
+            setFgColor(r: number, g: number, b: number) {
+                const hexColor = '#' + [r, g, b]
                         .map(v => v.toString(16).padStart(2, '0'))
                         .join('');
                 global.color = createColorFormat(hexColor)
