@@ -295,7 +295,7 @@ export function savePopupFloatingState(
   popupId: string,
   updates: {
     isLocked?: boolean;
-    floatingState?: { x: number; y: number; width: number; height: number };
+    floatingState?: { x: number; y: number; width: number; height?: number };
   }
 ): void {
   try {
@@ -318,7 +318,7 @@ export function savePopupFloatingState(
 
 export function getPopupFloatingState(
   popupId: string
-): { x: number; y: number; width: number; height: number } | undefined {
+): { x: number; y: number; width: number; height?: number } | undefined {
   try {
     return getCachedLayoutState().popupPanels[popupId]?.floatingState;
   } catch {

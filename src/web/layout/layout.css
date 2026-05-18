@@ -475,6 +475,9 @@ body.layout-dragging * {
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   z-index: 100;
+  /* Belt-and-braces: never let a floating panel collapse to 0 even if a
+     bad persisted height slips through. Matches the resize handler clamp. */
+  min-height: 80px;
 }
 
 .floating-panel__header {

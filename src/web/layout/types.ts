@@ -122,7 +122,8 @@ export interface PopupPanelDockState {
     x: number;
     y: number;
     width: number;
-    height: number;
+    /** Undefined for auto-height popups. */
+    height?: number;
   };
   /** If true, popup should auto-open on page load. */
   persistOpen?: boolean;

@@ -120,11 +120,20 @@ export class WindowManager {
     // Preload windows as hints; live windows are activated by open() calls.
     // Hints are NEVER visible — visibility is owned by the live windows map.
     // The render filter (visible:true) is what gates whether a window is shown.
+    // Heal previously-corrupted state: any non-docked height below the resize
+    // minimum is treated as auto-height so the popup can render at all.
     this.windowHints = new Map(
-      Object.entries(state.windows ?? {}).map(([id, w]) => [
-        id,
-        { ...w, visible: false },
-      ])
+      Object.entries(state.windows ?? {}).map(([id, w]) => {
+        const healed: WindowRecord = { ...w, visible: false };
+        if (
+          !healed.docked &&
+          healed.height !== undefined &&
+          healed.height < 80
+        ) {
+          healed.height = undefined;
+        }
+        return [id, healed];
+      })
     );
     this.windows.clear();
 
@@ -278,7 +287,10 @@ export class WindowManager {
       base.x = popupHint.floatingState.x;
       base.y = popupHint.floatingState.y;
       base.width = popupHint.floatingState.width;
-      base.height = popupHint.floatingState.height;
+      // Heal previously-corrupted state: any height below the resize minimum
+      // (or 0, written by an older code path) is treated as auto-height.
+      const ph = popupHint.floatingState.height;
+      base.height = ph !== undefined && ph >= 80 ? ph : undefined;
     }
 
     this.windows.set(id, base);
@@ -301,11 +313,22 @@ export class WindowManager {
         state.dockOrder = w.dockOrder;
       } else {
         state.isDocked = false;
+        // Auto-height popups (w.height === undefined) must NOT be persisted as
+        // height: 0 — when re-opened that 0 becomes an explicit height and the
+        // window renders collapsed. Preserve any prior height, else omit so the
+        // popup falls back to auto-height on next open.
+        const prevH = state.floatingState?.height;
+        const nextH =
+          w.height !== undefined
+            ? w.height
+            : prevH !== undefined && prevH >= 80
+            ? prevH
+            : undefined;
         state.floatingState = {
           x: w.x,
           y: w.y,
           width: w.width,
-          height: w.height ?? state.floatingState?.height ?? 0,
+          height: nextH,
         };
       }
       this.popupDockState.set(id, state);
@@ -775,11 +798,18 @@ export class WindowManager {
       state.dockOrder = w.dockOrder;
     } else {
       state.isDocked = false;
+      const prevH = state.floatingState?.height;
+      const nextH =
+        w.height !== undefined
+          ? w.height
+          : prevH !== undefined && prevH >= 80
+          ? prevH
+          : undefined;
       state.floatingState = {
         x: w.x,
         y: w.y,
         width: w.width,
-        height: w.height ?? state.floatingState?.height ?? 0,
+        height: nextH,
       };
       state.userModifiedPosition = true;
     }
