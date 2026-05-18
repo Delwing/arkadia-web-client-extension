@@ -33,7 +33,7 @@ test.describe('Direction key bindings', () => {
         ['Numpad1', 'sw'],
         ['Numpad3', 'se'],
         ['NumpadMultiply', 'u'],
-        ['NumpadSubtract', 'd'],
+        ['NumpadDivide', 'd'],
     ];
 
     for (const [code, direction] of DEFAULT_BINDINGS) {

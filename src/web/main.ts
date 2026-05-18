@@ -750,7 +750,7 @@ const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
     sw: {key: 'Numpad1'},
     se: {key: 'Numpad3'},
     u: {key: 'NumpadMultiply'},
-    d: {key: 'NumpadSubtract'},
+    d: {key: 'NumpadDivide'},
     zerknij: {key: 'Numpad5'},
     special: {key: 'Numpad0'},
 };
