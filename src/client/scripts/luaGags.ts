@@ -161,12 +161,13 @@ export default function registerLuaGagTriggers(client: Client) {
         if (patterns.length === 0 && children.length === 0) return;
 
         const container: Triggers | Trigger = parent;
-        const callback: LuaGagCallback = (line, matches, _type) => {
+        const callback: LuaGagCallback = (line, matches, type) => {
             if (node.script != undefined) {
                 const rawLine = line.text;
 
                 global.line = line;
                 global.matches = matches;
+                global.type = type;
                 resetSelection();
 
                 // Set Lua variables with proper escaping
@@ -211,10 +212,11 @@ export default function registerLuaGagTriggers(client: Client) {
     }
 
     function createLuaEnv() {
-        const global: { line?: AnsiAwareBuffer, matches?: RegExpMatchArray, color?: FormatStateSnapshot } = {
+        const global: { line?: AnsiAwareBuffer, matches?: RegExpMatchArray, color?: FormatStateSnapshot, type?: string } = {
             line: null,
             matches: null,
-            color: null
+            color: null,
+            type: null
         }
 
         let selection = [0, 0]
@@ -266,7 +268,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 return false
             },
             is_type: (_, type: string) => {
-                return gmcp?.gmcp_msgs?.type == type
+                return global.type === type || gmcp?.gmcp_msgs?.type == type
             },
             who_hits: () => {
                 let who;
