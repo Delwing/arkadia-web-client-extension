@@ -323,13 +323,20 @@ export default function initObjectAliases(
         });
         aliases.push({
             pattern: /\/ra ([0-9]+)$/,
-            callback: (m: RegExpMatchArray) => exec(m[1], "rozkaz druzynie zaatakowac")
+            callback: (m: RegExpMatchArray) => {
+                const obj = findByShortcut(m[1]);
+                if (obj) {
+                    client.sendCommand(`wskaz ob_${obj.num} jako cel ataku`);
+                    client.sendCommand(`rozkaz druzynie zaatakowac ob_${obj.num}`);
+                }
+            }
         });
         aliases.push({
             pattern: /^\/ra$/,
             callback: () => {
                 const id = client.TeamManager.getAttackTargetId();
                 if (id !== undefined) {
+                    client.sendCommand(`wskaz ob_${id} jako cel ataku`);
                     client.sendCommand(`rozkaz druzynie zaatakowac ob_${id}`);
                 }
             }
@@ -338,11 +345,13 @@ export default function initObjectAliases(
             pattern: /\/rz ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
                 if (m[1] === '@') {
+                    client.sendCommand(`wskaz siebie jako cel obrony`);
                     client.sendCommand(`rozkaz druzynie zaslonic siebie`);
                     return;
                 }
                 const obj = findByShortcut(m[1]);
                 if (obj) {
+                    client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
                     client.sendCommand(`rozkaz druzynie zaslonic ob_${obj.num}`);
                 }
             }
@@ -354,8 +363,10 @@ export default function initObjectAliases(
                 if (id !== undefined) {
                     const selfNum = client.ObjectManager.getObjectsOnLocation().find(o => o.shortcut === '@')?.num;
                     if (selfNum !== undefined && id === selfNum) {
+                        client.sendCommand(`wskaz siebie jako cel obrony`);
                         client.sendCommand(`rozkaz druzynie zaslonic siebie`);
                     } else {
+                        client.sendCommand(`wskaz ob_${id} jako cel obrony`);
                         client.sendCommand(`rozkaz druzynie zaslonic ob_${id}`);
                     }
                 }
@@ -386,7 +397,7 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /^\/zz (.+)$/,
             callback: (m: RegExpMatchArray) => {
-                client.sendCommand(`${attackController.getAttackCommand()} ${m[1]}`);
+                attackController.attackByTarget(m[1]);
             }
         });
         aliases.push({

@@ -41,6 +41,16 @@ export function createAttackController(client: Client) {
         }
     };
 
+    const attackByTarget = (target: string, command: string = attackCommand) => {
+        client.sendCommand(`${command} ${target}`);
+        if (attackMode !== "A" && client.TeamManager.isLeader?.()) {
+            client.sendCommand(`wskaz ${target} jako cel ataku`, false);
+            if (attackMode === "AWR") {
+                client.sendCommand(`rozkaz druzynie zaatakowac ${target}`, false);
+            }
+        }
+    };
+
     const attackAllEnemies = (isAlly?: (id: number) => boolean) => {
         const objects = client.ObjectManager.getObjectsOnLocation();
         const targets = objects.filter(o =>
@@ -62,6 +72,7 @@ export function createAttackController(client: Client) {
 
     return {
         attackById,
+        attackByTarget,
         attackAllEnemies,
         support,
         getAttackCommand: () => attackCommand,
