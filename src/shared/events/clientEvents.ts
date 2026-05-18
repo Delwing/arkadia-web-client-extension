@@ -19,6 +19,7 @@ import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
+import type {CombatStatsSnapshot} from "@client/scripts/combatStats.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
 import type {LootPopupPayload, GroundItem} from "@client/scripts/lootParser.ts";
@@ -288,6 +289,9 @@ export interface KnownEvents {
     "combat.cleared": void;
     "combat.popup.open": void;
     "combat.settingsChanged": Record<CombatMessageType, boolean>;
+    "stat.updated": CombatStatsSnapshot;
+    "stat.cleared": void;
+    "stat.popup.open": void;
     "postepy.updated": unknown;
     "postepy.popup.open": void;
     "postepy2.updated": void;

@@ -11,6 +11,7 @@ import {
     Swords,
     TrendingUp,
     BarChart3,
+    PieChart,
     Skull,
     ClipboardList,
     Mail,
@@ -131,6 +132,11 @@ export function setupOutputContextMenu(outputWrapper: HTMLElement): () => void {
             {
                 label: iconLabel(Swords, 'Walka'),
                 action: () => eventBus.emit('sendCommand', { command: '/walkaw' }),
+                opensWindow: true,
+            },
+            {
+                label: iconLabel(PieChart, 'Statystyki'),
+                action: () => eventBus.emit('stat.popup.open'),
                 opensWindow: true,
             },
             {

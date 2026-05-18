@@ -25,6 +25,7 @@ import {
     normalizeLuaGagsColors,
     normalizeLuaGagsWalkaConfig,
 } from "../luaGagsSettings";
+import {recordCombatStat} from "./combatStats";
 
 const ERROR_COLOR = createColorFormat('#ff0000');
 
@@ -224,6 +225,7 @@ export default function registerLuaGagTriggers(client: Client) {
                 gags.gag_prefix(null, `${value}/${totalValue}`, type)
             },
             gag_prefix: (_, prefix: string, type: string) => {
+                recordCombatStat(prefix, type, global.line?.text ?? "");
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
                     return global.line.markAsDeleted();

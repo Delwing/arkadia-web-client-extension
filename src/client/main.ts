@@ -33,6 +33,7 @@ import {initItemCollector} from './scripts/itemCollector'
 import initContainers from './scripts/prettyContainers'
 import initChatHistory from './scripts/chatHistory'
 import initCombatWindow from './scripts/combatWindow'
+import initCombatStats from './scripts/combatStats'
 import initBagManager from './scripts/bagManager'
 import initDeposits from './scripts/deposits'
 import initHerbShop from './scripts/herbShop'
@@ -297,6 +298,7 @@ export function registerScripts(client: Client) {
     registerGagTriggers(client)
     registerLuaGagTriggers(client)
     initCombatWindow(client, aliases)
+    initCombatStats(client, aliases)
     initKillTracker(client)
     initPackageHelper(client)
     initInlineCompassRose(client, aliases)
