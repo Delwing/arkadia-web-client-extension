@@ -19,6 +19,20 @@ const mockClient = {
   Triggers: {},
 } as unknown as Client;
 
+// Creates a script element that fires 'load' as soon as an onload handler is
+// attached. Avoids the timer race where the event fires before the
+// PluginManager's onload listener is wired up.
+function makeAutoLoadingScript(): HTMLScriptElement {
+  const el = document.createElement('script');
+  Object.defineProperty(el, 'onload', {
+    configurable: true,
+    set(fn: (() => void) | null) {
+      if (fn) queueMicrotask(fn);
+    },
+  });
+  return el;
+}
+
 describe('PluginManager', () => {
   let pluginManager: PluginManager;
 
@@ -61,14 +75,8 @@ describe('PluginManager', () => {
     it('should handle loading a legacy script', async () => {
       const url = 'https://example.com/legacy-script.js';
 
-      // Mock the script element creation and loading
-      const mockScriptElement = document.createElement('script');
+      const mockScriptElement = makeAutoLoadingScript();
       jest.spyOn(document, 'createElement').mockReturnValueOnce(mockScriptElement);
-
-      // Trigger the load event after a short delay
-      setTimeout(() => {
-        mockScriptElement.dispatchEvent(new Event('load'));
-      }, 10);
 
       const plugin = await pluginManager.loadPlugin(url);
 
@@ -80,12 +88,8 @@ describe('PluginManager', () => {
     it('should track loading state', async () => {
       const url = 'https://example.com/script.js';
 
-      const mockScriptElement = document.createElement('script');
+      const mockScriptElement = makeAutoLoadingScript();
       jest.spyOn(document, 'createElement').mockReturnValueOnce(mockScriptElement);
-
-      setTimeout(() => {
-        mockScriptElement.dispatchEvent(new Event('load'));
-      }, 10);
 
       const loadPromise = pluginManager.loadPlugin(url);
 
@@ -107,17 +111,10 @@ describe('PluginManager', () => {
     it('should emit destroyed event when unloading', async () => {
       const url = 'https://example.com/script.js';
 
-      // First load a plugin
-      const mockScriptElement = document.createElement('script');
+      const mockScriptElement = makeAutoLoadingScript();
       jest.spyOn(document, 'createElement').mockReturnValueOnce(mockScriptElement);
 
-      setTimeout(() => {
-        mockScriptElement.dispatchEvent(new Event('load'));
-      }, 10);
-
       await pluginManager.loadPlugin(url);
-
-      // Then unload it
       await pluginManager.unloadPlugin(url);
 
       expect(eventBus.emit).toHaveBeenCalledWith('plugin:destroyed', { url });
