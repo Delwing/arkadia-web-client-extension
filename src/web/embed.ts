@@ -6,7 +6,9 @@ import {
     type RoomClickEventDetail,
     type AreaExitClickEventDetail,
     type PanEventDetail,
-    LabelRenderMode, MapRenderer
+    LabelRenderMode, MapRenderer,
+    ExplorationLens,
+    ALL_VISIBLE
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
@@ -90,6 +92,7 @@ export class EmbeddedMap {
     private zoom: number;
     private explorationMode = false;
     private visited = new Set<number>();
+    public explorationLens = new ExplorationLens();
     private totalRooms: number;
     private currentPath: { segments: Array<{ path: number[]; color: string }> } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
@@ -231,10 +234,13 @@ export class EmbeddedMap {
         eventBus.on('enterLocation', async (ev) => {
             const id = ev.id;
             this.visited.add(id);
-            this.reader.addVisitedRoom(id);
+            const added = this.explorationLens.addVisited(id);
             characterStorage.set('mapperRoomId', id);
             this.scheduleSaveVisitedRooms();
             this.renderRoomById(id);
+            if (added && this.explorationMode) {
+                this.renderer.refresh();
+            }
         });
 
         document.addEventListener('visibilitychange', () => {
@@ -294,8 +300,11 @@ export class EmbeddedMap {
     private async initVisitedRooms(initialRoom: number) {
         const visited = await loadVisitedRooms();
         visited.forEach(id => this.visited.add(id));
-        this.reader.addVisitedRooms(visited);
+        this.explorationLens.addVisitedAll(visited);
         this.renderRoomById(initialRoom);
+        if (this.explorationMode) {
+            this.renderer.refresh();
+        }
     }
 
     private saveZoom() {
@@ -442,11 +451,15 @@ export class EmbeddedMap {
     setExplorationMode(on: boolean) {
         this.explorationMode = on;
         if (this.explorationMode) {
-            this.reader.decorateWithExploration()
+            this.renderer.setLens(this.explorationLens);
         } else {
-            this.reader.clearExplorationDecoration()
+            this.renderer.setLens(ALL_VISIBLE);
         }
         this.refresh();
+    }
+
+    isExplorationMode(): boolean {
+        return this.explorationMode;
     }
 
     setZoom(zoom: number) {
@@ -658,10 +671,8 @@ export class EmbeddedMap {
 
         this.renderer = new MapRenderer(this.reader, this.settings, this.map);
 
-        this.reader.addVisitedRooms(Array.from(this.visited));
-
         if (this.explorationMode) {
-            this.reader.decorateWithExploration();
+            this.renderer.setLens(this.explorationLens);
         }
 
         if (typeof this.currentRoom === 'number') {

@@ -530,6 +530,10 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             const renderer = new MapRenderer(embedded.reader, embedded.settings, container);
             rendererRef.current = renderer;
 
+            if (embedded.isExplorationMode?.() && embedded.explorationLens) {
+                renderer.setLens(embedded.explorationLens);
+            }
+
             renderer.centerOnResize = false;
             renderer.setZoom(0.30);
 

@@ -1,9 +1,8 @@
 import type {
-    DrawingBackend,
-    GroupNode,
     MapState,
     SceneOverlay,
     SceneOverlayContext,
+    Shape,
     ViewportBounds,
 } from "mudlet-map-renderer";
 
@@ -75,10 +74,9 @@ export class PulseOverlay implements SceneOverlay {
         this.ctx = undefined;
     }
 
-    render(target: DrawingBackend, state: MapState, _bounds: ViewportBounds): GroupNode | void {
+    render(state: MapState, _bounds: ViewportBounds): Shape | Shape[] | void {
         if (this.roomIds.size === 0) return;
 
-        const group = target.createGroup(0, 0);
         const { fillColor, radius, stroke, strokeWidth, pulseColor, pulseMaxScale, pulsePeriodMs } = this.opts;
 
         const phase = this.rafId !== undefined ? ((performance.now() - this.startTime) % pulsePeriodMs) / pulsePeriodMs : 0;
@@ -88,31 +86,41 @@ export class PulseOverlay implements SceneOverlay {
         const currentArea = state.currentArea;
         const currentZ = state.currentZIndex;
 
+        const shapes: Shape[] = [];
+
         for (const id of this.roomIds) {
             const room = state.mapReader.getRoom(id);
             if (!room) continue;
             if (currentArea !== undefined && (room.area !== currentArea || room.z !== currentZ)) continue;
 
             if (pulseAlpha > 0.01) {
-                target.addCircle(group, {
+                shapes.push({
+                    type: "circle",
                     cx: room.x,
                     cy: room.y,
                     radius: radius * pulseScale,
-                    stroke: `rgba(${pulseColor}, ${pulseAlpha.toFixed(3)})`,
-                    strokeWidth: strokeWidth * 1.2,
+                    paint: {
+                        stroke: `rgba(${pulseColor}, ${pulseAlpha.toFixed(3)})`,
+                        strokeWidth: strokeWidth * 1.2,
+                    },
+                    layer: "overlay",
                 });
             }
 
-            target.addCircle(group, {
+            shapes.push({
+                type: "circle",
                 cx: room.x,
                 cy: room.y,
                 radius,
-                fill: fillColor,
-                stroke,
-                strokeWidth,
+                paint: {
+                    fill: fillColor,
+                    stroke,
+                    strokeWidth,
+                },
+                layer: "overlay",
             });
         }
 
-        return group;
+        return shapes;
     }
 }
