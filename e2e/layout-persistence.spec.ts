@@ -11,12 +11,14 @@ async function login(page: Page): Promise<void> {
 }
 
 async function openUiSettingsModal(page: Page): Promise<void> {
-    await page.click('#menu-button');
-    // Wait for any in-progress close animation to finish before opening
+    // Serialize with any in-progress close animation from a prior modal cycle
     await page.waitForFunction(() => {
         const el = document.getElementById('ui-settings-modal');
         return !el || window.getComputedStyle(el).display === 'none';
     });
+    await page.click('#menu-button');
+    // Wait for the dropdown to actually open before clicking an item inside it
+    await page.waitForSelector('#menu-button + .dropdown-menu.show', {timeout: 5000});
     await page.click('#ui-settings-button');
     await page.waitForSelector('#ui-settings-modal.show', {timeout: 5000});
     // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
