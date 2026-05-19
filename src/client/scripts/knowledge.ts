@@ -857,6 +857,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             if (payload) {
                 client.sendEvent('knowledgeDetailsReport', payload);
             }
+            client.sendEvent('knowledgeDetailsUpdated', { character: characterKey });
         }, 50);
     }
 

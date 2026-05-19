@@ -198,6 +198,7 @@ export interface KnownEvents {
     "knowledgeReport.popup.open": void;
     "knowledgeReportCurrentLibrary": string | null;
     "knowledgeDetailsReport": unknown | null;
+    "knowledgeDetailsUpdated": { character: string };
     "knowledgeDetails.popup.open": void;
     "knowledgeReportAction": KnowledgeReportAction;
     "requestKnowledgeReport": void | { character?: string };

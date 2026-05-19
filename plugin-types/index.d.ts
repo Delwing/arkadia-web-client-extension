@@ -793,6 +793,7 @@ export interface ClientEvents {
   "knowledgeReport.popup.open": void;
   /** Knowledge details report */
   "knowledgeDetailsReport": unknown | null;
+  "knowledgeDetailsUpdated": { character: string };
   /** Open knowledge details popup */
   "knowledgeDetails.popup.open": void;
   /** Knowledge report action */
