@@ -51,6 +51,8 @@ export interface TransportHop {
     toRoomId: number;
     label?: string;
     timeSeconds?: number;
+    /** Intermediate stop room IDs the vehicle passes through without the user disembarking. */
+    viaStops?: Array<{ roomId: number; label?: string }>;
 }
 
 export type TransportPathSegment =
@@ -154,20 +156,49 @@ function buildGraph(reader: MapReader, defs: TransportDef[], opts?: TransportPat
         }
     }
 
+    // For each transport, emit edges for every contiguous sub-route on the same
+    // vehicle (a "ride through" several stops without disembarking). The
+    // boarding penalty is paid once per ride, so Dijkstra naturally prefers
+    // staying onboard over exit-and-reboard.
     for (const def of defs) {
-        for (const stop of def.stops) {
-            const time = typeof stop.time === "number" && stop.time > 0 ? stop.time : DEFAULT_TRANSPORT_TIME;
-            const cost = time * timeToHopRatio + boardingPenalty;
-            const hop: TransportHop = {
-                transportName: def.name,
-                boardCommands: def.boardCommands,
-                exitCommand: def.exitCommand,
-                fromRoomId: stop.start,
-                toRoomId: stop.destination,
-                label: stop.label,
-                timeSeconds: stop.time,
-            };
-            add(stop.start, { to: stop.destination, cost, hop });
+        const stops = def.stops;
+        const n = stops.length;
+        if (n === 0) continue;
+
+        for (let i = 0; i < n; i++) {
+            const startStop = stops[i];
+            const fromRoomId = startStop.start;
+            const intermediates: Array<{ roomId: number; label?: string }> = [];
+            let cumulativeTime = 0;
+            let chainContinuesFrom = startStop.start;
+
+            for (let offset = 0; offset < n; offset++) {
+                const stop = stops[(i + offset) % n];
+                // Chain must stay connected: previous destination == this start.
+                if (stop.start !== chainContinuesFrom) break;
+                const legTime = typeof stop.time === "number" && stop.time > 0 ? stop.time : DEFAULT_TRANSPORT_TIME;
+                cumulativeTime += legTime;
+                const toRoomId = stop.destination;
+
+                // Skip the round-trip back to where we boarded.
+                if (toRoomId === fromRoomId) break;
+
+                const hop: TransportHop = {
+                    transportName: def.name,
+                    boardCommands: def.boardCommands,
+                    exitCommand: def.exitCommand,
+                    fromRoomId,
+                    toRoomId,
+                    label: stop.label,
+                    timeSeconds: cumulativeTime,
+                    viaStops: intermediates.length > 0 ? [...intermediates] : undefined,
+                };
+                const cost = cumulativeTime * timeToHopRatio + boardingPenalty;
+                add(fromRoomId, { to: toRoomId, cost, hop });
+
+                intermediates.push({ roomId: toRoomId, label: stop.label });
+                chainContinuesFrom = toRoomId;
+            }
         }
     }
 

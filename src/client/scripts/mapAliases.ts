@@ -106,7 +106,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                 }
 
                 const opts: TransportPathOptions | undefined = aggressive
-                    ? { boardingPenalty: 0, timeToHopRatio: 0.1 }
+                    ? { boardingPenalty: 10, timeToHopRatio: 0.1 }
                     : undefined;
                 const segments = findTransportPath(reader, getTransportDefs(), current.id, targetId, opts);
                 if (!segments || segments.length === 0) {
@@ -483,6 +483,11 @@ function printTransportInstructions(
             }
             const timeNote = typeof seg.timeSeconds === 'number' ? ` (~${seg.timeSeconds}s)` : '';
             output.append(`${timeNote}\n`, gray);
+            if (seg.viaStops && seg.viaStops.length > 0) {
+                const viaLabels = seg.viaStops.map(v => v.label ?? `#${v.roomId}`).join(', ');
+                output.append(`   przez: `, gray);
+                output.append(`${viaLabels}\n`, white);
+            }
             output.append(`   wysiadz na: `, gray);
             output.append(`${labelForRoom(seg.toRoomId)}\n`, white);
         }

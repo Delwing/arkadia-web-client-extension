@@ -54,6 +54,9 @@ declare namespace MapData {
         exits: Record<direction, number>;
         doors: Record<direction, 1 | 2 | 3>;
         specialExits: Record<string, number>;
+        exitLocks?: number[];
+        exitWeights?: Record<string, number>;
+        mSpecialExitLocks?: number[];
     }
 
     export interface Label {
