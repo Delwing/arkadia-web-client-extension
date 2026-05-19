@@ -773,7 +773,6 @@ function initRooms(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
     const hashes: Record<string, number> = (client.Map as any).hashes;
-    const areaSources: Record<number, MapData.Area> = reader.areaSources;
 
     // Snapshot all rooms, then remove pool rooms from map entirely
     savedRoomData.clear();
@@ -800,7 +799,7 @@ function initRooms(client: Client) {
         // Remove from map
         delete hashes[room.hash];
         delete readerRooms[roomId];
-        const areaSource = areaSources[room.area];
+        const areaSource = reader.areas[room.area]?.area;
         if (areaSource) {
             areaSource.rooms = areaSource.rooms.filter((r: MapData.Room) => r.id !== roomId);
         }
@@ -846,7 +845,6 @@ function fullReset(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
     const hashes: Record<string, number> = (client.Map as any).hashes;
-    const areaSources: Record<number, MapData.Area> = reader.areaSources;
     const areas: Record<number, any> = reader.areas;
     const affectedAreas = new Set<number>();
 
@@ -864,7 +862,7 @@ function fullReset(client: Client) {
         if (!readerRooms[roomId]) {
             readerRooms[roomId] = room;
             hashes[room.hash] = roomId;
-            const areaSource = areaSources[room.area];
+            const areaSource = areas[room.area]?.area;
             if (areaSource) {
                 areaSource.rooms.push(room);
             }

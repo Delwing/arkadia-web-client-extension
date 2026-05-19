@@ -89,17 +89,15 @@ function getNextGridPosition(): { x: number; y: number } {
 }
 
 function createSyntheticArea(reader: any) {
-    const areaSources: Record<number, MapData.Area> = reader.areaSources;
     const areas: Record<number, any> = reader.areas;
 
-    if (!areaSources[LABYRINTH_AREA_ID]) {
+    if (!areas[LABYRINTH_AREA_ID]) {
         const areaSource: MapData.Area = {
             areaName: 'Labirynt (mapper)',
             areaId: String(LABYRINTH_AREA_ID),
             rooms: [],
             labels: [],
         };
-        areaSources[LABYRINTH_AREA_ID] = areaSource;
 
         // Create a processed Area object (same as MapReader constructor does)
         // Get the Area constructor from any existing area
@@ -140,8 +138,7 @@ function createTempRoom(client: Client, room: LabyrinthRoom): void {
     hashes[hash] = room.tempId;
     readerRooms[room.tempId] = tempRoom;
 
-    const areaSources: Record<number, MapData.Area> = reader.areaSources;
-    areaSources[LABYRINTH_AREA_ID].rooms.push(tempRoom);
+    reader.areas[LABYRINTH_AREA_ID].area.rooms.push(tempRoom);
 }
 
 function directionToStubNumber(dir: string): number {
@@ -350,16 +347,13 @@ function deactivate(client: Client) {
         }
     }
 
-    // Remove synthetic area rooms
-    const areaSources: Record<number, MapData.Area> = reader.areaSources;
-    if (areaSources[LABYRINTH_AREA_ID]) {
-        areaSources[LABYRINTH_AREA_ID].rooms = [];
-    }
-
     // Rebuild
     const areas: Record<number, any> = reader.areas;
     const area = areas[LABYRINTH_AREA_ID];
     if (area) {
+        if (area.area) {
+            area.area.rooms = [];
+        }
         area.planes = area.createPlanes();
         area.exits = new Map();
         area.createExits();
