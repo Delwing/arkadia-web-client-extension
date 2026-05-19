@@ -190,6 +190,7 @@ export default class Client {
             for (const {text, type} of groups) {
                 const parts = this.onLine(text, type);
                 for (const part of parts) {
+                    part.originalText = text;
                     deferred.push(() => this.sendEvent(`gmcp_msg.${type}` as any, part));
                     this.clientAdapter.output(part, type);
                 }

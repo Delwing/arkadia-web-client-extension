@@ -394,6 +394,7 @@ export class AnsiAwareBuffer {
     private _deleted = false;
     private _onRender?: (container: HTMLElement) => void;
     private _textCache: string | null = null;
+    originalText?: string;
 
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {

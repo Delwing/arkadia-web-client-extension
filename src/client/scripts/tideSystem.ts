@@ -97,7 +97,7 @@ export default function initTideSystem(client: Client, aliases: { pattern: RegEx
     // Detect tide state from room exits: "Mozesz stad poplynac" = high tide, no "gore" = surface
     client.on("gmcp_msg.room.exits", (exits) => {
         if (!client.Map.tryGetMapReader() || !isInTideArea(client)) return;
-        const text = exits.text;
+        const text = exits.originalText ?? exits.text;
         if (text.includes("Mozesz stad poplynac")) {
             if (!isHighTide) {
                 isHighTide = true;
