@@ -10,6 +10,7 @@ import type {
 } from "../types/transport";
 import { gmcp } from "../gmcp";
 import {
+    deleteTransportSegment,
     getAllTransportSegments,
     recordTransportSegment,
     type StoredTransportSegmentRecord,
@@ -680,6 +681,25 @@ class Tracker {
         this.client.sendEvent('transportTimesDebug', payload);
     }
 
+    private async resetLeg(payload: { transport: string; fromId: number; toId: number }): Promise<void> {
+        const def = this.defs.find(d => d.name === payload.transport);
+        if (!def) return;
+        await deleteTransportSegment(payload.transport, payload.fromId, payload.toId);
+        def.stops.forEach((stop, i) => {
+            if (stop.start === payload.fromId && stop.destination === payload.toId) {
+                this.durationOverrides.delete(segKey(def, i));
+                stop.time = stop.originalTime ?? undefined;
+                if (this.state.kind === 'on_board' && this.state.def === def && this.state.leg?.stopIdx === i) {
+                    this.startLegTimer(def, i, this.state.leg.startedAt);
+                    this.updateTimer(def, i, this.state.leg.startedAt);
+                }
+            }
+        });
+        this.emit();
+        void this.emitTimesDebug();
+        console.log(`${LOG} Reset leg ${payload.transport} ${payload.fromId}->${payload.toId}`);
+    }
+
     private recordSegment(def: Def, stopIdx: number, startedAt: number, endedAt: number): void {
         const stop = def.stops[stopIdx];
         const elapsed = (endedAt - startedAt) / 1000;
@@ -848,6 +868,11 @@ class Tracker {
         // Times debug snapshot request (popup asks for fresh data on open)
         this.client.on('transportTimesDebug.request', () => {
             void this.emitTimesDebug();
+        });
+
+        // Reset a single leg's recorded time
+        this.client.on('transportTimesDebug.resetLeg', (payload) => {
+            void this.resetLeg(payload);
         });
     }
 }

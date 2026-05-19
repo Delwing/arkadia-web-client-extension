@@ -904,6 +904,14 @@
     "note": "Czarny pulsujacy krysztal \"ob krysztal\" krysztal zmienia lokalizacje w zamku i ma ich kilka.cuchnacy niski golem \"ob golema\" oraz \"przejrzyj sie w posadzce\""
   },
   {
+    "Rodzaj": "Wiedza o Chaosie i jego tworach",
+    "Wiedza": "Dowiedziales gdzie i kiedy w Starym Swiecie odbywaja sie sabaty czarownic",
+    "id": 16946,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Miasta Imperium,Bretonni",
+    "note": "Bezwzgledny zakapturzony mezczyzna (Savinien NPC)  \" zapytaj czlowieka o sabat\""
+  },
+  {
     "Rodzaj": "Wiedza o goblinoidach",
     "Wiedza": "Ogladales goblinski oltarz",
     "id": 6988,
@@ -3781,7 +3789,7 @@
     "id": 5170,
     "Domena": "Imperium",
     "lokalizacja": "Event - Cmentarze w domenie Imperium",
-    "note": "Czujny mlody mezczyzna(Aubert) \"przedstaw sie\" \"zapytaj auberta o blizne\" \"zapytaj auberta o talizman\""
+    "note": "Czujny mlody mezczyzna(Aubert) \"przedstaw sie\" \"zapytaj auberta o blizne\" \"zapytaj auberta o talizman\" \"zapytaj auberta o geheimnisnacht\""
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4397,7 +4405,7 @@
     "id": 17190,
     "Domena": "Imperium",
     "lokalizacja": "Wissenland: Gory Czarne na poludnie od Kreutz",
-    "note": "\"przedstaw sie\" \"zapytaj kobiete o plaskowyz\""
+    "note": "\"przedstaw sie\" \"zapytaj kobiete o plaskowyz\" . Zielonooka energiczna kobieta Inguna"
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4612,8 +4620,8 @@
     "Wiedza": "Dowiedziales sie jak znalezc esencje zycia na terenie Starego Swiata",
     "id": null,
     "Domena": "Imperium",
-    "lokalizacja": "Event - Regiony Imperium i Bretonni",
-    "note": "\"przedstaw sie\" \"zapytaj jorna o esencje zycia\" . Jenna w Wiezy Magow w Nuln wie czy wogole aktualnie gdzies chodzi i jesli tak powie ci po jakim regionie go szukac aktualnie. \"zapytaj jenne o jorna\""
+    "lokalizacja": "Event - Regiony Imperium i Bretonni + Cmentarze",
+    "note": "\"przedstaw sie\" \"zapytaj jorna o esencje zycia\" . Jenna w Wiezy Magow w Nuln wie czy wogole aktualnie gdzies chodzi i jesli tak powie ci po jakim regionie go szukac aktualnie. \"zapytaj jenne o jorna\" ( kaplan morra Aubert takze daje ta wiedze pojawiajacy sie event na cmentarzach \"zapytaj auberta o geheimnisnacht\" )"
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4622,6 +4630,14 @@
     "Domena": "Imperium",
     "lokalizacja": "Zamek Drachenfels",
     "note": "Czarny pulsujacy krysztal \"ob krysztal\" krysztal zmienia lokalizacje w zamku i ma ich kilka.cuchnacy niski golem \"ob golema\" oraz \"przejrzyj sie w posadzce\""
+  },
+  {
+    "Rodzaj": "Wiedza o nieumarlych",
+    "Wiedza": "Dowiedziales sie o naturze nocy Hexensnacht w Starym Swiecie",
+    "id": 12469,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Cmentarze w domenie Imperium",
+    "note": "Czujny mlody mezczyzna(Aubert) \"przedstaw sie\" \"zapytaj auberta o blizne\" \"zapytaj auberta o talizman\" \"zapytaj auberta o geheimnisnacht\""
   },
   {
     "Rodzaj": "Wiedza o pajakach i pajakowatych",
@@ -7104,6 +7120,46 @@
     "note": "\"ob powoz\""
   },
   {
+    "Rodzaj": "Wiedza o szczuroludziach",
+    "Wiedza": "Spotkales spaczinzyniera z klanu Skryre",
+    "id": 4953,
+    "Domena": "Imperium",
+    "lokalizacja": "Geheimnisnacht - Event - Trakty Imperium",
+    "note": "Na traktach podczas swieta spotkasz  patrol skavenski z /Dziwaczna skavenska machina na platformie./ \"ob skaveny\" \"ob machine\". Z wladczego opancerzonego skavena wez zniszczona Ornamentowa Zielonkawa Zbroje Plytowa i \"ob zbroje\""
+  },
+  {
+    "Rodzaj": "Wiedza o szczuroludziach",
+    "Wiedza": "Widziales skavena z klanu Skryre",
+    "id": 4953,
+    "Domena": "Imperium",
+    "lokalizacja": "Geheimnisnacht - Event - Trakty Imperium",
+    "note": "Na traktach podczas swieta spotkasz  patrol skavenski z /Dziwaczna skavenska machina na platformie./ \"ob skaveny\" \"ob machine\". Z wladczego opancerzonego skavena wez zniszczona Ornamentowa Zielonkawa Zbroje Plytowa i \"ob zbroje\""
+  },
+  {
+    "Rodzaj": "Wiedza o szczuroludziach",
+    "Wiedza": "Spotkales gwardziste klanu Skryre z elitarnego oddzialu Burzowego Robactwa",
+    "id": 4953,
+    "Domena": "Imperium",
+    "lokalizacja": "Geheimnisnacht - Event - Trakty Imperium",
+    "note": "Na traktach podczas swieta spotkasz  patrol skavenski z /Dziwaczna skavenska machina na platformie./ \"ob skaveny\" \"ob machine\". Z wladczego opancerzonego skavena wez zniszczona Ornamentowa Zielonkawa Zbroje Plytowa i \"ob zbroje\""
+  },
+  {
+    "Rodzaj": "Wiedza o szczuroludziach",
+    "Wiedza": "Widziales teleskop klanu Skryre sluzacy do sledzenia Morrslieba",
+    "id": 4953,
+    "Domena": "Imperium",
+    "lokalizacja": "Geheimnisnacht - Event - Trakty Imperium",
+    "note": "Na traktach podczas swieta spotkasz  patrol skavenski z /Dziwaczna skavenska machina na platformie./ \"ob skaveny\" \"ob machine\". Z wladczego opancerzonego skavena wez zniszczona Ornamentowa Zielonkawa Zbroje Plytowa i \"ob zbroje\""
+  },
+  {
+    "Rodzaj": "Wiedza o szczuroludziach",
+    "Wiedza": "Ogladales zbroje skavenskiego spaczinzyniera z klanu Skryre",
+    "id": 4953,
+    "Domena": "Imperium",
+    "lokalizacja": "Geheimnisnacht - Event - Trakty Imperium",
+    "note": "Na traktach podczas swieta spotkasz  patrol skavenski z /Dziwaczna skavenska machina na platformie./ \"ob skaveny\" \"ob machine\". Z wladczego opancerzonego skavena wez zniszczona Ornamentowa Zielonkawa Zbroje Plytowa i \"ob zbroje\""
+  },
+  {
     "Rodzaj": "Wiedza o wampirach",
     "Wiedza": "Ogladales osikowy kolek na wampiry i inne stwory",
     "id": 348,
@@ -7125,7 +7181,7 @@
     "id": 5170,
     "Domena": "Imperium",
     "lokalizacja": "Event - Cmentarze w domenie Imperium",
-    "note": "Czujny mlody mezczyzna(Aubert) \"przedstaw sie\" \"zapytaj auberta o blizne\" \"zapytaj auberta o talizman\""
+    "note": "Czujny mlody mezczyzna(Aubert) \"przedstaw sie\" \"zapytaj auberta o blizne\" \"zapytaj auberta o talizman\" \"zapytaj auberta o geheimnisnacht\""
   },
   {
     "Rodzaj": "Wiedza o wampirach",

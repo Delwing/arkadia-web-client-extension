@@ -54,3 +54,9 @@ export interface TransportTimesDebugEntry {
 export interface TransportTimesDebugPayload {
     transports: TransportTimesDebugEntry[];
 }
+
+export interface TransportLegResetPayload {
+    transport: string;
+    fromId: number;
+    toId: number;
+}

@@ -218,6 +218,28 @@ export async function recordTransportSegment(record: TransportSegmentRecord): Pr
     }
 }
 
+export async function deleteTransportSegment(
+    transport: string,
+    fromId: number,
+    toId: number,
+): Promise<void> {
+    try {
+        const db = await getDatabase();
+        await new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], "readwrite");
+            const store = transaction.objectStore(STORE_NAME);
+            const segmentKey = createSegmentKey({ transport, fromId, toId });
+            const request = store.delete(segmentKey);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error ?? new Error("Failed to delete transport segment"));
+        });
+    } catch (error) {
+        if (typeof process === "undefined" || process.env.NODE_ENV !== "test") {
+            console.warn("[Transport] Failed to delete transport segment", error);
+        }
+    }
+}
+
 export async function clearTransportStats(): Promise<void> {
     try {
         const db = await getDatabase();

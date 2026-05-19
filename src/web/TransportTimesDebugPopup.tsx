@@ -189,6 +189,9 @@ interface TransportSectionProps {
 const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
     const [open, setOpen] = useState(true);
     const recordedCount = entry.legs.filter(l => l.shortest !== null).length;
+    const resetLeg = (fromId: number, toId: number) => {
+        eventBus.emit('transportTimesDebug.resetLeg', { transport: entry.name, fromId, toId });
+    };
     return (
         <div style={{ marginBottom: 8 }}>
             <div
@@ -217,6 +220,7 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                             <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>max</th>
                             <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>orig</th>
                             <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>updated</th>
+                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -250,6 +254,25 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                                     </td>
                                     <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)', fontSize: 10 }}>
                                         {formatRelative(l.updatedAt)}
+                                    </td>
+                                    <td style={{ padding: '2px 4px', textAlign: 'right' }}>
+                                        <button
+                                            type="button"
+                                            title="Skasuj zapisany czas (przywroc oryginalny)"
+                                            disabled={l.shortest === null}
+                                            onClick={() => resetLeg(l.fromId, l.toId)}
+                                            style={{
+                                                padding: '1px 6px', fontSize: 10, fontFamily: 'monospace',
+                                                background: 'var(--popup-control-bg)',
+                                                border: '1px solid var(--popup-border-control)',
+                                                borderRadius: 3,
+                                                color: l.shortest === null ? 'var(--popup-text-dim)' : 'var(--popup-text-subtle)',
+                                                cursor: l.shortest === null ? 'default' : 'pointer',
+                                                opacity: l.shortest === null ? 0.4 : 1,
+                                            }}
+                                        >
+                                            reset
+                                        </button>
                                     </td>
                                 </tr>
                             );
