@@ -509,8 +509,7 @@ function createChapelPlaceholder(client: Client, sourceRoom: RaonRoom, doorDirec
     const hashes: Record<string, number> = (client.Map as any).hashes;
     readerRooms[CHAPEL_ROOM_ID] = mapRoom;
     hashes[mapRoom.hash] = CHAPEL_ROOM_ID;
-    const areaSources: Record<number, MapData.Area> = reader.areaSources;
-    areaSources[mapRoom.area].rooms.push(mapRoom);
+    reader.areas[mapRoom.area].area.rooms.push(mapRoom);
 
     const chapel: RaonRoom = {
         fingerprint: CHAPEL_PLACEHOLDER_FP,
@@ -652,8 +651,7 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
         const hashes: Record<string, number> = (client.Map as any).hashes;
         readerRooms[mapRoomId] = mapRoom;
         hashes[mapRoom.hash] = mapRoomId;
-        const areaSources: Record<number, MapData.Area> = reader.areaSources;
-        areaSources[mapRoom.area].rooms.push(mapRoom);
+        reader.areas[mapRoom.area].area.rooms.push(mapRoom);
     }
 
     room!.visitCount++;
