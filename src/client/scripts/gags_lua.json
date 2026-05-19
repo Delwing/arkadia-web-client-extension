@@ -9509,7 +9509,7 @@
                 "name": "wycofanie-za-ciebie",
                 "patterns": [
                   {
-                    "pattern": "^[ >]*.* (unosi|zastawia sie) swoja .* i szybko przesuwa sie za ciebie, kryjac.*",
+                    "pattern": "^[ >]*.* (unosi|zastawia sie) swo(?:ja|im) .* i szybko przesuwa sie za ciebie, kryjac.*",
                     "type": 1
                   },
                   {
@@ -9523,7 +9523,7 @@
                 "name": "wycofanie_sie_ty",
                 "patterns": [
                   {
-                    "pattern": "[ >]*Unosisz swoja .* i (?:szybko )?przesuwasz sie za .*, kryjac sie przed atakami",
+                    "pattern": "[ >]*(?:Unosisz swoja|Zastawiasz sie swo(?:ja|im)) .* i (?:szybko )?przesuwasz sie za .*, kryjac sie przed atakami",
                     "type": 1
                   },
                   {
@@ -9537,7 +9537,7 @@
                 "name": "wycofanie-kogos",
                 "patterns": [
                   {
-                    "pattern": "(?:(?:unosi|zastawia sie) swoja .+? i |)szybko przesuwa sie za (?!ciebie).+?, (?:kryjac sie przed atakami .+?|uciekajac przed twoimi ciosami)\\.$",
+                    "pattern": "(?:(?:unosi|zastawia sie) swo(?:ja|im) .+? i |)szybko przesuwa sie za (?!ciebie).+?, (?:kryjac sie przed atakami .+?|uciekajac przed twoimi ciosami)\\.$",
                     "type": 1
                   },
                   {
@@ -9585,7 +9585,7 @@
                 "name": "nie_wycofanie_ty",
                 "patterns": [
                   {
-                    "pattern": "[ >]*Unosisz swoja .+? i przesuwasz sie w strone .+?, bezskutecznie probujac",
+                    "pattern": "[ >]*(?:Unosisz swoja|Zastawiasz sie swo(?:ja|im)) .+? i przesuwasz sie w strone .+?, bezskutecznie probujac",
                     "type": 1
                   },
                   {
