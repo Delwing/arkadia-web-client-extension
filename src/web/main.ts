@@ -66,7 +66,7 @@ import {
     migrateMobileButtonMacroField,
     runAllSettingsMigrations
 } from "@modules/core/settingsMigrations"
-import {setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
+import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 import {CommandInputController} from "./commandInput/CommandInputController";
 
@@ -571,6 +571,13 @@ Promise.all([mapDataPromise, colorsPromise])
         console.error('Failed to load map data or colors:', error);
     });
 
+
+setOutputTimestampVisibility(globalStorage.get('uiSettings')?.showTimestamps ?? defaultUiSettings.showTimestamps);
+globalStorage.onChange('uiSettings', (settings) => {
+    if (typeof settings?.showTimestamps === 'boolean') {
+        setOutputTimestampVisibility(settings.showTimestamps);
+    }
+});
 
 // Set up message event listener for UI updates
 setupOutputMessageHandler(mudClient, {

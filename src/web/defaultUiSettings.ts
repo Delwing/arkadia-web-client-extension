@@ -93,6 +93,7 @@ export interface UiSettings {
     colorTheme: ColorTheme;
     customThemeColor?: string;
     soundCategories?: SoundCategories;
+    showTimestamps: boolean;
 }
 
 export const defaultUiSettings: UiSettings = {
@@ -147,4 +148,5 @@ export const defaultUiSettings: UiSettings = {
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
     colorTheme: 'default',
     soundCategories: {},
+    showTimestamps: false,
 };

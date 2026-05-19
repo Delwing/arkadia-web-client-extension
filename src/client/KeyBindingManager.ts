@@ -6,6 +6,9 @@ import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HotkeyMsg } from "@modules/helper/helperProtocol";
 import { registerHelperBind } from "@modules/helper/helperBindRegistry";
 
+const DOUBLE_PRESS_WINDOW_MS = 1000;
+const DOUBLE_K_COMMAND = '+k';
+
 type BindConfig = {
     key: string;
     ctrl?: boolean;
@@ -18,6 +21,7 @@ export default class KeyBindingManager {
     attackBind: BindConfig = { key: "Digit1", ctrl: true };
     supportBind: BindConfig = { key: "KeyQ", ctrl: true };
     moveModeBind: BindConfig = { key: "Backquote" };
+    doubleKBind: BindConfig = { key: "Equal", ctrl: true, alt: true };
     customBinds: (BindConfig & { command: string })[] = [];
     tempBinds: (BindConfig & { command: string | null })[] = [
         { key: 'F4', command: null },
@@ -25,6 +29,7 @@ export default class KeyBindingManager {
     ];
 
     private client: Client;
+    private lastDoubleKPress = Number.NEGATIVE_INFINITY;
 
     constructor(client: Client, helperConnection?: HelperConnection) {
         this.client = client;
@@ -172,6 +177,16 @@ export default class KeyBindingManager {
                 }
                 ev.preventDefault();
             }
+            if (bindMatches(ev, this.doubleKBind)) {
+                ev.preventDefault();
+                const now = performance.now();
+                if (now - this.lastDoubleKPress <= DOUBLE_PRESS_WINDOW_MS) {
+                    this.lastDoubleKPress = Number.NEGATIVE_INFINITY;
+                    this.client.sendCommand(DOUBLE_K_COMMAND);
+                } else {
+                    this.lastDoubleKPress = now;
+                }
+            }
             this.customBinds.forEach(cb => {
                 if (bindMatches(ev, cb)) {
                     this.client.sendCommand(cb.command);
@@ -250,6 +265,11 @@ export default class KeyBindingManager {
             const moveMode = b?.moveMode;
             if (moveMode) {
                 this.moveModeBind = { ...moveMode };
+            }
+            const doubleK = b?.doubleK;
+            if (doubleK) {
+                this.doubleKBind = { ...doubleK };
+                this.lastDoubleKPress = Number.NEGATIVE_INFINITY;
             }
             const temp = b?.temp;
             if (Array.isArray(temp)) {

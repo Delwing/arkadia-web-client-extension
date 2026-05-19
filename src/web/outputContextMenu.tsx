@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { getContextMenuEntries as getPluginContextMenuEntries } from '@modules/core/pluginUiRegistry';
+import { globalStorage } from '@modules/core/storage';
 import {
     areOutputMessageTypesVisible,
     areOutputTimestampsVisible,
@@ -65,7 +66,14 @@ export function setupOutputContextMenu(outputWrapper: HTMLElement): () => void {
         const items: ContextMenuEntry[] = [
             {
                 label: timestampsVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
-                action: () => setOutputTimestampVisibility(!timestampsVisible),
+                action: () => {
+                    const next = !timestampsVisible;
+                    setOutputTimestampVisibility(next);
+                    const current = globalStorage.get('uiSettings');
+                    if (current) {
+                        globalStorage.set('uiSettings', { ...current, showTimestamps: next });
+                    }
+                },
             },
             {
                 label: typesVisible ? 'Ukryj typy wiadomości' : 'Pokaż typy wiadomości',

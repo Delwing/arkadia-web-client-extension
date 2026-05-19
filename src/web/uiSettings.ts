@@ -487,6 +487,9 @@ function load(): UiSettings {
             const commandEcho = typeof parsed.commandEcho === 'boolean'
                 ? parsed.commandEcho
                 : defaultUiSettings.commandEcho;
+            const showTimestamps = typeof parsed.showTimestamps === 'boolean'
+                ? parsed.showTimestamps
+                : defaultUiSettings.showTimestamps;
             const outputBottomPadding = typeof parsed.outputBottomPadding === 'number' && parsed.outputBottomPadding >= 0
                 ? parsed.outputBottomPadding
                 : defaultUiSettings.outputBottomPadding;
@@ -542,6 +545,7 @@ function load(): UiSettings {
                 drinkableAsFunctionalBind,
                 wakeLock,
                 commandEcho,
+                showTimestamps,
                 outputBottomPadding,
                 outputMaxElements,
                 splitViewHeight,

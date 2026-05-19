@@ -29,6 +29,10 @@ export function formatLabel(options: FunctionalBindOptions) {
         key = '[';
     } else if (key === 'Backquote') {
         key = '`';
+    } else if (key === 'Equal') {
+        key = '=';
+    } else if (key === 'Minus') {
+        key = '-';
     }
     const parts = [] as string[];
     if (options.ctrl) parts.push('CTRL');

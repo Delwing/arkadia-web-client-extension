@@ -53,6 +53,8 @@ export interface BindSettings {
     moveMode: Bind;
     roomBind: Bind;
     drinkable: Bind;
+    /** Double-press bind that sends the `+k` game command. */
+    doubleK: Bind;
     directions: DirectionBinds;
     custom: CustomBind[];
     temp: Bind[];

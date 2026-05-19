@@ -93,6 +93,8 @@ function label(bind: Bind) {
     else if (key === 'BracketRight') key = ']';
     else if (key === 'BracketLeft') key = '[';
     else if (key === 'Backquote') key = '`';
+    else if (key === 'Equal') key = '=';
+    else if (key === 'Minus') key = '-';
     const parts: string[] = [];
     if (bind.ctrl) parts.push('CTRL');
     if (bind.alt) parts.push(ALT_LABEL);
@@ -860,6 +862,18 @@ function Binds() {
                                     size="sm"
                                     value={label(binds.drinkable)}
                                     onKeyDown={ev => handleCapture('drinkable', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="w-32">Dwukrotne +k</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.doubleK)}
+                                    onKeyDown={ev => handleCapture('doubleK', ev)}
                                 />
                             </td>
                         </tr>
