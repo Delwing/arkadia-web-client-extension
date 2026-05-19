@@ -483,18 +483,8 @@ function printTransportInstructions(
             }
             const timeNote = typeof seg.timeSeconds === 'number' ? ` (~${seg.timeSeconds}s)` : '';
             output.append(`${timeNote}\n`, gray);
-            if (seg.boardCommands.length > 0) {
-                output.append(`   komenda: `, gray);
-                output.append(`${seg.boardCommands.join('; ')}\n`, white);
-            }
             output.append(`   wysiadz na: `, gray);
-            output.append(`${labelForRoom(seg.toRoomId)}`, white);
-            if (seg.exitCommand) {
-                output.append(` (`, gray);
-                output.append(`${seg.exitCommand}`, white);
-                output.append(`)`, gray);
-            }
-            output.append('\n');
+            output.append(`${labelForRoom(seg.toRoomId)}\n`, white);
         }
     }
     output.append(`Anuluj: `, gray);
