@@ -41,6 +41,7 @@ export type BuiltInPopupType =
   | 'profession'
   | 'sunTracker'
   | 'transport-route'
+  | 'transport-times-debug'
   | 'zlom'
   | 'stat';
 

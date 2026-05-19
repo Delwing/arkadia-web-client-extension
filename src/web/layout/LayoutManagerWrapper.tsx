@@ -33,6 +33,7 @@ import ProfessionPopup from '../ProfessionPopup';
 import SunTrackerPopup from '../SunTrackerPopup';
 import TransportRoutePopup from '../TransportRoutePopup';
 import TransportDebugPopup from '../TransportDebugPopup';
+import TransportTimesDebugPopup from '../TransportTimesDebugPopup';
 import ZlomPopup from '../ZlomPopup';
 import StatPopup from '../StatPopup';
 
@@ -102,6 +103,7 @@ export function LayoutManagerWrapper({
       <SunTrackerPopup />
       <TransportRoutePopup />
       <TransportDebugPopup />
+      <TransportTimesDebugPopup />
       <ZlomPopup />
       <StatPopup />
       <StaticMapPopupManager />

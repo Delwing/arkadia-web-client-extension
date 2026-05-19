@@ -12,7 +12,7 @@ export type SoundCategory =
 
 import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
 import {LetterSubmitPayload} from "@client/types/letter.ts";
-import {TransportTimerPayload, TransportRoutePayload, TransportDebugState} from "@client/types/transport.ts";
+import {TransportTimerPayload, TransportRoutePayload, TransportDebugState, TransportTimesDebugPayload} from "@client/types/transport.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
@@ -147,6 +147,7 @@ export interface KnownEvents {
     "tripPlanner.addStop": { roomId: number };
     "tripPlanner.popup.open": void;
     "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
+    "mapTransportHops": Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }> | null;
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLostRooms": [number[]];
     "mapLocationLabel": string;
@@ -176,6 +177,9 @@ export interface KnownEvents {
     "transportRoute": TransportRoutePayload | null;
     "transportDebug": TransportDebugState | null;
     "transportDebug.toggle": void;
+    "transportTimesDebug": TransportTimesDebugPayload;
+    "transportTimesDebug.request": void;
+    "transportTimesDebug.popup.toggle": void;
     "transportArrival": number;
     "transportDeparture": void;
     "transport.popup.open": void;

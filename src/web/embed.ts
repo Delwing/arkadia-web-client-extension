@@ -16,8 +16,10 @@ import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStor
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
 import { openMapContextMenu } from "@modules/core/contextMenus";
 import { PulseOverlay } from "./pulseOverlay";
+import { TransportHopsOverlay, type TransportHopMarker } from "./transportHopsOverlay";
 
 const LOST_ROOMS_OVERLAY_ID = "lost-rooms";
+const TRANSPORT_HOPS_OVERLAY_ID = "transport-hops";
 
 const MIN_ZOOM = 0.01;
 
@@ -97,6 +99,7 @@ export class EmbeddedMap {
     private currentPath: { segments: Array<{ path: number[]; color: string }> } | null = null;
     private currentHighlights: { roomId: number; color: string }[] = [];
     private lostRoomsOverlay: PulseOverlay | null = null;
+    private transportHopsOverlay: TransportHopsOverlay | null = null;
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
     private _viewedZ: number | null = null;
@@ -261,6 +264,10 @@ export class EmbeddedMap {
 
         eventBus.on('mapLostRooms', (roomIds: number[]) => {
             this.updateLostRoomsOverlay(roomIds);
+        });
+
+        eventBus.on('mapTransportHops', (hops: TransportHopMarker[] | null) => {
+            this.updateTransportHopsOverlay(hops ?? []);
         });
 
         // Request current highlights and path in case they were created before map loaded
@@ -699,6 +706,22 @@ export class EmbeddedMap {
             this.renderer.addSceneOverlay(LOST_ROOMS_OVERLAY_ID, this.lostRoomsOverlay);
         } else {
             this.lostRoomsOverlay.setRoomIds(roomIds);
+        }
+    }
+
+    private updateTransportHopsOverlay(hops: TransportHopMarker[]) {
+        if (hops.length === 0) {
+            if (this.transportHopsOverlay) {
+                this.renderer.removeSceneOverlay(TRANSPORT_HOPS_OVERLAY_ID);
+                this.transportHopsOverlay = null;
+            }
+            return;
+        }
+        if (!this.transportHopsOverlay) {
+            this.transportHopsOverlay = new TransportHopsOverlay(hops);
+            this.renderer.addSceneOverlay(TRANSPORT_HOPS_OVERLAY_ID, this.transportHopsOverlay);
+        } else {
+            this.transportHopsOverlay.setHops(hops);
         }
     }
 }

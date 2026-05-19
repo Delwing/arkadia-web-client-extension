@@ -7,6 +7,9 @@ import {getNote} from "@web/options/locationNotesStorage";
 import {getPluginLocationNotes} from "@modules/core/pluginLocationNotesRegistry";
 import {getSnapshot as getMultibindSnapshot} from "@web/dataStores/multibindStore";
 import {getMultibindLabel} from "../multibindKeys";
+import {findTransportPath, type TransportPathSegment, type TransportPathOptions} from "@shared/map/transportPathFinder";
+import {getTransportDefs} from "./transports/definitions";
+import {SEGMENT_COLORS} from "@shared/map/MapHelper";
 
 type SearchableRoom = {
     id: number;
@@ -71,6 +74,77 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             pattern: /^\/prowadz-$/,
             callback: () => {
                 client.sendEvent('clearLeadTo');
+            }
+        },
+        {
+            pattern: /^\/prowadzt(!?)\s+(.*)$/,
+            callback: (matches: RegExpMatchArray) => {
+                const aggressive = matches[1] === '!';
+                let input = matches[2];
+                if (input.startsWith('"') && input.endsWith('"')) {
+                    input = input.slice(1, -1);
+                }
+                const shortcutId = getShortcut(input);
+                const numericId = Number(input);
+                const targetId = typeof shortcutId === 'number'
+                    ? shortcutId
+                    : (!Number.isNaN(numericId) ? numericId : null);
+                if (targetId === null) {
+                    client.println(`Nie znaleziono celu prowadzenia dla '${input}'.`);
+                    return;
+                }
+
+                const reader = client.Map.tryGetMapReader();
+                const current = client.Map.currentRoom;
+                if (!reader || !current) {
+                    client.println('Brak aktualnej lokalizacji.');
+                    return;
+                }
+                if (current.id === targetId) {
+                    client.println('Jestes juz na miejscu.');
+                    return;
+                }
+
+                const opts: TransportPathOptions | undefined = aggressive
+                    ? { boardingPenalty: 0, timeToHopRatio: 0.1 }
+                    : undefined;
+                const segments = findTransportPath(reader, getTransportDefs(), current.id, targetId, opts);
+                if (!segments || segments.length === 0) {
+                    client.println(`Brak sciezki (z transportem) do lokacji ${targetId}.`);
+                    return;
+                }
+
+                const walkSegments: Array<{ path: number[]; color: string }> = [];
+                const hops: Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }> = [];
+                let colorIndex = 0;
+                const nextColor = () => SEGMENT_COLORS[colorIndex++ % SEGMENT_COLORS.length];
+
+                let totalWalkRooms = 0;
+                let totalTransportSeconds = 0;
+
+                for (const seg of segments) {
+                    if (seg.kind === 'walk') {
+                        const color = nextColor();
+                        walkSegments.push({ path: seg.rooms, color });
+                        totalWalkRooms += Math.max(0, seg.rooms.length - 1);
+                    } else {
+                        const color = nextColor();
+                        hops.push({
+                            fromRoomId: seg.fromRoomId,
+                            toRoomId: seg.toRoomId,
+                            transportName: seg.transportName,
+                            label: seg.label,
+                            color,
+                        });
+                        if (typeof seg.timeSeconds === 'number') {
+                            totalTransportSeconds += seg.timeSeconds;
+                        }
+                    }
+                }
+
+                client.Map.setTransportRoute({ walkSegments, hops, finalDestination: targetId });
+
+                printTransportInstructions(client, segments, totalWalkRooms, totalTransportSeconds, aggressive);
             }
         },
         {
@@ -352,4 +426,78 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             }
         }
     );
+}
+
+function printTransportInstructions(
+    client: Client,
+    segments: TransportPathSegment[],
+    totalWalkRooms: number,
+    totalTransportSeconds: number,
+    aggressive = false,
+) {
+    const reader = client.Map.tryGetMapReader();
+    const labelForRoom = (id: number): string => {
+        const room = reader?.getRoom(id) as SearchableRoom | undefined;
+        if (!room) return `#${id}`;
+        const area = reader && typeof (reader as any).getArea === 'function' ? (reader as any).getArea(room.area) : null;
+        const areaName = area?.getAreaName?.() ?? '';
+        const name = room.name && room.name !== String(room.id) ? room.name : '';
+        if (name && areaName) return `#${id} ${name} (${areaName})`;
+        if (areaName) return `#${id} ${areaName}`;
+        return `#${id}`;
+    };
+
+    const gray = { foreground: { space: 'hex' as const, color: '#888888' } };
+    const white = { foreground: { space: 'hex' as const, color: '#dddddd' } };
+    const yellow = { foreground: { space: 'hex' as const, color: '#ffd166' } };
+
+    const output = new AnsiAwareBuffer();
+    const transportCount = segments.filter(s => s.kind === 'transport').length;
+    const summaryParts: string[] = [];
+    summaryParts.push(`${totalWalkRooms} pokoi pieszo`);
+    if (transportCount > 0) {
+        const mins = Math.round(totalTransportSeconds / 60);
+        summaryParts.push(`${transportCount} ${transportCount === 1 ? 'przesiadka' : 'przesiadki'} (~${mins > 0 ? mins + ' min' : totalTransportSeconds + 's'})`);
+    }
+    const header = aggressive ? 'Trasa z transportem (min. pieszo)' : 'Trasa z transportem';
+    output.append(`${header}: ${summaryParts.join(', ')}\n`, gray);
+
+    let stepNum = 1;
+    for (const seg of segments) {
+        if (seg.kind === 'walk') {
+            const from = seg.rooms[0];
+            const to = seg.rooms[seg.rooms.length - 1];
+            const hops = seg.rooms.length - 1;
+            output.append(`${stepNum++}. `, gray);
+            output.append(`Idz `, white);
+            output.append(`${labelForRoom(from)}`, gray);
+            output.append(` → `, white);
+            output.append(`${labelForRoom(to)}`, white);
+            output.append(` (${hops} ${hops === 1 ? 'pokoj' : 'pokoi'})\n`, gray);
+        } else {
+            output.append(`${stepNum++}. `, gray);
+            output.append(`Wsiadz: `, yellow);
+            output.append(`${seg.transportName}`, white);
+            if (seg.label) {
+                output.append(` → ${seg.label}`, white);
+            }
+            const timeNote = typeof seg.timeSeconds === 'number' ? ` (~${seg.timeSeconds}s)` : '';
+            output.append(`${timeNote}\n`, gray);
+            if (seg.boardCommands.length > 0) {
+                output.append(`   komenda: `, gray);
+                output.append(`${seg.boardCommands.join('; ')}\n`, white);
+            }
+            output.append(`   wysiadz na: `, gray);
+            output.append(`${labelForRoom(seg.toRoomId)}`, white);
+            if (seg.exitCommand) {
+                output.append(` (`, gray);
+                output.append(`${seg.exitCommand}`, white);
+                output.append(`)`, gray);
+            }
+            output.append('\n');
+        }
+    }
+    output.append(`Anuluj: `, gray);
+    output.append(`/prowadz-\n`, white);
+    client.println(output);
 }

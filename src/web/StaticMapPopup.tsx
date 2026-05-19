@@ -9,6 +9,9 @@ import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/p
 import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
+import { TransportHopsOverlay, type TransportHopMarker } from './transportHopsOverlay';
+
+const TRANSPORT_HOPS_OVERLAY_ID = 'transport-hops';
 
 interface StaticMapInstance {
     id: string;
@@ -452,6 +455,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
     const currentPathRef = useRef<{ segments: Array<{ path: number[]; color: string }> } | null>(null);
     const currentHighlightsRef = useRef<{ roomId: number; color: string }[]>([]);
+    const transportHopsOverlayRef = useRef<TransportHopsOverlay | null>(null);
     const initialHighlightRoomRef = useRef<number | null>(null);
     const followPlayerRef = useRef(false);
 
@@ -508,6 +512,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let container: HTMLDivElement | null = null;
         let pathHandler: ((data: { segments: Array<{ path: number[]; color: string }> } | null) => void) | null = null;
         let highlightHandler: ((data: { roomId: number; color: string }[]) => void) | null = null;
+        let transportHopsHandler: ((data: TransportHopMarker[] | null) => void) | null = null;
         let moveHandler: ((ev: { id: number }) => void) | null = null;
         let contextMenuHandler: ((ev: Event) => void) | null = null;
         let roomClickHandler: ((ev: Event) => void) | null = null;
@@ -669,6 +674,25 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             highlightHandler = (data: { roomId: number; color: string }[]) => {
                 currentHighlightsRef.current = data;
                 renderPathsAndHighlights();
+            };
+
+            transportHopsHandler = (data: TransportHopMarker[] | null) => {
+                const hops = data ?? [];
+                const renderer = rendererRef.current;
+                if (!renderer) return;
+                if (hops.length === 0) {
+                    if (transportHopsOverlayRef.current) {
+                        renderer.removeSceneOverlay(TRANSPORT_HOPS_OVERLAY_ID);
+                        transportHopsOverlayRef.current = null;
+                    }
+                    return;
+                }
+                if (!transportHopsOverlayRef.current) {
+                    transportHopsOverlayRef.current = new TransportHopsOverlay(hops);
+                    renderer.addSceneOverlay(TRANSPORT_HOPS_OVERLAY_ID, transportHopsOverlayRef.current);
+                } else {
+                    transportHopsOverlayRef.current.setHops(hops);
+                }
             };
 
             moveHandler = (ev: { id: number }) => {
@@ -870,6 +894,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
             eventBus.on('mapPath', pathHandler);
             eventBus.on('mapHighlights', highlightHandler);
+            eventBus.on('mapTransportHops', transportHopsHandler);
             eventBus.on('enterLocation', moveHandler);
             settingsUnsubscribe = globalStorage.onChange('uiSettings', settingsHandler);
             eventBus.on('mapShowGrid', gridHandler);
@@ -886,6 +911,8 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             resizeObserver.observe(parentContainer);
 
             eventBus.emit('requestMapHighlights');
+            // requestMapPath triggers MapHelper.emitPath(), which also re-emits
+            // mapTransportHops, so the overlay populates without a separate request.
             eventBus.emit('requestMapPath');
             renderPathsAndHighlights();
 
@@ -896,6 +923,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             cancelAnimationFrame(initTimeout);
             if (pathHandler) eventBus.off('mapPath', pathHandler);
             if (highlightHandler) eventBus.off('mapHighlights', highlightHandler);
+            if (transportHopsHandler) eventBus.off('mapTransportHops', transportHopsHandler);
             if (moveHandler) eventBus.off('enterLocation', moveHandler);
             if (settingsUnsubscribe) settingsUnsubscribe();
             if (gridHandler) eventBus.off('mapShowGrid', gridHandler);

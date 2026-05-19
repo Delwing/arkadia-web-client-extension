@@ -1,78 +1,25 @@
 import Client from "../Client";
 import { isType } from "../Triggers";
-import type { TransportTimerPayload, TransportRoutePayload, TransportRouteStop } from "../types/transport";
+import type {
+    TransportTimerPayload,
+    TransportRoutePayload,
+    TransportRouteStop,
+    TransportTimesDebugPayload,
+    TransportTimesDebugEntry,
+    TransportLegDebug,
+} from "../types/transport";
 import { gmcp } from "../gmcp";
-import { getAllTransportSegments, recordTransportSegment } from "../utils/transportStats";
+import {
+    getAllTransportSegments,
+    recordTransportSegment,
+    type StoredTransportSegmentRecord,
+} from "../utils/transportStats";
 import type { TransportDebugState } from "../types/transport";
-
-import Ancelmus from "./ships/Ancelmus.json";
-import Annibale from "./ships/Annibale.json";
-import Asa from "./ships/Asa.json";
-import Batista from "./ships/Batista.json";
-import Bjorn from "./ships/Bjorn.json";
-import Cern from "./ships/Cern.json";
-import Charonda from "./ships/Charonda.json";
-import Creyard from "./ships/Creyard.json";
-import Daniel from "./ships/Daniel.json";
-import Elich from "./ships/Elich.json";
-import Flavius from "./ships/Flavius.json";
-import Francois from "./ships/Francois.json";
-import Gervais from "./ships/Gervais.json";
-import Gmeath from "./ships/Gmeath.json";
-import Gvidon from "./ships/Gvidon.json";
-import Hallgerda from "./ships/Hallgerda.json";
-import Haming from "./ships/Haming.json";
-import Jacob from "./ships/Jacob.json";
-import Kelim from "./ships/Kelim.json";
-import Louis from "./ships/Louis.json";
-import Luiggi from "./ships/Luiggi.json";
-import Malacius from "./ships/Malacius.json";
-import Mallcolm from "./ships/Mallcolm.json";
-import Olaf from "./ships/Olaf.json";
-import Pluskolec from "./ships/Pluskolec.json";
-import Rygwit from "./ships/Rygwit.json";
-import Strag from "./ships/Strag.json";
-import BialyMostHagge from "./other/Bialy Most - Hagge.json";
-import CarrerasRiviaScala from "./other/Carreras - Rivia - Scala.json";
-import Jouinard from "./other/Jouinard - Nuln.json";
-import KrainaZgromadzenia from "./other/Kraina Zgromadzenia - Nuln.json";
-import MariborGrabowa from "./other/Maribor - Grabowa Buchta.json";
-import PodgrodzieTretogoruGelibol from "./other/Podgrodzie Tretogoru - Gelibol.json";
-import MariborObawa from "./other/Maribor - Obawa.json";
-import Salignac from "./other/Salignac - Nuln.json";
-import NulnBlekitnaWstega from "./other/Nuln - Blekitna Wstega.json";
-import Varieno from "./other/Varieno - Miragliano - Campogrotta.json";
-import NovigradOxenfurt from "./other/Novigrad - Oxenfurt.json";
-import WyzimaOxenfurt from "./other/Wyzima - Oxenfurt.json";
-import QuenellesMontlacMerceauxDesclouxParravon from "./other/Quenelles - Montlac - Merceaux-Descloux - Parravon.json";
-import UrbimoToscania from "./other/Urbimo - Toscania.json";
-
-// ── definition types (unchanged from previous system) ────────────────────────
-
-interface RawTransportStop {
-    start: number;
-    destination: number;
-    time?: number;
-    stop_pattern?: string | string[];
-    stop_pattern_outside?: string;
-    stop_pattern_inside?: string;
-    set_pattern?: string;
-    label?: string;
-}
-
-interface RawTransportDefinition {
-    label?: string;
-    enter?: string;
-    exit?: string;
-    start?: string;
-    stop_pattern?: string | string[];
-    bind?: string;
-    exit_command?: string;
-    show_path?: boolean;
-    board_commands?: string[];
-    standing_patterns?: string[];
-    stops: RawTransportStop[];
-}
+import {
+    RAW_TRANSPORT_DEFINITIONS,
+    type RawTransportDefinition,
+    type RawTransportStop,
+} from "./transports/definitions";
 
 interface CompiledStop extends RawTransportStop {
     stopRegex?: RegExp;
@@ -81,6 +28,8 @@ interface CompiledStop extends RawTransportStop {
     stopRegexInside?: RegExp;
     setRegex?: RegExp;
     patternKey: string;
+    /** Time as declared in the original transport JSON (before any overrides). */
+    originalTime: number | null;
 }
 
 interface Def extends RawTransportDefinition {
@@ -120,38 +69,9 @@ const FOLLOW_EXIT_RE = /[pP]odazasz za .* na zewnatrz\.$/;
 const EXIT_TIMEOUT_MS = 30_000;
 const LOG = "[Transport]";
 
-// ── definition loading (same logic as before) ─────────────────────────────────
+// ── definition loading ────────────────────────────────────────────────────────
 
-const RAW: Array<[string, RawTransportDefinition]> = [
-    ["Ancelmus", Ancelmus as RawTransportDefinition], ["Annibale", Annibale as RawTransportDefinition],
-    ["Asa", Asa as RawTransportDefinition], ["Batista", Batista as RawTransportDefinition],
-    ["Bjorn", Bjorn as RawTransportDefinition], ["Cern", Cern as RawTransportDefinition],
-    ["Charonda", Charonda as RawTransportDefinition], ["Creyard", Creyard as RawTransportDefinition],
-    ["Daniel", Daniel as RawTransportDefinition], ["Elich", Elich as RawTransportDefinition],
-    ["Flavius", Flavius as RawTransportDefinition], ["Francois", Francois as RawTransportDefinition],
-    ["Gervais", Gervais as RawTransportDefinition], ["Gmeath", Gmeath as RawTransportDefinition],
-    ["Gvidon", Gvidon as RawTransportDefinition], ["Hallgerda", Hallgerda as RawTransportDefinition],
-    ["Haming", Haming as RawTransportDefinition], ["Jacob", Jacob as RawTransportDefinition],
-    ["Kelim", Kelim as RawTransportDefinition], ["Louis", Louis as RawTransportDefinition],
-    ["Luiggi", Luiggi as RawTransportDefinition], ["Malacius", Malacius as RawTransportDefinition],
-    ["Mallcolm", Mallcolm as RawTransportDefinition], ["Olaf", Olaf as RawTransportDefinition],
-    ["Pluskolec", Pluskolec as RawTransportDefinition], ["Rygwit", Rygwit as RawTransportDefinition],
-    ["Strag", Strag as RawTransportDefinition],
-    ["Bialy Most - Hagge", BialyMostHagge as RawTransportDefinition],
-    ["Carreras - Rivia - Scala", CarrerasRiviaScala as RawTransportDefinition],
-    ["Jouinard - Nuln", Jouinard as RawTransportDefinition],
-    ["Kraina Zgromadzenia - Nuln", KrainaZgromadzenia as RawTransportDefinition],
-    ["Maribor - Grabowa Buchta", MariborGrabowa as RawTransportDefinition],
-    ["Podgrodzie Tretogoru - Gelibol", PodgrodzieTretogoruGelibol as RawTransportDefinition],
-    ["Maribor - Obawa", MariborObawa as RawTransportDefinition],
-    ["Salignac - Nuln", Salignac as RawTransportDefinition],
-    ["Nuln - Blekitna Wstega", NulnBlekitnaWstega as RawTransportDefinition],
-    ["Varieno - Miragliano - Campogrotta", Varieno as RawTransportDefinition],
-    ["Novigrad - Oxenfurt", NovigradOxenfurt as RawTransportDefinition],
-    ["Wyzima - Oxenfurt", WyzimaOxenfurt as RawTransportDefinition],
-    ["Quenelles - Montlac - Merceaux-Descloux - Parravon", QuenellesMontlacMerceauxDesclouxParravon as RawTransportDefinition],
-    ["Urbimo - Toscania", UrbimoToscania as RawTransportDefinition],
-];
+const RAW = RAW_TRANSPORT_DEFINITIONS;
 
 function compile(fileKey: string, raw: RawTransportDefinition): Def {
     const name = raw.label ?? fileKey;
@@ -177,6 +97,7 @@ function compile(fileKey: string, raw: RawTransportDefinition): Def {
             stopRegexInside: s.stop_pattern_inside ? new RegExp(s.stop_pattern_inside) : undefined,
             setRegex: s.set_pattern ? new RegExp(s.set_pattern) : undefined,
             patternKey: lastPat ?? s.stop_pattern_inside ?? "",
+            originalTime: typeof s.time === 'number' && !Number.isNaN(s.time) ? s.time : null,
         };
     });
 
@@ -239,7 +160,7 @@ class Tracker {
         this.defs = RAW.map(([name, raw]) => compile(name, raw));
         this.exitCmds = new Set(this.defs.map(d => d.exitCommand).filter((c): c is string => !!c));
         this.registerTriggers();
-        void this.loadOverrides();
+        void this.loadOverrides().then(() => this.emitTimesDebug());
         this.emit();
         this.emitDebug();
     }
@@ -723,6 +644,42 @@ class Tracker {
         }
     }
 
+    // ── times debug snapshot ──────────────────────────────────────────────────
+
+    private async emitTimesDebug(): Promise<void> {
+        let records: StoredTransportSegmentRecord[] = [];
+        try {
+            records = await getAllTransportSegments();
+        } catch (e) {
+            console.warn(`${LOG} Failed to read transport stats for debug snapshot`, e);
+        }
+        const byKey = new Map<string, StoredTransportSegmentRecord>();
+        for (const r of records) {
+            byKey.set(r.segmentKey, r);
+        }
+        const transports: TransportTimesDebugEntry[] = this.defs.map(def => {
+            const legs: TransportLegDebug[] = def.stops.map((stop, i) => {
+                const rec = byKey.get(segKey(def, i));
+                return {
+                    fromId: stop.start,
+                    toId: stop.destination,
+                    fromLabel: def.locationLabels.get(stop.start) ?? String(stop.start),
+                    toLabel: destLabel(def, i),
+                    currentTime: typeof stop.time === 'number' && !Number.isNaN(stop.time) ? stop.time : null,
+                    originalTime: stop.originalTime,
+                    shortest: rec ? rec.shortestDuration.duration : null,
+                    longest: rec ? rec.longestDuration.duration : null,
+                    expectedDuration: rec?.expectedDuration ?? null,
+                    updatedAt: rec?.updatedAt ?? null,
+                };
+            });
+            return { name: def.name, legs };
+        });
+        transports.sort((a, b) => a.name.localeCompare(b.name));
+        const payload: TransportTimesDebugPayload = { transports };
+        this.client.sendEvent('transportTimesDebug', payload);
+    }
+
     private recordSegment(def: Def, stopIdx: number, startedAt: number, endedAt: number): void {
         const stop = def.stops[stopIdx];
         const elapsed = (endedAt - startedAt) / 1000;
@@ -734,7 +691,7 @@ class Tracker {
             toLabel: destLabel(def, stopIdx),
             startedAt, endedAt, duration: elapsed,
             expectedDuration: typeof stop.time === 'number' ? stop.time : null,
-        });
+        }).then(() => this.emitTimesDebug());
         // Update override if faster
         const key = segKey(def, stopIdx);
         const cur = this.durationOverrides.get(key);
@@ -880,6 +837,17 @@ class Tracker {
         this.client.aliases.push({
             pattern: /^\/tdebug$/,
             callback: () => this.client.sendEvent('transportDebug.toggle', undefined),
+        });
+
+        // Times debug popup toggle alias
+        this.client.aliases.push({
+            pattern: /^\/ttimes$/,
+            callback: () => this.client.sendEvent('transportTimesDebug.popup.toggle', undefined),
+        });
+
+        // Times debug snapshot request (popup asks for fresh data on open)
+        this.client.on('transportTimesDebug.request', () => {
+            void this.emitTimesDebug();
         });
     }
 }

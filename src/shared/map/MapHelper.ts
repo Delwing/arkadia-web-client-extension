@@ -107,6 +107,10 @@ export default class MapHelper {
     private mapReady = false;
     public isBlockable = false;
     private _destinations: number[] = [];
+    private _transportRoute: {
+        walkSegments: Array<{ path: number[]; color: string }>;
+        hops: Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }>;
+    } | null = null;
     private highlights: number[] = [];
     private pendingBindAbort?: AbortController;
     private highlighterIdCounter = 0;
@@ -644,16 +648,34 @@ export default class MapHelper {
             return;
         }
         this._destinations = [id];
+        this._transportRoute = null;
         this.emitDrawData();
     }
 
     setMultiDestinations(ids: number[]) {
         this._destinations = ids;
+        this._transportRoute = null;
         this.emitDrawData();
     }
 
     clearLeadTo() {
         this._destinations = [];
+        this._transportRoute = null;
+        this.emitDrawData();
+    }
+
+    setTransportRoute(route: {
+        walkSegments: Array<{ path: number[]; color: string }>;
+        hops: Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }>;
+        finalDestination?: number;
+    }) {
+        this._transportRoute = { walkSegments: route.walkSegments, hops: route.hops };
+        this._destinations = typeof route.finalDestination === "number" ? [route.finalDestination] : [];
+        this.emitDrawData();
+    }
+
+    clearTransportRoute() {
+        this._transportRoute = null;
         this.emitDrawData();
     }
 
@@ -751,6 +773,12 @@ export default class MapHelper {
     }
 
     emitPath() {
+        if (this._transportRoute) {
+            this.client.sendEvent("mapPath", { segments: this._transportRoute.walkSegments });
+            this.client.sendEvent("mapTransportHops", this._transportRoute.hops);
+            return;
+        }
+        this.client.sendEvent("mapTransportHops", null);
         const currentId = this.currentRoom?.id;
         if (this._destinations.length > 0 && currentId) {
             // Build path segments through all destinations, each with a different color
