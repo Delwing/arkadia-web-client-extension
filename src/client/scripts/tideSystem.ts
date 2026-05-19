@@ -193,8 +193,7 @@ function activate(client: Client) {
         hashes[tempRoom.hash] = tempId;
         readerRooms[tempId] = tempRoom;
 
-        const areaSources: Record<number, MapData.Area> = reader.areaSources;
-        areaSources[original.area].rooms.push(tempRoom);
+        reader.areas[original.area].area.rooms.push(tempRoom);
     }
 
     // 3. Add additional surface connections between temp rooms
@@ -261,8 +260,7 @@ function deactivate(client: Client) {
         delete hashes[tempRoom.hash];
         delete readerRooms[tempId];
 
-        const areaSources: Record<number, MapData.Area> = reader.areaSources;
-        const areaSource = areaSources[tempRoom.area];
+        const areaSource = reader.areas[tempRoom.area]?.area;
         if (areaSource) {
             areaSource.rooms = areaSource.rooms.filter((r: MapData.Room) => r.id !== tempId);
         }
