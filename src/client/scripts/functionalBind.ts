@@ -42,7 +42,7 @@ export function formatLabel(options: FunctionalBindOptions) {
     return parts.join('+');
 }
 
-function createBindMessage(label: string, printable: string, callback: () => void): AnsiAwareBuffer {
+export function createBindMessage(label: string, printable: string, callback: () => void): AnsiAwareBuffer {
     // Using xterm proper palette colors: 49 = #00ffaf, 222 = #ffd787
     const bindColor: FormatStateSnapshot = { foreground: { space: 'hex', color: '#00ffaf' } };
     const labelColor: FormatStateSnapshot = { foreground: { space: 'hex', color: '#ffd787' } };

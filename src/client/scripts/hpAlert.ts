@@ -2,6 +2,7 @@ import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import { createBindMessage, formatLabel } from "./functionalBind";
 
 export default function initHpAlert(client: Client) {
     const ORANGE = createColorFormat("#ffa500");
@@ -61,6 +62,9 @@ export default function initHpAlert(client: Client) {
             const msg = colorString(plain, ORANGE).prepend("\n").append('\n');
             client.sendEvent("sound:category", "hp");
             client.println(msg);
+            const doubleK = client.keyBindingManager.doubleKBind;
+            const label = `${formatLabel(doubleK)} x2`;
+            client.println(createBindMessage(label, '+k', () => client.sendCommand('+k')));
             client.notify(plain);
         }
         prev = hp;
