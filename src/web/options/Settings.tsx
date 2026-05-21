@@ -297,7 +297,7 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                                 s.shortExitsBackgroundColor = 'transparent';
                                             })}
                                             title="Przywróć wszystkie domyślne ustawienia"
-                                            style={{ padding: "0px 0.5rem", height: "21px", lineHeight: "21px", fontSize: "0.875rem" }}
+                                            style={{ padding: "0.25rem 0.5rem", height: "30px", lineHeight: "30px" }}
                                         >
                                             Przywróć domyślne
                                         </button>
