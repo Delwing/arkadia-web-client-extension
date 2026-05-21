@@ -184,6 +184,22 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                         {settings.shortenExits && (
                             <div className="mt-3 pt-3 border-top">
                                 <div className="d-flex flex-column gap-3">
+                                    <div className="d-flex gap-3">
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-secondary"
+                                            onClick={() => onChangeSetting(s => {
+                                                s.shortExitsPrefix = '-----:';
+                                                s.shortExitsSeparator = ' ';
+                                                s.shortExitsColor = '#ffa500';
+                                                s.shortExitsBackgroundColor = 'transparent';
+                                            })}
+                                            title="Przywróć wszystkie domyślne ustawienia"
+                                            style={{ padding: "0.25rem 0.5rem", height: "36px" }}
+                                        >
+                                            Przywróć domyślne
+                                        </button>
+                                    </div>
                                     <div className="d-flex gap-3 align-items-flex-start flex-wrap">
                                         <Form.Group className="d-flex flex-column gap-2">
                                             <Form.Label className="mb-0">Przedrostek</Form.Label>
@@ -287,20 +303,6 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                             />
                                             <small className="text-muted d-block" style={{fontSize: '0.75rem'}}>Między kierunkami</small>
                                         </Form.Group>
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-secondary"
-                                            onClick={() => onChangeSetting(s => {
-                                                s.shortExitsPrefix = '-----:';
-                                                s.shortExitsSeparator = ' ';
-                                                s.shortExitsColor = '#ffa500';
-                                                s.shortExitsBackgroundColor = 'transparent';
-                                            })}
-                                            title="Przywróć wszystkie domyślne ustawienia"
-                                            style={{ padding: "0.25rem 0.5rem", height: "36px" }}
-                                        >
-                                            Przywróć domyślne
-                                        </button>
                                     </div>
                                     <Form.Group className="d-flex flex-column gap-2">
                                         <Form.Label className="mb-0">Podgląd</Form.Label>
