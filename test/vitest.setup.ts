@@ -40,7 +40,11 @@ class LocalStorageMock {
 }
 
 if (typeof globalThis.localStorage === 'undefined') {
-    (globalThis as unknown as { localStorage: Storage }).localStorage = new LocalStorageMock() as unknown as Storage;
+    Object.defineProperty(globalThis, 'localStorage', {
+        value: new LocalStorageMock() as unknown as Storage,
+        writable: true,
+        configurable: true,
+    });
 }
 
 if (typeof globalThis.ResizeObserver === 'undefined') {
