@@ -279,6 +279,34 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                             {(settings.shortExitsPrefix ?? '-----:') + (settings.shortExitsSeparator ?? ' ') + 'N' + (settings.shortExitsSeparator ?? ' ') + 'E' + (settings.shortExitsSeparator ?? ' ') + 'NE'}
                                         </div>
                                     </Form.Group>
+                                    <Form.Group className="d-flex flex-column gap-2">
+                                        <Form.Label className="mb-0">Przywróć</Form.Label>
+                                        <div className="d-flex gap-2">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary btn-sm"
+                                                onClick={() => onChangeSetting(s => {
+                                                    s.shortExitsPrefix = '-----:';
+                                                    s.shortExitsSeparator = ' ';
+                                                })}
+                                                title="Przywróć domyślne przedrostek i separator"
+                                            >
+                                                Format
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary btn-sm"
+                                                onClick={() => onChangeSetting(s => {
+                                                    s.shortExitsPrefix = '-----:';
+                                                    s.shortExitsSeparator = ' ';
+                                                    s.shortExitsColor = '#ffa500';
+                                                })}
+                                                title="Przywróć wszystkie domyślne ustawienia"
+                                            >
+                                                Wszystko
+                                            </button>
+                                        </div>
+                                    </Form.Group>
                                 </div>
                             </div>
                         )}
