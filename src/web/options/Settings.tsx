@@ -251,14 +251,25 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                         </Form.Group>
                                         <Form.Group className="d-flex flex-column gap-2">
                                             <Form.Label htmlFor="exits-bg-color" className="mb-0">Kolor tła</Form.Label>
-                                            <Form.Control
-                                                type="color"
-                                                id="exits-bg-color"
-                                                value={settings.shortExitsBackgroundColor ?? 'transparent'}
-                                                onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
-                                                className="form-control-color"
-                                                style={{ width: '3rem', height: '2rem' }}
-                                            />
+                                            <div className="d-flex gap-2 align-items-center">
+                                                <Form.Control
+                                                    type="color"
+                                                    id="exits-bg-color"
+                                                    value={settings.shortExitsBackgroundColor ?? 'transparent'}
+                                                    onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
+                                                    className="form-control-color"
+                                                    style={{ width: '3rem', height: '2rem' }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    onClick={() => onChangeSetting(s => s.shortExitsBackgroundColor = 'transparent')}
+                                                    title="Przywróć domyślny kolor tła"
+                                                    style={{ padding: "0.25rem 0.5rem" }}
+                                                >
+                                                    ↺
+                                                </button>
+                                            </div>
                                         </Form.Group>
                                     </div>
                                     <div className="d-flex gap-3 align-items-flex-end flex-wrap">
@@ -286,8 +297,9 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                                 s.shortExitsBackgroundColor = 'transparent';
                                             })}
                                             title="Przywróć wszystkie domyślne ustawienia"
+                                            style={{ padding: "0.25rem 0.5rem" }}
                                         >
-                                            Przywróć domyślne ustawienia
+                                            Przywróć domyślne
                                         </button>
                                     </div>
                                     <Form.Group className="d-flex flex-column gap-2">
