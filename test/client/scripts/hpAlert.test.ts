@@ -8,6 +8,10 @@ class FakeClient {
   private emitter = new EventEmitter();
   println = jest.fn();
   notify = jest.fn();
+  sendCommand = jest.fn();
+  keyBindingManager = {
+    doubleKBind: { key: 'Equal', ctrl: true, alt: true },
+  };
   on(event: string, cb: any) {
     this.emitter.on(event, cb);
   }
@@ -60,8 +64,8 @@ describe('hp alert', () => {
     });
     const first = colorString('Jestes ciezko ranny', color).prepend("\n").append('\n');
     const second = colorString('Jestes ledwo zywy', color).prepend("\n").append('\n');
-    expect(client.println).toHaveBeenNthCalledWith(1, first);
-    expect(client.println).toHaveBeenNthCalledWith(2, second);
+    expect(client.println).toHaveBeenCalledWith(first);
+    expect(client.println).toHaveBeenCalledWith(second);
     expect(client.notify).toHaveBeenNthCalledWith(1, 'Jestes ciezko ranny');
     expect(client.notify).toHaveBeenNthCalledWith(2, 'Jestes ledwo zywy');
   });
