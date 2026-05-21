@@ -183,96 +183,113 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                         </div>
                         {settings.shortenExits && (
                             <div className="mt-3 pt-3 border-top">
-                                <div className="d-flex flex-wrap gap-3">
-                                    <Form.Group className="d-flex flex-column gap-2">
-                                        <Form.Label className="mb-0">Przedrostek</Form.Label>
-                                        <div className="d-flex flex-column gap-2">
-                                            <Form.Check
-                                                type="radio"
-                                                id="format-compact"
-                                                label='Kompaktowy (-----:)'
-                                                name="shortExitsFormat"
-                                                value="compact"
-                                                checked={(settings.shortExitsPrefix ?? '-----:') === '-----:'}
-                                                onChange={() => onChangeSetting(s => s.shortExitsPrefix = '-----:')}
-                                            />
-                                            <Form.Check
-                                                type="radio"
-                                                id="format-arrow"
-                                                label='Strzałka (→)'
-                                                name="shortExitsFormat"
-                                                value="arrow"
-                                                checked={(settings.shortExitsPrefix ?? '-----:') === '→'}
-                                                onChange={() => onChangeSetting(s => s.shortExitsPrefix = '→')}
-                                            />
-                                            <Form.Check
-                                                type="radio"
-                                                id="format-custom"
-                                                label="Niestandardowy"
-                                                name="shortExitsFormat"
-                                                value="custom"
-                                                checked={(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→'}
-                                                onChange={() => onChangeSetting(s => s.shortExitsPrefix = '>>>')}
-                                            />
-                                        </div>
-                                        {(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→' && (
-                                            <Form.Control
-                                                type="text"
-                                                size="sm"
-                                                value={settings.shortExitsPrefix ?? ''}
-                                                onChange={e => onChangeSetting(s => s.shortExitsPrefix = e.target.value)}
-                                                placeholder="np. >>>"
-                                                style={{maxWidth: '8rem'}}
-                                            />
-                                        )}
-                                    </Form.Group>
-                                    <Form.Group className="d-flex flex-column gap-2">
-                                        <Form.Label htmlFor="separator" className="mb-0">Separator</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            id="separator"
-                                            size="sm"
-                                            value={settings.shortExitsSeparator ?? ' '}
-                                            onChange={e => onChangeSetting(s => s.shortExitsSeparator = e.target.value)}
-                                            placeholder=" "
-                                            maxLength={5}
-                                            style={{maxWidth: '6rem'}}
-                                        />
-                                        <small className="text-muted d-block" style={{fontSize: '0.75rem'}}>Między kierunkami</small>
-                                    </Form.Group>
-                                    <Form.Group className="d-flex flex-column gap-2">
-                                        <Form.Label htmlFor="exits-color" className="mb-0">Kolor</Form.Label>
-                                        <div className="d-flex gap-2 align-items-center">
+                                <div className="d-flex flex-column gap-3">
+                                    <div className="d-flex gap-3 align-items-flex-start flex-wrap">
+                                        <Form.Group className="d-flex flex-column gap-2">
+                                            <Form.Label className="mb-0">Przedrostek</Form.Label>
+                                            <div className="d-flex flex-column gap-2">
+                                                <Form.Check
+                                                    type="radio"
+                                                    id="format-compact"
+                                                    label='Kompaktowy (-----:)'
+                                                    name="shortExitsFormat"
+                                                    value="compact"
+                                                    checked={(settings.shortExitsPrefix ?? '-----:') === '-----:'}
+                                                    onChange={() => onChangeSetting(s => s.shortExitsPrefix = '-----:')}
+                                                />
+                                                <Form.Check
+                                                    type="radio"
+                                                    id="format-arrow"
+                                                    label='Strzałka (→)'
+                                                    name="shortExitsFormat"
+                                                    value="arrow"
+                                                    checked={(settings.shortExitsPrefix ?? '-----:') === '→'}
+                                                    onChange={() => onChangeSetting(s => s.shortExitsPrefix = '→')}
+                                                />
+                                                <Form.Check
+                                                    type="radio"
+                                                    id="format-custom"
+                                                    label="Niestandardowy"
+                                                    name="shortExitsFormat"
+                                                    value="custom"
+                                                    checked={(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→'}
+                                                    onChange={() => onChangeSetting(s => s.shortExitsPrefix = '>>>')}
+                                                />
+                                            </div>
+                                            {(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→' && (
+                                                <Form.Control
+                                                    type="text"
+                                                    size="sm"
+                                                    value={settings.shortExitsPrefix ?? ''}
+                                                    onChange={e => onChangeSetting(s => s.shortExitsPrefix = e.target.value)}
+                                                    placeholder="np. >>>"
+                                                    style={{maxWidth: '8rem'}}
+                                                />
+                                            )}
+                                        </Form.Group>
+                                        <Form.Group className="d-flex flex-column gap-2">
+                                            <Form.Label htmlFor="exits-color" className="mb-0">Kolor tekstu</Form.Label>
+                                            <div className="d-flex gap-2 align-items-center">
+                                                <Form.Control
+                                                    type="color"
+                                                    id="exits-color"
+                                                    value={settings.shortExitsColor ?? '#ffa500'}
+                                                    onChange={e => onChangeSetting(s => s.shortExitsColor = e.target.value)}
+                                                    className="form-control-color"
+                                                    style={{ width: '3rem', height: '2rem' }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    onClick={() => onChangeSetting(s => s.shortExitsColor = '#ffa500')}
+                                                    title="Przywróć domyślny kolor"
+                                                    style={{ padding: "0.25rem 0.5rem" }}
+                                                >
+                                                    ↺
+                                                </button>
+                                            </div>
+                                        </Form.Group>
+                                        <Form.Group className="d-flex flex-column gap-2">
+                                            <Form.Label htmlFor="exits-bg-color" className="mb-0">Kolor tła</Form.Label>
                                             <Form.Control
                                                 type="color"
-                                                id="exits-color"
-                                                value={settings.shortExitsColor ?? '#ffa500'}
-                                                onChange={e => onChangeSetting(s => s.shortExitsColor = e.target.value)}
+                                                id="exits-bg-color"
+                                                value={settings.shortExitsBackgroundColor ?? 'transparent'}
+                                                onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
                                                 className="form-control-color"
                                                 style={{ width: '3rem', height: '2rem' }}
                                             />
-                                            <button
-                                                type="button"
-                                                className="btn btn-outline-secondary btn-sm"
-                                                onClick={() => onChangeSetting(s => s.shortExitsColor = '#ffa500')}
-                                                title="Przywróć domyślny kolor"
-                                                style={{ padding: "0.25rem 0.5rem" }}
-                                            >
-                                                ↺
-                                            </button>
-                                        </div>
-                                    </Form.Group>
-                                    <Form.Group className="d-flex flex-column gap-2">
-                                        <Form.Label htmlFor="exits-bg-color" className="mb-0">Tło</Form.Label>
-                                        <Form.Control
-                                            type="color"
-                                            id="exits-bg-color"
-                                            value={settings.shortExitsBackgroundColor ?? 'transparent'}
-                                            onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
-                                            className="form-control-color"
-                                            style={{ width: '3rem', height: '2rem' }}
-                                        />
-                                    </Form.Group>
+                                        </Form.Group>
+                                    </div>
+                                    <div className="d-flex gap-3 align-items-flex-end flex-wrap">
+                                        <Form.Group className="d-flex flex-column gap-2">
+                                            <Form.Label htmlFor="separator" className="mb-0">Separator</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                id="separator"
+                                                size="sm"
+                                                value={settings.shortExitsSeparator ?? ' '}
+                                                onChange={e => onChangeSetting(s => s.shortExitsSeparator = e.target.value)}
+                                                placeholder=" "
+                                                maxLength={5}
+                                                style={{maxWidth: '6rem'}}
+                                            />
+                                            <small className="text-muted d-block" style={{fontSize: '0.75rem'}}>Między kierunkami</small>
+                                        </Form.Group>
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-secondary btn-sm"
+                                            onClick={() => onChangeSetting(s => {
+                                                s.shortExitsPrefix = '-----:';
+                                                s.shortExitsSeparator = ' ';
+                                                s.shortExitsColor = '#ffa500';
+                                                s.shortExitsBackgroundColor = 'transparent';
+                                            })}
+                                            title="Przywróć wszystkie domyślne ustawienia"
+                                        >
+                                            Przywróć domyślne ustawienia
+                                        </button>
+                                    </div>
                                     <Form.Group className="d-flex flex-column gap-2">
                                         <Form.Label className="mb-0">Podgląd</Form.Label>
                                         <div
@@ -285,25 +302,11 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                                 border: '1px solid #333',
                                                 whiteSpace: 'nowrap',
                                                 fontSize: '0.9rem',
+                                                maxWidth: '20rem'
                                             }}
                                         >
                                             {(settings.shortExitsPrefix ?? '-----:') + (settings.shortExitsSeparator ?? ' ') + 'N' + (settings.shortExitsSeparator ?? ' ') + 'E' + (settings.shortExitsSeparator ?? ' ') + 'NE'}
                                         </div>
-                                    </Form.Group>
-                                    <Form.Group className="d-flex flex-column gap-2">
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-secondary btn-sm"
-                                            onClick={() => onChangeSetting(s => {
-                                                s.shortExitsPrefix = '-----:';
-                                                s.shortExitsSeparator = ' ';
-                                                s.shortExitsColor = '#ffa500';
-                                                s.shortExitsBackgroundColor = 'transparent';
-                                            })}
-                                            title="Przywróć wszystkie domyślne ustawienia"
-                                        >
-                                            Przywróć domyślne
-                                        </button>
                                     </Form.Group>
                                 </div>
                             </div>
