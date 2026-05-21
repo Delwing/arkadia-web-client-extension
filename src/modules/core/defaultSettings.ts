@@ -68,6 +68,7 @@ export interface Settings {
     shortExitsPrefix?: string;
     shortExitsColor?: string;
     shortExitsSeparator?: string;
+    shortExitsBackgroundColor?: string;
 }
 
 export const defaultSettings: Settings = {
@@ -140,4 +141,5 @@ export const defaultSettings: Settings = {
     shortExitsPrefix: '-----:',
     shortExitsColor: '#ffa500',
     shortExitsSeparator: ' ',
+    shortExitsBackgroundColor: 'transparent',
 };

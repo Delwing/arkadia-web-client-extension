@@ -51,13 +51,28 @@ export default function initShortExits(client: Client) {
     let exitsPrefix = defaultSettings.shortExitsPrefix ?? '-----:';
     let exitsSeparator = defaultSettings.shortExitsSeparator ?? ' ';
     let exitsColor = createColorFormat(defaultSettings.shortExitsColor ?? '#ffa500');
+    let exitsBackgroundColor = defaultSettings.shortExitsBackgroundColor ?? 'transparent';
+
+    const createExitsFormat = (fgHex: string, bgHex: string) => {
+        const format: any = {
+            foreground: {space: "hex", color: fgHex}
+        };
+        if (bgHex && bgHex !== 'transparent') {
+            format.background = {space: "hex", color: bgHex};
+        }
+        return format;
+    };
 
     const applySettings = (settings: any) => {
         const detail = settings ?? defaultSettings;
         enabled = !!detail.shortenExits;
         exitsPrefix = detail.shortExitsPrefix ?? defaultSettings.shortExitsPrefix ?? '-----:';
         exitsSeparator = detail.shortExitsSeparator ?? defaultSettings.shortExitsSeparator ?? ' ';
-        exitsColor = createColorFormat(detail.shortExitsColor ?? defaultSettings.shortExitsColor ?? '#ffa500');
+        exitsBackgroundColor = detail.shortExitsBackgroundColor ?? defaultSettings.shortExitsBackgroundColor ?? 'transparent';
+        exitsColor = createExitsFormat(
+            detail.shortExitsColor ?? defaultSettings.shortExitsColor ?? '#ffa500',
+            exitsBackgroundColor
+        ) as any;
     };
 
     const initialSettings = characterStorage.get('settings');

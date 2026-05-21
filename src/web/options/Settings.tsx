@@ -263,11 +263,22 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                         </div>
                                     </Form.Group>
                                     <Form.Group className="d-flex flex-column gap-2">
+                                        <Form.Label htmlFor="exits-bg-color" className="mb-0">Tło</Form.Label>
+                                        <Form.Control
+                                            type="color"
+                                            id="exits-bg-color"
+                                            value={settings.shortExitsBackgroundColor ?? 'transparent'}
+                                            onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
+                                            className="form-control-color"
+                                            style={{ width: '3rem', height: '2rem' }}
+                                        />
+                                    </Form.Group>
+                                    <Form.Group className="d-flex flex-column gap-2">
                                         <Form.Label className="mb-0">Podgląd</Form.Label>
                                         <div
                                             style={{
                                                 padding: '0.5rem',
-                                                backgroundColor: '#1a1a1a',
+                                                backgroundColor: settings.shortExitsBackgroundColor ?? 'transparent',
                                                 color: settings.shortExitsColor ?? '#ffa500',
                                                 fontFamily: 'monospace',
                                                 borderRadius: '0.25rem',
@@ -287,10 +298,11 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                                 s.shortExitsPrefix = '-----:';
                                                 s.shortExitsSeparator = ' ';
                                                 s.shortExitsColor = '#ffa500';
+                                                s.shortExitsBackgroundColor = 'transparent';
                                             })}
                                             title="Przywróć wszystkie domyślne ustawienia"
                                         >
-                                            Przywróć domyślne ustawienia
+                                            Przywróć domyślne
                                         </button>
                                     </Form.Group>
                                 </div>
