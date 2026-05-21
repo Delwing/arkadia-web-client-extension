@@ -39,7 +39,6 @@ export default class CommandProcessor {
         if (command) {
             command = stripPolishCharacters(command);
         }
-        this.client.sendEvent('command', command);
 
         let commandChanged = false;
         if (!skipMapParse) {
@@ -78,6 +77,7 @@ export default class CommandProcessor {
             this.client.print(mudletColorLine(`--- <tomato>Nieznany alias<reset>: ${command}`));
             return;
         }
+        this.client.sendEvent('command', command);
         this.client.movementManager.sendMovement(command, echo, options);
     }
 

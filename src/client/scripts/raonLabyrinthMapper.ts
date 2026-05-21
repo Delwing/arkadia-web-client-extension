@@ -3,7 +3,7 @@ import {getLongDir, isDirection, polishToEnglish} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import {parseExitString} from "./shortExits";
 import {gmcp} from "../gmcp";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, colorStringInLine, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {PathFinder} from "mudlet-map-renderer";
@@ -927,6 +927,7 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
 
     // Leader mode: track direction and look commands when active
     client.registerCommandHook("raon-labyrinth-mapper", (command) => {
+        console.log(command)
         if (!isActive) return undefined;
 
         const cmd = stripPolishCharacters(command).trim();
@@ -1007,9 +1008,15 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
     // Capture description lines and detect exit line to finish
     client.Triggers.registerTrigger(
         /.+/,
-        (line) => {
-            const text = line.text ?? (typeof line === 'string' ? line : String(line));
+        (line, matches, type) => {
+            const text = matches[0]
             const stripped = stripPolishCharacters(text);
+
+            // Movement failed — no exit in attempted direction, abort capture
+            if (captureState.phase === 'capturing' && stripped.includes('Nie widzisz zadnego wyjscia')) {
+                captureState = {phase: 'idle'};
+                return line;
+            }
 
             // Detect bowl smoke teleport — start/reset capture without direction
             if (isActive && stripped.includes('z misy bucha')) {
@@ -1032,24 +1039,20 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
             }
 
             if (captureState.phase !== 'capturing') {
-                if (pendingLook && currentFingerprint) {
-                    if (LABYRINTH_EXIT_PATTERN.test(text)) {
-                        pendingLook = false;
-                        printRoomStatus(client, currentFingerprint);
-                    }
+                if (pendingLook && currentFingerprint && type === 'room.exits' && LABYRINTH_EXIT_PATTERN.test(text)) {
+                    pendingLook = false;
+                    printRoomStatus(client, currentFingerprint);
                 }
                 return line;
             }
 
-            // Skip additional smoke narration lines during teleport
-            if (captureState.teleport) {
-                const smokeKeywords = ['nabierasz oparu', 'odbierajac ci orientacje', 'przekletej trucizny', 'zmierzasz ku najblizszemu'];
-                if (smokeKeywords.some(kw => stripped.includes(kw))) {
-                    return line;
-                }
+            // Brief mode showed short description — abort capture
+            if (type === 'room.short') {
+                captureState = {phase: 'idle'};
+                return line;
             }
 
-            // Detect door text — extract direction to chapel, skip from description
+            // Detect door text — extract direction to chapel, skip from description (door shares room.exits type)
             const doorMatch = text.match(/^(?:Zamkniete|Otwarte) masywne drzwi prowadzace na (\S+)/);
             if (doorMatch) {
                 const rawDir = doorMatch[1].replace(/\.$/, '');
@@ -1060,20 +1063,23 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
                 return line;
             }
 
-            // Skip "podazasz za" movement lines (with or without "Wraz z ..." prefix)
-            if (/podazasz za .+ na .+\.$/.test(text)) return line;
-
-            const match = text.match(LABYRINTH_EXIT_PATTERN);
-            if (match) {
-                const descLines = captureState.lines;
-                const dir = captureState.direction;
-                const src = captureState.sourceFingerprint;
-                const doorDir = captureState.doorDirection;
-                const isTeleport = captureState.teleport ?? false;
-                captureState = {phase: 'idle'};
-                finishCapture(client, descLines, match[1], dir, src, doorDir, isTeleport);
+            // Exit line finishes capture
+            if (type === 'room.exits') {
+                const match = text.match(LABYRINTH_EXIT_PATTERN);
+                if (match) {
+                    const descLines = captureState.lines;
+                    const dir = captureState.direction;
+                    const src = captureState.sourceFingerprint;
+                    const doorDir = captureState.doorDirection;
+                    const isTeleport = captureState.teleport ?? false;
+                    captureState = {phase: 'idle'};
+                    finishCapture(client, descLines, match[1], dir, src, doorDir, isTeleport);
+                }
                 return line;
             }
+
+            // Only room.long lines contribute to fingerprint
+            if (type !== 'room.long') return line;
 
             captureState.lines.push(text);
             return line;
@@ -1131,23 +1137,23 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
         /(\S+) oczy jarza sie delikatna poswiata/,
         (line, matches) => {
             figurineEyes['smok'] = matches![1].toLowerCase();
-            return line;
+            return colorStringInLine(line, matches[1], COLOR_KNOWN)
         },
         tag
     );
     client.Triggers.registerTrigger(
-        /(\S+) oczy gryfa lsnia niebezpiecznie/,
+        /(\S+) oczy gryfa/,
         (line, matches) => {
             figurineEyes['gryf'] = matches![1].toLowerCase();
-            return line;
+            return colorStringInLine(line, matches[1], COLOR_KNOWN)
         },
         tag
     );
     client.Triggers.registerTrigger(
-        /Jego (\S+), tajemnicze oczy zwrocone sa/,
+        /Jego (\S+), .* oczy zwrocone sa/,
         (line, matches) => {
             figurineEyes['jednorozec'] = matches![1].toLowerCase();
-            return line;
+            return colorStringInLine(line, matches[1], COLOR_KNOWN)
         },
         tag
     );
