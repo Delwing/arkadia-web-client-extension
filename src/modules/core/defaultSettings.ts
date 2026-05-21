@@ -65,6 +65,9 @@ export interface Settings {
     opCommand1: string;
     opCommand2: string;
     opCommand3: string;
+    shortExitsPrefix?: string;
+    shortExitsColor?: string;
+    shortExitsSeparator?: string;
 }
 
 export const defaultSettings: Settings = {
@@ -134,4 +137,7 @@ export const defaultSettings: Settings = {
     opCommand1: '',
     opCommand2: '',
     opCommand3: '',
+    shortExitsPrefix: '-----:',
+    shortExitsColor: '#ffa500',
+    shortExitsSeparator: ' ',
 };

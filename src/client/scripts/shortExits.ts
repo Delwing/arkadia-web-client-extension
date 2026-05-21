@@ -5,8 +5,6 @@ import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 
-const ORANGE = createColorFormat('#ffa500');
-
 export { getShortDir as toShort };
 
 export function parseExitString(str: string): string[] {
@@ -50,24 +48,32 @@ const EXIT_PATTERNS: RegExp[] = [
 
 export default function initShortExits(client: Client) {
     let enabled = false;
+    let exitsPrefix = defaultSettings.shortExitsPrefix ?? '-----:';
+    let exitsSeparator = defaultSettings.shortExitsSeparator ?? ' ';
+    let exitsColor = createColorFormat(defaultSettings.shortExitsColor ?? '#ffa500');
+
+    const applySettings = (settings: any) => {
+        const detail = settings ?? defaultSettings;
+        enabled = !!detail.shortenExits;
+        exitsPrefix = detail.shortExitsPrefix ?? defaultSettings.shortExitsPrefix ?? '-----:';
+        exitsSeparator = detail.shortExitsSeparator ?? defaultSettings.shortExitsSeparator ?? ' ';
+        exitsColor = createColorFormat(detail.shortExitsColor ?? defaultSettings.shortExitsColor ?? '#ffa500');
+    };
 
     const initialSettings = characterStorage.get('settings');
     if (initialSettings) {
-        const detail = (initialSettings ?? defaultSettings) as { shortenExits?: boolean };
-        enabled = !!detail.shortenExits;
+        applySettings(initialSettings);
     }
-    characterStorage.onChange('settings', (settings) => {
-        const detail = (settings ?? defaultSettings) as { shortenExits?: boolean };
-        enabled = !!detail.shortenExits;
-    });
+
+    characterStorage.onChange('settings', applySettings);
 
     const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
         if (!enabled) return line;
         if (!matches) return line;
         const dirs: string[] = parseExitString(matches[1]).map(getShortDir);
         if (dirs.length === 0) return line;
-        const str = "-----:" + dirs.map(d => " " + d.toUpperCase()).join("");
-        return colorString(str, ORANGE);
+        const str = exitsPrefix + dirs.map(d => exitsSeparator + d.toUpperCase()).join("");
+        return colorString(str, exitsColor);
     };
 
     client.Triggers.registerTrigger(EXIT_PATTERNS, callback, 'shortExits');

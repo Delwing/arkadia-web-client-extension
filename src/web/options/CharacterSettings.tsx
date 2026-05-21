@@ -6,8 +6,9 @@ import GuildsSettings from "./GuildsSettings";
 import LuaGagsSettings from "./LuaGagsSettings";
 import EnemyBindsSettings from "./EnemyBindsSettings";
 import MagikiSettings from "./MagikiSettings";
+import ShortExitsSettings from "./ShortExitsSettings";
 
-type Tab = "general" | "guild" | "luaGags" | "enemyBinds" | "magiki";
+type Tab = "general" | "guild" | "luaGags" | "enemyBinds" | "magiki" | "shortExits";
 
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
@@ -17,9 +18,10 @@ function CharacterSettings() {
         luaGags: useRef<HTMLDivElement>(null),
         enemyBinds: useRef<HTMLDivElement>(null),
         magiki: useRef<HTMLDivElement>(null),
+        shortExits: useRef<HTMLDivElement>(null),
     } as const;
-    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0, enemyBinds: 0, magiki: 0 });
-    const saveRefs = useRef<Record<Tab, (settings: any) => void>>({ general: () => {}, guild: () => {}, luaGags: () => {}, enemyBinds: () => {}, magiki: () => {} });
+    const scrollPos = useRef<Record<Tab, number>>({ general: 0, guild: 0, luaGags: 0, enemyBinds: 0, magiki: 0, shortExits: 0 });
+    const saveRefs = useRef<Record<Tab, (settings: any) => void>>({ general: () => {}, guild: () => {}, luaGags: () => {}, enemyBinds: () => {}, magiki: () => {}, shortExits: () => {} });
     const [locked, setLocked] = useState(!characterStorage.getCharacter());
     const [char, setChar] = useState<string | null>(characterStorage.getCharacter());
 
@@ -72,6 +74,10 @@ function CharacterSettings() {
         saveRefs.current.magiki = fn;
     }, []);
 
+    const registerShortExitsSave = useCallback((fn: (settings: any) => void) => {
+        saveRefs.current.shortExits = fn;
+    }, []);
+
     useEffect(() => {
         const handler = () => {
             // Read settings once at the start
@@ -84,6 +90,7 @@ function CharacterSettings() {
             saveRefs.current.luaGags(updated);
             saveRefs.current.enemyBinds(updated);
             saveRefs.current.magiki(updated);
+            saveRefs.current.shortExits(updated);
 
             // Write once at the end
             characterStorage.set("settings", updated);
@@ -146,6 +153,12 @@ function CharacterSettings() {
                     >
                         Magiki
                     </button>
+                    <button
+                        className={`btn btn-sm ${tab === "shortExits" ? "btn-primary" : "btn-secondary"}`}
+                        onClick={() => changeTab("shortExits")}
+                    >
+                        Wyjścia
+                    </button>
                 </div>
             </div>
             <div className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
@@ -183,6 +196,13 @@ function CharacterSettings() {
                     style={{ minHeight: 0 }}
                 >
                     <MagikiSettings registerSave={registerMagikiSave} />
+                </div>
+                <div
+                    ref={scrollRefs.shortExits}
+                    className={`h-100 overflow-auto${tab === "shortExits" ? "" : " d-none"}`}
+                    style={{ minHeight: 0 }}
+                >
+                    <ShortExitsSettings registerSave={registerShortExitsSave} />
                 </div>
             </div>
         </div>
