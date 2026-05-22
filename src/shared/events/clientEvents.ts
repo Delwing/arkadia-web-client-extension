@@ -139,6 +139,7 @@ export interface KnownEvents {
     "output-sent": number;
     "buffer-sent": number;
     "mapMove": void;
+    "mapReady": void;
     "renderMapLocation": { locationId: number };
     "stepBack": void;
     "leadTo": number;

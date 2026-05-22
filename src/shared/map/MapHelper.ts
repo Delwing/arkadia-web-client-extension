@@ -241,6 +241,7 @@ export default class MapHelper {
         this.mapReady = true;
         this.mapReadyCallbacks.forEach(cb => cb(mapData, colors));
         this.mapReadyCallbacks = [];
+        this.client.sendEvent("mapReady");
         return {startId, reader: this.mapReader, pathFinder: this.pathFinder};
     }
 

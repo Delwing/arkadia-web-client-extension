@@ -729,6 +729,8 @@ export interface ClientEvents {
   "buffer-sent": number;
   /** Map position changed */
   "mapMove": void;
+  /** Map data loaded and ready (fired once, after initial map initialization) */
+  "mapReady": void;
   /** Step back in location history */
   "stepBack": void;
   /** Lead to specific room ID */
@@ -793,7 +795,6 @@ export interface ClientEvents {
   "knowledgeReport.popup.open": void;
   /** Knowledge details report */
   "knowledgeDetailsReport": unknown | null;
-  "knowledgeDetailsUpdated": { character: string };
   /** Open knowledge details popup */
   "knowledgeDetails.popup.open": void;
   /** Knowledge report action */
