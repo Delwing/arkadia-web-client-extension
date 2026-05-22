@@ -231,7 +231,7 @@ export default function initLootParser(client: Client) {
                 for (const item of items) {
                     const command = stertyIndex != null
                         ? `wez ${item.fullName.toLowerCase()} z ${stertyIndex}. sterty`
-                        : `wez ${item.fullName.toLowerCase()} z ciala ${description}`;
+                        : `wez ${item.fullName.toLowerCase()} z ciala ${description.toLowerCase()}`;
                     buffer.createLinksForText(item.fullName, {
                         onClick: () => client.sendCommand(command),
                         title: command,

@@ -21,7 +21,7 @@ function lootCommand(itemName: string, body: BodyEntry): string {
     if (body.stertyIndex != null) {
         return `wez ${name} z ${body.stertyIndex}. sterty`;
     }
-    return `wez ${name} z ciala ${body.description}`;
+    return `wez ${name} z ciala ${body.description.toLowerCase()}`;
 }
 
 const POPUP_ID = 'popup:loot';
