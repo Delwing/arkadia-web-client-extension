@@ -737,6 +737,8 @@ export interface ClientEvents {
   "leadTo": number;
   /** Clear lead to destination */
   "clearLeadTo": void;
+  /** Map path data emitted when destination(s) change. null when no active path. */
+  "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
   /** Display notification */
   "notify": NotificationPayload;
   /** Lamp timer updated */
