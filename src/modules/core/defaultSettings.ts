@@ -17,6 +17,10 @@ export interface Settings {
     inlineCompassRose: number;
     compassBackExits: boolean;
     shortenExits: boolean;
+    shortExitsPrefix?: string;
+    shortExitsColor?: string;
+    shortExitsSeparator?: string;
+    shortExitsBackgroundColor?: string;
     prettyContainers: boolean;
     containerColumns: number;
     containerOpen: boolean;
@@ -73,6 +77,10 @@ export const defaultSettings: Settings = {
     inlineCompassRose: 0,
     compassBackExits: false,
     shortenExits: false,
+    shortExitsPrefix: '-----:',
+    shortExitsColor: '#ffa500',
+    shortExitsSeparator: ' ',
+    shortExitsBackgroundColor: 'transparent',
     prettyContainers: true,
     containerColumns: 2,
     containerOpen: true,

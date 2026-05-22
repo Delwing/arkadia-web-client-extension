@@ -160,6 +160,19 @@ export function registerScripts(client: Client) {
             emitFakeLine(client, matches[2], matches[1] || undefined)
         }
     })
+    aliases.push({
+        pattern: /^\/reload-plugins$/,
+        callback: async () => {
+            const manager = getPluginManager();
+            if (!manager) {
+                client.print('Nie mozna przeladowac pluginow: menedzer nie jest gotowy.');
+                return;
+            }
+
+            await manager.reloadAll();
+            client.print('Przeladowano pluginy.');
+        },
+    })
     initSoundAliases(client, aliases)
     initMapAliases(client, aliases)
     initZaznaczaj(client, aliases)
