@@ -71,7 +71,17 @@ export const createGmcpStream = ({
             (type, payload) => {
                 if (type === "gmcp_msgs") {
                     const msgType = (payload as { type: string }).type ?? "";
-                    const binaryString = atob((payload as { text: string }).text ?? "");
+                    const rawText = (payload as { text: string }).text ?? "";
+                    // The text field is base64 when the server has the
+                    // `base64_gmcp_msgs` option on (always on WS, opted-in over a
+                    // telnet proxy). If that option isn't active the bytes arrive
+                    // inline, so fall back to the raw text instead of dropping it.
+                    let binaryString: string;
+                    try {
+                        binaryString = atob(rawText);
+                    } catch {
+                        binaryString = rawText;
+                    }
                     const text = msgType === "system.login"
                         ? new TextDecoder('utf-8').decode(Uint8Array.from(binaryString, c => c.charCodeAt(0)))
                         : binaryString;

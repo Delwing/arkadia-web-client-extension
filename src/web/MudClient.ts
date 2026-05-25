@@ -13,6 +13,8 @@ import {
     GMCP_WILL,
     MccpHandler,
     stripTelnetSequences,
+    TELNET_GA,
+    TELNET_EOR,
 } from "@shared/socket";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
@@ -25,7 +27,17 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 
 // WebSocket configuration
 const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL ?? 'wss://arkadia.rpg.pl/wss';
+// Query the proxy worker reads to know which telnet host/port to bridge to.
+const PROXY_QUERY = '?host=arkadia.rpg.pl&port=23';
+// Opt-in telnet->WebSocket proxy (Arkadia's raw telnet port). Selected via the
+// "proxy" checkbox on the connection screen; off by default. Exported so the
+// "host your own proxy" wizard can reuse it as the CORS relay for its API calls.
+export const PROXY_WEBSOCKET_URL = `wss://arkadia-proxy.delwing.workers.dev${PROXY_QUERY}`;
 const MCCP_STORAGE_KEY = 'mccpEnabled';
+const PROXY_STORAGE_KEY = 'proxyEnabled';
+// A user-deployed proxy URL (from the "host your own" wizard) that overrides the
+// default proxy when proxy mode is on. Stored as a plain wss:// origin.
+const USER_PROXY_URL_STORAGE_KEY = 'userProxyUrl';
 
 class MudClient implements ClientAdapter {
     private socket!: WebSocket;
@@ -38,6 +50,25 @@ class MudClient implements ClientAdapter {
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
     private connectionCheckTimeout: number | null = null;
+    private gmcpInitialized: boolean = false;
+    // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
+    // partial multi-byte char across WebSocket frames.
+    private textDecoder = new TextDecoder('utf-8', {fatal: false});
+    // Start of a subnegotiation that arrived without its closing IAC SE, held
+    // until the next frame completes it.
+    private pendingSubneg = "";
+    // Text after the last '\n' of a frame, held back until the next frame
+    // continues the line, a prompt (IAC GA/EOR) arrives, or the idle timer
+    // fires — prevents spurious line breaks when a line is split across frames.
+    private pendingLineTail = "";
+    private pendingTailTimer: number | null = null;
+    // Latches true once the server sends IAC GA/EOR; from then on we trust those
+    // prompt markers and bypass partial-line buffering (mirrors Mudlet).
+    private gaDriver = false;
+    // When true, connect through the proxy instead of WEBSOCKET_URL.
+    private proxyEnabled = false;
+    // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL when set.
+    private userProxyUrl: string | null = null;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -53,6 +84,8 @@ class MudClient implements ClientAdapter {
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
+        this.proxyEnabled = localStorage.getItem(PROXY_STORAGE_KEY) === 'true';
+        this.userProxyUrl = localStorage.getItem(USER_PROXY_URL_STORAGE_KEY) || null;
         this.echoHandler = new EchoHandler(
             (data) => this.sendRaw(data),
             (serverEchoing) => this.emit('telnet.echo', serverEchoing),
@@ -118,6 +151,30 @@ class MudClient implements ClientAdapter {
         return this.mccpHandler.enabled;
     }
 
+    setProxyEnabled(enabled: boolean): void {
+        this.proxyEnabled = enabled;
+        localStorage.setItem(PROXY_STORAGE_KEY, String(enabled));
+    }
+
+    isProxyEnabled(): boolean {
+        return this.proxyEnabled;
+    }
+
+    /** Set (or clear, with null) a user-deployed proxy URL that overrides the default. */
+    setUserProxyUrl(url: string | null): void {
+        const trimmed = url?.trim() || null;
+        this.userProxyUrl = trimmed;
+        if (trimmed) {
+            localStorage.setItem(USER_PROXY_URL_STORAGE_KEY, trimmed);
+        } else {
+            localStorage.removeItem(USER_PROXY_URL_STORAGE_KEY);
+        }
+    }
+
+    getUserProxyUrl(): string | null {
+        return this.userProxyUrl;
+    }
+
     /**
      * Connect to the WebSocket server
      */
@@ -133,8 +190,21 @@ class MudClient implements ClientAdapter {
         }
         this.mccpHandler.reset();
         this.echoHandler.reset();
+        this.gmcpInitialized = false;
+        this.textDecoder = new TextDecoder('utf-8', {fatal: false});
+        this.pendingSubneg = "";
+        this.pendingLineTail = "";
+        this.gaDriver = false;
+        this.clearTailTimer();
         try {
-            this.socket = new WebSocket(WEBSOCKET_URL, []);
+            // A user-deployed proxy is a bare wss:// origin — append the host/port
+            // query the worker needs (unless the user already included one).
+            const customProxy = this.userProxyUrl
+                ? (this.userProxyUrl.includes('?') ? this.userProxyUrl : this.userProxyUrl + PROXY_QUERY)
+                : null;
+            const proxyUrl = customProxy ?? PROXY_WEBSOCKET_URL;
+            const url = this.proxyEnabled ? proxyUrl : WEBSOCKET_URL;
+            this.socket = new WebSocket(url, []);
 
             this.socket.onmessage = (event: MessageEvent<string>) => {
                 try {
@@ -148,6 +218,7 @@ class MudClient implements ClientAdapter {
                     const data = this.mccpHandler.processData(decodedData);
                     if (data.includes(GMCP_WILL)) {
                         this.sendRaw(GMCP_DO);
+                        this.negotiateGmcpSupports();
                     }
                     this.echoHandler.processData(data);
                     this.emit('socket.incoming', data);
@@ -171,11 +242,15 @@ class MudClient implements ClientAdapter {
                     clearTimeout(this.connectionCheckTimeout);
                     this.connectionCheckTimeout = null;
                 }
+                this.flushPendingLineTail();
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
                 this.mccpHandler.reset();
                 this.echoHandler.reset();
+                this.pendingSubneg = "";
+                this.pendingLineTail = "";
+                this.clearTailTimer();
             };
 
             this.socket.onopen = (event: Event) => {
@@ -262,6 +337,28 @@ class MudClient implements ClientAdapter {
         }
     }
 
+    /**
+     * Announce supported GMCP modules to the server (Core.Supports.Add) and turn
+     * on base64 encoding for gmcp_msgs (Core.Options.Set). Sent once per
+     * connection right after we accept GMCP (IAC DO GMCP).
+     *
+     * Safe on both transports: native Arkadia (/wss) already has these enabled by
+     * default and simply re-accepts them, while the telnet proxy needs the
+     * explicit declaration before it streams `gmcp_msgs`. Module names carry the
+     * " 1" version suffix per the GMCP/Mudlet convention.
+     */
+    private negotiateGmcpSupports(): void {
+        if (this.gmcpInitialized) {
+            return;
+        }
+        this.gmcpInitialized = true;
+        // Char/Core/Room are auto-enabled after IAC DO GMCP; add the rest.
+        // Objects drives item/combat panels; Gmcp_msgs streams game text. Then
+        // turn on base64 encoding for gmcp_msgs so its text decodes consistently.
+        this.sendGmcp('Core.Supports.Add', ['Objects 1', 'Gmcp_msgs 1']);
+        this.sendGmcp('Core.Options.Set', ['base64_gmcp_msgs']);
+    }
+
     sendGmcp(path: string, payload: any = {}): void {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             return;
@@ -281,15 +378,104 @@ class MudClient implements ClientAdapter {
     }
 
     /**
-     * Process incoming WebSocket data by removing telnet options
+     * Latin-1 byte-string (from atob) -> UTF-8 string, buffering any trailing
+     * partial multi-byte sequence for the next frame.
      */
-    private processIncomingData(data: string, options?: { timestamp?: number }) {
-        const sanitized = stripTelnetSequences(data, this.telnetOptionHandler);
-        if (sanitized.length > 0) {
-            const timestamp = typeof options?.timestamp === 'number' ? options.timestamp : Date.now();
-            this.emit('message', sanitized, undefined, timestamp)
+    private decodeUtf8(byteString: string): string {
+        if (byteString.length === 0) return '';
+        const bytes = new Uint8Array(byteString.length);
+        for (let i = 0; i < byteString.length; i++) {
+            bytes[i] = byteString.charCodeAt(i) & 0xff;
         }
-        this.flushMessageBuffer()
+        return this.textDecoder.decode(bytes, {stream: true});
+    }
+
+    /**
+     * Process incoming data: strip telnet options (which feed the GMCP/echo
+     * handlers), then route the remaining game text through the same line
+     * pipeline as gmcp_msgs (flushLines -> onLine -> AnsiAwareBuffer) so ANSI
+     * colors render. Handles subnegotiations, prompts, and lines split across
+     * WebSocket frames.
+     *
+     * Native Arkadia (the /wss endpoint) carries no game text here — it streams
+     * via gmcp_msgs — so this is effectively a no-op there. The raw text path
+     * matters for the telnet proxy.
+     */
+    private processIncomingData(rawData: string, _options?: { timestamp?: number }) {
+        const data = this.pendingSubneg + rawData;
+        this.pendingSubneg = "";
+
+        // Hold back a subnegotiation that arrived without its closing IAC SE so
+        // stripTelnetSequences doesn't mangle a half-frame GMCP/MCCP packet.
+        const incompleteAt = findIncompleteSubnegStart(data);
+        let processable = data;
+        if (incompleteAt !== -1) {
+            this.pendingSubneg = data.substring(incompleteAt);
+            processable = data.substring(0, incompleteAt);
+        }
+
+        const hasPrompt = processable.includes(TELNET_GA) || processable.includes(TELNET_EOR);
+        const sanitized = stripTelnetSequences(processable, this.telnetOptionHandler).replace(/\r/g, '');
+        const decoded = this.decodeUtf8(sanitized);
+
+        if (decoded.length > 0) {
+            this.clearTailTimer();
+            if (this.gaDriver) {
+                // Server reliably marks prompts via IAC GA/EOR — emit verbatim.
+                this.pushChunk(decoded);
+            } else {
+                const combined = this.pendingLineTail + decoded;
+                const lastNl = combined.lastIndexOf('\n');
+                if (lastNl === -1) {
+                    this.pendingLineTail = combined;
+                } else {
+                    this.pushChunk(combined.substring(0, lastNl + 1));
+                    this.pendingLineTail = combined.substring(lastNl + 1);
+                }
+            }
+        }
+
+        if (hasPrompt) {
+            this.flushPendingLineTail();
+            this.gaDriver = true;
+        } else if (this.pendingLineTail.length > 0) {
+            this.scheduleTailFlush();
+        }
+
+        this.flushMessageBuffer();
+    }
+
+    /** Queue a chunk of raw game text for the flushLines pipeline. */
+    private pushChunk(text: string): void {
+        if (text.length === 0) return;
+        this.messageBuffer.push({text, type: 'mud'});
+    }
+
+    /** Flush a held-back partial line (prompt or frame-split tail) through the
+     *  normal line pipeline so triggers and rendering treat it as complete. */
+    private flushPendingLineTail(): void {
+        this.clearTailTimer();
+        if (this.pendingLineTail.length === 0) return;
+        const tail = this.pendingLineTail;
+        this.pendingLineTail = "";
+        this.pushChunk(tail);
+    }
+
+    private scheduleTailFlush(): void {
+        if (this.pendingTailTimer !== null) return;
+        this.pendingTailTimer = window.setTimeout(() => {
+            this.pendingTailTimer = null;
+            if (this.pendingLineTail.length === 0) return;
+            this.flushPendingLineTail();
+            this.flushMessageBuffer();
+        }, 300);
+    }
+
+    private clearTailTimer(): void {
+        if (this.pendingTailTimer !== null) {
+            clearTimeout(this.pendingTailTimer);
+            this.pendingTailTimer = null;
+        }
     }
 
     flushMessageBuffer() {
@@ -320,6 +506,37 @@ class MudClient implements ClientAdapter {
         this.emit('flushLines', groups);
     }
 
+}
+
+/**
+ * Index of the first IAC SB (subnegotiation start) that has no matching IAC SE
+ * later in the string, or -1 if every subnegotiation is complete. Used to detect
+ * a GMCP/MCCP subnegotiation split across WebSocket frames so it can be held
+ * back until the closing IAC SE arrives.
+ */
+function findIncompleteSubnegStart(data: string): number {
+    const IAC = 0xFF;
+    const SB = 0xFA;
+    const SE = 0xF0;
+    let i = 0;
+    while (i < data.length - 1) {
+        if (data.charCodeAt(i) === IAC && data.charCodeAt(i + 1) === SB) {
+            let j = i + 2;
+            let found = false;
+            while (j < data.length - 1) {
+                if (data.charCodeAt(j) === IAC && data.charCodeAt(j + 1) === SE) {
+                    found = true;
+                    i = j + 2;
+                    break;
+                }
+                j++;
+            }
+            if (!found) return i;
+        } else {
+            i++;
+        }
+    }
+    return -1;
 }
 
 export default new MudClient();

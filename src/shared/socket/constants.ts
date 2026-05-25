@@ -1,4 +1,11 @@
-export const TELNET_OPTION_REGEX = /\u00FF\u00FA.*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
+// `[\s\S]*?` (not `.*?`) so a subnegotiation body containing newlines is still
+// matched in full \u2014 `.` does not match \n in JS regex.
+export const TELNET_OPTION_REGEX = /\u00FF\u00FA[\s\S]*?\u00FF\u00F0|\u00FF.[^\u00FF]/g;
+
+// Telnet Go Ahead / End-of-Record \u2014 MUDs use these to mark a prompt line that
+// is not newline-terminated.
+export const TELNET_GA  = "\xFF\xF9"; // IAC GA  (249)
+export const TELNET_EOR = "\xFF\xEF"; // IAC EOR (239)
 export const GMCP_COMMAND_CODE = 201;
 export const GMCP_IAC = "\xFF";
 export const GMCP_SB = "\xFA";

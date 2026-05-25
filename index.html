@@ -353,6 +353,11 @@
                 <input class="form-check-input" type="checkbox" id="mccp-enabled" checked>
                 <label class="form-check-label" for="mccp-enabled">Kompresja MCCP</label>
             </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="proxy-enabled">
+                <label class="form-check-label" for="proxy-enabled">Połącz przez proxy</label>
+                <a href="#" id="proxy-config-link" class="small ms-2">Konfiguruj</a>
+            </div>
             <a href="https://buycoffee.to/dargoth" target="_blank" class="mt-4"><img src="https://buycoffee.to/static/img/share/share-button-primary.png" style="width: 146px; height: 38px" alt="Postaw mi kawę na buycoffee.to"></a>
         </div>
         <div id="layout-manager-suggestion" style="display: none;">
@@ -364,6 +369,8 @@
         </div>
         <div id="commit-info"></div>
     </div>
+
+    <div id="proxy-config-root"></div>
 
     <div id="ui-settings-modal" class="modal fade" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable h-100">
