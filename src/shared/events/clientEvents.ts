@@ -148,7 +148,7 @@ export interface KnownEvents {
     "tripPlanner.addStop": { roomId: number };
     "tripPlanner.popup.open": void;
     "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
-    "mapTransportHops": Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }> | null;
+    "mapTransportHops": [Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }> | null];
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLostRooms": [number[]];
     "mapLocationLabel": string;

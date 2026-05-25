@@ -1601,6 +1601,7 @@ export default async function initUiSettings(soundManager: {
             xtermPalette: (xtermPaletteInput.value as 'arkadia' | 'proper') || defaultUiSettings.xtermPalette,
             colorTheme: (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'custom-dark'].includes(colorThemeInput?.value) ? colorThemeInput.value : defaultUiSettings.colorTheme) as ColorTheme,
             customThemeColor: current.customThemeColor,
+            showTimestamps: current.showTimestamps,
             footerMode: parseInt(footerModeInput.value) || defaultUiSettings.footerMode,
             explorationMode: explorationInput.checked,
             instantMove: instantMoveInput.checked,
