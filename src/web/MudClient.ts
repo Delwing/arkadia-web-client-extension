@@ -5,6 +5,7 @@ import {globalStorage} from "@modules/core/storage";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
 import {
+    base64Codec,
     createGmcpStream,
     createTelnetOptionParser,
     EchoHandler,
@@ -12,9 +13,11 @@ import {
     GMCP_DO,
     GMCP_WILL,
     MccpHandler,
+    selectCodec,
     stripTelnetSequences,
     TELNET_GA,
     TELNET_EOR,
+    type TransportCodec,
 } from "@shared/socket";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
@@ -69,6 +72,9 @@ class MudClient implements ClientAdapter {
     private proxyEnabled = false;
     // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL when set.
     private userProxyUrl: string | null = null;
+    // Wire-format strategy, chosen at connect time: binary frames for the
+    // proxy, base64 for the native /wss endpoint. Defaults to base64.
+    private codec: TransportCodec = base64Codec;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -195,6 +201,8 @@ class MudClient implements ClientAdapter {
         this.pendingSubneg = "";
         this.pendingLineTail = "";
         this.gaDriver = false;
+        // Proxy speaks raw binary frames; native /wss speaks base64 text.
+        this.codec = selectCodec(this.proxyEnabled);
         this.clearTailTimer();
         try {
             // A user-deployed proxy is a bare wss:// origin — append the host/port
@@ -205,15 +213,18 @@ class MudClient implements ClientAdapter {
             const proxyUrl = customProxy ?? PROXY_WEBSOCKET_URL;
             const url = this.proxyEnabled ? proxyUrl : WEBSOCKET_URL;
             this.socket = new WebSocket(url, []);
+            // Deliver binary frames (proxy) as ArrayBuffer rather than Blob;
+            // harmless for the native endpoint's text frames.
+            this.socket.binaryType = 'arraybuffer';
 
-            this.socket.onmessage = (event: MessageEvent<string>) => {
+            this.socket.onmessage = (event: MessageEvent<string | ArrayBuffer>) => {
                 try {
-                    if (event.data.length === 0) return;
+                    const decodedData = this.codec.decode(event.data);
+                    if (decodedData.length === 0) return;
                     if (this.connectionCheckTimeout !== null) {
                         clearTimeout(this.connectionCheckTimeout);
                         this.connectionCheckTimeout = null;
                     }
-                    const decodedData = atob(event.data);
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
                     if (data.includes(GMCP_WILL)) {
@@ -310,7 +321,7 @@ class MudClient implements ClientAdapter {
         }
 
         try {
-            this.socket.send(btoa(message + "\r\n"));
+            this.socket.send(this.codec.encode(message + "\r\n"));
         } catch (error) {
             console.error('Error sending message:', error);
             this.emit('error', error);
@@ -331,7 +342,7 @@ class MudClient implements ClientAdapter {
             return;
         }
         try {
-            this.socket.send(btoa(data));
+            this.socket.send(this.codec.encode(data));
         } catch (error) {
             console.error('Error sending raw data:', error);
         }
@@ -365,7 +376,7 @@ class MudClient implements ClientAdapter {
         }
         try {
             const gmcpMessage = encodeGmcp(path, payload);
-            this.socket.send(btoa(gmcpMessage));
+            this.socket.send(this.codec.encode(gmcpMessage));
         } catch (error) {
             console.error('Error sending GMCP message:', error);
             this.emit('error', error);

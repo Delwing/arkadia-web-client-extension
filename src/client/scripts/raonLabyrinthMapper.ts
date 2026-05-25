@@ -927,7 +927,6 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
 
     // Leader mode: track direction and look commands when active
     client.registerCommandHook("raon-labyrinth-mapper", (command) => {
-        console.log(command)
         if (!isActive) return undefined;
 
         const cmd = stripPolishCharacters(command).trim();
