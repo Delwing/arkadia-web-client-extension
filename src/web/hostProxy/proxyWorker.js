@@ -20,14 +20,6 @@ const STRIPPED_REQUEST_HEADERS = new Set([
     'keep-alive', 'transfer-encoding', 'upgrade',
 ]);
 
-function uint8ToBase64(bytes) {
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
-
 // WebSocket close.reason has a 123-byte limit; trimming defensively.
 function clipReason(text) {
     const str = String(text ?? '').slice(0, 120);
@@ -126,10 +118,14 @@ export default {
         try {
             tcpSocket = connect({ hostname: host, port });
         } catch (err) {
+            // Synchronous failure (e.g. invalid hostname format) — surface and bail.
             safeClose(server, 1011, `Proxy: ${describeError(err)}`);
             return new Response(null, { status: 101, webSocket: client });
         }
 
+        // The TCP `opened` promise rejects on connect failures (DNS, refused,
+        // network unreachable). Without this, those errors used to be swallowed
+        // and the client would only see a generic 1006 close.
         tcpSocket.opened.catch((err) => {
             tcpClosed = true;
             safeClose(server, 1011, `Proxy: connect to ${host}:${port} failed: ${describeError(err)}`);
@@ -137,7 +133,7 @@ export default {
 
         const writer = tcpSocket.writable.getWriter();
 
-        // TCP -> WebSocket
+        // TCP → WebSocket
         (async () => {
             const reader = tcpSocket.readable.getReader();
             try {
@@ -145,9 +141,12 @@ export default {
                     const { done, value } = await reader.read();
                     if (done) break;
                     if (server.readyState === WebSocket.OPEN) {
-                        server.send(uint8ToBase64(value));
+                        // Binary WebSocket frame — `value` is the raw byte view
+                        // straight from the TCP socket; no base64 transcoding.
+                        server.send(value);
                     }
                 }
+                // Clean EOF — TCP peer closed the connection normally.
                 tcpClosed = true;
                 safeClose(server, 1000, 'TCP connection closed');
             } catch (err) {
@@ -156,11 +155,12 @@ export default {
             }
         })();
 
-        // WebSocket -> TCP
+        // WebSocket → TCP
         server.addEventListener('message', async (event) => {
             if (tcpClosed) return;
             try {
-                const bytes = Uint8Array.from(atob(event.data), c => c.charCodeAt(0));
+                // Client sends binary frames; event.data is an ArrayBuffer.
+                const bytes = new Uint8Array(event.data);
                 await writer.write(bytes);
             } catch (err) {
                 tcpClosed = true;
