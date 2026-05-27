@@ -94,6 +94,22 @@ const migrations: Migration[] = [
         description: 'Migrate layoutManagerState from nested-slots to flat windows (handled by migrateLayoutManagerState)',
         migrate: settings => settings, // No-op for core Settings, actual migration is below
     },
+    {
+        version: 9,
+        description: 'Remove legacy keybinding fields (binds, directions, lamp, main) from character settings; keybindings now live in global keymaps',
+        migrate: (settings) => {
+            const legacyKeys = ['binds', 'directions', 'lamp', 'main'];
+            const record = settings as Record<string, unknown>;
+            if (!legacyKeys.some(key => key in record)) {
+                return settings;
+            }
+            const cleaned = { ...record };
+            for (const key of legacyKeys) {
+                delete cleaned[key];
+            }
+            return cleaned as Partial<Settings>;
+        },
+    },
 ];
 
 /**
@@ -147,6 +163,40 @@ export function migrateSettings(settings: Partial<Settings>, fromVersion?: numbe
     }
 
     return { settings: migratedSettings, migrated: appliedCount > 0 };
+}
+
+/**
+ * Apply the relevant migrations to a single value that arrived via sync /
+ * bulk import, keyed by its base storage key. Returns a JSON string ready to
+ * write to localStorage (or the original `raw` if nothing applies / parsing fails).
+ *
+ * Imported data bypasses the startup migration pass — that pass is gated by the
+ * `settingsMigrationsVersion` key, which is global and NOT synced, so a peer
+ * device running older code can push pre-migration shapes that the local pass
+ * already finished and will never revisit. Funneling imported values through
+ * here closes that hole. Every migration is idempotent, so running them on
+ * already-current data is a no-op.
+ *
+ * Note: `layoutManagerState` (v8) is migrated at the import call site instead,
+ * because its transform lives in `@web/layout` and is loaded lazily to keep
+ * this module independent of the layout bundle. `binds`/`keymaps` self-heal on
+ * read (see keymapStorage.migrateLegacyBinds), so they need no handling here.
+ */
+export function migrateImportedValue(baseKey: string, raw: string): string {
+    try {
+        if (baseKey === 'settings') {
+            const parsed = JSON.parse(raw) as Partial<Settings>;
+            // fromVersion 0: apply the whole registry regardless of the bundle's age.
+            return JSON.stringify(migrateSettings(parsed, 0).settings);
+        }
+        if (baseKey === 'mobileButtonSettings') {
+            const { data, changed } = migrateMobileButtonMacroData(JSON.parse(raw));
+            return changed ? JSON.stringify(data) : raw;
+        }
+    } catch {
+        // Fall through and return the original value untouched.
+    }
+    return raw;
 }
 
 /**
@@ -281,6 +331,74 @@ export function migrateButtonSizeMultiplier(): void {
  * This is migration version 6 that converts the old field name used in
  * mobile button configs to the unified `macroType` field.
  */
+/**
+ * Pure transform for migration v6: rename `macro` to `macroType` in a
+ * mobileButtonSettings object. Operates on a clone, leaving the input intact,
+ * and reports whether anything changed. Shared by the startup migration
+ * (migrateMobileButtonMacroField) and the import path (migrateImportedValue).
+ */
+export function migrateMobileButtonMacroData(input: unknown): { data: any; changed: boolean } {
+    if (!input || typeof input !== 'object') {
+        return { data: input, changed: false };
+    }
+
+    const data: any = structuredClone(input);
+    let changed = false;
+
+    function renameMacroInConfig(obj: any): void {
+        if (!obj || typeof obj !== 'object') return;
+        if ('macro' in obj && !('macroType' in obj)) {
+            obj.macroType = obj.macro;
+            delete obj.macro;
+            changed = true;
+        }
+        // Recurse into hold config
+        if (obj.hold && typeof obj.hold === 'object') {
+            renameMacroInConfig(obj.hold);
+        }
+        // Recurse into steps array
+        if (Array.isArray(obj.steps)) {
+            for (const step of obj.steps) {
+                renameMacroInConfig(step);
+            }
+        }
+        // Recurse into hold.steps
+        if (obj.hold && Array.isArray(obj.hold.steps)) {
+            for (const step of obj.hold.steps) {
+                renameMacroInConfig(step);
+            }
+        }
+    }
+
+    // Process each layout (solo, team, leader)
+    for (const mode of ['solo', 'team', 'leader']) {
+        const layout = data[mode];
+        if (!layout || typeof layout !== 'object') continue;
+        const buttons = layout.buttons || layout;
+        if (typeof buttons !== 'object') continue;
+        for (const key of Object.keys(buttons)) {
+            if (['order', 'cols', 'background'].includes(key)) continue;
+            const btn = buttons[key];
+            if (btn && typeof btn === 'object') {
+                renameMacroInConfig(btn);
+            }
+        }
+    }
+
+    // Also handle legacy flat format (no solo/team/leader wrapper)
+    if (!data.solo && !data.team && !data.leader) {
+        for (const key of Object.keys(data)) {
+            if (['order', 'cols', 'background', 'locked', 'radial', 'buttonSize', 'buttonGap'].includes(key)) continue;
+            const btn = data[key];
+            if (btn && typeof btn === 'object' && ('macro' in btn || 'macroType' in btn)) {
+                renameMacroInConfig(btn);
+            }
+        }
+    }
+
+    return { data, changed };
+}
+
 export function migrateMobileButtonMacroField(): void {
     const currentVersion = getMigrationsVersion();
 
@@ -291,65 +409,9 @@ export function migrateMobileButtonMacroField(): void {
 
     try {
         const raw: any = globalStorage.get('mobileButtonSettings');
-        if (!raw || typeof raw !== 'object') {
-            return;
-        }
-
-        let changed = false;
-
-        function renameMacroInConfig(obj: any): void {
-            if (!obj || typeof obj !== 'object') return;
-            if ('macro' in obj && !('macroType' in obj)) {
-                obj.macroType = obj.macro;
-                delete obj.macro;
-                changed = true;
-            }
-            // Recurse into hold config
-            if (obj.hold && typeof obj.hold === 'object') {
-                renameMacroInConfig(obj.hold);
-            }
-            // Recurse into steps array
-            if (Array.isArray(obj.steps)) {
-                for (const step of obj.steps) {
-                    renameMacroInConfig(step);
-                }
-            }
-            // Recurse into hold.steps
-            if (obj.hold && Array.isArray(obj.hold.steps)) {
-                for (const step of obj.hold.steps) {
-                    renameMacroInConfig(step);
-                }
-            }
-        }
-
-        // Process each layout (solo, team, leader)
-        for (const mode of ['solo', 'team', 'leader']) {
-            const layout = raw[mode];
-            if (!layout || typeof layout !== 'object') continue;
-            const buttons = layout.buttons || layout;
-            if (typeof buttons !== 'object') continue;
-            for (const key of Object.keys(buttons)) {
-                if (['order', 'cols', 'background'].includes(key)) continue;
-                const btn = buttons[key];
-                if (btn && typeof btn === 'object') {
-                    renameMacroInConfig(btn);
-                }
-            }
-        }
-
-        // Also handle legacy flat format (no solo/team/leader wrapper)
-        if (!raw.solo && !raw.team && !raw.leader) {
-            for (const key of Object.keys(raw)) {
-                if (['order', 'cols', 'background', 'locked', 'radial', 'buttonSize', 'buttonGap'].includes(key)) continue;
-                const btn = raw[key];
-                if (btn && typeof btn === 'object' && ('macro' in btn || 'macroType' in btn)) {
-                    renameMacroInConfig(btn);
-                }
-            }
-        }
-
+        const { data, changed } = migrateMobileButtonMacroData(raw);
         if (changed) {
-            globalStorage.set('mobileButtonSettings', raw);
+            globalStorage.set('mobileButtonSettings', data);
             console.log('[SettingsMigrations] Renamed macro to macroType in mobileButtonSettings');
         }
     } catch (e) {

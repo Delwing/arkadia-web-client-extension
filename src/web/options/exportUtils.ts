@@ -19,6 +19,7 @@ import {
 } from "@modules/device";
 import { characterStorageKeys, globalStorageKeys } from '@modules/core/storageSchema';
 import { globalStorage, characterStorage } from '@modules/core/storage';
+import { migrateImportedValue } from '@modules/core/settingsMigrations';
 
 export interface ExportedLocalStorage {
     global: Record<string, string>;
@@ -931,6 +932,25 @@ export async function exportCategory(
     }
 }
 
+/**
+ * Migrate an imported layoutManagerState blob (v8: nested-slots -> flat-windows).
+ * The transform lives in @web/layout and is imported lazily so this module stays
+ * independent of the layout bundle, matching settingsMigrations.migrateLayoutManagerState.
+ */
+async function migrateImportedLayoutState(raw: string): Promise<string> {
+    try {
+        const parsed = JSON.parse(raw);
+        // Already in the new flat-windows shape — nothing to do.
+        if (parsed && typeof parsed === 'object' && 'windows' in parsed) {
+            return raw;
+        }
+        const { migrateLayoutState } = await import('@web/layout/utils/layoutStorage');
+        return JSON.stringify(migrateLayoutState(parsed));
+    } catch {
+        return raw;
+    }
+}
+
 // Import a single category from JSON string
 export async function importCategory(
     category: SyncCategory,
@@ -965,9 +985,13 @@ export async function importCategory(
                 const skipDevice = options?.skipDeviceScoped ?? false;
                 if (data.uiSettings && !skipDevice) trackingSetItem('uiSettings', data.uiSettings);
                 if (data.loggingEnabled) trackingSetItem('loggingEnabled', data.loggingEnabled);
-                if (data.layoutManagerState && !skipDevice) trackingSetItem('layoutManagerState', data.layoutManagerState);
+                if (data.layoutManagerState && !skipDevice) {
+                    // Imported data skips the startup migration pass, so migrate a
+                    // pre-v8 nested-slots layout to the flat-windows shape here.
+                    trackingSetItem('layoutManagerState', await migrateImportedLayoutState(data.layoutManagerState));
+                }
                 if (data.desktopButtonSettings && !skipDevice) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
-                if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', data.mobileButtonSettings);
+                if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', migrateImportedValue('mobileButtonSettings', data.mobileButtonSettings));
                 // Notify layout system of changes
                 if (data.layoutManagerState && !skipDevice) {
                     eventBus.emit('layoutManagerStateChanged', { type: 'import' });
@@ -1009,7 +1033,9 @@ export async function importCategory(
                             return;
                         }
 
-                        trackingSetItem(storageKey, raw);
+                        // Imported values bypass the startup migration pass, so run
+                        // them through it here (no-op for keys without a migration).
+                        trackingSetItem(storageKey, migrateImportedValue(baseKey, raw));
                     });
                 });
                 break;
@@ -1044,7 +1070,7 @@ export async function importCategory(
                     } catch {
                         // Invalid incoming data
                     }
-                    trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
+                    trackingSetItem('mobileButtonSettings', migrateImportedValue('mobileButtonSettings', JSON.stringify(merged)));
                 }
                 if (data.desktopButtonSettings && !(options?.skipDeviceScoped)) {
                     trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
@@ -1063,7 +1089,7 @@ export async function importCategory(
                         }
                     }
                     merged.radial = data.radial;
-                    trackingSetItem('mobileButtonSettings', JSON.stringify(merged));
+                    trackingSetItem('mobileButtonSettings', migrateImportedValue('mobileButtonSettings', JSON.stringify(merged)));
                 }
                 break;
             }

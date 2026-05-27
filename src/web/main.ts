@@ -248,14 +248,6 @@ const isDirectionMap = (value: unknown): value is Record<string, Partial<RawDire
     });
 };
 
-characterStorage.onChange('settings', (detail) => {
-    const payload = detail as { binds?: { directions?: unknown } } | undefined;
-    const directions = payload?.binds?.directions;
-    if (isDirectionMap(directions)) {
-        applyDirectionBinds(directions);
-    }
-});
-
 globalStorage.onChange('binds', (detail) => {
     const payload = detail as { directions?: unknown } | undefined;
     const directions = payload?.directions;
