@@ -25,6 +25,12 @@ export class HelperConnection {
     private keyCapturedListeners: KeyCapturedListener[] = [];
     private stateListeners: StateChangeListener[] = [];
     private focusListenersAttached = false;
+    // Set by disconnect() so an intentional close isn't treated as a dropped
+    // connection to reconnect. Reset on every connect()/launch().
+    private intentionalClose = false;
+    // Guards against overlapping reconnect loops (each unexpected close would
+    // otherwise spawn its own pollAndConnect).
+    private reconnecting = false;
 
     async probe(): Promise<HelperStatus | null> {
         try {
@@ -37,6 +43,7 @@ export class HelperConnection {
     }
 
     launch(): void {
+        this.intentionalClose = false;
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = 'arkadia://launch';
@@ -46,8 +53,15 @@ export class HelperConnection {
     }
 
     connect(): void {
+        this.intentionalClose = false;
         if (this.ws) {
+            // Detach handlers before closing so the old socket's close event
+            // doesn't trigger a reconnect (or leave its ping running) for a
+            // connection we're replacing.
+            this.ws.onclose = null;
+            this.ws.onerror = null;
             this.ws.close();
+            this.stopPing();
         }
 
         this.setState('connecting');
@@ -69,12 +83,28 @@ export class HelperConnection {
         this.ws.onclose = () => {
             this.setState('disconnected');
             this.stopPing();
+            // The helper restarts itself to apply updates and exits when idle.
+            // If we didn't tear this down deliberately, poll for it to come
+            // back and reconnect — otherwise hotkeys/proxy silently stay dead.
+            if (!this.intentionalClose) {
+                this.scheduleReconnect();
+            }
         };
 
         this.ws.onerror = () => {
             this.setState('disconnected');
             this.stopPing();
+            // A 'close' event always follows 'error'; reconnect is scheduled
+            // there to avoid double-scheduling.
         };
+    }
+
+    private scheduleReconnect(): void {
+        if (this.intentionalClose || this.reconnecting) return;
+        this.reconnecting = true;
+        this.pollAndConnect().finally(() => {
+            this.reconnecting = false;
+        });
     }
 
     send(msg: OutboundMsg): void {
@@ -84,6 +114,9 @@ export class HelperConnection {
     }
 
     disconnect(): void {
+        // Mark intentional so neither the close handler nor an in-flight
+        // pollAndConnect loop tries to reconnect.
+        this.intentionalClose = true;
         this.stopPing();
         if (this.ws) {
             this.ws.close();
@@ -162,6 +195,8 @@ export class HelperConnection {
         const maxAttempts = 30;
         for (let i = 0; i < maxAttempts; i++) {
             await new Promise(r => setTimeout(r, 500));
+            // Bail if disconnect() was called while we were waiting.
+            if (this.intentionalClose) return;
             const status = await this.probe();
             if (status) {
                 this.connect();

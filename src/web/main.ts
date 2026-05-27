@@ -16,6 +16,7 @@ import eventBus from "@modules/core/eventBus";
 import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {HelperConnection} from "@modules/helper/HelperConnection";
+import {setupHelperResync} from "@modules/helper/helperResync";
 import {setupOutputContextMenu} from "./outputContextMenu";
 import initPipeStatus from "./pipeStatus";
 import {Dropdown, Modal} from 'bootstrap';
@@ -118,14 +119,9 @@ registerScripts(client);
 const helperConnection = new HelperConnection();
 client.keyBindingManager.setHelperConnection(helperConnection);
 
-helperConnection.onStateChange((state) => {
-    if (state === 'connected') {
-        helperConnection.send({
-            type: 'set_window_match',
-            patterns: ['Arkadia', 'arkadia.rpg.pl']
-        });
-    }
-});
+// Re-push all helper-side session state (window match, binds) on every
+// (re)connect, so an auto-update restart or any reconnect fully restores it.
+setupHelperResync(helperConnection);
 
 // Auto-connect: probe first, launch if not running
 if (localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {

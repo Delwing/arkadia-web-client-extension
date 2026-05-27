@@ -2,63 +2,30 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Form, Table } from "react-bootstrap";
 import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HelperState } from "@modules/helper/HelperConnection";
-import type { BindAction, BindMode, HelperBind, HelperStatus } from "@modules/helper/helperProtocol";
+import type { BindAction, BindMode, HelperStatus } from "@modules/helper/helperProtocol";
 import { getHelperBinds } from "@modules/helper/helperBindRegistry";
+import { type StoredBind, loadBinds, saveBinds, toHelperBind } from "@modules/helper/helperBinds";
 
-const STORAGE_KEY = 'arkadia.helperBinds';
 const HELPER_BASE_PATH = `${import.meta.env.BASE_URL}helper/arkadia-helper`;
 
-function getDownloadUrl(): { url: string; label: string } | null {
+type HelperOs = 'win' | 'mac' | 'linux';
+
+function getDownloadUrl(): { url: string; label: string; os: HelperOs } | null {
     const ua = navigator.userAgent.toLowerCase();
     const isArm = /arm|aarch64/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (ua.includes('win')) {
         const arch = isArm ? 'arm64' : 'amd64';
-        return { url: `${HELPER_BASE_PATH}-windows-${arch}.exe`, label: `Windows (${arch})` };
+        return { url: `${HELPER_BASE_PATH}-windows-${arch}.exe`, label: `Windows (${arch})`, os: 'win' };
     }
     if (ua.includes('mac')) {
         const arch = isArm ? 'arm64' : 'amd64';
-        return { url: `${HELPER_BASE_PATH}-darwin-${arch}`, label: `macOS (${arch})` };
+        return { url: `${HELPER_BASE_PATH}-darwin-${arch}`, label: `macOS (${arch})`, os: 'mac' };
     }
     if (ua.includes('linux')) {
         const arch = isArm ? 'arm64' : 'amd64';
-        return { url: `${HELPER_BASE_PATH}-linux-${arch}`, label: `Linux (${arch})` };
+        return { url: `${HELPER_BASE_PATH}-linux-${arch}`, label: `Linux (${arch})`, os: 'linux' };
     }
     return null;
-}
-
-export interface StoredBind {
-    id: string;
-    key: string;
-    mode: BindMode;
-    action: BindAction;
-    command?: string;      // for action "command"
-    targetBind?: string;   // for action "bind" — name of existing bind to trigger
-    focusBrowser: boolean;
-}
-
-function loadBinds(): StoredBind[] {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch {
-        return [];
-    }
-}
-
-function saveBinds(binds: StoredBind[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(binds));
-}
-
-function toHelperBind(b: StoredBind): HelperBind {
-    return {
-        id: b.id,
-        key: b.key,
-        mode: b.mode,
-        action: b.action,
-        command: b.command,
-        remap_to: b.targetBind,
-        focus_browser: b.focusBrowser,
-    };
 }
 
 function actionLabel(b: StoredBind): string {
@@ -111,12 +78,13 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
             setState(newState);
             if (newState === 'connected') {
                 helperConnection.probe().then(setStatus);
-                sendBindsToHelper(loadBinds());
+                // Binds are (re)registered centrally on connect by
+                // setupHelperResync — no need to push them again here.
             } else {
                 setStatus(null);
             }
         });
-    }, [helperConnection, sendBindsToHelper]);
+    }, [helperConnection]);
 
     useEffect(() => {
         if (localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {
@@ -389,6 +357,7 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
 
             {state === 'disconnected' && !status && (() => {
                 const dl = getDownloadUrl();
+                const fileName = dl ? dl.url.substring(dl.url.lastIndexOf('/') + 1) : '';
                 return (
                     <div className="mt-3 small text-muted">
                         Helper nie jest uruchomiony. Skróty zostaną zarejestrowane po połączeniu.
@@ -397,10 +366,41 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
                                 <a href={dl.url} download className="btn btn-outline-secondary btn-sm">
                                     Pobierz Helper — {dl.label}
                                 </a>
-                                <div className="mt-2 p-2 border rounded">
-                                    Po pobraniu uruchom plik raz — zarejestruje on obsługę linków <code>arkadia://</code>,
-                                    dzięki czemu klient będzie mógł automatycznie uruchamiać Helper.
-                                </div>
+                                {dl.os === 'mac' ? (
+                                    <div className="mt-2 p-2 border rounded">
+                                        <div>
+                                            Pobrany plik to zwykły program (nie <code>.app</code>), więc macOS go
+                                            zablokuje (komunikat: „Apple nie może sprawdzić, czy plik nie zawiera
+                                            złośliwego oprogramowania"). Otwórz Terminal i wykonaj:
+                                        </div>
+                                        <pre
+                                            className="mt-2 mb-2 p-2 bg-dark text-light rounded small"
+                                            style={{ whiteSpace: 'pre-wrap' }}
+                                        >
+{`cd ~/Downloads
+chmod +x ${fileName}
+xattr -d com.apple.quarantine ${fileName}
+./${fileName}`}
+                                        </pre>
+                                        <div>
+                                            Program zarejestruje obsługę linków <code>arkadia://</code> i zakończy
+                                            działanie — to normalne. Następnie kliknij <strong>„Uruchom Helper"</strong>{' '}
+                                            powyżej, aby go wystartować.
+                                        </div>
+                                        <div className="mt-2">
+                                            Aby działały <strong>globalne skróty</strong>, przyznaj aplikacji{' '}
+                                            <code>ArkadiaHelper</code> uprawnienia w: <em>Ustawienia systemowe →
+                                            Prywatność i bezpieczeństwo → Dostępność</em>, a następnie uruchom Helper
+                                            ponownie.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-2 p-2 border rounded">
+                                        Po pobraniu uruchom plik raz — zarejestruje on obsługę linków{' '}
+                                        <code>arkadia://</code>, dzięki czemu klient będzie mógł automatycznie
+                                        uruchamiać Helper.
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
