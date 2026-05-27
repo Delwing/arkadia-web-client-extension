@@ -284,7 +284,23 @@
     "type": "2"
   },
   {
+    "pattern": "nie pozwoli ci zblizyc sie do drzwi.",
+    "type": "0"
+  },
+  {
     "pattern": "Nie mozesz sie stad wymknac posiadajac przy sobie zrodlo swiatla.",
+    "type": "0"
+  },
+  {
+    "pattern": "mowi do ciebie: Nikt z bronia nie wejdzie na teren palacu. Prosze wlozyc ja do stojaka.",
+    "type": "0"
+  },
+  {
+    "pattern": "mowi do ciebie: Na terenie palacu zbroja nie bedzie wam potrzebna.",
+    "type": "0"
+  },
+  {
+    "pattern": "do ciebie: Przed oblicze Diuka dopuszczane sa tylko osoby we wlasciwym stroju.",
     "type": "0"
   },
   {
