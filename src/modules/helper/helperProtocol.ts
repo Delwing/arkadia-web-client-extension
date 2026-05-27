@@ -76,3 +76,7 @@ export interface HelperStatus {
 export const HELPER_PORT = 19876;
 export const HELPER_BASE_URL = `http://127.0.0.1:${HELPER_PORT}`;
 export const HELPER_WS_URL = `ws://127.0.0.1:${HELPER_PORT}/ws`;
+// Telnet bridge endpoint: the helper dials Arkadia's raw telnet port and pumps
+// bytes as binary frames, acting as a local alternative to the Cloudflare proxy.
+// Used as a user proxy URL (the host/port query is appended by MudClient).
+export const HELPER_TELNET_URL = `ws://127.0.0.1:${HELPER_PORT}/telnet`;

@@ -31,6 +31,7 @@ type Server struct {
 	handler          MessageHandler
 	clientsMu        sync.RWMutex
 	clients          []*wsConn
+	telnetCount      int // active telnet bridge connections (see telnet.go)
 	onIdle           func()
 	onDisconnectAll  func()
 	idleTimer        *time.Timer
@@ -72,6 +73,7 @@ func New(version string) *Server {
 	}
 	s.mux.HandleFunc("GET /status", s.handleStatus)
 	s.mux.HandleFunc("GET /ws", s.handleWS)
+	s.mux.HandleFunc("GET /telnet", s.handleTelnet)
 	return s
 }
 

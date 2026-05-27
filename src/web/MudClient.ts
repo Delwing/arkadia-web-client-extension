@@ -2,6 +2,7 @@ import {ClientAdapter} from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
 import {globalStorage} from "@modules/core/storage";
+import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
 import {
@@ -37,10 +38,18 @@ const PROXY_QUERY = '?host=arkadia.rpg.pl&port=23';
 // "host your own proxy" wizard can reuse it as the CORS relay for its API calls.
 export const PROXY_WEBSOCKET_URL = `wss://arkadia-proxy.delwing.workers.dev${PROXY_QUERY}`;
 const MCCP_STORAGE_KEY = 'mccpEnabled';
+// Legacy boolean flag (proxy on/off), kept only to migrate to PROXY_MODE_STORAGE_KEY.
 const PROXY_STORAGE_KEY = 'proxyEnabled';
-// A user-deployed proxy URL (from the "host your own" wizard) that overrides the
-// default proxy when proxy mode is on. Stored as a plain wss:// origin.
+// How to reach the game:
+//   - 'direct': native Arkadia /wss endpoint (base64 text frames)
+//   - 'helper': local helper app's telnet bridge (binary frames)
+//   - 'proxy':  a remote telnet->WebSocket proxy, default or user-defined (binary)
+const PROXY_MODE_STORAGE_KEY = 'proxyMode';
+// A user-deployed proxy URL (from the "host your own" wizard) used in 'proxy'
+// mode in place of the default. Stored as a plain wss:// origin.
 const USER_PROXY_URL_STORAGE_KEY = 'userProxyUrl';
+
+export type ProxyMode = 'direct' | 'helper' | 'proxy';
 
 class MudClient implements ClientAdapter {
     private socket!: WebSocket;
@@ -68,12 +77,12 @@ class MudClient implements ClientAdapter {
     // Latches true once the server sends IAC GA/EOR; from then on we trust those
     // prompt markers and bypass partial-line buffering (mirrors Mudlet).
     private gaDriver = false;
-    // When true, connect through the proxy instead of WEBSOCKET_URL.
-    private proxyEnabled = false;
-    // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL when set.
+    // How to reach the game (direct / helper / proxy); see PROXY_MODE_STORAGE_KEY.
+    private proxyMode: ProxyMode = 'direct';
+    // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL in 'proxy' mode.
     private userProxyUrl: string | null = null;
     // Wire-format strategy, chosen at connect time: binary frames for the
-    // proxy, base64 for the native /wss endpoint. Defaults to base64.
+    // proxy/helper, base64 for the native /wss endpoint. Defaults to base64.
     private codec: TransportCodec = base64Codec;
 
     constructor() {
@@ -90,7 +99,7 @@ class MudClient implements ClientAdapter {
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
-        this.proxyEnabled = localStorage.getItem(PROXY_STORAGE_KEY) === 'true';
+        this.proxyMode = MudClient.loadProxyMode();
         this.userProxyUrl = localStorage.getItem(USER_PROXY_URL_STORAGE_KEY) || null;
         this.echoHandler = new EchoHandler(
             (data) => this.sendRaw(data),
@@ -157,13 +166,27 @@ class MudClient implements ClientAdapter {
         return this.mccpHandler.enabled;
     }
 
-    setProxyEnabled(enabled: boolean): void {
-        this.proxyEnabled = enabled;
-        localStorage.setItem(PROXY_STORAGE_KEY, String(enabled));
+    /**
+     * Resolve the persisted proxy mode, migrating the legacy `proxyEnabled`
+     * boolean on first run (true -> 'proxy', false/absent -> 'direct').
+     */
+    private static loadProxyMode(): ProxyMode {
+        const stored = localStorage.getItem(PROXY_MODE_STORAGE_KEY);
+        if (stored === 'direct' || stored === 'helper' || stored === 'proxy') {
+            return stored;
+        }
+        const migrated: ProxyMode = localStorage.getItem(PROXY_STORAGE_KEY) === 'true' ? 'proxy' : 'direct';
+        localStorage.setItem(PROXY_MODE_STORAGE_KEY, migrated);
+        return migrated;
     }
 
-    isProxyEnabled(): boolean {
-        return this.proxyEnabled;
+    setProxyMode(mode: ProxyMode): void {
+        this.proxyMode = mode;
+        localStorage.setItem(PROXY_MODE_STORAGE_KEY, mode);
+    }
+
+    getProxyMode(): ProxyMode {
+        return this.proxyMode;
     }
 
     /** Set (or clear, with null) a user-deployed proxy URL that overrides the default. */
@@ -179,6 +202,24 @@ class MudClient implements ClientAdapter {
 
     getUserProxyUrl(): string | null {
         return this.userProxyUrl;
+    }
+
+    /**
+     * The WebSocket URL to dial for the current proxy mode. The helper and a
+     * bare user proxy origin both need the host/port query appended; the default
+     * proxy URL already carries it, and the native endpoint takes none.
+     */
+    private resolveConnectUrl(): string {
+        if (this.proxyMode === 'helper') {
+            return HELPER_TELNET_URL + PROXY_QUERY;
+        }
+        if (this.proxyMode === 'proxy') {
+            if (this.userProxyUrl) {
+                return this.userProxyUrl.includes('?') ? this.userProxyUrl : this.userProxyUrl + PROXY_QUERY;
+            }
+            return PROXY_WEBSOCKET_URL;
+        }
+        return WEBSOCKET_URL;
     }
 
     /**
@@ -201,17 +242,11 @@ class MudClient implements ClientAdapter {
         this.pendingSubneg = "";
         this.pendingLineTail = "";
         this.gaDriver = false;
-        // Proxy speaks raw binary frames; native /wss speaks base64 text.
-        this.codec = selectCodec(this.proxyEnabled);
+        // Proxy/helper speak raw binary frames; native /wss speaks base64 text.
+        this.codec = selectCodec(this.proxyMode !== 'direct');
         this.clearTailTimer();
         try {
-            // A user-deployed proxy is a bare wss:// origin — append the host/port
-            // query the worker needs (unless the user already included one).
-            const customProxy = this.userProxyUrl
-                ? (this.userProxyUrl.includes('?') ? this.userProxyUrl : this.userProxyUrl + PROXY_QUERY)
-                : null;
-            const proxyUrl = customProxy ?? PROXY_WEBSOCKET_URL;
-            const url = this.proxyEnabled ? proxyUrl : WEBSOCKET_URL;
+            const url = this.resolveConnectUrl();
             this.socket = new WebSocket(url, []);
             // Deliver binary frames (proxy) as ArrayBuffer rather than Blob;
             // harmless for the native endpoint's text frames.

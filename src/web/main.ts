@@ -9,7 +9,7 @@ import './themes/light-parchment.css'
 import './themes/light-silver.css'
 import './layout/layout.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
-import {ProxyConfigMount, OPEN_PROXY_SETTINGS_EVENT} from "./hostProxy/ProxyConfigMount.tsx";
+import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
 import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
@@ -1426,34 +1426,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const proxyCheckbox = document.getElementById('proxy-enabled') as HTMLInputElement | null;
-    if (proxyCheckbox) {
-        proxyCheckbox.checked = mudClient.isProxyEnabled();
-        proxyCheckbox.addEventListener('change', () => {
-            mudClient.setProxyEnabled(proxyCheckbox.checked);
-        });
-    }
-
-    // Proxy URL + "host your own" wizard live in a small settings modal (opened
-    // from the connection-screen "Konfiguruj" link) so the connect screen stays
-    // uncluttered. Pasting a URL reuses an existing proxy; deploying enables it.
-    const proxyConfigRoot = document.getElementById('proxy-config-root');
-    if (proxyConfigRoot) {
-        createRoot(proxyConfigRoot).render(createElement(ProxyConfigMount, {
+    // Connection mode (direct / helper / proxy) plus the proxy URL settings and
+    // "host your own" wizard, mounted as one React island on the connect screen.
+    const proxyControlsRoot = document.getElementById('proxy-controls-root');
+    if (proxyControlsRoot) {
+        createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
             relayBase: PROXY_WEBSOCKET_URL,
+            initialMode: mudClient.getProxyMode(),
             initialUrl: mudClient.getUserProxyUrl() ?? '',
+            onModeChange: (mode) => mudClient.setProxyMode(mode),
             onUrlChange: (url: string) => mudClient.setUserProxyUrl(url),
             onUseProxy: (url: string) => {
                 mudClient.setUserProxyUrl(url);
-                mudClient.setProxyEnabled(true);
-                if (proxyCheckbox) proxyCheckbox.checked = true;
+                mudClient.setProxyMode('proxy');
             },
         }));
     }
-    document.getElementById('proxy-config-link')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent(OPEN_PROXY_SETTINGS_EVENT));
-    });
 
     if (authClose) {
         const closeAuthOverlay = () => {

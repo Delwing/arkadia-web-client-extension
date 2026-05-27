@@ -104,6 +104,7 @@ func (s *Server) removeClient(c *wsConn) {
 		}
 	}
 	remaining := len(s.clients)
+	telnet := s.telnetCount
 	s.clientsMu.Unlock()
 
 	log.Printf("Client disconnected, %d remaining", remaining)
@@ -111,6 +112,34 @@ func (s *Server) removeClient(c *wsConn) {
 		if s.onDisconnectAll != nil {
 			s.onDisconnectAll()
 		}
+		// Keep the helper alive while a telnet bridge is still streaming.
+		if telnet == 0 {
+			s.resetIdleTimer(idleTimeout)
+		}
+	}
+}
+
+// addTelnet records an active telnet bridge connection and holds off the
+// idle-exit timer, mirroring addClient for the bridge endpoint.
+func (s *Server) addTelnet() {
+	s.clientsMu.Lock()
+	s.telnetCount++
+	s.clientsMu.Unlock()
+	s.idleMu.Lock()
+	if s.idleTimer != nil {
+		s.idleTimer.Stop()
+	}
+	s.idleMu.Unlock()
+}
+
+// removeTelnet drops an active telnet bridge and restarts the idle timer if
+// nothing else (control client or bridge) remains connected.
+func (s *Server) removeTelnet() {
+	s.clientsMu.Lock()
+	s.telnetCount--
+	total := len(s.clients) + s.telnetCount
+	s.clientsMu.Unlock()
+	if total == 0 {
 		s.resetIdleTimer(idleTimeout)
 	}
 }
