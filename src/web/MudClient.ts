@@ -401,7 +401,7 @@ class MudClient implements ClientAdapter {
         // Char/Core/Room are auto-enabled after IAC DO GMCP; add the rest.
         // Objects drives item/combat panels; Gmcp_msgs streams game text. Then
         // turn on base64 encoding for gmcp_msgs so its text decodes consistently.
-        this.sendGmcp('Core.Supports.Add', ['Objects 1', 'Gmcp_msgs 1']);
+        this.sendGmcp('Core.Supports.Add', ['Objects 1', 'Gmcp_msgs 1', 'Mail 1']);
         this.sendGmcp('Core.Options.Set', ['base64_gmcp_msgs']);
     }
 
