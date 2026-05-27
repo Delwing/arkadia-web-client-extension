@@ -23,10 +23,10 @@ describe('wezz alias', () => {
     const m = '/wezz deliona 2'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez 1 zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swoj woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wez zolty jasny kwiat z 2. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wez 1 zolty jasny kwiat z 2. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(6, 'zamknij 2. swoj woreczek');
     expect(characterStorage.get('herb_counts')).toEqual({ 1: { herbs: {} }, 2: { herbs: {} } });
   });
@@ -50,7 +50,7 @@ describe('wezz alias', () => {
     const m = '/wezz deliona'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez 1 zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
     expect(characterStorage.get('herb_counts')).toEqual({ 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } });
   });

@@ -1,5 +1,6 @@
 import {mudletColorLine} from "./Colors";
 import type {HerbUse} from "@client/scripts/herbsLoader";
+import {getBindableUses, isHerbSmokable} from "@modules/data/dataStores/herbsStore";
 import {showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 
@@ -30,16 +31,9 @@ export function buildHerbContextMenuItems(
     postUseCommands: string[],
     amounts: number[]
 ): ContextMenuItem[] {
-    if (!actions || actions.length === 0) {
-        return [];
-    }
+    const bindableActions = getBindableUses(actions);
 
-    const bindableActions = actions.filter(action => !action.dont_bind);
-    if (bindableActions.length === 0) {
-        return [];
-    }
-
-    return bindableActions.flatMap(action =>
+    const items: ContextMenuItem[] = bindableActions.flatMap(action =>
         amounts.map(amount => {
             const rawEffect = typeof action.effect === "string" ? action.effect.trim() : "";
             const parsedEffect = rawEffect ? mudletColorLine(rawEffect).text : "";
@@ -54,6 +48,18 @@ export function buildHerbContextMenuItems(
             };
         })
     );
+
+    // Smokable herbs get a "nabij fajke" entry that loads the pipe (routed
+    // through the /ziola_fajka alias, which takes the herb and uses the
+    // instrumental form).
+    if (isHerbSmokable(actions)) {
+        items.push({
+            label: 'Nabij fajke',
+            action: () => eventBus.emit('sendCommand', { command: `/ziola_fajka ${herbId}` }),
+        });
+    }
+
+    return items;
 }
 
 export function openHerbContextMenu(options: HerbMenuOptions) {

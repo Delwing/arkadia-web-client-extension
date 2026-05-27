@@ -763,6 +763,7 @@ export class AnsiAwareBuffer {
 
             const styles: string[] = [];
             const state = segment.state;
+            const classAttr = state.cssClass ? ` class="${this.escapeHtml(state.cssClass)}"` : "";
 
             // Handle inverse first (swaps foreground and background)
             const fg = state.inverse ? state.background : state.foreground;
@@ -809,16 +810,16 @@ export class AnsiAwareBuffer {
                 if (state.hyperlink.title) {
                     const titleAttr = ` title="${this.escapeHtml(state.hyperlink.title)}"`;
                     const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
-                    html += `<span${styleAttr}${titleAttr}${dataAttr}>${escapedText}</span>`;
+                    html += `<span${styleAttr}${classAttr}${titleAttr}${dataAttr}>${escapedText}</span>`;
                     continue;
                 }
                 const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
-                html += `<span${styleAttr}${dataAttr}>${escapedText}</span>`;
+                html += `<span${styleAttr}${classAttr}${dataAttr}>${escapedText}</span>`;
                 continue;
             }
 
             const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
-            html += `<span${styleAttr}>${escapedText}</span>`;
+            html += `<span${styleAttr}${classAttr}>${escapedText}</span>`;
         }
 
         return html;

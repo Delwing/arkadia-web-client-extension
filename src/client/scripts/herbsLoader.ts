@@ -5,9 +5,11 @@ import {
   HerbsData,
   HerbForms,
   HerbUse,
+  isHerbSmokable,
+  getBindableUses,
 } from '@modules/data/dataStores/herbsStore';
 
-export { HERBS_URL };
+export { HERBS_URL, isHerbSmokable, getBindableUses };
 export type { HerbForms, HerbUse, HerbsData };
 
 export default async function loadHerbs(): Promise<HerbsData | null> {

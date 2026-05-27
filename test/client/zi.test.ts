@@ -23,7 +23,7 @@ describe('/zi alias', () => {
     const m = '/zi rub deliona'.match(alias.pattern) as RegExpMatchArray;
     await alias.callback(m);
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez 1 zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'rub zolty jasny kwiat');
   });

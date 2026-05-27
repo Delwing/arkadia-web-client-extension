@@ -1,5 +1,6 @@
 import { buildHerbContextMenuItems, openHerbContextMenu } from "@modules/core/contextMenus";
 import { showContextMenu } from "@web/contextMenu";
+import eventBus from "@modules/core/eventBus";
 
 vi.mock("@web/contextMenu", () => ({
     showContextMenu: jest.fn(),
@@ -48,6 +49,43 @@ describe("buildHerbContextMenuItems", () => {
 
         expect(items).toHaveLength(1);
         expect(items[0].label).toBe("zjedz 1 (+15 ZDR)");
+    });
+
+    it("adds a 'Nabij fajke' item for smokable herbs alongside bindable actions", () => {
+        const emitSpy = jest.spyOn(eventBus, "emit");
+        const items = buildHerbContextMenuItems(
+            "tyton",
+            [
+                { action: "zjedz", effect: "+15 ZDR" },
+                { action: ".", effect: "--", dont_bind: true, smokable: true },
+            ],
+            "/zi",
+            [],
+            [],
+            [1],
+        );
+
+        const smoke = items.find(item => item.label === "Nabij fajke");
+        expect(smoke).toBeDefined();
+        expect(items.some(item => item.label.startsWith("zjedz"))).toBe(true);
+
+        smoke!.action();
+        expect(emitSpy).toHaveBeenCalledWith("sendCommand", { command: "/ziola_fajka tyton" });
+        emitSpy.mockRestore();
+    });
+
+    it("offers only 'Nabij fajke' for smokable-only herbs", () => {
+        const items = buildHerbContextMenuItems(
+            "gwiazda_poludnia",
+            [{ action: ".", effect: "--", dont_bind: true, smokable: true }],
+            "/zi",
+            [],
+            [],
+            [1],
+        );
+
+        expect(items).toHaveLength(1);
+        expect(items[0].label).toBe("Nabij fajke");
     });
 
     it("shows empty menu with header when no bindable actions remain", () => {

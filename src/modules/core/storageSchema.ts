@@ -50,6 +50,7 @@ export interface CharacterStorageSchema {
     attack_mode: AttackMode;
     chat_history: any[]; // TODO: use serialized ChatEntry[] type
     gender: CharGender;
+    pipe_filled: boolean;
 }
 
 /**
@@ -142,6 +143,7 @@ export const characterStorageKeys = [
     'attack_mode',
     'chat_history',
     'gender',
+    'pipe_filled',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */

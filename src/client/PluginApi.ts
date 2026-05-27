@@ -1334,6 +1334,8 @@ export interface HerbForms {
   mnoga_dopelniacz: string;
   /** Accusative plural (mnoga biernik) */
   mnoga_biernik: string;
+  /** Instrumental singular (narzednik) - used by "nabij fajke <herb>" */
+  narzednik: string;
 }
 
 /**
@@ -1346,6 +1348,8 @@ export interface HerbUse {
   effect: string;
   /** If true, herb should not be bound when used */
   dont_bind?: boolean;
+  /** If true, the herb can be smoked; such entries carry no real action/effect */
+  smokable?: boolean;
 }
 
 /**

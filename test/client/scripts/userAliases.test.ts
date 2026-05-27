@@ -97,10 +97,10 @@ describe('user aliases', () => {
 
     const expectedSequence = [
       'otworz 1. swoj woreczek',
-      'wez naparstnice z 1. swojego woreczka',
+      'wez 1 naparstnice z 1. swojego woreczka',
       'zamknij 1. swoj woreczek',
       'otworz 1. swoj woreczek',
-      'wez zolty jasny kwiat z 1. swojego woreczka',
+      'wez 1 zolty jasny kwiat z 1. swojego woreczka',
       'zamknij 1. swoj woreczek',
       'ob delione',
       'zjedz ziola',

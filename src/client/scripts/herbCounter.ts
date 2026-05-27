@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {parseItems} from "./prettyContainers";
-import loadHerbs, {HerbsData} from "./herbsLoader";
+import loadHerbs, {HerbsData, isHerbSmokable} from "./herbsLoader";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
@@ -16,6 +16,11 @@ import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
 const headerColor = createColorFormat('#8470ff')
 const WHITE = createColorFormat('#ffffff');
 const STORAGE_KEY = "herb_counts";
+
+// Smokable-herb marker: an SVG pipe (see `.herb-smoke-glyph` in style.css).
+// Spaces carry the class; their count matches the glyph's 2ch render width.
+const SMOKE_GLYPH_CLASS = 'herb-smoke-glyph';
+const SMOKE_GLYPH_TEXT = '  ';
 
 const biernikDigits = new Set([2, 3, 4]);
 
@@ -259,11 +264,13 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const sortedEntries = entries.sort((a, b) => a[0].localeCompare(b[0]));
 
         // First pass: calculate max widths
-        const rowData: Array<{id: string, count: number, herbName: string, usesText: string, usesBuffer: AnsiAwareBuffer}> = [];
+        const rowData: Array<{id: string, count: number, herbName: string, usesText: string, usesBuffer: AnsiAwareBuffer, smokable: boolean}> = [];
         sortedEntries.forEach(([id, c]) => {
             const usesBuffer = new AnsiAwareBuffer();
-            const usesList = herbs?.herb_id_to_use[id];
-            if (usesList && usesList.length > 0) {
+            // Smokable entries carry no real action — exclude them here; they
+            // are summarised in the "Do palenia" section at the bottom.
+            const usesList = (herbs?.herb_id_to_use[id] ?? []).filter(u => !u.smokable);
+            if (usesList.length > 0) {
                 usesList.forEach((u, idx) => {
                     if (idx > 0) usesBuffer.append(' | ');
                     usesBuffer.append(`${u.action}: `);
@@ -274,11 +281,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             }
             const herbName = useFormattedNames ? formatHerbName(id, c) : id;
             const usesText = usesBuffer.text;
+            const smokable = isHerbSmokable(herbs?.herb_id_to_use[id]);
 
+            // Smokable names are included in the column widths so the "Do palenia"
+            // rows align exactly like the regular rows above.
             maxNameWidth = Math.max(maxNameWidth, herbName.length);
             maxActionsWidth = Math.max(maxActionsWidth, usesText.length);
 
-            rowData.push({id, count: c, herbName, usesText, usesBuffer});
+            rowData.push({id, count: c, herbName, usesText, usesBuffer, smokable});
         });
 
         // Build dynamic separator
@@ -320,8 +330,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             output.append('\n');
         }
 
-        // Second pass: build rows
-        rowData.forEach(({id, count, herbName, usesBuffer}) => {
+        // Second pass: build rows (smokable herbs are listed separately below)
+        rowData.forEach(({id, count, herbName, usesBuffer, smokable}) => {
+            if (smokable) return;
             if (normal) {
                 const line = new AnsiAwareBuffer();
                 const base = `${String(count).padStart(countWidth, ' ')} | ${herbName.padEnd(maxNameWidth, ' ')} | `;
@@ -419,6 +430,47 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 }
 
                 output.appendBuffer(bagLine);
+                output.append('\n');
+            });
+        }
+
+        // Smokable herbs, listed at the bottom one per line with the pipe glyph.
+        const smokableRows = rowData.filter(({smokable}) => smokable);
+        if (smokableRows.length > 0) {
+            // In the narrow view the full table separator would overflow, so cap it.
+            const sepLine = normal ? separator : '-'.repeat(Math.min(width, Math.max(maxNameWidth + 6, 10)));
+            const sepStart = output.length;
+            output.append(sepLine, {});
+            output.color([sepStart, output.length], WHITE);
+            output.append('\n');
+
+            const labelStart = output.length;
+            output.append('Do palenia:', {});
+            output.color([labelStart, output.length], WHITE);
+            output.append('\n');
+
+            // Formatted like a normal row, with the pipe glyph in the action
+            // column. A trailing space after the glyph makes the line end in plain
+            // text so the newline breaks it (a newline straight after the
+            // inline-block glyph span does not).
+            smokableRows.forEach(({id, count, herbName}) => {
+                const line = new AnsiAwareBuffer();
+                const nameStart = normal ? countWidth + 3 : 4;
+                if (normal) {
+                    line.append(`${String(count).padStart(countWidth, ' ')} | ${herbName.padEnd(maxNameWidth, ' ')} | `, WHITE);
+                } else {
+                    line.append(`${String(count).padStart(3, ' ')} ${herbName} `, WHITE);
+                }
+                // Right-click the name to reach the "Nabij fajke" action.
+                line.createLink([nameStart, nameStart + herbName.length], {
+                    onContextMenu: (ev) => {
+                        ev.preventDefault();
+                        showHerbActions(id, ev);
+                    },
+                });
+                line.append(SMOKE_GLYPH_TEXT, { ...WHITE, cssClass: SMOKE_GLYPH_CLASS });
+                line.append(' ', WHITE);
+                output.appendBuffer(line);
                 output.append('\n');
             });
         }
@@ -558,11 +610,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             if (toTake <= 0) continue;
             client.sendCommand(`otworz ${num}. swoj woreczek`);
             const form = getHerbCase(herb, toTake, herbs);
-            if (toTake === 1) {
-                client.sendCommand(`wez ${form} z ${num}. swojego woreczka`);
-            } else {
-                client.sendCommand(`wez ${toTake} ${form} z ${num}. swojego woreczka`);
-            }
+            client.sendCommand(`wez ${toTake} ${form} z ${num}. swojego woreczka`);
             client.sendCommand(`zamknij ${num}. swoj woreczek`);
             const remaining = available - toTake;
             if (remaining > 0) {

@@ -283,7 +283,7 @@ export function registerScripts(client: Client) {
     initWeaponColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
-    initPipe(client)
+    initPipe(client, aliases)
     initHpAlert(client)
     initIdleFullHp(client)
     initFullHpTimer(client)

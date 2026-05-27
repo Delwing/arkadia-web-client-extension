@@ -1,16 +1,24 @@
 import type { HerbBagsState } from "../types/herbs";
 import type { HerbsData, HerbUse } from "./herbsLoader";
+import { getBindableUses, isHerbSmokable } from "./herbsLoader";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import { createColorFormat, mudletColorLine } from "@modules/core/Colors";
 import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
 
 const WHITE = createColorFormat('#ffffff');
 
+// Smokable herbs are marked with an SVG pipe (see `.herb-smoke-glyph` in
+// style.css). Spaces carry the class; their count matches the glyph's 2ch
+// render width so the buffer text and the rendered cells stay in sync.
+const SMOKE_GLYPH_CLASS = 'herb-smoke-glyph';
+const SMOKE_GLYPH_TEXT = '  ';
+
 export interface HerbTextRow {
     count: number;
     herbId: string;
     herbName: string;
     actions: HerbUse[] | undefined;
+    smokable: boolean;
 }
 
 export interface HerbTextSummary {
@@ -20,11 +28,11 @@ export interface HerbTextSummary {
 }
 
 function getActionsText(actions: HerbUse[] | undefined): string {
-    if (!actions || actions.length === 0) {
+    const bindable = getBindableUses(actions);
+    if (bindable.length === 0) {
         return '--';
     }
-    return actions
-        .filter(a => !a.dont_bind)
+    return bindable
         .map(a => {
             const effect = typeof a.effect === 'string' ? a.effect.replace(/<[^>]+>/g, '').trim() : '';
             return effect ? `${a.action}: ${effect}` : a.action;
@@ -66,7 +74,7 @@ export function buildHerbTextSummary(
         maxNameLength = Math.max(maxNameLength, herbName.length);
         maxActionsLength = Math.max(maxActionsLength, actionsText.length);
 
-        return { count, herbId: id, herbName, actions };
+        return { count, herbId: id, herbName, actions, smokable: isHerbSmokable(actions) };
     });
 
     return { rows, maxNameLength, maxActionsLength };
@@ -94,8 +102,10 @@ export function buildHerbTextBuffer(
     const countWidth = 5;
     const nameWidth = Math.max(summary.maxNameLength, 5);
 
-    // Build rows with colors and links
+    // Build rows with colors and links. Smokable herbs are not listed here —
+    // they only appear in the "Do palenia" section below.
     summary.rows.forEach(row => {
+        if (row.smokable) return;
         const line = new AnsiAwareBuffer();
         const base = `${String(row.count).padStart(countWidth)} | ${row.herbName.padEnd(nameWidth)} | `;
         line.append(base, WHITE);
@@ -119,16 +129,13 @@ export function buildHerbTextBuffer(
 
         // Build uses with mudlet colors
         const usesBuffer = new AnsiAwareBuffer();
-        if (row.actions && row.actions.length > 0) {
-            const bindableActions = row.actions.filter(a => !a.dont_bind);
+        const bindableActions = getBindableUses(row.actions);
+        if (bindableActions.length > 0) {
             bindableActions.forEach((u, idx) => {
                 if (idx > 0) usesBuffer.append(' | ');
                 usesBuffer.append(`${u.action}: `);
                 usesBuffer.appendBuffer(mudletColorLine(u.effect));
             });
-            if (bindableActions.length === 0) {
-                usesBuffer.append('--');
-            }
         } else {
             usesBuffer.append('--');
         }
@@ -137,6 +144,40 @@ export function buildHerbTextBuffer(
         output.appendBuffer(line);
         output.append('\n');
     });
+
+    // Smokable herbs are listed below a separator, one per line, formatted like a
+    // normal row but with the pipe glyph in the action column. A trailing space
+    // is appended after the glyph so the line ends in plain text — a newline
+    // straight after the inline-block glyph span does not break the line.
+    const smokableRows = summary.rows.filter(row => row.smokable);
+    if (smokableRows.length > 0) {
+        const sepWidth = countWidth + 3 + nameWidth + 3 + Math.max(summary.maxActionsLength, 8);
+        output.append('-'.repeat(sepWidth), WHITE);
+        output.append('\n');
+        output.append('Do palenia:', WHITE);
+        output.append('\n');
+
+        smokableRows.forEach(row => {
+            const line = new AnsiAwareBuffer();
+            line.append(`${String(row.count).padStart(countWidth)} | ${row.herbName.padEnd(nameWidth)} | `, WHITE);
+
+            // Make the herb name right-clickable so the "Nabij fajke" action is reachable.
+            const nameStart = countWidth + 3; // After count and " | "
+            if (onHerbContextMenu) {
+                line.createLink([nameStart, nameStart + row.herbName.length], {
+                    onContextMenu: (ev) => {
+                        ev.preventDefault();
+                        onHerbContextMenu(row.herbId, ev);
+                    },
+                });
+            }
+
+            line.append(SMOKE_GLYPH_TEXT, { ...WHITE, cssClass: SMOKE_GLYPH_CLASS });
+            line.append(' ', WHITE);
+            output.appendBuffer(line);
+            output.append('\n');
+        });
+    }
 
     return output;
 }

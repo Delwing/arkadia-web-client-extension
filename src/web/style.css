@@ -7081,6 +7081,21 @@ body.layout-manager-enabled #notification-center {
   text-align: center;
 }
 
+/* Smokable-herb marker: an inline pipe drawn from an SVG and treated like a
+   glyph. Its width is a whole number of monospace cells (2ch) so it never
+   breaks column alignment, and it is capped at the line height so it does not
+   grow the row. The mask + currentColor make it inherit the surrounding text
+   colour, like a real glyph. */
+.herb-smoke-glyph {
+  display: inline-block;
+  width: 2ch;
+  height: 1em;
+  vertical-align: middle;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='6%208%2056%2027'%3E%3Cpath%20d='M22%2022%20Q40%2018%2057%2013%20L59%2017%20Q42%2022%2024%2026%20Z'%20fill='black'/%3E%3Cellipse%20cx='58'%20cy='15'%20rx='2.2'%20ry='2.6'%20fill='black'/%3E%3Cpath%20d='M8%2013%20L8%2025%20Q8%2033%2016%2033%20Q24%2033%2024%2025%20L24%2013%20Z'%20fill='black'/%3E%3Cellipse%20cx='16'%20cy='13'%20rx='8'%20ry='3'%20fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='6%208%2056%2027'%3E%3Cpath%20d='M22%2022%20Q40%2018%2057%2013%20L59%2017%20Q42%2022%2024%2026%20Z'%20fill='black'/%3E%3Cellipse%20cx='58'%20cy='15'%20rx='2.2'%20ry='2.6'%20fill='black'/%3E%3Cpath%20d='M8%2013%20L8%2025%20Q8%2033%2016%2033%20Q24%2033%2024%2025%20L24%2013%20Z'%20fill='black'/%3E%3Cellipse%20cx='16'%20cy='13'%20rx='8'%20ry='3'%20fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 /* Clock Window - size overrides */
 .clock-window {
   --fw-width: 480px;

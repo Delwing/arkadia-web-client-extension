@@ -174,7 +174,7 @@ describe('herb counter', () => {
     const manager = (client as unknown as any).herbManager;
     await manager.move({ herbId: 'deliona', amount: 1, fromBag: 1, toBag: 2 });
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'otworz 1. swoj woreczek');
-    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'wez 1 zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenNthCalledWith(3, 'zamknij 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(4, 'otworz 2. swoj woreczek');
     expect(client.sendCommand).toHaveBeenNthCalledWith(5, 'wloz zolty jasny kwiat do 2. swojego woreczka');
@@ -269,7 +269,7 @@ describe('herb counter', () => {
     client.sendCommand.mockClear();
     await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo deliona')!);
     expect(client.sendCommand).toHaveBeenCalledWith('otworz 1. swoj woreczek');
-    expect(client.sendCommand).toHaveBeenCalledWith('wez zolty jasny kwiat z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenCalledWith('wez 1 zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenCalledWith('zamknij 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
   });

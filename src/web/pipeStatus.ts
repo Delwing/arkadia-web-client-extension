@@ -15,6 +15,7 @@
  */
 
 import mudClient from "./MudClient.ts";
+import eventBus from "@modules/core/eventBus";
 
 const LIT_CLASS = "pipe-icon--lit";
 
@@ -67,6 +68,7 @@ export function setPipeLit(lit: boolean): void {
   const el = getElement();
   if (!el) return;
   el.classList.toggle(LIT_CLASS, lit); // ember fades up / down via CSS
+  el.title = lit ? "Zgas fajke" : "Zapal fajke";
   if (lit) {
     startSmoke(el);
   } else {
@@ -91,4 +93,12 @@ export default function initPipeStatus(): void {
       wisp.style.animationPlayState = "paused";
     }
   }
+  // Click to toggle: light it (/zapal fills + lights) when unlit, put it out
+  // (zgas fajke) when lit.
+  el.style.cursor = "pointer";
+  el.title = isPipeLit() ? "Zgas fajke" : "Zapal fajke";
+  el.addEventListener("click", () => {
+    const command = isPipeLit() ? "zgas fajke" : "/zapal";
+    eventBus.emit("sendCommand", { command });
+  });
 }
