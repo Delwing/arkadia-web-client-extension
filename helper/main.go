@@ -58,13 +58,15 @@ func main() {
 
 	log.Printf("Arkadia Helper v%s starting on port %d", Version, *portFlag)
 
-	// Start auto-updater
-	if Version != "dev" {
-		updater.Start(Version)
-	}
-
 	// Create server
 	srv := server.New(Version)
+
+	// Start auto-updater. It defers restarting while the helper is busy
+	// (a connected client or an active telnet/proxy bridge) so updates never
+	// interrupt a live game session.
+	if Version != "dev" {
+		updater.Start(Version, srv.IsBusy)
+	}
 
 	// Create window focus detector and monitor
 	detector := window.NewPlatformDetector()

@@ -97,6 +97,16 @@ func (s *Server) Close() error {
 	return nil
 }
 
+// IsBusy reports whether any control client or telnet bridge is connected.
+// The auto-updater uses this to avoid restarting mid-session — restarting would
+// tear down an active telnet bridge (the user's game connection when the helper
+// is used as a proxy) or the non-reconnecting control WebSocket.
+func (s *Server) IsBusy() bool {
+	s.clientsMu.RLock()
+	defer s.clientsMu.RUnlock()
+	return len(s.clients)+s.telnetCount > 0
+}
+
 // Broadcast sends a message to all connected clients.
 func (s *Server) Broadcast(msg any) {
 	s.clientsMu.RLock()

@@ -17,44 +17,66 @@ const (
 	baseURL       = "https://delwing.github.io/arkadia-web-client-extension/helper"
 )
 
+// updateStaged is set once a new binary has been written to disk. The actual
+// restart is deferred until the helper is idle, so it survives re-checks.
+var updateStaged bool
+
 // Start begins periodic update checks in the background.
 // currentVersion is the running binary's version (commit hash).
-func Start(currentVersion string) {
+// isBusy reports whether a session is in progress (a connected control client
+// or an active telnet bridge); the updater never restarts while it returns true.
+func Start(currentVersion string, isBusy func() bool) {
 	// Clean up old binary from previous update
 	cleanupOld()
 
 	go func() {
 		// Check once shortly after startup
 		time.Sleep(10 * time.Second)
-		checkAndUpdate(currentVersion)
+		checkAndUpdate(currentVersion, isBusy)
 
 		ticker := time.NewTicker(checkInterval)
 		defer ticker.Stop()
 		for range ticker.C {
-			checkAndUpdate(currentVersion)
+			checkAndUpdate(currentVersion, isBusy)
 		}
 	}()
 }
 
-func checkAndUpdate(currentVersion string) {
-	remoteVersion, err := fetchRemoteVersion()
-	if err != nil {
-		log.Printf("Update check failed: %v", err)
+func checkAndUpdate(currentVersion string, isBusy func() bool) {
+	if !updateStaged {
+		remoteVersion, err := fetchRemoteVersion()
+		if err != nil {
+			log.Printf("Update check failed: %v", err)
+			return
+		}
+
+		if remoteVersion == currentVersion || remoteVersion == "" {
+			return
+		}
+
+		log.Printf("Update available: %s -> %s", currentVersion, remoteVersion)
+
+		if err := downloadAndReplace(); err != nil {
+			log.Printf("Update failed: %v", err)
+			return
+		}
+
+		updateStaged = true
+		log.Println("Update staged; will apply when the helper is idle")
+	}
+
+	// The new binary is already on disk. Restarting now would drop an active
+	// telnet bridge (the user's game connection when the helper is a proxy) or
+	// the non-reconnecting control WebSocket, so hold off while anything is
+	// connected. The staged binary also applies automatically on the next
+	// idle-exit + relaunch, making this restart just a fast path for the rare
+	// moment the helper is alive but idle.
+	if isBusy != nil && isBusy() {
+		log.Println("Update staged but helper is busy; deferring restart")
 		return
 	}
 
-	if remoteVersion == currentVersion || remoteVersion == "" {
-		return
-	}
-
-	log.Printf("Update available: %s -> %s", currentVersion, remoteVersion)
-
-	if err := downloadAndReplace(); err != nil {
-		log.Printf("Update failed: %v", err)
-		return
-	}
-
-	log.Println("Update downloaded, restarting...")
+	log.Println("Applying staged update, restarting...")
 	restart()
 }
 
