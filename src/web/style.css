@@ -3132,6 +3132,142 @@ h1 {
   color: var(--popup-data-tomato);
 }
 
+/* Pipe-smoking indicator (footer). Everything is sized in `em` so it
+   tracks the surrounding footer font-size. */
+.pipe-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.7em;
+  height: 1.3em;
+  line-height: 1;
+  vertical-align: -0.28em;
+  overflow: visible; /* let smoke drift above the footer line */
+}
+
+.pipe-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  /* crisp, faint light edge keeps the pipe legible on the dark footer, while a
+     soft, very transparent shadow below grounds it on the bar -- neither reads
+     as the pipe glowing on its own */
+  filter: drop-shadow(0 0 0.025em rgba(255, 255, 255, 0.32))
+    drop-shadow(0 0.05em 0.14em rgba(255, 255, 255, 0.07));
+}
+
+/* Ember: the breathing pulse (scale + glow) runs continuously. Lighting the
+   pipe fades the ember up to full brightness; extinguishing fades it back to a
+   cold, dim coal. Because element opacity also dims the drop-shadow glow, the
+   opacity cross-fade reads as the ember igniting / dying out smoothly rather
+   than snapping between states. */
+.pipe-ember {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0.1;
+  transition: opacity 1.7s ease;
+  animation: pipe-ember-breathe 4.2s ease-in-out infinite;
+}
+
+.pipe-icon--lit .pipe-ember {
+  opacity: 1;
+}
+
+@keyframes pipe-ember-breathe {
+  0%,
+  100% {
+    transform: scale(0.98);
+    filter: drop-shadow(0 0 0.12em rgba(255, 138, 24, 0.7))
+      drop-shadow(0 0 0.24em rgba(255, 90, 0, 0.5));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 0.16em rgba(255, 165, 45, 0.95))
+      drop-shadow(0 0 0.32em rgba(255, 90, 0, 0.65));
+  }
+}
+
+/* Smoke wisps each rise and fade once per cycle. Lighting / extinguishing is
+   handled as an emitter in pipeStatus.ts: on extinguish we stop spawning new
+   wisps and let the in-flight ones finish their rise (a natural die-out); on
+   lighting we restart them so the stream builds up from the bowl. */
+.pipe-smoke {
+  position: absolute;
+  left: 0.2em;
+  bottom: 1.07em; /* anchored to the bowl rim */
+  width: 0.5em;
+  height: 0.5em;
+  pointer-events: none;
+}
+
+.pipe-smoke i {
+  position: absolute;
+  bottom: 0;
+  left: 0em;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(235, 235, 240, 0.8),
+    rgba(210, 210, 220, 0) 70%
+  );
+  opacity: 0;
+  animation: pipe-smoke-rise 5.4s linear infinite;
+}
+
+/* Nine wisps at a steady (linear) pace, evenly staggered (every 0.6s) so the
+   vertical spacing stays even and the column never gaps. Each wisp weaves in
+   the opposite direction to its neighbour (alternating +/- sway) so the stream
+   braids and shimmers organically instead of looking like a static rod. */
+.pipe-smoke i:nth-child(1) { animation-delay: 0s;   --pipe-sway:  0.09em; }
+.pipe-smoke i:nth-child(2) { animation-delay: 0.6s; --pipe-sway: -0.07em; }
+.pipe-smoke i:nth-child(3) { animation-delay: 1.2s; --pipe-sway:  0.1em; }
+.pipe-smoke i:nth-child(4) { animation-delay: 1.8s; --pipe-sway: -0.06em; }
+.pipe-smoke i:nth-child(5) { animation-delay: 2.4s; --pipe-sway:  0.08em; }
+.pipe-smoke i:nth-child(6) { animation-delay: 3s;   --pipe-sway: -0.09em; }
+.pipe-smoke i:nth-child(7) { animation-delay: 3.6s; --pipe-sway:  0.07em; }
+.pipe-smoke i:nth-child(8) { animation-delay: 4.2s; --pipe-sway: -0.1em; }
+.pipe-smoke i:nth-child(9) { animation-delay: 4.8s; --pipe-sway:  0.06em; }
+
+@keyframes pipe-smoke-rise {
+  0% {
+    transform: translate(0, 0) scale(0.3);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.75;
+  }
+  25% {
+    transform: translate(var(--pipe-sway), -0.42em) scale(0.55);
+    opacity: 0.62;
+  }
+  50% {
+    transform: translate(calc(var(--pipe-sway) * -1), -0.85em) scale(0.78);
+    opacity: 0.45;
+  }
+  75% {
+    transform: translate(calc(var(--pipe-sway) * 0.4), -1.28em) scale(0.95);
+    opacity: 0.25;
+  }
+  100% {
+    transform: translate(calc(var(--pipe-sway) * 0.1), -1.7em) scale(1.1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipe-ember,
+  .pipe-smoke i {
+    animation: none;
+  }
+  /* still fade lit/unlit, just without the rising/breathing motion */
+  .pipe-smoke i {
+    opacity: 0;
+  }
+}
+
 #release-guard-timer {
   display: none;
 }
@@ -11401,4 +11537,134 @@ body.layout-manager-enabled #notification-center {
   line-height: 1;
   pointer-events: none;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Data Sources ("Zrodla danych") Popup */
+.data-sources-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--popup-bg);
+}
+
+.data-sources-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: var(--popup-text-bright);
+}
+
+.data-sources-table th,
+.data-sources-table td {
+  padding: 0.35rem 0.55rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--popup-border);
+}
+
+.data-sources-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--popup-bg);
+  color: var(--popup-text-dim);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.data-sources-row--due td {
+  color: var(--popup-data-blue);
+}
+
+.data-sources-note {
+  color: var(--popup-text-dim);
+  font-size: 0.7rem;
+}
+
+.data-sources-action-cell {
+  text-align: right;
+  white-space: nowrap;
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.data-sources-refresh-btn,
+.data-sources-preview-btn,
+.data-sources-back-btn,
+.data-sources-popup__refresh-all {
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.data-sources-refresh-btn:hover:not(:disabled),
+.data-sources-preview-btn:hover:not(:disabled),
+.data-sources-back-btn:hover:not(:disabled),
+.data-sources-popup__refresh-all:hover:not(:disabled) {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-bright);
+}
+
+.data-sources-refresh-btn:disabled,
+.data-sources-preview-btn:disabled,
+.data-sources-back-btn:disabled,
+.data-sources-popup__refresh-all:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Data Sources — raw data preview (detail) view */
+.data-sources-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.data-sources-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.55rem;
+  border-bottom: 1px solid var(--popup-border);
+  flex: 0 0 auto;
+}
+
+.data-sources-detail__title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--popup-text-bright);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-sources-detail__status {
+  padding: 1rem;
+  color: var(--popup-text-dim);
+  font-size: 0.8rem;
+}
+
+.data-sources-detail__content {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0.55rem;
+  overflow: auto;
+  font-family: var(--output-font-family), monospace;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--popup-text-bright);
+  white-space: pre-wrap;
+  word-break: break-word;
+  tab-size: 2;
 }

@@ -17,6 +17,7 @@ import type {SendCommandEvent} from "@shared/events";
 import {registerScripts} from "@client/main";
 import {HelperConnection} from "@modules/helper/HelperConnection";
 import {setupOutputContextMenu} from "./outputContextMenu";
+import initPipeStatus from "./pipeStatus";
 import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
@@ -453,6 +454,8 @@ if (multiBindsElement) {
 }
 
 setupOutputContextMenu(outputWrapper);
+
+initPipeStatus();
 
 function closeHistoryScrollback() {
     outputWrapper.scrollTop = outputWrapper.scrollHeight;
@@ -945,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutsButton = document.getElementById('shortcuts-button') as HTMLButtonElement | null;
     const locationNotesButton = document.getElementById('location-notes-button') as HTMLButtonElement | null;
     const peopleBrowserButton = document.getElementById('people-browser-button') as HTMLButtonElement | null;
+    const dataSourcesButton = document.getElementById('data-sources-button') as HTMLButtonElement | null;
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
     const mobileRadialButton = document.getElementById('mobile-radial-button') as HTMLButtonElement | null;
     const helperButton = document.getElementById('helper-button') as HTMLButtonElement | null;
@@ -1250,6 +1254,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (peopleBrowserButton) {
         peopleBrowserButton.addEventListener('click', () => {
             eventBus.emit('peopleBrowser.popup.open');
+        });
+    }
+
+    if (dataSourcesButton) {
+        dataSourcesButton.addEventListener('click', () => {
+            eventBus.emit('dataSources.popup.open');
         });
     }
 

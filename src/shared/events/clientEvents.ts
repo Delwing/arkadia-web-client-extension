@@ -160,6 +160,7 @@ export interface KnownEvents {
     "lampTimer": number | null;
     "coverTimer": number | null;
     "breakItem": { text: string; command?: string } | null;
+    "pipeLit": boolean;
     "packageStatus": PackageStatus | null;
     "releaseGuard": boolean;
     "attackMode": "A" | "AW" | "AWR";
@@ -314,6 +315,7 @@ export interface KnownEvents {
     "deposits.popup.open": { filter?: string };
     "skroty.popup.open": void;
     "peopleBrowser.popup.open": void;
+    "dataSources.popup.open": void;
     "map.centerOn": { roomId: number };
     "map.setLocation": { roomId: number };
     "mapLabelVisibility": boolean;

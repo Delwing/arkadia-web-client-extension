@@ -342,6 +342,10 @@ export async function getSnapshot(): Promise<NpcStoreSnapshot | undefined> {
   return store.getSnapshot();
 }
 
+export async function getMetadata(): Promise<RefreshMetadata | undefined> {
+  return store.getMetadata();
+}
+
 export async function addLocalNpc(npc: NpcRecord) {
   await store.applyLocalChange(current => {
     const snapshot = ensureSnapshot(current);

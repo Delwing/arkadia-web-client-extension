@@ -23,6 +23,7 @@ const DISPLAY_NAMES: Record<string, string> = {
     'clock-display': 'Zegar',
     'transport-timer': 'Timer transportu',
     'lamp-timer': 'Timer lampy',
+    'pipe-status': 'Fajka',
     'break-item-warning': 'Ostrzezenie o uszkodzeniu',
     'mail-status': 'Status poczty',
     'package-status': 'Status paczki',

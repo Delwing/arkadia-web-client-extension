@@ -57,6 +57,7 @@ import initOdlozMagie from './scripts/odlozMagie'
 import registerGagTriggers from './scripts/gags'
 import initLeaderAttackWarning from './scripts/leaderAttackWarning'
 import initBreakItem from './scripts/breakItem'
+import initPipe from './scripts/pipe'
 import initHpAlert from './scripts/hpAlert'
 import initNoWeaponAlert from './scripts/noWeaponAlert'
 import initMagikZnika from './scripts/magikZnika'
@@ -282,6 +283,7 @@ export function registerScripts(client: Client) {
     initWeaponColors(client)
     initLeaderAttackWarning(client)
     initBreakItem(client)
+    initPipe(client)
     initHpAlert(client)
     initIdleFullHp(client)
     initFullHpTimer(client)

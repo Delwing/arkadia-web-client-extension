@@ -38,6 +38,14 @@ export function subscribe(
   return getPeopleStore().subscribe(listener, options);
 }
 
+export async function getMetadata(): Promise<PeopleMetadata | undefined> {
+  return getPeopleStore().getMetadata();
+}
+
+export async function getSnapshot(): Promise<PeopleSnapshot | undefined> {
+  return getPeopleStore().getSnapshot();
+}
+
 export async function refresh(options: { onProgress?: ProgressListener } = {}) {
   return await getPeopleStore().refresh({ onProgress: options.onProgress });
 }
