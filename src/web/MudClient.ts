@@ -77,6 +77,13 @@ class MudClient implements ClientAdapter {
     // Latches true once the server sends IAC GA/EOR; from then on we trust those
     // prompt markers and bypass partial-line buffering (mirrors Mudlet).
     private gaDriver = false;
+    // Per gmcp_msgs type, the trailing partial line (text after the last '\n')
+    // held back until a later message of that type supplies the rest. A complete
+    // line of game text ends with '\n'; a payload without one is a line split
+    // across frames/messages. Flushed at a prompt boundary, the idle timer, or
+    // socket close. Keyed by type so independent streams (room.long, comm, ...)
+    // never bleed into each other.
+    private pendingMsgTails = new Map<string, string>();
     // How to reach the game (direct / helper / proxy); see PROXY_MODE_STORAGE_KEY.
     private proxyMode: ProxyMode = 'direct';
     // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL in 'proxy' mode.
@@ -241,6 +248,7 @@ class MudClient implements ClientAdapter {
         this.textDecoder = new TextDecoder('utf-8', {fatal: false});
         this.pendingSubneg = "";
         this.pendingLineTail = "";
+        this.pendingMsgTails.clear();
         this.gaDriver = false;
         // Proxy/helper speak raw binary frames; native /wss speaks base64 text.
         this.codec = selectCodec(this.proxyMode !== 'direct');
@@ -289,6 +297,7 @@ class MudClient implements ClientAdapter {
                     this.connectionCheckTimeout = null;
                 }
                 this.flushPendingLineTail();
+                this.flushMessageBuffer(true);
                 this.emit('close', event);
                 this.emit('client.disconnect');
                 this.pingTracker.stop();
@@ -296,6 +305,7 @@ class MudClient implements ClientAdapter {
                 this.echoHandler.reset();
                 this.pendingSubneg = "";
                 this.pendingLineTail = "";
+                this.pendingMsgTails.clear();
                 this.clearTailTimer();
             };
 
@@ -465,7 +475,6 @@ class MudClient implements ClientAdapter {
         const decoded = this.decodeUtf8(sanitized);
 
         if (decoded.length > 0) {
-            this.clearTailTimer();
             if (this.gaDriver) {
                 // Server reliably marks prompts via IAC GA/EOR — emit verbatim.
                 this.pushChunk(decoded);
@@ -482,13 +491,32 @@ class MudClient implements ClientAdapter {
         }
 
         if (hasPrompt) {
+            // A telnet prompt (IAC GA/EOR) ends the server's burst: complete the
+            // raw tail and force every held partial line out, then trust prompt
+            // markers from here on.
             this.flushPendingLineTail();
             this.gaDriver = true;
-        } else if (this.pendingLineTail.length > 0) {
-            this.scheduleTailFlush();
+            this.flushMessageBuffer(true);
+        } else {
+            this.flushMessageBuffer();
         }
 
-        this.flushMessageBuffer();
+        // Arm the idle flush while any partial line — raw or per-type gmcp_msgs —
+        // is still waiting for its continuation; cancel it once nothing is held.
+        // scheduleTailFlush no-ops if a timer is already pending, so an unrelated
+        // frame doesn't keep pushing back a held line's deadline.
+        if (this.pendingLineTail.length > 0 || this.hasPendingMsgTails()) {
+            this.scheduleTailFlush();
+        } else {
+            this.clearTailTimer();
+        }
+    }
+
+    private hasPendingMsgTails(): boolean {
+        for (const tail of this.pendingMsgTails.values()) {
+            if (tail.length > 0) return true;
+        }
+        return false;
     }
 
     /** Queue a chunk of raw game text for the flushLines pipeline. */
@@ -511,9 +539,9 @@ class MudClient implements ClientAdapter {
         if (this.pendingTailTimer !== null) return;
         this.pendingTailTimer = window.setTimeout(() => {
             this.pendingTailTimer = null;
-            if (this.pendingLineTail.length === 0) return;
+            // No continuation arrived in time — render whatever is held as-is.
             this.flushPendingLineTail();
-            this.flushMessageBuffer();
+            this.flushMessageBuffer(true);
         }, 300);
     }
 
@@ -524,11 +552,27 @@ class MudClient implements ClientAdapter {
         }
     }
 
-    flushMessageBuffer() {
-        if (this.messageBuffer.length === 0) {
+    /**
+     * Group buffered messages by consecutive type and emit complete lines.
+     *
+     * A complete line of game text ends with '\n'. A gmcp_msgs payload that
+     * doesn't is a line split across frames/messages, so its trailing remainder
+     * is held per type in pendingMsgTails and joined with the continuation in a
+     * later frame. `force` (a prompt boundary, the idle timer, or socket close)
+     * emits every held tail immediately instead of waiting for the '\n'.
+     *
+     * A gmcp_msgs "prompt" has no trailing newline by design and marks the end
+     * of a server burst, so its presence also forces a flush.
+     */
+    flushMessageBuffer(force = false) {
+        const promptBoundary = force || this.messageBuffer.some(m => m.type === 'prompt');
+
+        if (this.messageBuffer.length === 0 && !(promptBoundary && this.hasPendingMsgTails())) {
             return;
         }
 
+        // Concatenate consecutive same-type messages — a single frame's run of
+        // one type is one line fragment.
         const groups: { text: string; type: string }[] = [];
         let currentType: string | null = null;
         let currentText = "";
@@ -549,7 +593,48 @@ class MudClient implements ClientAdapter {
         }
 
         this.messageBuffer = [];
-        this.emit('flushLines', groups);
+
+        const out: { text: string; type: string }[] = [];
+        for (const group of groups) {
+            const held = this.pendingMsgTails.get(group.type) ?? "";
+            this.pendingMsgTails.delete(group.type);
+            const combined = held + group.text;
+            if (combined.length === 0) continue;
+
+            const lastNl = combined.lastIndexOf('\n');
+            if (lastNl === -1) {
+                // No line terminator yet — hold for the next frame unless a
+                // prompt boundary says the burst is over.
+                if (promptBoundary) {
+                    out.push({ text: combined, type: group.type });
+                } else {
+                    this.pendingMsgTails.set(group.type, combined);
+                }
+                continue;
+            }
+
+            out.push({ text: combined.substring(0, lastNl + 1), type: group.type });
+            const tail = combined.substring(lastNl + 1);
+            if (tail.length > 0) {
+                if (promptBoundary) {
+                    out.push({ text: tail, type: group.type });
+                } else {
+                    this.pendingMsgTails.set(group.type, tail);
+                }
+            }
+        }
+
+        if (promptBoundary && this.pendingMsgTails.size > 0) {
+            // Flush tails for types that didn't appear in this batch.
+            for (const [type, tail] of this.pendingMsgTails) {
+                if (tail.length > 0) out.push({ text: tail, type });
+            }
+            this.pendingMsgTails.clear();
+        }
+
+        if (out.length > 0) {
+            this.emit('flushLines', out);
+        }
     }
 
 }

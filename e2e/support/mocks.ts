@@ -155,9 +155,15 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
 
         globalScope.__pushText = (text: string, type: string) => {
             const normalized = normalizeLines(text);
+            // The client treats a gmcp_msgs payload without a trailing newline
+            // as a partial line and holds it for the next frame (the real server
+            // terminates a complete line with "\n"). Emit a complete line so each
+            // push renders immediately. Prompts intentionally have no newline.
+            const payload =
+                type === 'prompt' || normalized.endsWith('\n') ? normalized : `${normalized}\n`;
             globalScope.__pushGmcp('gmcp_msgs', {
                 type,
-                text: btoa(normalized),
+                text: btoa(payload),
             });
         };
     });
