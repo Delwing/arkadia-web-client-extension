@@ -8,7 +8,7 @@ export async function initEsbuild(updateStatus: (message: string, type: StatusTy
   if (esbuildInitialized) return
   try {
     await esbuild.initialize({
-      wasmURL: 'https://unpkg.com/esbuild-wasm@0.27.0/esbuild.wasm',
+      wasmURL: `https://unpkg.com/esbuild-wasm@${esbuild.version}/esbuild.wasm`,
     })
     esbuildInitialized = true
     updateStatus('esbuild initialized', 'success')
