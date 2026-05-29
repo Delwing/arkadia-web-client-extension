@@ -343,6 +343,20 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).toMatch(/rubin/);
     });
 
+    test('categorizes a string of pearls as bizuteria, not kamienie', () => {
+      const input = 'Otwarty skorzany plecak zawiera polyskujacy sznur blekitnych perel.';
+
+      client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      const tableText = getEmittedTable();
+
+      // "sznur ... perel" is jewelery, not loose gemstones
+      expect(tableText).toMatch(/bizuteria/);
+      expect(tableText).toMatch(/perel/);
+      expect(tableText).not.toMatch(/kamienie/);
+    });
+
     test('does not categorize items with gem-colored adjectives as stones', () => {
       const input = 'Otwarty skorzany plecak zawiera szmaragdowy okragly flakonik, zielony szmaragd.';
 
