@@ -1,9 +1,11 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {characterStorage} from "@modules/core/storage";
-import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {getKillData} from "./kill";
+import {BaseCounter} from "./BaseCounter";
+import {createPad, createHeader} from "./counterTableUtils";
 
 const HEADER_COLOR = createColorFormat("#90ee90");
 const SECTION_COLOR = createColorFormat("#ffa500");
@@ -72,58 +74,6 @@ export function formatDuration(ms: number): string {
     return `${m.toString().padStart(3, " ")}:${s.toString().padStart(2, "0")}`;
 }
 
-function createPad(width: number, left: number, right: number) {
-    const contentWidth = width - left - right;
-    return (content?: AnsiAwareBuffer): AnsiAwareBuffer => {
-        const line = new AnsiAwareBuffer("|");
-        line.append(" ".repeat(left), {});
-
-        if (content) {
-            if (content.length > contentWidth) {
-                // Truncate content if too long
-                const truncated = new AnsiAwareBuffer();
-                const segments = content.getSegments();
-                let remaining = contentWidth;
-                for (const segment of segments) {
-                    if (remaining <= 0) break;
-                    if (segment.text.length <= remaining) {
-                        truncated.append(segment.text, segment.state);
-                        remaining -= segment.text.length;
-                    } else {
-                        truncated.append(segment.text.slice(0, remaining), segment.state);
-                        remaining = 0;
-                    }
-                }
-                line.appendBuffer(truncated);
-            } else {
-                line.appendBuffer(content);
-                line.append(" ".repeat(contentWidth - content.length));
-            }
-        } else {
-            line.append(" ".repeat(contentWidth), {});
-        }
-
-        line.append(" ".repeat(right), {});
-        line.append("|");
-        return line;
-    };
-}
-
-function createHeader(width: number, offset: number, color: FormatStateSnapshot) {
-    return (title: string): AnsiAwareBuffer => {
-        const line = new AnsiAwareBuffer("+");
-        const dashes = width - title.length - offset;
-        const left = Math.floor(dashes / 2);
-        const right = dashes - left;
-        line.append("-".repeat(left));
-        line.append(" ");
-        line.appendBuffer(colorString(title, color));
-        line.append(" ");
-        line.append("-".repeat(right), {});
-        line.append("+");
-        return line;
-    };
-}
 
 export type ImproveEntry = {
     state: string;
@@ -179,8 +129,7 @@ export function getFormattedPostepyTable(): AnsiAwareBuffer | null {
     return improveCounterInstance?.getFormattedTable() ?? null;
 }
 
-export default class ImproveCounter {
-    private client: Client;
+export default class ImproveCounter extends BaseCounter {
     private entries: ImproveEntry[] = [];
     private lifetime: { date: string; count: number; noFormCount?: number }[] = [];
     private lifetimeEnabled = true;
@@ -196,9 +145,8 @@ export default class ImproveCounter {
     private waitingForFirstCombat = false;
     private stateForm: number = 0;
     private optionsForm: number = 0;
-    private selfPersisting = false;
     constructor(client: Client) {
-        this.client = client;
+        super(client);
         improveCounterInstance = this;
 
         const initialData = characterStorage.get('improve_counter');
@@ -209,8 +157,7 @@ export default class ImproveCounter {
         this.loadLifetime(initialLifetime ?? {});
         this.lifetimeLoaded = true;
 
-        characterStorage.onChange('improve_counter', (value) => {
-            if (this.selfPersisting) return;
+        this.onStorageChange('improve_counter', (value) => {
             this.load(value ?? {});
             this.initialized = false;
             this.loaded = true;
@@ -220,8 +167,7 @@ export default class ImproveCounter {
                 this.handleLevel(level);
             }
         });
-        characterStorage.onChange('improve_counter_lifetime', (value) => {
-            if (this.selfPersisting) return;
+        this.onStorageChange('improve_counter_lifetime', (value) => {
             this.loadLifetime(value ?? {});
             this.lifetimeLoaded = true;
             if (this.pendingLifetime.length) {
@@ -231,8 +177,6 @@ export default class ImproveCounter {
                 this.pendingLifetime = [];
             }
         });
-
-        this.client.on("reset", () => this.reset());
 
         window.addEventListener("beforeunload", this.persist);
 
@@ -488,9 +432,12 @@ export default class ImproveCounter {
         }
     }
 
+    protected onReset(): void {
+        this.reset();
+    }
+
     private persist = () => {
-        this.selfPersisting = true;
-        characterStorage.set('improve_counter', {
+        this.setStorage('improve_counter', {
             entries: this.entries,
             lastTime: this.lastTime,
             lastKills: this.lastKills,
@@ -498,13 +445,10 @@ export default class ImproveCounter {
             lastObjNum: this.lastObjNum,
             waitingForFirstCombat: this.waitingForFirstCombat,
         });
-        this.selfPersisting = false;
     };
 
     private persistLifetime = () => {
-        this.selfPersisting = true;
-        characterStorage.set('improve_counter_lifetime', {entries: this.lifetime, enabled: this.lifetimeEnabled});
-        this.selfPersisting = false;
+        this.setStorage('improve_counter_lifetime', {entries: this.lifetime, enabled: this.lifetimeEnabled});
     };
 
     addLifetime(count: number, id?: number) {

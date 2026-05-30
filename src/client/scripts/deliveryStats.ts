@@ -4,6 +4,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {characterStorage} from "@modules/core/storage";
 import {getFromIndexedDB, storeInIndexedDB, IndexedDBConfig} from "@client/utils/dataCache.ts";
 import {GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
+import {createPad, createHeader} from "./counterTableUtils";
 
 export interface DeliveryRecord {
     timestamp: number;
@@ -38,40 +39,6 @@ function parsePayment(text: string): { gold: number; silver: number; copper: num
     };
 }
 
-function createPad(
-    width: number,
-    left: number,
-    right: number,
-): (content?: AnsiAwareBuffer) => AnsiAwareBuffer {
-    const contentWidth = width - left - right;
-    return (content = new AnsiAwareBuffer()) => {
-        const buffer = new AnsiAwareBuffer();
-        buffer.append("|", {});
-        buffer.append(" ".repeat(left), {});
-        buffer.appendBuffer(content);
-        buffer.append(" ".repeat(Math.max(0, contentWidth - content.length)), {});
-        buffer.append(" ".repeat(right), {});
-        buffer.append("|", {});
-        return buffer;
-    };
-}
-
-function createHeader(
-    width: number,
-    offset: number,
-    color: ReturnType<typeof createColorFormat>,
-): (title: string) => AnsiAwareBuffer {
-    return (title: string) => {
-        const dashes = width - title.length - offset;
-        const left = Math.floor(dashes / 2);
-        const right = dashes - left;
-        const buffer = new AnsiAwareBuffer();
-        buffer.append(`+${"-".repeat(left)} `, {});
-        buffer.append(title, color);
-        buffer.append(` ${"-".repeat(right)}+`, {});
-        return buffer;
-    };
-}
 
 interface PeriodStats {
     total: number;
