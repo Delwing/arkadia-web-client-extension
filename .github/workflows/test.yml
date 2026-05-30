@@ -223,14 +223,10 @@ jobs:
           merge-multiple: true
       - name: Merge Playwright reports
         if: steps.download-blob-reports.outcome == 'success'
+        continue-on-error: true
         env:
-          PLAYWRIGHT_JUNIT_OUTPUT_NAME: results.xml
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: test-results/e2e-junit.xml
         run: npx playwright merge-reports --reporter=html,junit ./all-blob-reports
-      - name: Move merged JUnit report
-        if: steps.download-blob-reports.outcome == 'success'
-        run: |
-          mkdir -p test-results
-          mv results.xml test-results/e2e-junit.xml
       - name: Upload Playwright HTML report
         if: steps.download-blob-reports.outcome == 'success'
         uses: actions/upload-artifact@v6
