@@ -10,6 +10,12 @@
  *                  are already faded to nothing) so they die out naturally
  *                  instead of all cutting out at once.
  *
+ * The graceful extinguish relies on the `animationiteration` event, which the
+ * browser throttles (and may never deliver) while the tab is backgrounded. So
+ * when the document is hidden we freeze the wisps outright, and we reconcile
+ * the smoke whenever the tab becomes visible again — otherwise a pipe that
+ * burns out in a background tab would keep smoking until you switch back.
+ *
  * Lit/unlit is driven by the game via the `pipeLit` client event (see
  * src/client/scripts/pipe.ts).
  */
@@ -31,6 +37,22 @@ function getWisps(el: HTMLElement): HTMLElement[] {
 // re-light can cancel them before they fire.
 let extinguishSignal: AbortController | null = null;
 
+// The latest lit/unlit state the game asked for, so a visibility change can
+// reconcile the smoke (the `animationiteration` listeners may never have fired
+// while the tab was hidden).
+let pipeLit = false;
+
+function freezeSmoke(el: HTMLElement): void {
+  // Drop the animation entirely so each wisp falls back to its base opacity: 0
+  // (fully hidden) regardless of where in the rise it currently is. Used when
+  // we can't rely on `animationiteration` to land the wisps gracefully.
+  extinguishSignal?.abort();
+  extinguishSignal = null;
+  for (const wisp of getWisps(el)) {
+    wisp.style.animation = "none";
+  }
+}
+
 function startSmoke(el: HTMLElement): void {
   extinguishSignal?.abort();
   extinguishSignal = null;
@@ -46,6 +68,12 @@ function startSmoke(el: HTMLElement): void {
 }
 
 function stopSmoke(el: HTMLElement): void {
+  if (document.hidden) {
+    // No reliable `animationiteration` while hidden — freeze now (it's not
+    // visible anyway) so the pipe doesn't keep smoking in the background.
+    freezeSmoke(el);
+    return;
+  }
   extinguishSignal?.abort();
   const controller = new AbortController();
   extinguishSignal = controller;
@@ -67,6 +95,7 @@ function stopSmoke(el: HTMLElement): void {
 export function setPipeLit(lit: boolean): void {
   const el = getElement();
   if (!el) return;
+  pipeLit = lit;
   el.classList.toggle(LIT_CLASS, lit); // ember fades up / down via CSS
   el.title = lit ? "Zgas fajke" : "Zapal fajke";
   if (lit) {
@@ -87,6 +116,14 @@ export default function initPipeStatus(): void {
   if (!el) return;
   // Driven by the game: lit when the pipe is puffed, unlit when it burns out.
   mudClient.on("pipeLit", (lit) => setPipeLit(lit));
+  pipeLit = el.classList.contains(LIT_CLASS);
+  // If the pipe burned out while the tab was hidden, the `animationiteration`
+  // listeners never fired, so the wisps could still be mid-rise. Reconcile when
+  // the tab comes back into view.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || pipeLit) return;
+    freezeSmoke(el);
+  });
   // The CSS starts the wisps running; if the pipe loads unlit, halt them.
   if (!el.classList.contains(LIT_CLASS)) {
     for (const wisp of getWisps(el)) {
