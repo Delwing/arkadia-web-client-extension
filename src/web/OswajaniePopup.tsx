@@ -177,6 +177,7 @@ const LinkMenu: React.FC<{ state: LinkMenuState; onClose: () => void }> = ({ sta
         <div
             ref={ref}
             className="oswajanie-linkmenu"
+            data-popup-overlay
             style={{ left: pos?.left ?? state.rect.left, top: pos?.top ?? state.rect.bottom + 4, visibility: pos ? 'visible' : 'hidden' }}
         >
             <div className="oswajanie-linkmenu__title">Polacz z:</div>

@@ -261,7 +261,10 @@ export function useDockablePopup({
       const floatingPopup = target.closest('.floating-panel--popup');
       const dockedPopup = target.closest('.docked-panel--popup');
       const contextMenu = target.closest('#context-menu');
-      if (floatingPopup || dockedPopup || contextMenu) return;
+      // Overlays a popup portals to document.body (e.g. the oswajanie link
+      // menu) opt out of the outside-click close via this attribute.
+      const popupOverlay = target.closest('[data-popup-overlay]');
+      if (floatingPopup || dockedPopup || contextMenu || popupOverlay) return;
       onCloseRef.current();
     };
 
