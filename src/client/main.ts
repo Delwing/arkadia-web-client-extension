@@ -46,6 +46,7 @@ import initItemCondition from './scripts/itemCondition'
 import initDurability from './scripts/durability'
 import initWearUsed from './scripts/wearUsed'
 import initAnimalTaming from './scripts/animalTaming'
+import initOswajanie from './scripts/oswajanie'
 import initInvite from './scripts/invite'
 import initObjectAliases from './scripts/objectAliases'
 import initMagicKeys from './scripts/magicKeys'
@@ -266,6 +267,7 @@ export function registerScripts(client: Client) {
     initDurability(client)
     initWearUsed(client)
     initAnimalTaming(client)
+    initOswajanie(client, aliases)
     initInvite(client)
     initObjectAliases(client, aliases)
     initMagicKeys(client)

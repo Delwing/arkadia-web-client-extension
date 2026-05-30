@@ -2,20 +2,23 @@ import Client from "../Client";
 import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "../ansi/FormatState";
 
-const COLORS: FormatStateSnapshot[] = [
-    createColorFormat("#ff0000"),
-    createColorFormat("#ff0000"),
-    createColorFormat("#ff0000"),
-    createColorFormat("#ffa500"),
-    createColorFormat("#ffa500"),
-    createColorFormat("#ffff00"),
-    createColorFormat("#ffff00"),
-    createColorFormat("#00ff00"),
-    createColorFormat("#00ff00"),
-    createColorFormat("#87ceeb"),
+/** Hex color per taming level (1-based index maps via value - 1). */
+export const TAMING_LEVEL_COLORS: string[] = [
+    "#ff0000",
+    "#ff0000",
+    "#ff0000",
+    "#ffa500",
+    "#ffa500",
+    "#ffff00",
+    "#ffff00",
+    "#00ff00",
+    "#00ff00",
+    "#87ceeb",
 ];
 
-const TAMING_LEVELS: Record<string, number> = {
+const COLORS: FormatStateSnapshot[] = TAMING_LEVEL_COLORS.map(createColorFormat);
+
+export const TAMING_LEVELS: Record<string, number> = {
     "plochliwe": 1,
     "nerwowe": 2,
     "nieufne": 3,
@@ -27,6 +30,13 @@ const TAMING_LEVELS: Record<string, number> = {
     "oddane": 9,
     "calkowicie oddane": 10,
 };
+
+/** Taming value (1-10) and display color for a level name, or null if unknown. */
+export function getTamingLevelInfo(level: string): { value: number; color: string } | null {
+    const value = TAMING_LEVELS[level.toLowerCase()];
+    if (value == null) return null;
+    return { value, color: TAMING_LEVEL_COLORS[value - 1] };
+}
 
 export function processAnimalTaming(buffer: AnsiAwareBuffer, level: string): AnsiAwareBuffer {
     const value = TAMING_LEVELS[level.toLowerCase()];

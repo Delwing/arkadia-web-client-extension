@@ -36,6 +36,7 @@ import TransportDebugPopup from '../TransportDebugPopup';
 import TransportTimesDebugPopup from '../TransportTimesDebugPopup';
 import ZlomPopup from '../ZlomPopup';
 import StatPopup from '../StatPopup';
+import OswajaniePopup from '../OswajaniePopup';
 import DataSourcesPopup from '../DataSourcesPopup';
 
 interface LayoutManagerWrapperProps {
@@ -107,6 +108,7 @@ export function LayoutManagerWrapper({
       <TransportTimesDebugPopup />
       <ZlomPopup />
       <StatPopup />
+      <OswajaniePopup />
       <DataSourcesPopup />
       <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}

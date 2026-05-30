@@ -11683,3 +11683,261 @@ body.layout-manager-enabled #notification-center {
   word-break: break-word;
   tab-size: 2;
 }
+
+/* Oswajanie (animal taming) popup — rendered as a DockablePopupWrapper body */
+.oswajanie-popup {
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--popup-text);
+  background: var(--popup-bg);
+}
+.oswajanie-popup a {
+  color: var(--popup-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+.oswajanie-popup a:hover {
+  text-decoration: underline;
+}
+.oswajanie-popup__heading {
+  font-weight: 600;
+  color: var(--popup-text-bright);
+  margin-bottom: 0.4rem;
+}
+.oswajanie-popup__intro {
+  color: var(--popup-text-subtle);
+  margin: 0.4rem 0;
+}
+.oswajanie-popup__subheading {
+  font-weight: 600;
+  color: var(--popup-text-bright);
+  margin: 0.6rem 0 0.25rem;
+}
+.oswajanie-popup__list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.oswajanie-popup__hint {
+  color: var(--popup-text-dim);
+  font-size: 0.85em;
+  margin-top: 0.4rem;
+}
+
+.oswajanie-nav,
+.oswajanie-topbar,
+.oswajanie-controls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.oswajanie-nav {
+  margin-bottom: 0.6rem;
+}
+.oswajanie-topbar {
+  margin-bottom: 0.6rem;
+}
+.oswajanie-controls {
+  margin-top: 0.35rem;
+  font-size: 0.85em;
+}
+
+.oswajanie-tab,
+.oswajanie-btn {
+  background: var(--popup-control-bg);
+  color: var(--popup-text-bright);
+  border: 1px solid var(--popup-border-subtle);
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+}
+.oswajanie-tab:hover,
+.oswajanie-btn:hover {
+  background: var(--popup-control-hover-bg);
+}
+.oswajanie-tab.is-active {
+  background: var(--popup-accent-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-text);
+}
+.oswajanie-btn--sm {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.85em;
+}
+.oswajanie-btn--success {
+  background: var(--popup-success-bg);
+  border-color: var(--popup-success-border);
+  color: var(--popup-success-light);
+}
+.oswajanie-btn--success:hover {
+  background: var(--popup-success-hover-bg);
+}
+.oswajanie-btn--danger {
+  background: var(--popup-danger-bg);
+  border-color: var(--popup-danger-border);
+  color: var(--popup-danger-light);
+}
+.oswajanie-btn--danger:hover {
+  background: var(--popup-danger-hover-bg);
+}
+
+.oswajanie-select {
+  background: var(--popup-input-bg);
+  color: var(--popup-input-text);
+  border: 1px solid var(--popup-border-control);
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  font: inherit;
+  max-width: 100%;
+}
+
+.oswajanie-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+.oswajanie-table th {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  background: var(--popup-control-bg);
+  border-bottom: 1px solid var(--popup-border-strong);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 0.78em;
+}
+.oswajanie-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--popup-border-subtle);
+  vertical-align: top;
+}
+.oswajanie-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.oswajanie-td--center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.oswajanie-count {
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+}
+.oswajanie-count--toggle {
+  cursor: pointer;
+  color: var(--popup-accent);
+}
+.oswajanie-prev {
+  color: var(--popup-text-dim);
+}
+.oswajanie-ready {
+  color: var(--popup-warning-light);
+  font-weight: 600;
+}
+.oswajanie-muted {
+  color: var(--popup-text-dim);
+}
+
+.oswajanie-empty {
+  color: var(--popup-text-dim);
+  margin: 0.4rem 0;
+}
+
+.oswajanie-linkmenu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--popup-section-bg);
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 0.4rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+  padding: 0.25rem;
+  min-width: 150px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.875rem;
+}
+.oswajanie-linkmenu__title {
+  color: var(--popup-text-dim);
+  font-size: 0.8em;
+  padding: 0.2rem 0.4rem;
+}
+.oswajanie-linkmenu__item {
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--popup-text);
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font: inherit;
+}
+.oswajanie-linkmenu__item:hover {
+  background: var(--popup-accent-bg);
+}
+
+/* Oswajanie animal table column sizing: keep date/level columns tight and let
+   the "pokarm" column absorb the remaining width (no trailing whitespace). */
+.oswajanie-col-when,
+.oswajanie-col-next,
+.oswajanie-col-level {
+  white-space: nowrap;
+  width: 1%;
+}
+.oswajanie-col-food {
+  width: 100%;
+}
+
+/* Oswajanie pokarm cell: food + link icon buttons on one row */
+.oswajanie-foodrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.oswajanie-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-bright);
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 0.3rem;
+  cursor: pointer;
+  line-height: 0;
+}
+.oswajanie-iconbtn:hover {
+  background: var(--popup-control-hover-bg);
+}
+.oswajanie-iconbtn--danger {
+  color: var(--popup-danger-light);
+}
+.oswajanie-iconbtn--danger:hover {
+  background: var(--popup-danger-hover-bg);
+  border-color: var(--popup-danger-border);
+}
+
+/* Oswajanie "ready to feed now" shortcut list above the table */
+.oswajanie-ready-block {
+  margin: 0.75rem 0;
+}
+.oswajanie-ready-block__label {
+  color: var(--popup-text-subtle);
+  margin-right: 0.3rem;
+}
+.oswajanie-ready-block a {
+  color: var(--popup-warning-light);
+  font-weight: 600;
+}

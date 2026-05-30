@@ -20,6 +20,7 @@ import {
     Calendar,
     Wrench,
     Shield,
+    PawPrint,
     type LucideIcon,
 } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
@@ -195,6 +196,11 @@ export function setupOutputContextMenu(outputWrapper: HTMLElement): () => void {
             {
                 label: iconLabel(Shield, 'Zlom'),
                 action: () => eventBus.emit('zlom.popup.open'),
+                opensWindow: true,
+            },
+            {
+                label: iconLabel(PawPrint, 'Oswajanie'),
+                action: () => eventBus.emit('oswajanie.popup.open', {}),
                 opensWindow: true,
             },
         );

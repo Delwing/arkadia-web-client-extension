@@ -44,6 +44,7 @@ export type BuiltInPopupType =
   | 'transport-times-debug'
   | 'zlom'
   | 'stat'
+  | 'oswajanie'
   | 'dataSources';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
