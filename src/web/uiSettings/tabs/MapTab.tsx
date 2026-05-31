@@ -3,6 +3,9 @@ import { defaultUiSettings } from "../../defaultUiSettings";
 import { CheckboxRow, ColorField, NumberField, RangeField, SelectField, SettingsSection } from "../fields";
 import MapPreviewCanvas from "../MapPreviewCanvas";
 
+// Highlights take their colour per-call at runtime; use a representative sample for the preview.
+const HIGHLIGHT_PREVIEW_COLOR = '#ffcc00';
+
 interface MapTabProps {
     draft: UiSettings;
     update: (patch: Partial<UiSettings>) => void;
@@ -90,6 +93,7 @@ function MapTab({ draft, update, mapVersion, refreshing, onRefreshMap, explorati
                 <RangeField id="ui-map-player-marker-size-factor" label="Mnożnik rozmiaru markera" value={draft.mapPlayerMarkerSizeFactor} min={0.5} max={3} step={0.1} onChange={(n) => update({ mapPlayerMarkerSizeFactor: n })} />
                 <CheckboxRow id="ui-map-player-marker-dash-enabled" label="Przerywane obramowanie markera" checked={draft.mapPlayerMarkerDashEnabled} onChange={(v) => update({ mapPlayerMarkerDashEnabled: v })} />
                 <MapPreviewCanvas
+                    id="ui-map-preview-canvas"
                     roomSize={draft.mapRoomSize}
                     lineWidth={draft.mapLineWidth}
                     roomShape={draft.mapRoomShape}
@@ -100,6 +104,35 @@ function MapTab({ draft, update, mapVersion, refreshing, onRefreshMap, explorati
                     strokeWidth={draft.mapPlayerMarkerStrokeWidth}
                     sizeFactor={draft.mapPlayerMarkerSizeFactor}
                     dashEnabled={draft.mapPlayerMarkerDashEnabled}
+                />
+            </SettingsSection>
+
+            <SettingsSection title="Podświetlenie pomieszczeń">
+                <p className="text-muted small mb-1">Styl pierścieni rysowanych wokół wyróżnionych pomieszczeń (np. cel podróży, notatki). Kolor jest dobierany automatycznie dla każdego wyróżnienia.</p>
+                <SelectField id="ui-map-highlight-shape" label="Kształt podświetlenia" value={draft.mapHighlightShape} onChange={(v) => update({ mapHighlightShape: v as UiSettings['mapHighlightShape'] })}>
+                    <option value="match">Jak kształt pomieszczenia</option>
+                    <option value="rectangle">Prostokąt</option>
+                    <option value="roundedRectangle">Zaokrąglony prostokąt</option>
+                    <option value="circle">Koło</option>
+                </SelectField>
+                <RangeField id="ui-map-highlight-stroke-alpha" label="Przezroczystość obramowania" value={draft.mapHighlightStrokeAlpha} min={0} max={1} step={0.01} onChange={(n) => update({ mapHighlightStrokeAlpha: n })} />
+                <RangeField id="ui-map-highlight-fill-alpha" label="Przezroczystość wypełnienia" value={draft.mapHighlightFillAlpha} min={0} max={1} step={0.01} onChange={(n) => update({ mapHighlightFillAlpha: n })} />
+                <RangeField id="ui-map-highlight-stroke-width" label="Grubość obramowania" value={draft.mapHighlightStrokeWidth} min={0.01} max={0.3} step={0.01} onChange={(n) => update({ mapHighlightStrokeWidth: n })} />
+                <RangeField id="ui-map-highlight-size-factor" label="Mnożnik rozmiaru" value={draft.mapHighlightSizeFactor} min={0.5} max={3} step={0.025} onChange={(n) => update({ mapHighlightSizeFactor: n })} />
+                <CheckboxRow id="ui-map-highlight-dash-enabled" label="Przerywane obramowanie" checked={draft.mapHighlightDashEnabled} onChange={(v) => update({ mapHighlightDashEnabled: v })} />
+                <MapPreviewCanvas
+                    id="ui-map-highlight-preview-canvas"
+                    roomSize={draft.mapRoomSize}
+                    lineWidth={draft.mapLineWidth}
+                    roomShape={draft.mapRoomShape}
+                    markerShape={draft.mapHighlightShape === 'match' ? draft.mapRoomShape : draft.mapHighlightShape}
+                    strokeColor={HIGHLIGHT_PREVIEW_COLOR}
+                    fillColor={HIGHLIGHT_PREVIEW_COLOR}
+                    strokeAlpha={draft.mapHighlightStrokeAlpha}
+                    fillAlpha={draft.mapHighlightFillAlpha}
+                    strokeWidth={draft.mapHighlightStrokeWidth}
+                    sizeFactor={draft.mapHighlightSizeFactor}
+                    dashEnabled={draft.mapHighlightDashEnabled}
                 />
             </SettingsSection>
         </>

@@ -2,9 +2,12 @@ import { useEffect, useRef } from "react";
 import type { MapRoomShape } from "../uiSettingsCore";
 
 interface MapPreviewCanvasProps {
+    id?: string;
     roomSize: number;
     lineWidth: number;
     roomShape: MapRoomShape;
+    /** Shape of the overlay marker/highlight. Defaults to 'circle' (player marker behaviour). */
+    markerShape?: MapRoomShape;
     strokeColor: string;
     fillColor: string;
     strokeAlpha: number;
@@ -14,9 +17,35 @@ interface MapPreviewCanvasProps {
     dashEnabled: boolean;
 }
 
+/** Trace a centered shape path; size is the full width/height (diameter for circles). */
+function traceShape(ctx: CanvasRenderingContext2D, shape: MapRoomShape, cx: number, cy: number, size: number) {
+    ctx.beginPath();
+    if (shape === 'circle') {
+        ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
+    } else if (shape === 'roundedRectangle') {
+        const radius = size * 0.2; // 20% corner radius
+        const x = cx - size / 2;
+        const y = cy - size / 2;
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + size - radius, y);
+        ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
+        ctx.lineTo(x + size, y + size - radius);
+        ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
+        ctx.lineTo(x + radius, y + size);
+        ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    } else {
+        // rectangle (default)
+        ctx.rect(cx - size / 2, cy - size / 2, size, size);
+    }
+}
+
 /**
- * Live preview of a room + player marker, mirroring the map renderer.
- * Ported verbatim from the former imperative `drawPreview()`.
+ * Live preview of a room + overlay marker, mirroring the map renderer.
+ * Used for both the player marker (markerShape defaults to 'circle') and
+ * room highlights (markerShape resolved from the highlight shape setting).
  */
 function MapPreviewCanvas(props: MapPreviewCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -33,7 +62,7 @@ function MapPreviewCanvas(props: MapPreviewCanvasProps) {
         ctx.clearRect(0, 0, width, height);
 
         const {
-            roomSize, lineWidth, roomShape,
+            roomSize, lineWidth, roomShape, markerShape = 'circle',
             strokeColor, fillColor, strokeAlpha, fillAlpha,
             strokeWidth, sizeFactor, dashEnabled,
         } = props;
@@ -48,42 +77,12 @@ function MapPreviewCanvas(props: MapPreviewCanvasProps) {
         // Draw sample room based on shape
         ctx.strokeStyle = '#888';
         ctx.lineWidth = scaledLineWidth;
+        traceShape(ctx, roomShape, centerX, centerY, scaledRoomSize);
+        ctx.stroke();
 
-        if (roomShape === 'circle') {
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, scaledRoomSize / 2, 0, Math.PI * 2);
-            ctx.stroke();
-        } else if (roomShape === 'roundedRectangle') {
-            const radius = scaledRoomSize * 0.2; // 20% corner radius
-            const x = centerX - scaledRoomSize / 2;
-            const y = centerY - scaledRoomSize / 2;
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.lineTo(x + scaledRoomSize - radius, y);
-            ctx.quadraticCurveTo(x + scaledRoomSize, y, x + scaledRoomSize, y + radius);
-            ctx.lineTo(x + scaledRoomSize, y + scaledRoomSize - radius);
-            ctx.quadraticCurveTo(x + scaledRoomSize, y + scaledRoomSize, x + scaledRoomSize - radius, y + scaledRoomSize);
-            ctx.lineTo(x + radius, y + scaledRoomSize);
-            ctx.quadraticCurveTo(x, y + scaledRoomSize, x, y + scaledRoomSize - radius);
-            ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y);
-            ctx.closePath();
-            ctx.stroke();
-        } else {
-            // rectangle (default)
-            ctx.strokeRect(
-                centerX - scaledRoomSize / 2,
-                centerY - scaledRoomSize / 2,
-                scaledRoomSize,
-                scaledRoomSize
-            );
-        }
-
-        // Draw player marker (circle)
-        const markerRadius = (scaledRoomSize / 2) * sizeFactor;
-
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, markerRadius, 0, Math.PI * 2);
+        // Draw the overlay marker / highlight
+        const markerSize = scaledRoomSize * sizeFactor;
+        traceShape(ctx, markerShape, centerX, centerY, markerSize);
 
         // Fill
         if (fillAlpha > 0) {
@@ -113,7 +112,7 @@ function MapPreviewCanvas(props: MapPreviewCanvasProps) {
     return (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
             <canvas
-                id="ui-map-preview-canvas"
+                id={props.id ?? 'ui-map-preview-canvas'}
                 ref={canvasRef}
                 width={200}
                 height={100}

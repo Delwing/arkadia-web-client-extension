@@ -6,6 +6,7 @@ import {
     defaultUiSettings,
     type ColorTheme,
     type FooterComponentConfig,
+    type MapHighlightShape,
     type MapRoomShape,
     type PathFindingAlgorithm,
     type UiSettings
@@ -15,7 +16,7 @@ import {loadLayoutState} from "@web/layout";
 import {applyCustomTheme, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
 
 // Re-export for backwards compatibility
-export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
+export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapHighlightShape, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
 
 export const ALL_SOUND_CATEGORIES: SoundCategory[] = [
     'attack', 'hp', 'fishing', 'lamp', 'gear',
@@ -338,6 +339,14 @@ export function apply(settings: UiSettings) {
         mapSettings.playerMarker.strokeWidth = settings.mapPlayerMarkerStrokeWidth;
         mapSettings.playerMarker.sizeFactor = settings.mapPlayerMarkerSizeFactor;
         mapSettings.playerMarker.dashEnabled = settings.mapPlayerMarkerDashEnabled;
+        if (mapSettings.highlight) {
+            mapSettings.highlight.strokeAlpha = settings.mapHighlightStrokeAlpha;
+            mapSettings.highlight.fillAlpha = settings.mapHighlightFillAlpha;
+            mapSettings.highlight.strokeWidth = settings.mapHighlightStrokeWidth;
+            mapSettings.highlight.sizeFactor = settings.mapHighlightSizeFactor;
+            mapSettings.highlight.dashEnabled = settings.mapHighlightDashEnabled;
+            mapSettings.highlight.shape = settings.mapHighlightShape;
+        }
         mapSettings.roomShape = settings.mapRoomShape;
         mapSettings.lineColor = settings.mapLineColor;
         const isLayoutManagerEnabled = loadLayoutState().enabled;
@@ -459,6 +468,24 @@ export function load(): UiSettings {
             const mapPlayerMarkerDashEnabled = typeof parsed.mapPlayerMarkerDashEnabled === 'boolean'
                 ? parsed.mapPlayerMarkerDashEnabled
                 : defaultUiSettings.mapPlayerMarkerDashEnabled;
+            const mapHighlightStrokeAlpha = typeof parsed.mapHighlightStrokeAlpha === 'number'
+                ? parsed.mapHighlightStrokeAlpha
+                : defaultUiSettings.mapHighlightStrokeAlpha;
+            const mapHighlightFillAlpha = typeof parsed.mapHighlightFillAlpha === 'number'
+                ? parsed.mapHighlightFillAlpha
+                : defaultUiSettings.mapHighlightFillAlpha;
+            const mapHighlightStrokeWidth = typeof parsed.mapHighlightStrokeWidth === 'number'
+                ? parsed.mapHighlightStrokeWidth
+                : defaultUiSettings.mapHighlightStrokeWidth;
+            const mapHighlightSizeFactor = typeof parsed.mapHighlightSizeFactor === 'number'
+                ? parsed.mapHighlightSizeFactor
+                : defaultUiSettings.mapHighlightSizeFactor;
+            const mapHighlightDashEnabled = typeof parsed.mapHighlightDashEnabled === 'boolean'
+                ? parsed.mapHighlightDashEnabled
+                : defaultUiSettings.mapHighlightDashEnabled;
+            const mapHighlightShape = (parsed.mapHighlightShape === 'match' || parsed.mapHighlightShape === 'rectangle' || parsed.mapHighlightShape === 'circle' || parsed.mapHighlightShape === 'roundedRectangle')
+                ? parsed.mapHighlightShape as MapHighlightShape
+                : defaultUiSettings.mapHighlightShape;
             const mapRoomShape = (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle')
                 ? parsed.mapRoomShape as MapRoomShape
                 : defaultUiSettings.mapRoomShape;
@@ -531,6 +558,12 @@ export function load(): UiSettings {
                 mapPlayerMarkerStrokeWidth,
                 mapPlayerMarkerSizeFactor,
                 mapPlayerMarkerDashEnabled,
+                mapHighlightStrokeAlpha,
+                mapHighlightFillAlpha,
+                mapHighlightStrokeWidth,
+                mapHighlightSizeFactor,
+                mapHighlightDashEnabled,
+                mapHighlightShape,
                 mapRoomShape,
                 pathFindingAlgorithm,
                 objectContextMenuCommands,

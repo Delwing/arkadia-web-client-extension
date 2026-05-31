@@ -9,6 +9,8 @@ type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mo
 
 export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 
+export type MapHighlightShape = 'match' | 'rectangle' | 'roundedRectangle' | 'circle';
+
 export type PathFindingAlgorithm = 'dijkstra' | 'astar';
 
 export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'custom-dark';
@@ -71,6 +73,12 @@ export interface UiSettings {
     mapPlayerMarkerStrokeWidth: number;
     mapPlayerMarkerSizeFactor: number;
     mapPlayerMarkerDashEnabled: boolean;
+    mapHighlightStrokeAlpha: number;
+    mapHighlightFillAlpha: number;
+    mapHighlightStrokeWidth: number;
+    mapHighlightSizeFactor: number;
+    mapHighlightDashEnabled: boolean;
+    mapHighlightShape: MapHighlightShape;
     mapRoomShape: MapRoomShape;
     mapBackgroundColor: string;
     mapLineColor: string;
@@ -130,6 +138,12 @@ export const defaultUiSettings: UiSettings = {
     mapPlayerMarkerStrokeWidth: 0.1,
     mapPlayerMarkerSizeFactor: 1.7,
     mapPlayerMarkerDashEnabled: true,
+    mapHighlightStrokeAlpha: 1,
+    mapHighlightFillAlpha: 0,
+    mapHighlightStrokeWidth: 0.1,
+    mapHighlightSizeFactor: 1.425,
+    mapHighlightDashEnabled: true,
+    mapHighlightShape: 'match',
     mapRoomShape: 'rectangle',
     mapBackgroundColor: '#000000',
     mapLineColor: '#e1ffe1',
