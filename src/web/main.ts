@@ -61,7 +61,7 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {characterStorage, globalStorage, migrateNewlyCharacterScopedKeys} from "@modules/core/storage"
+import {globalStorage, migrateNewlyCharacterScopedKeys} from "@modules/core/storage"
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
