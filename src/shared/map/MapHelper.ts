@@ -1,5 +1,5 @@
 import {MapReader, PathFinder} from "mudlet-map-renderer";
-import {getLongDir, getShortDir, longToShort} from "./directions";
+import {getLongDir, getShortDir, isPolishDirection, longToShort} from "./directions";
 import {characterStorage} from "@modules/core/storage";
 
 type Position = {
@@ -380,9 +380,16 @@ export default class MapHelper {
     }
 
     followMove(direction: string, fullFollow?: string) {
-        const result = this.move(direction, true);
-        if (result.moved) {
-            return result.direction;
+        // The follow token comes from game prose, so only attempt a bare
+        // directional move when it is a full Polish direction word. Otherwise a
+        // preposition like "w" (in "w lesna gestwine") would be resolved to the
+        // short code for "west". Configured exits in specialExits /
+        // team_follow_link below are still resolved normally.
+        if (isPolishDirection(direction)) {
+            const result = this.move(direction, true);
+            if (result.moved) {
+                return result.direction;
+            }
         }
 
         if (this.currentRoom?.specialExits) {

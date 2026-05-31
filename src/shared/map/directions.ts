@@ -52,3 +52,16 @@ export function isDirection(dir: string): boolean {
     const long = getLongDir(dir);
     return Object.prototype.hasOwnProperty.call(longToShort, long);
 }
+
+/**
+ * Strict check for a full Polish direction word (polnoc, zachod, ...).
+ *
+ * Unlike isDirection, this does NOT accept the single-letter English short
+ * codes (n/s/e/w/...). Game output always names movement with full Polish
+ * words, so when interpreting tokens lifted from game text (e.g. follow
+ * messages) we must not let a prose token like "w" (the preposition "into")
+ * resolve to the short code for "west".
+ */
+export function isPolishDirection(dir: string): boolean {
+    return Object.prototype.hasOwnProperty.call(polishToEnglish, dir.toLowerCase());
+}
