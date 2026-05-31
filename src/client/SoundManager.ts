@@ -52,6 +52,17 @@ export default class SoundManager {
             this.playCategory(category);
         });
 
+        // Re-resolve the cached "beep" element when the custom beep selection
+        // changes, so categories left on "default beep" pick up the new sound
+        // without requiring a page reload.
+        globalStorage.onChange("uiSettings", (newVal, oldVal) => {
+            const newKey = (newVal as any)?.customBeepSoundKey || undefined;
+            const oldKey = (oldVal as any)?.customBeepSoundKey || undefined;
+            if (newKey !== oldKey) {
+                void this.refreshBeepSource();
+            }
+        });
+
         void this.discoverAndPreload();
 
         this.installGestureListeners();
@@ -179,6 +190,21 @@ export default class SoundManager {
             this.elementLoaders.set(key, loader);
         }
         return loader;
+    }
+
+    /**
+     * Re-resolve the cached "beep" element's source in place (keeping the
+     * primed element) after the custom beep selection changes.
+     */
+    private async refreshBeepSource(): Promise<void> {
+        const src = await this.resolveSrc("beep");
+        if (!src) return;
+        const audio = this.elements.get("beep");
+        if (audio) {
+            audio.src = src;
+        } else {
+            await this.ensureElement("beep");
+        }
     }
 
     private async resolveSrc(key: SoundKey): Promise<string | undefined> {

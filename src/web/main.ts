@@ -30,7 +30,7 @@ import initLogFileSaver from "./logFileSaver";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
-import initUiSettings from "./uiSettings";
+import UiSettings from "./uiSettings/UiSettings";
 import {defaultUiSettings} from "./defaultUiSettings";
 
 import "@client/main.ts"
@@ -955,6 +955,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Bootstrap modal
     const optionsModalElement = document.getElementById('options-modal');
     const optionsModal = optionsModalElement ? new Modal(optionsModalElement) : null;
+    const uiSettingsModalElement = document.getElementById('ui-settings-modal');
+    const uiSettingsModal = uiSettingsModalElement ? new Modal(uiSettingsModalElement) : null;
     const exportImportModalElement = document.getElementById('export-import-modal');
     const exportImportModal = exportImportModalElement ? new Modal(exportImportModalElement) : null;
     const characterManagementModalElement = document.getElementById('character-management-modal');
@@ -1198,6 +1200,24 @@ document.addEventListener('DOMContentLoaded', () => {
             window.dispatchEvent(new Event('save-options'));
         });
     }
+
+    // UI settings ("Ustawienia UI") modal — React component in #ui-settings-root.
+    const uiSettingsButton = document.getElementById('ui-settings-button') as HTMLButtonElement | null;
+    if (uiSettingsButton && uiSettingsModal) {
+        uiSettingsButton.addEventListener('click', () => {
+            uiSettingsModal.show();
+        });
+    }
+    const uiSettingsSave = document.getElementById('ui-settings-save') as HTMLButtonElement | null;
+    if (uiSettingsSave) {
+        uiSettingsSave.addEventListener('click', () => {
+            window.dispatchEvent(new Event('save-ui-settings'));
+        });
+    }
+    window.addEventListener('close-ui-settings', () => {
+        (document.activeElement as HTMLElement)?.blur?.();
+        uiSettingsModal?.hide();
+    });
 
     if (bindsButton && bindsModal) {
         bindsButton.addEventListener('click', () => {
@@ -1510,7 +1530,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLeader = !!client.TeamManager.isLeader?.();
     applyMobileButtonSettings(mobileSettings, inTeam, isLeader);
 
-    initUiSettings(client.SoundManager);
+    const uiSettingsRoot = document.getElementById('ui-settings-root');
+    if (uiSettingsRoot) {
+        createRoot(uiSettingsRoot).render(createElement(UiSettings, {
+            soundManager: client.SoundManager,
+            onEnableNotifications: () => client.enableNotifications(),
+        }));
+    }
 
     const fullscreenButton = document.getElementById('fullscreen-button') as HTMLButtonElement | null;
     if (fullscreenButton) {

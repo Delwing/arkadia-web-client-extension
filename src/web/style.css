@@ -6510,6 +6510,18 @@ body.mobile-command-radial-active {
   cursor: pointer;
 }
 
+/* Sound category tiles (Dźwięk tab) */
+.ui-sound-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.ui-sound-tile {
+  background-color: var(--popup-control-bg);
+  border-color: var(--popup-border) !important;
+}
+
 .modal-dialog {
   max-height: 85%;
   pointer-events: auto;

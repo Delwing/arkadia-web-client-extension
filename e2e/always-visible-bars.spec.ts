@@ -31,6 +31,7 @@ async function openUiSettings(page: Page) {
     await page.click(UI_SETTINGS_BUTTON);
     const modal = page.locator(UI_MODAL);
     await expect(modal, 'should open UI settings modal').toBeVisible();
+    await modal.getByRole('button', {name: 'Stopka', exact: true}).click();
     // Wait for the bar-order React component to mount
     await modal.locator('#ui-bar-order-settings').waitFor({state: 'visible'});
     await modal.locator(AVB_ALL).waitFor({state: 'visible'});

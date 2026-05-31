@@ -32,6 +32,10 @@ async function openUiSettings(page: Page) {
     return modal;
 }
 
+async function selectTab(modal: ReturnType<Page['locator']>, name: string) {
+    await modal.getByRole('button', {name, exact: true}).click();
+}
+
 test.beforeEach(async ({context}) => {
     await installEmbeddedMock(context);
 });
@@ -60,6 +64,8 @@ test.describe('UI settings', () => {
             }
         }
 
+        // Mapa tab
+        await selectTab(modal, 'Mapa');
         await ensureUnchecked('#ui-transparent-labels');
         await modal.locator('#ui-label-render-mode').selectOption('image');
         await modal.locator('#ui-map-scale').fill('0.5');
@@ -68,17 +74,25 @@ test.describe('UI settings', () => {
         await ensureChecked('#ui-exploration-mode');
         await ensureUnchecked('#ui-instant-move');
         await ensureUnchecked('#ui-highlight-current-room');
+
+        // Ogólne tab
+        await selectTab(modal, 'Ogólne');
         await modal.locator('#ui-content-font').fill('1.5');
         await modal.locator('#ui-objects-font').fill('1.25');
         await modal.locator('#ui-output-background').fill('#123456');
-        await modal.locator('#ui-footer-mode').selectOption('2');
         await modal.locator('#ui-xterm-palette').selectOption('proper');
         await modal.locator('#ui-font-family').selectOption('cascadia-mono');
         await ensureUnchecked('#ui-show-buttons');
         await ensureUnchecked('#ui-haptic-feedback');
-        await ensureChecked('#ui-emoji-labels');
+
+        // fight-title icon and clear-input now live on the Ogólne tab
         await ensureUnchecked('#ui-fight-title-icon');
         await ensureChecked('#ui-clear-input');
+
+        // Stopka tab
+        await selectTab(modal, 'Stopka');
+        await modal.locator('#ui-footer-mode').selectOption('2');
+        await ensureChecked('#ui-emoji-labels');
 
         // Toggle footer component visibility (transport-timer and combat-timer)
         // Wait for the footer components React component to render
@@ -216,7 +230,9 @@ test.describe('UI settings', () => {
         await ensureGameSocket(page);
 
         const modal = await openUiSettings(page);
+        await selectTab(modal, 'Mapa');
         await modal.locator('#ui-map-position').selectOption('bottom');
+        await selectTab(modal, 'Ogólne');
         await modal.locator('#ui-output-background').fill('#123456');
         await modal.locator('#ui-settings-save').click();
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
@@ -253,10 +269,12 @@ test.describe('UI settings', () => {
         ).toBe('rgb(18, 52, 86)');
 
         const reloadedModal = await openUiSettings(page);
+        await selectTab(reloadedModal, 'Mapa');
         await expect(
             reloadedModal.locator('#ui-map-position'),
             'should show persisted map position in UI settings',
         ).toHaveValue('bottom');
+        await selectTab(reloadedModal, 'Ogólne');
         await expect(
             reloadedModal.locator('#ui-output-background'),
             'should show persisted output background color in UI settings',
