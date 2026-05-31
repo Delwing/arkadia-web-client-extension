@@ -28,9 +28,11 @@ Modul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z z
 | Komenda | Opis |
 |---------|------|
 | `/ziola_przepakuj from to` | Przepakuj ziola z woreczka `from` do woreczka `to` |
-| `/ziola_daj imie ziolo` | Daj 1 sztuke ziola czlonkowi druzyny |
-| `/ziola_daj imie ziolo ilosc` | Daj wskazana ilosc ziola czlonkowi druzyny |
+| `/ziola_daj cel ziolo` | Daj 1 sztuke ziola wskazanemu celowi |
+| `/ziola_daj cel ziolo ilosc` | Daj wskazana ilosc ziola wskazanemu celowi |
 | `/ziola_odloz_woreczek numer` | Odloz woreczek (odbezpiecz, odtrocz, odloz) |
+
+> **Wskazowka:** Cel mozna podac jako skrot (litera/numer z listy obiektow, jak w `/z`, `/zas`) albo jako imie czlonka druzyny.
 
 ## Ustawienia
 

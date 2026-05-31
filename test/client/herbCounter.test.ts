@@ -225,37 +225,51 @@ describe('herb counter', () => {
   test('ziola_daj with count takes herbs from pouch and gives to team member', async () => {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     initHerbClient((client as unknown) as any, { 1: { deliona: 3 } }, defaultHerbData, aliases);
-    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(42) };
-    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo deliona 2'));
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([{ num: 42, shortcut: 'A' }]) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj A deliona 2'));
     expect(entry).toBeTruthy();
     client.sendCommand.mockClear();
-    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo deliona 2')!);
+    await entry!.callback(entry!.pattern.exec('/ziola_daj A deliona 2')!);
     expect(client.sendCommand).toHaveBeenCalledWith('otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenCalledWith('wez 2 zolte jasne kwiaty z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenCalledWith('zamknij 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
   });
 
-  test('ziola_daj with count prints error for unknown team member', async () => {
+  test('ziola_daj resolves a team member by name when no shortcut matches', async () => {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
-    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } }, defaultHerbData, aliases);
-    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(undefined) };
-    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Unknown deliona 1'));
+    initHerbClient((client as unknown) as any, { 1: { deliona: 2 } }, defaultHerbData, aliases);
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([{ num: 42, shortcut: 'A' }]) };
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(77) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo deliona'));
     expect(entry).toBeTruthy();
     client.sendCommand.mockClear();
-    await entry!.callback(entry!.pattern.exec('/ziola_daj Unknown deliona 1')!);
+    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo deliona')!);
+    expect((client as any).TeamManager.getTeamMemberObjectId).toHaveBeenCalledWith('Pablo');
+    expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_77');
+  });
+
+  test('ziola_daj with count prints error for unknown target', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } }, defaultHerbData, aliases);
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([]) };
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(undefined) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Z deliona 1'));
+    expect(entry).toBeTruthy();
+    client.sendCommand.mockClear();
+    await entry!.callback(entry!.pattern.exec('/ziola_daj Z deliona 1')!);
     expect(client.sendCommand).not.toHaveBeenCalled();
-    expect(client.println).toHaveBeenCalledWith('Nie znaleziono czlonka druzyny: Unknown');
+    expect(client.println).toHaveBeenCalledWith('Nie znaleziono celu: Z');
   });
 
   test('ziola_daj with count prints error for unknown herb', async () => {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     initHerbClient((client as unknown) as any, {}, defaultHerbData, aliases);
-    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(42) };
-    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo nieznana 1'));
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([{ num: 42, shortcut: 'A' }]) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj A nieznana 1'));
     expect(entry).toBeTruthy();
     client.sendCommand.mockClear();
-    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo nieznana 1')!);
+    await entry!.callback(entry!.pattern.exec('/ziola_daj A nieznana 1')!);
     expect(client.sendCommand).not.toHaveBeenCalled();
     expect(client.println).toHaveBeenCalledWith('Nieznane ziolo: nieznana');
   });
@@ -263,11 +277,11 @@ describe('herb counter', () => {
   test('ziola_daj single herb takes 1 herb and gives to team member', async () => {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     initHerbClient((client as unknown) as any, { 1: { deliona: 2 } }, defaultHerbData, aliases);
-    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(42) };
-    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj Pablo deliona'));
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([{ num: 42, shortcut: 'A' }]) };
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_daj A deliona'));
     expect(entry).toBeTruthy();
     client.sendCommand.mockClear();
-    await entry!.callback(entry!.pattern.exec('/ziola_daj Pablo deliona')!);
+    await entry!.callback(entry!.pattern.exec('/ziola_daj A deliona')!);
     expect(client.sendCommand).toHaveBeenCalledWith('otworz 1. swoj woreczek');
     expect(client.sendCommand).toHaveBeenCalledWith('wez 1 zolty jasny kwiat z 1. swojego woreczka');
     expect(client.sendCommand).toHaveBeenCalledWith('zamknij 1. swoj woreczek');

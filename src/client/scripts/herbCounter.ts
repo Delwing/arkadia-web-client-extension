@@ -753,57 +753,48 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             }
         });
 
-        aliases.push({
-            pattern: /^\/ziola_daj ([a-zA-Z]+) ([a-z_]+) ([0-9]+)$/,
-            callback: async (m: RegExpMatchArray) => {
-                const name = m[1];
-                const herb = m[2].toLowerCase();
-                const count = parseInt(m[3], 10);
-                if (count <= 0) {
-                    client.println('Ilosc musi byc wieksza od zera.');
-                    return;
-                }
-                await ensureData();
-                if (herbs && !herbs.herb_id_to_odmiana[herb]) {
-                    client.println(`Nieznane ziolo: ${herb}`);
-                    return;
-                }
-                const objectId = client.TeamManager.getTeamMemberObjectId(name);
-                if (objectId === undefined) {
-                    client.println(`Nie znaleziono czlonka druzyny: ${name}`);
-                    return;
-                }
-                const taken = await take(herb, count);
-                if (taken === 0) {
-                    client.println(`Brak ziola: ${herb}`);
-                    return;
-                }
-                client.sendCommand(`daj ziola ob_${objectId}`);
+        const findByShortcut = (short: string) => {
+            const lower = short.toLowerCase();
+            return client.ObjectManager
+                .getObjectsOnLocation()
+                .find(o => o.shortcut?.toLowerCase() === lower);
+        };
+
+        const giveHerb = async (who: string, herb: string, count: number) => {
+            if (count <= 0) {
+                client.println('Ilosc musi byc wieksza od zera.');
+                return;
             }
+            await ensureData();
+            if (herbs && !herbs.herb_id_to_odmiana[herb]) {
+                client.println(`Nieznane ziolo: ${herb}`);
+                return;
+            }
+            // Accept either a letter/number shortcut (as in /z, /zas) or a name.
+            const objectId = findByShortcut(who)?.num
+                ?? client.TeamManager.getTeamMemberObjectId(who);
+            if (objectId === undefined) {
+                client.println(`Nie znaleziono celu: ${who}`);
+                return;
+            }
+            const taken = await take(herb, count);
+            if (taken === 0) {
+                client.println(`Brak ziola: ${herb}`);
+                return;
+            }
+            client.sendCommand(`daj ziola ob_${objectId}`);
+        };
+
+        aliases.push({
+            pattern: /^\/ziola_daj ([A-Za-z0-9@]+) ([a-z_]+) ([0-9]+)$/,
+            callback: (m: RegExpMatchArray) =>
+                giveHerb(m[1], m[2].toLowerCase(), parseInt(m[3], 10))
         });
 
         aliases.push({
-            pattern: /^\/ziola_daj ([a-zA-Z]+) ([a-z_]+)$/,
-            callback: async (m: RegExpMatchArray) => {
-                const name = m[1];
-                const herb = m[2].toLowerCase();
-                await ensureData();
-                if (herbs && !herbs.herb_id_to_odmiana[herb]) {
-                    client.println(`Nieznane ziolo: ${herb}`);
-                    return;
-                }
-                const objectId = client.TeamManager.getTeamMemberObjectId(name);
-                if (objectId === undefined) {
-                    client.println(`Nie znaleziono czlonka druzyny: ${name}`);
-                    return;
-                }
-                const taken = await take(herb, 1);
-                if (taken === 0) {
-                    client.println(`Brak ziola: ${herb}`);
-                    return;
-                }
-                client.sendCommand(`daj ziola ob_${objectId}`);
-            }
+            pattern: /^\/ziola_daj ([A-Za-z0-9@]+) ([a-z_]+)$/,
+            callback: (m: RegExpMatchArray) =>
+                giveHerb(m[1], m[2].toLowerCase(), 1)
         });
 
         let pendingPutDown: { bag: number; time: number } | null = null;
