@@ -141,14 +141,18 @@
             <div id="agent-panel" style="display: none;">
                 <div id="agent-panel-header">
                     <span>AI Coding Agent</span>
+                    <span id="agent-current-model" title="Active provider and model (change in Settings)"></span>
                     <button id="agent-close-btn" title="Close Agent Panel">×</button>
                 </div>
                 <div id="agent-content">
                     <div id="agent-messages"></div>
                     <div id="agent-input-container">
+                        <div id="agent-attachments"></div>
                         <textarea id="agent-input" placeholder="Ask the AI to help with your plugin..." rows="3"></textarea>
+                        <input type="file" id="agent-file-input" multiple style="display: none;" />
                         <div id="agent-controls">
                             <button id="agent-send-btn" class="primary">Send</button>
+                            <button id="agent-attach-btn" title="Attach files (e.g. a Mudlet XML to convert)">📎</button>
                             <button id="agent-preview-btn" title="Preview request context">Preview</button>
                             <button id="agent-settings-btn" title="Settings">⚙</button>
                             <button id="agent-clear-btn" title="Clear conversation">Clear</button>
@@ -228,28 +232,37 @@
                 <select id="agent-provider">
                     <option value="openai">OpenAI (ChatGPT)</option>
                     <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="gemini">Google (Gemini)</option>
                 </select>
             </div>
             <div style="margin-bottom: 16px;">
                 <label for="agent-openai-key">OpenAI API Key</label>
                 <input type="password" id="agent-openai-key" placeholder="sk-..." />
-                <button type="button" id="agent-openai-fetch-models" style="margin-top: 8px; display: none;">Fetch Models</button>
             </div>
             <div id="agent-openai-model-container" style="margin-bottom: 16px; display: none;">
                 <label for="agent-openai-model">OpenAI Model</label>
                 <select id="agent-openai-model">
-                    <option value="">Loading...</option>
+                    <option value="">Open to load models...</option>
                 </select>
             </div>
             <div style="margin-bottom: 16px;">
                 <label for="agent-anthropic-key">Anthropic API Key</label>
                 <input type="password" id="agent-anthropic-key" placeholder="sk-ant-..." />
-                <button type="button" id="agent-anthropic-fetch-models" style="margin-top: 8px; display: none;">Fetch Models</button>
             </div>
             <div id="agent-anthropic-model-container" style="margin-bottom: 16px; display: none;">
                 <label for="agent-anthropic-model">Anthropic Model</label>
                 <select id="agent-anthropic-model">
-                    <option value="">Loading...</option>
+                    <option value="">Open to load models...</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label for="agent-gemini-key">Google Gemini API Key</label>
+                <input type="password" id="agent-gemini-key" placeholder="AIza..." />
+            </div>
+            <div id="agent-gemini-model-container" style="margin-bottom: 16px; display: none;">
+                <label for="agent-gemini-model">Gemini Model</label>
+                <select id="agent-gemini-model">
+                    <option value="">Open to load models...</option>
                 </select>
             </div>
             <div class="modal-buttons">

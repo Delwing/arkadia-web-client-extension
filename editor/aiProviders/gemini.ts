@@ -1,6 +1,11 @@
 /**
- * Anthropic Claude API Integration
- * Supports tool calling for documentation lookup and chunked execution for large tasks.
+ * Google Gemini API Integration
+ * Uses the Generative Language API (generateContent) with function calling for
+ * documentation lookup and chunked execution for large tasks.
+ *
+ * Works with any Google AI Studio API key, including the free tier
+ * (e.g. gemini-2.0-flash, gemini-1.5-flash). Authentication is a simple
+ * `?key=API_KEY` query parameter - no OAuth required.
  */
 
 import type { AgentRequest, AgentResponse, AgentProgressCallback } from '../types/codingAgent';
@@ -10,15 +15,27 @@ import { fetchWithRetry, describeRetry } from './httpRetry';
 /** Maximum continuation loops to prevent infinite loops */
 const MAX_CONTINUATIONS = 10;
 
+/**
+ * gemini-2.5-flash-lite intermittently returns an empty turn (no parts, no
+ * text, no function call) with finishReason STOP, especially right after a
+ * tool response. Re-issue the same request this many times before giving up.
+ */
+const MAX_EMPTY_RETRIES = 3;
+
+/** Instruction appended to unstick an empty (zero-token) Gemini turn. */
+const EMPTY_RESPONSE_NUDGE =
+  'Your previous response was empty. Continue now and provide your output. ' +
+  'If creating or editing files, respond with a ```json block containing a ' +
+  '"fileOperations" array, and set "hasMoreSteps": true if more steps remain.';
+
 /** Model context and output limits */
 const MODEL_LIMITS: Record<string, { context: number; maxOutput: number }> = {
-  'claude-sonnet-4': { context: 200000, maxOutput: 16000 },
-  'claude-3-5-sonnet': { context: 200000, maxOutput: 8192 },
-  'claude-3-5-haiku': { context: 200000, maxOutput: 8192 },
-  'claude-3-opus': { context: 200000, maxOutput: 4096 },
-  'claude-3-sonnet': { context: 200000, maxOutput: 4096 },
-  'claude-3-haiku': { context: 200000, maxOutput: 4096 },
-  'default': { context: 200000, maxOutput: 8192 }
+  'gemini-2.5-pro': { context: 1048576, maxOutput: 65536 },
+  'gemini-2.5-flash': { context: 1048576, maxOutput: 65536 },
+  'gemini-2.0-flash': { context: 1048576, maxOutput: 8192 },
+  'gemini-1.5-pro': { context: 2097152, maxOutput: 8192 },
+  'gemini-1.5-flash': { context: 1048576, maxOutput: 8192 },
+  'default': { context: 1048576, maxOutput: 8192 }
 };
 
 /** Estimate token count from text (rough: ~4 chars per token) */
@@ -26,11 +43,11 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-/** Calculate dynamic max_tokens based on input size and model limits */
-function calculateMaxTokens(systemMessage: string, messages: any[], model: string): number {
+/** Calculate dynamic max output tokens based on input size and model limits */
+function calculateMaxTokens(systemMessage: string, contents: any[], model: string): number {
   // Estimate input tokens
-  const inputText = systemMessage + messages.map(m =>
-    typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+  const inputText = systemMessage + contents.map(c =>
+    (c.parts || []).map((p: any) => p.text || JSON.stringify(p)).join('')
   ).join('');
   const inputTokens = estimateTokens(inputText);
 
@@ -49,12 +66,12 @@ function calculateMaxTokens(systemMessage: string, messages: any[], model: strin
   return Math.max(minTokens, maxTokens);
 }
 
-/** Tool definitions for Anthropic tool use */
-const tools = [
+/** Tool definitions for Gemini function calling */
+const functionDeclarations = [
   {
     name: 'get_api_docs',
     description: 'Fetch PluginApi documentation for a specific topic. Use this to look up API details for triggers, events, map, colors, commands, aliases, ui, bind, team, gmcp, attackQueue, objects, prettyContainers, herbs, objectListFilters, AnsiAwareBuffer, etc.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         topic: {
@@ -68,7 +85,7 @@ const tools = [
   {
     name: 'get_file',
     description: 'Read the content of a plugin file. Use this to read files you need to understand or modify.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         path: {
@@ -82,7 +99,7 @@ const tools = [
   {
     name: 'get_compilation_errors',
     description: 'Check the plugin for TypeScript/JavaScript compilation and type errors (the same diagnostics shown in the editor). Returns errors with file, line, and message, or a message saying there are none. Call this after creating or modifying files to verify your changes compile, and fix any reported errors before finishing.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {},
       required: []
@@ -90,7 +107,7 @@ const tools = [
   }
 ];
 
-export async function callAnthropic(
+export async function callGemini(
   request: AgentRequest,
   apiKey: string,
   model: string,
@@ -100,22 +117,23 @@ export async function callAnthropic(
   if (!apiKey) {
     return {
       message: '',
-      error: 'Anthropic API key not configured. Please set it in the settings.'
+      error: 'Google Gemini API key not configured. Please set it in the settings.'
     };
   }
 
   try {
-    // Build system message from conversation history
+    // Build system instruction from conversation history; map remaining messages
+    // to Gemini's contents format (roles: 'user' | 'model').
     let systemMessage = '';
-    const userMessages: Array<{ role: string; content: any }> = [];
+    const contents: Array<{ role: string; parts: any[] }> = [];
 
     for (const msg of request.conversationHistory) {
       if (msg.role === 'system') {
         systemMessage = msg.content;
       } else {
-        userMessages.push({
-          role: msg.role,
-          content: msg.content
+        contents.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
         });
       }
     }
@@ -124,19 +142,20 @@ export async function callAnthropic(
     systemMessage = systemMessage + '\n\n' + getDocsSummary();
 
     // Add current request
-    userMessages.push({
+    contents.push({
       role: 'user',
-      content: buildPrompt(request)
+      parts: [{ text: buildPrompt(request) }]
     });
 
     // Accumulated response for multi-step execution
     const allFileOperations: any[] = [];
     const messagesParts: string[] = [];
     let continuationCount = 0;
+    let emptyRetries = 0;
 
     while (continuationCount < MAX_CONTINUATIONS) {
       const response = await fetchWithRetry(
-        () => makeApiCall(apiKey, model, systemMessage, userMessages),
+        () => makeApiCall(apiKey, model, systemMessage, contents),
         (notice) => onProgress?.({ type: 'retry', message: describeRetry(notice), step: continuationCount + 1 })
       );
 
@@ -144,42 +163,146 @@ export async function callAnthropic(
         const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
         return {
           message: '',
-          error: `Anthropic API error: ${error.error?.message || response.statusText}`
+          error: `Gemini API error: ${error.error?.message || response.statusText}`
         };
       }
 
       const data = await response.json();
+      const candidate = data.candidates?.[0];
 
-      // Check if there are tool uses in the response
-      const toolUses = data.content.filter((block: any) => block.type === 'tool_use');
+      if (!candidate) {
+        return {
+          message: '',
+          error: 'Gemini API returned no candidates. The request may have been blocked.'
+        };
+      }
 
-      if (toolUses.length > 0) {
-        // Add assistant message with tool uses to history
-        userMessages.push({
-          role: 'assistant',
-          content: data.content
+      const parts: any[] = candidate.content?.parts || [];
+
+      // Check if there are function calls in the response
+      const functionCalls = parts.filter((part: any) => part.functionCall);
+      const hasText = parts.some((part: any) => typeof part.text === 'string' && part.text.trim());
+
+      // Empty turn handling. A non-STOP/MAX_TOKENS finishReason means the model
+      // was blocked or cut off and retrying won't help, so surface it. An empty
+      // STOP turn (zero output tokens) is a known flash-lite failure, typically
+      // right after a tool result - it is deterministic, so re-issuing the same
+      // request is useless. Instead nudge the model with an explicit instruction
+      // to produce output, up to MAX_EMPTY_RETRIES times.
+      if (functionCalls.length === 0 && !hasText) {
+        const finishReason = candidate.finishReason;
+        if (finishReason && finishReason !== 'STOP' && finishReason !== 'MAX_TOKENS') {
+          return {
+            message: '',
+            error: `Gemini stopped without producing output (finishReason: ${finishReason}).`
+          };
+        }
+        if (emptyRetries < MAX_EMPTY_RETRIES) {
+          emptyRetries++;
+          onProgress?.({
+            type: 'continuation',
+            message: `Empty response from Gemini, nudging for output (${emptyRetries}/${MAX_EMPTY_RETRIES})...`,
+            step: continuationCount + 1
+          });
+          // Change the input so the retry isn't identical. Append the nudge to
+          // the trailing user turn (the function response) to respect Gemini's
+          // user/model alternation, falling back to a fresh user turn otherwise.
+          const last = contents[contents.length - 1];
+          const alreadyNudged =
+            last?.role === 'user' &&
+            last.parts?.some((p: any) => p.text === EMPTY_RESPONSE_NUDGE);
+          if (last?.role === 'user' && !alreadyNudged) {
+            last.parts.push({ text: EMPTY_RESPONSE_NUDGE });
+          } else if (last?.role !== 'user') {
+            contents.push({ role: 'user', parts: [{ text: EMPTY_RESPONSE_NUDGE }] });
+          }
+          continue;
+        }
+        // Out of retries: return whatever was accumulated, or an error if nothing.
+        if (allFileOperations.length === 0 && messagesParts.length === 0) {
+          return {
+            message: '',
+            error: 'Gemini repeatedly returned an empty response. Please try again or switch models.'
+          };
+        }
+        break;
+      }
+      emptyRetries = 0;
+
+      if (functionCalls.length > 0) {
+        // Thinking models (gemini-2.5+) routinely emit explanatory text and a
+        // ```json fileOperations block in the SAME turn as a tool call. Extract
+        // and surface that text now, otherwise it (and any file operations) are
+        // silently dropped because this branch returns to the API loop.
+        const turnText = parts
+          .filter((part: any) => typeof part.text === 'string')
+          .map((part: any) => part.text)
+          .join('\n');
+
+        if (turnText.trim()) {
+          const parsedTurn = parseAgentResponse(turnText);
+          if (onProgress) {
+            // Panel displays and executes incrementally; don't also accumulate
+            // it into the final return, or it gets shown/executed twice.
+            onProgress({
+              type: 'step_complete',
+              message: `Step ${continuationCount + 1} complete`,
+              step: continuationCount + 1,
+              partialResponse: {
+                message: parsedTurn.message,
+                fileOperations: parsedTurn.fileOperations
+              }
+            });
+          } else {
+            if (parsedTurn.fileOperations && parsedTurn.fileOperations.length > 0) {
+              allFileOperations.push(...parsedTurn.fileOperations);
+            }
+            if (parsedTurn.message) {
+              messagesParts.push(parsedTurn.message);
+            }
+          }
+        }
+
+        // Add model message with function calls to history. Thinking models
+        // (gemini-2.5+) attach a `thoughtSignature` to each function-call part
+        // that MUST be echoed back, or the next request is rejected with
+        // "Function call is missing a thought_signature". Echo any text parts
+        // too so the model retains its own reasoning across the continuation.
+        contents.push({
+          role: 'model',
+          parts: [
+            ...parts
+              .filter((p: any) => typeof p.text === 'string')
+              .map((p: any) => ({ text: p.text })),
+            ...functionCalls.map((p: any) => {
+              const part: any = { functionCall: p.functionCall };
+              if (p.thoughtSignature) part.thoughtSignature = p.thoughtSignature;
+              return part;
+            })
+          ]
         });
 
-        // Process tool uses and build tool results
-        const toolResults: any[] = [];
-        for (const toolUse of toolUses) {
-          if (toolUse.name === 'get_api_docs') {
-            const docs = searchDocs(toolUse.input.topic);
+        // Process function calls and build function responses
+        const functionResponses: any[] = [];
+        for (const part of functionCalls) {
+          const call = part.functionCall;
+          if (call.name === 'get_api_docs') {
+            const docs = searchDocs(call.args?.topic);
 
-            // Report progress
             onProgress?.({
               type: 'tool_call',
-              message: `Looking up documentation: "${toolUse.input.topic}"`,
+              message: `Looking up documentation: "${call.args?.topic}"`,
               step: continuationCount + 1
             });
 
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: toolUse.id,
-              content: docs
+            functionResponses.push({
+              functionResponse: {
+                name: 'get_api_docs',
+                response: { content: docs }
+              }
             });
-          } else if (toolUse.name === 'get_file') {
-            const filePath = toolUse.input.path;
+          } else if (call.name === 'get_file') {
+            const filePath = call.args?.path;
             const fileContent = request.context.pluginFiles?.[filePath];
 
             onProgress?.({
@@ -188,12 +311,15 @@ export async function callAnthropic(
               step: continuationCount + 1
             });
 
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: toolUse.id,
-              content: fileContent ?? `File not found: "${filePath}". Available files: ${Object.keys(request.context.pluginFiles || {}).join(', ')}`
+            functionResponses.push({
+              functionResponse: {
+                name: 'get_file',
+                response: {
+                  content: fileContent ?? `File not found: "${filePath}". Available files: ${Object.keys(request.context.pluginFiles || {}).join(', ')}`
+                }
+              }
             });
-          } else if (toolUse.name === 'get_compilation_errors') {
+          } else if (call.name === 'get_compilation_errors') {
             onProgress?.({
               type: 'tool_call',
               message: 'Checking for compilation errors',
@@ -204,18 +330,19 @@ export async function callAnthropic(
               ? await getCompilationErrors()
               : 'Compilation checking is not available.';
 
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: toolUse.id,
-              content: report
+            functionResponses.push({
+              functionResponse: {
+                name: 'get_compilation_errors',
+                response: { content: report }
+              }
             });
           }
         }
 
-        // Add tool results as user message
-        userMessages.push({
+        // Add function results as a user message
+        contents.push({
           role: 'user',
-          content: toolResults
+          parts: functionResponses
         });
 
         // Continue the loop to get the next response
@@ -224,13 +351,15 @@ export async function callAnthropic(
       }
 
       // Extract text content from response
-      const textBlocks = data.content.filter((block: any) => block.type === 'text');
-      const assistantMessage = textBlocks.map((block: any) => block.text).join('\n');
+      const assistantMessage = parts
+        .filter((part: any) => typeof part.text === 'string')
+        .map((part: any) => part.text)
+        .join('\n');
 
       const parsed = parseAgentResponse(assistantMessage);
 
       // Check if response was truncated or has more steps
-      const wasTruncated = data.stop_reason === 'max_tokens';
+      const wasTruncated = candidate.finishReason === 'MAX_TOKENS';
       const hasMoreSteps = parsed.hasMoreSteps || wasTruncated;
       const willContinue = hasMoreSteps && continuationCount < MAX_CONTINUATIONS - 1;
 
@@ -273,16 +402,16 @@ export async function callAnthropic(
           });
         }
 
-        // Add the assistant's response to history
-        userMessages.push({
-          role: 'assistant',
-          content: assistantMessage
+        // Add the model's response to history
+        contents.push({
+          role: 'model',
+          parts: [{ text: assistantMessage }]
         });
 
         // Ask to continue
-        userMessages.push({
+        contents.push({
           role: 'user',
-          content: 'Continue with the next step. Remember to set "hasMoreSteps": true if there are more steps after this one.'
+          parts: [{ text: 'Continue with the next step. Remember to set "hasMoreSteps": true if there are more steps after this one.' }]
         });
 
         continuationCount++;
@@ -310,24 +439,25 @@ async function makeApiCall(
   apiKey: string,
   model: string,
   systemMessage: string,
-  messages: any[]
+  contents: any[]
 ): Promise<Response> {
   // Calculate dynamic max tokens based on input size and model limits
-  const maxTokens = calculateMaxTokens(systemMessage, messages, model);
+  const maxTokens = calculateMaxTokens(systemMessage, contents, model);
 
-  return fetch('https://api.anthropic.com/v1/messages', {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  return fetch(url, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system: systemMessage,
-      messages,
-      tools
+      system_instruction: { parts: [{ text: systemMessage }] },
+      contents,
+      tools: [{ functionDeclarations }],
+      generationConfig: {
+        maxOutputTokens: maxTokens
+      }
     })
   });
 }

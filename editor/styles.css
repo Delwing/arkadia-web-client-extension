@@ -649,6 +649,17 @@ body {
     font-weight: 600;
 }
 
+#agent-current-model {
+    margin-right: auto;
+    margin-left: 10px;
+    font-size: 11px;
+    font-weight: 400;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 #agent-close-btn {
     background: transparent;
     border: none;
@@ -851,7 +862,8 @@ body {
 
 #agent-preview-btn,
 #agent-settings-btn,
-#agent-clear-btn {
+#agent-clear-btn,
+#agent-attach-btn {
     padding: 8px 12px;
     background: var(--input-bg);
     border: 1px solid var(--border-color);
@@ -863,8 +875,79 @@ body {
 
 #agent-preview-btn:hover,
 #agent-settings-btn:hover,
-#agent-clear-btn:hover {
+#agent-clear-btn:hover,
+#agent-attach-btn:hover {
     background: var(--hover-bg);
+}
+
+.agent-retry-btn {
+    margin-top: 8px;
+    padding: 4px 12px;
+    background: var(--button-bg);
+    border: 1px solid var(--button-bg);
+    color: var(--button-fg);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.agent-retry-btn:hover:not(:disabled) {
+    background: var(--button-hover-bg);
+}
+
+.agent-retry-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#agent-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+#agent-attachments:empty {
+    display: none;
+}
+
+.agent-attachment {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    max-width: 100%;
+}
+
+.agent-attachment-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agent-attachment-size {
+    color: #888;
+}
+
+.agent-attachment-remove {
+    background: none;
+    border: none;
+    color: var(--input-fg);
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.agent-attachment-remove:hover {
+    opacity: 1;
+    color: #f87171;
 }
 
 #agent-resizer {

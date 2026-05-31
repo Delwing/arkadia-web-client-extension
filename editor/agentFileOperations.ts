@@ -136,10 +136,11 @@ function modifyFile(operation: FileOperation, context: AgentFileOperationsContex
   const { path, content = '' } = operation;
   const { plugin } = context;
 
-  // Check if file exists
+  // If the file doesn't exist yet, treat "modify" as "create". Models sometimes
+  // label a brand-new path as "modify" (e.g. when moving a file to a new folder),
+  // and silently failing would drop the file. Creating it is the intended outcome.
   if (!plugin.files[path]) {
-    context.updateStatus(`File not found: ${path}`, 'error');
-    return false;
+    return createFile(operation, context);
   }
 
   // Update file content

@@ -3,10 +3,11 @@
  * Type definitions for the AI coding assistant panel
  */
 
-export type AIProvider = 'openai' | 'anthropic';
+export type AIProvider = 'openai' | 'anthropic' | 'gemini';
 
 export type OpenAIModel = string; // Dynamic models from API
 export type AnthropicModel = string; // Dynamic models from API
+export type GeminiModel = string; // Dynamic models from API
 
 export interface AIConfig {
   provider: AIProvider;
@@ -21,6 +22,8 @@ export interface Message {
   timestamp: number;
   fileOperations?: FileOperation[];
   isLoading?: boolean;
+  /** Marks an error message; the last one can be retried. */
+  isError?: boolean;
 }
 
 export interface ConversationHistory {
@@ -36,6 +39,11 @@ export interface FileOperation {
   language?: 'typescript' | 'javascript' | 'json' | 'plaintext';
 }
 
+export interface AttachedFile {
+  name: string;
+  content: string;
+}
+
 export interface AgentRequest {
   prompt: string;
   context: {
@@ -45,6 +53,7 @@ export interface AgentRequest {
     cursorPosition?: { line: number; column: number };
     selectedText?: string;
     pluginApiDocs?: string;
+    attachedFiles?: AttachedFile[];
   };
   conversationHistory: Message[];
 }
@@ -57,7 +66,7 @@ export interface AgentResponse {
 
 /** Progress update during multi-step execution */
 export interface AgentProgress {
-  type: 'tool_call' | 'continuation' | 'truncated' | 'step_complete';
+  type: 'tool_call' | 'continuation' | 'truncated' | 'step_complete' | 'retry';
   message: string;
   step: number;
   /** Partial response from a completed step (for incremental display) */
@@ -73,8 +82,10 @@ export type AgentProgressCallback = (progress: AgentProgress) => void;
 export interface AgentSettings {
   openaiApiKey?: string;
   anthropicApiKey?: string;
+  geminiApiKey?: string;
   defaultProvider: AIProvider;
   defaultOpenAIModel: OpenAIModel;
   defaultAnthropicModel: AnthropicModel;
+  defaultGeminiModel: GeminiModel;
   systemPrompt: string;
 }

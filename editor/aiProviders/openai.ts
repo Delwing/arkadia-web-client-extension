@@ -5,6 +5,7 @@
 
 import type { AgentRequest, AgentResponse, AgentProgressCallback } from '../types/codingAgent';
 import { searchDocs, getDocsSummary } from './docsRegistry';
+import { fetchWithRetry, describeRetry } from './httpRetry';
 
 /** Maximum continuation loops to prevent infinite loops */
 const MAX_CONTINUATIONS = 10;
@@ -84,6 +85,18 @@ const tools = [
         required: ['path']
       }
     }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_compilation_errors',
+      description: 'Check the plugin for TypeScript/JavaScript compilation and type errors (the same diagnostics shown in the editor). Returns errors with file, line, and message, or a message saying there are none. Call this after creating or modifying files to verify your changes compile, and fix any reported errors before finishing.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: []
+      }
+    }
   }
 ];
 
@@ -91,7 +104,8 @@ export async function callOpenAI(
   request: AgentRequest,
   apiKey: string,
   model: string,
-  onProgress?: AgentProgressCallback
+  onProgress?: AgentProgressCallback,
+  getCompilationErrors?: () => Promise<string>
 ): Promise<AgentResponse> {
   if (!apiKey) {
     return {
@@ -126,7 +140,10 @@ export async function callOpenAI(
     let continuationCount = 0;
 
     while (continuationCount < MAX_CONTINUATIONS) {
-      const response = await makeApiCall(apiKey, model, messages);
+      const response = await fetchWithRetry(
+        () => makeApiCall(apiKey, model, messages),
+        (notice) => onProgress?.({ type: 'retry', message: describeRetry(notice), step: continuationCount + 1 })
+      );
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
@@ -178,6 +195,22 @@ export async function callOpenAI(
               tool_call_id: toolCall.id,
               content: fileContent ?? `File not found: "${args.path}". Available files: ${Object.keys(request.context.pluginFiles || {}).join(', ')}`
             });
+          } else if (toolCall.function.name === 'get_compilation_errors') {
+            onProgress?.({
+              type: 'tool_call',
+              message: 'Checking for compilation errors',
+              step: continuationCount + 1
+            });
+
+            const report = getCompilationErrors
+              ? await getCompilationErrors()
+              : 'Compilation checking is not available.';
+
+            messages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: report
+            });
           }
         }
 
@@ -190,18 +223,24 @@ export async function callOpenAI(
       const assistantMessage = choice.message?.content || '';
       const parsed = parseAgentResponse(assistantMessage);
 
-      if (parsed.fileOperations && parsed.fileOperations.length > 0) {
-        allFileOperations.push(...parsed.fileOperations);
-      }
-      if (parsed.message) {
-        messagesParts.push(parsed.message);
-      }
-
       // Check if response was truncated or has more steps
       const wasTruncated = choice.finish_reason === 'length';
       const hasMoreSteps = parsed.hasMoreSteps || wasTruncated;
+      const willContinue = hasMoreSteps && continuationCount < MAX_CONTINUATIONS - 1;
 
-      if (hasMoreSteps && continuationCount < MAX_CONTINUATIONS - 1) {
+      // When this step is emitted incrementally below (onProgress present and we
+      // will continue), the panel displays and executes it right away. Don't also
+      // accumulate it into the final return, or it gets shown/executed a second time.
+      if (!(willContinue && onProgress)) {
+        if (parsed.fileOperations && parsed.fileOperations.length > 0) {
+          allFileOperations.push(...parsed.fileOperations);
+        }
+        if (parsed.message) {
+          messagesParts.push(parsed.message);
+        }
+      }
+
+      if (willContinue) {
         // Emit step_complete with partial response so UI can display it immediately
         onProgress?.({
           type: 'step_complete',
@@ -318,6 +357,13 @@ function buildPrompt(request: AgentRequest): string {
       prompt += `\n  - ${path} (${content.length} chars)`;
     }
     prompt += '\n\nUse the get_file tool to read file contents when needed.';
+  }
+
+  if (request.context.attachedFiles && request.context.attachedFiles.length > 0) {
+    prompt += `\n\nAttached files (provided by the user for reference, e.g. a Mudlet XML to convert into a plugin):`;
+    for (const file of request.context.attachedFiles) {
+      prompt += `\n\n--- ${file.name} ---\n\`\`\`\n${file.content}\n\`\`\``;
+    }
   }
 
   return prompt;

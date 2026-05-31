@@ -5,11 +5,13 @@
 
 import * as monaco from 'monaco-editor';
 import type { EditorPluginData } from '@client/utils/pluginEditorStorage.ts';
-import type { Message, AgentRequest, AIProvider, FileOperation, AgentProgress } from './types/codingAgent';
+import type { Message, AgentRequest, AIProvider, FileOperation, AgentProgress, AttachedFile } from './types/codingAgent';
 import { getAgentSettings, saveAgentSettings, getConversationHistory, saveConversationHistory, clearConversationHistory } from './agentStorage';
 import { callOpenAI } from './aiProviders/openai';
 import { callAnthropic } from './aiProviders/anthropic';
+import { callGemini } from './aiProviders/gemini';
 import { executeFileOperations, type AgentFileOperationsContext } from './agentFileOperations';
+import { getPluginCompilationErrors } from './agentDiagnostics';
 import type { StatusType } from './types';
 
 export class CodingAgentPanel {
@@ -27,6 +29,22 @@ export class CodingAgentPanel {
   private currentPluginId: string | null = null;
   private messages: Message[] = [];
   private isProcessing = false;
+
+  private attachButton: HTMLButtonElement;
+  private fileInput: HTMLInputElement;
+  private attachmentsContainer: HTMLElement;
+  private attachedFiles: AttachedFile[] = [];
+
+  /** The last turn's input, kept so a failed request can be retried. */
+  private lastTurn: { prompt: string; attachedFiles: AttachedFile[]; userMessageId: string } | null = null;
+
+  /** Reject attachments larger than this to avoid blowing the model context. */
+  private static readonly MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
+
+  /** Per-provider model lists are fetched lazily on first dropdown open, then cached for the session. */
+  private modelsLoaded: Record<AIProvider, boolean> = { openai: false, anthropic: false, gemini: false };
+  /** Guards against firing overlapping fetches while one is already in flight. */
+  private modelsLoading: Record<AIProvider, boolean> = { openai: false, anthropic: false, gemini: false };
 
   constructor(
     private getEditorContext: () => {
@@ -51,6 +69,9 @@ export class CodingAgentPanel {
     this.closeButton = document.getElementById('agent-close-btn') as HTMLButtonElement;
     this.settingsModal = document.getElementById('agent-settings-modal')!;
     this.previewModal = document.getElementById('agent-preview-modal')!;
+    this.attachButton = document.getElementById('agent-attach-btn') as HTMLButtonElement;
+    this.fileInput = document.getElementById('agent-file-input') as HTMLInputElement;
+    this.attachmentsContainer = document.getElementById('agent-attachments')!;
 
     this.setupEventListeners();
     this.loadSettings();
@@ -68,6 +89,10 @@ export class CodingAgentPanel {
 
     // Update token count when user types
     this.inputTextarea.addEventListener('input', () => this.updateModelInfo());
+
+    // Attach files
+    this.attachButton.addEventListener('click', () => this.fileInput.click());
+    this.fileInput.addEventListener('change', () => this.handleFileSelection());
 
     // Preview
     this.previewButton.addEventListener('click', () => this.showPreview());
@@ -97,22 +122,29 @@ export class CodingAgentPanel {
       }
     });
 
-    // API key change listeners to show/hide fetch buttons
-    const openaiKeyInput = document.getElementById('agent-openai-key') as HTMLInputElement;
-    openaiKeyInput.addEventListener('input', () => {
-      const fetchBtn = document.getElementById('agent-openai-fetch-models')!;
-      fetchBtn.style.display = openaiKeyInput.value.trim() ? 'block' : 'none';
-    });
+    // When an API key changes, reveal its model dropdown and invalidate any cached
+    // model list so the next dropdown open re-fetches with the new key.
+    const wireKeyInput = (provider: AIProvider, keyId: string, containerId: string) => {
+      const keyInput = document.getElementById(keyId) as HTMLInputElement;
+      keyInput.addEventListener('input', () => {
+        this.modelsLoaded[provider] = false;
+        document.getElementById(containerId)!.style.display = keyInput.value.trim() ? 'block' : 'none';
+      });
+    };
+    wireKeyInput('openai', 'agent-openai-key', 'agent-openai-model-container');
+    wireKeyInput('anthropic', 'agent-anthropic-key', 'agent-anthropic-model-container');
+    wireKeyInput('gemini', 'agent-gemini-key', 'agent-gemini-model-container');
 
-    const anthropicKeyInput = document.getElementById('agent-anthropic-key') as HTMLInputElement;
-    anthropicKeyInput.addEventListener('input', () => {
-      const fetchBtn = document.getElementById('agent-anthropic-fetch-models')!;
-      fetchBtn.style.display = anthropicKeyInput.value.trim() ? 'block' : 'none';
-    });
-
-    // Fetch models buttons
-    document.getElementById('agent-openai-fetch-models')!.addEventListener('click', () => this.fetchOpenAIModels());
-    document.getElementById('agent-anthropic-fetch-models')!.addEventListener('click', () => this.fetchAnthropicModels());
+    // Fetch the model list lazily the first time each dropdown is opened, instead of
+    // making the user click a separate "Fetch Models" button. Cached for the session.
+    const wireModelSelect = (selectId: string, fetchFn: () => void) => {
+      const select = document.getElementById(selectId) as HTMLSelectElement;
+      select.addEventListener('mousedown', fetchFn);
+      select.addEventListener('focus', fetchFn);
+    };
+    wireModelSelect('agent-openai-model', () => this.fetchOpenAIModels());
+    wireModelSelect('agent-anthropic-model', () => this.fetchAnthropicModels());
+    wireModelSelect('agent-gemini-model', () => this.fetchGeminiModels());
   }
 
   public show(): void {
@@ -126,6 +158,7 @@ export class CodingAgentPanel {
     }
 
     // Update model and token info
+    this.updateCurrentModelBadge();
     this.updateModelInfo();
 
     // Scroll to bottom after panel is visible
@@ -194,11 +227,19 @@ export class CodingAgentPanel {
       return;
     }
 
-    // Add user message
+    // Snapshot and clear attachments for this turn
+    const attachedFiles = this.attachedFiles;
+    this.attachedFiles = [];
+    this.renderAttachments();
+
+    // Add user message, noting any attachments so the conversation reflects them
+    const attachmentNote = attachedFiles.length > 0
+      ? `\n\n_Attached: ${attachedFiles.map(f => f.name).join(', ')}_`
+      : '';
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: prompt,
+      content: prompt + attachmentNote,
       timestamp: Date.now()
     };
     this.messages.push(userMessage);
@@ -207,6 +248,35 @@ export class CodingAgentPanel {
 
     // Clear input
     this.inputTextarea.value = '';
+
+    await this.processTurn(prompt, attachedFiles, userMessage.id);
+  }
+
+  /** Retry the most recent failed turn with the same prompt and attachments. */
+  private async retryLastTurn(): Promise<void> {
+    if (this.isProcessing || !this.lastTurn) return;
+
+    // Drop the error message(s) so they don't linger in the conversation/history.
+    this.messages = this.messages.filter(m => !m.isError);
+    this.renderMessages();
+
+    const { prompt, attachedFiles, userMessageId } = this.lastTurn;
+    await this.processTurn(prompt, attachedFiles, userMessageId);
+  }
+
+  /**
+   * Runs one agent turn (provider call + response handling) for an already-pushed
+   * user message. Extracted so it can be re-run by retryLastTurn after a failure.
+   */
+  private async processTurn(prompt: string, attachedFiles: AttachedFile[], userMessageId: string): Promise<void> {
+    const context = this.getEditorContext();
+    if (!context.plugin || !context.pluginId) {
+      this.showError('No plugin loaded');
+      return;
+    }
+
+    // Remember this turn so it can be retried if the request fails.
+    this.lastTurn = { prompt, attachedFiles, userMessageId };
 
     // Add loading message
     const loadingMessage: Message = {
@@ -238,10 +308,11 @@ export class CodingAgentPanel {
             Object.entries(context.plugin.files).map(([path, file]) => [path, file.content])
           ),
           selectedText: this.getSelectedText(context.editor),
-          cursorPosition: this.getCursorPosition(context.editor)
+          cursorPosition: this.getCursorPosition(context.editor),
+          attachedFiles: attachedFiles.length > 0 ? attachedFiles : undefined
           // Note: pluginApiDocs removed - AI uses get_api_docs tool instead
         },
-        conversationHistory: this.messages.filter(m => m.role !== 'user' || m.id !== userMessage.id)
+        conversationHistory: this.messages.filter(m => m.role !== 'user' || m.id !== userMessageId)
       };
 
       // Progress callback to update loading message and show partial responses
@@ -306,17 +377,26 @@ export class CodingAgentPanel {
         }
       };
 
+      // Lets the AI check its work against the editor's TypeScript diagnostics
+      const pluginId = context.pluginId;
+      const getCompilationErrors = () => getPluginCompilationErrors(pluginId);
+
       // Call AI provider
       const provider = settings.defaultProvider;
-      const response = provider === 'openai'
-        ? await callOpenAI(request, settings.openaiApiKey || '', settings.defaultOpenAIModel, onProgress)
-        : await callAnthropic(request, settings.anthropicApiKey || '', settings.defaultAnthropicModel, onProgress);
+      let response;
+      if (provider === 'openai') {
+        response = await callOpenAI(request, settings.openaiApiKey || '', settings.defaultOpenAIModel, onProgress, getCompilationErrors);
+      } else if (provider === 'anthropic') {
+        response = await callAnthropic(request, settings.anthropicApiKey || '', settings.defaultAnthropicModel, onProgress, getCompilationErrors);
+      } else {
+        response = await callGemini(request, settings.geminiApiKey || '', settings.defaultGeminiModel, onProgress, getCompilationErrors);
+      }
 
       // Remove loading message
       this.messages = this.messages.filter(m => !m.isLoading);
 
       if (response.error) {
-        this.showError(response.error);
+        this.showError(response.error, true);
         return;
       }
 
@@ -358,7 +438,7 @@ export class CodingAgentPanel {
       }
 
     } catch (error) {
-      this.showError(error instanceof Error ? error.message : 'Unknown error occurred');
+      this.showError(error instanceof Error ? error.message : 'Unknown error occurred', true);
     } finally {
       this.isProcessing = false;
       this.sendButton.disabled = false;
@@ -382,12 +462,77 @@ export class CodingAgentPanel {
     return { line: position.lineNumber, column: position.column };
   }
 
-  private showError(message: string): void {
+  private async handleFileSelection(): Promise<void> {
+    const files = this.fileInput.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      if (file.size > CodingAgentPanel.MAX_ATTACHMENT_BYTES) {
+        const limitMb = Math.round(CodingAgentPanel.MAX_ATTACHMENT_BYTES / (1024 * 1024));
+        alert(`"${file.name}" is too large to attach (max ${limitMb} MB).`);
+        continue;
+      }
+
+      // Skip duplicates by name
+      if (this.attachedFiles.some(f => f.name === file.name)) continue;
+
+      try {
+        const content = await file.text();
+        this.attachedFiles.push({ name: file.name, content });
+      } catch (_e) {
+        alert(`Failed to read "${file.name}". It may not be a text file.`);
+      }
+    }
+
+    // Reset input so selecting the same file again re-triggers change
+    this.fileInput.value = '';
+
+    this.renderAttachments();
+    this.updateModelInfo();
+  }
+
+  private removeAttachment(name: string): void {
+    this.attachedFiles = this.attachedFiles.filter(f => f.name !== name);
+    this.renderAttachments();
+    this.updateModelInfo();
+  }
+
+  private renderAttachments(): void {
+    this.attachmentsContainer.innerHTML = '';
+
+    for (const file of this.attachedFiles) {
+      const chip = document.createElement('div');
+      chip.className = 'agent-attachment';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'agent-attachment-name';
+      nameSpan.textContent = file.name;
+      nameSpan.title = file.name;
+
+      const sizeSpan = document.createElement('span');
+      sizeSpan.className = 'agent-attachment-size';
+      sizeSpan.textContent = `${file.content.length.toLocaleString()} chars`;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'agent-attachment-remove';
+      removeBtn.textContent = '×';
+      removeBtn.title = 'Remove attachment';
+      removeBtn.addEventListener('click', () => this.removeAttachment(file.name));
+
+      chip.appendChild(nameSpan);
+      chip.appendChild(sizeSpan);
+      chip.appendChild(removeBtn);
+      this.attachmentsContainer.appendChild(chip);
+    }
+  }
+
+  private showError(message: string, retryable = false): void {
     const errorMessage: Message = {
       id: crypto.randomUUID(),
       role: 'assistant',
       content: `Error: ${message}`,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      isError: retryable
     };
     this.messages.push(errorMessage);
     this.renderMessages();
@@ -425,6 +570,16 @@ export class CodingAgentPanel {
       if (message.fileOperations && message.fileOperations.length > 0) {
         const fileOpsEl = this.renderFileOperations(message.fileOperations);
         messageEl.appendChild(fileOpsEl);
+      }
+
+      // Offer a retry on the most recent retryable error
+      if (message.isError && message === this.messages[this.messages.length - 1] && this.lastTurn) {
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'agent-retry-btn';
+        retryBtn.textContent = '↻ Retry';
+        retryBtn.disabled = this.isProcessing;
+        retryBtn.addEventListener('click', () => this.retryLastTurn());
+        messageEl.appendChild(retryBtn);
       }
 
       this.messagesContainer.appendChild(messageEl);
@@ -553,32 +708,25 @@ export class CodingAgentPanel {
 
     const openaiKeyInput = document.getElementById('agent-openai-key') as HTMLInputElement;
     const anthropicKeyInput = document.getElementById('agent-anthropic-key') as HTMLInputElement;
+    const geminiKeyInput = document.getElementById('agent-gemini-key') as HTMLInputElement;
 
     openaiKeyInput.value = settings.openaiApiKey || '';
     anthropicKeyInput.value = settings.anthropicApiKey || '';
+    geminiKeyInput.value = settings.geminiApiKey || '';
 
-    // Show fetch buttons if keys are present
-    const openaiFetchBtn = document.getElementById('agent-openai-fetch-models')!;
-    const anthropicFetchBtn = document.getElementById('agent-anthropic-fetch-models')!;
-    openaiFetchBtn.style.display = settings.openaiApiKey ? 'block' : 'none';
-    anthropicFetchBtn.style.display = settings.anthropicApiKey ? 'block' : 'none';
-
-    // Show model containers and set saved models if available
-    if (settings.defaultOpenAIModel) {
-      const openaiModelContainer = document.getElementById('agent-openai-model-container')!;
-      openaiModelContainer.style.display = 'block';
-      const openaiModelSelect = document.getElementById('agent-openai-model') as HTMLSelectElement;
-      openaiModelSelect.innerHTML = `<option value="${settings.defaultOpenAIModel}">${settings.defaultOpenAIModel}</option>`;
-      openaiModelSelect.value = settings.defaultOpenAIModel;
-    }
-
-    if (settings.defaultAnthropicModel) {
-      const anthropicModelContainer = document.getElementById('agent-anthropic-model-container')!;
-      anthropicModelContainer.style.display = 'block';
-      const anthropicModelSelect = document.getElementById('agent-anthropic-model') as HTMLSelectElement;
-      anthropicModelSelect.innerHTML = `<option value="${settings.defaultAnthropicModel}">${settings.defaultAnthropicModel}</option>`;
-      anthropicModelSelect.value = settings.defaultAnthropicModel;
-    }
+    // Show each model dropdown whenever its key is present. The full model list is
+    // fetched lazily on first open; until then the dropdown shows the saved model.
+    const seedModelSelect = (keyPresent: boolean, containerId: string, selectId: string, savedModel: string) => {
+      document.getElementById(containerId)!.style.display = keyPresent ? 'block' : 'none';
+      if (savedModel) {
+        const select = document.getElementById(selectId) as HTMLSelectElement;
+        select.innerHTML = `<option value="${savedModel}">${savedModel}</option>`;
+        select.value = savedModel;
+      }
+    };
+    seedModelSelect(!!settings.openaiApiKey, 'agent-openai-model-container', 'agent-openai-model', settings.defaultOpenAIModel);
+    seedModelSelect(!!settings.anthropicApiKey, 'agent-anthropic-model-container', 'agent-anthropic-model', settings.defaultAnthropicModel);
+    seedModelSelect(!!settings.geminiApiKey, 'agent-gemini-model-container', 'agent-gemini-model', settings.defaultGeminiModel);
   }
 
   private saveSettings(): void {
@@ -587,26 +735,29 @@ export class CodingAgentPanel {
       openaiApiKey: (document.getElementById('agent-openai-key') as HTMLInputElement).value,
       defaultOpenAIModel: (document.getElementById('agent-openai-model') as HTMLSelectElement).value,
       anthropicApiKey: (document.getElementById('agent-anthropic-key') as HTMLInputElement).value,
-      defaultAnthropicModel: (document.getElementById('agent-anthropic-model') as HTMLSelectElement).value
+      defaultAnthropicModel: (document.getElementById('agent-anthropic-model') as HTMLSelectElement).value,
+      geminiApiKey: (document.getElementById('agent-gemini-key') as HTMLInputElement).value,
+      defaultGeminiModel: (document.getElementById('agent-gemini-model') as HTMLSelectElement).value
     };
 
     saveAgentSettings(settings);
     this.closeSettings();
+    this.updateCurrentModelBadge();
+    this.updateModelInfo();
 
     const context = this.getEditorContext();
     context.updateStatus('Agent settings saved', 'success');
   }
 
   private async fetchOpenAIModels(): Promise<void> {
+    // Fetch once per session; skip if already loaded, in flight, or no key yet.
+    if (this.modelsLoaded.openai || this.modelsLoading.openai) return;
     const apiKey = (document.getElementById('agent-openai-key') as HTMLInputElement).value.trim();
-    if (!apiKey) {
-      alert('Please enter your OpenAI API key first');
-      return;
-    }
+    if (!apiKey) return;
 
-    const fetchBtn = document.getElementById('agent-openai-fetch-models') as HTMLButtonElement;
-    fetchBtn.disabled = true;
-    fetchBtn.textContent = 'Fetching...';
+    const modelSelect = document.getElementById('agent-openai-model') as HTMLSelectElement;
+    const previous = modelSelect.value;
+    this.modelsLoading.openai = true;
 
     try {
       const response = await fetch('https://api.openai.com/v1/models', {
@@ -630,39 +781,35 @@ export class CodingAgentPanel {
       }
 
       // Populate dropdown
-      const modelSelect = document.getElementById('agent-openai-model') as HTMLSelectElement;
       modelSelect.innerHTML = gptModels
         .map((model: string) => `<option value="${model}">${model}</option>`)
         .join('');
 
-      // Select gpt-4-turbo if available, otherwise first model
-      const defaultModel = gptModels.find((m: string) => m === 'gpt-4-turbo') || gptModels[0];
-      modelSelect.value = defaultModel;
+      // Keep the saved selection if it's still offered, else prefer gpt-4-turbo
+      modelSelect.value = gptModels.includes(previous)
+        ? previous
+        : (gptModels.find((m: string) => m === 'gpt-4-turbo') || gptModels[0]);
 
-      // Show model container
-      const modelContainer = document.getElementById('agent-openai-model-container')!;
-      modelContainer.style.display = 'block';
-
+      this.modelsLoaded.openai = true;
       const context = this.getEditorContext();
       context.updateStatus(`Found ${gptModels.length} OpenAI models`, 'success');
     } catch (error) {
-      alert(`Failed to fetch OpenAI models: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const context = this.getEditorContext();
+      context.updateStatus(`Failed to fetch OpenAI models: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     } finally {
-      fetchBtn.disabled = false;
-      fetchBtn.textContent = 'Fetch Models';
+      this.modelsLoading.openai = false;
     }
   }
 
   private async fetchAnthropicModels(): Promise<void> {
+    // Fetch once per session; skip if already loaded, in flight, or no key yet.
+    if (this.modelsLoaded.anthropic || this.modelsLoading.anthropic) return;
     const apiKey = (document.getElementById('agent-anthropic-key') as HTMLInputElement).value.trim();
-    if (!apiKey) {
-      alert('Please enter your Anthropic API key first');
-      return;
-    }
+    if (!apiKey) return;
 
-    const fetchBtn = document.getElementById('agent-anthropic-fetch-models') as HTMLButtonElement;
-    fetchBtn.disabled = true;
-    fetchBtn.textContent = 'Fetching...';
+    const modelSelect = document.getElementById('agent-anthropic-model') as HTMLSelectElement;
+    const previous = modelSelect.value;
+    this.modelsLoading.anthropic = true;
 
     try {
       // Anthropic doesn't have a public models endpoint, so we'll verify the key works
@@ -695,25 +842,76 @@ export class CodingAgentPanel {
       ];
 
       // Populate dropdown
-      const modelSelect = document.getElementById('agent-anthropic-model') as HTMLSelectElement;
       modelSelect.innerHTML = claudeModels
         .map((model: string) => `<option value="${model}">${model}</option>`)
         .join('');
 
-      // Select claude-3-5-sonnet as default
-      modelSelect.value = 'claude-3-5-sonnet-20241022';
+      // Keep the saved selection if it's still offered, else default to claude-3-5-sonnet
+      modelSelect.value = claudeModels.includes(previous) ? previous : 'claude-3-5-sonnet-20241022';
 
-      // Show model container
-      const modelContainer = document.getElementById('agent-anthropic-model-container')!;
-      modelContainer.style.display = 'block';
-
+      this.modelsLoaded.anthropic = true;
       const context = this.getEditorContext();
       context.updateStatus(`Anthropic API key verified`, 'success');
     } catch (error) {
-      alert(`Failed to verify Anthropic API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const context = this.getEditorContext();
+      context.updateStatus(`Failed to verify Anthropic API key: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     } finally {
-      fetchBtn.disabled = false;
-      fetchBtn.textContent = 'Fetch Models';
+      this.modelsLoading.anthropic = false;
+    }
+  }
+
+  private async fetchGeminiModels(): Promise<void> {
+    // Fetch once per session; skip if already loaded, in flight, or no key yet.
+    if (this.modelsLoaded.gemini || this.modelsLoading.gemini) return;
+    const apiKey = (document.getElementById('agent-gemini-key') as HTMLInputElement).value.trim();
+    if (!apiKey) return;
+
+    const modelSelect = document.getElementById('agent-gemini-model') as HTMLSelectElement;
+    const previous = modelSelect.value;
+    this.modelsLoading.gemini = true;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const geminiModels = (data.models || [])
+        // Only models that support text generation
+        .filter((model: any) => (model.supportedGenerationMethods || []).includes('generateContent'))
+        // Strip the "models/" prefix
+        .map((model: any) => (model.name || '').replace(/^models\//, ''))
+        .filter((id: string) => id.startsWith('gemini-'))
+        .sort();
+
+      if (geminiModels.length === 0) {
+        throw new Error('No Gemini models found');
+      }
+
+      // Populate dropdown
+      modelSelect.innerHTML = geminiModels
+        .map((model: string) => `<option value="${model}">${model}</option>`)
+        .join('');
+
+      // Keep the saved selection if it's still offered, else prefer a flash model (free-tier friendly)
+      modelSelect.value = geminiModels.includes(previous)
+        ? previous
+        : (geminiModels.find((m: string) => m === 'gemini-2.0-flash')
+          || geminiModels.find((m: string) => m.includes('flash'))
+          || geminiModels[0]);
+
+      this.modelsLoaded.gemini = true;
+      const context = this.getEditorContext();
+      context.updateStatus(`Found ${geminiModels.length} Gemini models`, 'success');
+    } catch (error) {
+      const context = this.getEditorContext();
+      context.updateStatus(`Failed to fetch Gemini models: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      this.modelsLoading.gemini = false;
     }
   }
 
@@ -766,6 +964,15 @@ export class CodingAgentPanel {
 
     contextPreview += `PluginApi Documentation: On-demand via get_api_docs tool\n`;
 
+    let attachmentsSize = 0;
+    if (this.attachedFiles.length > 0) {
+      contextPreview += `\nAttached Files (${this.attachedFiles.length}) - inlined into the prompt:\n`;
+      for (const file of this.attachedFiles) {
+        attachmentsSize += file.content.length;
+        contextPreview += `  - ${file.name} (${file.content.length} chars)\n`;
+      }
+    }
+
     // Build history preview
     const historyMessages = this.messages.filter(m => m.role !== 'user' || m.content !== prompt);
     let historyPreview = '';
@@ -779,7 +986,8 @@ export class CodingAgentPanel {
     const totalChars = settings.systemPrompt.length + prompt.length +
                       pluginListingSize +
                       totalHistorySize +
-                      (selectedText?.length || 0);
+                      (selectedText?.length || 0) +
+                      attachmentsSize;
     const estimatedTokens = Math.ceil(totalChars / 4);
 
     // Update preview modal
@@ -798,6 +1006,30 @@ export class CodingAgentPanel {
     this.previewModal.style.display = 'none';
   }
 
+  /** Render the active provider + model in the panel header so it's always visible. */
+  private updateCurrentModelBadge(): void {
+    const settings = getAgentSettings();
+
+    const providerLabels: Record<AIProvider, string> = {
+      openai: 'OpenAI',
+      anthropic: 'Anthropic',
+      gemini: 'Gemini'
+    };
+
+    const model = settings.defaultProvider === 'openai'
+      ? settings.defaultOpenAIModel
+      : settings.defaultProvider === 'anthropic'
+        ? settings.defaultAnthropicModel
+        : settings.defaultGeminiModel;
+
+    const badge = document.getElementById('agent-current-model');
+    if (!badge) return;
+
+    const providerLabel = providerLabels[settings.defaultProvider];
+    badge.textContent = model ? `${providerLabel} · ${model}` : `${providerLabel} · no model selected`;
+    badge.title = `Active provider and model (change in Settings)\nProvider: ${providerLabel}\nModel: ${model || 'not selected'}`;
+  }
+
   private async updateModelInfo(): Promise<void> {
     const settings = getAgentSettings();
     const context = this.getEditorContext();
@@ -805,7 +1037,9 @@ export class CodingAgentPanel {
     // Get selected model
     const model = settings.defaultProvider === 'openai'
       ? settings.defaultOpenAIModel
-      : settings.defaultAnthropicModel;
+      : settings.defaultProvider === 'anthropic'
+        ? settings.defaultAnthropicModel
+        : settings.defaultGeminiModel;
 
     // Calculate token estimate
     const prompt = this.inputTextarea.value.trim();
@@ -820,11 +1054,13 @@ export class CodingAgentPanel {
 
     const selectedText = this.getSelectedText(context.editor) || '';
     const historySize = this.messages.reduce((sum, msg) => sum + msg.content.length, 0);
+    const attachmentsSize = this.attachedFiles.reduce((sum, f) => sum + f.content.length, 0);
 
-    // File contents and docs are on-demand via tools, not included upfront
+    // File contents and docs are on-demand via tools, not included upfront.
+    // Attached files, however, are inlined into the prompt.
     const totalChars = settings.systemPrompt.length + prompt.length +
                       pluginListingSize +
-                      historySize + selectedText.length;
+                      historySize + selectedText.length + attachmentsSize;
 
     const estimatedTokens = Math.ceil(totalChars / 4);
 

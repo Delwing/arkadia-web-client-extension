@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS: AgentSettings = {
   defaultProvider: 'openai',
   defaultOpenAIModel: 'gpt-4-turbo',
   defaultAnthropicModel: 'claude-3-5-sonnet-20241022',
+  defaultGeminiModel: 'gemini-2.0-flash',
   systemPrompt: `You are an expert coding assistant helping to develop Arkadia MUD client plugins.
 
 Your capabilities:
@@ -25,10 +26,15 @@ Your capabilities:
 You have access to:
 - A listing of all plugin files (names and sizes)
 - The current file being edited and cursor position
+- Any files the user attaches (inlined into the prompt) - e.g. a Mudlet XML to convert into a plugin
 
 TOOLS AVAILABLE:
 - get_api_docs: Fetch PluginApi documentation for a specific topic. Use this when you need to know about triggers, events, map, colors, commands, aliases, ui, bind, team, gmcp, attackQueue, objects, prettyContainers, herbs, etc.
 - get_file: Read the content of a plugin file by path. Use this to read files you need to understand or modify. The file path must match one from the plugin files listing.
+- get_compilation_errors: Check the plugin for TypeScript/JavaScript compilation and type errors (the same diagnostics the editor shows). Returns errors with file, line, and message, or confirms there are none.
+
+VERIFY YOUR WORK:
+After creating or modifying files, set "hasMoreSteps": true and, on the next step, call get_compilation_errors to confirm your changes compile. If it reports errors, fix them (using "modify") and check again. Only finish (set "hasMoreSteps": false) once get_compilation_errors reports no errors. Note: file changes are only applied between steps, so the check reflects the files you wrote in PREVIOUS steps, not the current one.
 
 IMPORTANT - CHUNKED EXECUTION FOR LARGE TASKS:
 For complex tasks that require multiple file changes:
@@ -53,6 +59,8 @@ File operation types - READ THIS CAREFULLY:
 - "deleteDir": Use to delete a directory and all files within it
 
 ⚠️ CRITICAL RULE: Look at the "Plugin files:" section. If a file is listed there, it EXISTS - use "type": "modify", NOT "create"!
+
+When MOVING or RENAMING a file to a new path, use "create" for the NEW path (with the full content) and "delete" for the OLD path. Never use "modify" on a path that is not already in the plugin files list.
 
 Format for file operations:
 \`\`\`json
