@@ -187,12 +187,13 @@ const StatPopup: React.FC = () => {
                     {BODY_PARTS.map((p) => {
                         const recv = s.otrzymane.parts[p];
                         const parry = s.wyparowane.zbroje.parts[p];
+                        const partTotal = recv + parry;
                         return (
                             <div key={p} className="stat-popup__line">
                                 <span className="stat-popup__label">{BODY_LABELS[p]}</span>
                                 <span className="stat-popup__value">
-                                    {recv} ({pct(recv, s.otrzymane.count)}) /{' '}
-                                    {parry} ({pct(parry, s.wyparowane.zbroje.count)})
+                                    {recv} ({pct(recv, partTotal)}) /{' '}
+                                    {parry} ({pct(parry, partTotal)})
                                 </span>
                             </div>
                         );

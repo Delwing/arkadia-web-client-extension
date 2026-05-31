@@ -124,7 +124,9 @@ const INNER_TOTAL = INNER + LEFT_PAD + RIGHT_PAD;
 const LEFT_SPACES = " ".repeat(LEFT_PAD);
 const RIGHT_SPACES = " ".repeat(RIGHT_PAD);
 const VALUE_COL_DEFAULT = 36;
-const VALUE_COL_COMBINED = 19;
+// Column (within INNER) where the last char of every value lands, so closing
+// parentheses line up vertically across all rows, including the combined ones.
+const VALUE_CLOSE_COL = 41;
 
 type Segment = [text: string, color: FormatStateSnapshot];
 
@@ -137,12 +139,21 @@ function alignedTail(prefixLen: number, value: string, valueCol: number): string
     return `: ${".".repeat(dotsCount)} ${value}${trailing}${RIGHT_SPACES}|`;
 }
 
-function statRowSegments(label: string, value: string, valueCol = VALUE_COL_DEFAULT): Segment[] {
+function alignedTailRight(prefixLen: number, value: string): string {
+    // Right-align value so its last char lands at VALUE_CLOSE_COL.
+    const start = VALUE_CLOSE_COL - value.length + 1;
+    const dotsCount = Math.max(2, start - prefixLen - 3);
+    const used = prefixLen + 3 + dotsCount + value.length;
+    const trailing = " ".repeat(Math.max(0, INNER - used));
+    return `: ${".".repeat(dotsCount)} ${value}${trailing}${RIGHT_SPACES}|`;
+}
+
+function statRowSegments(label: string, value: string): Segment[] {
     const labelPrefix = `  » ${label}`;
     return [
         [`|${LEFT_SPACES}${"  » "}`, COLOR_BORDER],
         [label, COLOR_LABEL],
-        [alignedTail(labelPrefix.length, value, valueCol), COLOR_DIM],
+        [alignedTailRight(labelPrefix.length, value), COLOR_DIM],
     ];
 }
 
@@ -238,11 +249,19 @@ function buildPanel(s: CombatStatsSnapshot): AnsiAwareBuffer {
     lines.push(blankRowSegments());
 
     lines.push(combinedHeadingSegments());
+    const recvCell = (p: BodyPart) => {
+        const v = s.otrzymane.parts[p];
+        return `${v} (${pct(v, v + s.wyparowane.zbroje.parts[p])})`;
+    };
+    const parCell = (p: BodyPart) => {
+        const v = s.wyparowane.zbroje.parts[p];
+        return `${v} (${pct(v, s.otrzymane.parts[p] + v)})`;
+    };
+    const recvWidth = Math.max(...BODY_PARTS.map((p) => recvCell(p).length));
+    const parWidth = Math.max(...BODY_PARTS.map((p) => parCell(p).length));
     BODY_PARTS.forEach((p) => {
-        const recv = s.otrzymane.parts[p];
-        const par = s.wyparowane.zbroje.parts[p];
-        const text = `${recv} (${pct(recv, s.otrzymane.count)}) / ${par} (${pct(par, s.wyparowane.zbroje.count)})`;
-        lines.push(statRowSegments(BODY_LABELS[p], text, VALUE_COL_COMBINED));
+        const text = `${recvCell(p).padStart(recvWidth)} / ${parCell(p).padStart(parWidth)}`;
+        lines.push(statRowSegments(BODY_LABELS[p], text));
     });
     lines.push(blankRowSegments());
 
