@@ -114,18 +114,27 @@ export function getSessionYear(name: string): number | null {
 
 /** Collect only CSS rules relevant to log HTML output. */
 export function collectLogStyles(): string {
-  const logContainer = document.getElementById("logs-preview");
-  if (!logContainer) return "";
+  // Class names used in exported log HTML. Seed these so style collection works
+  // even when the live preview (#logs-preview) is not mounted - e.g. when
+  // exporting from the "Zarzadzanie" tab, where #logs-preview does not exist.
+  const usedClasses = new Set<string>([
+    "output_msg",
+    "output_msg_text",
+    "log-time",
+    "logs-preview-highlight",
+    // ansi animation classes that may appear in log content
+    "ansi-slow-blink",
+    "ansi-rapid-blink",
+    "ansi-dim",
+  ]);
 
-  // Collect all class names actually used in the log preview
-  const usedClasses = new Set<string>();
-  for (const el of logContainer.querySelectorAll("[class]")) {
-    for (const cls of el.classList) usedClasses.add(cls);
+  // Augment with class names actually present in the live preview, if mounted.
+  const logContainer = document.getElementById("logs-preview");
+  if (logContainer) {
+    for (const el of logContainer.querySelectorAll("[class]")) {
+      for (const cls of el.classList) usedClasses.add(cls);
+    }
   }
-  // Also include ansi animation classes that may appear in log content
-  usedClasses.add("ansi-slow-blink");
-  usedClasses.add("ansi-rapid-blink");
-  usedClasses.add("ansi-dim");
 
   function isRelevantRule(rule: CSSRule): boolean {
     if (rule instanceof CSSKeyframesRule) {
