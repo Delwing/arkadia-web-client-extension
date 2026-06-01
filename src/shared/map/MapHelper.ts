@@ -93,6 +93,10 @@ export default class MapHelper {
     private mapReader!: MapReader;
     private pathFinder!: PathFinder;
     public refreshPosition = true;
+    // True when the most recent gmcp.room.info applied a position change that has
+    // not yet been reconciled with a follow-step. Lets followMove() avoid moving
+    // a second time on top of a position GMCP already advanced this step.
+    private gmcpJustMoved = false;
     private hashes: Record<string, number> = {};
     private internalIds: Record<string, number> = {};
     private gmcpPosition!: Position;
@@ -151,9 +155,16 @@ export default class MapHelper {
         this.client.on("gmcp.room.info", (eventDetail) => {
             this.setBlockable(false);
             this.gmcpPosition = eventDetail?.map;
+            // Reset per room.info so a leftover flag from a step without a
+            // follow-step can't suppress the next step's relative move.
+            this.gmcpJustMoved = false;
             if (this.refreshPosition) {
+                const before = this.currentRoom?.id;
                 this.setMapPosition(this.gmcpPosition);
                 this.refreshPosition = false;
+                if (this.currentRoom?.id !== before) {
+                    this.gmcpJustMoved = true;
+                }
             }
         });
 
@@ -380,6 +391,20 @@ export default class MapHelper {
     }
 
     followMove(direction: string, fullFollow?: string) {
+        // When the authoritative GMCP room.info for this step already advanced
+        // us (it is parsed inline and applied before the buffered prose line that
+        // triggers this follow reaches us), a relative follow-step would overshoot.
+        // During "idz marszem" every step both updates the GMCP position and
+        // prints "Ruszasz marszem na <dir>"; without this guard the two stack and
+        // walk us one room too far. We key off whether GMCP actually moved us this
+        // step rather than position equality, because across frames the prose can
+        // arrive before its room.info, in which case the stale GMCP position would
+        // also "match" the current room yet the relative move is still required.
+        if (this.gmcpJustMoved) {
+            this.gmcpJustMoved = false;
+            return undefined;
+        }
+
         // The follow token comes from game prose, so only attempt a bare
         // directional move when it is a full Polish direction word. Otherwise a
         // preposition like "w" (in "w lesna gestwine") would be resolved to the
