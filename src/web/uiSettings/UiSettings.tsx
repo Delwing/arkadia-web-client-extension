@@ -14,6 +14,18 @@ import ManageSoundsModal from "./ManageSoundsModal";
 
 type Tab = "general" | "footer" | "map" | "sound";
 
+// Top-level keys whose value differs between two settings snapshots.
+function changedKeys(a: UiSettingsType, b: UiSettingsType): string[] {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    const changed: string[] = [];
+    for (const k of keys) {
+        if (JSON.stringify((a as any)[k]) !== JSON.stringify((b as any)[k])) {
+            changed.push(k);
+        }
+    }
+    return changed;
+}
+
 const TABS: { key: Tab; label: string }[] = [
     { key: "general", label: "Ogólne" },
     { key: "footer", label: "Stopka" },
@@ -151,7 +163,17 @@ function UiSettings({ soundManager, onEnableNotifications }: UiSettingsProps) {
         const offUiSettings = globalStorage.onChange("uiSettings", (newValue) => {
             if (newValue) {
                 const fresh = load();
+                // The map persists its current zoom to uiSettings.mapScale on every
+                // wheel tick. Routing that write back through setDraft -> apply()
+                // re-renders and recenters the map (refresh() + the map 'resize'
+                // event), fighting the renderer's zoom-to-cursor and making the
+                // wheel feel jittery. When mapScale is the only thing that changed,
+                // sync our cached copy but skip the live re-apply.
+                const prev = savedRef.current;
                 savedRef.current = fresh;
+                if (prev && changedKeys(prev, fresh).every((k) => k === "mapScale")) {
+                    return;
+                }
                 setDraft(fresh);
             }
         });
