@@ -673,14 +673,14 @@ test.describe('Object list timers bar', () => {
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const coverItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'});
 
-            // Should show countdown initially
-            const text1 = await coverItem.textContent();
-            expect(text1, 'should show countdown after trigger').toMatch(/Zas: [0-9]\.[0-9]{2}/);
+            // Should show countdown initially. Poll: the trigger propagates
+            // through an event + React re-render, so reading once immediately
+            // races the update (flaky under CI load).
+            await expect(coverItem, 'should show countdown after trigger').toContainText(/Zas: [0-9]\.[0-9]{2}/);
 
             // Advance time — value should decrease
             await page.clock.runFor(2000);
-            const text2 = await coverItem.textContent();
-            expect(text2, 'should show lower value after 2s').toMatch(/Zas: [0-9]\.[0-9]{2}/);
+            await expect(coverItem, 'should show lower value after 2s').toContainText(/Zas: [0-9]\.[0-9]{2}/);
 
             // Timer should expire after 5s total
             await page.clock.runFor(3500);
@@ -707,14 +707,14 @@ test.describe('Object list timers bar', () => {
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const orderItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Rozkaz:'});
 
-            // Should show countdown
-            const text1 = await orderItem.textContent();
-            expect(text1, 'should show countdown after order').toMatch(/Rozkaz: \d+\.\d{2}/);
+            // Should show countdown. Poll: the trigger propagates through an
+            // event + React re-render, so reading once immediately races the
+            // update (flaky under CI load).
+            await expect(orderItem, 'should show countdown after order').toContainText(/Rozkaz: \d+\.\d{2}/);
 
             // Advance time — value should decrease
             await page.clock.runFor(5000);
-            const text2 = await orderItem.textContent();
-            expect(text2, 'should show lower value after 5s').toMatch(/Rozkaz: \d+\.\d{2}/);
+            await expect(orderItem, 'should show lower value after 5s').toContainText(/Rozkaz: \d+\.\d{2}/);
 
             // Timer should expire after 15s total
             await page.clock.runFor(10500);
