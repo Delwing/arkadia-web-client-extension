@@ -68,6 +68,7 @@ export default defineConfig({
                 editor: resolve('editor/index.html'),
                 viewer: resolve('viewer/index.html'),
                 'log-viewer': resolve('log-viewer/index.html'),
+                popup: resolve('popup/index.html'),
             },
             output: {
                 manualChunks: (id) => {

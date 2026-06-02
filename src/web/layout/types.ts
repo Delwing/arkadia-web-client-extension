@@ -97,6 +97,13 @@ export interface WindowRecord {
   // shell components can react to it without consulting the popup registry.
   isPinned?: boolean;
   isLocked?: boolean;
+
+  /** When true, the window is detached into a separate browser window
+   *  (popout). It keeps all its dock / floating / tab / split fields so it
+   *  can be restored to its prior location when the popout closes. The main
+   *  shells skip rendering it; PopoutWindowLayer owns the external window.
+   *  Never persisted — healed to false on loadState. */
+  poppedOut?: boolean;
 }
 
 export interface DragState {

@@ -60,7 +60,7 @@ export function DockArea({
   const sorted = useMemo(
     () =>
       windows
-        .filter(w => w.docked === side && w.visible)
+        .filter(w => w.docked === side && w.visible && !w.poppedOut)
         .sort((a, b) => (a.dockOrder ?? 0) - (b.dockOrder ?? 0)),
     [windows, side]
   );

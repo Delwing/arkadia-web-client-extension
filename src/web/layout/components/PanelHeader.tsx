@@ -20,6 +20,8 @@ export interface PanelChrome {
   onPin?: () => void;
   onLock?: () => void;
   onReset?: () => void;
+  /** Detach the panel into a separate browser window. Popups only. */
+  onPopout?: () => void;
 }
 
 /** Subscribe to the popupRegistry for a single popup id. */
@@ -36,7 +38,7 @@ function usePopupInfo(panelId: string): RegisteredPopup | null {
 }
 
 export function usePanelChrome(window: WindowRecord): PanelChrome {
-  const { getBuiltInPanelState, updateBuiltInPanelState } = useLayoutManager();
+  const { manager, getBuiltInPanelState, updateBuiltInPanelState } = useLayoutManager();
   const popup = usePopupInfo(window.id);
   const isBuiltIn = window.id === 'map' || window.id === 'objectList';
   const builtInState = isBuiltIn ? getBuiltInPanelState(window.id) : undefined;
@@ -80,6 +82,13 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
       ? () => updateBuiltInPanelState(window.id, { isLocked: !builtInState?.isLocked })
       : undefined,
     onReset: popup?.onReset,
+    // Popout is offered for popups and the built-in panels (map, object list).
+    // All of them render through the WindowManager's relocatable portal target,
+    // so they can be moved into a separate browser window the same way.
+    onPopout:
+      isPopup || isBuiltIn
+        ? () => manager.setPoppedOut(window.id, true)
+        : undefined,
   };
 }
 
@@ -121,6 +130,7 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
         chrome.onReset ||
         chrome.onLock ||
         chrome.onPin ||
+        chrome.onPopout ||
         (chrome.closable && chrome.onClose)) && (
         <div className={actionsClass} onPointerDown={e => e.stopPropagation()}>
           {chrome.headerActions}
@@ -146,6 +156,14 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
               className={`panel-button panel-button--pin${chrome.isPinned ? ' is-active' : ''}`}
               onClick={chrome.onPin}
               title={chrome.isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+            />
+          )}
+          {chrome.onPopout && (
+            <button
+              type="button"
+              className="panel-button panel-button--popout"
+              onClick={chrome.onPopout}
+              title="Otworz w osobnym oknie"
             />
           )}
           {chrome.closable && chrome.onClose && (

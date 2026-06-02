@@ -739,6 +739,51 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 /* ============================================
+   Popout Window (panel detached into its own browser window)
+   ============================================ */
+
+.popout-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.popout-frame {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  border: none;
+  box-shadow: none;
+}
+
+/* Header is not draggable in a popout — override the docked grab cursor. */
+.popout-frame__header {
+  cursor: default;
+  justify-content: space-between;
+}
+
+.popout-frame__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.popout-frame__content > div {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The .floating-panel fill rule doesn't reach the popout frame — mirror it so
+   built-in panels (map, object list) fill the popped-out window. */
+.popout-frame .map-panel-container,
+.popout-frame .object-list-panel-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================
    Map Header Menu Styles
    ============================================ */
 

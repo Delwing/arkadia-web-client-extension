@@ -124,7 +124,10 @@ export class WindowManager {
     // minimum is treated as auto-height so the popup can render at all.
     this.windowHints = new Map(
       Object.entries(state.windows ?? {}).map(([id, w]) => {
-        const healed: WindowRecord = { ...w, visible: false };
+        // poppedOut is a live-only state: a separate browser window can't
+        // survive a reload, so always restore the panel into its prior
+        // floating / docked location.
+        const healed: WindowRecord = { ...w, visible: false, poppedOut: false };
         if (
           !healed.docked &&
           healed.height !== undefined &&
@@ -300,8 +303,9 @@ export class WindowManager {
   close(id: string): void {
     const w = this.windows.get(id);
     if (!w) return;
-    // Preserve last-known geometry as a hint.
-    this.windowHints.set(id, { ...w, visible: false });
+    // Preserve last-known geometry as a hint. poppedOut is a live-only state —
+    // never carry it into the hint, or reopening would immediately re-detach.
+    this.windowHints.set(id, { ...w, visible: false, poppedOut: false });
     this.windows.delete(id);
 
     // Sync popupPanels dock state for popups so shouldPopupAutoOpen reflects truth.
@@ -385,6 +389,19 @@ export class WindowManager {
 
   setVisible(id: string, visible: boolean): void {
     this.patch(id, { visible });
+  }
+
+  /** Detach the window into a separate browser window (true) or restore it to
+   *  its prior dock / floating location (false). All geometry / grouping
+   *  fields are preserved across the transition, so flipping the flag back
+   *  re-renders the window exactly where it was. */
+  setPoppedOut(id: string, poppedOut: boolean): void {
+    const w = this.windows.get(id);
+    if (!w || !!w.poppedOut === poppedOut) return;
+    w.poppedOut = poppedOut;
+    // Raise on restore so it lands on top of any panels opened meanwhile.
+    if (!poppedOut) w.zIndex = ++this.nextZ;
+    this.notify();
   }
 
   // ── Geometry (floating) ──────────────────────────────────────────────────

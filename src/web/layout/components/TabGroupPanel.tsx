@@ -120,7 +120,13 @@ function TabItem({ panel, isActive, manager, onDragStateChange }: TabItemProps) 
  *  larger) custom headerActions go last. */
 function ActiveTabActions({ panel }: { panel: WindowRecord }) {
   const chrome = usePanelChrome(panel);
-  if (!chrome.headerActions && !chrome.onReset && !chrome.onLock && !chrome.onPin) {
+  if (
+    !chrome.headerActions &&
+    !chrome.onReset &&
+    !chrome.onLock &&
+    !chrome.onPin &&
+    !chrome.onPopout
+  ) {
     return null;
   }
   return (
@@ -150,6 +156,14 @@ function ActiveTabActions({ panel }: { panel: WindowRecord }) {
           className="panel-button panel-button--reset panel-button--sm"
           onClick={chrome.onReset}
           title="Przywroc domyslna pozycje i rozmiar"
+        />
+      )}
+      {chrome.onPopout && (
+        <button
+          type="button"
+          className="panel-button panel-button--popout panel-button--sm"
+          onClick={chrome.onPopout}
+          title="Otworz w osobnym oknie"
         />
       )}
       {chrome.headerActions}

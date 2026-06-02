@@ -77,8 +77,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
 
   const calculateDropdownPosition = useCallback(() => {
     if (toggleRef.current) {
+      // Use the button's own window so the dropdown positions correctly even
+      // when the panel has been popped out into a separate browser window.
+      const win = toggleRef.current.ownerDocument.defaultView ?? window;
       const rect = toggleRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
+      const viewportHeight = win.innerHeight;
       // Calculate available space below the button with some padding
       const availableSpace = viewportHeight - rect.bottom - 16;
       // Ensure at least some minimum height (100px) and cap at 360px
@@ -86,7 +89,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
       setDropdownStyle({
         position: 'fixed',
         top: rect.bottom + 4,
-        right: window.innerWidth - rect.right,
+        right: win.innerWidth - rect.right,
         maxHeight,
       });
     }
@@ -294,8 +297,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [showCompleted, closeMenu]);
 
-  const handleCopyAsImage = useCallback(async () => {
-    const mapContainer = document.getElementById('map');
+  const handleCopyAsImage = useCallback(async (e: React.MouseEvent) => {
+    // Resolve against the button's own document so the map is found whether the
+    // panel is docked in the main window or popped out into its own window.
+    const doc = (e.currentTarget as HTMLElement).ownerDocument;
+    const mapContainer = doc.getElementById('map');
     if (!mapContainer) return;
 
     // Konva creates multiple canvas layers - we need to composite them all
@@ -308,7 +314,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
       const height = canvases[0].height;
 
       // Create a composite canvas
-      const compositeCanvas = document.createElement('canvas');
+      const compositeCanvas = doc.createElement('canvas');
       compositeCanvas.width = width;
       compositeCanvas.height = height;
       const ctx = compositeCanvas.getContext('2d');

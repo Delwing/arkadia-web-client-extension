@@ -19,7 +19,7 @@ export function FloatingWindowLayer({
   onTitlebarContextMenu,
   disableDocking,
 }: FloatingWindowLayerProps) {
-  const floating = windows.filter(w => !w.docked && w.visible);
+  const floating = windows.filter(w => !w.docked && w.visible && !w.poppedOut);
 
   return createPortal(
     <div className="floating-window-root">

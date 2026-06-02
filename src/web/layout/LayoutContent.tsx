@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { DockArea } from './components/DockArea';
 import { FloatingWindowLayer } from './components/FloatingWindowLayer';
+import { PopoutWindowLayer } from './components/PopoutWindowLayer';
 import { MapPanel } from './panels/MapPanel';
 import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
@@ -57,7 +58,7 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
     }
     const sideHasContent = (side: DockSide) =>
       Object.values(layoutState.windows).some(
-        w => w.docked === side && w.visible
+        w => w.docked === side && w.visible && !w.poppedOut
       );
     const sideIsDragTarget = (side: DockSide) =>
       dragState?.potentialDock === side;
@@ -75,8 +76,15 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
     [manager]
   );
 
+  // Windows shown in the in-app dock / floating shells. Popped-out windows are
+  // excluded here — they live in their own browser window via PopoutWindowLayer.
   const visibleWindows = useMemo(
-    () => Object.values(layoutState.windows).filter(w => w.visible),
+    () => Object.values(layoutState.windows).filter(w => w.visible && !w.poppedOut),
+    [layoutState.windows]
+  );
+
+  const poppedWindows = useMemo(
+    () => Object.values(layoutState.windows).filter(w => w.visible && w.poppedOut),
     [layoutState.windows]
   );
 
@@ -92,12 +100,15 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
     // Map/objectList stay in their legacy DOM containers (#iframe-container,
     // #objects-list) — they're not opened in the WindowManager.
     return (
-      <FloatingWindowLayer
-        windows={visibleWindows}
-        manager={manager}
-        onDragStateChange={updateDragState}
-        disableDocking
-      />
+      <>
+        <FloatingWindowLayer
+          windows={visibleWindows}
+          manager={manager}
+          onDragStateChange={updateDragState}
+          disableDocking
+        />
+        <PopoutWindowLayer windows={poppedWindows} manager={manager} />
+      </>
     );
   }
 
@@ -176,6 +187,8 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
         manager={manager}
         onDragStateChange={updateDragState}
       />
+
+      <PopoutWindowLayer windows={poppedWindows} manager={manager} />
     </>
   );
 }

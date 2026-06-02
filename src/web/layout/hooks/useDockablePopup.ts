@@ -254,6 +254,9 @@ export function useDockablePopup({
 
     const handlePointerDown = (event: PointerEvent) => {
       if (isPinnedRef.current) return;
+      // A popped-out popup lives in its own browser window — clicks in the
+      // main window must not close it.
+      if (windowManager.get(popupId)?.poppedOut) return;
       const dockedIn = windowManager.findPanelDock(popupId);
       if (dockedIn) return;
       const target = event.target as Element | null;
@@ -271,6 +274,7 @@ export function useDockablePopup({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       if (isPinnedRef.current) return;
+      if (windowManager.get(popupId)?.poppedOut) return;
       if (windowManager.findPanelDock(popupId)) return;
       event.preventDefault();
       onCloseRef.current();
