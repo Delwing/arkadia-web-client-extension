@@ -4817,6 +4817,16 @@ h1 {
   z-index: 1001;
 }
 
+/* While the "..." menu (Ustawienia / Interfejs / ...) is open, lift the whole
+   input area above the floating-window tier (root 1040, popups up to ~10000)
+   so the dropdown — which is trapped in #input-area's stacking context — is not
+   covered by pinned floating windows. Kept below the context menu (10100). The
+   class is toggled only while the menu is open, so floats/modals still layer
+   over the input bar normally the rest of the time. */
+#input-area.menu-open {
+  z-index: 10090;
+}
+
 #message-input,
 #message-input-password {
   flex: 1 1 0;
@@ -6864,7 +6874,10 @@ body.layout-manager-enabled #notification-center {
   box-shadow: none;
   padding: 0.5rem;
   border-radius: 0.5rem;
-  z-index: 1105;
+  /* Sits above every floating window / pinned popup (Sun Tracker, desktop
+     buttons and other inline z-indexes reach ~10000) so a right-click menu is
+     always the topmost transient layer and never gets covered. */
+  z-index: 10100;
   min-width: 0;
 }
 

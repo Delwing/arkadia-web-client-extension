@@ -1080,6 +1080,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (menuButton) {
         new Dropdown(menuButton);
+        // The dropdown is trapped inside #input-area's stacking context (z 1001),
+        // so pinned floating windows (z 1040+) cover it. Lift the input area while
+        // the menu is open, then restore it so floats/modals layer normally again.
+        const inputArea = document.getElementById('input-area');
+        menuButton.addEventListener('show.bs.dropdown', () => inputArea?.classList.add('menu-open'));
+        menuButton.addEventListener('hidden.bs.dropdown', () => inputArea?.classList.remove('menu-open'));
     }
 
     if (disconnectButton) {
