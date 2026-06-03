@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { PanelBottom, PanelLeft, PanelRight, PanelTop, type LucideIcon } from 'lucide-react';
 import type { SplitDir } from '../types';
 
 interface SplitContextMenuProps {
@@ -10,11 +11,11 @@ interface SplitContextMenuProps {
   onSplit: (dir: SplitDir, before: boolean) => void;
 }
 
-const ITEMS: Array<{ label: string; dir: SplitDir; before: boolean }> = [
-  { label: 'Podziel w lewo', dir: 'row', before: true },
-  { label: 'Podziel w prawo', dir: 'row', before: false },
-  { label: 'Podziel w gore', dir: 'col', before: true },
-  { label: 'Podziel w dol', dir: 'col', before: false },
+const ITEMS: Array<{ label: string; dir: SplitDir; before: boolean; Icon: LucideIcon }> = [
+  { label: 'Podziel w lewo', dir: 'row', before: true, Icon: PanelLeft },
+  { label: 'Podziel w prawo', dir: 'row', before: false, Icon: PanelRight },
+  { label: 'Podziel w gore', dir: 'col', before: true, Icon: PanelTop },
+  { label: 'Podziel w dol', dir: 'col', before: false, Icon: PanelBottom },
 ];
 
 /** Small context menu offering to split a docked panel, inserting an empty
@@ -54,6 +55,9 @@ export function SplitContextMenu({ x, y, onClose, onSplit }: SplitContextMenuPro
           className="dropdown-item layout-split-menu__item"
           onClick={() => onSplit(item.dir, item.before)}
         >
+          <span className="layout-split-menu__icon">
+            <item.Icon size={16} />
+          </span>
           {item.label}
         </button>
       ))}

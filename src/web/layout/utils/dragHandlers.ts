@@ -59,6 +59,8 @@ export function startUndockableDrag(opts: UndockableDragOptions): void {
       slotIndex !== potentialSlot ||
       stackTargetId !== potentialStackTarget ||
       splitTargetId !== potentialSplitTarget ||
+      splitBefore !== potentialSplitBefore ||
+      splitDir !== potentialSplitDir ||
       fillLeafId !== potentialFillLeaf
     ) {
       potentialDock = side;
@@ -207,6 +209,8 @@ export function startFloatingDrag(opts: FloatingDragOptions): void {
       slotIndex !== potentialSlot ||
       stackTargetId !== potentialStackTarget ||
       splitTargetId !== potentialSplitTarget ||
+      splitBefore !== potentialSplitBefore ||
+      splitDir !== potentialSplitDir ||
       fillLeafId !== potentialFillLeaf
     ) {
       potentialDock = side;

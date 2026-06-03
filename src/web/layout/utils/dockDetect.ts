@@ -116,34 +116,35 @@ function slotDropInfo(dockEl: HTMLElement, mx: number, my: number): DropInfo {
   return edgeZones(leafEl, target, mx, my);
 }
 
+// Edge band thickness (fraction of the leaf). The left/right bands span the
+// full height and are tested first, so corners belong to the horizontal split
+// rather than flipping between two directions — this is what keeps aiming
+// predictable (the standard VS Code / dock-manager "frame" model).
+const EDGE = 0.25;
+
 /**
- * Edge-direction zones: the nearest edge decides the split direction (drop on
- * the left edge -> new pane on the left, etc.), the central region stacks as a
- * tab. Direction-from-edge is predictable and independent of how the tree is
- * nested, and WindowManager.splitIntoGroup turns a same-axis split into a
- * sibling insert automatically.
+ * "Frame" drop zones: a left/right band -> horizontal split, a top/bottom band
+ * (excluding the corners, which the left/right bands already claimed) ->
+ * vertical split, the central region -> tab stack. Direction-from-edge is
+ * predictable regardless of nesting, and WindowManager.splitIntoGroup turns a
+ * same-axis split into a sibling insert automatically.
  */
 function edgeZones(leafEl: HTMLElement, target: string, mx: number, my: number): DropInfo {
   const r = leafEl.getBoundingClientRect();
   const relX = (mx - r.left) / (r.width || 1);
   const relY = (my - r.top) / (r.height || 1);
-  const left = relX;
-  const right = 1 - relX;
-  const top = relY;
-  const bottom = 1 - relY;
-  const nearest = Math.min(left, right, top, bottom);
 
-  // Central ~40% box stacks as a tab.
-  if (nearest >= 0.3) return { slotIndex: 0, stackTargetId: target };
-
-  if (nearest === left) {
+  if (relX < EDGE) {
     return { slotIndex: 0, splitTargetId: target, splitBefore: true, splitDir: 'row' };
   }
-  if (nearest === right) {
+  if (relX > 1 - EDGE) {
     return { slotIndex: 0, splitTargetId: target, splitBefore: false, splitDir: 'row' };
   }
-  if (nearest === top) {
+  if (relY < EDGE) {
     return { slotIndex: 0, splitTargetId: target, splitBefore: true, splitDir: 'col' };
   }
-  return { slotIndex: 0, splitTargetId: target, splitBefore: false, splitDir: 'col' };
+  if (relY > 1 - EDGE) {
+    return { slotIndex: 0, splitTargetId: target, splitBefore: false, splitDir: 'col' };
+  }
+  return { slotIndex: 0, stackTargetId: target };
 }

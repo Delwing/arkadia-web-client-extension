@@ -134,15 +134,42 @@ function SplitView({
 
 // ── Leaf ─────────────────────────────────────────────────────────────────────
 
-function splitOverlayStyle(dir: SplitDir, before: boolean): CSSProperties {
-  if (dir === 'row') {
-    return before
-      ? { left: 0, top: 0, bottom: 0, width: '50%' }
-      : { right: 0, top: 0, bottom: 0, width: '50%' };
-  }
-  return before
-    ? { left: 0, right: 0, top: 0, height: '50%' }
-    : { left: 0, right: 0, bottom: 0, height: '50%' };
+/** The "fake slot": a real ghost cell that opens up beside the panel, pushing
+ *  its content aside to show where the dropped window would land. Lives INSIDE
+ *  the leaf, so the leaf's measured rect (what drop detection reads) is
+ *  unchanged — the preview reflows the content but never destabilizes aiming. */
+function SplitPreviewWrap({
+  dir,
+  before,
+  children,
+}: {
+  dir: SplitDir;
+  before: boolean;
+  children: React.ReactNode;
+}) {
+  const ghost = (
+    <div className="layout-preview" style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
+      <div className="dock-drop-preview" />
+    </div>
+  );
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: dir === 'row' ? 'row' : 'column',
+        flex: 1,
+        minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
+      {before && ghost}
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+        {children}
+      </div>
+      {!before && ghost}
+    </div>
+  );
 }
 
 function LeafView({
@@ -209,6 +236,17 @@ function LeafView({
     );
   }
 
+  // Split target → open a real ghost cell beside the content. Stack target →
+  // a whole-cell highlight (tab stacking doesn't create a new slot).
+  const inner =
+    isSplitTarget && dragState?.splitDir ? (
+      <SplitPreviewWrap dir={dragState.splitDir} before={!!dragState.splitBefore}>
+        {content}
+      </SplitPreviewWrap>
+    ) : (
+      content
+    );
+
   const leafClass = [
     'layout-leaf',
     leaf.placeholder ? 'layout-leaf--placeholder' : '',
@@ -225,18 +263,7 @@ function LeafView({
       data-cell-id={leaf.id}
       style={{ ...style, position: 'relative', display: 'flex', minWidth: 0, minHeight: 0, overflow: 'hidden' }}
     >
-      {content}
-      {/* Non-reflowing drop preview: an absolute overlay on the target edge so
-          panel geometry never shifts under the cursor mid-drag. */}
-      {isSplitTarget && dragState!.splitDir && (
-        <div
-          className="layout-split-preview"
-          style={{
-            position: 'absolute',
-            ...splitOverlayStyle(dragState!.splitDir!, !!dragState!.splitBefore),
-          }}
-        />
-      )}
+      {inner}
     </div>
   );
 }
