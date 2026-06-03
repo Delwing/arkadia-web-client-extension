@@ -5,3 +5,4 @@ export { CombatTimer } from "./CombatTimer";
 export { TransportTimer } from "./TransportTimer";
 export { ClockDisplay } from "./ClockDisplay";
 export { WorldDestructionTimer } from "./WorldDestructionTimer";
+export { TeamPanel } from "./TeamPanel";

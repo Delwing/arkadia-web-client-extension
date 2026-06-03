@@ -101,6 +101,7 @@ import initDrowning from './scripts/drowning'
 import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
+import initTeamPanel from './scripts/teamPanel'
 import initNoExitHighlight from './scripts/noExitHighlight'
 import initTideWarningHighlight from './scripts/tideWarningHighlight'
 import initLetter from './scripts/letter'
@@ -289,6 +290,7 @@ export function registerScripts(client: Client) {
     initHpAlert(client)
     initIdleFullHp(client)
     initFullHpTimer(client)
+    initTeamPanel(client)
     initNoWeaponAlert(client)
     initNewMail(client)
     initMagikZnika(client)

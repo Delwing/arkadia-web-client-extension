@@ -16,6 +16,7 @@ import {
   ClockDisplay,
   MailStatus,
   WeaponState,
+  TeamPanel,
   PlaybackControls
 } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
@@ -47,6 +48,7 @@ export const mountMigratedComponents = (): MountResult => {
     { id: "multi-binds", Component: MultiBinds },
     { id: "mail-status", Component: MailStatus },
     { id: "weapon-state", Component: WeaponState },
+    { id: "team-panel", Component: TeamPanel },
   ];
 
   componentConfigs.forEach(({ id, Component }) => {

@@ -36,6 +36,7 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'order-timer', visible: true, order: 11 },
     { id: 'combat-timer', visible: true, order: 12 },
     { id: 'world-destruction-timer', visible: true, order: 13 },
+    { id: 'team-panel', visible: true, order: 14 },
 ];
 
 export interface UiSettings {

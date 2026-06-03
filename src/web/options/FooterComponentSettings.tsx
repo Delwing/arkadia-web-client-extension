@@ -34,6 +34,7 @@ const DISPLAY_NAMES: Record<string, string> = {
     'order-timer': 'Timer rozkazu',
     'combat-timer': 'Timer walki (30s)',
     'world-destruction-timer': 'Timer apokalipsy',
+    'team-panel': 'Panel druzyny',
 };
 
 interface SortableItemProps {
