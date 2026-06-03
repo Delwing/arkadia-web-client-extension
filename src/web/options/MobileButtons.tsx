@@ -317,6 +317,10 @@ function MobileButtons() {
         setActive(null);
     }
 
+    function resetPosition() {
+        eventBus.emit('mobileButtonsResetPosition');
+    }
+
     function copyLayout(from: Mode) {
         const to = view;
         if (from === to) return;
@@ -360,14 +364,19 @@ function MobileButtons() {
                         Prowadzacy
                     </Button>
                 </div>
-                <Form.Check
-                    id="mobile-buttons-lock"
-                    type="switch"
-                    className="user-select-none"
-                    label="Zablokuj"
-                    checked={settings.locked}
-                    onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
-                />
+                <div className="d-flex align-items-center gap-2">
+                    <Button size="sm" variant="outline-secondary" onClick={resetPosition}>
+                        Resetuj pozycje
+                    </Button>
+                    <Form.Check
+                        id="mobile-buttons-lock"
+                        type="switch"
+                        className="user-select-none"
+                        label="Zablokuj"
+                        checked={settings.locked}
+                        onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
+                    />
+                </div>
             </div>
 
             {/* Button size and gap section */}

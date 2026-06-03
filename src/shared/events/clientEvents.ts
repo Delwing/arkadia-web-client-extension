@@ -228,6 +228,7 @@ export interface KnownEvents {
     "playSound": SoundCategory;
     "line-start": void;
     "mobileButtonsSettings": unknown;
+    "mobileButtonsResetPosition": void;
     "desktopButtonsSettings": unknown;
     "orderTimer": number | null;
     "pauserStart": void;

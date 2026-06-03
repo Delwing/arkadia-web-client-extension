@@ -205,6 +205,11 @@ export default class MobileDirectionButtons {
             });
         });
 
+        // Listen for position reset requests from the options UI
+        eventBus.on('mobileButtonsResetPosition', () => {
+            this.resetPosition();
+        });
+
         // Listen for UI settings changes
         const initialUi = globalStorage.get('uiSettings');
         if (initialUi) {
@@ -534,6 +539,17 @@ export default class MobileDirectionButtons {
         }
         this.container.style.left = `${left}px`;
         this.container.style.top = `${saved.y}px`;
+    }
+
+    public resetPosition(): void {
+        if (!this.container) return;
+        this.savedPositions = {};
+        globalStorage.remove('mobileButtonsPosition');
+        this.container.style.removeProperty('left');
+        this.container.style.removeProperty('top');
+        this.container.style.removeProperty('right');
+        this.preCollapseLeft = null;
+        requestAnimationFrame(() => this.clampToView(false));
     }
 
     private positionsEqual(a?: StoredPosition | null, b?: StoredPosition | null): boolean {
