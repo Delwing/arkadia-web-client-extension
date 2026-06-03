@@ -1051,7 +1051,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
     }
 
-    type BookTriggerEntry = { bookKey: string; dopelniacz: string; categories: string[] };
+    type BookTriggerEntry = { bookKey: string; dopelniacz: string; biernik: string; categories: string[] };
 
     function findBookProgValue(
         bookProg: Record<string, true | 'in_progress'>,
@@ -1124,6 +1124,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     bookVariants.set(trimmed, {
                         bookKey: key,
                         dopelniacz: book.dopelniacz,
+                        biernik: book.biernik,
                         categories: [...categories],
                     });
                 }
@@ -1158,8 +1159,10 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                             hideBookTooltip();
                             const items = entry.categories.map((category) => {
                                 const dative = getDativeCategoryName(category);
-                                const cmd = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
-                                return { label: cmd, action: () => client.sendCommand(cmd) };
+                                const zglebiaj = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
+                                const biernik = entry.biernik?.trim();
+                                const cmd = biernik ? `otworz ${biernik};${zglebiaj}` : zglebiaj;
+                                return { label: zglebiaj, action: () => client.sendCommand(cmd) };
                             });
                             showContextMenu(items, ev.pageX, ev.pageY);
                         },

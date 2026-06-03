@@ -523,7 +523,7 @@ let plugLinks = false;
 
 // Book filter for pretty containers (populated after async load)
 let bookFilter: ((name: string) => boolean) | null = null;
-type BookLookupEntry = { dopelniacz: string; categories: string[]; bookKey: string };
+type BookLookupEntry = { dopelniacz: string; biernik: string; categories: string[]; bookKey: string };
 const bookCategoryLookup = new Map<string, BookLookupEntry>();
 let bookProgressByCharacter: Record<string, Record<string, KnowledgeBookCategoryProgress>> = {};
 
@@ -555,8 +555,10 @@ function getBookColor(entry: BookLookupEntry): ReturnType<typeof createColorForm
 function openBookContextMenu(client: Client, entry: BookLookupEntry, x: number, y: number) {
     const items = entry.categories.map((category) => {
         const dative = getDativeCategoryName(category);
-        const cmd = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
-        return { label: cmd, action: () => client.sendCommand(cmd) };
+        const zglebiaj = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
+        const biernik = entry.biernik?.trim();
+        const cmd = biernik ? `otworz ${biernik};${zglebiaj}` : zglebiaj;
+        return { label: zglebiaj, action: () => client.sendCommand(cmd) };
     });
     showContextMenu(items, x, y);
 }
@@ -691,6 +693,7 @@ async function loadMagicAndKeysFilter(client: Client) {
                     } else {
                         bookCategoryLookup.set(lower, {
                             dopelniacz: book.dopelniacz,
+                            biernik: book.biernik,
                             categories: [...categories],
                             bookKey,
                         });

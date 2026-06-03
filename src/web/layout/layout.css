@@ -1418,14 +1418,23 @@ body.layout-manager-enabled .compass-rose-box {
   background: var(--surface-border, #333);
   flex-shrink: 0;
   transition: background 0.12s;
+  position: relative;
   z-index: 5;
 }
 .layout-splitter:hover,
 .layout-splitter:active {
   background: var(--bs-primary, #589aff);
 }
+/* Extended hit area without changing the visible 1px line. */
+.layout-splitter::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+}
 .layout-splitter--h { height: 1px; cursor: ns-resize; width: 100%; }
 .layout-splitter--v { width: 1px; cursor: ew-resize; height: 100%; }
+.layout-splitter--h::before { left: 0; right: 0; top: -4px; bottom: -4px; }
+.layout-splitter--v::before { top: 0; bottom: 0; left: -4px; right: -4px; }
 
 /* Empty placeholder cell — an intentional drop target. */
 .layout-leaf--placeholder {
