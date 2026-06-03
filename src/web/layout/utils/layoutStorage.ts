@@ -1,15 +1,20 @@
 import {
   BuiltInPanelState,
+  crossDir,
   DEFAULT_DOCK_EXTENTS,
   DEFAULT_LAYOUT,
   DockSide,
+  generateNodeId,
   generateSplitGroupId,
   LayoutState,
+  LeafNode,
   LegacyDockState,
   LegacyDockSlot,
   LegacyLayoutState,
   PANEL_CONFIGS,
   PopupPanelDockState,
+  primaryDir,
+  SplitNode,
   WindowRecord,
 } from '../types';
 import eventBus from '@modules/core/eventBus';
@@ -17,7 +22,8 @@ import { globalStorage } from '@modules/core/storage';
 
 // ─── Migration ────────────────────────────────────────────────────────────
 
-/** True when the stored object already uses the new flat-windows shape. */
+/** True when the stored object uses the windows-keyed shape (v1 flat fields or
+ *  v2 with dockTrees). */
 export function isNewLayoutShape(obj: unknown): obj is Partial<LayoutState> {
   return (
     obj != null &&
@@ -25,6 +31,141 @@ export function isNewLayoutShape(obj: unknown): obj is Partial<LayoutState> {
     'windows' in (obj as Record<string, unknown>) &&
     typeof (obj as { windows?: unknown }).windows === 'object'
   );
+}
+
+/** True when the stored object already carries dockTrees (v2 — tree shape). */
+function hasDockTrees(obj: unknown): boolean {
+  return (
+    obj != null &&
+    typeof obj === 'object' &&
+    'dockTrees' in (obj as Record<string, unknown>) &&
+    (obj as { dockTrees?: unknown }).dockTrees != null
+  );
+}
+
+const STRUCTURAL_FIELDS: Array<keyof WindowRecord> = [
+  'dockOrder',
+  'dockFlex',
+  'dockGroup',
+  'tabOrder',
+  'isActiveTab',
+  'splitGroup',
+  'splitOrder',
+  'splitFlex',
+];
+
+/** Strip the deprecated flat structural fields off records after their info has
+ *  been folded into dockTrees. */
+function stripStructuralFields(windows: Record<string, WindowRecord>): void {
+  for (const w of Object.values(windows)) {
+    for (const f of STRUCTURAL_FIELDS) delete w[f];
+  }
+}
+
+function makeLeafNode(ids: string[]): LeafNode {
+  return {
+    kind: 'leaf',
+    id: generateNodeId(),
+    windowIds: [...ids],
+    activeId: ids[0] ?? '',
+  };
+}
+
+/** A "cell" is one or more windows sharing a split slot. >1 (or a dockGroup) =
+ *  tab group leaf; otherwise a single-window leaf. */
+function leafFromCell(cell: WindowRecord[]): LeafNode {
+  if (cell.length > 1 || cell[0].dockGroup) {
+    const sorted = [...cell].sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0));
+    const active = sorted.find(p => p.isActiveTab) ?? sorted[0];
+    return {
+      kind: 'leaf',
+      id: generateNodeId(),
+      windowIds: sorted.map(p => p.id),
+      activeId: active.id,
+    };
+  }
+  return makeLeafNode([cell[0].id]);
+}
+
+/** Build a single side's tree from flat WindowRecord structural fields,
+ *  reproducing the legacy DockArea.slots + SplitGroupPanel grouping so migrated
+ *  layouts render identically. */
+function buildSideTree(
+  side: DockSide,
+  windows: Record<string, WindowRecord>
+): SplitNode | null {
+  const docked = Object.values(windows)
+    .filter(w => w.docked === side)
+    .sort((a, b) => (a.dockOrder ?? 0) - (b.dockOrder ?? 0));
+  if (docked.length === 0) return null;
+
+  const root: SplitNode = {
+    kind: 'split',
+    id: generateNodeId(),
+    dir: primaryDir(side),
+    children: [],
+    sizes: [],
+  };
+  const seen = new Set<string>();
+
+  for (const w of docked) {
+    if (w.splitGroup) {
+      if (seen.has(w.splitGroup)) continue;
+      seen.add(w.splitGroup);
+      const members = docked.filter(p => p.splitGroup === w.splitGroup);
+      const cellsByOrder = new Map<number, WindowRecord[]>();
+      for (const m of members) {
+        const o = m.splitOrder ?? 0;
+        const arr = cellsByOrder.get(o) ?? [];
+        arr.push(m);
+        cellsByOrder.set(o, arr);
+      }
+      const orders = Array.from(cellsByOrder.keys()).sort((a, b) => a - b);
+      const splitNode: SplitNode = {
+        kind: 'split',
+        id: generateNodeId(),
+        dir: crossDir(side),
+        children: [],
+        sizes: [],
+      };
+      for (const o of orders) {
+        const cell = cellsByOrder.get(o)!;
+        splitNode.children.push(leafFromCell(cell));
+        splitNode.sizes.push(cell[0].splitFlex ?? 1);
+      }
+      root.children.push(splitNode);
+      root.sizes.push(w.dockFlex ?? 1);
+    } else if (w.dockGroup) {
+      if (seen.has(w.dockGroup)) continue;
+      seen.add(w.dockGroup);
+      const members = docked.filter(p => p.dockGroup === w.dockGroup);
+      root.children.push(leafFromCell(members));
+      root.sizes.push(w.dockFlex ?? 1);
+    } else {
+      if (seen.has(w.id)) continue;
+      seen.add(w.id);
+      root.children.push(makeLeafNode([w.id]));
+      root.sizes.push(w.dockFlex ?? 1);
+    }
+  }
+
+  return root.children.length ? root : null;
+}
+
+/** Build dockTrees for all four sides from flat structural fields. */
+export function migrateFlatWindowsToTrees(
+  windows: Record<string, WindowRecord>
+): Record<DockSide, SplitNode | null> {
+  return {
+    left: buildSideTree('left', windows),
+    right: buildSideTree('right', windows),
+    top: buildSideTree('top', windows),
+    bottom: buildSideTree('bottom', windows),
+  };
+}
+
+function cloneDefaultTrees(): Record<DockSide, SplitNode | null> {
+  return JSON.parse(JSON.stringify(DEFAULT_LAYOUT.dockTrees));
 }
 
 function migrateSide(
@@ -117,12 +258,17 @@ export function migrateLayoutState(legacy: LegacyLayoutState): LayoutState {
     }
   }
 
+  // Fold the flat structural fields into per-side trees, then strip them.
+  const dockTrees = migrateFlatWindowsToTrees(windows);
+  stripStructuralFields(windows);
+
   return {
     enabled: !!legacy.enabled,
     enabledPanels: {
       objectList: legacy.enabledPanels?.objectList ?? true,
     },
     windows,
+    dockTrees,
     dockExtents,
     popupPanels: legacy.popupPanels ?? {},
     builtInPanels: legacy.builtInPanels ?? {},
@@ -146,12 +292,23 @@ export function loadLayoutState(): LayoutState {
     if (!stored) return cloneDefault();
 
     if (isNewLayoutShape(stored)) {
+      const windows: Record<string, WindowRecord> = { ...stored.windows };
+      let dockTrees: Record<DockSide, SplitNode | null>;
+      if (hasDockTrees(stored) && stored.dockTrees) {
+        // v2: trees already stored.
+        dockTrees = stored.dockTrees;
+      } else {
+        // v1: derive trees from the flat structural fields, then strip them.
+        dockTrees = migrateFlatWindowsToTrees(windows);
+        stripStructuralFields(windows);
+      }
       const state: LayoutState = {
         enabled: !!stored.enabled,
         enabledPanels: {
           objectList: stored.enabledPanels?.objectList ?? true,
         },
-        windows: { ...stored.windows },
+        windows,
+        dockTrees,
         dockExtents: { ...DEFAULT_DOCK_EXTENTS, ...stored.dockExtents },
         popupPanels: stored.popupPanels ?? {},
         builtInPanels: stored.builtInPanels ?? {},
@@ -173,6 +330,7 @@ function cloneDefault(): LayoutState {
     windows: Object.fromEntries(
       Object.entries(DEFAULT_LAYOUT.windows).map(([k, v]) => [k, { ...v }])
     ),
+    dockTrees: cloneDefaultTrees(),
     dockExtents: { ...DEFAULT_LAYOUT.dockExtents },
     popupPanels: {},
     builtInPanels: {},

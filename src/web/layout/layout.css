@@ -1375,6 +1375,76 @@ body.layout-manager-enabled .compass-rose-box {
 .split-group-splitter--h { height: 1px; cursor: ns-resize; width: 100%; }
 .split-group-splitter--v { width: 1px; cursor: ew-resize; height: 100%; }
 
+/* ── Recursive layout tree (LayoutNodeView) ──────────────────────────────── */
+.layout-split {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.layout-leaf {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Non-reflowing drop-target overlay painted on the edge a split would land.
+ * Kept strongly visible (no opacity-pulsing animation, which washed it out). */
+.layout-split-preview {
+  pointer-events: none;
+  z-index: 6;
+  background: rgba(88, 154, 255, 0.42);
+  border: 2px solid var(--bs-primary, #589aff);
+  box-shadow: inset 0 0 14px rgba(88, 154, 255, 0.65);
+  border-radius: 2px;
+}
+/* Splitter between sibling cells in a split node. */
+.layout-splitter {
+  background: var(--surface-border, #333);
+  flex-shrink: 0;
+  transition: background 0.12s;
+  z-index: 5;
+}
+.layout-splitter:hover,
+.layout-splitter:active {
+  background: var(--bs-primary, #589aff);
+}
+.layout-splitter--h { height: 1px; cursor: ns-resize; width: 100%; }
+.layout-splitter--v { width: 1px; cursor: ew-resize; height: 100%; }
+
+.layout-preview {
+  pointer-events: none;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Empty placeholder cell — an intentional drop target. */
+.layout-leaf--placeholder {
+  border: 1px dashed var(--surface-border, #444);
+}
+.layout-placeholder {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  color: var(--bs-secondary-color, #888);
+  font-size: 0.85em;
+  user-select: none;
+}
+.layout-placeholder--target {
+  background: rgba(135, 206, 250, 0.18);
+}
+.layout-placeholder__close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
 /* ── Floating script-window (mudix-style resize handles + portal layer) ─── */
 /* z-index sits above #input-area (1001) so dragging floats over the input bar
  * keeps the float on top. Below modal dialogs (Bootstrap modals: 1055). */

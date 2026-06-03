@@ -44,25 +44,30 @@ export function startUndockableDrag(opts: UndockableDragOptions): void {
   let potentialStackTarget: string | undefined;
   let potentialSplitTarget: string | undefined;
   let potentialSplitBefore: boolean | undefined;
+  let potentialSplitDir: DragState['splitDir'];
+  let potentialFillLeaf: string | undefined;
 
   const updateDockState = (shiftHeld: boolean, clientX: number, clientY: number) => {
     if (!hasDragged || !floatingEl) return;
-    const { side, slotIndex, stackTargetId, splitTargetId, splitBefore } =
+    const { side, slotIndex, stackTargetId, splitTargetId, splitBefore, splitDir, fillLeafId } =
       shiftHeld
-        ? { side: null as DockSide | null, slotIndex: 0, stackTargetId: undefined, splitTargetId: undefined, splitBefore: undefined }
+        ? { side: null as DockSide | null, slotIndex: 0, stackTargetId: undefined, splitTargetId: undefined, splitBefore: undefined, splitDir: undefined, fillLeafId: undefined }
         : detectDock(clientX, clientY);
 
     if (
       side !== potentialDock ||
       slotIndex !== potentialSlot ||
       stackTargetId !== potentialStackTarget ||
-      splitTargetId !== potentialSplitTarget
+      splitTargetId !== potentialSplitTarget ||
+      fillLeafId !== potentialFillLeaf
     ) {
       potentialDock = side;
       potentialSlot = slotIndex;
       potentialStackTarget = stackTargetId;
       potentialSplitTarget = splitTargetId;
       potentialSplitBefore = splitBefore;
+      potentialSplitDir = splitDir;
+      potentialFillLeaf = fillLeafId;
       manager.setPosition(id, lastX, lastY);
       onDragStateChange(
         side
@@ -73,6 +78,8 @@ export function startUndockableDrag(opts: UndockableDragOptions): void {
               stackTargetId,
               splitTargetId,
               splitBefore,
+              splitDir,
+              fillLeafId,
             }
           : null
       );
@@ -127,10 +134,17 @@ export function startUndockableDrag(opts: UndockableDragOptions): void {
     onDragStateChange(null);
     if (hasDragged) {
       if (potentialDock !== null) {
-        if (potentialStackTarget) {
+        if (potentialFillLeaf) {
+          manager.fillPlaceholder(potentialFillLeaf, id);
+        } else if (potentialStackTarget) {
           manager.tabIntoGroup(id, potentialStackTarget);
         } else if (potentialSplitTarget) {
-          manager.splitIntoGroup(id, potentialSplitTarget, potentialSplitBefore ?? false);
+          manager.splitIntoGroup(
+            id,
+            potentialSplitTarget,
+            potentialSplitBefore ?? false,
+            potentialSplitDir
+          );
         } else {
           manager.dock(id, potentialDock, potentialSlot);
         }
@@ -179,24 +193,29 @@ export function startFloatingDrag(opts: FloatingDragOptions): void {
   let potentialStackTarget: string | undefined;
   let potentialSplitTarget: string | undefined;
   let potentialSplitBefore: boolean | undefined;
+  let potentialSplitDir: DragState['splitDir'];
+  let potentialFillLeaf: string | undefined;
 
   const updateDockState = (shiftHeld: boolean, clientX: number, clientY: number) => {
-    const { side, slotIndex, stackTargetId, splitTargetId, splitBefore } =
+    const { side, slotIndex, stackTargetId, splitTargetId, splitBefore, splitDir, fillLeafId } =
       shiftHeld
-        ? { side: null as DockSide | null, slotIndex: 0, stackTargetId: undefined, splitTargetId: undefined, splitBefore: undefined }
+        ? { side: null as DockSide | null, slotIndex: 0, stackTargetId: undefined, splitTargetId: undefined, splitBefore: undefined, splitDir: undefined, fillLeafId: undefined }
         : detectDock(clientX, clientY);
 
     if (
       side !== potentialDock ||
       slotIndex !== potentialSlot ||
       stackTargetId !== potentialStackTarget ||
-      splitTargetId !== potentialSplitTarget
+      splitTargetId !== potentialSplitTarget ||
+      fillLeafId !== potentialFillLeaf
     ) {
       potentialDock = side;
       potentialSlot = slotIndex;
       potentialStackTarget = stackTargetId;
       potentialSplitTarget = splitTargetId;
       potentialSplitBefore = splitBefore;
+      potentialSplitDir = splitDir;
+      potentialFillLeaf = fillLeafId;
       manager.setPosition(id, lastX, lastY);
       onDragStateChange(
         side
@@ -207,6 +226,8 @@ export function startFloatingDrag(opts: FloatingDragOptions): void {
               stackTargetId,
               splitTargetId,
               splitBefore,
+              splitDir,
+              fillLeafId,
             }
           : null
       );
@@ -235,10 +256,17 @@ export function startFloatingDrag(opts: FloatingDragOptions): void {
   const onUp = () => {
     onDragStateChange(null);
     if (potentialDock !== null) {
-      if (potentialStackTarget) {
+      if (potentialFillLeaf) {
+        manager.fillPlaceholder(potentialFillLeaf, id);
+      } else if (potentialStackTarget) {
         manager.tabIntoGroup(id, potentialStackTarget);
       } else if (potentialSplitTarget) {
-        manager.splitIntoGroup(id, potentialSplitTarget, potentialSplitBefore ?? false);
+        manager.splitIntoGroup(
+          id,
+          potentialSplitTarget,
+          potentialSplitBefore ?? false,
+          potentialSplitDir
+        );
       } else {
         manager.dock(id, potentialDock, potentialSlot);
       }

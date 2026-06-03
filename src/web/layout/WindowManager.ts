@@ -1,12 +1,16 @@
 import {
+  crossDir,
   DEFAULT_DOCK_EXTENTS,
   DockSide,
-  generateSplitGroupId,
-  generateTabGroupId,
+  generateNodeId,
+  LayoutNode,
   LayoutState,
+  LeafNode,
   PopupPanelDockState,
   positionOf,
-  sideOf,
+  primaryDir,
+  SplitDir,
+  SplitNode,
   WindowRecord,
 } from './types';
 
@@ -31,10 +35,39 @@ export type WindowsChangeFn = (snapshot: WindowManagerSnapshot) => void;
 
 export interface WindowManagerSnapshot {
   windows: WindowRecord[];
+  dockTrees: Record<DockSide, SplitNode | null>;
   dockExtents: Record<DockSide, number>;
 }
 
 const DEFAULT_FLOATING_SIZE = { w: 360, h: 280 };
+const SIDES: DockSide[] = ['left', 'right', 'top', 'bottom'];
+
+const emptyTrees = (): Record<DockSide, SplitNode | null> => ({
+  left: null,
+  right: null,
+  top: null,
+  bottom: null,
+});
+
+function cloneTree(node: LayoutNode | null): LayoutNode | null {
+  if (!node) return null;
+  if (node.kind === 'leaf') {
+    return {
+      kind: 'leaf',
+      id: node.id,
+      windowIds: [...node.windowIds],
+      activeId: node.activeId,
+      ...(node.placeholder ? { placeholder: true as const } : {}),
+    };
+  }
+  return {
+    kind: 'split',
+    id: node.id,
+    dir: node.dir,
+    children: node.children.map(c => cloneTree(c)!) as LayoutNode[],
+    sizes: [...node.sizes],
+  };
+}
 
 /**
  * Owns the canonical window state plus the portal-target divs that move
@@ -44,10 +77,17 @@ const DEFAULT_FLOATING_SIZE = { w: 360, h: 280 };
  * getOrCreatePortalTarget(id) — those divs are mounted/unmounted by the
  * shells (DockedPanel, TabContent, FloatingPanel) without ever destroying
  * the React subtree rendered inside them.
+ *
+ * Dock structure (slot order, splits, tab groups) lives in `dockTrees` — a
+ * recursive per-side tree of SplitNode/LeafNode. `WindowRecord.docked` is a
+ * cache of which side's tree holds a window, written only by syncDockedFlags().
  */
 export class WindowManager {
   /** Live window state — keyed by panel id. Order does not matter. */
   private readonly windows = new Map<string, WindowRecord>();
+
+  /** Structural layout tree per dock side. */
+  private dockTrees: Record<DockSide, SplitNode | null> = emptyTrees();
 
   /** Last-known geometry for closed popups (the "hint" channel). */
   private windowHints = new Map<string, WindowRecord>();
@@ -72,8 +112,6 @@ export class WindowManager {
 
   /** Z-index counter for bringToFront. */
   private nextZ = 100;
-  /** Slot ordering counter — used when adding new dock slots. */
-  private nextDockOrder = 0;
   /** Increments on every loadState — used by hooks that need to re-register
    *  themselves after an external state replacement (e.g. Restore Default,
    *  device sync import). Exposed via getLoadVersion(). */
@@ -93,8 +131,15 @@ export class WindowManager {
   getSnapshot(): WindowManagerSnapshot {
     return {
       windows: Array.from(this.windows.values()),
+      dockTrees: this.cloneTrees(),
       dockExtents: { ...this.dockExtents },
     };
+  }
+
+  private cloneTrees(): Record<DockSide, SplitNode | null> {
+    const out = emptyTrees();
+    for (const side of SIDES) out[side] = cloneTree(this.dockTrees[side]) as SplitNode | null;
+    return out;
   }
 
   private notify(): void {
@@ -108,6 +153,13 @@ export class WindowManager {
     }
   }
 
+  /** Normalize every side, re-sync docked-flag cache, then notify listeners. */
+  private commit(): void {
+    for (const side of SIDES) this.normalize(side);
+    this.syncDockedFlags();
+    this.notify();
+  }
+
   // ── Persistence ──────────────────────────────────────────────────────────
 
   loadState(state: LayoutState): void {
@@ -116,6 +168,14 @@ export class WindowManager {
     this.builtInPanelState = { ...state.builtInPanels };
     this.popupDockState = new Map(Object.entries(state.popupPanels ?? {}));
     Object.assign(this.dockExtents, state.dockExtents);
+
+    // Load the structural trees (deep-cloned so the manager owns them).
+    this.dockTrees = emptyTrees();
+    if (state.dockTrees) {
+      for (const side of SIDES) {
+        this.dockTrees[side] = cloneTree(state.dockTrees[side] ?? null) as SplitNode | null;
+      }
+    }
 
     // Preload windows as hints; live windows are activated by open() calls.
     // Hints are NEVER visible — visibility is owned by the live windows map.
@@ -140,7 +200,6 @@ export class WindowManager {
     );
     this.windows.clear();
 
-    this.recomputeDockOrderCounter();
     this.loadVersion++;
     this.notify();
   }
@@ -166,6 +225,7 @@ export class WindowManager {
       enabled: this.enabled,
       enabledPanels: { ...this.enabledPanels },
       windows: windowsObj,
+      dockTrees: this.cloneTrees(),
       dockExtents: { ...this.dockExtents },
       popupPanels,
       builtInPanels: { ...this.builtInPanelState },
@@ -272,32 +332,38 @@ export class WindowManager {
     if (opts.isPinned !== undefined) base.isPinned = opts.isPinned;
     if (opts.isLocked !== undefined) base.isLocked = opts.isLocked;
 
-    // If no hint provided dock placement but popup state remembers one, restore.
-    if (!hint && popupHint?.isDocked && popupHint.dockPosition) {
-      base.docked = sideOf(popupHint.dockPosition);
-      base.dockOrder = popupHint.dockOrder ?? this.nextDockOrder++;
-      base.dockFlex = base.dockFlex ?? 1;
+    // Does a structural tree leaf already reference this id? (persisted layout)
+    const placedSide = this.findWindowSide(id);
+
+    // Decide a desired dock side when the tree doesn't already place this id.
+    let desiredSide: DockSide | undefined = placedSide ?? undefined;
+    if (!placedSide) {
+      if (!hint && popupHint?.isDocked && popupHint.dockPosition) {
+        desiredSide = sideOfPosition(popupHint.dockPosition);
+      } else if (!hint && opts.docked) {
+        desiredSide = opts.docked;
+      } else if (hint?.docked) {
+        desiredSide = hint.docked;
+      }
     }
 
-    // Honor explicit options when no hint.
-    if (!hint && opts.docked) {
-      base.docked = opts.docked;
-      base.dockOrder = opts.dockOrder ?? this.nextDockOrder++;
-      base.dockFlex = base.dockFlex ?? 1;
-    }
-
-    if (!hint && popupHint?.floatingState && !base.docked) {
+    // Honor floating geometry from popup hint when not docked.
+    if (!hint && !desiredSide && popupHint?.floatingState) {
       base.x = popupHint.floatingState.x;
       base.y = popupHint.floatingState.y;
       base.width = popupHint.floatingState.width;
-      // Heal previously-corrupted state: any height below the resize minimum
-      // (or 0, written by an older code path) is treated as auto-height.
       const ph = popupHint.floatingState.height;
       base.height = ph !== undefined && ph >= 80 ? ph : undefined;
     }
 
     this.windows.set(id, base);
-    this.notify();
+
+    // Insert a top-level slot if the tree doesn't already place this window.
+    if (!placedSide && desiredSide) {
+      this.insertTopLevelLeaf(desiredSide, id);
+    }
+
+    this.commit();
   }
 
   close(id: string): void {
@@ -308,13 +374,15 @@ export class WindowManager {
     this.windowHints.set(id, { ...w, visible: false, poppedOut: false });
     this.windows.delete(id);
 
+    // Remove from the structural tree (a closed window has no slot).
+    this.removeWindowFromAllTrees(id);
+
     // Sync popupPanels dock state for popups so shouldPopupAutoOpen reflects truth.
     if (id.startsWith('popup:')) {
       const state = this.popupDockState.get(id) ?? { isDocked: false };
       if (w.docked) {
         state.isDocked = true;
         state.dockPosition = positionOf(w.docked);
-        state.dockOrder = w.dockOrder;
       } else {
         state.isDocked = false;
         // Auto-height popups (w.height === undefined) must NOT be persisted as
@@ -338,7 +406,7 @@ export class WindowManager {
       this.popupDockState.set(id, state);
     }
 
-    this.notify();
+    this.commit();
   }
 
   has(id: string): boolean {
@@ -366,8 +434,7 @@ export class WindowManager {
     let dirty = false;
     for (const k of Object.keys(patch) as Array<keyof WindowRecord>) {
       if (w[k] !== patch[k]) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (w as any)[k] = patch[k];
+        (w as unknown as Record<string, unknown>)[k] = patch[k];
         dirty = true;
       }
     }
@@ -392,9 +459,9 @@ export class WindowManager {
   }
 
   /** Detach the window into a separate browser window (true) or restore it to
-   *  its prior dock / floating location (false). All geometry / grouping
-   *  fields are preserved across the transition, so flipping the flag back
-   *  re-renders the window exactly where it was. */
+   *  its prior dock / floating location (false). The window keeps its tree leaf
+   *  membership while popped out, so flipping the flag back re-renders it where
+   *  it was. */
   setPoppedOut(id: string, poppedOut: boolean): void {
     const w = this.windows.get(id);
     if (!w || !!w.poppedOut === poppedOut) return;
@@ -418,116 +485,102 @@ export class WindowManager {
     this.patch(id, { zIndex: ++this.nextZ });
   }
 
-  // ── Docking ──────────────────────────────────────────────────────────────
+  // ── Docking (tree operations) ──────────────────────────────────────────────
 
-  /** Dock a window to `side` at `slotIndex` as a single-slot panel. */
+  /** Dock a window to `side` at `slotIndex` as a single-window top-level slot. */
   dock(id: string, side: DockSide, slotIndex: number): void {
     const w = this.windows.get(id);
     if (!w) return;
-    // Remove from any current tab/split group.
-    this.detachFromGroups(w);
-    // Shift other panels at this side to make room.
-    this.makeRoomAtDockOrder(side, slotIndex);
-    w.docked = side;
-    w.dockOrder = slotIndex;
-    w.dockFlex = w.dockFlex ?? 1;
-    this.normalizeDockOrders(side);
-    this.syncPopupDockState(w);
-    this.notify();
+    this.removeWindowFromAllTrees(id);
+    const root = this.ensureRoot(side);
+    const at = Math.max(0, Math.min(slotIndex, root.children.length));
+    root.children.splice(at, 0, makeLeaf([id]));
+    root.sizes.splice(at, 0, avg(root.sizes));
+    this.commit();
+    this.afterPlacement(id);
   }
 
-  /** Add `id` as a tab into the slot occupied by `targetId`. */
+  /** Add `id` as a tab into the leaf occupied by `targetId`. */
   tabIntoGroup(id: string, targetId: string): void {
     const w = this.windows.get(id);
-    const t = this.windows.get(targetId);
-    if (!w || !t || !t.docked) return;
-    this.detachFromGroups(w);
-
-    // If target already has a dockGroup, join it. Otherwise create one.
-    let groupId = t.dockGroup;
-    if (!groupId) {
-      groupId = generateTabGroupId();
-      t.dockGroup = groupId;
-      t.tabOrder = 0;
-      t.isActiveTab = true;
-    }
-    const groupMembers = this.windowsInDockGroup(groupId);
-    w.docked = t.docked;
-    w.dockOrder = t.dockOrder;
-    w.dockFlex = t.dockFlex ?? 1;
-    // Inherit split-group placement from the target so the new tab lands in
-    // the target's split cell rather than being rendered as its own dock slot
-    // at the same dockOrder (which would visually duplicate the slot).
-    w.splitGroup = t.splitGroup;
-    w.splitOrder = t.splitOrder;
-    w.splitFlex = t.splitFlex;
-    w.dockGroup = groupId;
-    w.tabOrder = groupMembers.length;
-    w.isActiveTab = true;
-    // Promote the new tab to active; demote others in the group.
-    for (const m of groupMembers) m.isActiveTab = false;
-    w.isActiveTab = true;
-    this.syncPopupDockState(w);
-    this.notify();
+    if (!w) return;
+    const side = this.findWindowSide(targetId);
+    if (!side) return;
+    this.removeWindowFromAllTrees(id);
+    const found = this.findLeafByWindow(side, targetId);
+    if (!found) return;
+    found.leaf.windowIds.push(id);
+    found.leaf.activeId = id;
+    this.commit();
+    this.afterPlacement(id);
   }
 
-  /** Join a split group (cross-axis) anchored on `targetId`. */
-  splitIntoGroup(id: string, targetId: string, before: boolean): void {
+  /** Join/create a split anchored on `targetId`. `dir` is the desired split
+   *  axis: same as the target's parent split => sibling insert; perpendicular
+   *  => wrap the target leaf in a new split node. */
+  splitIntoGroup(
+    id: string,
+    targetId: string,
+    before: boolean,
+    dir?: SplitDir
+  ): void {
     const w = this.windows.get(id);
-    const t = this.windows.get(targetId);
-    if (!w || !t || !t.docked) return;
-    this.detachFromGroups(w);
+    if (!w) return;
+    const side = this.findWindowSide(targetId);
+    if (!side) return;
+    this.removeWindowFromAllTrees(id);
+    this.insertBesideWindow(side, targetId, makeLeaf([id]), before, dir);
+    this.commit();
+    this.afterPlacement(id);
+  }
 
-    let groupId = t.splitGroup;
-    if (!groupId) {
-      // Bootstrap a new split group. If the target is part of a tab group,
-      // ALL tab members join the new split at the same splitOrder so the
-      // tab group is split as a single unit (otherwise the un-joined tab
-      // siblings would be rendered as a phantom second slot at the same
-      // dockOrder).
-      groupId = generateSplitGroupId();
-      const tabMembers = t.dockGroup
-        ? this.windowsInDockGroup(t.dockGroup)
-        : [t];
-      for (const m of tabMembers) {
-        m.splitGroup = groupId;
-        m.splitOrder = 0;
-        m.splitFlex = 1;
+  /** Insert an empty placeholder cell beside the leaf holding `id`. */
+  splitWithPlaceholder(id: string, dir: SplitDir, before: boolean): void {
+    const side = this.findWindowSide(id);
+    if (!side) return;
+    const placeholder: LeafNode = {
+      kind: 'leaf',
+      id: generateNodeId(),
+      windowIds: [],
+      activeId: '',
+      placeholder: true,
+    };
+    this.insertBesideWindow(side, id, placeholder, before, dir);
+    this.commit();
+  }
+
+  /** Drop a window into an empty placeholder leaf, turning it into a real leaf. */
+  fillPlaceholder(leafId: string, windowId: string): void {
+    const w = this.windows.get(windowId);
+    if (!w) return;
+    let target: LeafNode | undefined;
+    for (const side of SIDES) {
+      const f = this.findNode(side, leafId);
+      if (f && f.node.kind === 'leaf') {
+        target = f.node;
+        break;
       }
     }
+    if (!target) return;
+    this.removeWindowFromAllTrees(windowId);
+    target.windowIds = [windowId];
+    target.activeId = windowId;
+    delete target.placeholder;
+    this.commit();
+    this.afterPlacement(windowId);
+  }
 
-    // Group existing members into cells keyed by splitOrder. A cell is one
-    // visual column/row in the split — tab-group members at the same
-    // splitOrder form a single cell.
-    const members = this.windowsInSplitGroup(groupId);
-    const cellsByOrder = new Map<number, WindowRecord[]>();
-    for (const m of members) {
-      const order = m.splitOrder ?? 0;
-      if (!cellsByOrder.has(order)) cellsByOrder.set(order, []);
-      cellsByOrder.get(order)!.push(m);
+  /** Remove a node (placeholder leaf or split) from its side's tree. */
+  removeNode(side: DockSide, nodeId: string): void {
+    const f = this.findNode(side, nodeId);
+    if (!f) return;
+    if (!f.parent) {
+      this.dockTrees[side] = null;
+    } else {
+      f.parent.children.splice(f.index, 1);
+      f.parent.sizes.splice(f.index, 1);
     }
-    const sortedOrders = Array.from(cellsByOrder.keys()).sort((a, b) => a - b);
-    const cells: WindowRecord[][] = sortedOrders.map(o => cellsByOrder.get(o)!);
-
-    const targetIdx = cells.findIndex(cell => cell.some(m => m.id === t.id));
-    const insertIdx = before ? targetIdx : targetIdx + 1;
-
-    // Stamp the new window with split membership before splicing it in.
-    w.docked = t.docked;
-    w.dockOrder = t.dockOrder;
-    w.dockFlex = t.dockFlex ?? 1;
-    w.splitGroup = groupId;
-    w.splitFlex = 1;
-
-    cells.splice(insertIdx, 0, [w]);
-
-    // Re-assign contiguous splitOrders 0..N-1 by cell index.
-    cells.forEach((cell, idx) => {
-      for (const m of cell) m.splitOrder = idx;
-    });
-
-    this.syncPopupDockState(w);
-    this.notify();
+    this.commit();
   }
 
   /** Remove from any dock placement; convert to floating. */
@@ -539,18 +592,11 @@ export class WindowManager {
     screenY?: number
   ): void {
     const w = this.windows.get(id);
-    if (!w || !w.docked) return;
+    if (!w) return;
+    const side = this.findWindowSide(id);
+    if (!side) return;
 
-    this.detachFromGroups(w);
-    w.docked = undefined;
-    w.dockOrder = undefined;
-    w.dockFlex = undefined;
-    w.dockGroup = undefined;
-    w.tabOrder = undefined;
-    w.isActiveTab = undefined;
-    w.splitGroup = undefined;
-    w.splitOrder = undefined;
-    w.splitFlex = undefined;
+    this.removeWindowFromAllTrees(id);
 
     if (typeof visualW === 'number') w.width = Math.max(150, visualW);
     if (typeof visualH === 'number') w.height = Math.max(80, visualH);
@@ -558,64 +604,34 @@ export class WindowManager {
     if (typeof screenY === 'number') w.y = screenY;
     w.zIndex = ++this.nextZ;
 
-    this.syncPopupDockState(w);
-    this.notify();
+    this.commit();
+    this.afterPlacement(id);
   }
 
   setActiveTab(id: string): void {
-    const w = this.windows.get(id);
-    if (!w?.dockGroup) return;
-    const members = this.windowsInDockGroup(w.dockGroup);
-    let changed = false;
-    for (const m of members) {
-      const next = m.id === id;
-      if (m.isActiveTab !== next) {
-        m.isActiveTab = next;
-        changed = true;
-      }
-    }
-    if (changed) this.notify();
+    const side = this.findWindowSide(id);
+    if (!side) return;
+    const found = this.findLeafByWindow(side, id);
+    if (!found || found.leaf.activeId === id) return;
+    found.leaf.activeId = id;
+    this.notify();
   }
 
-  setSlotFlex(slotKey: string, flex: number): void {
-    // slotKey is either a window id (single slot), a dockGroup, or a splitGroup.
-    // Adjust dockFlex on all matching windows.
-    let changed = false;
-    for (const w of this.windows.values()) {
-      if (
-        w.id === slotKey ||
-        w.dockGroup === slotKey ||
-        w.splitGroup === slotKey
-      ) {
-        if (w.dockFlex !== flex) {
-          w.dockFlex = flex;
-          changed = true;
-        }
-      }
-    }
-    if (changed) this.notify();
-  }
-
-  setSplitFlex(splitMemberId: string, flex: number): void {
-    // splitMemberId may be a window id directly, OR a tab-group member id
-    // (in which case all members of that tab-group share splitFlex).
-    const w = this.windows.get(splitMemberId);
-    if (!w) return;
-    let changed = false;
-    if (w.dockGroup) {
-      for (const m of this.windowsInDockGroup(w.dockGroup)) {
-        if (m.splitFlex !== flex) {
-          m.splitFlex = flex;
-          changed = true;
-        }
-      }
-    } else {
-      if (w.splitFlex !== flex) {
-        w.splitFlex = flex;
-        changed = true;
-      }
-    }
-    if (changed) this.notify();
+  /** Resize two adjacent children of a split node. */
+  setNodeFlex(
+    side: DockSide,
+    parentNodeId: string,
+    childIndex: number,
+    flexA: number,
+    flexB: number
+  ): void {
+    const f = this.findNode(side, parentNodeId);
+    if (!f || f.node.kind !== 'split') return;
+    const node = f.node;
+    if (childIndex < 0 || childIndex + 1 >= node.sizes.length) return;
+    node.sizes[childIndex] = flexA;
+    node.sizes[childIndex + 1] = flexB;
+    this.notify();
   }
 
   setDockExtent(side: DockSide, n: number): void {
@@ -652,158 +668,166 @@ export class WindowManager {
     this.notify();
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Lookups ────────────────────────────────────────────────────────────────
 
   /** Find which side a panel is docked to (or null). */
   findPanelDock(id: string): DockSide | null {
-    return this.windows.get(id)?.docked ?? null;
+    return this.windows.get(id)?.docked ?? this.findWindowSide(id) ?? null;
   }
 
   findFloatingPanel(id: string): WindowRecord | null {
     const w = this.windows.get(id);
-    return w && !w.docked ? w : null;
+    return w && !this.findWindowSide(id) ? w : null;
   }
 
-  /** Find the logical slot grouping for a panel. Returns the dock side and a
-   *  pseudo-slot id (window id for single, dockGroup for tabs, splitGroup
-   *  for splits). */
-  findPanelSlot(
-    id: string
-  ): { dock: DockSide; slotId: string } | null {
+  // ── Tree helpers ───────────────────────────────────────────────────────────
+
+  private ensureRoot(side: DockSide): SplitNode {
+    let root = this.dockTrees[side];
+    if (!root) {
+      root = {
+        kind: 'split',
+        id: generateNodeId(),
+        dir: primaryDir(side),
+        children: [],
+        sizes: [],
+      };
+      this.dockTrees[side] = root;
+    }
+    return root;
+  }
+
+  private insertTopLevelLeaf(side: DockSide, id: string): void {
+    const root = this.ensureRoot(side);
+    root.children.push(makeLeaf([id]));
+    root.sizes.push(avg(root.sizes));
+  }
+
+  /** Insert `newLeaf` beside the leaf holding `targetId`. desiredDir defaults
+   *  to the cross-axis of the side. Same dir as the parent => sibling insert;
+   *  perpendicular => wrap the target leaf in a new split node. */
+  private insertBesideWindow(
+    side: DockSide,
+    targetId: string,
+    newLeaf: LeafNode,
+    before: boolean,
+    desiredDir?: SplitDir
+  ): void {
+    const found = this.findLeafByWindow(side, targetId);
+    if (!found) return;
+    const { leaf, parent, index } = found;
+    const dir = desiredDir ?? crossDir(side);
+    // parent is always defined: the root is always a SplitNode.
+    if (!parent) return;
+    if (parent.dir === dir) {
+      const at = before ? index : index + 1;
+      parent.children.splice(at, 0, newLeaf);
+      parent.sizes.splice(at, 0, avg(parent.sizes));
+    } else {
+      const wrap: SplitNode = {
+        kind: 'split',
+        id: generateNodeId(),
+        dir,
+        children: before ? [newLeaf, leaf] : [leaf, newLeaf],
+        sizes: [1, 1],
+      };
+      parent.children[index] = wrap;
+      // wrap inherits the leaf's former size slot (parent.sizes[index]).
+    }
+  }
+
+  private findWindowSide(id: string): DockSide | null {
+    for (const side of SIDES) {
+      if (this.findLeafByWindow(side, id)) return side;
+    }
+    return null;
+  }
+
+  private findLeafByWindow(
+    side: DockSide,
+    windowId: string
+  ): { leaf: LeafNode; parent: SplitNode | null; index: number } | null {
+    const root = this.dockTrees[side];
+    if (!root) return null;
+    let result: { leaf: LeafNode; parent: SplitNode | null; index: number } | null = null;
+    const walk = (node: LayoutNode, parent: SplitNode | null, index: number) => {
+      if (result) return;
+      if (node.kind === 'leaf') {
+        if (node.windowIds.includes(windowId)) result = { leaf: node, parent, index };
+        return;
+      }
+      node.children.forEach((c, i) => walk(c, node, i));
+    };
+    walk(root, null, -1);
+    return result;
+  }
+
+  private findNode(
+    side: DockSide,
+    nodeId: string
+  ): { node: LayoutNode; parent: SplitNode | null; index: number } | null {
+    const root = this.dockTrees[side];
+    if (!root) return null;
+    let result: { node: LayoutNode; parent: SplitNode | null; index: number } | null = null;
+    const walk = (node: LayoutNode, parent: SplitNode | null, index: number) => {
+      if (result) return;
+      if (node.id === nodeId) {
+        result = { node, parent, index };
+        return;
+      }
+      if (node.kind === 'split') node.children.forEach((c, i) => walk(c, node, i));
+    };
+    walk(root, null, -1);
+    return result;
+  }
+
+  /** Detach a window id from every tree leaf; prune leaves that become empty
+   *  (unless they're intentional placeholders). Does not normalize. */
+  private removeWindowFromAllTrees(id: string): void {
+    for (const side of SIDES) {
+      const found = this.findLeafByWindow(side, id);
+      if (!found) continue;
+      const { leaf } = found;
+      leaf.windowIds = leaf.windowIds.filter(w => w !== id);
+      if (leaf.activeId === id) {
+        leaf.activeId = leaf.windowIds[leaf.windowIds.length - 1] ?? '';
+      }
+      // normalize() prunes the now-empty leaf.
+    }
+  }
+
+  /** Rebuild the `docked` cache on every live window from current trees. The
+   *  ONLY method allowed to write WindowRecord.docked. */
+  private syncDockedFlags(): void {
+    const placement = new Map<string, DockSide>();
+    for (const side of SIDES) {
+      const root = this.dockTrees[side];
+      if (!root) continue;
+      forEachLeaf(root, leaf => {
+        for (const wid of leaf.windowIds) placement.set(wid, side);
+      });
+    }
+    for (const w of this.windows.values()) {
+      const side = placement.get(w.id);
+      if (w.docked !== side) w.docked = side;
+    }
+  }
+
+  /** Normalize a side's tree in place: prune empty non-placeholder leaves,
+   *  merge nested same-dir splits, collapse single-child splits (except the
+   *  root), null out an empty root. */
+  private normalize(side: DockSide): void {
+    const root = this.dockTrees[side];
+    if (!root) return;
+    const norm = normalizeNode(root, true);
+    this.dockTrees[side] = norm && norm.kind === 'split' ? norm : null;
+  }
+
+  /** Sync popup dock state after a placement change (popups only). */
+  private afterPlacement(id: string): void {
+    if (!id.startsWith('popup:')) return;
     const w = this.windows.get(id);
-    if (!w?.docked) return null;
-    const slotId = w.splitGroup ?? w.dockGroup ?? w.id;
-    return { dock: w.docked, slotId };
-  }
-
-  private windowsInDockGroup(groupId: string): WindowRecord[] {
-    const out: WindowRecord[] = [];
-    for (const w of this.windows.values()) {
-      if (w.dockGroup === groupId) out.push(w);
-    }
-    return out;
-  }
-
-  private windowsInSplitGroup(groupId: string): WindowRecord[] {
-    const out: WindowRecord[] = [];
-    for (const w of this.windows.values()) {
-      if (w.splitGroup === groupId) out.push(w);
-    }
-    return out;
-  }
-
-  /** When removing a window from a group, clean up its membership and any
-   *  resulting one-member group. */
-  private detachFromGroups(w: WindowRecord): void {
-    if (w.dockGroup) {
-      const others = this.windowsInDockGroup(w.dockGroup).filter(m => m.id !== w.id);
-      if (others.length === 1) {
-        // Tab group collapses — clear groupings on the remaining member.
-        const m = others[0];
-        m.dockGroup = undefined;
-        m.tabOrder = undefined;
-        m.isActiveTab = undefined;
-      } else if (others.length > 1) {
-        // Re-pack tabOrder + ensure one tab stays active.
-        others.sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0));
-        let activeFound = false;
-        others.forEach((m, i) => {
-          m.tabOrder = i;
-          if (m.isActiveTab) activeFound = true;
-        });
-        if (!activeFound) others[0].isActiveTab = true;
-      }
-    }
-
-    if (w.splitGroup) {
-      const others = this.windowsInSplitGroup(w.splitGroup).filter(m => m.id !== w.id);
-      if (others.length > 0) {
-        // Group remaining members into cells keyed by splitOrder — tab-group
-        // members at the same splitOrder share a cell and must stay paired.
-        const cellsByOrder = new Map<number, WindowRecord[]>();
-        for (const m of others) {
-          const order = m.splitOrder ?? 0;
-          if (!cellsByOrder.has(order)) cellsByOrder.set(order, []);
-          cellsByOrder.get(order)!.push(m);
-        }
-        const sortedOrders = Array.from(cellsByOrder.keys()).sort((a, b) => a - b);
-
-        if (sortedOrders.length <= 1) {
-          // Only one cell left — the split group is no longer needed. Strip
-          // split fields off the remaining members (a tab group survives
-          // intact as a non-split slot).
-          for (const m of others) {
-            m.splitGroup = undefined;
-            m.splitOrder = undefined;
-            m.splitFlex = undefined;
-          }
-        } else {
-          // Multiple cells: re-pack splitOrders contiguously by cell index
-          // so cells stay grouped (members sharing a cell keep the same
-          // splitOrder).
-          sortedOrders.forEach((order, idx) => {
-            for (const m of cellsByOrder.get(order)!) m.splitOrder = idx;
-          });
-        }
-      }
-    }
-
-    w.dockGroup = undefined;
-    w.tabOrder = undefined;
-    w.isActiveTab = undefined;
-    w.splitGroup = undefined;
-    w.splitOrder = undefined;
-    w.splitFlex = undefined;
-  }
-
-  private makeRoomAtDockOrder(side: DockSide, slotIndex: number): void {
-    // Shift existing slot heads (singles, tab-group-actives, split-group-firsts) at or
-    // after the insertion point by +1.
-    const taken = new Set<string>();
-    for (const w of this.windows.values()) {
-      if (w.docked !== side) continue;
-      if ((w.dockOrder ?? 0) >= slotIndex) {
-        // Increment the slot order for this *slot* once (not per member).
-        const key = w.splitGroup ?? w.dockGroup ?? w.id;
-        if (taken.has(key)) continue;
-        taken.add(key);
-      }
-    }
-    for (const w of this.windows.values()) {
-      if (w.docked !== side) continue;
-      if ((w.dockOrder ?? 0) >= slotIndex) {
-        w.dockOrder = (w.dockOrder ?? 0) + 1;
-      }
-    }
-  }
-
-  private normalizeDockOrders(side: DockSide): void {
-    // Group windows by slot key (splitGroup || dockGroup || id) and renumber
-    // them densely starting at 0, preserving relative order. All members of a
-    // slot must share the same dockOrder.
-    const slots = new Map<string, WindowRecord[]>();
-    for (const w of this.windows.values()) {
-      if (w.docked !== side) continue;
-      const key = w.splitGroup ?? w.dockGroup ?? w.id;
-      const arr = slots.get(key) ?? [];
-      arr.push(w);
-      slots.set(key, arr);
-    }
-    const entries = Array.from(slots.entries()).sort(
-      (a, b) => (a[1][0].dockOrder ?? 0) - (b[1][0].dockOrder ?? 0)
-    );
-    entries.forEach(([, members], i) => {
-      for (const m of members) m.dockOrder = i;
-    });
-    this.nextDockOrder = Math.max(this.nextDockOrder, entries.length);
-  }
-
-  private recomputeDockOrderCounter(): void {
-    let max = 0;
-    for (const w of this.windows.values()) {
-      if (w.docked && (w.dockOrder ?? 0) >= max) max = (w.dockOrder ?? 0) + 1;
-    }
-    this.nextDockOrder = max;
+    if (w) this.syncPopupDockState(w);
   }
 
   private syncPopupDockState(w: WindowRecord): void {
@@ -812,7 +836,6 @@ export class WindowManager {
     if (w.docked) {
       state.isDocked = true;
       state.dockPosition = positionOf(w.docked);
-      state.dockOrder = w.dockOrder;
     } else {
       state.isDocked = false;
       const prevH = state.floatingState?.height;
@@ -832,6 +855,69 @@ export class WindowManager {
     }
     this.popupDockState.set(w.id, state);
   }
+}
+
+// ── Module helpers ───────────────────────────────────────────────────────────
+
+function makeLeaf(windowIds: string[]): LeafNode {
+  return {
+    kind: 'leaf',
+    id: generateNodeId(),
+    windowIds: [...windowIds],
+    activeId: windowIds[0] ?? '',
+  };
+}
+
+function avg(sizes: number[]): number {
+  if (sizes.length === 0) return 1;
+  return sizes.reduce((a, b) => a + b, 0) / sizes.length || 1;
+}
+
+function forEachLeaf(node: LayoutNode, cb: (leaf: LeafNode) => void): void {
+  if (node.kind === 'leaf') {
+    cb(node);
+    return;
+  }
+  for (const c of node.children) forEachLeaf(c, cb);
+}
+
+/** Pure normalization. Returns the normalized node, or null when it collapses
+ *  away entirely. The root is never collapsed to a leaf (isRoot keeps it a
+ *  SplitNode) so `dock()` always has a root to insert into. */
+function normalizeNode(node: LayoutNode, isRoot: boolean): LayoutNode | null {
+  if (node.kind === 'leaf') {
+    if (node.windowIds.length === 0 && !node.placeholder) return null;
+    return node;
+  }
+
+  const children: LayoutNode[] = [];
+  const sizes: number[] = [];
+  node.children.forEach((child, i) => {
+    const n = normalizeNode(child, false);
+    if (n === null) return;
+    if (n.kind === 'split' && n.dir === node.dir) {
+      // Merge a same-dir child split: splice its grandchildren in, scaling
+      // their sizes so the merged block keeps the child's former proportion.
+      const share = node.sizes[i] ?? 1;
+      const tot = n.sizes.reduce((a, b) => a + b, 0) || 1;
+      n.children.forEach((gc, j) => {
+        children.push(gc);
+        sizes.push(share * ((n.sizes[j] ?? 1) / tot));
+      });
+    } else {
+      children.push(n);
+      sizes.push(node.sizes[i] ?? 1);
+    }
+  });
+
+  if (children.length === 0) return null;
+  if (children.length === 1 && !isRoot) return children[0];
+  return { kind: 'split', id: node.id, dir: node.dir, children, sizes };
+}
+
+// positionOf is imported; small local inverse for popupHint.dockPosition.
+function sideOfPosition(p: string): DockSide {
+  return p.toLowerCase() as DockSide;
 }
 
 // Singleton: one WindowManager for the whole app.

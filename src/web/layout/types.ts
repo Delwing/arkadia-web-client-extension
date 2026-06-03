@@ -11,6 +11,43 @@ export const positionOf = (s: DockSide): DockPosition =>
 
 export type PanelId = 'map' | 'objectList' | string;
 
+// ─── Recursive dock layout tree ───────────────────────────────────────────
+// Each dock side owns a tree. The root is always a SplitNode whose `dir` is the
+// side's primary axis (left/right -> 'col', top/bottom -> 'row'), so the root's
+// direct children are the classic "slots". Deeper nesting gives arbitrary
+// splits. Sizing lives ONLY in SplitNode.sizes (parallel to children) — leaves
+// have no intrinsic size.
+
+export type SplitDir = 'row' | 'col';
+
+export interface SplitNode {
+  kind: 'split';
+  id: string;
+  /** 'row' = children laid left->right; 'col' = children laid top->bottom. */
+  dir: SplitDir;
+  children: LayoutNode[];
+  /** Flex value per child, parallel to `children`. */
+  sizes: number[];
+}
+
+export interface LeafNode {
+  kind: 'leaf';
+  id: string;
+  /** Tab group; array order is tab order. Empty array = placeholder cell. */
+  windowIds: string[];
+  /** Active tab id ('' when the leaf is an empty placeholder). */
+  activeId: string;
+  /** True when this is an intentional empty cell (kept by normalize). */
+  placeholder?: true;
+}
+
+export type LayoutNode = SplitNode | LeafNode;
+
+export const primaryDir = (side: DockSide): SplitDir =>
+  side === 'top' || side === 'bottom' ? 'row' : 'col';
+export const crossDir = (side: DockSide): SplitDir =>
+  primaryDir(side) === 'row' ? 'col' : 'row';
+
 // Built-in popup types
 export type BuiltInPopupType =
   | 'clock'
@@ -57,11 +94,13 @@ export type PopupType = BuiltInPopupType | PluginPopupType;
  * sessions for known windows. Mirrors mudix's ScriptWindowRenderData so the
  * docking / tab / split logic can be ported directly.
  *
- * Slot grouping is *implicit* — it's derived from these fields rather than
- * stored as nested arrays:
- *  - same `docked` side + same `dockOrder` = same slot (single window).
- *  - share a `dockGroup` = tab group within a slot.
- *  - share a `splitGroup` = split group within a slot.
+ * Structure (slot order, splits, tabs) lives in `LayoutState.dockTrees` — a
+ * recursive per-side tree of SplitNode/LeafNode. `docked` is kept on the record
+ * as a *synced cache* of which side's tree contains this window (written only by
+ * WindowManager.syncDockedFlags). The legacy flat structural fields below
+ * (dockOrder/dockFlex/dockGroup/tabOrder/isActiveTab/splitGroup/splitOrder/
+ * splitFlex) are deprecated — they exist only so old persisted state can be
+ * migrated into trees; nothing reads them at render time anymore.
  */
 export interface WindowRecord {
   id: PanelId;
@@ -76,22 +115,19 @@ export interface WindowRecord {
   height?: number;
   zIndex: number;
 
-  // Dock placement (undefined = floating)
+  // Dock placement cache (undefined = floating). Which side's tree holds this
+  // window — written only by WindowManager.syncDockedFlags().
   docked?: DockSide;
-  /** Slot position within the dock side. */
+
+  /** @deprecated structure lives in dockTrees; kept only for migration. */
   dockOrder?: number;
-  /** Slot size (flex value). */
-  dockFlex?: number;
-
-  // Tab grouping (panels with same dockGroup share a tab bar)
-  dockGroup?: string;
-  tabOrder?: number;
-  isActiveTab?: boolean;
-
-  // Split grouping (panels with same splitGroup are arranged cross-axis)
-  splitGroup?: string;
-  splitOrder?: number;
-  splitFlex?: number;
+  /** @deprecated */ dockFlex?: number;
+  /** @deprecated */ dockGroup?: string;
+  /** @deprecated */ tabOrder?: number;
+  /** @deprecated */ isActiveTab?: boolean;
+  /** @deprecated */ splitGroup?: string;
+  /** @deprecated */ splitOrder?: number;
+  /** @deprecated */ splitFlex?: number;
 
   // Popup-only metadata mirrored into the record while it's open so the
   // shell components can react to it without consulting the popup registry.
@@ -118,6 +154,10 @@ export interface DragState {
   splitTargetId?: string;
   /** true = insert before target (in split), false = after. */
   splitBefore?: boolean;
+  /** Axis of the intended split (perpendicular = wrap, same as parent = sibling). */
+  splitDir?: SplitDir;
+  /** Drop into an empty placeholder leaf with this node id. */
+  fillLeafId?: string;
   /** Whether Ctrl is held — forces floating regardless of cursor zone. */
   ctrlHeld?: boolean;
 }
@@ -161,8 +201,10 @@ export interface LayoutState {
   enabledPanels: {
     objectList: boolean;
   };
-  /** Per-window state (the canonical store). */
+  /** Per-window state (identity, floating geometry, popup/popout metadata). */
   windows: Record<string, WindowRecord>;
+  /** Structural layout tree per dock side (null = empty side). */
+  dockTrees: Record<DockSide, SplitNode | null>;
   /** Extent (size in px) of each dock side. */
   dockExtents: Record<DockSide, number>;
   /** Popup dock preferences — survives popup close. */
@@ -232,8 +274,6 @@ export const DEFAULT_LAYOUT: LayoutState = {
       height: 280,
       zIndex: 10,
       docked: 'right',
-      dockOrder: 0,
-      dockFlex: 1,
     },
     objectList: {
       id: 'objectList',
@@ -245,8 +285,26 @@ export const DEFAULT_LAYOUT: LayoutState = {
       height: 200,
       zIndex: 11,
       docked: 'right',
-      dockOrder: 1,
-      dockFlex: 1,
+    },
+  },
+  dockTrees: {
+    left: null,
+    top: null,
+    bottom: null,
+    right: {
+      kind: 'split',
+      id: 'root-right-default',
+      dir: 'col',
+      children: [
+        { kind: 'leaf', id: 'leaf-map-default', windowIds: ['map'], activeId: 'map' },
+        {
+          kind: 'leaf',
+          id: 'leaf-objectList-default',
+          windowIds: ['objectList'],
+          activeId: 'objectList',
+        },
+      ],
+      sizes: [1, 1],
     },
   },
   dockExtents: { ...DEFAULT_DOCK_EXTENTS },
@@ -269,6 +327,10 @@ export function generateTabGroupId(): string {
 
 export function generateSplitGroupId(): string {
   return `split-${_idBase()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function generateNodeId(): string {
+  return `node-${_idBase()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // ─── Legacy shape (used only during migration) ────────────────────────────

@@ -1,51 +1,25 @@
-import { Fragment, useMemo, useRef } from 'react';
-import type { DockSide, DragState, WindowRecord } from '../types';
+import { useMemo, useRef } from 'react';
+import type { DockSide, DragState, SplitNode, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
-import { DockedPanel } from './DockedPanel';
-import { TabGroupPanel } from './TabGroupPanel';
-import { SplitGroupPanel } from './SplitGroupPanel';
+import { LayoutNodeView, NodeViewContext } from './LayoutNodeView';
 
 interface DockAreaProps {
   side: DockSide;
+  /** Structural tree root for this side (null = empty). */
+  root: SplitNode | null;
+  /** Live, visible, non-popped windows (any side) — used to resolve leaf ids. */
   windows: WindowRecord[];
   extent: number;
   dragState: DragState | null;
   manager: WindowManager;
   onSetExtent: (side: DockSide, n: number) => void;
   onDragStateChange: (s: DragState | null) => void;
-  onTitlebarContextMenu?: (e: React.MouseEvent) => void;
+  onTitlebarContextMenu?: (e: React.MouseEvent, windowId: string) => void;
 }
-
-type SlotKind = 'single' | 'tabs' | 'split';
-
-interface DockSlot {
-  id: string; // panel id (single), dockGroup id (tabs), splitGroup id (split)
-  targetId: string; // panel id for drag-target attribute
-  flex: number;
-  kind: SlotKind;
-  panels: WindowRecord[];
-  activeId?: string;
-}
-
-type DisplaySlot =
-  | { isPreview: true; id: string; flex: number }
-  | {
-      isPreview: false;
-      id: string;
-      targetId: string;
-      flex: number;
-      kind: SlotKind;
-      panels: WindowRecord[];
-      activeId?: string;
-      isStackTarget: boolean;
-      isSplitTarget: boolean;
-      splitBefore?: boolean;
-    };
-
-type RealSlot = Extract<DisplaySlot, { isPreview: false }>;
 
 export function DockArea({
   side,
+  root,
   windows,
   extent,
   dragState,
@@ -57,111 +31,23 @@ export function DockArea({
   const areaRef = useRef<HTMLDivElement>(null);
   const horizontal = side === 'left' || side === 'right';
 
-  const sorted = useMemo(
-    () =>
-      windows
-        .filter(w => w.docked === side && w.visible && !w.poppedOut)
-        .sort((a, b) => (a.dockOrder ?? 0) - (b.dockOrder ?? 0)),
-    [windows, side]
+  const windowsById = useMemo(() => {
+    const map: Record<string, WindowRecord> = {};
+    for (const w of windows) map[w.id] = w;
+    return map;
+  }, [windows]);
+
+  const ctx: NodeViewContext = useMemo(
+    () => ({
+      side,
+      manager,
+      windowsById,
+      dragState,
+      onDragStateChange,
+      onTitlebarContextMenu,
+    }),
+    [side, manager, windowsById, dragState, onDragStateChange, onTitlebarContextMenu]
   );
-
-  const slots: DockSlot[] = useMemo(() => {
-    const result: DockSlot[] = [];
-    const seenGroups = new Set<string>();
-    for (const w of sorted) {
-      // splitGroup checked first: a tab group can be a member of a split
-      // group, so the split slot owns the outer rendering and the inner
-      // SplitGroupPanel handles the tab group.
-      if (w.splitGroup) {
-        if (seenGroups.has(w.splitGroup)) continue;
-        seenGroups.add(w.splitGroup);
-        const group = sorted
-          .filter(p => p.splitGroup === w.splitGroup)
-          .sort((a, b) => (a.splitOrder ?? 0) - (b.splitOrder ?? 0));
-        result.push({
-          id: w.splitGroup,
-          targetId: group[0].id,
-          flex: w.dockFlex ?? 1,
-          kind: 'split',
-          panels: group,
-        });
-      } else if (w.dockGroup) {
-        if (seenGroups.has(w.dockGroup)) continue;
-        seenGroups.add(w.dockGroup);
-        const group = sorted
-          .filter(p => p.dockGroup === w.dockGroup)
-          .sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0));
-        const active = group.find(p => p.isActiveTab) ?? group[0];
-        result.push({
-          id: w.dockGroup,
-          targetId: active.id,
-          flex: w.dockFlex ?? 1,
-          kind: 'tabs',
-          panels: group,
-          activeId: active.id,
-        });
-      } else {
-        result.push({
-          id: w.id,
-          targetId: w.id,
-          flex: w.dockFlex ?? 1,
-          kind: 'single',
-          panels: [w],
-        });
-      }
-    }
-    return result;
-  }, [sorted]);
-
-  const displaySlots: DisplaySlot[] = useMemo(() => {
-    const isTarget = dragState?.potentialDock === side;
-    const isStackDrop = isTarget && !!dragState?.stackTargetId;
-    const isSplitDrop = isTarget && !!dragState?.splitTargetId;
-    const insertIndex =
-      isTarget && !isStackDrop && !isSplitDrop
-        ? dragState!.insertSlotIndex ?? slots.length
-        : null;
-
-    const plain = (s: DockSlot): Extract<DisplaySlot, { isPreview: false }> => ({
-      isPreview: false,
-      ...s,
-      isStackTarget: false,
-      isSplitTarget: false,
-    });
-
-    if (!isTarget) return slots.map(plain);
-
-    if (isStackDrop) {
-      return slots.map(s => ({
-        ...plain(s),
-        isStackTarget:
-          s.targetId === dragState!.stackTargetId ||
-          s.panels.some(p => p.id === dragState!.stackTargetId),
-      }));
-    }
-
-    if (isSplitDrop) {
-      return slots.map(s => ({
-        ...plain(s),
-        isSplitTarget:
-          s.targetId === dragState!.splitTargetId ||
-          s.panels.some(p => p.id === dragState!.splitTargetId),
-        splitBefore: dragState!.splitBefore,
-      }));
-    }
-
-    const result: DisplaySlot[] = [];
-    slots.forEach((s, i) => {
-      if (i === insertIndex) {
-        result.push({ isPreview: true, id: `preview-${dragState!.panelId}`, flex: 1 });
-      }
-      result.push(plain(s));
-    });
-    if (insertIndex !== null && insertIndex >= slots.length) {
-      result.push({ isPreview: true, id: `preview-${dragState!.panelId}`, flex: 1 });
-    }
-    return result;
-  }, [slots, dragState, side]);
 
   const handleEdgePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -179,10 +65,8 @@ export function DockArea({
         80,
         startSize + ((horizontal ? ev.clientX : ev.clientY) - startPos) * flip
       );
-      // Drive the grid column via the CSS variable so the whole layout
-      // reflows live during drag. Without this the dock-area's inline style
-      // grows but the grid cell stays fixed at the pre-drag size, causing
-      // overflow on right/bottom and freeze-until-release when expanding.
+      // Drive the grid column via the CSS variable so the whole layout reflows
+      // live during drag.
       contentArea?.style.setProperty(cssVar, `${lastSize}px`);
       el.style[horizontal ? 'width' : 'height'] = `${lastSize}px`;
     };
@@ -195,51 +79,7 @@ export function DockArea({
     document.addEventListener('pointerup', onUp);
   };
 
-  const handleSlotSplitterDown =
-    (aboveId: string, belowId: string) =>
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.button !== 0) return;
-      e.preventDefault();
-      const aboveEl = areaRef.current?.querySelector<HTMLElement>(
-        `[data-dock-slot="${aboveId}"]`
-      );
-      const belowEl = areaRef.current?.querySelector<HTMLElement>(
-        `[data-dock-slot="${belowId}"]`
-      );
-      if (!aboveEl || !belowEl) return;
-      const startPos = horizontal ? e.clientY : e.clientX;
-      const startAboveSize = horizontal ? aboveEl.offsetHeight : aboveEl.offsetWidth;
-      const startBelowSize = horizontal ? belowEl.offsetHeight : belowEl.offsetWidth;
-      const totalSize = startAboveSize + startBelowSize;
-      const aSlot0 = slots.find(s => s.id === aboveId);
-      const bSlot0 = slots.find(s => s.id === belowId);
-      const totFlex = (aSlot0?.flex ?? 1) + (bSlot0?.flex ?? 1);
-
-      const onMove = (ev: PointerEvent) => {
-        const delta = (horizontal ? ev.clientY : ev.clientX) - startPos;
-        const newAbove = Math.max(40, Math.min(totalSize - 40, startAboveSize + delta));
-        const ratio = newAbove / totalSize;
-        aboveEl.style.flex = `${totFlex * ratio}`;
-        belowEl.style.flex = `${totFlex * (1 - ratio)}`;
-      };
-      const onUp = (ev: PointerEvent) => {
-        const delta = (horizontal ? ev.clientY : ev.clientX) - startPos;
-        const newAbove = Math.max(40, Math.min(totalSize - 40, startAboveSize + delta));
-        const ratio = newAbove / totalSize;
-        manager.setSlotFlex(aboveId, totFlex * ratio);
-        manager.setSlotFlex(belowId, totFlex * (1 - ratio));
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-      };
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-    };
-
   const edgeSplitClass = `dock-edge-splitter dock-edge-splitter-${side}`;
-  const slotSplitClass = `dock-panel-splitter dock-panel-splitter-${horizontal ? 'h' : 'v'}`;
-  const realSlots = displaySlots.filter(
-    (s): s is Extract<DisplaySlot, { isPreview: false }> => !s.isPreview
-  );
 
   return (
     <div
@@ -247,153 +87,13 @@ export function DockArea({
       className={`dock-area dock-area-${side} dock-zone dock-zone--${side}`}
       style={{ [horizontal ? 'width' : 'height']: extent }}
     >
-      {displaySlots.map(slotUnion => {
-        if (slotUnion.isPreview) {
-          return (
-            <div
-              key={slotUnion.id}
-              className="dock-panel-slot dock-panel-slot--preview"
-              style={{ flex: slotUnion.flex, minHeight: 0, minWidth: 0 }}
-            >
-              <div className="dock-drop-preview" />
-            </div>
-          );
-        }
-
-        // After the preview branch returned, the union narrows to RealSlot —
-        // but TS's narrowing across useMemo result types is unreliable here,
-        // so coerce explicitly for clarity and safety.
-        const slot = slotUnion as RealSlot;
-        const realIdx = realSlots.findIndex(r => r.id === slot.id);
-        const nextReal = realSlots[realIdx + 1];
-
-        const slotClass = [
-          'dock-panel-slot',
-          slot.isStackTarget && slot.kind !== 'split'
-            ? 'dock-panel-slot--stack-target'
-            : '',
-        ]
-          .filter(Boolean)
-          .join(' ');
-
-        const crossVertical = side === 'top' || side === 'bottom';
-
-        const panelContent =
-          slot.kind === 'tabs' && slot.panels.length === 1 ? (
-            <DockedPanel
-              window={slot.panels[0]}
-              manager={manager}
-              onDragStateChange={onDragStateChange}
-              onTitlebarContextMenu={onTitlebarContextMenu}
-            />
-          ) : slot.kind === 'tabs' ? (
-            <TabGroupPanel
-              side={side}
-              panels={slot.panels}
-              activeId={slot.activeId!}
-              manager={manager}
-              onDragStateChange={onDragStateChange}
-              onTitlebarContextMenu={onTitlebarContextMenu}
-            />
-          ) : slot.kind === 'split' ? (
-            <SplitGroupPanel
-              side={side}
-              panels={slot.panels}
-              splitGroupId={slot.id}
-              manager={manager}
-              onDragStateChange={onDragStateChange}
-              onTitlebarContextMenu={onTitlebarContextMenu}
-              stackTargetId={slot.isStackTarget ? dragState?.stackTargetId : undefined}
-              splitTargetId={slot.isSplitTarget ? dragState?.splitTargetId : undefined}
-              splitBefore={dragState?.splitBefore}
-            />
-          ) : (
-            <DockedPanel
-              window={slot.panels[0]}
-              manager={manager}
-              onDragStateChange={onDragStateChange}
-              onTitlebarContextMenu={onTitlebarContextMenu}
-            />
-          );
-
-        const ghostEl = (
-          <div
-            className="dock-panel-slot dock-panel-slot--preview"
-            style={{ flex: 1, minHeight: 0, minWidth: 0 }}
-          >
-            <div className="dock-drop-preview" />
-          </div>
-        );
-
-        const slotInner =
-          slot.isSplitTarget && slot.kind !== 'split' ? (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: crossVertical ? 'column' : 'row',
-                flex: 1,
-                minHeight: 0,
-                minWidth: 0,
-                overflow: 'hidden',
-              }}
-            >
-              {slot.splitBefore ? (
-                <>
-                  {ghostEl}
-                  <div
-                    style={{
-                      flex: 1,
-                      minHeight: 0,
-                      minWidth: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {panelContent}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      flex: 1,
-                      minHeight: 0,
-                      minWidth: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {panelContent}
-                  </div>
-                  {ghostEl}
-                </>
-              )}
-            </div>
-          ) : (
-            panelContent
-          );
-
-        return (
-          <Fragment key={slot.id}>
-            <div
-              data-dock-slot={slot.id}
-              data-dock-panel={slot.targetId}
-              className={slotClass}
-              style={{ flex: slot.flex, minHeight: 0, minWidth: 0 }}
-            >
-              {slotInner}
-            </div>
-            {nextReal && (
-              <div
-                className={slotSplitClass}
-                onPointerDown={handleSlotSplitterDown(slot.id, nextReal.id)}
-              />
-            )}
-          </Fragment>
-        );
-      })}
+      {root && (
+        <LayoutNodeView
+          node={root}
+          ctx={ctx}
+          style={{ flex: 1, minWidth: 0, minHeight: 0 }}
+        />
+      )}
       <div className={edgeSplitClass} onPointerDown={handleEdgePointerDown} />
     </div>
   );

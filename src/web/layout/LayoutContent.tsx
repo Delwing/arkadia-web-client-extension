@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DockArea } from './components/DockArea';
 import { FloatingWindowLayer } from './components/FloatingWindowLayer';
 import { PopoutWindowLayer } from './components/PopoutWindowLayer';
+import { SplitContextMenu } from './components/SplitContextMenu';
 import { MapPanel } from './panels/MapPanel';
 import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
@@ -56,10 +57,10 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
       contentArea.style.removeProperty('--dock-right-size');
       return;
     }
-    const sideHasContent = (side: DockSide) =>
-      Object.values(layoutState.windows).some(
-        w => w.docked === side && w.visible && !w.poppedOut
-      );
+    const sideHasContent = (side: DockSide) => {
+      const root = layoutState.dockTrees[side];
+      return !!root && root.children.length > 0;
+    };
     const sideIsDragTarget = (side: DockSide) =>
       dragState?.potentialDock === side;
     const sizeFor = (side: DockSide) =>
@@ -76,6 +77,21 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
     [manager]
   );
 
+  // Right-click on a docked panel titlebar → split menu.
+  const [splitMenu, setSplitMenu] = useState<{
+    x: number;
+    y: number;
+    windowId: string;
+  } | null>(null);
+  const handleTitlebarContextMenu = useCallback(
+    (e: React.MouseEvent, windowId: string) => {
+      if (!windowId) return;
+      e.preventDefault();
+      setSplitMenu({ x: e.clientX, y: e.clientY, windowId });
+    },
+    []
+  );
+
   // Windows shown in the in-app dock / floating shells. Popped-out windows are
   // excluded here — they live in their own browser window via PopoutWindowLayer.
   const visibleWindows = useMemo(
@@ -90,7 +106,8 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
 
   // Compute which dock areas to render (only sides with content OR active drag target).
   const showSide = (side: DockSide): boolean => {
-    if (visibleWindows.some(w => w.docked === side)) return true;
+    const root = layoutState.dockTrees[side];
+    if (root && root.children.length > 0) return true;
     if (dragState?.potentialDock === side) return true;
     return false;
   };
@@ -120,34 +137,40 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
         {showSide('top') && (
           <DockArea
             side="top"
+            root={layoutState.dockTrees.top}
             windows={visibleWindows}
             extent={layoutState.dockExtents.top}
             dragState={dragState}
             manager={manager}
             onSetExtent={setExtent}
             onDragStateChange={updateDragState}
+            onTitlebarContextMenu={handleTitlebarContextMenu}
           />
         )}
         {showSide('left') && (
           <DockArea
             side="left"
+            root={layoutState.dockTrees.left}
             windows={visibleWindows}
             extent={layoutState.dockExtents.left}
             dragState={dragState}
             manager={manager}
             onSetExtent={setExtent}
             onDragStateChange={updateDragState}
+            onTitlebarContextMenu={handleTitlebarContextMenu}
           />
         )}
         {showSide('right') && (
           <DockArea
             side="right"
+            root={layoutState.dockTrees.right}
             windows={visibleWindows}
             extent={layoutState.dockExtents.right}
             dragState={dragState}
             manager={manager}
             onSetExtent={setExtent}
             onDragStateChange={updateDragState}
+            onTitlebarContextMenu={handleTitlebarContextMenu}
           />
         )}
       </div>
@@ -157,12 +180,14 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
         <BottomDockPortal>
           <DockArea
             side="bottom"
+            root={layoutState.dockTrees.bottom}
             windows={visibleWindows}
             extent={layoutState.dockExtents.bottom}
             dragState={dragState}
             manager={manager}
             onSetExtent={setExtent}
             onDragStateChange={updateDragState}
+            onTitlebarContextMenu={handleTitlebarContextMenu}
           />
         </BottomDockPortal>
       )}
@@ -189,6 +214,18 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
       />
 
       <PopoutWindowLayer windows={poppedWindows} manager={manager} />
+
+      {splitMenu && (
+        <SplitContextMenu
+          x={splitMenu.x}
+          y={splitMenu.y}
+          onClose={() => setSplitMenu(null)}
+          onSplit={(dir, before) => {
+            manager.splitWithPlaceholder(splitMenu.windowId, dir, before);
+            setSplitMenu(null);
+          }}
+        />
+      )}
     </>
   );
 }
