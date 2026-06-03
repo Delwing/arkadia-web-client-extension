@@ -105,6 +105,7 @@ export class EmbeddedMap {
     private transportHopsOverlay: TransportHopsOverlay | null = null;
     private transportStopsOverlay: WaypointOverlay | null = null;
     private waypointHover = false;
+    private pointerDownPos: { x: number; y: number } | null = null;
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
     private _viewedZ: number | null = null;
@@ -119,6 +120,7 @@ export class EmbeddedMap {
         this.map.addEventListener('roomclick', (ev: CustomEvent<RoomClickEventDetail>) => this.onRoomClick(ev));
         this.map.addEventListener('areaexitclick', (ev: CustomEvent<AreaExitClickEventDetail>) => this.onAreaExitClick(ev));
         this.map.addEventListener('pan', (ev: CustomEvent<PanEventDetail>) => this.onPan(ev));
+        this.map.addEventListener('pointerdown', (ev: PointerEvent) => { this.pointerDownPos = { x: ev.clientX, y: ev.clientY }; });
         this.map.addEventListener('click', (ev: MouseEvent) => this.onWaypointClick(ev));
         this.map.addEventListener('pointermove', (ev: PointerEvent) => this.onWaypointHover(ev));
         this.reader = reader;
@@ -765,6 +767,11 @@ export class EmbeddedMap {
     private onWaypointClick(ev: MouseEvent) {
         const overlay = this.transportStopsOverlay;
         if (!overlay) return;
+        // Ignore clicks that were actually drags (pan started over a bubble): if
+        // the pointer moved past a small threshold between down and up, bail.
+        const down = this.pointerDownPos;
+        this.pointerDownPos = null;
+        if (down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 5) return;
         const rect = this.map.getBoundingClientRect();
         const p = this.renderer.camera.clientToMapPoint(ev.clientX, ev.clientY, { left: rect.left, top: rect.top });
         if (!p) return;
