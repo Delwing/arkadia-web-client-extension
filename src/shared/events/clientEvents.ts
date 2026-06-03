@@ -325,6 +325,7 @@ export interface KnownEvents {
     "mapAlwaysShowNote": boolean;
     "mapShowGrid": boolean;
     "mapShowAreaExitLabels": boolean;
+    "mapShowTransportStops": boolean;
     "objectListViewMode": "list" | "card" | "compact" | "compact-dots" | "raid";
     "objectList.showWeaponState": boolean;
     "objectList.showCoverTimer": boolean;

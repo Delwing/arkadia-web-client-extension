@@ -8,7 +8,8 @@ import {
     type PanEventDetail,
     LabelRenderMode, MapRenderer,
     ExplorationLens,
-    ALL_VISIBLE
+    ALL_VISIBLE,
+    WaypointOverlay
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
@@ -17,9 +18,11 @@ import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip"
 import { openMapContextMenu } from "@modules/core/contextMenus";
 import { PulseOverlay } from "./pulseOverlay";
 import { TransportHopsOverlay, type TransportHopMarker } from "./transportHopsOverlay";
+import { buildTransportWaypoints } from "./transportWaypoints";
 
 const LOST_ROOMS_OVERLAY_ID = "lost-rooms";
 const TRANSPORT_HOPS_OVERLAY_ID = "transport-hops";
+const TRANSPORT_STOPS_OVERLAY_ID = "transport-stops";
 
 const MIN_ZOOM = 0.01;
 
@@ -100,6 +103,8 @@ export class EmbeddedMap {
     private currentHighlights: { roomId: number; color: string }[] = [];
     private lostRoomsOverlay: PulseOverlay | null = null;
     private transportHopsOverlay: TransportHopsOverlay | null = null;
+    private transportStopsOverlay: WaypointOverlay | null = null;
+    private waypointHover = false;
     private _isViewingPlayerPosition = true;
     private _viewedAreaId: number | null = null;
     private _viewedZ: number | null = null;
@@ -114,6 +119,8 @@ export class EmbeddedMap {
         this.map.addEventListener('roomclick', (ev: CustomEvent<RoomClickEventDetail>) => this.onRoomClick(ev));
         this.map.addEventListener('areaexitclick', (ev: CustomEvent<AreaExitClickEventDetail>) => this.onAreaExitClick(ev));
         this.map.addEventListener('pan', (ev: CustomEvent<PanEventDetail>) => this.onPan(ev));
+        this.map.addEventListener('click', (ev: MouseEvent) => this.onWaypointClick(ev));
+        this.map.addEventListener('pointermove', (ev: PointerEvent) => this.onWaypointHover(ev));
         this.reader = reader;
         this.totalRooms = this.reader.getRooms().length;
 
@@ -269,6 +276,14 @@ export class EmbeddedMap {
         eventBus.on('mapTransportHops', (hops: TransportHopMarker[] | null) => {
             this.updateTransportHopsOverlay(hops ?? []);
         });
+
+        eventBus.on('mapShowTransportStops', (show: boolean) => {
+            this.setTransportStopsVisible(show);
+        });
+        // Apply the persisted setting on load (the menu also emits on mount).
+        if (getBuiltInPanelSetting('map', 'showTransportStops', false)) {
+            this.setTransportStopsVisible(true);
+        }
 
         // Request current highlights and path in case they were created before map loaded
         eventBus.emit('requestMapHighlights');
@@ -722,6 +737,59 @@ export class EmbeddedMap {
             this.renderer.addSceneOverlay(TRANSPORT_HOPS_OVERLAY_ID, this.transportHopsOverlay);
         } else {
             this.transportHopsOverlay.setHops(hops);
+        }
+    }
+
+    private setTransportStopsVisible(show: boolean) {
+        if (!show) {
+            if (this.transportStopsOverlay) {
+                this.renderer.removeSceneOverlay(TRANSPORT_STOPS_OVERLAY_ID);
+                this.transportStopsOverlay = null;
+            }
+            return;
+        }
+        if (!this.transportStopsOverlay) {
+            // Stops come from the static transport definitions; build once and let
+            // the renderer's WaypointOverlay handle placement/drawing. Each
+            // waypoint carries its own onClick (opens the route popup).
+            const overlay = new WaypointOverlay();
+            overlay.set(buildTransportWaypoints());
+            this.transportStopsOverlay = overlay;
+            this.renderer.addSceneOverlay(TRANSPORT_STOPS_OVERLAY_ID, overlay);
+        }
+    }
+
+    // Transport-stop bubbles live on the overlay layer, so they aren't part of
+    // the renderer's room hit-testing. Resolve clicks against the overlay's own
+    // bubble rects (world space) and fire the waypoint's handler.
+    private onWaypointClick(ev: MouseEvent) {
+        const overlay = this.transportStopsOverlay;
+        if (!overlay) return;
+        const rect = this.map.getBoundingClientRect();
+        const p = this.renderer.camera.clientToMapPoint(ev.clientX, ev.clientY, { left: rect.left, top: rect.top });
+        if (!p) return;
+        const wp = overlay.hitTest(p.x, p.y);
+        wp?.onClick?.(wp);
+    }
+
+    // Show a pointer cursor while hovering a clickable transport-stop bubble.
+    // The renderer drives the cursor only via room/area hover events, so we just
+    // toggle on enter/leave of a waypoint and otherwise leave its value alone.
+    private onWaypointHover(ev: PointerEvent) {
+        const overlay = this.transportStopsOverlay;
+        if (!overlay) {
+            if (this.waypointHover) { this.map.style.cursor = ''; this.waypointHover = false; }
+            return;
+        }
+        const rect = this.map.getBoundingClientRect();
+        const p = this.renderer.camera.clientToMapPoint(ev.clientX, ev.clientY, { left: rect.left, top: rect.top });
+        const over = !!(p && overlay.hitTest(p.x, p.y));
+        if (over && !this.waypointHover) {
+            this.map.style.cursor = 'pointer';
+            this.waypointHover = true;
+        } else if (!over && this.waypointHover) {
+            this.map.style.cursor = '';
+            this.waypointHover = false;
         }
     }
 }

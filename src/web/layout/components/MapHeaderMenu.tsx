@@ -25,6 +25,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [alwaysShowNote, setAlwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
   const [showGrid, setShowGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
   const [showAreaExitLabels, setShowAreaExitLabels] = useBuiltInPanelSetting('map', 'showAreaExitLabels', true);
+  const [showTransportStops, setShowTransportStops] = useBuiltInPanelSetting('map', 'showTransportStops', false);
   const [hintsEnabled, setHintsEnabled] = useState(() =>
     getPopupSetting('popup:knowledgeDetails', 'showHints', false)
   );
@@ -61,6 +62,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     if (embedded?.settings) embedded.settings.areaExitLabels = showAreaExitLabels;
     eventBus.emit('mapShowAreaExitLabels', showAreaExitLabels);
   }, [showAreaExitLabels, getEmbedded]);
+
+  // Emit showTransportStops state on mount and when it changes
+  useEffect(() => {
+    eventBus.emit('mapShowTransportStops', showTransportStops);
+  }, [showTransportStops]);
 
   // Keep hintsEnabled and showCompleted in sync with KnowledgeDetailsReport
   useEffect(() => {
@@ -288,6 +294,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [setShowAreaExitLabels, closeMenu]);
 
+  const handleToggleTransportStops = useCallback(() => {
+    setShowTransportStops((prev) => !prev);
+    closeMenu();
+  }, [setShowTransportStops, closeMenu]);
+
   const handleToggleShowCompleted = useCallback(() => {
     const newShowCompleted = !showCompleted;
     setShowCompleted(newShowCompleted);
@@ -495,6 +506,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 <span className={`map-header-menu__checkbox${showAreaExitLabels ? ' map-header-menu__checkbox--checked' : ''}`} />
                 Etykiety wyjsc obszaru
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item map-header-menu__item--checkbox"
+                onClick={handleToggleTransportStops}
+              >
+                <span className={`map-header-menu__checkbox${showTransportStops ? ' map-header-menu__checkbox--checked' : ''}`} />
+                Przystanki transportu
               </button>
               {hintsEnabled && (
                 <button
