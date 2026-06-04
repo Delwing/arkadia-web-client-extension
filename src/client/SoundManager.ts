@@ -18,6 +18,67 @@ const PRIMER_VOLUME = 0.1;
 // expiration so background-tab triggers still produce audible output.
 const KEEPALIVE_VOLUME = 0.001;
 
+// The keepalive loop must play *real* (non-zero) PCM — Chrome ignores
+// all-zero/silent tracks for the "actively playing media" state (see
+// docs/AUDIO_SYSTEM.md constraint #3). Earlier it reused the beep src, but
+// the beep is a full-scale tone, so looping it even at -60 dB left a faintly
+// audible periodic beep. This generates a dedicated source instead: a short
+// loop of low-amplitude pseudo-random noise (peak ~256 of 32767, ~-42 dBFS at
+// the source). It has no tonal peaks and, played at KEEPALIVE_VOLUME, lands
+// around -100 dBFS — genuinely inaudible — while staying non-zero PCM that
+// Chrome counts as real playback. Built lazily and cached.
+let keepaliveSrcCache: string | undefined;
+function buildKeepaliveSrc(): string {
+    if (keepaliveSrcCache) return keepaliveSrcCache;
+
+    const sampleRate = 8000;
+    const numSamples = sampleRate; // 1 second
+    const bytesPerSample = 2;
+    const dataSize = numSamples * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    const writeString = (offset: number, str: string) => {
+        for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset + i, str.charCodeAt(i));
+        }
+    };
+
+    // Minimal 16-bit mono PCM WAV header.
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);                       // fmt chunk size
+    view.setUint16(20, 1, true);                        // PCM
+    view.setUint16(22, 1, true);                        // channels
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * bytesPerSample, true); // byte rate
+    view.setUint16(32, bytesPerSample, true);           // block align
+    view.setUint16(34, 16, true);                       // bits per sample
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Deterministic LCG so the buffer is reproducible (no Math.random); each
+    // sample falls in [-256, 255].
+    let seed = 0x9e3779b9;
+    let offset = 44;
+    for (let i = 0; i < numSamples; i++) {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        const sample = ((seed >>> 23) & 0x1ff) - 256;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+    }
+
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    keepaliveSrcCache = 'data:audio/wav;base64,' + btoa(binary);
+    return keepaliveSrcCache;
+}
+
 // iOS WebKit ignores HTMLAudioElement.volume (always reads/plays at 1.0),
 // so the keepalive loop — designed to be inaudible at -60 dB — would play
 // the beep at full hardware volume on a loop. iOS also doesn't enforce
@@ -42,6 +103,7 @@ export default class SoundManager {
         this.keepalive = new Audio();
         this.keepalive.preload = 'auto';
         this.keepalive.loop = true;
+        this.keepalive.src = buildKeepaliveSrc();
 
         this.client.on("sound:play", ({ key }) => {
             if (typeof key === "string" && key) {
@@ -153,22 +215,19 @@ export default class SoundManager {
             }
         }
 
-        // Start the continuous keepalive loop. Reuses the beep src — the
-        // actual audio content doesn't matter, only that the page is
-        // continuously playing real audio data at non-zero volume.
-        // Skipped on iOS where volume is read-only (would loop at full
-        // hardware volume) and isn't needed anyway.
+        // Start the continuous keepalive loop. Uses a dedicated near-silent
+        // noise source (set in the constructor) — the page just needs to be
+        // continuously playing real audio data at non-zero volume; the source
+        // is shaped to have no audible tonal content. Skipped on iOS where
+        // volume is read-only (would loop at full hardware volume) and isn't
+        // needed anyway.
         if (!isIOS()) {
-            const beepAudio = this.elements.get('beep');
-            if (beepAudio) {
-                this.keepalive.src = beepAudio.src;
-                this.keepalive.volume = KEEPALIVE_VOLUME;
-                this.keepalive.muted = false;
-                this.keepalive.loop = true;
-                this.keepalive.play().catch((err) => {
-                    console.warn('[SoundManager] keepalive failed', err);
-                });
-            }
+            this.keepalive.volume = KEEPALIVE_VOLUME;
+            this.keepalive.muted = false;
+            this.keepalive.loop = true;
+            this.keepalive.play().catch((err) => {
+                console.warn('[SoundManager] keepalive failed', err);
+            });
         }
     }
 
