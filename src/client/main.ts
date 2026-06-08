@@ -235,7 +235,7 @@ export function registerScripts(client: Client) {
     initEnemyBinds(client, aliases)
     initChatHistory(client, aliases)
     initMoveMode(client)
-    initCarriage(client)
+    initCarriage(client, aliases)
     initPausers(client)
     initIdz(client, aliases)
     initKillCounter(client, aliases)

@@ -1,22 +1,36 @@
 import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
-export default function initCarriage(client: Client) {
+export default function initCarriage(
+    client: Client,
+    aliases?: { pattern: RegExp; callback: Function }[]
+) {
+    const list = aliases ?? client.aliases;
+
+    const setCarriageMode = (enabled: boolean) => {
+        client.carriageMode = enabled;
+        if (client.moveModeButton) {
+            client.moveModeButton.disabled = enabled;
+        }
+    };
     const enable = (line: AnsiAwareBuffer) => {
-        client.carriageMode = true;
-        if (client.moveModeButton) {
-            client.moveModeButton.disabled = true;
-        }
+        setCarriageMode(true);
         return line;
     };
-    const disable = (line) => {
-        client.carriageMode = false;
-        if (client.moveModeButton) {
-            client.moveModeButton.disabled = false;
-        }
+    const disable = (line: AnsiAwareBuffer) => {
+        setCarriageMode(false);
         return line;
     };
-    client.Triggers.registerTrigger(/^Siadasz w (.*) (dylizansie|wozie|bryczce)\.$/, enable, "carriageMode");
+    client.Triggers.registerTrigger(/^Siadasz (?:w|na) (.*) (dylizansie|wozie|bryczce)\.$/, enable, "carriageMode");
     client.Triggers.registerTrigger(/^Zsiadasz z (.*) (dylizansu|wozu|bryczki)\.$/, disable, "carriageMode");
     client.Triggers.registerTrigger(/^Wstajesz i wysiadasz z (.*) (dylizansu|wozu|bryczki)\.$/, disable, "carriageMode");
+    client.Triggers.registerTrigger(/^Zwracasz (.*) (dylizans|woz|bryczke)\b/, disable, "carriageMode");
+
+    list.push({
+        pattern: /^\/woz$/,
+        callback: () => {
+            setCarriageMode(!client.carriageMode);
+            client.println(`Tryb wozu: ${client.carriageMode ? "wlaczony" : "wylaczony"}`);
+        },
+    });
 }
