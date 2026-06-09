@@ -414,7 +414,11 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).toMatch(/stalowoszare ryby/);
     });
 
-    test('adds a hover hint with the fish name to fish entries', () => {
+    test('adds a hover hint with the fish name to fish entries', async () => {
+      // The fish-hint transform is registered after the async magic/key loaders
+      // resolve, so flush pending microtasks before generating output.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       const input = 'Otwarty skorzany plecak zawiera brazowoszara ryba.';
 
       client.onLine(input, '');

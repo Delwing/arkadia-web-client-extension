@@ -414,15 +414,6 @@ const defaultTransforms: TransformDefinition[] = [
         return buffer;
     }},
     { transform: (buffer, item) => {
-        // Add a hover hint with the fish name for fish color descriptions,
-        // mirroring the in-game fish-hint trigger.
-        const fish = matchFishHint(item.name);
-        if (fish && fish.end <= buffer.length) {
-            buffer.createLink([fish.start, fish.end], { title: fish.hint });
-        }
-        return buffer;
-    }},
-    { transform: (buffer, item) => {
         const zlom = getZlomFormatting(item.name);
         if (!zlom) return buffer;
         if (zlom.color) {
@@ -673,6 +664,20 @@ async function loadMagicAndKeysFilter(client: Client) {
     } catch (e) {
         console.error('Failed to load magic keys or magics:', e);
     }
+
+    // Add a hover hint with the fish name for fish color descriptions, mirroring
+    // the in-game fish-hint trigger. Registered after the magic/key transforms so
+    // the hyperlink survives their color() calls (color() replaces state, which
+    // would otherwise drop the link).
+    defaultTransforms.push({
+        transform: (buffer, item) => {
+            const fish = matchFishHint(item.name);
+            if (fish && fish.end <= buffer.length) {
+                buffer.createLink([fish.start, fish.end], { title: fish.hint });
+            }
+            return buffer;
+        },
+    });
 
     try {
         const knowledgeStore = getKnowledgeStore();
