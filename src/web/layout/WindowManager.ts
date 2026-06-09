@@ -668,6 +668,21 @@ export class WindowManager {
     this.notify();
   }
 
+  /**
+   * Mirror a single built-in panel setting that was just written straight to
+   * storage (via setBuiltInPanelSetting) into the live in-memory copy. Without
+   * this, the next serialize() would overwrite the freshly-persisted value with
+   * the stale snapshot loaded at startup. No notify(): storage already holds the
+   * value, so there is nothing new to persist or re-render.
+   */
+  syncBuiltInPanelSetting(id: string, key: string, value: unknown): void {
+    const cur = this.builtInPanelState[id] ?? {};
+    this.builtInPanelState[id] = {
+      ...cur,
+      settings: { ...(cur.settings ?? {}), [key]: value },
+    };
+  }
+
   // ── Lookups ────────────────────────────────────────────────────────────────
 
   /** Find which side a panel is docked to (or null). */

@@ -19,6 +19,7 @@ import {
 } from '../types';
 import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
+import { windowManager } from '../WindowManager';
 
 // ─── Migration ────────────────────────────────────────────────────────────
 
@@ -535,6 +536,9 @@ export function setBuiltInPanelSetting<T>(
     }
     state.builtInPanels[panelId].settings![key] = value;
     saveLayoutState(state);
+    // Keep the live WindowManager copy in sync so its next serialize() doesn't
+    // clobber this write with the stale snapshot it loaded at startup.
+    windowManager.syncBuiltInPanelSetting(panelId, key, value);
   } catch (e) {
     console.error('Failed to save built-in panel setting:', e);
   }
