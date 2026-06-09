@@ -102,6 +102,30 @@ function findFishHint(colorDesc: string): string | null {
     return null;
 }
 
+// Matches a fish color description followed by the noun "ryba"/"ryby"/"ryb"
+// (e.g. "brazowoszara ryba", "brazowoszare ryby", "brazowoszarych ryb").
+const FISH_DESC_PATTERN_SOURCE = '(\\w+) (ryb[aey]|ryb)\\b';
+
+export interface FishHintMatch {
+    hint: string;
+    start: number;
+    end: number;
+}
+
+// Find the first fish color description in `text` that maps to a known fish
+// hint. Shared by the in-game line trigger and the pretty-container filter.
+export function matchFishHint(text: string): FishHintMatch | null {
+    const regex = new RegExp(FISH_DESC_PATTERN_SOURCE, 'gi');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+        const hint = findFishHint(match[1]);
+        if (hint) {
+            return { hint, start: match.index, end: match.index + match[0].length };
+        }
+    }
+    return null;
+}
+
 export interface FishingStatePayload {
     state: FishingState;
     castTimestamp: number | null;
@@ -215,14 +239,14 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
 
     // Trigger: Fish hint - match fish color descriptions and add hint on hover
     // Matches patterns like "brazowoszara ryba", "brazowoszare ryby", "brazowoszarych ryb"
-    const fishDescPattern = /(\w+) (ryb[aey]|ryb)\b/gi;
+    const fishDescPattern = new RegExp(FISH_DESC_PATTERN_SOURCE, 'gi');
 
     client.Triggers.registerTrigger(fishDescPattern, (line) => {
         const text = line.text;
 
         // Find all fish descriptions and add hover hints
         let match;
-        const regex = /(\w+) (ryb[aey]|ryb)\b/gi;
+        const regex = new RegExp(FISH_DESC_PATTERN_SOURCE, 'gi');
         while ((match = regex.exec(text)) !== null) {
             const colorDesc = match[1];
             const hint = findFishHint(colorDesc);

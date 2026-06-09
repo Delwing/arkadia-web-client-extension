@@ -400,6 +400,32 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).toMatch(/przedmiot/);
       expect(tableText).toMatch(/rzecz/);
     });
+
+    test('categorizes fish into ryby group', () => {
+      const input = 'Otwarty skorzany plecak zawiera brazowoszara ryba, stalowoszare ryby.';
+
+      client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      const tableText = getEmittedTable();
+
+      expect(tableText).toMatch(/ryby/);
+      expect(tableText).toMatch(/brazowoszara ryba/);
+      expect(tableText).toMatch(/stalowoszare ryby/);
+    });
+
+    test('adds a hover hint with the fish name to fish entries', () => {
+      const input = 'Otwarty skorzany plecak zawiera brazowoszara ryba.';
+
+      client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      const buffer = mockAdapter.output.mock.calls[0][0];
+      const segments = typeof buffer === 'string' ? [] : buffer.getSegments();
+      // "brazowoszar..." maps to Jesiotr in the fish-hint table
+      const hinted = segments.find((s: any) => s.state?.hyperlink?.title === 'Jesiotr');
+      expect(hinted).toBeTruthy();
+    });
   });
 
   describe('coin coloring', () => {

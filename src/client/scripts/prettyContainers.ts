@@ -15,6 +15,7 @@ import {
     COPPER_COLOR,
 } from "../constants/colors";
 import { polishNumberWords, polishNumberPattern } from "./polishNumberConverter";
+import { matchFishHint } from "./fishing";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { getZlomFormatting } from "./zlom";
@@ -384,6 +385,7 @@ const defs: GroupDefinition[] = [
     {name: "ubrania", filter: createRegexpFilter(wear)},
     {name: "bizuteria", filter: createRegexpFilter(jewelery)},
     {name: "kamienie", filter: createRegexpFilter(gems)},
+    {name: "ryby", filter: (item: string) => matchFishHint(item) !== null},
 ]
 
 const defaultTransforms: TransformDefinition[] = [
@@ -408,6 +410,15 @@ const defaultTransforms: TransformDefinition[] = [
     { transform: (buffer, item) => {
         if (item.name.match("miedzian\\w+ monet")) {
             buffer.color([0, buffer.length], COPPER_COLOR);
+        }
+        return buffer;
+    }},
+    { transform: (buffer, item) => {
+        // Add a hover hint with the fish name for fish color descriptions,
+        // mirroring the in-game fish-hint trigger.
+        const fish = matchFishHint(item.name);
+        if (fish && fish.end <= buffer.length) {
+            buffer.createLink([fish.start, fish.end], { title: fish.hint });
         }
         return buffer;
     }},
