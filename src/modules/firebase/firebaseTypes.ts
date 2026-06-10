@@ -9,46 +9,22 @@ export interface FirebaseUserConfig {
     measurementId?: string;
 }
 
-// Sync options - precise control over what to sync
-export interface SyncOptions {
-    uiSettings: boolean;       // Interface settings (colors, themes, layout)
-    binds: boolean;            // Key bindings
-    shortcuts: boolean;        // Shortcuts
-    characterSettings: boolean; // Character gameplay settings
-    triggers: boolean;
-    aliases: boolean;
-    multibinds: boolean;
-    buttons: boolean;
-    radial: boolean;
-    visitedRooms: boolean;
-    locationNotes: boolean;    // Location notes
-    killCounts: boolean;       // Lifetime kill counts per character
-    improveCounts: boolean;    // Lifetime improve counts per character
-    deposits: boolean;         // Deposit tracking per character
-    containers: boolean;       // Container configuration per character
-    peopleEdits: boolean;      // Local edits to person database
-    knowledge: boolean;        // Knowledge progress (libraries, books, events, details)
-}
+// Categories, their display names, defaults and storage mappings all derive
+// from the category registry — see ./categoryRegistry.
+import { DEFAULT_SYNC_OPTIONS } from './categoryRegistry';
+import type { SyncCategory, SyncOptions } from './categoryRegistry';
 
-export const DEFAULT_SYNC_OPTIONS: SyncOptions = {
-    uiSettings: true,
-    binds: true,
-    shortcuts: true,
-    characterSettings: true,
-    triggers: true,
-    aliases: true,
-    multibinds: true,
-    buttons: true,
-    radial: true,
-    visitedRooms: true,
-    locationNotes: true,
-    killCounts: true,
-    improveCounts: true,
-    deposits: true,
-    containers: true,
-    peopleEdits: true,
-    knowledge: true,
-};
+export {
+    CATEGORY_REGISTRY,
+    getCategoryDefinition,
+    SYNC_CATEGORIES,
+    SYNC_CATEGORY_NAMES,
+    DEFAULT_SYNC_OPTIONS,
+    COLD_SYNC_CATEGORIES,
+    COLD_STORAGE_KEYS,
+    DEVICE_SCOPED_SYNC_CATEGORIES,
+} from './categoryRegistry';
+export type { SyncCategory, SyncOptions, CategoryDefinition } from './categoryRegistry';
 
 // Encrypted data structure
 export interface EncryptedData {
@@ -56,51 +32,6 @@ export interface EncryptedData {
     iv: string;          // Base64 (12 bytes for AES-GCM)
     salt: string;        // Base64 (16 bytes for PBKDF2)
 }
-
-// Sync category names (matches SyncOptions keys)
-export type SyncCategory = keyof SyncOptions;
-
-// All sync categories as array
-export const SYNC_CATEGORIES: SyncCategory[] = [
-    'uiSettings',
-    'binds',
-    'shortcuts',
-    'characterSettings',
-    'triggers',
-    'aliases',
-    'multibinds',
-    'buttons',
-    'radial',
-    'visitedRooms',
-    'locationNotes',
-    'killCounts',
-    'improveCounts',
-    'deposits',
-    'containers',
-    'peopleEdits',
-    'knowledge',
-];
-
-// Category display names (Polish)
-export const SYNC_CATEGORY_NAMES: Record<SyncCategory, string> = {
-    uiSettings: 'Ustawienia interfejsu',
-    binds: 'Bindy klawiszy',
-    shortcuts: 'Skroty',
-    characterSettings: 'Ustawienia postaci',
-    triggers: 'Triggery',
-    aliases: 'Aliasy',
-    multibinds: 'Multibindy',
-    buttons: 'Przyciski',
-    radial: 'Menu radialne',
-    visitedRooms: 'Odwiedzone lokacje',
-    locationNotes: 'Notatki lokacji',
-    killCounts: 'Licznik zabitych',
-    improveCounts: 'Licznik postepow',
-    deposits: 'Depozyty',
-    containers: 'Pojemniki',
-    peopleEdits: 'Edycje bazy postaci',
-    knowledge: 'Wiedza',
-};
 
 // Per-category payload stored in Firestore
 // Path: users/{userId}/sync/{category}

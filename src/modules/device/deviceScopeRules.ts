@@ -1,5 +1,6 @@
 import type { SyncGroup } from './deviceTypes';
 import type { SyncCategory } from '@modules/firebase/firebaseTypes';
+import { DEVICE_SCOPED_SYNC_CATEGORIES } from '@modules/firebase/firebaseTypes';
 
 /**
  * localStorage keys that are device-scoped (tied to physical device).
@@ -14,13 +15,10 @@ export const DEVICE_SCOPED_STORAGE_KEYS = new Set([
 ]);
 
 /**
- * Sync categories that contain device-scoped keys.
- * These need special handling when syncing from a foreign device.
+ * Sync categories that contain device-scoped keys (derived from the category
+ * registry). These need special handling when syncing from a foreign device.
  */
-export const DEVICE_SCOPED_CATEGORIES = new Set<SyncCategory>([
-    'uiSettings', // contains layoutManagerState, uiSettings, desktopButtonSettings
-    'buttons',    // contains desktopButtonSettings (mixed: also has mobileButtonSettings)
-]);
+export const DEVICE_SCOPED_CATEGORIES: ReadonlySet<SyncCategory> = DEVICE_SCOPED_SYNC_CATEGORIES;
 
 export interface DeviceScopeContext {
     sourceDeviceId: string;

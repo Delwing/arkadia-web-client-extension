@@ -772,48 +772,33 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     <section className="character-settings-section">
                         <h5 className="character-settings-section-title">Dane do synchronizacji</h5>
                         <div className="row g-2">
-                            <div className="col-6">
-                                {(['uiSettings', 'binds', 'shortcuts', 'characterSettings', 'triggers', 'aliases', 'killCounts', 'improveCounts'] as SyncCategory[]).map(cat => (
-                                    <div key={cat} className="d-flex align-items-center gap-1">
-                                        <Form.Check
-                                            type="checkbox"
-                                            id={`sync-${cat}`}
-                                            label={SYNC_CATEGORY_NAMES[cat]}
-                                            checked={syncOptions[cat]}
-                                            onChange={e => setSyncOptions(prev => ({ ...prev, [cat]: e.target.checked }))}
-                                        />
-                                        {cloudMetadata[cat]?.exists && (
-                                            <span
-                                                title={`W chmurze${cloudMetadata[cat]?.encrypted ? ' (zaszyfrowane)' : ''}${cloudMetadata[cat]?.syncedAt ? ` - ${new Date(cloudMetadata[cat]!.syncedAt!).toLocaleString()}` : ''}`}
-                                                style={{ fontSize: '0.75rem', cursor: 'help' }}
-                                            >
-                                                {cloudMetadata[cat]?.encrypted ? '🔒' : '☁️'}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="col-6">
-                                {(['multibinds', 'buttons', 'radial', 'visitedRooms', 'locationNotes', 'deposits', 'containers'] as SyncCategory[]).map(cat => (
-                                    <div key={cat} className="d-flex align-items-center gap-1">
-                                        <Form.Check
-                                            type="checkbox"
-                                            id={`sync-${cat}`}
-                                            label={SYNC_CATEGORY_NAMES[cat]}
-                                            checked={syncOptions[cat]}
-                                            onChange={e => setSyncOptions(prev => ({ ...prev, [cat]: e.target.checked }))}
-                                        />
-                                        {cloudMetadata[cat]?.exists && (
-                                            <span
-                                                title={`W chmurze${cloudMetadata[cat]?.encrypted ? ' (zaszyfrowane)' : ''}${cloudMetadata[cat]?.syncedAt ? ` - ${new Date(cloudMetadata[cat]!.syncedAt!).toLocaleString()}` : ''}`}
-                                                style={{ fontSize: '0.75rem', cursor: 'help' }}
-                                            >
-                                                {cloudMetadata[cat]?.encrypted ? '🔒' : '☁️'}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            {/* Two columns derived from the category registry */}
+                            {[
+                                SYNC_CATEGORIES.slice(0, Math.ceil(SYNC_CATEGORIES.length / 2)),
+                                SYNC_CATEGORIES.slice(Math.ceil(SYNC_CATEGORIES.length / 2)),
+                            ].map((column, columnIdx) => (
+                                <div key={columnIdx} className="col-6">
+                                    {column.map(cat => (
+                                        <div key={cat} className="d-flex align-items-center gap-1">
+                                            <Form.Check
+                                                type="checkbox"
+                                                id={`sync-${cat}`}
+                                                label={SYNC_CATEGORY_NAMES[cat]}
+                                                checked={syncOptions[cat]}
+                                                onChange={e => setSyncOptions(prev => ({ ...prev, [cat]: e.target.checked }))}
+                                            />
+                                            {cloudMetadata[cat]?.exists && (
+                                                <span
+                                                    title={`W chmurze${cloudMetadata[cat]?.encrypted ? ' (zaszyfrowane)' : ''}${cloudMetadata[cat]?.syncedAt ? ` - ${new Date(cloudMetadata[cat]!.syncedAt!).toLocaleString()}` : ''}`}
+                                                    style={{ fontSize: '0.75rem', cursor: 'help' }}
+                                                >
+                                                    {cloudMetadata[cat]?.encrypted ? '🔒' : '☁️'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
                         </div>
                     </section>
 

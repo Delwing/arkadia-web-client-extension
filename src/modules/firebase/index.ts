@@ -5,6 +5,7 @@ export type {
     FirebaseUserConfig,
     SyncOptions,
     SyncCategory,
+    CategoryDefinition,
     EncryptedData,
     CategoryPayload,
     CategorySyncStatus,
@@ -16,9 +17,14 @@ export type {
 } from './firebaseTypes';
 
 export {
+    CATEGORY_REGISTRY,
+    getCategoryDefinition,
     DEFAULT_SYNC_OPTIONS,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,
+    COLD_SYNC_CATEGORIES,
+    COLD_STORAGE_KEYS,
+    DEVICE_SCOPED_SYNC_CATEGORIES,
     INITIAL_AUTH_STATE,
     FIREBASE_CONFIG_KEY,
     FIREBASE_SETTINGS_KEY,

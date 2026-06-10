@@ -691,7 +691,8 @@ export async function applyImportedData(payload: ExportPayload): Promise<ImportR
 // Per-category export/import functions for Firebase sync
 // ============================================================================
 
-import type { SyncCategory } from '@modules/firebase';
+import type { SyncCategory, CategoryDefinition } from '@modules/firebase';
+import { CATEGORY_REGISTRY } from '@modules/firebase';
 
 export interface CategoryData {
     // uiSettings now includes layout + buttons (device-scoped settings bundle)
@@ -722,12 +723,51 @@ export interface CategoryData {
     knowledge?: ExportedKnowledgeData;
 }
 
-// Export a single category as JSON string
+/** Generic export for categories backed by whole global localStorage keys. */
+function exportGlobalKeys(keys: readonly string[]): string | null {
+    const result: Record<string, string> = {};
+    for (const key of keys) {
+        const raw = localStorage.getItem(key);
+        if (raw) result[key] = raw;
+    }
+    return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
+}
+
+/** Generic export for categories backed by one character-scoped localStorage key. */
+function exportCharacterScopedKey(baseKey: string, selectedCharacters: string[]): string | null {
+    const result: Record<string, string> = {};
+    const selectedSet = new Set(selectedCharacters);
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        const colonIdx = key.indexOf(':');
+        if (colonIdx <= 0) continue;
+        if (key.slice(colonIdx + 1) !== baseKey) continue;
+        const charName = key.slice(0, colonIdx);
+        if (!selectedSet.has(charName)) continue;
+        const raw = localStorage.getItem(key);
+        if (raw) result[charName] = raw;
+    }
+    return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
+}
+
+// Export a single category as JSON string.
+// Categories without customSync in the registry are exported generically from
+// their declared storage keys; only the custom ones appear in the switch below.
 export async function exportCategory(
     category: SyncCategory,
     selectedCharacters: string[]
 ): Promise<string | null> {
     try {
+        const def = CATEGORY_REGISTRY[category] as CategoryDefinition | undefined;
+        if (!def) return null;
+
+        if (!def.customSync) {
+            if (def.globalKeys) return exportGlobalKeys(def.globalKeys);
+            if (def.characterKey) return exportCharacterScopedKey(def.characterKey, selectedCharacters);
+            return null;
+        }
+
         switch (category) {
             case 'uiSettings': {
                 // Device-scoped settings bundle: uiSettings + layout + buttons
@@ -743,18 +783,6 @@ export async function exportCategory(
                 const mobileButtonSettings = localStorage.getItem('mobileButtonSettings');
                 if (mobileButtonSettings) data.mobileButtonSettings = mobileButtonSettings;
                 return Object.keys(data).length > 0 ? JSON.stringify(data) : null;
-            }
-            case 'binds': {
-                const binds = localStorage.getItem('binds');
-                const keymaps = localStorage.getItem('keymaps');
-                const result: Record<string, string> = {};
-                if (binds) result.binds = binds;
-                if (keymaps) result.keymaps = keymaps;
-                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
-            }
-            case 'shortcuts': {
-                const shortcuts = localStorage.getItem('shortcuts');
-                return shortcuts ? JSON.stringify({ shortcuts }) : null;
             }
             case 'characterSettings': {
                 const characters: Record<string, Record<string, string>> = {};
@@ -772,14 +800,6 @@ export async function exportCategory(
                     characters[parsed.name][key] = raw;
                 }
                 return Object.keys(characters).length > 0 ? JSON.stringify(characters) : null;
-            }
-            case 'triggers': {
-                const triggers = localStorage.getItem('triggers');
-                return triggers ? JSON.stringify({ triggers }) : null;
-            }
-            case 'aliases': {
-                const aliases = localStorage.getItem('aliases');
-                return aliases ? JSON.stringify({ aliases }) : null;
             }
             case 'multibinds': {
                 const multibinds = await getMultibindsSnapshot().catch(() => []);
@@ -836,88 +856,7 @@ export async function exportCategory(
                     // Fallback to localStorage if IndexedDB fails
                 }
                 // Fallback: export from localStorage (pre-migration data)
-                const result: Record<string, string> = {};
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (!key) continue;
-                    const colonIdx = key.indexOf(':');
-                    if (colonIdx <= 0) continue;
-                    const charName = key.slice(0, colonIdx);
-                    const baseKey = key.slice(colonIdx + 1);
-                    if (baseKey !== 'kill_counter') continue;
-                    if (!selectedSet.has(charName)) continue;
-                    const raw = localStorage.getItem(key);
-                    if (raw) result[charName] = raw;
-                }
-                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
-            }
-            case 'improveCounts': {
-                const result: Record<string, string> = {};
-                const selectedSet = new Set(selectedCharacters);
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (!key) continue;
-                    const colonIdx = key.indexOf(':');
-                    if (colonIdx <= 0) continue;
-                    const charName = key.slice(0, colonIdx);
-                    const baseKey = key.slice(colonIdx + 1);
-                    if (baseKey !== 'improve_counter_lifetime') continue;
-                    if (!selectedSet.has(charName)) continue;
-                    const raw = localStorage.getItem(key);
-                    if (raw) result[charName] = raw;
-                }
-                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
-            }
-            case 'deposits': {
-                const result: Record<string, string> = {};
-                const selectedSet = new Set(selectedCharacters);
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (!key) continue;
-                    const colonIdx = key.indexOf(':');
-                    if (colonIdx <= 0) continue;
-                    const charName = key.slice(0, colonIdx);
-                    const baseKey = key.slice(colonIdx + 1);
-                    if (baseKey !== 'deposits') continue;
-                    if (!selectedSet.has(charName)) continue;
-                    const raw = localStorage.getItem(key);
-                    if (raw) result[charName] = raw;
-                }
-                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
-            }
-            case 'containers': {
-                const result: Record<string, string> = {};
-                const selectedSet = new Set(selectedCharacters);
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (!key) continue;
-                    const colonIdx = key.indexOf(':');
-                    if (colonIdx <= 0) continue;
-                    const charName = key.slice(0, colonIdx);
-                    const baseKey = key.slice(colonIdx + 1);
-                    if (baseKey !== 'containers') continue;
-                    if (!selectedSet.has(charName)) continue;
-                    const raw = localStorage.getItem(key);
-                    if (raw) result[charName] = raw;
-                }
-                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
-            }
-            case 'peopleEdits': {
-                const result: Record<string, string> = {};
-                const selectedSet = new Set(selectedCharacters);
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (!key) continue;
-                    const colonIdx = key.indexOf(':');
-                    if (colonIdx <= 0) continue;
-                    const charName = key.slice(0, colonIdx);
-                    const baseKey = key.slice(colonIdx + 1);
-                    if (baseKey !== 'peopleLocalEvents') continue;
-                    if (!selectedSet.has(charName)) continue;
-                    const raw = localStorage.getItem(key);
-                    if (raw) result[charName] = raw;
-                }
-                return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
+                return exportCharacterScopedKey('kill_counter', selectedCharacters);
             }
             case 'knowledge': {
                 const knowledgeData = await exportKnowledgeData(selectedCharacters);
@@ -979,7 +918,27 @@ export async function importCategory(
             }
         };
 
-        switch (category) {
+        const def = CATEGORY_REGISTRY[category] as CategoryDefinition | undefined;
+        if (!def) {
+            return { success: false, error: `Unknown category: ${category}` };
+        }
+
+        // Categories without customSync are imported generically from the
+        // storage keys declared in the registry.
+        if (!def.customSync) {
+            if (def.globalKeys) {
+                for (const key of def.globalKeys) {
+                    const value = (data as Record<string, unknown>)[key];
+                    if (value && typeof value === 'string') trackingSetItem(key, value);
+                }
+            } else if (def.characterKey) {
+                const baseKey = def.characterKey;
+                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
+                    if (typeof raw !== 'string') return;
+                    trackingSetItem(`${charName}:${baseKey}`, raw);
+                });
+            }
+        } else switch (category) {
             case 'uiSettings': {
                 // Device-scoped settings bundle: uiSettings + layout + buttons
                 const skipDevice = options?.skipDeviceScoped ?? false;
@@ -996,15 +955,6 @@ export async function importCategory(
                 if (data.layoutManagerState && !skipDevice) {
                     eventBus.emit('layoutManagerStateChanged', { type: 'import' });
                 }
-                break;
-            }
-            case 'binds': {
-                if (data.keymaps) trackingSetItem('keymaps', data.keymaps);
-                if (data.binds) trackingSetItem('binds', data.binds);
-                break;
-            }
-            case 'shortcuts': {
-                if (data.shortcuts) trackingSetItem('shortcuts', data.shortcuts);
                 break;
             }
             case 'characterSettings': {
@@ -1038,14 +988,6 @@ export async function importCategory(
                         trackingSetItem(storageKey, migrateImportedValue(baseKey, raw));
                     });
                 });
-                break;
-            }
-            case 'triggers': {
-                if (data.triggers) trackingSetItem('triggers', data.triggers);
-                break;
-            }
-            case 'aliases': {
-                if (data.aliases) trackingSetItem('aliases', data.aliases);
                 break;
             }
             case 'multibinds': {
@@ -1124,34 +1066,6 @@ export async function importCategory(
                         trackingSetItem(`${charName}:kill_counter`, raw);
                     });
                 }
-                break;
-            }
-            case 'improveCounts': {
-                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
-                    if (typeof raw !== 'string') return;
-                    trackingSetItem(`${charName}:improve_counter_lifetime`, raw);
-                });
-                break;
-            }
-            case 'deposits': {
-                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
-                    if (typeof raw !== 'string') return;
-                    trackingSetItem(`${charName}:deposits`, raw);
-                });
-                break;
-            }
-            case 'containers': {
-                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
-                    if (typeof raw !== 'string') return;
-                    trackingSetItem(`${charName}:containers`, raw);
-                });
-                break;
-            }
-            case 'peopleEdits': {
-                Object.entries(data as Record<string, string>).forEach(([charName, raw]) => {
-                    if (typeof raw !== 'string') return;
-                    trackingSetItem(`${charName}:peopleLocalEvents`, raw);
-                });
                 break;
             }
             case 'knowledge': {

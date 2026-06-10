@@ -7,17 +7,7 @@
  */
 
 import type { SyncCategory } from './firebaseTypes';
-
-// Storage keys that map to cold sync categories
-const COLD_STORAGE_KEYS = new Set([
-    'kill_counter',      // killCounts category
-]);
-
-// Cold sync categories - these use extended debounce
-const COLD_SYNC_CATEGORIES = new Set<SyncCategory>([
-    'killCounts',
-    'visitedRooms',
-]);
+import { COLD_STORAGE_KEYS, COLD_SYNC_CATEGORIES } from './categoryRegistry';
 
 const COLD_SYNC_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const HOT_SYNC_INTERVAL_MS = 30 * 1000; // 30 seconds (existing behavior)

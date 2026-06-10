@@ -960,3 +960,54 @@ describe('exportCategory and importCategory', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// Registry-driven generic categories
+// ---------------------------------------------------------------------------
+
+describe('registry-driven generic categories', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    it('should export binds in the historical {binds, keymaps} shape and key order', async () => {
+        localStorage.setItem('binds', 'BINDS_RAW');
+        localStorage.setItem('keymaps', 'KEYMAPS_RAW');
+        const exported = await exportCategory('binds', []);
+        expect(exported).toBe(JSON.stringify({ binds: 'BINDS_RAW', keymaps: 'KEYMAPS_RAW' }));
+    });
+
+    it('should export single-key categories in the historical shape', async () => {
+        localStorage.setItem('triggers', 'T_RAW');
+        localStorage.setItem('aliases', 'A_RAW');
+        localStorage.setItem('shortcuts', 'S_RAW');
+        expect(await exportCategory('triggers', [])).toBe(JSON.stringify({ triggers: 'T_RAW' }));
+        expect(await exportCategory('aliases', [])).toBe(JSON.stringify({ aliases: 'A_RAW' }));
+        expect(await exportCategory('shortcuts', [])).toBe(JSON.stringify({ shortcuts: 'S_RAW' }));
+    });
+
+    it('should import binds and keymaps from a binds payload', async () => {
+        const result = await importCategory('binds', JSON.stringify({ binds: 'B2', keymaps: 'K2' }));
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('binds')).toBe('B2');
+        expect(localStorage.getItem('keymaps')).toBe('K2');
+    });
+
+    it('should export character-scoped categories only for selected characters', async () => {
+        localStorage.setItem('Alice:containers', 'C_ALICE');
+        localStorage.setItem('Bob:containers', 'C_BOB');
+        const exported = await exportCategory('containers', ['Alice']);
+        expect(exported).toBe(JSON.stringify({ Alice: 'C_ALICE' }));
+    });
+
+    it('should import character-scoped categories under the declared base key', async () => {
+        const result = await importCategory('peopleEdits', JSON.stringify({ Alice: 'P_RAW' }));
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('Alice:peopleLocalEvents')).toBe('P_RAW');
+    });
+
+    it('should return null when no data exists for a generic category', async () => {
+        expect(await exportCategory('triggers', [])).toBeNull();
+        expect(await exportCategory('containers', ['Alice'])).toBeNull();
+    });
+});
