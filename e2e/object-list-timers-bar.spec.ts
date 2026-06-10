@@ -56,9 +56,15 @@ async function openObjectListMenu(page: Page): Promise<void> {
         .locator('[data-panel-id="objectList"]')
         .locator('.map-header-menu__toggle');
     await toggle.waitFor({state: 'visible'});
-    await toggle.click();
-    // Wait for the dropdown to appear.
-    await page.locator('.map-header-menu__dropdown').waitFor({state: 'visible'});
+    const dropdown = page.locator('.map-header-menu__dropdown');
+    // Retry the click until the dropdown opens. Right after a page reload the
+    // click can land before the toggle's handler is bound, silently doing nothing.
+    await expect(async () => {
+        if (!(await dropdown.isVisible())) {
+            await toggle.click();
+        }
+        await expect(dropdown).toBeVisible({timeout: 1000});
+    }).toPass({timeout: 5000});
 }
 
 // Click a checkbox menu item by its label text. The menu closes after clicking.
@@ -322,9 +328,8 @@ test.describe('Object list timers bar', () => {
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const coverItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'});
 
-            // Should show a countdown value (not "OK")
-            const timerText = await coverItem.textContent();
-            expect(timerText, 'should show countdown value').toMatch(/Zas: [0-9]\.[0-9]{2}/);
+            // Should show a countdown value (not "OK") — retry until React renders it.
+            await expect(coverItem, 'should show countdown value').toContainText(/Zas: [0-9]\.[0-9]{2}/);
 
             const valueSpan = coverItem.locator('span');
             await expect(valueSpan, 'active value should have --active class').toHaveClass(/object-list-timers-bar__item--active/);
@@ -367,8 +372,7 @@ test.describe('Object list timers bar', () => {
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const coverItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'});
-            const timerText = await coverItem.textContent();
-            expect(timerText, 'should show countdown initially').toMatch(/Zas: [0-9]\.[0-9]{2}/);
+            await expect(coverItem, 'should show countdown initially').toContainText(/Zas: [0-9]\.[0-9]{2}/);
 
             // Wait for timer to expire (5 seconds + buffer)
             await page.clock.runFor(5500);
@@ -457,9 +461,8 @@ test.describe('Object list timers bar', () => {
             const bar = page.locator('#objects-list .object-list-timers-bar');
             const orderItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Rozkaz:'});
 
-            // Should show a countdown value
-            const timerText = await orderItem.textContent();
-            expect(timerText, 'should show countdown after order').toMatch(/Rozkaz: \d+\.\d{2}/);
+            // Should show a countdown value — retry until React renders it.
+            await expect(orderItem, 'should show countdown after order').toContainText(/Rozkaz: \d+\.\d{2}/);
 
             const valueSpan = orderItem.locator('span');
             await expect(valueSpan, 'active value should have --active class').toHaveClass(/object-list-timers-bar__item--active/);
