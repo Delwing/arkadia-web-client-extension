@@ -118,6 +118,7 @@ Mozesz zabezpieczyc swoje dane w chmurze szyfrujac je haslem.
 
 - Dane sa szyfrowane algorytmem **AES-256-GCM** - jest to silne szyfrowanie stosowane w bankach i wojsku.
 - **Haslo nie jest nigdzie zapisywane** na serwerze. Jesli je zapomnisz, nie ma mozliwosci odzyskania zaszyfrowanych danych.
+- Haslo jest pamietane lokalnie tylko do zamkniecia karty przegladarki - po ponownym otwarciu klienta trzeba je podac ponownie.
 - Musisz uzyc **tego samego hasla** na wszystkich urzadzeniach, ktore chca odczytac zaszyfrowane dane.
 - Jesli inne urzadzenie odbierze zaszyfrowane dane bez podanego hasla, zostaniesz poproszony o wprowadzenie hasla. Dane zostana odszyfrowane po jego podaniu.
 - Zmiana hasla nie szyfruje ponownie istniejacych danych w chmurze - musisz wykonac synchronizacje ponownie.

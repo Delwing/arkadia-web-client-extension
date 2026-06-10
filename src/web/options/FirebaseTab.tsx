@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Button, Form, Spinner } from "react-bootstrap";
-import { characterStorage, globalStorage } from "@modules/core/storage";
 import {
     type FirebaseAuthState,
     type SyncOptions,
     type SyncCategory,
     type CategoryConflictInfo,
-    type CategorySyncTimes,
     INITIAL_AUTH_STATE,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,
@@ -31,12 +29,10 @@ import {
 import {
     uploadCategories,
     downloadCategories,
-    checkCategoriesConflicts,
     getAllCategoriesMetadata,
     updateCategorySyncTime,
     deleteAllCategories,
-    syncDebounceManager,
-    syncListener,
+    syncEngine,
 } from "@modules/firebase";
 import eventBus from "@modules/core/eventBus";
 import {
@@ -91,18 +87,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     const [syncOptions, setSyncOptions] = useState<SyncOptions>(() => loadFirebaseSettings().syncOptions);
     const [encryptionEnabled, setEncryptionEnabled] = useState(() => loadFirebaseSettings().encryptionEnabled);
     const [autoSyncEnabled, setAutoSyncEnabled] = useState(() => loadFirebaseSettings().autoSyncEnabled);
-    const [passphrase, setPassphrase] = useState('');
+    const [passphrase, setPassphrase] = useState(() => syncEngine.getPassphrase() ?? '');
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncStatus, setSyncStatus] = useState<string | null>(null);
     const [syncError, setSyncError] = useState<string | null>(null);
-    const [, setCategorySyncTimes] = useState<CategorySyncTimes>(() => loadFirebaseSettings().categorySyncTimes);
     const [cloudMetadata, setCloudMetadata] = useState<Partial<Record<SyncCategory, {
         exists: boolean;
         syncedAt?: string;
         deviceId?: string;
         encrypted?: boolean;
     }>>>({});
-    const [pendingAutoSync, setPendingAutoSync] = useState(false);
+    const [pendingAutoSync, setPendingAutoSync] = useState(() => syncEngine.hasPendingAutoSync());
 
     // Conflict state
     const [conflicts, setConflicts] = useState<CategoryConflictInfo[]>([]);
@@ -177,6 +172,12 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         // Subscribe to future changes
         const unsubscribe = onAuthStateChanged((state) => {
             setAuthState(state);
+            // Ensure the headless engine runs even when the startup wiring in
+            // web/main.ts did not (e.g. first session before a config was saved).
+            // start() is idempotent; stopping is handled by main.ts / sign-out.
+            if (state.isAuthenticated) {
+                syncEngine.start();
+            }
         });
 
         return () => unsubscribe();
@@ -193,13 +194,26 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         const unsubApplied = eventBus.on('firebase.sync.applied', ({ categories }) => {
             const now = Date.now();
             categories.forEach(cat => updateCategorySyncTime(cat, now));
-            setCategorySyncTimes(prev => {
-                const updated = { ...prev };
-                categories.forEach(cat => { updated[cat] = now; });
-                return updated;
-            });
             onImportComplete?.();
             setSyncStatus(`Automatycznie zsynchronizowano: ${categories.length} kat.`);
+        });
+
+        const unsubUploaded = eventBus.on('firebase.sync.uploaded', ({ categories, encrypted, auto }) => {
+            // Update metadata locally based on what was uploaded (avoids extra read)
+            setCloudMetadata(prev => {
+                const updated = { ...prev };
+                categories.forEach(cat => {
+                    updated[cat] = { exists: true, encrypted };
+                });
+                return updated;
+            });
+            if (!auto) {
+                setSyncStatus('Synchronizacja zakonczona sukcesem.');
+            }
+        });
+
+        const unsubAutoPending = eventBus.on('firebase.autosync.pending', ({ pending }) => {
+            setPendingAutoSync(pending);
         });
 
         const unsubConflict = eventBus.on('firebase.sync.conflict', ({ conflicts: newConflicts }) => {
@@ -220,77 +234,25 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         return () => {
             unsubMeta();
             unsubApplied();
+            unsubUploaded();
+            unsubAutoPending();
             unsubConflict();
             unsubPending();
             unsubError();
         };
     }, [authState.isAuthenticated, onImportComplete]);
 
-    // Sync passphrase to the listener service
+    // Forward the passphrase to the sync engine (which feeds the realtime listener)
     useEffect(() => {
-        syncListener.setPassphrase(encryptionEnabled ? passphrase || null : null);
-    }, [encryptionEnabled, passphrase]);
+        syncEngine.setPassphrase(passphrase || null);
+    }, [passphrase]);
 
-    // Save sync options when they change
+    // Save sync options when they change and let the engine re-evaluate them.
+    // The engine itself watches storage and uploads — see @modules/firebase/syncEngine.
     useEffect(() => {
         saveFirebaseSettings({ syncOptions, encryptionEnabled, autoSyncEnabled });
+        syncEngine.settingsChanged();
     }, [syncOptions, encryptionEnabled, autoSyncEnabled]);
-
-    // Auto-sync on storage changes using SyncDebounceManager
-    useEffect(() => {
-        // Disable auto-sync on localhost to prevent excessive writes during testing
-        const isLocalhost = typeof window !== 'undefined' &&
-            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-        if (!authState.isAuthenticated || !autoSyncEnabled || isLocalhost) {
-            setPendingAutoSync(false);
-            syncDebounceManager.cancelAll();
-            return;
-        }
-
-        // Check if we can auto-sync (encryption needs passphrase)
-        const canSync = !encryptionEnabled || (encryptionEnabled && passphrase);
-        if (!canSync) {
-            syncDebounceManager.cancelAll();
-            return;
-        }
-
-        // Keys that should NOT trigger auto-sync (internal sync metadata)
-        // This prevents sync loops when multiple windows are open
-        const IGNORED_STORAGE_KEYS = ['arkadia.firebaseSettings', 'arkadia.firebaseConfig'];
-
-        // Initialize debounce manager with sync callback
-        syncDebounceManager.initialize({
-            onSyncNeeded: () => {
-                setPendingAutoSync(false);
-                if (!isSyncingRef.current) {
-                    performSync(true);
-                }
-            }
-        });
-
-        // Handler for local storage changes
-        // Filter out firebase internal keys to prevent sync loops between tabs
-        const handleStorageChange = (key: string) => {
-            if (IGNORED_STORAGE_KEYS.includes(key)) {
-                return;
-            }
-            const result = syncDebounceManager.handleStorageChange([key]);
-            if (result.shouldSync) {
-                setPendingAutoSync(true);
-            }
-        };
-
-        const unsub1 = characterStorage.onAnyChange((key) => handleStorageChange(key));
-        const unsub2 = globalStorage.onAnyChange((key) => handleStorageChange(key));
-
-        return () => {
-            unsub1();
-            unsub2();
-            syncDebounceManager.destroy();
-            setPendingAutoSync(false);
-        };
-    }, [authState.isAuthenticated, autoSyncEnabled, encryptionEnabled, passphrase]);
 
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -361,6 +323,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         try {
             await signOut();
+            // Stop the engine here too — covers setups where the startup wiring
+            // in web/main.ts did not run (e.g. first session, localhost).
+            syncEngine.stop();
             setPassphrase('');
             setSyncStatus(null);
             setSyncError(null);
@@ -372,102 +337,33 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         }
     };
 
-    const performSync = useCallback(async (isAutoSync = false) => {
+    // Manual "send to cloud". The engine performs the actual work; success,
+    // conflicts and errors come back through eventBus subscriptions above.
+    const performSync = useCallback(async () => {
         if (isSyncingRef.current) return;
         if (!authState.isAuthenticated) return;
-        if (encryptionEnabled && !passphrase) {
-            if (!isAutoSync) {
-                setSyncError('Podaj haslo szyfrowania.');
-            }
-            return;
-        }
 
         isSyncingRef.current = true;
         setIsSyncing(true);
         setSyncError(null);
-        if (!isAutoSync) {
-            setSyncStatus(null);
-        }
+        setSyncStatus(null);
 
         try {
-            // Get enabled categories
-            const enabledCategories = SYNC_CATEGORIES.filter(cat => syncOptions[cat]);
-            if (enabledCategories.length === 0) {
-                setSyncError('Nie wybrano zadnych kategorii do synchronizacji.');
-                return;
-            }
-
-            // Pre-merge CRDT data (profession) from cloud before exporting
-            // This prevents overwriting cloud +staz events that were added on another device
-            if (enabledCategories.includes('characterSettings')) {
-                try {
-                    const cloudResult = await downloadCategories(
-                        ['characterSettings'],
-                        encryptionEnabled ? passphrase : undefined
-                    );
-                    if (cloudResult.success && cloudResult.data.characterSettings) {
-                        mergeCloudProfessionData(cloudResult.data.characterSettings);
-                    }
-                } catch {
-                    // Non-critical: proceed with upload even if pre-merge fails
+            const result = await syncEngine.syncNow(false);
+            if (result.status === 'skipped') {
+                if (result.reason === 'needs-passphrase') {
+                    setSyncError('Podaj haslo szyfrowania.');
+                } else if (result.reason === 'no-categories') {
+                    setSyncError('Nie wybrano zadnych kategorii do synchronizacji.');
+                } else if (result.reason === 'no-data') {
+                    setSyncStatus('Brak danych do wyslania.');
                 }
             }
-
-            // Export data for enabled categories
-            const allCharacters = collectCharacters();
-            const categoryData = await exportCategories(enabledCategories, allCharacters);
-
-            // Check for conflicts
-            const conflictResult = await checkCategoriesConflicts(
-                categoryData
-            );
-
-            if (Object.keys(conflictResult.errors).length > 0) {
-                const firstError = Object.values(conflictResult.errors)[0];
-                setSyncError(firstError ?? FIREBASE_ERRORS.SYNC_FAILED);
-                return;
-            }
-
-            if (conflictResult.conflicts.length > 0) {
-                setConflicts(conflictResult.conflicts);
-                setShowConflictModal(true);
-                return;
-            }
-
-            // Upload categories to Firestore
-            const uploadResult = await uploadCategories(categoryData, {
-                encrypted: encryptionEnabled,
-                passphrase: encryptionEnabled ? passphrase : undefined,
-            });
-
-            if (!uploadResult.success) {
-                const firstError = Object.values(uploadResult.errors)[0];
-                setSyncError(firstError ?? FIREBASE_ERRORS.SYNC_FAILED);
-                return;
-            }
-
-            setCategorySyncTimes(prev => ({ ...prev, ...uploadResult.timestamps }));
-            syncListener.notifyLocalUpload(uploadResult.checksums);
-            if (!isAutoSync) {
-                setSyncStatus('Synchronizacja zakonczona sukcesem.');
-            }
-
-            // Update metadata locally based on what we uploaded (avoids extra read)
-            setCloudMetadata(prev => {
-                const updated = { ...prev };
-                enabledCategories.forEach(cat => {
-                    updated[cat] = { exists: true, encrypted: encryptionEnabled };
-                });
-                return updated;
-            });
-        } catch (err) {
-            console.error('Sync failed', err);
-            setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
         } finally {
             isSyncingRef.current = false;
             setIsSyncing(false);
         }
-    }, [authState.isAuthenticated, encryptionEnabled, passphrase, syncOptions]);
+    }, [authState.isAuthenticated]);
 
     const handleDownload = useCallback(async (specificCategories?: SyncCategory[]) => {
         if (!authState.isAuthenticated) return;
@@ -515,12 +411,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
             // Update local sync times
             const now = Date.now();
-            const newTimes: CategorySyncTimes = {};
             Object.keys(result.data).forEach(cat => {
-                newTimes[cat as SyncCategory] = now;
                 updateCategorySyncTime(cat as SyncCategory, now);
             });
-            setCategorySyncTimes(prev => ({ ...prev, ...newTimes }));
 
             onImportComplete?.();
             setSyncStatus('Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.');
@@ -576,7 +469,6 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     const firstError = Object.values(uploadResult.errors)[0];
                     setSyncError(firstError ?? FIREBASE_ERRORS.SYNC_FAILED);
                 } else {
-                    setCategorySyncTimes(prev => ({ ...prev, ...uploadResult.timestamps }));
                     setSyncStatus('Dane lokalne zostaly wyslane do chmury.');
 
                     // Refresh metadata
@@ -985,7 +877,6 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                                 return;
                                             }
                                             setPassphrase('');
-                                            setCategorySyncTimes(prev => ({ ...prev, ...uploadResult.timestamps }));
                                             setSyncStatus('Szyfrowanie zostalo wylaczone. Dane zapisane bez szyfrowania.');
                                             // Refresh metadata
                                             const metadata = await getAllCategoriesMetadata();
@@ -1024,7 +915,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                     />
                                 </Form.Group>
                                 <p className="text-muted small mb-0">
-                                    Haslo nie jest zapisywane. Jesli je zapomnisz, dane w chmurze beda niedostepne.
+                                    Haslo jest pamietane tylko do zamkniecia karty przegladarki i nigdy nie trafia
+                                    na serwer. Jesli je zapomnisz, dane w chmurze beda niedostepne.
                                 </p>
                             </div>
                         )}
@@ -1047,7 +939,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             )}
                         </div>
                         <p className="text-muted small mb-0 mt-1">
-                            Automatycznie wysyla zmiany do chmury po 5 sekundach od ostatniej zmiany.
+                            Automatycznie wysyla zmiany do chmury po 30 sekundach od ostatniej zmiany
+                            (rzadziej dla danych zmieniajacych sie czesto, np. licznika zabitych).
+                            Dziala w tle takze po zamknieciu tego okna.
                             {encryptionEnabled && !passphrase && autoSyncEnabled && (
                                 <span className="text-warning d-block mt-1">
                                     Podaj haslo szyfrowania aby wlaczyc auto-sync.
@@ -1113,7 +1007,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             {/* Bottom action buttons */}
             <div className="d-flex flex-wrap gap-2 pt-2 border-top flex-shrink-0">
                 <Button
-                    onClick={() => performSync(false)}
+                    onClick={() => performSync()}
                     disabled={isSyncing || (encryptionEnabled && !passphrase)}
                 >
                     {isSyncing ? (

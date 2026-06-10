@@ -117,3 +117,7 @@ export type { SyncDebounceCallbacks } from './syncDebounceManager';
 
 // Real-time sync listener
 export { syncListener } from './firebaseSyncListener';
+
+// Headless auto-sync engine (storage watching + debounced upload)
+export { syncEngine } from './syncEngine';
+export type { SyncRunResult } from './syncEngine';

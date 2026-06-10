@@ -23,7 +23,7 @@ import type {CombatStatsSnapshot} from "@client/scripts/combatStats.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
 import type {LootPopupPayload, GroundItem} from "@client/scripts/lootParser.ts";
-import type {SyncCategory, CategoryConflictInfo} from "@modules/firebase/firebaseTypes";
+import type {SyncCategory, CategoryConflictInfo, CategorySyncTimes} from "@modules/firebase/firebaseTypes";
 import type {GmcpCharInfo, GmcpCharState, GmcpCharOptions, GmcpCharOptionsInfo, GmcpCharColors, GmcpRoomInfo, GmcpRoomTime, GmcpMsgType} from "./gmcpTypes";
 
 export type FirebaseSyncMetadataPayload = Partial<Record<SyncCategory, {
@@ -380,6 +380,8 @@ export interface KnownEvents {
     "firebase.sync.conflict": { conflicts: CategoryConflictInfo[] };
     "firebase.sync.pendingPassphrase": { categories: SyncCategory[] };
     "firebase.sync.error": { message: string };
+    "firebase.sync.uploaded": { categories: SyncCategory[]; timestamps: CategorySyncTimes; encrypted: boolean; auto: boolean };
+    "firebase.autosync.pending": { pending: boolean };
     "firebase.listener.status": { active: boolean };
     "flushLines": [{ text: string; type: string }[]];
     "socket.incoming": string;
