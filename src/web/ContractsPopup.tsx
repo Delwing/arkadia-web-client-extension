@@ -156,7 +156,7 @@ const ContractsPopup: React.FC = () => {
                                 <div className="contract-details">
                                     <span className="contract-type">{contract.type}</span>
                                     <span className="contract-count">
-                                        {contract.count} x {contract.item}
+                                        {contract.count} {contract.unit || 'x'} {contract.item}
                                         {contract.quality && ` (${contract.quality} jakosci)`}
                                     </span>
                                 </div>

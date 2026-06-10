@@ -9,6 +9,7 @@ export interface Contract {
     type: string;
     item: string;
     count: number;
+    unit?: string;
     quality?: string;
     deadlineTimestamp: number;
     createdAt: number;
@@ -143,13 +144,55 @@ const POLISH_DAYS: Record<string, number> = {
     trzydziesci: 30,
 };
 
-function parsePolishNumber(text: string): number {
-    const lower = text.toLowerCase();
-    if (POLISH_NUMBERS[lower] !== undefined) {
-        return POLISH_NUMBERS[lower];
+// Splits the "amount + item" part of a contract request into a count, an
+// optional unit, and the item. The leading number can be one word ("czterech
+// srednich ryb morskich") or two words ("dwudziestu dwoch sztuk plucnicy"); we
+// try the longer match first.
+//
+// A counter word right after the number is treated as a unit:
+//   - "sztuk"/"sztuke"/"sztuki" is the generic counter and carries no unit label
+//     (it just disappears), so the count shows as "10 x mieczy".
+//   - "kilogramow"/"kilograma"/"kilogram" becomes the "kg" unit shown next to the
+//     count, e.g. "10 kg miesa z bazanta".
+// Descriptors like "malych"/"srednich"/"duzych" are NOT counters and stay in the
+// item.
+const UNIT_LABELS: Record<string, string | undefined> = {
+    sztuk: undefined,
+    sztuke: undefined,
+    sztuki: undefined,
+    kilogramow: "kg",
+    kilograma: "kg",
+    kilogram: "kg",
+};
+
+export function parseAmountAndItem(text: string): { count: number; item: string; unit?: string } {
+    const words = text.trim().split(/\s+/);
+
+    const splitUnit = (rest: string[]): { unit?: string; item: string } => {
+        if (rest.length > 1 && Object.prototype.hasOwnProperty.call(UNIT_LABELS, rest[0].toLowerCase())) {
+            return { unit: UNIT_LABELS[rest[0].toLowerCase()], item: rest.slice(1).join(" ") };
+        }
+        return { item: rest.join(" ") };
+    };
+
+    if (words.length >= 2) {
+        const twoWord = `${words[0]} ${words[1]}`.toLowerCase();
+        if (POLISH_NUMBERS[twoWord] !== undefined) {
+            return { count: POLISH_NUMBERS[twoWord], ...splitUnit(words.slice(2)) };
+        }
     }
-    const parsed = parseInt(text, 10);
-    return isNaN(parsed) ? 1 : parsed;
+
+    const oneWord = words[0].toLowerCase();
+    if (POLISH_NUMBERS[oneWord] !== undefined) {
+        return { count: POLISH_NUMBERS[oneWord], ...splitUnit(words.slice(1)) };
+    }
+
+    const numeric = parseInt(words[0], 10);
+    if (!isNaN(numeric)) {
+        return { count: numeric, ...splitUnit(words.slice(1)) };
+    }
+
+    return { count: 1, item: text.trim() };
 }
 
 function parsePolishDays(text: string): number {
@@ -227,9 +270,11 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     // Pattern for contract offer line
     // "Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje czterech tarcz, przynajmniej sredniej jakosci."
     // "Potrzebuje dwudziestu dwoch sztuk plucnicy." - two-word numbers
+    // "Potrzebuje czterech srednich ryb morskich." - adjective before item (no "sztuk")
+    // "Potrzebuje dziesieciu kilogramow miesa z bazanta." - weight unit instead of "sztuk"
     // "Potrzebuje jeszcze jednej dwurecznej broni klujacej" - with "jeszcze"
-    // Note: (?!sztuk) prevents capturing "sztuk" as part of the number
-    const contractOfferPattern = /.+? \S+ do [^:]+: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje (?:jeszcze )?([a-z]+(?: (?!sztuk)[a-z]+)?) (?:sztuk )?([^,]+?)(?:, przynajmniej ([^.]+) jakosci)?\.(?:.*Dobrze zaplace)?/;
+    // The whole "amount + item" segment is captured as one group and split by parseAmountAndItem.
+    const contractOfferPattern = /.+? \S+ do [^:]+: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje (?:jeszcze )?([^.,]+?)(?:, przynajmniej ([^.]+) jakosci)?\.(?:.*Dobrze zaplace)?/;
 
     // Pattern for deadline line
     // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."
@@ -252,10 +297,12 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
 
     client.Triggers.registerTrigger(contractOfferPattern, (line, matches) => {
         if (matches && pendingContract) {
+            const { count, item, unit } = parseAmountAndItem(matches[2]);
             pendingContract.type = matches[1];
-            pendingContract.count = parsePolishNumber(matches[2]);
-            pendingContract.item = matches[3].trim();
-            pendingContract.quality = matches[4] || undefined;
+            pendingContract.count = count;
+            pendingContract.item = item;
+            pendingContract.unit = unit;
+            pendingContract.quality = matches[3] || undefined;
         }
         return line;
     }, 'contracts');
@@ -272,6 +319,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
                 type: pendingContract.type,
                 item: pendingContract.item || "",
                 count: pendingContract.count || 1,
+                unit: pendingContract.unit,
                 quality: pendingContract.quality,
                 deadlineTimestamp,
                 createdAt: Date.now(),
