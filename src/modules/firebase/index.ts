@@ -78,15 +78,11 @@ export {
     // Core
     getFullSyncData,
     invalidateSyncCache,
-    SYNC_CHECK_INTERVAL_MS,
-    canPerformSyncCheck,
-    updateLastSyncCheckTime,
 
     // Category sync
     uploadCategories,
     downloadCategories,
     checkCategoriesConflicts,
-    checkConflictsLocally,
     getAllCategoriesMetadata,
     deleteCategory,
     deleteAllCategories,
@@ -97,20 +93,11 @@ export {
     getRegisteredDevices,
     unregisterDevice,
 
-    // Sync groups
+    // Sync groups (membership)
     createSyncGroup,
     joinSyncGroup,
     leaveSyncGroupCloud,
-    uploadSyncedSettings,
-    checkForSyncUpdates,
-    resolveSyncConflict,
-    syncNow,
-    getRemoteDeviceName,
-    getCloudSyncGroup,
     getCloudSyncGroups,
-    getCloudGroupSettings,
-    getCloudDeviceSettings,
-    copySettingsFromCloudGroup,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
 } from './firebaseUnifiedSync';

@@ -2,12 +2,9 @@
 export type {
     DeviceInfo,
     DeviceSettings,
-    DeviceRegistryEntry,
     DeviceSettingsExport,
     ImportedDeviceEntry,
     SyncGroup,
-    SyncedDeviceSettings,
-    SyncConflict,
     SyncState,
 } from './deviceTypes';
 
@@ -40,32 +37,20 @@ export {
     createDeviceSettingsExport,
     validateDeviceSettingsExport,
     importDeviceSettingsExport,
-    getDeviceSettingsChecksum,
-    exportPartialDeviceSettings,
 } from './deviceSettingsBundle';
 
 // Sync group functions
 export {
-    getSyncState,
-    setSyncState,
     clearSyncState,
     getSyncGroup,
     setSyncGroup,
     leaveSyncGroup,
     isInSyncGroup,
-    getSyncVersion,
-    setSyncVersion,
-    incrementSyncVersion,
-    getRawDeviceSettings,
-    calculateSettingsChecksum,
-    buildSyncedDeviceSettings,
-    applySyncedSettings,
     createLocalSyncGroup,
 } from './syncGroup';
 
 // Device scope rules
 export {
-    DEVICE_SCOPED_STORAGE_KEYS,
     DEVICE_SCOPED_CATEGORIES,
     shouldApplyDeviceSettings,
     isCategoryDeviceScoped,

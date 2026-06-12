@@ -77,7 +77,6 @@ describe('loadFirebaseSettings', () => {
         expect(settings.autoSyncEnabled).toBe(false);
         expect(settings.encryptionEnabled).toBe(false);
         expect(settings.categorySyncTimes).toEqual({});
-        expect(settings.lastSyncCheckTime).toBe(0);
         expect(settings.syncOptions).toEqual(DEFAULT_SYNC_OPTIONS);
     });
 
@@ -106,7 +105,6 @@ describe('loadFirebaseSettings', () => {
         expect(settings.encryptionEnabled).toBe(false);
         expect(settings.syncOptions).toEqual(DEFAULT_SYNC_OPTIONS);
         expect(settings.categorySyncTimes).toEqual({});
-        expect(settings.lastSyncCheckTime).toBe(0);
     });
 
     test('merges partial syncOptions with defaults', () => {
@@ -126,7 +124,6 @@ describe('loadFirebaseSettings', () => {
             autoSyncEnabled: true,
             encryptionEnabled: true,
             categorySyncTimes: { binds: 1700000000000 },
-            lastSyncCheckTime: 9999,
             syncOptions: { ...DEFAULT_SYNC_OPTIONS, uiSettings: false },
         };
         localStorage.setItem(FIREBASE_SETTINGS_KEY, JSON.stringify(stored));
@@ -134,7 +131,6 @@ describe('loadFirebaseSettings', () => {
         expect(settings.autoSyncEnabled).toBe(true);
         expect(settings.encryptionEnabled).toBe(true);
         expect(settings.categorySyncTimes).toEqual({ binds: 1700000000000 });
-        expect(settings.lastSyncCheckTime).toBe(9999);
         expect(settings.syncOptions.uiSettings).toBe(false);
     });
 
@@ -148,12 +144,6 @@ describe('loadFirebaseSettings', () => {
         localStorage.setItem(FIREBASE_SETTINGS_KEY, JSON.stringify({ autoSyncEnabled: 1 }));
         const settings = loadFirebaseSettings();
         expect(settings.autoSyncEnabled).toBe(false);
-    });
-
-    test('falls back to 0 for lastSyncCheckTime when stored value is not a number', () => {
-        localStorage.setItem(FIREBASE_SETTINGS_KEY, JSON.stringify({ lastSyncCheckTime: 'never' }));
-        const settings = loadFirebaseSettings();
-        expect(settings.lastSyncCheckTime).toBe(0);
     });
 
     test('falls back to empty object for categorySyncTimes when stored value is not an object', () => {
@@ -218,11 +208,11 @@ describe('saveFirebaseSettings', () => {
     });
 
     test('preserves unrelated fields when saving a partial update', () => {
-        saveFirebaseSettings({ lastSyncCheckTime: 42 });
+        saveFirebaseSettings({ autoSyncEnabled: true });
         saveFirebaseSettings({ encryptionEnabled: true });
         const raw = localStorage.getItem(FIREBASE_SETTINGS_KEY);
         const parsed = JSON.parse(raw!);
-        expect(parsed.lastSyncCheckTime).toBe(42);
+        expect(parsed.autoSyncEnabled).toBe(true);
         expect(parsed.encryptionEnabled).toBe(true);
     });
 

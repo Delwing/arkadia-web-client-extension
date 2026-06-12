@@ -228,7 +228,6 @@ export async function enableFirebaseSettings(page: Page, options: {
             autoSyncEnabled: opts.autoSync ?? false,
             categorySyncTimes: {},
             deviceId: (window as any).__MOCK_DEVICE_ID__ || 'test-device',
-            lastSyncCheckTime: 0,
         };
 
         // Apply category overrides

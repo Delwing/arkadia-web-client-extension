@@ -63,6 +63,8 @@ Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie 
 
 Dwie kategorie sa traktowane specjalnie - **Ustawienia interfejsu** i **Przyciski**. Te ustawienia sa powiazane z konkretnym urzadzeniem, poniewaz rozne urzadzenia moga miec rozne rozmiary ekranu i ukady. Nie sa automatycznie stosowane na innych urzadzeniach, chyba ze naleza do tej samej [grupy synchronizacji](#grupy-synchronizacji).
 
+Kategoria **Ustawienia interfejsu** obejmuje takze uklad okien, trasy podrozy (trip planner) i aktywna mape klawiszy.
+
 ---
 
 ## Automatyczna synchronizacja
@@ -214,9 +216,9 @@ Po dolaczeniu ustawienia grupy zostana zastosowane na tym urzadzeniu.
 ### Synchronizacja w grupie
 
 Gdy urzadzenia sa w tej samej grupie:
-- Zmiany w ukladzie interfejsu i przyciskach sa synchronizowane miedzy urzadzeniami w grupie
+- Zmiany w ukladzie interfejsu i przyciskach sa synchronizowane miedzy urzadzeniami w grupie automatycznie, razem z pozostalymi kategoriami (zakladka **Synchronizacja konfiguracji**)
 - Konflikty sa wykrywane i rozwiazywane tak samo jak dla zwyklych kategorii
-- Mozesz recznie zsynchronizowac ustawienia przyciskiem "Synchronizuj"
+- Reczna synchronizacja odbywa sie przyciskami "Wyslij do chmury" / "Pobierz z chmury" w zakladce Synchronizacja konfiguracji
 
 ### Opuszczanie grupy
 

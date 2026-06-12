@@ -3,18 +3,6 @@ import type { SyncCategory } from '@modules/firebase/firebaseTypes';
 import { DEVICE_SCOPED_SYNC_CATEGORIES } from '@modules/firebase/firebaseTypes';
 
 /**
- * localStorage keys that are device-scoped (tied to physical device).
- * These should NOT be auto-applied from a foreign device unless
- * same device or same sync group.
- */
-export const DEVICE_SCOPED_STORAGE_KEYS = new Set([
-    'layoutManagerState',
-    'uiSettings',
-    'desktopButtonSettings',
-    'active_keymap_id',
-]);
-
-/**
  * Sync categories that contain device-scoped keys (derived from the category
  * registry). These need special handling when syncing from a foreign device.
  */

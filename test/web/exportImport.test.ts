@@ -1011,3 +1011,46 @@ describe('registry-driven generic categories', () => {
         expect(await exportCategory('containers', ['Alice'])).toBeNull();
     });
 });
+
+// ---------------------------------------------------------------------------
+// uiSettings device bundle: tripRoutes + activeKeymap
+// ---------------------------------------------------------------------------
+
+describe('uiSettings category with tripRoutes and activeKeymap', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    it('should export tripRoutes and activeKeymap as part of uiSettings', async () => {
+        localStorage.setItem('uiSettings', '{"theme":"dark"}');
+        localStorage.setItem('tripRoutes', '[{"name":"route1"}]');
+        localStorage.setItem('arkadia.activeKeymap', 'keymap-1');
+
+        const exported = await exportCategory('uiSettings', []);
+        expect(exported).not.toBeNull();
+        const parsed = JSON.parse(exported!);
+        expect(parsed.tripRoutes).toBe('[{"name":"route1"}]');
+        expect(parsed.activeKeymap).toBe('keymap-1');
+    });
+
+    it('should import tripRoutes and activeKeymap from a uiSettings payload', async () => {
+        const result = await importCategory('uiSettings', JSON.stringify({
+            tripRoutes: '[{"name":"route2"}]',
+            activeKeymap: 'keymap-2',
+        }));
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('tripRoutes')).toBe('[{"name":"route2"}]');
+        expect(localStorage.getItem('arkadia.activeKeymap')).toBe('keymap-2');
+    });
+
+    it('should skip tripRoutes and activeKeymap when skipDeviceScoped is set', async () => {
+        const result = await importCategory(
+            'uiSettings',
+            JSON.stringify({ tripRoutes: '[]', activeKeymap: 'keymap-3' }),
+            { skipDeviceScoped: true },
+        );
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('tripRoutes')).toBeNull();
+        expect(localStorage.getItem('arkadia.activeKeymap')).toBeNull();
+    });
+});

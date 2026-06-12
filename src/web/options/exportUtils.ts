@@ -693,6 +693,7 @@ export async function applyImportedData(payload: ExportPayload): Promise<ImportR
 
 import type { SyncCategory, CategoryDefinition } from '@modules/firebase';
 import { CATEGORY_REGISTRY } from '@modules/firebase';
+import { ACTIVE_KEYMAP_STORAGE_KEY } from '@modules/core/keymapTypes';
 
 export interface CategoryData {
     // uiSettings now includes layout + buttons (device-scoped settings bundle)
@@ -702,6 +703,8 @@ export interface CategoryData {
         layoutManagerState?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;  // includes radial
+        tripRoutes?: string;
+        activeKeymap?: string;
     };
     binds?: { binds?: string; keymaps?: string };
     shortcuts?: { shortcuts?: string };
@@ -770,7 +773,7 @@ export async function exportCategory(
 
         switch (category) {
             case 'uiSettings': {
-                // Device-scoped settings bundle: uiSettings + layout + buttons
+                // Device-scoped settings bundle: uiSettings + layout + buttons + trip routes + keymap
                 const data: CategoryData['uiSettings'] = {};
                 const uiSettings = localStorage.getItem('uiSettings');
                 if (uiSettings) data.uiSettings = uiSettings;
@@ -782,6 +785,10 @@ export async function exportCategory(
                 if (desktopButtonSettings) data.desktopButtonSettings = desktopButtonSettings;
                 const mobileButtonSettings = localStorage.getItem('mobileButtonSettings');
                 if (mobileButtonSettings) data.mobileButtonSettings = mobileButtonSettings;
+                const tripRoutes = localStorage.getItem('tripRoutes');
+                if (tripRoutes) data.tripRoutes = tripRoutes;
+                const activeKeymap = localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY);
+                if (activeKeymap) data.activeKeymap = activeKeymap;
                 return Object.keys(data).length > 0 ? JSON.stringify(data) : null;
             }
             case 'characterSettings': {
@@ -940,7 +947,7 @@ export async function importCategory(
             }
         } else switch (category) {
             case 'uiSettings': {
-                // Device-scoped settings bundle: uiSettings + layout + buttons
+                // Device-scoped settings bundle: uiSettings + layout + buttons + trip routes + keymap
                 const skipDevice = options?.skipDeviceScoped ?? false;
                 if (data.uiSettings && !skipDevice) trackingSetItem('uiSettings', data.uiSettings);
                 if (data.loggingEnabled) trackingSetItem('loggingEnabled', data.loggingEnabled);
@@ -951,6 +958,17 @@ export async function importCategory(
                 }
                 if (data.desktopButtonSettings && !skipDevice) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
                 if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', migrateImportedValue('mobileButtonSettings', data.mobileButtonSettings));
+                if (data.tripRoutes && !skipDevice) trackingSetItem('tripRoutes', data.tripRoutes);
+                if (data.activeKeymap && !skipDevice) {
+                    trackingSetItem(ACTIVE_KEYMAP_STORAGE_KEY, data.activeKeymap);
+                    // Re-apply the selected keymap's binds to the flat 'binds' key
+                    const activeKeymap = data.activeKeymap as string;
+                    import('@modules/core/keymapStorage').then(({ switchKeymap }) => {
+                        switchKeymap(activeKeymap);
+                    }).catch(() => {
+                        // keymapStorage may not be available in all contexts
+                    });
+                }
                 // Notify layout system of changes
                 if (data.layoutManagerState && !skipDevice) {
                     eventBus.emit('layoutManagerStateChanged', { type: 'import' });

@@ -14,23 +14,19 @@ import {
     type DeviceInfo,
     type ImportedDeviceEntry,
     type SyncGroup,
-    type SyncConflict,
 } from "@modules/device";
 import {
     createSyncGroup,
     joinSyncGroup,
     leaveSyncGroupCloud,
-    syncNow,
-    checkForSyncUpdates,
-    getRemoteDeviceName,
     getFirebaseAuth,
     getCloudSyncGroups,
     getRegisteredDevices,
     registerDevice,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
+    syncEngine,
 } from "@modules/firebase";
-import SyncConflictModal from "./SyncConflictModal";
 
 function DeviceManagementTab() {
     const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
@@ -44,13 +40,9 @@ function DeviceManagementTab() {
     const [syncGroup, setSyncGroupState] = useState<SyncGroup | null>(null);
     const [syncGroupName, setSyncGroupName] = useState("");
     const [isCreatingGroup, setIsCreatingGroup] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
     const [isLeavingGroup, setIsLeavingGroup] = useState(false);
-    const [syncConflict, setSyncConflict] = useState<SyncConflict | null>(null);
-    const [showConflictModal, setShowConflictModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
-    const [conflictDeviceName, setConflictDeviceName] = useState<string>("");
     const [cloudSyncGroups, setCloudSyncGroups] = useState<SyncGroup[]>([]);
     const [isLoadingCloudGroups, setIsLoadingCloudGroups] = useState(false);
     const [cloudDevices, setCloudDevices] = useState<DeviceInfo[]>([]);
@@ -209,7 +201,6 @@ function DeviceManagementTab() {
                 const result = await leaveSyncGroupCloud();
                 if (result.success) {
                     setSyncGroupState(null);
-                    setSyncConflict(null);
                     setStatus("Opuscono grupe synchronizacji.");
                 } else {
                     setError(result.error || "Nie udalo sie opuscic grupy synchronizacji.");
@@ -218,7 +209,6 @@ function DeviceManagementTab() {
                 // Leave locally when not logged in
                 leaveSyncGroup();
                 setSyncGroupState(null);
-                setSyncConflict(null);
                 setStatus("Opuscono grupe synchronizacji.");
             }
         } catch (err) {
@@ -227,54 +217,6 @@ function DeviceManagementTab() {
         } finally {
             setIsLeavingGroup(false);
         }
-    };
-
-    // Handle sync now
-    const handleSyncNow = async () => {
-        if (!syncGroup) return;
-
-        setIsSyncing(true);
-        setError(null);
-        setStatus(null);
-
-        try {
-            const result = await syncNow();
-            if (result.success) {
-                if (result.action === "conflict" && result.conflict) {
-                    setSyncConflict(result.conflict);
-                    // Get device name for display
-                    const name = await getRemoteDeviceName(result.conflict.remoteUpdatedBy);
-                    setConflictDeviceName(name);
-                    setShowConflictModal(true);
-                } else if (result.action === "uploaded") {
-                    setStatus("Ustawienia zostaly zsynchronizowane.");
-                } else if (result.action === "downloaded") {
-                    setStatus("Pobrano nowe ustawienia z chmury.");
-                } else {
-                    setStatus("Ustawienia sa aktualne.");
-                }
-            } else {
-                setError(result.error || "Nie udalo sie zsynchronizowac ustawien.");
-            }
-        } catch (err) {
-            console.error("Failed to sync", err);
-            setError("Wystapil blad podczas synchronizacji.");
-        } finally {
-            setIsSyncing(false);
-        }
-    };
-
-    // Handle conflict resolved
-    const handleConflictResolved = () => {
-        setSyncConflict(null);
-        setShowConflictModal(false);
-        setStatus("Konflikt zostal rozwiazany.");
-        refreshData();
-    };
-
-    // Handle conflict modal cancel
-    const handleConflictCancel = () => {
-        setShowConflictModal(false);
     };
 
     // Handle join sync group from imported device
@@ -306,7 +248,9 @@ function DeviceManagementTab() {
 
             if (isLoggedIn) {
                 // Join via Firebase when logged in
-                const result = await joinSyncGroup(entry.syncGroup.id);
+                const result = await joinSyncGroup(entry.syncGroup.id, {
+                    passphrase: syncEngine.getPassphrase() ?? undefined,
+                });
                 if (result.success && result.group) {
                     setSyncGroupState(result.group);
                     setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}" i skopiowano ustawienia.`);
@@ -342,7 +286,9 @@ function DeviceManagementTab() {
         setStatus(null);
 
         try {
-            const result = await joinSyncGroup(groupToJoin.id);
+            const result = await joinSyncGroup(groupToJoin.id, {
+                passphrase: syncEngine.getPassphrase() ?? undefined,
+            });
             if (result.success && result.group) {
                 setSyncGroupState(result.group);
                 // Remove joined group from cloud groups list
@@ -371,7 +317,7 @@ function DeviceManagementTab() {
         setStatus(null);
 
         try {
-            const result = await copySettingsFromCloudDevice(deviceId);
+            const result = await copySettingsFromCloudDevice(deviceId, syncEngine.getPassphrase() ?? undefined);
             if (result.success) {
                 setStatus(`Ustawienia zostaly skopiowane z urzadzenia "${deviceName}".`);
             } else {
@@ -408,30 +354,6 @@ function DeviceManagementTab() {
             setDeletingGroupId(null);
         }
     };
-
-    // Check for sync updates on mount
-    useEffect(() => {
-        const checkUpdates = async () => {
-            if (!syncGroup || !isLoggedIn) return;
-
-            try {
-                const result = await checkForSyncUpdates();
-                if (result.error) {
-                    setError(result.error);
-                } else if (result.hasUpdate && result.conflict) {
-                    setSyncConflict(result.conflict);
-                    // Get device name for display
-                    const name = await getRemoteDeviceName(result.conflict.remoteUpdatedBy);
-                    setConflictDeviceName(name);
-                }
-            } catch (err) {
-                console.error("Failed to check for sync updates", err);
-                setError("Nie udalo sie sprawdzic aktualizacji synchronizacji.");
-            }
-        };
-
-        checkUpdates();
-    }, [syncGroup, isLoggedIn]);
 
     const formatDate = (isoString?: string) => {
         if (!isoString) return "Brak danych";
@@ -646,24 +568,11 @@ function DeviceManagementTab() {
                                     </Alert>
                                 )}
 
-                                {syncConflict && isLoggedIn && (
-                                    <Alert variant="warning" className="mb-0">
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Wykryto konflikt ustawien</strong>
-                                                <div className="small">
-                                                    Urzadzenie "{conflictDeviceName}" zmienilo ustawienia {formatDate(syncConflict.remoteUpdatedAt)}.
-                                                </div>
-                                            </div>
-                                            <Button
-                                                size="sm"
-                                                variant="warning"
-                                                onClick={() => setShowConflictModal(true)}
-                                            >
-                                                Rozwiaz
-                                            </Button>
-                                        </div>
-                                    </Alert>
+                                {isLoggedIn && (
+                                    <p className="text-muted small mb-0">
+                                        Ustawienia interfejsu synchronizuja sie automatycznie z urzadzeniami w tej grupie
+                                        (razem z pozostalymi kategoriami w zakladce Synchronizacja konfiguracji).
+                                    </p>
                                 )}
 
                                 <div className="text-muted small">
@@ -673,23 +582,6 @@ function DeviceManagementTab() {
                                 </div>
 
                                 <div className="d-flex gap-2">
-                                    {isLoggedIn && (
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            onClick={handleSyncNow}
-                                            disabled={isSyncing}
-                                        >
-                                            {isSyncing ? (
-                                                <>
-                                                    <Spinner size="sm" className="me-2" />
-                                                    Synchronizowanie...
-                                                </>
-                                            ) : (
-                                                "Synchronizuj teraz"
-                                            )}
-                                        </Button>
-                                    )}
                                     <Button
                                         variant="danger"
                                         size="sm"
@@ -895,15 +787,6 @@ function DeviceManagementTab() {
                 <Alert variant="danger" className="mb-0" dismissible onClose={() => setError(null)}>
                     {error}
                 </Alert>
-            )}
-
-            {/* Sync Conflict Modal */}
-            {showConflictModal && syncConflict && (
-                <SyncConflictModal
-                    conflict={syncConflict}
-                    onResolved={handleConflictResolved}
-                    onCancel={handleConflictCancel}
-                />
             )}
         </div>
     );
