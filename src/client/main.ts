@@ -120,6 +120,7 @@ import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
 import initFishing from './scripts/fishing'
+import initSpiderWeb from './scripts/spiderWeb'
 import initPoczta from './scripts/poczta'
 import initLanguageTeacher from './scripts/languageTeacher'
 import initProfession from './scripts/profession'
@@ -326,6 +327,7 @@ export function registerScripts(client: Client) {
     initWyroznienieOptions(client)
     initContracts(client, aliases)
     initFishing(client, aliases)
+    initSpiderWeb(client)
     initPoczta(client, aliases)
     initLanguageTeacher(client)
     initProfession(client, aliases)
