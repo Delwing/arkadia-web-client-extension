@@ -8,7 +8,7 @@ describe('direction bypass aliases', () => {
     return { client, aliases };
   }
 
-  function run(command: string, client: any, aliases: { pattern: RegExp; callback: Function }[]) {
+  function run(command: string, _client: any, aliases: { pattern: RegExp; callback: Function }[]) {
     const alias = aliases.find(a => a.pattern.test(command));
     expect(alias).toBeDefined();
     const match = command.match(alias!.pattern)!;
