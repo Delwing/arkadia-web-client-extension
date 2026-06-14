@@ -67,6 +67,12 @@ import {
   objectListFilters
 } from "@web/objectListFilters";
 import {
+  type EnemyBindCandidate,
+  type EnemyBindLocationObject,
+  type EnemyBindResolver,
+  enemyBindResolvers
+} from "@client/scripts/enemyBindResolvers";
+import {
   type ButtonMacroClickContext,
   getButtonMacroById,
   getButtonMacroState,
@@ -130,7 +136,10 @@ export type {
   FilterResult,
   EntryStyle,
   EntryContent,
-  ObjectData
+  ObjectData,
+  EnemyBindCandidate,
+  EnemyBindLocationObject,
+  EnemyBindResolver
 };
 
 // Re-export macro types for plugin developers
@@ -1827,6 +1836,72 @@ export interface ObjectListFiltersApi {
 }
 
 /**
+ * Enemy Binds API - Customize which enemies get assigned to the bind slots (F1/F2/F3)
+ *
+ * The enemy binds feature scans objects on the current location, builds a candidate
+ * list of those matching the built-in enemy check, and fills the bind slots in order.
+ * Resolvers run as a pipeline on that candidate list (re-run on every object update),
+ * letting plugins reorder targets and inject enemies the built-in check would miss.
+ */
+export interface EnemyBindsApi {
+  /**
+   * Register an enemy bind resolver
+   *
+   * Resolvers compose in priority order (higher runs first). Each receives the
+   * current ordered candidate list and every object on the location, and returns
+   * the candidate list to use going forward. The first three candidates map to the
+   * F1/F2/F3 slots (subject to per-slot enable settings). Duplicate `num`s are
+   * dropped automatically (first wins).
+   *
+   * @param name - Unique identifier (re-registering the same name replaces it)
+   * @param resolver - Resolver function; return a new array, or nothing to leave the list unchanged
+   * @param priority - Optional priority (higher = runs first, default: 0)
+   *
+   * @example
+   * ```typescript
+   * // Order targets by your own threat/affinity list (weakest known mobs first,
+   * // unknown mobs last). Useful when you know a mob is easier than the others.
+   * const AFFINITY_ORDER = ["szczur", "goblin", "wilk", "ork", "troll"];
+   * const rank = (desc: string) => {
+   *   const i = AFFINITY_ORDER.findIndex(name => desc.toLowerCase().includes(name));
+   *   return i === -1 ? Infinity : i;
+   * };
+   * api.enemyBinds.register("affinity", (candidates) =>
+   *   [...candidates].sort((a, b) => rank(a.desc) - rank(b.desc)));
+   *
+   * // Also bind a specific summoned mob the built-in check ignores
+   * api.enemyBinds.register("bind-totems", (candidates, allObjects) => {
+   *   const extra = allObjects
+   *     .filter(o => o.desc?.toLowerCase().includes("totem"))
+   *     .map(o => ({ num: o.num, desc: o.desc! }));
+   *   return [...candidates, ...extra];
+   * });
+   * ```
+   */
+  register(name: string, resolver: EnemyBindResolver, priority?: number): void;
+
+  /**
+   * Unregister an enemy bind resolver
+   *
+   * @param name - Resolver identifier to remove
+   * @returns True if a resolver was found and removed
+   */
+  unregister(name: string): boolean;
+
+  /**
+   * Get list of registered resolver names in priority order
+   *
+   * @returns Array of resolver names
+   */
+  getResolverNames(): string[];
+
+  /**
+   * Clear all registered resolvers
+   */
+  clear(): void;
+}
+
+/**
  * Handle returned by buttonMacros.register() for controlling macro state
  */
 export interface ButtonMacroHandle {
@@ -2368,6 +2443,8 @@ export interface PluginApi {
   herbs: HerbsApi;
   /** Object list filters - customize object list entry rendering */
   objectListFilters: ObjectListFiltersApi;
+  /** Enemy binds - customize which enemies get the F1/F2/F3 bind slots */
+  enemyBinds: EnemyBindsApi;
   /** Button macros - register custom button macros */
   buttonMacros: ButtonMacrosApi;
   /** Trigger macros - register custom trigger macros */
@@ -2437,6 +2514,7 @@ export class PluginApiImpl implements PluginApi {
   public magicKeys: MagicKeysApi;
   public herbs: HerbsApi;
   public objectListFilters: ObjectListFiltersApi;
+  public enemyBinds: EnemyBindsApi;
   public buttonMacros: ButtonMacrosApi;
   public triggerMacros: TriggerMacrosApi;
   public settings: SettingsApi;
@@ -2471,6 +2549,7 @@ export class PluginApiImpl implements PluginApi {
     this.magicKeys = this.createMagicKeysApi();
     this.herbs = this.createHerbsApi();
     this.objectListFilters = this.createObjectListFiltersApi();
+    this.enemyBinds = this.createEnemyBindsApi();
     this.buttonMacros = this.createButtonMacrosApi();
     this.triggerMacros = this.createTriggerMacrosApi();
     this.settings = this.createSettingsApi();
@@ -2961,6 +3040,30 @@ export class PluginApiImpl implements PluginApi {
 
       clear: () => {
         objectListFilters.clear();
+      }
+    };
+  }
+
+  // ============================================================================
+  // Enemy Binds API
+  // ============================================================================
+
+  private createEnemyBindsApi(): EnemyBindsApi {
+    return {
+      register: (name: string, resolver: EnemyBindResolver, priority?: number) => {
+        enemyBindResolvers.register(name, resolver, priority);
+      },
+
+      unregister: (name: string): boolean => {
+        return enemyBindResolvers.unregister(name);
+      },
+
+      getResolverNames: (): string[] => {
+        return enemyBindResolvers.getResolverNames();
+      },
+
+      clear: () => {
+        enemyBindResolvers.clear();
       }
     };
   }

@@ -671,6 +671,56 @@ const myFilter: ObjectListEntryFilter = (context, result) => {
 
 Zobacz `examples/object-list-filters-plugin.ts` dla pełnego przykładu.
 
+#### `api.enemyBinds` - Dostosowywanie Bindów na Wrogów
+
+Funkcja bindów na wrogów przypisuje wrogów na lokacji do slotów F1/F2/F3 (atak)
+oraz Ctrl+F1/F2/F3 (zablokuj). Domyślnie skanuje obiekty, buduje listę kandydatów
+pasujących do wbudowanego sprawdzenia `isEnemy()` i wypełnia sloty po kolei.
+
+Resolvery działają jako pipeline na tej liście kandydatów (uruchamiany przy każdej
+aktualizacji obiektów), pozwalając pluginom **zmienić kolejność** celów oraz
+**dobindować wrogów**, których wbudowane sprawdzenie by pominęło. Pierwsze trzy
+kandydaci trafiają na sloty F1/F2/F3 (z uwzględnieniem ustawień włączonych slotów).
+
+```typescript
+// Rejestracja resolvera (wyższy priorytet = uruchamiany wcześniej)
+api.enemyBinds.register(
+  "mojPlugin:resolver",
+  (candidates, allObjects) => {
+    // candidates: aktualna uporządkowana lista { num, desc }
+    // allObjects: wszystkie obiekty na lokacji (num, desc, hp, __category, ...)
+    // Zwróć nową tablicę, albo nic aby zostawić listę bez zmian.
+    return [...candidates].reverse();
+  },
+  10
+);
+
+// Usuwanie resolvera
+api.enemyBinds.unregister("mojPlugin:resolver");
+
+// Lista zarejestrowanych resolverów (w kolejności priorytetów)
+const resolvers = api.enemyBinds.getResolverNames();
+
+// Wyczyść wszystkie resolvery
+api.enemyBinds.clear();
+```
+
+**Uwagi:**
+- Resolvery komponują się: wynik jednego jest wejściem `candidates` następnego.
+- Duplikaty (po `num`) są odrzucane automatycznie (pierwszy wygrywa).
+- Resolver który rzuci wyjątek jest pomijany, a poprzednia lista zostaje zachowana.
+
+**Typy TypeScript:**
+```typescript
+import type { EnemyBindResolver } from "@arkadia/plugin-types";
+
+const myResolver: EnemyBindResolver = (candidates, allObjects) => {
+  // Pełne wsparcie TypeScript z autocomplete!
+};
+```
+
+Zobacz `examples/enemy-binds-plugin.ts` dla pełnego przykładu.
+
 #### `api.AnsiAwareBuffer` - Manipulacja Liniami
 
 ```typescript

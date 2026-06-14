@@ -740,6 +740,50 @@ export type ObjectListEntryFilter = (
   context: EntryContext,
   result: FilterResult
 ) => void | { stopPropagation: true };
+
+// ============================================================================
+// Enemy Bind Resolver Types
+// ============================================================================
+
+/**
+ * A single enemy candidate eligible for a bind slot (F1/F2/F3)
+ */
+export interface EnemyBindCandidate {
+  /** Object number (matches the GMCP object id; bind with \`ob_<num>\`) */
+  num: number;
+  /** Object description/name as shown in the bind line */
+  desc: string;
+}
+
+/**
+ * Read-only view of an object on the current location, passed to resolvers
+ */
+export interface EnemyBindLocationObject {
+  num: number;
+  desc?: string;
+  hp?: number;
+  attack_num?: boolean | number;
+  shortcut?: string;
+  __category?: "player" | "team" | "rest" | "rest-noncombat";
+}
+
+/**
+ * Enemy bind resolver function
+ *
+ * Receives the current (ordered) candidate list and every object on the location,
+ * and returns the candidate list to use going forward. Return a reordered and/or
+ * extended array to change which enemies get bound, or nothing to leave it unchanged.
+ *
+ * Resolvers compose: the output of one becomes the \`candidates\` input of the next,
+ * in priority order (higher priority runs first).
+ *
+ * @param candidates - Current ordered candidate list (output of previous resolvers)
+ * @param allObjects - Every object on the current location
+ */
+export type EnemyBindResolver = (
+  candidates: EnemyBindCandidate[],
+  allObjects: EnemyBindLocationObject[]
+) => EnemyBindCandidate[] | void;
 `);
 
 // Now we need to add the ClientEvents interface

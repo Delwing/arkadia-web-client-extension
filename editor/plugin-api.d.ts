@@ -589,6 +589,7 @@ interface HerbForms {
   mnoga_mianownik: string;
   mnoga_dopelniacz: string;
   mnoga_biernik: string;
+  narzednik: string;
 }
 
 /**
@@ -598,6 +599,7 @@ interface HerbUse {
   action: string;
   effect: string;
   dont_bind?: boolean;
+  smokable?: boolean;
 }
 
 /**
@@ -725,6 +727,24 @@ interface ObjectListFiltersApi {
   unregister(name: string): boolean;
 
   getFilterNames(): string[];
+
+  clear(): void;
+}
+
+/**
+ * Enemy Binds API - Customize which enemies get assigned to the bind slots (F1/F2/F3)
+ *
+ * The enemy binds feature scans objects on the current location, builds a candidate
+ * list of those matching the built-in enemy check, and fills the bind slots in order.
+ * Resolvers run as a pipeline on that candidate list (re-run on every object update),
+ * letting plugins reorder targets and inject enemies the built-in check would miss.
+ */
+interface EnemyBindsApi {
+  register(name: string, resolver: EnemyBindResolver, priority?: number): void;
+
+  unregister(name: string): boolean;
+
+  getResolverNames(): string[];
 
   clear(): void;
 }
@@ -947,6 +967,7 @@ interface PluginApi {
   magicKeys: MagicKeysApi;
   herbs: HerbsApi;
   objectListFilters: ObjectListFiltersApi;
+  enemyBinds: EnemyBindsApi;
   buttonMacros: ButtonMacrosApi;
   triggerMacros: TriggerMacrosApi;
   settings: SettingsApi;
