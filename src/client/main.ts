@@ -108,6 +108,7 @@ import initLetter from './scripts/letter'
 import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
 import initMove from './scripts/move'
+import initDirectionBypass from './scripts/directionBypass'
 import initZaznaczaj from './scripts/zaznaczaj'
 import initTropBind from './scripts/trop'
 import Client from "./Client";
@@ -205,6 +206,7 @@ export function registerScripts(client: Client) {
 
     initTeamBlockers(client)
     initMove(client)
+    initDirectionBypass(client, aliases)
 
     initNoExitHighlight(client)
     initTideWarningHighlight(client)
