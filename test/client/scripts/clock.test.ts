@@ -115,6 +115,18 @@ describe('ArkadiaTime - Clock System', () => {
         });
     });
 
+    describe('setTime', () => {
+        test('sets the day of year when given, leaving minutes at 0', () => {
+            clockIshtar.setTime(6, undefined, 135);
+
+            const snapshot = display.getSnapshot("Ishtar");
+            expect(snapshot).toBeDefined();
+            expect(snapshot.hours).toBe(6);
+            expect(snapshot.minutes).toBe(0);
+            expect(snapshot.dayOfYear).toBe(135);
+        });
+    });
+
     describe('Same hour check reduces precision', () => {
         test('checking time 30s later with same hour reduces precision', () => {
             // First check
