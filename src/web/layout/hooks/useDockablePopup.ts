@@ -89,6 +89,13 @@ export function useDockablePopup({
   const onResetRef = useRef(onReset);
   const isPinnedRef = useRef(isPinned);
   const isLockedRef = useRef(isLocked);
+  // Title is volatile (e.g. the knowledge report embeds live progress in its
+  // title). It is mirrored to the WindowManager by the dedicated setTitle
+  // effect below, so the register effect must NOT depend on it — otherwise a
+  // title change tears down and recreates the window record, dropping
+  // live-only state like `poppedOut` (the popup snaps back into the main
+  // window). Read the latest title from a ref for the one-time registration.
+  const titleRef = useRef(title);
 
   renderContentRef.current = renderContent;
   headerActionsRef.current = headerActions;
@@ -98,6 +105,7 @@ export function useDockablePopup({
   onResetRef.current = onReset;
   isPinnedRef.current = isPinned;
   isLockedRef.current = isLocked;
+  titleRef.current = title;
 
   // ── Register / unregister with popupRegistry + WindowManager ───────────
   useEffect(() => {
@@ -109,7 +117,7 @@ export function useDockablePopup({
 
     const config: PopupPanelConfig = {
       id: popupId,
-      title,
+      title: titleRef.current,
       closable: true,
       type: 'popup',
       popupType,
@@ -142,7 +150,7 @@ export function useDockablePopup({
           ? Math.max(16, (window.innerHeight - initialHeight) / 2)
           : Math.max(16, window.innerHeight * 0.1);
       windowManager.open(popupId, {
-        title,
+        title: titleRef.current,
         x: Math.max(16, (window.innerWidth - effectiveWidth) / 2),
         y: initialY,
         width: effectiveWidth,
@@ -160,7 +168,6 @@ export function useDockablePopup({
     isOpen,
     isManagedByLayout,
     popupId,
-    title,
     popupType,
     initialWidth,
     initialHeight,
