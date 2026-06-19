@@ -69,7 +69,8 @@ test.describe('Command history — Mudlet-style', () => {
         await submitCommand(page, 'north');
         await submitCommand(page, 'south');
 
-        await pressArrowUp(page);
+        // The just-sent command stays in the input (clearInputOnSend is off),
+        // so browsing starts from the previous command — no double-press needed.
         expect(await getInputValue(page)).toBe('south');
 
         await pressArrowUp(page);
@@ -77,6 +78,16 @@ test.describe('Command history — Mudlet-style', () => {
 
         await pressArrowUp(page);
         expect(await getInputValue(page)).toBe('look');
+    });
+
+    test('first ArrowUp after sending skips the just-sent command', async ({page}) => {
+        await submitCommand(page, 'alpha');
+        await submitCommand(page, 'beta');
+
+        // "beta" is already in the input; a single ArrowUp must reach "alpha"
+        // (regression: previously it re-loaded "beta", requiring two presses).
+        await pressArrowUp(page);
+        expect(await getInputValue(page)).toBe('alpha');
     });
 
     test('should navigate down through history back to sentinel', async ({page}) => {
@@ -131,8 +142,8 @@ test.describe('Command history — Mudlet-style', () => {
         await submitCommand(page, 'north');
         await submitCommand(page, 'look');  // duplicate of first, should be removed from old position
 
-        // History should be: ["", "look", "north"] (newest-first)
-        await pressArrowUp(page);
+        // History should be: ["", "look", "north"] (newest-first).
+        // "look" is already in the input, so the first ArrowUp reaches "north".
         expect(await getInputValue(page)).toBe('look');
 
         await pressArrowUp(page);
@@ -171,14 +182,14 @@ test.describe('Command history — Mudlet-style', () => {
         await submitCommand(page, 'cmd1');
         await submitCommand(page, 'cmd2');
 
-        // Navigate into history
+        // cmd2 is already in the input, so the first ArrowUp reaches cmd1
         await pressArrowUp(page);
-        expect(await getInputValue(page)).toBe('cmd2');
+        expect(await getInputValue(page)).toBe('cmd1');
 
-        // Escape should select all and reset
+        // Escape should select all and reset the browse position
         await pressEscape(page);
 
-        // After pressing up again, should start from the top (most recent)
+        // After the reset, browsing restarts from the top of history
         await pressArrowUp(page);
         expect(await getInputValue(page)).toBe('cmd2');
     });
@@ -190,14 +201,15 @@ test.describe('Command history — Mudlet-style', () => {
         await submitCommand(page, 'cmd2');
         await submitCommand(page, 'cmd3');
 
-        await page.click(HISTORY_UP_BUTTON);
-        expect(await getInputValue(page)).toBe('cmd3');
-
+        // cmd3 is already shown, so the first up-button reaches cmd2
         await page.click(HISTORY_UP_BUTTON);
         expect(await getInputValue(page)).toBe('cmd2');
 
+        await page.click(HISTORY_UP_BUTTON);
+        expect(await getInputValue(page)).toBe('cmd1');
+
         await page.click(HISTORY_DOWN_BUTTON);
-        expect(await getInputValue(page)).toBe('cmd3');
+        expect(await getInputValue(page)).toBe('cmd2');
     });
 
     // ── Empty history ────────────────────────────────────────────────
@@ -216,8 +228,9 @@ test.describe('Command history — Mudlet-style', () => {
         await submitCommand(page, 'old1');
         await submitCommand(page, 'old2');
 
+        // old2 is already shown, so the first ArrowUp reaches old1
         await pressArrowUp(page);
-        expect(await getInputValue(page)).toBe('old2');
+        expect(await getInputValue(page)).toBe('old1');
 
         // Start typing — resets history
         await page.locator(MESSAGE_INPUT).fill('new');
