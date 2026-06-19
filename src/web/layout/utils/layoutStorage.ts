@@ -450,6 +450,9 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
     }
     state.popupPanels[popupId].settings![key] = value;
     saveLayoutState(state);
+    // Keep the live WindowManager copy in sync so its next serialize() doesn't
+    // clobber this write with the stale snapshot it loaded at startup.
+    windowManager.syncPopupSetting(popupId, key, value);
   } catch (e) {
     console.error('Failed to save popup setting:', e);
   }

@@ -3,6 +3,8 @@ import { windowManager } from '@web/layout/WindowManager';
 import {
   getBuiltInPanelSetting,
   setBuiltInPanelSetting,
+  getPopupSetting,
+  setPopupSetting,
   loadLayoutState,
   saveLayoutState,
   invalidateLayoutCache,
@@ -39,5 +41,27 @@ describe('built-in panel settings persistence', () => {
 
     invalidateLayoutCache();
     expect(getBuiltInPanelSetting('map', 'labelVisible', true)).toBe(false);
+  });
+});
+
+describe('popup settings persistence', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+  });
+
+  it('survives a subsequent WindowManager serialize (e.g. a title change)', () => {
+    // User toggles the chat "Druzyna" filter.
+    setPopupSetting('popup:chat', 'showTeamOnly', true);
+
+    // Toggling flips the popup title, which makes useDockablePopup save the
+    // whole layout from the live manager. Without syncing the in-memory copy
+    // this would write the stale setting back over the toggle.
+    saveLayoutState(windowManager.serialize());
+
+    // Reload as if the page was refreshed.
+    invalidateLayoutCache();
+    expect(getPopupSetting('popup:chat', 'showTeamOnly', false)).toBe(true);
   });
 });
