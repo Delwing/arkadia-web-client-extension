@@ -1032,10 +1032,10 @@ describe('uiSettings category with tripRoutes and activeKeymap', () => {
         localStorage.clear();
     });
 
-    it('should export tripRoutes and activeKeymap as part of uiSettings', async () => {
+    it('should export tripRoutes and the canonical active keymap id', async () => {
         localStorage.setItem('uiSettings', '{"theme":"dark"}');
         localStorage.setItem('tripRoutes', '[{"name":"route1"}]');
-        localStorage.setItem('arkadia.activeKeymap', 'keymap-1');
+        globalStorage.set('active_keymap_id', 'keymap-1');
 
         const exported = await exportCategory('uiSettings', []);
         expect(exported).not.toBeNull();
@@ -1044,14 +1044,21 @@ describe('uiSettings category with tripRoutes and activeKeymap', () => {
         expect(parsed.activeKeymap).toBe('keymap-1');
     });
 
-    it('should import tripRoutes and activeKeymap from a uiSettings payload', async () => {
+    it('should not include the active keymap when none is stored', async () => {
+        localStorage.setItem('uiSettings', '{"theme":"dark"}');
+        const exported = await exportCategory('uiSettings', []);
+        const parsed = JSON.parse(exported!);
+        expect(parsed).not.toHaveProperty('activeKeymap');
+    });
+
+    it('should import tripRoutes and the active keymap into the canonical key', async () => {
         const result = await importCategory('uiSettings', JSON.stringify({
             tripRoutes: '[{"name":"route2"}]',
             activeKeymap: 'keymap-2',
         }));
         expect(result.success).toBe(true);
         expect(localStorage.getItem('tripRoutes')).toBe('[{"name":"route2"}]');
-        expect(localStorage.getItem('arkadia.activeKeymap')).toBe('keymap-2');
+        expect(globalStorage.get('active_keymap_id')).toBe('keymap-2');
     });
 
     it('should skip tripRoutes and activeKeymap when skipDeviceScoped is set', async () => {
@@ -1062,6 +1069,6 @@ describe('uiSettings category with tripRoutes and activeKeymap', () => {
         );
         expect(result.success).toBe(true);
         expect(localStorage.getItem('tripRoutes')).toBeNull();
-        expect(localStorage.getItem('arkadia.activeKeymap')).toBeNull();
+        expect(globalStorage.get('active_keymap_id')).toBeUndefined();
     });
 });

@@ -167,6 +167,10 @@ function DeviceManagementTab() {
                 if (result.success && result.group) {
                     setSyncGroupState(result.group);
                     setSyncGroupName("");
+                    // Push this device's interface/button settings so devices that
+                    // join the group have something to apply (the group doc only
+                    // holds membership; settings travel as device-scoped categories).
+                    void syncEngine.syncNow();
                     setStatus(`Grupa synchronizacji "${result.group.name}" zostala utworzona.`);
                 } else {
                     setError(result.error || "Nie udalo sie utworzyc grupy synchronizacji.");

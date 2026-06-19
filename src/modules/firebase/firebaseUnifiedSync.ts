@@ -723,27 +723,38 @@ const SYNC_GROUPS_SUBCOLLECTION = 'syncGroups';
 
 interface SyncGroupDocument {
     group: SyncGroup;
+    /**
+     * Legacy device-settings snapshot from the pre-collapse sync model. No
+     * longer written, but preserved on read/write so a device joining an old
+     * group (that has no deviceCategories yet) can still apply its interface
+     * settings. Shape: the old SyncedDeviceSettings.
+     */
+    settings?: { settings?: LegacyPerDeviceSettings['settings'] };
 }
 
-async function readSyncGroupDoc(userId: string, groupId: string): Promise<SyncGroup | null> {
+async function readSyncGroupDoc(
+    userId: string,
+    groupId: string,
+): Promise<{ group: SyncGroup | null; legacySettings?: LegacyPerDeviceSettings['settings'] }> {
     const { db } = await ensureFirebaseInitialized();
     const { doc, getDoc } = await import('firebase/firestore');
     const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, groupId);
     const snapshot = await getDoc(groupDocRef);
-    if (!snapshot.exists()) return null;
-    return (snapshot.data() as SyncGroupDocument).group ?? null;
+    if (!snapshot.exists()) return { group: null };
+    const data = snapshot.data() as SyncGroupDocument;
+    return { group: data.group ?? null, legacySettings: data.settings?.settings };
 }
 
 /**
- * Write a sync group document. Uses setDoc with the bare membership shape,
- * which also clears the legacy settings blob from pre-collapse documents.
+ * Write a sync group document. Merges so the membership update doesn't delete
+ * the legacy `settings` snapshot a pre-collapse group may still carry (a
+ * joining device with no deviceCategories yet relies on it).
  */
 async function writeSyncGroupDoc(userId: string, group: SyncGroup): Promise<void> {
     const { db } = await ensureFirebaseInitialized();
     const { doc, setDoc } = await import('firebase/firestore');
     const groupDocRef = doc(db, USERS_COLLECTION, userId, SYNC_GROUPS_SUBCOLLECTION, group.id);
-    const data: SyncGroupDocument = { group };
-    await setDoc(groupDocRef, data);
+    await setDoc(groupDocRef, { group }, { merge: true });
 }
 
 /**
@@ -751,13 +762,14 @@ async function writeSyncGroupDoc(userId: string, group: SyncGroup): Promise<void
  * members to this device. Used right after joining a group so the user sees
  * the group's interface settings without waiting for the next remote change.
  */
-async function applyGroupDeviceCategories(passphrase?: string): Promise<void> {
+async function applyGroupDeviceCategories(passphrase?: string): Promise<boolean> {
     const deviceCategories = Array.from(DEVICE_SCOPED_SYNC_CATEGORIES);
     const { data } = await downloadCategories(deviceCategories, passphrase);
-    if (Object.keys(data).length === 0) return;
+    if (Object.keys(data).length === 0) return false;
 
     const { importCategories } = await import('@web/options/exportUtils');
     await importCategories(data);
+    return true;
 }
 
 /**
@@ -815,7 +827,7 @@ export async function joinSyncGroup(
             return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        const existingGroup = await readSyncGroupDoc(userId, groupId);
+        const { group: existingGroup, legacySettings } = await readSyncGroupDoc(userId, groupId);
         if (!existingGroup) {
             return { success: false, error: 'Grupa synchronizacji nie istnieje.' };
         }
@@ -837,7 +849,13 @@ export async function joinSyncGroup(
         setSyncGroup(group);
 
         try {
-            await applyGroupDeviceCategories(options?.passphrase);
+            const applied = await applyGroupDeviceCategories(options?.passphrase);
+            // Old groups may only carry the legacy settings snapshot (no
+            // deviceCategories yet) — apply it so this device still gets the
+            // group's interface settings.
+            if (!applied && legacySettings) {
+                applyLegacyDeviceSettings(legacySettings);
+            }
         } catch (err) {
             console.warn('Joined group but failed to apply group settings', err);
         }
@@ -865,7 +883,7 @@ export async function leaveSyncGroupCloud(): Promise<{ success: boolean; error?:
             return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        const existingGroup = await readSyncGroupDoc(userId, currentGroup.id);
+        const { group: existingGroup } = await readSyncGroupDoc(userId, currentGroup.id);
 
         if (existingGroup) {
             const deviceInfo = getDeviceInfo();
@@ -1037,7 +1055,7 @@ export async function deleteEmptySyncGroup(groupId: string): Promise<{ success: 
             return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        const group = await readSyncGroupDoc(userId, groupId);
+        const { group } = await readSyncGroupDoc(userId, groupId);
         if (!group) {
             return { success: false, error: 'Grupa nie istnieje.' };
         }

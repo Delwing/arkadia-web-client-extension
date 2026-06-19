@@ -693,7 +693,6 @@ export async function applyImportedData(payload: ExportPayload): Promise<ImportR
 
 import type { SyncCategory, CategoryDefinition } from '@modules/firebase';
 import { CATEGORY_REGISTRY } from '@modules/firebase';
-import { ACTIVE_KEYMAP_STORAGE_KEY } from '@modules/core/keymapTypes';
 
 export interface CategoryData {
     // Device-scoped settings bundle: interface settings + layout + trip routes
@@ -784,7 +783,9 @@ export async function exportCategory(
                 if (layoutManagerState) data.layoutManagerState = layoutManagerState;
                 const tripRoutes = localStorage.getItem('tripRoutes');
                 if (tripRoutes) data.tripRoutes = tripRoutes;
-                const activeKeymap = localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY);
+                // Canonical active keymap lives under 'active_keymap_id'
+                // (arkadia.activeKeymap is a legacy key migrated away at startup).
+                const activeKeymap = globalStorage.get('active_keymap_id');
                 if (activeKeymap) data.activeKeymap = activeKeymap;
                 return Object.keys(data).length > 0 ? JSON.stringify(data) : null;
             }
@@ -958,9 +959,11 @@ export async function importCategory(
                 }
                 if (data.tripRoutes && !skipDevice) trackingSetItem('tripRoutes', data.tripRoutes);
                 if (data.activeKeymap && !skipDevice) {
-                    trackingSetItem(ACTIVE_KEYMAP_STORAGE_KEY, data.activeKeymap);
-                    // Re-apply the selected keymap's binds to the flat 'binds' key
+                    // Persist the canonical key so the selection survives even if
+                    // the keymap itself isn't loaded yet (e.g. binds imported later).
                     const activeKeymap = data.activeKeymap as string;
+                    globalStorage.set('active_keymap_id', activeKeymap);
+                    // Re-apply the selected keymap's binds to the flat 'binds' key
                     import('@modules/core/keymapStorage').then(({ switchKeymap }) => {
                         switchKeymap(activeKeymap);
                     }).catch(() => {
