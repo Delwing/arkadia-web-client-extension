@@ -216,11 +216,10 @@ export async function uploadCategories(
                     data: finalData,
                 };
 
-                // Use dot notation key for updateDoc (will be interpreted as path)
+                // Device-scoped categories live only under
+                // deviceCategories.{deviceId}; shared categories under categories.{cat}
                 if (isDeviceScoped) {
                     categoryUpdates[`deviceCategories.${deviceId}.${category}`] = payload;
-                    // Also write to legacy path for backward compat with old clients
-                    categoryUpdates[`categories.${category}`] = payload;
                 } else {
                     categoryUpdates[`categories.${category}`] = payload;
                 }
@@ -296,8 +295,9 @@ export interface DownloadedCategoryMeta {
 
 /**
  * Find the best per-device payload for a device-scoped category.
- * Checks own device first, then sync group members. Picks the most recent.
- * Falls back to legacy categories.{cat} if deviceCategories is empty.
+ * Considers only this device and its sync group members — a foreign device's
+ * layout is never surfaced here, which is what keeps device-scoped settings
+ * isolated unless the devices are explicitly grouped.
  */
 function findDeviceCategoryPayload(
     syncData: UnifiedSyncData,
@@ -322,14 +322,6 @@ function findDeviceCategoryPayload(
         if (!payload) continue;
         if (!best || payload.syncedAt > best.syncedAt) {
             best = payload;
-        }
-    }
-
-    // Fallback: check legacy categories.{cat} (migration)
-    if (!best) {
-        const legacyPayload = syncData.categories?.[category];
-        if (legacyPayload) {
-            best = legacyPayload;
         }
     }
 
@@ -446,7 +438,7 @@ export async function checkCategoriesConflicts(
 
             // For device-scoped categories, compare against own per-device data
             const cloudPayload = isCategoryDeviceScoped(category)
-                ? (syncData.deviceCategories?.[deviceId]?.[category] ?? cloudCategories[category])
+                ? syncData.deviceCategories?.[deviceId]?.[category]
                 : cloudCategories[category];
             if (!cloudPayload) continue;
 

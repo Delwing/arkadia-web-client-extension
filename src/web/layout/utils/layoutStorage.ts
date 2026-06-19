@@ -368,9 +368,14 @@ let cachedLayoutState: LayoutState | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 100;
 
-export function invalidateLayoutCache(): void {
+/** Drop the cached layout snapshot without notifying listeners. */
+export function resetLayoutCache(): void {
   cachedLayoutState = null;
   cacheTimestamp = 0;
+}
+
+export function invalidateLayoutCache(): void {
+  resetLayoutCache();
   eventBus.emit('layoutManagerStateChanged');
 }
 

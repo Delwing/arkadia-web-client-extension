@@ -141,21 +141,15 @@ class FirebaseSyncListener {
             }
         }
 
-        // Find the most recently synced payload from relevant devices
+        // Find the most recently synced payload from relevant devices.
+        // Only sync group members are considered — a foreign device's layout is
+        // never auto-applied, which is the whole point of device-scoping.
         let best: { payload: CategoryPayload; sourceDeviceId: string } | undefined;
         for (const devId of relevantIds) {
             const payload = deviceCats[devId]?.[category];
             if (!payload) continue;
             if (!best || payload.syncedAt > best.payload.syncedAt) {
                 best = { payload, sourceDeviceId: devId };
-            }
-        }
-
-        // Fallback: check legacy categories.{cat} (migration from old single-slot storage)
-        if (!best) {
-            const legacyPayload = data.categories?.[category];
-            if (legacyPayload && legacyPayload.deviceId !== deviceId) {
-                best = { payload: legacyPayload, sourceDeviceId: legacyPayload.deviceId };
             }
         }
 
@@ -307,12 +301,6 @@ class FirebaseSyncListener {
                     this.lastKnownChecksums[`device:${devId}:${category}`] = payload.checksum;
                 }
             }
-        }
-
-        // Record legacy checksum too (migration fallback)
-        const legacyPayload = data.categories?.[category];
-        if (legacyPayload) {
-            this.lastKnownChecksums[category] = legacyPayload.checksum;
         }
     }
 
