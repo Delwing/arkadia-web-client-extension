@@ -912,6 +912,7 @@ h1 {
 #main_text_output_msg_wrapper {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 8px;
   font-family: monospace;
   font-size: 0.775rem;
