@@ -173,8 +173,11 @@ export class CommandInputController {
                     this.deps.sendCommand(command, true, undefined, false, true);
                 }
 
-                // Reset state
-                this.historyBuffer = 0;
+                // Reset state. When the input is cleared, browsing starts from
+                // the sentinel (index 0). When the just-sent command stays in the
+                // input, it lives at index 1, so point the buffer there — otherwise
+                // the first ArrowUp would just re-load the command already shown.
+                this.historyBuffer = clearInputOnSend ? 0 : 1;
                 this.resetAllCompletionState();
 
                 if (clearInputOnSend) {
