@@ -729,14 +729,25 @@ describe('exportCategory and importCategory', () => {
             expect(parsed).toHaveProperty('loggingEnabled', 'true');
         });
 
-        it('should capture desktopButtonSettings and mobileButtonSettings', async () => {
+        it('should NOT capture button settings (owned by buttons / radial categories)', async () => {
             localStorage.setItem('desktopButtonSettings', JSON.stringify({ layout: 'standard' }));
             localStorage.setItem('mobileButtonSettings', JSON.stringify({ layout: 'compact' }));
             const exported = await exportCategory('uiSettings', []);
-            expect(exported).not.toBeNull();
-            const parsed = JSON.parse(exported!);
-            expect(parsed).toHaveProperty('desktopButtonSettings');
-            expect(parsed).toHaveProperty('mobileButtonSettings');
+            // Only button data present -> nothing for uiSettings to export
+            expect(exported).toBeNull();
+        });
+
+        it('should not write button settings when importing a uiSettings payload', async () => {
+            const result = await importCategory('uiSettings', JSON.stringify({
+                uiSettings: JSON.stringify({ theme: 'dark' }),
+                desktopButtonSettings: JSON.stringify({ layout: 'standard' }),
+                mobileButtonSettings: JSON.stringify({ layout: 'compact' }),
+            }));
+            expect(result.success).toBe(true);
+            expect(localStorage.getItem('uiSettings')).toBe(JSON.stringify({ theme: 'dark' }));
+            // Legacy button fields in the payload are ignored
+            expect(localStorage.getItem('desktopButtonSettings')).toBeNull();
+            expect(localStorage.getItem('mobileButtonSettings')).toBeNull();
         });
 
         it('should return null when no uiSettings data is stored', async () => {

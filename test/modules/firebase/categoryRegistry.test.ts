@@ -1,4 +1,5 @@
 import {
+    CATEGORY_GROUPS,
     CATEGORY_REGISTRY,
     COLD_STORAGE_KEYS,
     COLD_SYNC_CATEGORIES,
@@ -6,6 +7,7 @@ import {
     DEVICE_SCOPED_SYNC_CATEGORIES,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,
+    getCategoriesByGroup,
     getCategoryDefinition,
     type CategoryDefinition,
     type SyncCategory,
@@ -85,5 +87,23 @@ describe('CATEGORY_REGISTRY', () => {
 
     it('derives the device-scoped categories', () => {
         expect(new Set(DEVICE_SCOPED_SYNC_CATEGORIES)).toEqual(new Set(['uiSettings', 'buttons']));
+    });
+
+    it('assigns every category to exactly one declared UI group', () => {
+        const groupIds = new Set(CATEGORY_GROUPS.map(g => g.id));
+        for (const cat of SYNC_CATEGORIES) {
+            expect(groupIds.has(getCategoryDefinition(cat).group)).toBe(true);
+        }
+    });
+
+    it('every UI group covers a disjoint, complete partition of categories', () => {
+        const seen = new Set<SyncCategory>();
+        for (const group of CATEGORY_GROUPS) {
+            for (const cat of getCategoriesByGroup(group.id)) {
+                expect(seen.has(cat)).toBe(false);
+                seen.add(cat);
+            }
+        }
+        expect(seen).toEqual(new Set(SYNC_CATEGORIES));
     });
 });

@@ -6,6 +6,7 @@ export type {
     SyncOptions,
     SyncCategory,
     CategoryDefinition,
+    CategoryGroup,
     EncryptedData,
     CategoryPayload,
     CategorySyncStatus,
@@ -19,6 +20,8 @@ export type {
 export {
     CATEGORY_REGISTRY,
     getCategoryDefinition,
+    CATEGORY_GROUPS,
+    getCategoriesByGroup,
     DEFAULT_SYNC_OPTIONS,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,

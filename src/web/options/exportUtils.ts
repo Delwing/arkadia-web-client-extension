@@ -696,13 +696,12 @@ import { CATEGORY_REGISTRY } from '@modules/firebase';
 import { ACTIVE_KEYMAP_STORAGE_KEY } from '@modules/core/keymapTypes';
 
 export interface CategoryData {
-    // uiSettings now includes layout + buttons (device-scoped settings bundle)
+    // Device-scoped settings bundle: interface settings + layout + trip routes
+    // + keymap. Button settings live in the buttons / radial categories.
     uiSettings?: {
         uiSettings?: string;
         loggingEnabled?: string;
         layoutManagerState?: string;
-        desktopButtonSettings?: string;
-        mobileButtonSettings?: string;  // includes radial
         tripRoutes?: string;
         activeKeymap?: string;
     };
@@ -773,7 +772,9 @@ export async function exportCategory(
 
         switch (category) {
             case 'uiSettings': {
-                // Device-scoped settings bundle: uiSettings + layout + buttons + trip routes + keymap
+                // Device-scoped settings bundle: interface settings + layout + trip
+                // routes + keymap. Button settings have their own categories
+                // (buttons / radial), so they are intentionally not bundled here.
                 const data: CategoryData['uiSettings'] = {};
                 const uiSettings = localStorage.getItem('uiSettings');
                 if (uiSettings) data.uiSettings = uiSettings;
@@ -781,10 +782,6 @@ export async function exportCategory(
                 if (loggingEnabled) data.loggingEnabled = loggingEnabled;
                 const layoutManagerState = localStorage.getItem('layoutManagerState');
                 if (layoutManagerState) data.layoutManagerState = layoutManagerState;
-                const desktopButtonSettings = localStorage.getItem('desktopButtonSettings');
-                if (desktopButtonSettings) data.desktopButtonSettings = desktopButtonSettings;
-                const mobileButtonSettings = localStorage.getItem('mobileButtonSettings');
-                if (mobileButtonSettings) data.mobileButtonSettings = mobileButtonSettings;
                 const tripRoutes = localStorage.getItem('tripRoutes');
                 if (tripRoutes) data.tripRoutes = tripRoutes;
                 const activeKeymap = localStorage.getItem(ACTIVE_KEYMAP_STORAGE_KEY);
@@ -947,7 +944,10 @@ export async function importCategory(
             }
         } else switch (category) {
             case 'uiSettings': {
-                // Device-scoped settings bundle: uiSettings + layout + buttons + trip routes + keymap
+                // Device-scoped settings bundle: interface settings + layout + trip
+                // routes + keymap. Button settings come from the buttons / radial
+                // categories; older payloads may still carry desktop/mobile button
+                // fields, which are ignored here.
                 const skipDevice = options?.skipDeviceScoped ?? false;
                 if (data.uiSettings && !skipDevice) trackingSetItem('uiSettings', data.uiSettings);
                 if (data.loggingEnabled) trackingSetItem('loggingEnabled', data.loggingEnabled);
@@ -956,8 +956,6 @@ export async function importCategory(
                     // pre-v8 nested-slots layout to the flat-windows shape here.
                     trackingSetItem('layoutManagerState', await migrateImportedLayoutState(data.layoutManagerState));
                 }
-                if (data.desktopButtonSettings && !skipDevice) trackingSetItem('desktopButtonSettings', data.desktopButtonSettings);
-                if (data.mobileButtonSettings) trackingSetItem('mobileButtonSettings', migrateImportedValue('mobileButtonSettings', data.mobileButtonSettings));
                 if (data.tripRoutes && !skipDevice) trackingSetItem('tripRoutes', data.tripRoutes);
                 if (data.activeKeymap && !skipDevice) {
                     trackingSetItem(ACTIVE_KEYMAP_STORAGE_KEY, data.activeKeymap);

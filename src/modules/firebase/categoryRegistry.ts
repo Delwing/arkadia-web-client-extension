@@ -14,9 +14,14 @@
  *    @web/options/exportUtils.
  */
 
+/** UI grouping for the sync options screen. */
+export type CategoryGroup = 'control' | 'character' | 'map' | 'interface';
+
 export interface CategoryDefinition {
     /** Display name (Polish), shown in the options UI and conflict dialogs */
     name: string;
+    /** UI group this category is shown under in the sync options screen */
+    group: CategoryGroup;
     /** 'device': stored per-device in the cloud and only applied from sync-group members */
     scope: 'shared' | 'device';
     /** 'cold': changes frequently during play; synced with the long (10 min) debounce */
@@ -34,23 +39,23 @@ export interface CategoryDefinition {
 }
 
 export const CATEGORY_REGISTRY = {
-    uiSettings: { name: 'Ustawienia interfejsu', scope: 'device', speed: 'hot', customSync: true },
-    binds: { name: 'Bindy klawiszy', scope: 'shared', speed: 'hot', globalKeys: ['binds', 'keymaps'] },
-    shortcuts: { name: 'Skroty', scope: 'shared', speed: 'hot', globalKeys: ['shortcuts'] },
-    characterSettings: { name: 'Ustawienia postaci', scope: 'shared', speed: 'hot', customSync: true },
-    triggers: { name: 'Triggery', scope: 'shared', speed: 'hot', globalKeys: ['triggers'] },
-    aliases: { name: 'Aliasy', scope: 'shared', speed: 'hot', globalKeys: ['aliases'] },
-    multibinds: { name: 'Multibindy', scope: 'shared', speed: 'hot', customSync: true },
-    buttons: { name: 'Przyciski', scope: 'device', speed: 'hot', customSync: true },
-    radial: { name: 'Menu radialne', scope: 'shared', speed: 'hot', customSync: true },
-    visitedRooms: { name: 'Odwiedzone lokacje', scope: 'shared', speed: 'cold', customSync: true },
-    locationNotes: { name: 'Notatki lokacji', scope: 'shared', speed: 'hot', customSync: true },
-    killCounts: { name: 'Licznik zabitych', scope: 'shared', speed: 'cold', characterKey: 'kill_counter', customSync: true },
-    improveCounts: { name: 'Licznik postepow', scope: 'shared', speed: 'hot', characterKey: 'improve_counter_lifetime' },
-    deposits: { name: 'Depozyty', scope: 'shared', speed: 'hot', characterKey: 'deposits' },
-    containers: { name: 'Pojemniki', scope: 'shared', speed: 'hot', characterKey: 'containers' },
-    peopleEdits: { name: 'Edycje bazy postaci', scope: 'shared', speed: 'hot', characterKey: 'peopleLocalEvents' },
-    knowledge: { name: 'Wiedza', scope: 'shared', speed: 'hot', customSync: true },
+    uiSettings: { name: 'Ustawienia interfejsu', group: 'interface', scope: 'device', speed: 'hot', customSync: true },
+    binds: { name: 'Bindy klawiszy', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['binds', 'keymaps'] },
+    shortcuts: { name: 'Skroty', group: 'map', scope: 'shared', speed: 'hot', globalKeys: ['shortcuts'] },
+    characterSettings: { name: 'Ustawienia postaci', group: 'character', scope: 'shared', speed: 'hot', customSync: true },
+    triggers: { name: 'Triggery', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['triggers'] },
+    aliases: { name: 'Aliasy', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['aliases'] },
+    multibinds: { name: 'Multibindy', group: 'control', scope: 'shared', speed: 'hot', customSync: true },
+    buttons: { name: 'Przyciski', group: 'interface', scope: 'device', speed: 'hot', customSync: true },
+    radial: { name: 'Menu radialne', group: 'interface', scope: 'shared', speed: 'hot', customSync: true },
+    visitedRooms: { name: 'Odwiedzone lokacje', group: 'map', scope: 'shared', speed: 'cold', customSync: true },
+    locationNotes: { name: 'Notatki lokacji', group: 'map', scope: 'shared', speed: 'hot', customSync: true },
+    killCounts: { name: 'Licznik zabitych', group: 'character', scope: 'shared', speed: 'cold', characterKey: 'kill_counter', customSync: true },
+    improveCounts: { name: 'Licznik postepow', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'improve_counter_lifetime' },
+    deposits: { name: 'Depozyty', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'deposits' },
+    containers: { name: 'Pojemniki', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'containers' },
+    peopleEdits: { name: 'Edycje bazy postaci', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'peopleLocalEvents' },
+    knowledge: { name: 'Wiedza', group: 'character', scope: 'shared', speed: 'hot', customSync: true },
 } as const satisfies Record<string, CategoryDefinition>;
 
 // Sync category names (matches SyncOptions keys)
@@ -64,6 +69,19 @@ export const SYNC_CATEGORIES = Object.keys(CATEGORY_REGISTRY) as SyncCategory[];
 
 export function getCategoryDefinition(category: SyncCategory): CategoryDefinition {
     return CATEGORY_REGISTRY[category];
+}
+
+/** Display order and labels for the sync option groups (Polish). */
+export const CATEGORY_GROUPS: ReadonlyArray<{ id: CategoryGroup; name: string }> = [
+    { id: 'control', name: 'Sterowanie' },
+    { id: 'character', name: 'Postac' },
+    { id: 'map', name: 'Mapa' },
+    { id: 'interface', name: 'Interfejs i urzadzenie' },
+];
+
+/** Categories belonging to a UI group, in registry order. */
+export function getCategoriesByGroup(group: CategoryGroup): SyncCategory[] {
+    return SYNC_CATEGORIES.filter(cat => CATEGORY_REGISTRY[cat].group === group);
 }
 
 // Category display names (Polish)

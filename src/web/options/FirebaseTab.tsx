@@ -8,6 +8,8 @@ import {
     INITIAL_AUTH_STATE,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,
+    CATEGORY_GROUPS,
+    getCategoriesByGroup,
     FIREBASE_ERRORS,
     loadFirebaseConfig,
     saveFirebaseConfig,
@@ -768,17 +770,35 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         </Button>
                     </div>
 
-                    {/* Sync options */}
+                    {/* Sync options, grouped by category group (registry-driven) */}
                     <section className="character-settings-section">
-                        <h5 className="character-settings-section-title">Dane do synchronizacji</h5>
-                        <div className="row g-2">
-                            {/* Two columns derived from the category registry */}
-                            {[
-                                SYNC_CATEGORIES.slice(0, Math.ceil(SYNC_CATEGORIES.length / 2)),
-                                SYNC_CATEGORIES.slice(Math.ceil(SYNC_CATEGORIES.length / 2)),
-                            ].map((column, columnIdx) => (
-                                <div key={columnIdx} className="col-6">
-                                    {column.map(cat => (
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h5 className="character-settings-section-title mb-0">Dane do synchronizacji</h5>
+                            <div className="d-flex gap-2">
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="p-0 text-muted"
+                                    onClick={() => setSyncOptions(Object.fromEntries(SYNC_CATEGORIES.map(c => [c, true])) as SyncOptions)}
+                                >
+                                    Zaznacz wszystko
+                                </Button>
+                                <span className="text-muted">·</span>
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="p-0 text-muted"
+                                    onClick={() => setSyncOptions(Object.fromEntries(SYNC_CATEGORIES.map(c => [c, false])) as SyncOptions)}
+                                >
+                                    Odznacz wszystko
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+                            {CATEGORY_GROUPS.map(group => (
+                                <div key={group.id} className="col-6">
+                                    <div className="text-muted small fw-semibold mb-1">{group.name}</div>
+                                    {getCategoriesByGroup(group.id).map(cat => (
                                         <div key={cat} className="d-flex align-items-center gap-1">
                                             <Form.Check
                                                 type="checkbox"

@@ -17,6 +17,8 @@ import type { SyncCategory, SyncOptions } from './categoryRegistry';
 export {
     CATEGORY_REGISTRY,
     getCategoryDefinition,
+    CATEGORY_GROUPS,
+    getCategoriesByGroup,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,
     DEFAULT_SYNC_OPTIONS,
@@ -24,7 +26,7 @@ export {
     COLD_STORAGE_KEYS,
     DEVICE_SCOPED_SYNC_CATEGORIES,
 } from './categoryRegistry';
-export type { SyncCategory, SyncOptions, CategoryDefinition } from './categoryRegistry';
+export type { SyncCategory, SyncOptions, CategoryDefinition, CategoryGroup } from './categoryRegistry';
 
 // Encrypted data structure
 export interface EncryptedData {
