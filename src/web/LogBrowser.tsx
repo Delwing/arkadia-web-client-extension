@@ -25,6 +25,7 @@ import {
   getRawSessionData,
   getSessionData,
 } from "./logBrowserUtils";
+import { downloadLogAsImage } from "./logToImage";
 
 // --- Downloaded status persistence via separate IndexedDB ---
 
@@ -1344,6 +1345,26 @@ export function LogBrowser() {
     });
   }, [isExporting]);
 
+  const [isImageDownloading, setIsImageDownloading] = useState(false);
+  const handleDownloadAsImage = useCallback(async () => {
+    if (!currentSession || isImageDownloading) return;
+    const linesToRender = rangeFilter ? visibleLines : flatLines;
+    if (linesToRender.length === 0) {
+      alert("Brak linii do zapisu.");
+      return;
+    }
+    setIsImageDownloading(true);
+    try {
+      const suffix = rangeFilter ? "_zakres" : "";
+      await downloadLogAsImage(linesToRender, `${formatSessionFileName(currentSession)}${suffix}.png`);
+    } catch (error) {
+      console.error("[Logs] Image download failed:", error);
+      alert(error instanceof Error ? error.message : "Nie udalo sie zapisac obrazu.");
+    } finally {
+      setIsImageDownloading(false);
+    }
+  }, [currentSession, rangeFilter, visibleLines, flatLines, isImageDownloading]);
+
   // Delete current session
   const [isDeleting, setIsDeleting] = useState(false);
   const handleDeleteCurrent = useCallback(async () => {
@@ -1493,6 +1514,18 @@ export function LogBrowser() {
             title={rangeFilter ? "Pobierz tylko zaznaczony zakres osi czasu" : "Pobierz caly log"}
           >
             {rangeFilter ? "Pobierz zakres" : "Pobierz"}
+          </button>
+          <button
+            id="logs-download-image"
+            className="btn btn-secondary"
+            style={{ whiteSpace: "nowrap" }}
+            onClick={handleDownloadAsImage}
+            disabled={!currentSession || isImageDownloading}
+            title={rangeFilter ? "Pobierz zaznaczony zakres jako obraz PNG" : "Pobierz caly log jako obraz PNG"}
+          >
+            {isImageDownloading
+              ? "Tworzenie..."
+              : rangeFilter ? "Pobierz zakres jako obraz" : "Pobierz jako obraz"}
           </button>
           <button
             id="logs-download-all"
