@@ -1,6 +1,7 @@
 import { Modal, Button, Alert } from "react-bootstrap";
 import type { CategoryConflictInfo, ConflictResolution, SyncCategory } from "@modules/firebase";
 import { SYNC_CATEGORY_NAMES } from "@modules/firebase";
+import ConflictDiffView from "./ConflictDiffView";
 
 interface ConflictResolutionModalProps {
     show: boolean;
@@ -33,7 +34,7 @@ function ConflictResolutionModal({ show, conflicts, onResolve }: ConflictResolut
                     {' '}Wybierz, ktora wersje chcesz zachowac.
                 </Alert>
 
-                <div className="mb-3" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <div className="mb-3" style={{ maxHeight: '420px', overflowY: 'auto' }}>
                     {conflicts.map((conflict) => (
                         <div key={conflict.category} className="mb-2 p-2 border rounded">
                             <div className="fw-semibold mb-1">
@@ -49,6 +50,7 @@ function ConflictResolutionModal({ show, conflicts, onResolve }: ConflictResolut
                                     {formatDate(conflict.cloudTimestamp)}
                                 </div>
                             </div>
+                            <ConflictDiffView conflict={conflict} />
                         </div>
                     ))}
                 </div>
