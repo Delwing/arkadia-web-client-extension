@@ -49,6 +49,8 @@ class FirebaseSyncEngine {
     private syncing = false;
     private watching = false;
     private passphrase: string | null = null;
+    /** Whether auto-sync could run last time settings were evaluated. */
+    private autoSyncReady = false;
 
     constructor() {
         try {
@@ -83,6 +85,9 @@ class FirebaseSyncEngine {
         ];
 
         this.pushPassphraseToListener();
+        // Baseline readiness so a later enable is detected as a transition; we
+        // don't fire an initial sync just for app startup.
+        this.autoSyncReady = this.canAutoSync();
         console.log('[SyncEngine] Started');
     }
 
@@ -90,6 +95,7 @@ class FirebaseSyncEngine {
     stop(): void {
         if (!this.watching) return;
         this.watching = false;
+        this.autoSyncReady = false;
         this.storageUnsubs.forEach(unsub => unsub());
         this.storageUnsubs = [];
         syncDebounceManager.destroy();
@@ -128,10 +134,25 @@ class FirebaseSyncEngine {
     /** Re-evaluate after sync settings change (auto-sync toggle, encryption, categories). */
     settingsChanged(): void {
         this.pushPassphraseToListener();
-        if (!this.canAutoSync()) {
+        this.reconcileAutoSyncReadiness();
+    }
+
+    /**
+     * React to a change in whether auto-sync can run. When it first becomes
+     * possible — e.g. the user just switched auto-sync on — reconcile with the
+     * cloud immediately (push local changes, surface any conflicts) instead of
+     * waiting for the next local edit. Only fires while the engine is actually
+     * watching, so the localhost / disabled guards in start() still hold.
+     */
+    private reconcileAutoSyncReadiness(): void {
+        const ready = this.canAutoSync();
+        if (ready && !this.autoSyncReady && this.watching) {
+            void this.syncNow(false);
+        } else if (!ready) {
             syncDebounceManager.cancelAll();
             eventBus.emit('firebase.autosync.pending', { pending: false });
         }
+        this.autoSyncReady = ready;
     }
 
     /**

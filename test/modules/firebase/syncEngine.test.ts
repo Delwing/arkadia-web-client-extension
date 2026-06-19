@@ -204,6 +204,65 @@ describe('FirebaseSyncEngine', () => {
         });
     });
 
+    describe('immediate sync when auto-sync is switched on', () => {
+        it('reconciles with the cloud right away (no debounce wait)', async () => {
+            givenCleanUploadPath();
+            saveFirebaseSettings({ autoSyncEnabled: false });
+            syncEngine.start();
+            await flushAsync();
+            expect(mockedUpload).not.toHaveBeenCalled();
+
+            saveFirebaseSettings({ autoSyncEnabled: true });
+            syncEngine.settingsChanged();
+            await jest.advanceTimersByTimeAsync(0);
+            await flushAsync();
+
+            expect(mockedUpload).toHaveBeenCalledTimes(1);
+        });
+
+        it('surfaces conflicts on enable instead of uploading', async () => {
+            givenCleanUploadPath();
+            mockedConflicts.mockResolvedValue({
+                conflicts: [{ category: 'triggers', localTimestamp: 1, cloudTimestamp: 2 }],
+                errors: {},
+            });
+            const conflictEvents = onEvent<{ conflicts: unknown[] }>('firebase.sync.conflict');
+
+            saveFirebaseSettings({ autoSyncEnabled: false });
+            syncEngine.start();
+            saveFirebaseSettings({ autoSyncEnabled: true });
+            syncEngine.settingsChanged();
+            await jest.advanceTimersByTimeAsync(0);
+            await flushAsync();
+
+            expect(conflictEvents).toHaveLength(1);
+            expect(mockedUpload).not.toHaveBeenCalled();
+        });
+
+        it('does not re-sync when settings change but auto-sync was already on', async () => {
+            givenCleanUploadPath();
+            syncEngine.start(); // beforeEach enabled auto-sync → ready at baseline
+            await flushAsync();
+            expect(mockedUpload).not.toHaveBeenCalled();
+
+            syncEngine.settingsChanged();
+            await flushAsync();
+            expect(mockedUpload).not.toHaveBeenCalled();
+        });
+
+        it('does not run an immediate sync if the engine is not watching', async () => {
+            givenCleanUploadPath();
+            saveFirebaseSettings({ autoSyncEnabled: false });
+            // no start() — engine not watching (e.g. logged out / localhost)
+            saveFirebaseSettings({ autoSyncEnabled: true });
+            syncEngine.settingsChanged();
+            await jest.advanceTimersByTimeAsync(0);
+            await flushAsync();
+
+            expect(mockedUpload).not.toHaveBeenCalled();
+        });
+    });
+
     describe('syncNow', () => {
         it('returns uploaded with the synced categories on success', async () => {
             givenCleanUploadPath({ triggers: 'data', aliases: 'data' });
