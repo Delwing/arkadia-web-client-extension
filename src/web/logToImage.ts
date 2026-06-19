@@ -15,8 +15,7 @@ const BLOCK_ELEMENTS = new Set([
     'BLOCKQUOTE', 'PRE', 'HR', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER',
 ]);
 
-const MAX_LINES = 5000;
-const MAX_CANVAS_DIM = 16384;
+const MAX_CANVAS_DIM = 32767;
 
 function extractStyledSpans(node: Node, defaultColor: string): StyledSpan[] {
     const spans: StyledSpan[] = [];
@@ -64,9 +63,6 @@ interface WrappedLine {
 export async function downloadLogAsImage(lines: FlatLogLine[], filename: string): Promise<void> {
     if (lines.length === 0) {
         throw new Error('Brak linii do zapisu');
-    }
-    if (lines.length > MAX_LINES) {
-        throw new Error(`Za duzo linii do wygenerowania obrazu (${lines.length}). Maksymalnie ${MAX_LINES}. Uzyj filtra zakresu.`);
     }
 
     const logsPreview = document.getElementById('logs-preview');
@@ -195,11 +191,17 @@ export async function downloadLogAsImage(lines: FlatLogLine[], filename: string)
         }
     }
 
-    const scale = 2;
     const width = containerWidth + padding * 2;
     const height = padding * 2 + wrappedLines.length * lineHeightPx;
 
-    if (height * scale > MAX_CANVAS_DIM) {
+    // Prefer 2x for sharper text; fall back to 1x if it would overflow the
+    // browser's canvas dimension limit. width is bounded by the preview width
+    // so only height typically risks the cap.
+    let scale = 2;
+    if (height * scale > MAX_CANVAS_DIM || width * scale > MAX_CANVAS_DIM) {
+        scale = 1;
+    }
+    if (height * scale > MAX_CANVAS_DIM || width * scale > MAX_CANVAS_DIM) {
         throw new Error(`Log za dlugi do wygenerowania obrazu (${wrappedLines.length} linii po zawinieciu). Uzyj filtra zakresu.`);
     }
 
