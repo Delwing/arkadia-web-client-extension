@@ -66,7 +66,14 @@ export function subscribeToRegistry(listener: () => void): () => void {
   };
 }
 
-export function updatePopup(id: string, updates: Partial<Pick<RegisteredPopup, 'isPinned' | 'isLocked' | 'headerActions'>>): void {
+export function updatePopup(
+  id: string,
+  updates: Partial<Pick<RegisteredPopup, 'isPinned' | 'isLocked' | 'headerActions'>> & {
+    /** Patches config.title — popups with live titles (counts, progress)
+     *  mutate this without re-registering. */
+    title?: string;
+  },
+): void {
   const popup = popupRegistry.get(id);
   if (popup) {
     // Check if anything actually changed
@@ -80,8 +87,18 @@ export function updatePopup(id: string, updates: Partial<Pick<RegisteredPopup, '
     if ('headerActions' in updates && popup.headerActions !== updates.headerActions) {
       hasChanges = true;
     }
+    const titleChanged =
+      'title' in updates && popup.config.title !== updates.title;
+    if (titleChanged) {
+      hasChanges = true;
+    }
     if (hasChanges) {
-      popupRegistry.set(id, { ...popup, ...updates });
+      const { title, ...rest } = updates;
+      const next: RegisteredPopup = { ...popup, ...rest };
+      if (titleChanged) {
+        next.config = { ...popup.config, title };
+      }
+      popupRegistry.set(id, next);
       notifyListeners();
     }
   }

@@ -198,6 +198,11 @@ export function useDockablePopup({
 
   useEffect(() => {
     if (!isOpen) return;
+    // Mirror the live title into BOTH registries. PanelHeader reads
+    // popup.config.title before window.title, so updating only the
+    // WindowManager record leaves the rendered header stale (the register
+    // effect intentionally no longer re-runs on title changes).
+    updatePopup(popupId, { title });
     if (isManagedByLayout) windowManager.setTitle(popupId, title);
   }, [isOpen, isManagedByLayout, popupId, title]);
 
