@@ -773,6 +773,11 @@ export function LogBrowser() {
   const exportWorkerRef = useRef<Worker | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const searchRequestIdRef = useRef(0);
+  // Mirrors pendingScrollTarget for the loader effect. Reading it through a ref
+  // keeps it out of the loader's dependency array, so clearing the target after
+  // a scroll-to-result does not re-trigger a reload (which would then scroll to
+  // the bottom of the log).
+  const pendingScrollTargetRef = useRef<SearchResult | null>(null);
 
   // Narrow the rendered lines to the selected timeline window. Lines are
   // chronologically ordered, so the range maps to a contiguous slice; the
@@ -991,7 +996,8 @@ export function LogBrowser() {
         const flat = flattenLogGroups(groups);
         setFlatLines(flat);
         // Scroll to bottom after loading (unless we have a pending scroll target)
-        if (!pendingScrollTarget || pendingScrollTarget.sessionName !== currentSession) {
+        const pending = pendingScrollTargetRef.current;
+        if (!pending || pending.sessionName !== currentSession) {
           setTimeout(() => {
             if (parentRef.current) {
               parentRef.current.scrollTop = parentRef.current.scrollHeight;
@@ -1004,7 +1010,7 @@ export function LogBrowser() {
     };
 
     loadSession();
-  }, [isOpen, currentSession, pendingScrollTarget]);
+  }, [isOpen, currentSession]);
 
   // Handle pending scroll target after session loads
   useEffect(() => {
@@ -1021,6 +1027,7 @@ export function LogBrowser() {
         virtualizer.scrollToIndex(targetIndex, { align: "center" });
       });
     }
+    pendingScrollTargetRef.current = null;
     setPendingScrollTarget(null);
 
     // Clear highlight after 2s
@@ -1207,6 +1214,7 @@ export function LogBrowser() {
     // it runs after the range reset re-renders the full (unfiltered) list.
     if (allResults.length > 0) {
       const firstResult = allResults[0];
+      pendingScrollTargetRef.current = firstResult;
       setPendingScrollTarget(firstResult);
       if (firstResult.sessionName !== currentSession) {
         setCurrentSession(firstResult.sessionName);
@@ -1224,6 +1232,7 @@ export function LogBrowser() {
     // Clear any timeline narrowing so the target line is in view, then let the
     // pending-scroll effect do the highlight/scroll against the full list.
     setRangeFilter(null);
+    pendingScrollTargetRef.current = result;
     setPendingScrollTarget(result);
     if (result.sessionName !== currentSession) {
       setCurrentSession(result.sessionName);
