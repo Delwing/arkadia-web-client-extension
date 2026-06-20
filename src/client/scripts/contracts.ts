@@ -195,7 +195,11 @@ export function parseAmountAndItem(text: string): { count: number; item: string;
     return { count: 1, item: text.trim() };
 }
 
-function parsePolishDays(text: string): number {
+export function parsePolishDays(text: string | undefined): number {
+    // No number word at all (e.g. "Na realizacje zamowienia mam dzien") -> one day.
+    if (!text) {
+        return 1;
+    }
     const lower = text.toLowerCase();
     if (POLISH_DAYS[lower] !== undefined) {
         return POLISH_DAYS[lower];
@@ -203,6 +207,13 @@ function parsePolishDays(text: string): number {
     const parsed = parseInt(text, 10);
     return isNaN(parsed) ? 1 : parsed;
 }
+
+// Pattern for deadline line
+// "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."
+// "Na realizacje zamowienia mam kilka godzin, pozniej zapewne bede potrzebowac czego innego."
+// "Na realizacje zamowienia mam dzien, pozniej zapewne bede potrzebowac czego innego." - no number, singular
+// The number word is optional (group 1 is undefined when absent -> defaults to 1 day).
+export const deadlinePattern = /.+? \S+ do [^:]+: Na realizacje zamowienia mam (?:([a-z ]+) )?(?:dni|dzien|godzin|godziny|godzine), pozniej zapewne bede potrzebowac czego innego\./;
 
 function generateContractId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -275,11 +286,6 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     // "Potrzebuje jeszcze jednej dwurecznej broni klujacej" - with "jeszcze"
     // The whole "amount + item" segment is captured as one group and split by parseAmountAndItem.
     const contractOfferPattern = /.+? \S+ do [^:]+: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje (?:jeszcze )?([^.,]+?)(?:, przynajmniej ([^.]+) jakosci)?\.(?:.*Dobrze zaplace)?/;
-
-    // Pattern for deadline line
-    // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."
-    // "Na realizacje zamowienia mam kilka godzin, pozniej zapewne bede potrzebowac czego innego."
-    const deadlinePattern = /.+? \S+ do [^:]+: Na realizacje zamowienia mam ([a-z ]+) (?:dni|dzien|godzin|godziny|godzine), pozniej zapewne bede potrzebowac czego innego\./;
 
     // Pattern for asking about contract
     // "Pytasz blekitnookiego krotkowlosego mezczyzne o zlecenie."

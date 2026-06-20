@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAmountAndItem } from '@client/scripts/contracts.ts';
+import { parseAmountAndItem, parsePolishDays, deadlinePattern } from '@client/scripts/contracts.ts';
 
 describe('parseAmountAndItem', () => {
     it('parses a one-word number, dropping the generic "sztuk" counter', () => {
@@ -62,5 +62,38 @@ describe('parseAmountAndItem', () => {
             unit: undefined,
             item: 'strzal',
         });
+    });
+});
+
+describe('deadlinePattern', () => {
+    const PREFIX = 'Niewysoki brazowooki mezczyzna mowi do ciebie:';
+
+    it('matches a numbered deadline and parses the count', () => {
+        const line = `${PREFIX} Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego.`;
+        const matches = line.match(deadlinePattern);
+        expect(matches).not.toBeNull();
+        expect(parsePolishDays(matches![1])).toBe(17);
+    });
+
+    it('matches a bare singular "dzien" with no number and defaults to one day', () => {
+        // Reported case: "...mam dzien, ..." has no number word before the unit.
+        const line = `${PREFIX} Na realizacje zamowienia mam dzien, pozniej zapewne bede potrzebowac czego innego.`;
+        const matches = line.match(deadlinePattern);
+        expect(matches).not.toBeNull();
+        expect(matches![1]).toBeUndefined();
+        expect(parsePolishDays(matches![1])).toBe(1);
+    });
+
+    it('matches a worded hours deadline', () => {
+        const line = `${PREFIX} Na realizacje zamowienia mam kilka godzin, pozniej zapewne bede potrzebowac czego innego.`;
+        const matches = line.match(deadlinePattern);
+        expect(matches).not.toBeNull();
+        expect(parsePolishDays(matches![1])).toBe(0.5);
+    });
+});
+
+describe('parsePolishDays', () => {
+    it('defaults to one day when given no number word', () => {
+        expect(parsePolishDays(undefined)).toBe(1);
     });
 });
