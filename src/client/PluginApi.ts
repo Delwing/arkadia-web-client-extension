@@ -338,8 +338,11 @@ export interface EventsApi {
    *
    * @example
    * ```typescript
-   * // Emit a notification
+   * // Emit an in-app notification (toast in the notification center)
    * api.events.emit("notify", { text: "Hello!", time: 5000 });
+   *
+   * // Also fire an OS/browser notification (when the user granted permission)
+   * api.events.emit("notify", { text: "Hello!", system: true });
    *
    * // Send a command
    * api.events.emit("sendCommand", { command: "look", echo: true });

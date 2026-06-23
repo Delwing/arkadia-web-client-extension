@@ -10,7 +10,7 @@ import {
 import eventBus from "@modules/core/eventBus";
 import TriggerEditModal from "./TriggerEditModal";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
@@ -21,6 +21,7 @@ export interface UserMacro {
     command?: string;
     soundKey?: string;
     label?: string;
+    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
     pluginConfig?: Record<string, any>;
     // Dim effect options
     dimStartOpacity?: number;
@@ -310,6 +311,8 @@ function UserTriggers() {
                         return 'rapid blink';
                     case 'functionalBind':
                         return m.label && m.command ? `bind [${m.label}] → ${m.command}` : 'functional bind';
+                    case 'notify':
+                        return m.message ? `notify ${m.message}` : 'notify';
                     case 'wrap': {
                         const parts: string[] = [];
                         if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);

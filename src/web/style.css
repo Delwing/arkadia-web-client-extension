@@ -6969,12 +6969,19 @@ body.mobile-command-radial-active {
 }
 
 #notification-center {
-  position: absolute;
+  /* Sticky (not absolute): the wrapper is the scroll container, so an absolutely
+     positioned child anchors to the content top and scrolls out of view as game
+     text accumulates. Sticky keeps it pinned to the visible top of the scrollport
+     across every map-position layout. */
+  position: sticky;
   top: 3rem;
-  left: 0.5rem;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.5rem;
+  padding-left: 0.5rem;
+  /* Overlay only — never intercept clicks/selection over the text below it. */
+  pointer-events: none;
   z-index: 1104;
 }
 

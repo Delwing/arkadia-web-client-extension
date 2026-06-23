@@ -5,7 +5,7 @@ import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -14,6 +14,7 @@ export interface UserMacro {
     command?: string;
     soundKey?: string;
     label?: string;
+    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
     pluginConfig?: Record<string, any>;
     // Dim effect options
     dimStartOpacity?: number;
@@ -142,6 +143,11 @@ function applyMacrosToMatch(
                     });
                 }
                 break;
+            case 'notify': {
+                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                client.sendEvent("notify", { text, system: true });
+                break;
+            }
             default:
                 // Handle plugin trigger macros
                 if (macro.type.startsWith('plugin:')) {
@@ -182,6 +188,11 @@ function applyEventMacros(
                     client.FunctionalBind.set(macro.label, () => {
                         client.sendCommand(macro.command!);
                     });
+                }
+                break;
+            case 'notify':
+                if (macro.message) {
+                    client.sendEvent("notify", { text: macro.message, system: true });
                 }
                 break;
             // Note: Plugin macros are not supported for event triggers
