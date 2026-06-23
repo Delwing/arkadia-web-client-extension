@@ -708,9 +708,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         const useHerb = async (m: RegExpMatchArray) => {
             const action = m[1];
             const herb = m[2].toLowerCase();
+            preUseCommands.forEach(cmd => client.sendCommand(cmd));
             await take(herb, 1);
             const biernik = herbs?.herb_id_to_odmiana[herb]?.biernik || herb;
-            preUseCommands.forEach(cmd => client.sendCommand(cmd));
             client.sendCommand(`${action} ${biernik}`);
             postUseCommands.forEach(cmd => client.sendCommand(cmd));
         };
@@ -722,9 +722,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             if (isNaN(amount)) {
                 amount = 1;
             }
+            preUseCommands.forEach(cmd => client.sendCommand(cmd));
             await take(herb, amount);
             const biernik = getHerbCase(herb, amount, herbs);
-            preUseCommands.forEach(cmd => client.sendCommand(cmd));
             client.sendCommand(`${action} ${amount} ${biernik}`);
             postUseCommands.forEach(cmd => client.sendCommand(cmd));
         };
