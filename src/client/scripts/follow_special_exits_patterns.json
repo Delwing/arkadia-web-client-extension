@@ -1,0 +1,2090 @@
+[
+  {
+    "name": "przecisnij_sie_przez_odplyw",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie przez odplyw\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna przeciskac sie przez odplyw.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_gore_korzenie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na gore\")",
+    "patterns": [
+      {
+        "pattern": "calkiem sprawnie radzac sobie ze wspinaczka po korzeniach zaczyna wspinac sie na powierzchnie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "dotknij_slupa",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"dotknij slupa;e;e;wespnij sie po linie\")",
+    "patterns": [
+      {
+        "pattern": "dotyka swietlistego slupa energii.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "dotknij_statui",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"dotknij statui\")",
+    "patterns": [
+      {
+        "pattern": "wyciagna swa reke i dotyka statui. O dziwo kamien nie stawia zadnego oporu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "furtka",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"furtka\")",
+    "patterns": [
+      {
+        "pattern": "Niewielka furtka otwiera sie.",
+        "type": 3
+      },
+      {
+        "pattern": "otwiera niewielka furtke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "nacisnij_kamien",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"nacisnij kamien\")",
+    "patterns": [
+      {
+        "pattern": "naciska cos na scianie i po chwili znika.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "obejdz_budynek",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"obejdz budynek\")",
+    "patterns": [
+      {
+        "pattern": "podaza sciezka wzdluz budynku.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "obroc_rzezbe",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"obroc rzezbe\")",
+    "patterns": [
+      {
+        "pattern": "podchodzi do posagu.",
+        "type": 0
+      },
+      {
+        "pattern": "Znika za nim i ku twemu zdumieniu nie wraca juz.",
+        "type": 3
+      }
+    ]
+  },
+  {
+    "name": "otworz_klape",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"otworz klape\")",
+    "patterns": [
+      {
+        "pattern": "otwiera klape i wydostaje sie przez otwor w suficie na gore.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "otworz_sarkofag_wejdz_do_sarkofagu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"otworz sarkofag;wejdz do sarkofagu\")",
+    "patterns": [
+      {
+        "pattern": "uklada sie w sarkofagu. Po chwili wieko zasuwa sie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "pchnij_sciane",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"pchnij sciane\")",
+    "patterns": [
+      {
+        "pattern": "popycha jedna ze scian szafy i znika w powstalym na chwile przejsciu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "podwaz_czarny_glaz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"podwaz czarny glaz\")",
+    "patterns": [
+      {
+        "pattern": "napina sie i probuje podwazyc jeden z glazow, ktory po chwili ustepuje ujawniajac spora",
+        "type": 0
+      },
+      {
+        "pattern": "wskazuje na czarny glaz.",
+        "type": 0
+      },
+      {
+        "pattern": "nagle wraca na swoja pierwotna pozycje.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "poklon_sie_statui",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"poklon sie statui\")",
+    "patterns": [
+      {
+        "pattern": "poklonil sie statui.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "polnocny-wschod_polnocny-zachod",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(matches[2])",
+    "patterns": [
+      {
+        "pattern": "przechodzi na (.*) po desce nad metna woda\\.$",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_do_baszty",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie do baszty\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie do baszty.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_miedzy_skalami",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie miedzy skalami\")",
+    "patterns": [
+      {
+        "pattern": "uwaznie stawiajac kazdy swoj krok przeciska sie pomiedzy skalami.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_na_polnoc",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie na polnoc\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie na polnoc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_na_poludnie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie na poludnie\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie na poludnie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_obok_drzewa",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie obok drzewa\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie obok drzewa.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_pod_pniem",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie pod pniem\")",
+    "patterns": [
+      {
+        "pattern": "wciska sie w przeswit pod pniem, po chwili",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_przez_gaszcz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie przez gaszcz\")",
+    "patterns": [
+      {
+        "pattern": "znika w gaszczu krzakow.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_przez_krzaki",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie przez krzaki\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie przez krzaki.",
+        "type": 0
+      },
+      {
+        "pattern": "rozgarnia krzewy probujac sie przez nie przedrzec. Po chwili znika wewnatrz sciany roslinnosci.",
+        "type": 0
+      },
+      {
+        "pattern": "znika w kepie wawrzynow.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna przeciskac sie przez krzaki na",
+        "type": 0
+      },
+      {
+        "pattern": "znika w kepie krzakow.",
+        "type": 0
+      },
+      {
+        "pattern": "ostroznie przedziera sie przez sciane galezi rosnacych tu krzakow.",
+        "type": 0
+      },
+      {
+        "pattern": "wbiega w krzaki w pospiechu i ze wszystkich sil przedziera sie przez ich galezie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_przez_lukarne",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie przez lukarne\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie przez lukarne.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_przez_otwor",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie przez otwor\")",
+    "patterns": [
+      {
+        "pattern": "pochyla sie i czolgajac probuje przecisnac sie przez otwor w murze... po chwili znika ci z oczu.",
+        "type": 0
+      },
+      {
+        "pattern": "przeciska sie przez otwor.",
+        "type": 0
+      },
+      {
+        "pattern": "pochyla sie i probuje wpelznac do otworu.",
+        "type": 0
+      },
+      {
+        "pattern": "odsuwa gelezie z ogromnego glazu i wchodzi przez znajdujacy sie u jego podstawy otwor pod ziemie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przecisnij_sie_przez_szczeline",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie przez szczeline\")",
+    "patterns": [
+      {
+        "pattern": "znika w szczelinie.",
+        "type": 0
+      },
+      {
+        "pattern": "przeciska sie przez szczeline.",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi do szczeliny miedzy glazami i znika w jej mroku.",
+        "type": 0
+      },
+      {
+        "pattern": "podchodzi do szczeliny we wschodniej scianie i szamotajac sie przez moment znika w jej wnetrzu.",
+        "type": 0
+      },
+      {
+        "pattern": "przeciska sie przez znajdujaca",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi do szczeliny by po chwili zniknac w jej wnetrzu.",
+        "type": 0
+      },
+      {
+        "pattern": "przywiera plasko do ziemi i wczolguje sie w szczeline.",
+        "type": 0
+      },
+      {
+        "pattern": "spuszczajac nogi w szczeline siada na ziemi, by po chwili zniknac w otworze.",
+        "type": 0
+      },
+      {
+        "pattern": "znika w kepie brzozek.",
+        "type": 0
+      },
+      {
+        "pattern": "wciska sie do szczeliny w scianie i po chwili znika z oczu.",
+        "type": 0
+      },
+      {
+        "pattern": "przeslizguje sie przez szczeline.",
+        "type": 0
+      },
+      {
+        "pattern": "wciska sie w skalne pekniecie w jednej ze scian.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeczolgaj_sie_na_polnoc",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeczolgaj sie na polnoc\")",
+    "patterns": [
+      {
+        "pattern": "przywiera plasko do posadzki i ryjac nosem w pokrywajacym ja piachu, posuwa sie na polnoc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeczolgaj_sie_na_poludnie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeczolgaj sie na poludnie\")",
+    "patterns": [
+      {
+        "pattern": "przywiera plasko do posadzki i ryjac nosem w pokrywajacym ja piachu, posuwa sie na poludnie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przedrzyj_przez_bluszcz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przedrzyj sie przez bluszcz\")",
+    "patterns": [
+      {
+        "pattern": "podchodzi pod bluszczowa zaslone. Rozglada sie chwile, po czym rozwiera",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_po_plytkach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz po \" .. matches[2] .. \" plytkach\")",
+    "patterns": [
+      {
+        "pattern": "podaza na druga strone mostu, stapajac po (\\w+) plytkach\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "podaza na druga strone pieczary, stapajac po (\\w+) plytkach\\.$",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_furtke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez furtke\")",
+    "patterns": [
+      {
+        "pattern": "podaza przez furtke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_portal",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez portal\")",
+    "patterns": [
+      {
+        "pattern": "znika ci nagle z oczu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_portal_kurhany",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez \" .. matches[2])",
+    "patterns": [
+      {
+        "pattern": "podaza na druga strone krypty przez (.+)\\.$",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_strumien",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez strumien\")",
+    "patterns": [
+      {
+        "pattern": "na drugi brzeg koryta.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_wneke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez wneke\")",
+    "patterns": [
+      {
+        "pattern": "przechodzi przez iluzje sciany.",
+        "type": 0
+      },
+      {
+        "pattern": "przechodzi przez wneke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_wodospad",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do wody;przejdz przez wodospad\")",
+    "patterns": [
+      {
+        "pattern": "podaza w kierunku wodospadu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_wodospad2",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez wodospad\")",
+    "patterns": [
+      {
+        "pattern": "podaza przez lustro wodospadu na zewnatrz.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_przez_zachodnia_sciane",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przejdz przez zachodnia sciane\")",
+    "patterns": [
+      {
+        "pattern": "nabiera powietrza, zamyka oczy i nagle znika!",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przejdz_za_glazy",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przecisnij sie za glazy\")",
+    "patterns": [
+      {
+        "pattern": "rusza w kierunku przegradzajacych droge glazow",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przekrec_czaszke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przekrec czaszke\")",
+    "patterns": [
+      {
+        "pattern": "majstruje cos przy scianie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przekrec_galke_odsun_kredens",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przekrec galke;odsun kredens\")",
+    "patterns": [
+      {
+        "pattern": "przesuwa lekko rzezbiony kredens, znikajac w czarnej otchlani jaka sie za nim odslania.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeplyn_na_polnoc",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeplyn na polnoc\")",
+    "patterns": [
+      {
+        "pattern": "nurkuje i przeplywa na polnoc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeplyn_na_poludnie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeplyn na poludnie\")",
+    "patterns": [
+      {
+        "pattern": "nurkuje i przeplywa na poludnie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeplyn_rzeke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeplyn rzeke\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do wody i przeplywa na przeciwlegly brzeg.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przepraw_sie_przez_rzeke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przepraw sie przez rzeke\")",
+    "patterns": [
+      {
+        "pattern": "spycha jedno z czolen na wode",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi do niezbyt glebokiej wody po piers i przeprawia sie na przeciwlegly brzeg.",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi na lod skuwajacy rzeke i ostroznie stawiajac kroki przeprawia sie na przeciwlegly brzeg.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_na_most",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz na most\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozbieg i przeskakuje na most.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_na_polke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz na polke\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozbieg i przeskakuje na polke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_na_polnoc",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz na polnoc\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozped i z latwoscia przeskakuje nad zaglebieniem, podazajac na polnoc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_na_poludnie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz na poludnie\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozped i z latwoscia przeskakuje nad zaglebieniem, podazajac na poludnie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_nad_zaglebieniem",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz nad zaglebieniem\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozped i z latwoscia przeskakuje nad zaglebieniem podazajac na",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_palisade",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz palisade\")",
+    "patterns": [
+      {
+        "pattern": "przeskakuje palisade.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_przepasc",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz przepasc\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozbieg i przeskakuje przepasc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_przez_przepasc",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz przez przepasc\")",
+    "patterns": [
+      {
+        "pattern": "przeskakuje przez przepasc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_rozpadline",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz rozpadline\")",
+    "patterns": [
+      {
+        "pattern": "bierze krotki rozbieg i przeskakuje nad rozpadlina.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_szczeline",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz szczeline\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozbieg i przeskakuje szczeline.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeskocz_wyrwe",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeskocz wyrwe\")",
+    "patterns": [
+      {
+        "pattern": "bierze rozbieg i przeskakuje wyrwe.",
+        "type": 0
+      },
+      {
+        "pattern": "bierze rozbieg by przeskoczyc wyrwe.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeslizgnij_sie_miedzy_beczkami",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeslizgnij sie miedzy beczkami\")",
+    "patterns": [
+      {
+        "pattern": "podaza przeciskajac sie pomiedzy beczkami do otworu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przeslizgnij_sie_przez_szczeline",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przeslizgnij sie przez szczeline\")",
+    "patterns": [
+      {
+        "pattern": "przeslizguje sie przez szczeline.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przesun_glaz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przesun glaz\")",
+    "patterns": [
+      {
+        "pattern": "zapiera sie nogami o grunt i probuje przesunac glaz.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przesun_pien",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przesun pien\")",
+    "patterns": [
+      {
+        "pattern": "chwyta za jeden z konarow i zaczyna przesuwac pien.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "przesun_plyte",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"przesun plyte\")",
+    "patterns": [
+      {
+        "pattern": "przesuwa plyte i wydostaje sie przez otwor w suficie na gore.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "skocz_do_stawu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"skocz do stawu\")",
+    "patterns": [
+      {
+        "pattern": "zatyka nos i skacze do stawu machajac nogami.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "unies_krate",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"unies krate\")",
+    "patterns": [
+      {
+        "pattern": "unosi ciezka, zardzewiala krate i zeskakuje do otworu, ktory zaslaniala.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "unies_krate_klape_plyte",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"unies \" .. matches[2])",
+    "patterns": [
+      {
+        "pattern": "zapiera sie nogami o grunt i probuje uniesc ((?:[\\w-]+ )?[\\w-]+ \\w+)\\.",
+        "type": 1
+      },
+      {
+        "pattern": "zapiera sie nogami o grunt i probuje uniesc ((?:[\\w-]+ )?[\\w-]+ \\w+) w podlodze\\.",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "wcisnij_plaskorzezbe",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wcisnij plaskorzezbe\")",
+    "patterns": [
+      {
+        "pattern": "znika nagle.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wcisnij_sie_do_wneki",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wcisnij sie do wneki\")",
+    "patterns": [
+      {
+        "pattern": "pochyla sie i niemal na czworaka wciska sie do wneki pod rumowiskiem, aby po chwili zupelnie w niej zniknac.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wcisnij_zapadke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wcisnij zapadke\")",
+    "patterns": [
+      {
+        "pattern": "niespodziewanie znika z twoich oczu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_na_glaz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie na glaz\")",
+    "patterns": [
+      {
+        "pattern": "wdrapuje sie na duzy glaz.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_na_glaz_wespnij_sie_na_polke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie na glaz;wespnij sie na polke\")",
+    "patterns": [
+      {
+        "pattern": "zrecznie wspina sie na znajdujaca sie powyzej polke skalna.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_na_gore",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie na gore\")",
+    "patterns": [
+      {
+        "pattern": "calkiem sprawnie radzac sobie ze wspinaczka po korzeniach, podaza w kierunku powierzchni ziemi.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_na_polke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie na polke\")",
+    "patterns": [
+      {
+        "pattern": "wdrapuje sie na skalna polke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_na_sciezke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie na sciezke\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna szybko wdrapywac sie po scianie. Po chwili znika za zalomem",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_po_korzeniu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie po korzeniu\")",
+    "patterns": [
+      {
+        "pattern": "lapie za korzen i szybko wspina sie po skale. Po chwili wciaga sie na",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wdrap_sie_po_sznurze",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wdrap sie po sznurze\")",
+    "patterns": [
+      {
+        "pattern": "sprawnie sie podciagajac wychodzi ze studni.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_alkierza",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do alkierza\")",
+    "patterns": [
+      {
+        "pattern": "podaza znikajac w alkierzu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_baszty",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do baszty\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do baszty.",
+        "type": 0
+      },
+      {
+        "pattern": "przechodzi obok gruzow i wciska sie w szczeline przy wejsciu bo baszty, niknac w jej wnetrzu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_chaty",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do chaty\")",
+    "patterns": [
+      {
+        "pattern": "pokonujac zarastajace droge zarosla wchodzi do wnetrza spalonej chaty.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_czerwonego_wozu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do czerwonego wozu\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do czerwonego wozu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_dziupli",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do dziupli\")",
+    "patterns": [
+      {
+        "pattern": "przeciska sie przez otwor do ogromnej dziupli.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_dziury",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do dziury\")",
+    "patterns": [
+      {
+        "pattern": "podchodzi do waskiej dziury pod jednym drzew i po chwili w nim znika.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_grobowca",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do grobowca\")",
+    "patterns": [
+      {
+        "pattern": " wsuwa sie do grobowca.",
+        "type": 0
+      },
+      {
+        "pattern": "podaza do mauzoleum.",
+        "type": 0
+      },
+      {
+        "pattern": "podaza do grobowca.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_jamy",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do jamy\")",
+    "patterns": [
+      {
+        "pattern": "na kleczkach wchodzi do jamy.",
+        "type": 0
+      },
+      {
+        "pattern": "nagle znika ci z oczu!",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_jaskini",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do jaskini\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do jaskini.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_komina",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;wejdz do komina;dobadz wszystkich broni\")",
+    "patterns": [
+      {
+        "pattern": "znika w glebinach komina, pomagajac sobie przy tym wolna reka.",
+        "type": 0
+      },
+      {
+        "pattern": "mocno odbija sie stopami od podloza i zaczyna wspinaczke wglab tunelu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_krypty",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do krypty\")",
+    "patterns": [
+      {
+        "pattern": "podaza do krypty.",
+        "type": 0
+      },
+      {
+        "pattern": "schyla sie niezgrabnie i wchodzi do krypty.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_kurhanu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do kurhanu\")",
+    "patterns": [
+      {
+        "pattern": "podaza do kurhanu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_kutra",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do kutra\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie do kutra.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_latarni",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do latarni\")",
+    "patterns": [
+      {
+        "pattern": "podaza do wnetrza latarni.",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi do wnetrza latarni.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_namiotu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do namiotu\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do rozlozonego plociennego duzego namiotu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_okienka",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do okienka\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie do okienka.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_otworu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do otworu\")",
+    "patterns": [
+      {
+        "pattern": "znika w otworze.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_pieczary",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do pieczary\")",
+    "patterns": [
+      {
+        "pattern": "podaza do pieczary szefa.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_sarkofagu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do sarkofagu\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do starego sarkofagu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_studni_przecisnij_sie_przez_otwor",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do studni;przecisnij sie przez otwor\")",
+    "patterns": [
+      {
+        "pattern": "przeskakuje przez krawedz studni i znika z twych oczu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_szafy",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do szafy;pchnij sciane;unies klape\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do szafy.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_tunelu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do tunelu\")",
+    "patterns": [
+      {
+        "pattern": "kladac sie na ziemi przeciska sie przez waski otwor.",
+        "type": 0
+      },
+      {
+        "pattern": "podaza do tunelu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_wody",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;zdejmij tarcze;wejdz do wody\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi do wody.",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi do wody w sadzawce i nurkuje pod jej powierzchnia.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_do_wyrwy",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do wyrwy\")",
+    "patterns": [
+      {
+        "pattern": "znika w wyrwie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_drzewo",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na drzewo\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi na drzewo.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_gore",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na gore\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie na gore.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie po skarpie na gore.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na polke.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie po wielkich glazach skalnego rumowiska.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie po scianie",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na gran.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na uskok.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na sciane.",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi po kreconych schodach na gore.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna powoli wchodzic do gory.",
+        "type": 0
+      },
+      {
+        "pattern": "przechodzi szybko przez rozmyty row wyschnietej fosy i zabiera sie za wspinaczke po ogromnym gruzowisku.",
+        "type": 0
+      },
+      {
+        "pattern": "lapie sie za liny i zaczyna wspinac sie do gory.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie po skarpie na gore.",
+        "type": 0
+      },
+      {
+        "pattern": "^Niepewnie lapiac sie bardziej wystajacych kamieni \\w+ zaczyna wolno wspinac sie na gore\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Kamien po kamieniu \\w+ zaczyna wspinac sie na polke skalna\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "zaczyna wspinac sie po rumowisku.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_luk",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na luk\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi ostroznie na luk skalny, potykajac sie lekko.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na luk skalny.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_most",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na most\")",
+    "patterns": [
+      {
+        "pattern": "ostroznie wchodzi na most i powoli podaza w kierunku jego srodka.",
+        "type": 0
+      },
+      {
+        "pattern": "wchodzi na przewieszony nad przepascia most linowy.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_pien",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na pien\")",
+    "patterns": [
+      {
+        "pattern": "podaza na pien.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_plyte",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na plyte\")",
+    "patterns": [
+      {
+        "pattern": "staje niepewnie na kamiennej plycie, i nagle zapada sie w dol! Po chwili",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_podest",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na podest\")",
+    "patterns": [
+      {
+        "pattern": " bez trudu wchodzi na podest... traci rownowage",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_skaly",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na skaly\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie na skaly.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_na_szczyt",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz na szczyt\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie na szczyt.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_drabince",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;wejdz po drabince;dobadz wszystkich broni\")",
+    "patterns": [
+      {
+        "pattern": "wspina sie w gore po stalowej drabince wiodacej na szczyt",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_drabince_na_gore",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz po drabince na gore\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi po metalowej drabince na gore.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_drabinie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;wejdz po drabinie;dobadz wszystkich broni\")",
+    "patterns": [
+      {
+        "pattern": "ostroznie wchodzi do gory lapiac",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie po drewnianych",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie po drabinie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_korzeniu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz po korzeniu\")",
+    "patterns": [
+      {
+        "pattern": "lapie za korzen i szybko wspina sie po skale.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_linie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz po linie\")",
+    "patterns": [
+      {
+        "pattern": "chwyta za line skryta posrod pnacz bluszczu i razno zaczyna wspinac sie po niej na szczyt urwiska.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_schodach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz po schodach\")",
+    "patterns": [
+      {
+        "pattern": "wchodzi po schodach na gore i niknie ci z oczu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_schodkach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz po schodkach\")",
+    "patterns": [
+      {
+        "pattern": "korzystajac ze skrzypiacych schodow wchodzi na pietro wiezy.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_po_stopniach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz po stopniach\")",
+    "patterns": [
+      {
+        "pattern": "pokonuje kilkanascie kamiennych stopni.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_w_krzaki",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz w krzaki\")",
+    "patterns": [
+      {
+        "pattern": "rusza w strone kurhanu, przedzierajac sie przez lapiace",
+        "type": 0
+      },
+      {
+        "pattern": "znika w porastajacych krawedz traktu krzakach.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_w_otwor",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz w otwor\")",
+    "patterns": [
+      {
+        "pattern": "odnajduje otwor prowadzacy w dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_w_sciane",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz w sciane\")",
+    "patterns": [
+      {
+        "pattern": "znika nagle w jednej ze scian.",
+        "type": 0
+      },
+      {
+        "pattern": "podaza przez iluzoryczna sciane.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_w_szczeline",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz w szczeline\")",
+    "patterns": [
+      {
+        "pattern": "podaza w szczeline.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wejdz_za_najwiekszy_krzak",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz za najwiekszy krzak\")",
+    "patterns": [
+      {
+        "pattern": "wciska sie za najwiekszy krzak jalowca.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_do_gory",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie do gory\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie ku gorze.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_do_kraty",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie do kraty\")",
+    "patterns": [
+      {
+        "pattern": "ku widocznej w suficie kracie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_barak",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na barak\")",
+    "patterns": [
+      {
+        "pattern": "wspina sie na dach baraku.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_brame",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na brame\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie na brame.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna ostroznie wspinac sie po sliskich belkach bramy.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_drzewo",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na drzewo\")",
+    "patterns": [
+      {
+        "pattern": "wspina sie na drzewo.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_most",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na most\")",
+    "patterns": [
+      {
+        "pattern": "wspina sie po najblizszym zboczu docierajac w koncu na trakt.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na most.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_mur",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na mur\")",
+    "patterns": [
+      {
+        "pattern": "bierze dluzszy rozbieg i w kilku susach wdrapuje sie po obalonym konarze.",
+        "type": 0
+      },
+      {
+        "pattern": "podaza przeskakujac przez mur.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna wspinac sie na mur.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_polke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na polke\")",
+    "patterns": [
+      {
+        "pattern": "zeskakuje z mostu ladujac na waskiej polce skalnej.",
+        "type": 0
+      },
+      {
+        "pattern": "z widocznym wysilkiem wspina sie na widniejaca w gorze polke skalna.",
+        "type": 0
+      },
+      {
+        "pattern": "zrecznie wspina sie na znajdujaca sie powyzej polke skalna.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_na_skarpie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie na skarpe\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna wspinac sie na skarpe.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_glazach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po glazach\")",
+    "patterns": [
+      {
+        "pattern": "powoli wspina sie do gory",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_lancuchu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po lancuchu\")",
+    "patterns": [
+      {
+        "pattern": "chwyta mocno lancuch i zaczyna powoli wspinac sie w gore.",
+        "type": 0
+      },
+      {
+        "pattern": "ostroznie wschodzi na pozostalosci klatki chwytajac sie powyginanych pretow. Znalazlszy sie na gorze lapie pek lancuchow i powoli zaczyna sie po nich wspinac.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_linach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po linach\")",
+    "patterns": [
+      {
+        "pattern": "pewnie lapie za zwisajace liny i zaczyna wspinac sie do gory. Po chwili",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_linie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po linie\")",
+    "patterns": [
+      {
+        "pattern": "chwyta mocno line i zaczyna sie powoli wspinac w gore.",
+        "type": 0
+      },
+      {
+        "pattern": "pewnie lapie za zwisajace liny",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_pniu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po pniu\")",
+    "patterns": [
+      {
+        "pattern": "zrecznie wspina sie po zwalonym drzewie w kierunku krawedzi jaru.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_scianie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po scianie\")",
+    "patterns": [
+      {
+        "pattern": "wspina sie po scianie jaru.",
+        "type": 0
+      },
+      {
+        "pattern": "chwytajac sie wystajacych glazow nie bez wysilku wspina sie na skarpe.",
+        "type": 0
+      },
+      {
+        "pattern": "chwyta ukrytych za miniaturowym wodospadem wystepow skalnych po czym wspina sie na sama gore niknac w znajdujacym sie tam tunelu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wespnij_sie_po_skale",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wespnij sie po skale\")",
+    "patterns": [
+      {
+        "pattern": "ostroznie wspina sie do gory.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wskocz_na_most",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wskocz na most\")",
+    "patterns": [
+      {
+        "pattern": "biorac krotki rozbieg wskakuje na kamienny most.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wskocz_do_jamy",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wskocz do jamy\")",
+    "patterns": [
+      {
+        "pattern": "zeskakuje do pobliskiej jamy, niknac calkowicie w jej wnetrzu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wskocz_do_studni",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wskocz do studni\")",
+    "patterns": [
+      {
+        "pattern": "skacze do studni, w nieprzenikniona, czarna czelusc.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wskocz_do_wody",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;wskocz do wody\")",
+    "patterns": [
+      {
+        "pattern": "wskauje do otworu i zanurza sie w czarnej niczym noc wodzie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wslizgnij_sie_do_otworu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wslizgnij sie do otworu\")",
+    "patterns": [
+      {
+        "pattern": "wslizguje sie do lodowej dziury.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wyjdz_na_zewnatrz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wyjdz na zewnatrz\")",
+    "patterns": [
+      {
+        "pattern": "znika w wyrwie wychodzac na zewnatrz.",
+        "type": 0
+      },
+      {
+        "pattern": "przeciska sie przez szczeline w wyrwie wychodzac na zewnatrz.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "wyjscie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"wyjscie\")",
+    "patterns": [
+      {
+        "pattern": "podaza do wyjscia.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zanurkuj",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;zdejmij tarcze;zanurkuj\")",
+    "patterns": [
+      {
+        "pattern": "podaza pod wode, nurkujac.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zanurkuj_pod_wode",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zanurkuj pod wode\")",
+    "patterns": [
+      {
+        "pattern": "z posepna mina spoglada na metna wode. Po chwili wachania nurkuje",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zapukaj_w_skale",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zapukaj w skale\")",
+    "patterns": [
+      {
+        "pattern": "stuka w skale.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_do_rozpadliny",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz do rozpadliny\")",
+    "patterns": [
+      {
+        "pattern": "schodzi do rozpadliny.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_na_dol",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz na dol\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna sie powoli opuszczac przez gleboka wyrwe w murze.",
+        "type": 0
+      },
+      {
+        "pattern": "zsuwa sie po skarpie.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "lapiac sie wystajacych odlamkow skalnych schodzi w dol.",
+        "type": 0
+      },
+      {
+        "pattern": "spoglada na dol i ostroznie zsuwa sie tam.",
+        "type": 0
+      },
+      {
+        "pattern": "smialo zaczyna schodzic w dol i po chwili znika ci z oczu.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic po scianie.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic do niecki.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic po skarpie.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic do jamy.",
+        "type": 0
+      },
+      {
+        "pattern": "schodzi po kreconych schodach na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "wciska sie do skalnego szybu i zaczyna schodzic na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "wychyla sie przez okno i zaczyna schodzic na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna powoli schodzic na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "uwaznie stawiajac kazdy swoj krok zsuwa sie posrod skal.",
+        "type": 0
+      },
+      {
+        "pattern": "lapie za liny i zaczyna schodzic na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic po skarpie na dol.",
+        "type": 0
+      },
+      {
+        "pattern": "^Wykorzystujac platanine galezi mocno przywierajaca do skalnej sciany \\w+ zaczyna powoli schodzic na dol\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Niepewnie lapiac sie bardziej wystajacych kamieni \\w+ zaczyna wolno opuszczac sie w dol\\.$",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "zejdz_na_dol_po_drabinie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;zejdz na dol po drabinie;dobadz wszystkich broni\")",
+    "patterns": [
+      {
+        "pattern": "chwyta koncowe szczeble drabiny i zaczyna",
+        "type": 0
+      },
+      {
+        "pattern": "Drabina w tej chwili jest zajmowana przez kogos innego, musisz chwile poczekac, az sie zwolni.",
+        "type": 3
+      }
+    ]
+  },
+  {
+    "name": "zejdz_na_placyk",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz na placyk\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna schodzic na placyk.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_na_polke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz na polke\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna schodzic na polke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_na_wschod",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz na wschod\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna schodzic na wschod.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_nad_strumien",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz nad strumien\")",
+    "patterns": [
+      {
+        "pattern": "schodzi z mostu nad strumien.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_drabince",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;zejdz po drabince;dobadz wszystkich broni\")",
+    "patterns": [
+      {
+        "pattern": "schodzi po drabince.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_drabince_na_dol",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po drabince na dol\")",
+    "patterns": [
+      {
+        "pattern": "schodzi po metalowej drabince na dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_drabinie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"opusc bronie;zejdz po drabinie;dobadz wszystkich broni\")",
+    "patterns": [
+      {
+        "pattern": "ostroznie schodzi na dol",
+        "type": 0
+      },
+      {
+        "pattern": "schodzi po drabinie.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic po drabinie.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_lancuchu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po lancuchu\")",
+    "patterns": [
+      {
+        "pattern": "chwyta mocno lancuch i powoli zsuwa sie w dol.",
+        "type": 0
+      },
+      {
+        "pattern": "nachyla sie nad dziura w posadzce lapiac lancuch i zawisa na nim, by powoli  zaczac opuszczac sie w dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_linie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po linie\")",
+    "patterns": [
+      {
+        "pattern": "chwyta mocno line i powoli zsuwa sie w dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_pniu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po pniu\")",
+    "patterns": [
+      {
+        "pattern": "schodzi po starym pniu.",
+        "type": 0
+      },
+      {
+        "pattern": "schodzi po starym pniu w polmrok wawozu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_schodkach",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po schodkach\")",
+    "patterns": [
+      {
+        "pattern": "znika w ciemnym otworze, schodzac po schodach na parter.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_scianie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po scianie\")",
+    "patterns": [
+      {
+        "pattern": "chwytajac sie skalnych ostepow ostroznie schodzi w dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_po_zboczu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz po zboczu\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna schodzic po zboczu.",
+        "type": 0
+      },
+      {
+        "pattern": "schodzi po zboczu.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_pod_most",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz pod most\")",
+    "patterns": [
+      {
+        "pattern": "ostroznie schodzi po zboczu pod most.",
+        "type": 0
+      },
+      {
+        "pattern": "zaczyna schodzic pod most.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_pod_poklad",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz pod poklad\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna schodzic pod poklad.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zejdz_z_kutra",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz z kutra\")",
+    "patterns": [
+      {
+        "pattern": "zaczyna schodzic z kutra.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zeskocz_na_dol",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zeskocz na dol\")",
+    "patterns": [
+      {
+        "pattern": "zeskakuje na dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zeskocz_na_glaz",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zeskocz na glaz;wskocz do wody;zanurkuj pod wode\")",
+    "patterns": [
+      {
+        "pattern": "rzucajac niepewne spojrzenie na czarna wode",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zeskocz_na_placyk",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zeskocz na placyk\")",
+    "patterns": [
+      {
+        "pattern": "zeskakuje na plaskie podloze jaskini.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zeskocz_na_polke",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zeskocz na polke\")",
+    "patterns": [
+      {
+        "pattern": "zeskakuje na skalna polke.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zsun_sie_na_dol",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zsun sie na dol\")",
+    "patterns": [
+      {
+        "pattern": "podchodzi do szczeliny w skale i znika w jej wnetrzu.",
+        "type": 0
+      },
+      {
+        "pattern": "ostroznie zsuwa sie w dol.",
+        "type": 0
+      }
+    ]
+  },
+  {
+    "name": "zsun_sie_po_linie",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zsun sie po linie\")",
+    "patterns": [
+      {
+        "pattern": "podchodzi do szybu i pewnie lapie za zwisajace liny, by po chwili zsunac sie",
+        "type": 0
+      }
+    ]
+  }
+]
