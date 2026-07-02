@@ -26,6 +26,18 @@ export interface CategoryDefinition {
     scope: 'shared' | 'device';
     /** 'cold': changes frequently during play; synced with the long (10 min) debounce */
     speed: 'hot' | 'cold';
+    /**
+     * How diverged local and cloud versions can be combined on conflict:
+     * - 'append': data is additive (rooms visited, kill records, knowledge
+     *   events) — importing performs a union, so both sides merge losslessly.
+     * - 'perCharacter': payload is a { characterName: data } map — merge keeps
+     *   the chosen side for overlapping characters and both sides' exclusive
+     *   characters, so playing different characters on two devices never
+     *   discards one of them.
+     * - undefined: opaque whole-value data; conflict resolution is
+     *   keep-local / use-cloud as a whole.
+     */
+    merge?: 'append' | 'perCharacter';
     /** Global localStorage keys, exported as { [key]: rawValue } */
     globalKeys?: readonly string[];
     /** Character-scoped localStorage base key, exported as { [characterName]: rawValue } */
@@ -42,20 +54,20 @@ export const CATEGORY_REGISTRY = {
     uiSettings: { name: 'Ustawienia interfejsu', group: 'interface', scope: 'device', speed: 'hot', customSync: true },
     binds: { name: 'Bindy klawiszy', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['binds', 'keymaps'] },
     shortcuts: { name: 'Skroty', group: 'map', scope: 'shared', speed: 'hot', globalKeys: ['shortcuts'] },
-    characterSettings: { name: 'Ustawienia postaci', group: 'character', scope: 'shared', speed: 'hot', customSync: true },
+    characterSettings: { name: 'Ustawienia postaci', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', customSync: true },
     triggers: { name: 'Triggery', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['triggers'] },
     aliases: { name: 'Aliasy', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['aliases'] },
     multibinds: { name: 'Multibindy', group: 'control', scope: 'shared', speed: 'hot', customSync: true },
     buttons: { name: 'Przyciski', group: 'interface', scope: 'device', speed: 'hot', customSync: true },
     radial: { name: 'Menu radialne', group: 'interface', scope: 'shared', speed: 'hot', customSync: true },
-    visitedRooms: { name: 'Odwiedzone lokacje', group: 'map', scope: 'shared', speed: 'cold', customSync: true },
+    visitedRooms: { name: 'Odwiedzone lokacje', group: 'map', scope: 'shared', speed: 'cold', merge: 'append', customSync: true },
     locationNotes: { name: 'Notatki lokacji', group: 'map', scope: 'shared', speed: 'hot', customSync: true },
-    killCounts: { name: 'Licznik zabitych', group: 'character', scope: 'shared', speed: 'cold', characterKey: 'kill_counter', customSync: true },
-    improveCounts: { name: 'Licznik postepow', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'improve_counter_lifetime' },
-    deposits: { name: 'Depozyty', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'deposits' },
-    containers: { name: 'Pojemniki', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'containers' },
-    peopleEdits: { name: 'Edycje bazy postaci', group: 'character', scope: 'shared', speed: 'hot', characterKey: 'peopleLocalEvents' },
-    knowledge: { name: 'Wiedza', group: 'character', scope: 'shared', speed: 'hot', customSync: true },
+    killCounts: { name: 'Licznik zabitych', group: 'character', scope: 'shared', speed: 'cold', merge: 'append', characterKey: 'kill_counter', customSync: true },
+    improveCounts: { name: 'Licznik postepow', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'improve_counter_lifetime' },
+    deposits: { name: 'Depozyty', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'deposits' },
+    containers: { name: 'Pojemniki', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'containers' },
+    peopleEdits: { name: 'Edycje bazy postaci', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'peopleLocalEvents' },
+    knowledge: { name: 'Wiedza', group: 'character', scope: 'shared', speed: 'hot', merge: 'append', customSync: true },
 } as const satisfies Record<string, CategoryDefinition>;
 
 // Sync category names (matches SyncOptions keys)

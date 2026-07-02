@@ -288,6 +288,53 @@ describe('SyncDebounceManager', () => {
     });
 
     // -------------------------------------------------------------------------
+    // flushAll (pagehide)
+    // -------------------------------------------------------------------------
+    describe('flushAll', () => {
+        it('should fire immediately when a hot sync is pending', () => {
+            syncDebounceManager.handleStorageChange(['triggers']);
+            expect(onSyncNeeded).not.toHaveBeenCalled();
+
+            syncDebounceManager.flushAll();
+            expect(onSyncNeeded).toHaveBeenCalledTimes(1);
+        });
+
+        it('should fire immediately when a cold sync is pending', () => {
+            syncDebounceManager.handleStorageChange(['kill_counter']);
+            syncDebounceManager.flushAll();
+            expect(onSyncNeeded).toHaveBeenCalledTimes(1);
+        });
+
+        it('should do nothing when no sync is pending', () => {
+            syncDebounceManager.flushAll();
+            expect(onSyncNeeded).not.toHaveBeenCalled();
+        });
+
+        it('should cancel timers so nothing double-fires afterwards', () => {
+            syncDebounceManager.handleStorageChange(['triggers']);
+            syncDebounceManager.flushAll();
+            jest.advanceTimersByTime(HOT_SYNC_MS + COLD_SYNC_MS);
+            expect(onSyncNeeded).toHaveBeenCalledTimes(1);
+        });
+
+        it('should be triggered by the pagehide event (hot changes upload before close)', () => {
+            syncDebounceManager.handleStorageChange(['triggers']);
+            expect(onSyncNeeded).not.toHaveBeenCalled();
+
+            window.dispatchEvent(new Event('pagehide'));
+            expect(onSyncNeeded).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not fire on pagehide after destroy', () => {
+            syncDebounceManager.handleStorageChange(['triggers']);
+            syncDebounceManager.destroy();
+
+            window.dispatchEvent(new Event('pagehide'));
+            expect(onSyncNeeded).not.toHaveBeenCalled();
+        });
+    });
+
+    // -------------------------------------------------------------------------
     // hasPendingSync / hasPendingColdSync
     // -------------------------------------------------------------------------
     describe('hasPendingSync', () => {
@@ -487,6 +534,26 @@ describe('SyncDebounceManager', () => {
             expect(onSyncNeeded).toHaveBeenCalledTimes(1);
 
             // Restore to visible
+            Object.defineProperty(document, 'visibilityState', {
+                value: 'visible',
+                writable: true,
+                configurable: true,
+            });
+        });
+
+        it('should NOT flush hot changes on tab hide (alt-tab must not force uploads)', () => {
+            syncDebounceManager.handleStorageChange(['triggers']);
+
+            Object.defineProperty(document, 'visibilityState', {
+                value: 'hidden',
+                writable: true,
+                configurable: true,
+            });
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            expect(onSyncNeeded).not.toHaveBeenCalled();
+            expect(syncDebounceManager.hasPendingSync()).toBe(true);
+
             Object.defineProperty(document, 'visibilityState', {
                 value: 'visible',
                 writable: true,

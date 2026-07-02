@@ -267,7 +267,16 @@ export async function importAllKillRecords(records: KillRecord[]): Promise<void>
         const tx = db.transaction([STORE_NAME], 'readwrite');
         const store = tx.objectStore(STORE_NAME);
         for (const record of records) {
-            store.put(record);
+            // Merge with the existing record instead of overwriting: counts only
+            // ever grow, so the higher one is the more complete tally. Keeps an
+            // import (sync or backup restore) from erasing kills recorded locally.
+            const getReq = store.get(record.id);
+            getReq.onsuccess = () => {
+                const existing = getReq.result as KillRecord | undefined;
+                store.put(existing && existing.count > record.count
+                    ? existing
+                    : record);
+            };
         }
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(new Error('Failed to import kill records'));

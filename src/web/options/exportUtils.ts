@@ -330,8 +330,10 @@ export async function exportVisitedRooms(selectedCharacters: string[]): Promise<
                             return;
                         }
                     }
+                    // Sort for a canonical export — insertion order differs between
+                    // devices and would break checksum comparison of identical data.
                     const rooms = Array.isArray(entry?.rooms)
-                        ? entry.rooms.filter((v: unknown) => Number.isFinite(v as number)).map((v: number) => Number(v))
+                        ? entry.rooms.filter((v: unknown) => Number.isFinite(v as number)).map((v: number) => Number(v)).sort((a: number, b: number) => a - b)
                         : [];
                     result.push({ id, rooms });
                 });
@@ -353,7 +355,16 @@ export async function importVisitedRooms(entries: ExportedVisitedRoomsEntry[]): 
         const tx = db.transaction(["visitedRooms"], "readwrite");
         const store = tx.objectStore("visitedRooms");
         entries.forEach(entry => {
-            store.put({ id: entry.id, rooms: Array.isArray(entry.rooms) ? entry.rooms : [] });
+            const incoming = Array.isArray(entry.rooms) ? entry.rooms : [];
+            // Union with existing rooms — visited rooms are append-only, so an
+            // import must never discard rooms visited locally but absent from
+            // the imported snapshot (e.g. explored while another device synced).
+            const getReq = store.get(entry.id);
+            getReq.onsuccess = () => {
+                const existing: number[] = Array.isArray(getReq.result?.rooms) ? getReq.result.rooms : [];
+                const merged = Array.from(new Set([...existing, ...incoming])).sort((a, b) => a - b);
+                store.put({ id: entry.id, rooms: merged });
+            };
         });
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(new Error("Failed to store visited rooms"));
@@ -691,8 +702,10 @@ export async function applyImportedData(payload: ExportPayload): Promise<ImportR
 // Per-category export/import functions for Firebase sync
 // ============================================================================
 
-import type { SyncCategory, CategoryDefinition } from '@modules/firebase';
-import { CATEGORY_REGISTRY } from '@modules/firebase';
+// Import from the registry module directly (not the @modules/firebase index)
+// so this web-side module doesn't pull in the sync engine and its side effects.
+import type { SyncCategory, CategoryDefinition } from '@modules/firebase/categoryRegistry';
+import { CATEGORY_REGISTRY } from '@modules/firebase/categoryRegistry';
 
 export interface CategoryData {
     // Device-scoped settings bundle: interface settings + layout + trip routes
@@ -724,6 +737,21 @@ export interface CategoryData {
     knowledge?: ExportedKnowledgeData;
 }
 
+/**
+ * Rebuild an object with keys in sorted order so JSON.stringify output is
+ * canonical. Export envelopes are checksummed and compared across devices —
+ * localStorage iteration order differs between browsers/profiles, and without
+ * canonical ordering two devices holding identical data would produce
+ * different checksums (phantom changes and spurious conflicts).
+ */
+function sortedByKey<T>(obj: Record<string, T>): Record<string, T> {
+    const result: Record<string, T> = {};
+    for (const key of Object.keys(obj).sort()) {
+        result[key] = obj[key];
+    }
+    return result;
+}
+
 /** Generic export for categories backed by whole global localStorage keys. */
 function exportGlobalKeys(keys: readonly string[]): string | null {
     const result: Record<string, string> = {};
@@ -749,7 +777,7 @@ function exportCharacterScopedKey(baseKey: string, selectedCharacters: string[])
         const raw = localStorage.getItem(key);
         if (raw) result[charName] = raw;
     }
-    return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
+    return Object.keys(result).length > 0 ? JSON.stringify(sortedByKey(result)) : null;
 }
 
 // Export a single category as JSON string.
@@ -804,7 +832,13 @@ export async function exportCategory(
                     if (!characters[parsed.name]) characters[parsed.name] = {};
                     characters[parsed.name][key] = raw;
                 }
-                return Object.keys(characters).length > 0 ? JSON.stringify(characters) : null;
+                if (Object.keys(characters).length === 0) return null;
+                // Canonical envelope: sorted characters and sorted keys within each
+                const canonical = sortedByKey(characters);
+                for (const name of Object.keys(canonical)) {
+                    canonical[name] = sortedByKey(canonical[name]);
+                }
+                return JSON.stringify(canonical);
             }
             case 'multibinds': {
                 const multibinds = await getMultibindsSnapshot().catch(() => []);
@@ -1068,9 +1102,14 @@ export async function importCategory(
                     const records = (data as {_v: number; records: KillRecord[]}).records;
                     if (Array.isArray(records) && records.length > 0) {
                         await importAllKillRecords(records);
-                        // Also update localStorage for backward compat
+                        // Also update localStorage for backward compat. Recompute from
+                        // the store after the merge — importAllKillRecords keeps the
+                        // higher count per record, so the imported payload alone may
+                        // undercount what the store now holds.
+                        const affected = new Set(records.map(r => r.character));
+                        const merged = (await exportAllKillRecords()).filter(r => affected.has(r.character));
                         const byChar: Record<string, Record<string, number>> = {};
-                        for (const r of records) {
+                        for (const r of merged) {
                             if (!byChar[r.character]) byChar[r.character] = {};
                             byChar[r.character][r.mob] = (byChar[r.character][r.mob] ?? 0) + r.count;
                         }
@@ -1127,6 +1166,34 @@ export async function importCategory(
         console.error(`Failed to import category ${category}`, err);
         return { success: false, error: String(err) };
     }
+}
+
+/**
+ * Merge two per-character category envelopes ({ characterName: data } maps).
+ * The preferred side wins for characters present in both; characters exclusive
+ * to either side are all kept. Used in conflict resolution so choosing
+ * "keep local" or "use cloud" never discards a character that only the other
+ * side knows about (e.g. desktop plays char X while laptop plays char Y).
+ * Returns a canonical (key-sorted) JSON string.
+ */
+export function mergePerCharacterEnvelopes(preferredJson: string, otherJson: string): string {
+    let preferred: Record<string, unknown>;
+    let other: Record<string, unknown>;
+    try {
+        preferred = JSON.parse(preferredJson);
+        other = JSON.parse(otherJson);
+    } catch {
+        return preferredJson;
+    }
+    if (!preferred || typeof preferred !== 'object' || Array.isArray(preferred)
+        || !other || typeof other !== 'object' || Array.isArray(other)) {
+        return preferredJson;
+    }
+    const merged: Record<string, unknown> = {};
+    for (const char of Object.keys({ ...other, ...preferred }).sort()) {
+        merged[char] = char in preferred ? preferred[char] : other[char];
+    }
+    return JSON.stringify(merged);
 }
 
 /**

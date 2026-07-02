@@ -77,11 +77,17 @@ Po wlaczeniu automatycznej synchronizacji, zmiany w ustawieniach sa automatyczni
 
 2. **Wolna synchronizacja** - Kategorie, ktore zmieniaja sie czesto podczas gry (odwiedzone lokacje, licznik zabitych), sa synchronizowane z opoznieniem **10 minut**. Zapobiega to nadmiernemu obciazeniu serwera.
 
-3. **Synchronizacja przy zamykaniu** - Jesli masz niezapisane zmiany w "wolnych" kategoriach i zamykasz lub minimalizujesz zakladke, dane zostana wyslane natychmiast.
+3. **Synchronizacja przy zamykaniu** - Przy zamykaniu strony wszystkie oczekujace zmiany sa wysylane natychmiast. Przy samym ukryciu zakladki (np. przelaczenie okna) wysylane sa tylko zmiany z "wolnych" kategorii.
+
+4. **Synchronizacja przy starcie** - Po uruchomieniu klienta stan lokalny jest porownywany z chmura: zmiany, ktore nie zdazyly sie wyslac w poprzedniej sesji, sa wysylane, a zmiany wykonane w miedzyczasie na innym urzadzeniu - pobierane i stosowane.
 
 ### Odbieranie zmian z chmury
 
 Gdy inne urzadzenie wysle zmiany do chmury, Twoje urzadzenie odbiera je **w czasie rzeczywistym** dzieki nasluchiwaniu Firebase. Zmiany sa automatycznie stosowane lokalnie bez potrzeby odswiezania strony.
+
+### Wiele kart przegladarki
+
+Mozesz miec otwartych kilka kart klienta jednoczesnie - wysylaniem zmian zajmuje sie tylko jedna z nich (pozostale przejmuja te role automatycznie po jej zamknieciu), wiec dane nie sa wysylane wielokrotnie.
 
 ### Wlaczanie automatycznej synchronizacji
 
@@ -121,9 +127,9 @@ Mozesz zabezpieczyc swoje dane w chmurze szyfrujac je haslem.
 - Dane sa szyfrowane algorytmem **AES-256-GCM** - jest to silne szyfrowanie stosowane w bankach i wojsku.
 - **Haslo nie jest nigdzie zapisywane** na serwerze. Jesli je zapomnisz, nie ma mozliwosci odzyskania zaszyfrowanych danych.
 - Haslo jest pamietane lokalnie tylko do zamkniecia karty przegladarki - po ponownym otwarciu klienta trzeba je podac ponownie.
-- Musisz uzyc **tego samego hasla** na wszystkich urzadzeniach, ktore chca odczytac zaszyfrowane dane.
+- Musisz uzyc **tego samego hasla** na wszystkich urzadzeniach, ktore chca odczytac zaszyfrowane dane. Klient weryfikuje haslo przed wyslaniem danych - urzadzenie z innym haslem dostanie blad zamiast po cichu nadpisac dane niemozliwym do odczytania wpisem.
 - Jesli inne urzadzenie odbierze zaszyfrowane dane bez podanego hasla, zostaniesz poproszony o wprowadzenie hasla. Dane zostana odszyfrowane po jego podaniu.
-- Zmiana hasla nie szyfruje ponownie istniejacych danych w chmurze - musisz wykonac synchronizacje ponownie.
+- Aby zmienic haslo: wylacz szyfrowanie (dane zostana zapisane w chmurze bez szyfrowania), a nastepnie wlacz je ponownie z nowym haslem.
 
 ---
 
@@ -133,7 +139,7 @@ Konflikt wystepuje, gdy dane zostaly zmienione zarowno lokalnie, jak i w chmurze
 
 ### Rozwiazywanie konfliktow
 
-Gdy wykryty zostanie konflikt, pojawi sie okno z lista kategorii, w ktorych wystepuja roznice. Dla kazdej kategorii zobaczysz czas ostatniej zmiany lokalnej i w chmurze.
+Gdy wykryty zostanie konflikt, pojawi sie okno z lista kategorii, w ktorych wystepuja roznice (wraz z podgladem roznic). Jesli okno ustawien jest zamkniete, w rogu ekranu pojawi sie powiadomienie - konflikt czeka na rozwiazanie do momentu otwarcia zakladki synchronizacji.
 
 Masz trzy opcje:
 
@@ -142,6 +148,13 @@ Masz trzy opcje:
 | **Zachowaj lokalne** | Twoje lokalne dane zostana wyslane do chmury, nadpisujac dane z innego urzadzenia |
 | **Uzyj chmury** | Dane z chmury zostana zastosowane lokalnie, zastepujac Twoje zmiany |
 | **Anuluj** | Synchronizacja zostanie przerwana, nic sie nie zmieni |
+
+### Automatyczne laczenie danych
+
+Dla czesci kategorii wybor "lokalne czy chmura" nie powoduje utraty danych z drugiej strony:
+
+- **Odwiedzone lokacje, licznik zabitych, wiedza** - dane sa laczone (suma zbiorow); niezaleznie od wyboru nic nie ginie.
+- **Depozyty, pojemniki, liczniki postepow, ustawienia postaci, edycje bazy postaci** - dane sa laczone per postac: wybrana strona wygrywa tylko dla postaci wystepujacych po obu stronach, a postacie znane tylko jednej stronie sa zawsze zachowywane. Dzieki temu gra na roznych postaciach na roznych urzadzeniach nie kasuje danych zadnej z nich.
 
 ### Unikanie konfliktow
 
@@ -235,7 +248,7 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 3. Kliknij "Usun wszystkie dane"
 4. Potwierdz usuniecie
 
-**Uwaga**: Ta operacja jest nieodwracalna. Lokalne dane na Twoim urzadzeniu nie zostana usuniete.
+**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete.
 
 ---
 

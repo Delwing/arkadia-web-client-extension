@@ -70,12 +70,19 @@ export type ConflictResolution = 'keep-local' | 'use-cloud' | 'cancel';
 // Per-category sync timestamps
 export type CategorySyncTimes = Partial<Record<SyncCategory, number>>;
 
+// Per-category checksums of the last state this device synced (uploaded,
+// applied or downloaded). Acts as the three-way merge base for conflict
+// detection: local != base means we changed, cloud != base means the cloud
+// changed. Unlike timestamps this is immune to clock skew between devices.
+export type CategorySyncChecksums = Partial<Record<SyncCategory, string>>;
+
 // Firebase settings stored in localStorage
 export interface FirebaseSettings {
     syncOptions: SyncOptions;
     encryptionEnabled: boolean;
     autoSyncEnabled: boolean;
     categorySyncTimes: CategorySyncTimes;
+    categorySyncChecksums: CategorySyncChecksums;
     deviceId: string;
 }
 
@@ -151,6 +158,7 @@ export function loadFirebaseSettings(): FirebaseSettings {
         encryptionEnabled: false,
         autoSyncEnabled: false,
         categorySyncTimes: {},
+        categorySyncChecksums: {},
         deviceId: getDeviceId(),
     };
 
@@ -164,6 +172,9 @@ export function loadFirebaseSettings(): FirebaseSettings {
             autoSyncEnabled: typeof parsed.autoSyncEnabled === 'boolean' ? parsed.autoSyncEnabled : false,
             categorySyncTimes: parsed.categorySyncTimes && typeof parsed.categorySyncTimes === 'object'
                 ? parsed.categorySyncTimes
+                : {},
+            categorySyncChecksums: parsed.categorySyncChecksums && typeof parsed.categorySyncChecksums === 'object'
+                ? parsed.categorySyncChecksums
                 : {},
             deviceId: defaults.deviceId,
         };

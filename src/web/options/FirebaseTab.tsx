@@ -32,17 +32,12 @@ import {
     uploadCategories,
     downloadCategories,
     getAllCategoriesMetadata,
-    updateCategorySyncTime,
+    recordCategorySyncState,
     deleteAllCategories,
     syncEngine,
 } from "@modules/firebase";
 import eventBus from "@modules/core/eventBus";
-import {
-    collectCharacters,
-    exportCategories,
-    importCategories,
-    mergeCloudProfessionData,
-} from "./exportUtils";
+import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
 
 const GoogleLogo = ({ size = 18 }: { size?: number }) => (
@@ -189,13 +184,21 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     useEffect(() => {
         if (!authState.isAuthenticated) return;
 
+        // Conflicts detected while this tab was closed are held by the engine —
+        // show them now. Registering also suppresses the global conflict toast
+        // while the modal can be displayed here.
+        syncEngine.setConflictUiActive(true);
+        const pending = syncEngine.getPendingConflicts();
+        if (pending.length > 0) {
+            setConflicts(pending);
+            setShowConflictModal(true);
+        }
+
         const unsubMeta = eventBus.on('firebase.sync.metadata', (metadata) => {
             setCloudMetadata(metadata);
         });
 
         const unsubApplied = eventBus.on('firebase.sync.applied', ({ categories }) => {
-            const now = Date.now();
-            categories.forEach(cat => updateCategorySyncTime(cat, now));
             onImportComplete?.();
             setSyncStatus(`Automatycznie zsynchronizowano: ${categories.length} kat.`);
         });
@@ -234,6 +237,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         });
 
         return () => {
+            syncEngine.setConflictUiActive(false);
             unsubMeta();
             unsubApplied();
             unsubUploaded();
@@ -360,6 +364,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 } else if (result.reason === 'no-data') {
                     setSyncStatus('Brak danych do wyslania.');
                 }
+            } else if (result.status === 'in-sync') {
+                setSyncStatus('Wszystkie dane sa aktualne.');
             }
         } finally {
             isSyncingRef.current = false;
@@ -411,11 +417,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 return;
             }
 
-            // Update local sync times
-            const now = Date.now();
+            // The downloaded cloud state is the new sync base for these categories
+            const baseChecksums: Partial<Record<SyncCategory, string>> = {};
             Object.keys(result.data).forEach(cat => {
-                updateCategorySyncTime(cat as SyncCategory, now);
+                const payload = result.payloads[cat as SyncCategory];
+                if (payload) baseChecksums[cat as SyncCategory] = payload.checksum;
             });
+            recordCategorySyncState(baseChecksums);
 
             onImportComplete?.();
             setSyncStatus('Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.');
@@ -431,64 +439,42 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setShowConflictModal(false);
 
         if (resolution === 'cancel') {
+            syncEngine.clearPendingConflicts(categories);
             setConflicts([]);
             return;
         }
 
-        if (resolution === 'use-cloud') {
-            // Download the conflicted categories from cloud
-            await handleDownload(categories);
-        } else if (resolution === 'keep-local') {
-            // Force upload local data for conflicted categories
-            isSyncingRef.current = true;
-            setIsSyncing(true);
+        // The engine performs the resolution: merge-capable categories
+        // (per-character maps, append-only data) are combined so neither
+        // side's exclusive data is discarded; the rest is overwritten by the
+        // chosen side. Import notifications come back via eventBus.
+        isSyncingRef.current = true;
+        setIsSyncing(true);
+        try {
+            const result = await syncEngine.resolveConflicts(resolution, categories);
+            if (!result.success) {
+                setSyncError(result.error ?? FIREBASE_ERRORS.SYNC_FAILED);
+            } else {
+                setSyncStatus(resolution === 'keep-local'
+                    ? 'Dane lokalne zostaly wyslane do chmury.'
+                    : 'Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.');
+                onImportComplete?.();
 
-            try {
-                // Pre-merge CRDT data (profession) from cloud before overwriting
-                if (categories.includes('characterSettings')) {
-                    try {
-                        const cloudResult = await downloadCategories(
-                            ['characterSettings'],
-                            encryptionEnabled ? passphrase : undefined
-                        );
-                        if (cloudResult.success && cloudResult.data.characterSettings) {
-                            mergeCloudProfessionData(cloudResult.data.characterSettings);
-                        }
-                    } catch {
-                        // Non-critical: proceed with upload even if pre-merge fails
-                    }
+                // Refresh metadata
+                const metadata = await getAllCategoriesMetadata();
+                if (!metadata.error) {
+                    setCloudMetadata(metadata.categories);
                 }
-
-                const allCharacters = collectCharacters();
-                const categoryData = await exportCategories(categories, allCharacters);
-
-                const uploadResult = await uploadCategories(categoryData, {
-                    encrypted: encryptionEnabled,
-                    passphrase: encryptionEnabled ? passphrase : undefined,
-                });
-
-                if (!uploadResult.success) {
-                    const firstError = Object.values(uploadResult.errors)[0];
-                    setSyncError(firstError ?? FIREBASE_ERRORS.SYNC_FAILED);
-                } else {
-                    setSyncStatus('Dane lokalne zostaly wyslane do chmury.');
-
-                    // Refresh metadata
-                    const metadata = await getAllCategoriesMetadata();
-                    if (!metadata.error) {
-                        setCloudMetadata(metadata.categories);
-                    }
-                }
-            } catch {
-                setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
-            } finally {
-                isSyncingRef.current = false;
-                setIsSyncing(false);
             }
+        } catch {
+            setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
+        } finally {
+            isSyncingRef.current = false;
+            setIsSyncing(false);
         }
 
         setConflicts([]);
-    }, [handleDownload, encryptionEnabled, passphrase]);
+    }, [onImportComplete]);
 
     const handleDeleteCloudData = useCallback(async () => {
         if (!authState.isAuthenticated) return;
@@ -872,9 +858,12 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                                 setSyncError('Brak danych w chmurze.');
                                                 return;
                                             }
-                                            // Re-upload without encryption
+                                            // Re-upload without encryption. Force: this rewrites the
+                                            // cloud's own data deliberately, the conflict check must
+                                            // not block it.
                                             const uploadResult = await uploadCategories(result.data, {
                                                 encrypted: false,
+                                                force: true,
                                             });
                                             if (!uploadResult.success) {
                                                 const firstError = Object.values(uploadResult.errors)[0];

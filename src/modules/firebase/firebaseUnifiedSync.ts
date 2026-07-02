@@ -19,6 +19,7 @@ import {
 import type {
     CategoryConflictInfo,
     CategoryPayload,
+    CategorySyncChecksums,
     CategorySyncTimes,
     EncryptedData,
     SyncCategory
@@ -34,6 +35,12 @@ import {
 import {ensureFirebaseInitialized, getFirebaseAuth} from './firebaseConfig';
 import {calculateChecksum, decrypt, encrypt, isEncryptedData} from './firebaseCrypto';
 import { isCategoryDeviceScoped, getSyncGroup } from '@modules/device';
+
+// Known plaintext stored encrypted in the sync document so devices can verify
+// they use the same passphrase before uploading. Without it, two devices with
+// different passphrases silently overwrite each other with mutually
+// undecryptable blobs.
+const ENCRYPTION_CHECK_PLAINTEXT = 'arkadia-sync-passphrase-check';
 
 // Single document path
 const USERS_COLLECTION = 'users';
@@ -70,6 +77,10 @@ export interface UnifiedSyncData {
     // fallback by copySettingsFromCloudDevice for devices that never synced
     // their device-scoped categories)
     perDeviceSettings?: { [deviceId: string]: LegacyPerDeviceSettings };
+    // Passphrase verifier: ENCRYPTION_CHECK_PLAINTEXT encrypted with the
+    // account passphrase (JSON EncryptedData). Present only while encrypted
+    // payloads exist; removed when data is re-uploaded unencrypted.
+    encryptionCheck?: string;
     // Last update timestamp
     updatedAt?: unknown; // serverTimestamp
 }
@@ -144,146 +155,281 @@ export async function getFullSyncData(forceRefresh = false): Promise<{
 // ============================================================================
 
 /**
- * Upload categories to the unified document
+ * Record which cloud state this device is synced to. Called after uploads,
+ * after applying remote data and after manual downloads — the recorded
+ * checksum is the three-way merge base used for conflict detection.
+ */
+export function recordCategorySyncState(
+    checksums: Partial<Record<SyncCategory, string>>,
+    timestamp: number = Date.now(),
+): void {
+    const categories = Object.keys(checksums) as SyncCategory[];
+    if (categories.length === 0) return;
+    const settings = loadFirebaseSettings();
+    const updatedTimes: CategorySyncTimes = { ...settings.categorySyncTimes };
+    const updatedChecksums: CategorySyncChecksums = { ...settings.categorySyncChecksums };
+    for (const category of categories) {
+        const checksum = checksums[category];
+        if (!checksum) continue;
+        updatedTimes[category] = timestamp;
+        updatedChecksums[category] = checksum;
+    }
+    saveFirebaseSettings({ categorySyncTimes: updatedTimes, categorySyncChecksums: updatedChecksums });
+}
+
+export interface UploadCategoriesResult {
+    success: boolean;
+    errors: Partial<Record<SyncCategory, string>>;
+    timestamps: CategorySyncTimes;
+    checksums: Partial<Record<SyncCategory, string>>;
+    /** Categories NOT uploaded because the cloud moved since our last sync. */
+    conflicts: CategoryConflictInfo[];
+}
+
+/**
+ * Verify the passphrase against the cloud verifier field.
+ * Returns 'ok' (verified or no verifier yet), 'mismatch', or 'missing' when
+ * the doc has no verifier and one should be written with this upload.
+ */
+async function checkEncryptionVerifier(
+    existing: UnifiedSyncData | null,
+    passphrase: string,
+): Promise<'ok' | 'mismatch' | 'missing'> {
+    const raw = existing?.encryptionCheck;
+    if (!raw) return 'missing';
+    try {
+        const parsed = JSON.parse(raw);
+        if (!isEncryptedData(parsed)) return 'missing';
+        const plain = await decrypt(parsed as EncryptedData, passphrase);
+        return plain === ENCRYPTION_CHECK_PLAINTEXT ? 'ok' : 'mismatch';
+    } catch {
+        return 'mismatch';
+    }
+}
+
+/**
+ * Upload categories to the unified document.
+ *
+ * Runs inside a Firestore transaction: the conflict check (cloud unchanged
+ * since our recorded sync base) and the write happen atomically, so two
+ * devices uploading concurrently cannot silently overwrite each other — the
+ * loser's transaction retries, re-detects the change and reports a conflict.
+ *
+ * `force` skips the conflict check (used after explicit "keep local"
+ * resolution). Encrypted uploads are verified against the cloud passphrase
+ * verifier first, so devices with mismatched passphrases fail loudly instead
+ * of forking the data.
  */
 export async function uploadCategories(
     categoryData: Partial<Record<SyncCategory, string>>,
-    options: { encrypted: boolean; passphrase?: string }
-): Promise<{ success: boolean; errors: Partial<Record<SyncCategory, string>>; timestamps: CategorySyncTimes; checksums: Partial<Record<SyncCategory, string>> }> {
+    options: { encrypted: boolean; passphrase?: string; force?: boolean }
+): Promise<UploadCategoriesResult> {
     const errors: Partial<Record<SyncCategory, string>> = {};
     const timestamps: CategorySyncTimes = {};
     const checksums: Partial<Record<SyncCategory, string>> = {};
+    const conflicts: CategoryConflictInfo[] = [];
 
     try {
         const auth = getFirebaseAuth();
         const userId = auth?.currentUser?.uid;
         if (!userId) {
-            return { success: false, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED }, timestamps, checksums };
+            return { success: false, errors: { uiSettings: FIREBASE_ERRORS.AUTH_FAILED }, timestamps, checksums, conflicts };
         }
 
         const { db } = await ensureFirebaseInitialized();
-        const { doc, setDoc, updateDoc, getDoc, serverTimestamp } = await import('firebase/firestore');
+        const { doc, runTransaction, deleteField, serverTimestamp } = await import('firebase/firestore');
 
         const categories = Object.keys(categoryData) as SyncCategory[];
         const now = Date.now();
         const deviceId = getDeviceId();
+        const settings = loadFirebaseSettings();
+        const baseChecksums = settings.categorySyncChecksums;
 
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
 
-        // Read existing document to compare checksums and check existence
-        const snapshot = await getDoc(docRef);
-        const existingData = snapshot.exists() ? snapshot.data() as UnifiedSyncData : null;
-        const existingCategories = existingData?.categories || {};
-        const existingDeviceCategories = existingData?.deviceCategories || {};
-
-        // Build category payloads - use dot notation for updateDoc
-        const categoryUpdates: { [key: string]: CategoryPayload } = {};
-
+        // Prepare payloads outside the transaction (checksums + encryption are
+        // slow crypto work; the transaction body should stay fast).
+        interface Prepared {
+            category: SyncCategory;
+            checksum: string;
+            payload: CategoryPayload;
+        }
+        const prepared: Prepared[] = [];
         for (const category of categories) {
             const data = categoryData[category];
             if (!data) continue;
-
             try {
                 const checksum = await calculateChecksum(data);
                 checksums[category] = checksum;
 
-                // Device-scoped categories go to deviceCategories.{deviceId}.{cat}
-                const isDeviceScoped = isCategoryDeviceScoped(category);
-                const cloudPayload = isDeviceScoped
-                    ? existingDeviceCategories[deviceId]?.[category]
-                    : existingCategories[category];
-
-                // Skip upload if checksum matches cloud data (no changes)
-                if (cloudPayload && cloudPayload.checksum === checksum) {
-                    continue;
-                }
-
                 let finalData: string;
-
                 if (options.encrypted && options.passphrase) {
-                    const encryptedData = await encrypt(data, options.passphrase);
-                    finalData = JSON.stringify(encryptedData);
+                    finalData = JSON.stringify(await encrypt(data, options.passphrase));
                 } else {
                     finalData = data;
                 }
 
-                const payload: CategoryPayload = {
-                    version: 1,
-                    syncedAt: new Date().toISOString(),
-                    deviceId,
+                prepared.push({
+                    category,
                     checksum,
-                    encrypted: options.encrypted,
-                    data: finalData,
-                };
-
-                // Device-scoped categories live only under
-                // deviceCategories.{deviceId}; shared categories under categories.{cat}
-                if (isDeviceScoped) {
-                    categoryUpdates[`deviceCategories.${deviceId}.${category}`] = payload;
-                } else {
-                    categoryUpdates[`categories.${category}`] = payload;
-                }
-
-                timestamps[category] = now;
+                    payload: {
+                        version: 1,
+                        syncedAt: new Date().toISOString(),
+                        deviceId,
+                        checksum,
+                        encrypted: options.encrypted,
+                        data: finalData,
+                    },
+                });
             } catch (err) {
                 console.error(`Failed to prepare category ${category}`, err);
                 errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
             }
         }
 
-        // Skip write if no categories have changed
-        if (Object.keys(categoryUpdates).length === 0) {
-            console.log(`[Firebase] uploadCategories: no changes to upload`);
-            return { success: true, errors, timestamps, checksums };
-        }
-
-        const changedCount = Object.keys(categoryUpdates).length;
-
-        if (snapshot.exists()) {
-            // Use updateDoc - it interprets dots as paths
-            console.log(`[Firebase WRITE] uploadCategories (updateDoc): ${changedCount} changed categories:`, Object.keys(categoryUpdates));
-            await updateDoc(docRef, {
-                ...categoryUpdates,
-                updatedAt: serverTimestamp(),
-            });
-        } else {
-            // Document doesn't exist - create with proper nested structure
-            const nestedShared: { [key: string]: CategoryPayload } = {};
-            const nestedDevice: { [devId: string]: { [cat: string]: CategoryPayload } } = {};
-            for (const [key, payload] of Object.entries(categoryUpdates)) {
-                if (key.startsWith('deviceCategories.')) {
-                    // deviceCategories.{deviceId}.{category}
-                    const parts = key.split('.');
-                    const devId = parts[1];
-                    const cat = parts[2];
-                    if (!nestedDevice[devId]) nestedDevice[devId] = {};
-                    nestedDevice[devId][cat] = payload;
-                } else {
-                    const cat = key.replace('categories.', '');
-                    nestedShared[cat] = payload;
-                }
+        // Verify the passphrase against the cloud verifier before uploading
+        // anything encrypted. A mismatch means another device already encrypted
+        // the account data with a different passphrase.
+        let verifierPayload: string | null = null;
+        if (options.encrypted && options.passphrase) {
+            const { data: currentData } = await getFullSyncData();
+            const verdict = await checkEncryptionVerifier(currentData, options.passphrase);
+            if (verdict === 'mismatch') {
+                const errorTarget = categories[0] ?? 'uiSettings';
+                errors[errorTarget] = FIREBASE_ERRORS.WRONG_PASSPHRASE;
+                return { success: false, errors, timestamps, checksums, conflicts };
             }
-            console.log(`[Firebase WRITE] uploadCategories (setDoc): ${changedCount} categories`);
-            const docData: Record<string, unknown> = { updatedAt: serverTimestamp() };
-            if (Object.keys(nestedShared).length > 0) docData.categories = nestedShared;
-            if (Object.keys(nestedDevice).length > 0) docData.deviceCategories = nestedDevice;
-            await setDoc(docRef, docData);
+            if (verdict === 'missing') {
+                verifierPayload = JSON.stringify(await encrypt(ENCRYPTION_CHECK_PLAINTEXT, options.passphrase));
+            }
         }
+
+        const uploaded: SyncCategory[] = [];
+        const inSync: SyncCategory[] = [];
+
+        console.log(`[Firebase WRITE] uploadCategories (transaction): ${prepared.length} categories`);
+        await runTransaction(db, async (transaction) => {
+            // Re-evaluate against the state the transaction actually commits on
+            uploaded.length = 0;
+            inSync.length = 0;
+            conflicts.length = 0;
+
+            const snapshot = await transaction.get(docRef);
+            const existingData = snapshot.exists() ? snapshot.data() as UnifiedSyncData : null;
+            const existingCategories = existingData?.categories || {};
+            const existingDeviceCategories = existingData?.deviceCategories || {};
+
+            const categoryUpdates: { [key: string]: CategoryPayload } = {};
+
+            for (const { category, checksum, payload } of prepared) {
+                const isDeviceScoped = isCategoryDeviceScoped(category);
+                const cloudPayload = isDeviceScoped
+                    ? existingDeviceCategories[deviceId]?.[category]
+                    : existingCategories[category];
+
+                // Already in sync (checksum AND encryption mode match)
+                if (cloudPayload
+                    && cloudPayload.checksum === checksum
+                    && cloudPayload.encrypted === options.encrypted) {
+                    inSync.push(category);
+                    continue;
+                }
+
+                // Conflict check: refuse to overwrite cloud data that changed
+                // since this device last synced. Same-device payloads (another
+                // tab of this browser, sharing localStorage) are always safe.
+                if (!options.force && cloudPayload && cloudPayload.deviceId !== deviceId) {
+                    const base = baseChecksums[category];
+                    const cloudChanged = base !== undefined
+                        ? cloudPayload.checksum !== base && cloudPayload.checksum !== checksum
+                        // Legacy fallback (no recorded base yet): trust timestamps
+                        : new Date(cloudPayload.syncedAt).getTime() > (settings.categorySyncTimes[category] ?? 0);
+                    if (cloudChanged) {
+                        conflicts.push({
+                            category,
+                            localTimestamp: settings.categorySyncTimes[category] ?? 0,
+                            cloudTimestamp: new Date(cloudPayload.syncedAt).getTime(),
+                            localChecksum: checksum,
+                            cloudChecksum: cloudPayload.checksum,
+                            cloudData: cloudPayload,
+                        });
+                        continue;
+                    }
+                }
+
+                if (isDeviceScoped) {
+                    categoryUpdates[`deviceCategories.${deviceId}.${category}`] = payload;
+                } else {
+                    categoryUpdates[`categories.${category}`] = payload;
+                }
+                uploaded.push(category);
+            }
+
+            const needVerifierChange = verifierPayload !== null
+                || (!options.encrypted && existingData?.encryptionCheck !== undefined);
+
+            if (Object.keys(categoryUpdates).length === 0 && !needVerifierChange) {
+                return;
+            }
+
+            if (snapshot.exists()) {
+                const updates: Record<string, unknown> = {
+                    ...categoryUpdates,
+                    updatedAt: serverTimestamp(),
+                };
+                if (verifierPayload !== null) {
+                    updates.encryptionCheck = verifierPayload;
+                } else if (!options.encrypted && existingData?.encryptionCheck !== undefined) {
+                    // Data is being stored unencrypted — drop the stale verifier
+                    // so a future re-enable can set a fresh passphrase.
+                    updates.encryptionCheck = deleteField();
+                }
+                transaction.update(docRef, updates);
+            } else {
+                // Document doesn't exist - create with proper nested structure
+                const nestedShared: { [key: string]: CategoryPayload } = {};
+                const nestedDevice: { [devId: string]: { [cat: string]: CategoryPayload } } = {};
+                for (const [key, payload] of Object.entries(categoryUpdates)) {
+                    if (key.startsWith('deviceCategories.')) {
+                        const parts = key.split('.');
+                        const devId = parts[1];
+                        const cat = parts[2];
+                        if (!nestedDevice[devId]) nestedDevice[devId] = {};
+                        nestedDevice[devId][cat] = payload;
+                    } else {
+                        const cat = key.replace('categories.', '');
+                        nestedShared[cat] = payload;
+                    }
+                }
+                const docData: Record<string, unknown> = { updatedAt: serverTimestamp() };
+                if (Object.keys(nestedShared).length > 0) docData.categories = nestedShared;
+                if (Object.keys(nestedDevice).length > 0) docData.deviceCategories = nestedDevice;
+                if (verifierPayload !== null) docData.encryptionCheck = verifierPayload;
+                transaction.set(docRef, docData);
+            }
+        });
 
         invalidateCache();
 
-        // Update local sync times
-        const settings = loadFirebaseSettings();
-        const updatedTimes: CategorySyncTimes = { ...settings.categorySyncTimes, ...timestamps };
-        saveFirebaseSettings({ categorySyncTimes: updatedTimes });
+        // Record sync base for everything now known to match the cloud —
+        // both freshly uploaded and already-in-sync categories.
+        const syncedChecksums: Partial<Record<SyncCategory, string>> = {};
+        for (const category of [...uploaded, ...inSync]) {
+            const checksum = checksums[category];
+            if (checksum) {
+                syncedChecksums[category] = checksum;
+                if (uploaded.includes(category)) timestamps[category] = now;
+            }
+        }
+        recordCategorySyncState(syncedChecksums, now);
 
     } catch (err) {
         console.error('Failed to upload categories', err);
-        return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps, checksums };
+        return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps, checksums, conflicts };
     }
 
     const success = Object.keys(errors).length === 0;
-    return { success, errors, timestamps, checksums };
+    return { success, errors, timestamps, checksums, conflicts };
 }
 
 export interface DownloadedCategoryMeta {
@@ -409,69 +555,156 @@ export async function downloadCategories(
     return { success, data, payloads, errors };
 }
 
-/**
- * Check for conflicts on multiple categories (uses single read via cache)
- */
-export async function checkCategoriesConflicts(
-    categoryData: Partial<Record<SyncCategory, string>>
-): Promise<{
+export interface SyncPlan {
+    /** Categories where only the local side changed — safe to upload. */
+    uploads: SyncCategory[];
+    /** Decrypted cloud data to import locally (cloud changed, local did not). */
+    applies: Partial<Record<SyncCategory, { data: string; checksum: string; syncedAt: string }>>;
+    /** Both sides changed independently — needs user resolution. */
     conflicts: CategoryConflictInfo[];
+    /** Cloud data is encrypted and no (working) passphrase is available. */
+    pendingPassphrase: SyncCategory[];
+    /** Categories already matching the cloud, with their checksums (sync base healing). */
+    inSync: Partial<Record<SyncCategory, string>>;
     errors: Partial<Record<SyncCategory, string>>;
-}> {
-    const conflicts: CategoryConflictInfo[] = [];
-    const errors: Partial<Record<SyncCategory, string>> = {};
+}
+
+/**
+ * Compare local exports against the cloud and classify every category:
+ * upload, apply, in-sync or conflict — a three-way comparison against the
+ * persisted sync base (categorySyncChecksums), so the direction of change is
+ * known without trusting device clocks. Uses a single (cached) document read.
+ */
+export async function planSync(
+    categoryData: Partial<Record<SyncCategory, string>>,
+    enabledCategories: SyncCategory[],
+    passphrase?: string,
+): Promise<SyncPlan> {
+    const plan: SyncPlan = {
+        uploads: [],
+        applies: {},
+        conflicts: [],
+        pendingPassphrase: [],
+        inSync: {},
+        errors: {},
+    };
 
     try {
         const { data: syncData, error } = await getFullSyncData();
         if (error || !syncData) {
-            return { conflicts, errors: { uiSettings: error || FIREBASE_ERRORS.SYNC_FAILED } };
+            plan.errors.uiSettings = error || FIREBASE_ERRORS.SYNC_FAILED;
+            return plan;
         }
 
         const cloudCategories = syncData.categories || {};
-        const categories = Object.keys(categoryData) as SyncCategory[];
         const settings = loadFirebaseSettings();
+        const baseChecksums = settings.categorySyncChecksums;
         const deviceId = getDeviceId();
 
-        for (const category of categories) {
-            const localData = categoryData[category];
-            if (!localData) continue;
-
-            // For device-scoped categories, compare against own per-device data
-            const cloudPayload = isCategoryDeviceScoped(category)
-                ? syncData.deviceCategories?.[deviceId]?.[category]
-                : cloudCategories[category];
-            if (!cloudPayload) continue;
-
+        for (const category of enabledCategories) {
             try {
-                const localChecksum = await calculateChecksum(localData);
-                if (localChecksum === cloudPayload.checksum) continue;
+                const localData = categoryData[category];
+                // Device-scoped: consider own payload plus sync-group members
+                const cloudPayload = isCategoryDeviceScoped(category)
+                    ? findDeviceCategoryPayload(syncData, category)
+                    : cloudCategories[category];
 
-                if (cloudPayload.deviceId !== deviceId) {
+                if (!cloudPayload) {
+                    if (localData) plan.uploads.push(category);
+                    continue;
+                }
+
+                const localChecksum = localData ? await calculateChecksum(localData) : undefined;
+                if (localChecksum === cloudPayload.checksum) {
+                    plan.inSync[category] = localChecksum;
+                    continue;
+                }
+
+                const base = baseChecksums[category];
+                const applyCloud = async (): Promise<void> => {
+                    let data: string;
+                    if (cloudPayload.encrypted) {
+                        if (!passphrase) {
+                            plan.pendingPassphrase.push(category);
+                            return;
+                        }
+                        try {
+                            const encryptedData = JSON.parse(cloudPayload.data);
+                            if (!isEncryptedData(encryptedData)) {
+                                plan.errors[category] = FIREBASE_ERRORS.DECRYPTION_FAILED;
+                                return;
+                            }
+                            data = await decrypt(encryptedData as EncryptedData, passphrase);
+                        } catch {
+                            plan.pendingPassphrase.push(category);
+                            return;
+                        }
+                    } else {
+                        data = cloudPayload.data;
+                    }
+                    plan.applies[category] = {
+                        data,
+                        checksum: cloudPayload.checksum,
+                        syncedAt: cloudPayload.syncedAt,
+                    };
+                };
+
+                if (!localData) {
+                    // Nothing locally (fresh device / cleared storage) — take cloud
+                    await applyCloud();
+                    continue;
+                }
+
+                if (base !== undefined) {
+                    const cloudChanged = cloudPayload.checksum !== base;
+                    const localChanged = localChecksum !== base;
+                    if (!cloudChanged) {
+                        plan.uploads.push(category);
+                    } else if (!localChanged) {
+                        await applyCloud();
+                    } else if (cloudPayload.deviceId === deviceId) {
+                        // Cloud was last written by this device (another tab of the
+                        // same browser, sharing localStorage) — safe to overwrite.
+                        plan.uploads.push(category);
+                    } else {
+                        plan.conflicts.push({
+                            category,
+                            localTimestamp: settings.categorySyncTimes[category] ?? 0,
+                            cloudTimestamp: new Date(cloudPayload.syncedAt).getTime(),
+                            localChecksum: localChecksum ?? '',
+                            cloudChecksum: cloudPayload.checksum,
+                            cloudData: cloudPayload,
+                        });
+                    }
+                } else {
+                    // Legacy fallback: no sync base recorded yet (first run after
+                    // upgrade) — use the old timestamp heuristic.
                     const cloudTimestamp = new Date(cloudPayload.syncedAt).getTime();
                     const localTimestamp = settings.categorySyncTimes[category] ?? 0;
-
-                    if (cloudTimestamp > localTimestamp) {
-                        conflicts.push({
+                    if (cloudPayload.deviceId === deviceId || cloudTimestamp <= localTimestamp) {
+                        plan.uploads.push(category);
+                    } else {
+                        plan.conflicts.push({
                             category,
                             localTimestamp,
                             cloudTimestamp,
-                            localChecksum,
+                            localChecksum: localChecksum ?? '',
                             cloudChecksum: cloudPayload.checksum,
                             cloudData: cloudPayload,
                         });
                     }
                 }
             } catch (err) {
-                console.error(`Failed to check conflict for category ${category}`, err);
-                errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
+                console.error(`Failed to plan sync for category ${category}`, err);
+                plan.errors[category] = FIREBASE_ERRORS.SYNC_FAILED;
             }
         }
     } catch (err) {
-        console.error('Failed to check conflicts', err);
-        return { conflicts, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED } };
+        console.error('Failed to plan sync', err);
+        plan.errors.uiSettings = FIREBASE_ERRORS.SYNC_FAILED;
     }
 
-    return { conflicts, errors };
+    return plan;
 }
 
 /**
@@ -547,11 +780,13 @@ export async function deleteCategory(category: SyncCategory): Promise<{ success:
 
         invalidateCache();
 
-        // Clear local sync time
+        // Clear local sync state
         const settings = loadFirebaseSettings();
         const updatedTimes = { ...settings.categorySyncTimes };
+        const updatedChecksums = { ...settings.categorySyncChecksums };
         delete updatedTimes[category];
-        saveFirebaseSettings({ categorySyncTimes: updatedTimes });
+        delete updatedChecksums[category];
+        saveFirebaseSettings({ categorySyncTimes: updatedTimes, categorySyncChecksums: updatedChecksums });
 
         return { success: true };
     } catch (err) {
@@ -574,18 +809,21 @@ export async function deleteAllCategories(): Promise<{ success: boolean; errors:
         const { db } = await ensureFirebaseInitialized();
         const { doc, updateDoc, deleteField } = await import('firebase/firestore');
 
-        const deviceId = getDeviceId();
         const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
         console.log(`[Firebase WRITE] deleteAllCategories`);
+        // Full wipe: shared categories, per-device payloads of ALL devices and
+        // the passphrase verifier. "Delete all cloud data" should not leave
+        // other devices' layouts behind.
         await updateDoc(docRef, {
             categories: deleteField(),
-            [`deviceCategories.${deviceId}`]: deleteField(),
+            deviceCategories: deleteField(),
+            encryptionCheck: deleteField(),
         });
 
         invalidateCache();
 
-        // Clear all local sync times
-        saveFirebaseSettings({ categorySyncTimes: {} });
+        // Clear all local sync state
+        saveFirebaseSettings({ categorySyncTimes: {}, categorySyncChecksums: {} });
 
         return { success: true, errors: {} };
     } catch (err) {

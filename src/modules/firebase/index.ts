@@ -12,6 +12,7 @@ export type {
     CategorySyncStatus,
     CategoryConflictInfo,
     CategorySyncTimes,
+    CategorySyncChecksums,
     ConflictResolution,
     FirebaseSettings,
     FirebaseAuthState,
@@ -85,11 +86,12 @@ export {
     // Category sync
     uploadCategories,
     downloadCategories,
-    checkCategoriesConflicts,
+    planSync,
     getAllCategoriesMetadata,
     deleteCategory,
     deleteAllCategories,
     updateCategorySyncTime,
+    recordCategorySyncState,
 
     // Device registry
     registerDevice,
@@ -105,7 +107,7 @@ export {
     deleteEmptySyncGroup,
 } from './firebaseUnifiedSync';
 
-export type { DownloadedCategoryMeta } from './firebaseUnifiedSync';
+export type { DownloadedCategoryMeta, SyncPlan, UploadCategoriesResult } from './firebaseUnifiedSync';
 
 // Sync debounce manager (hot/cold sync)
 export { syncDebounceManager } from './syncDebounceManager';

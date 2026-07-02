@@ -23,6 +23,7 @@ class SyncDebounceManager {
     private hotDirty = false;
     private callbacks: SyncDebounceCallbacks | null = null;
     private visibilityHandler: (() => void) | null = null;
+    private pageHideHandler: (() => void) | null = null;
     private initialized = false;
 
     /**
@@ -34,13 +35,23 @@ class SyncDebounceManager {
         this.callbacks = callbacks;
         this.initialized = true;
 
-        // Set up visibility change handler for page close/hide
+        // Tab hidden (alt-tab, screen off): flush only cold data. Hot syncs
+        // keep their debounce — MUD players switch tabs constantly and each
+        // hide should not force an upload.
         this.visibilityHandler = () => {
             if (document.visibilityState === 'hidden') {
                 this.flushCold();
             }
         };
         document.addEventListener('visibilitychange', this.visibilityHandler);
+
+        // Page is going away (close / navigate): flush everything, otherwise
+        // edits made within the hot debounce window before closing would never
+        // upload — and nothing re-sends them until the next local edit.
+        this.pageHideHandler = () => {
+            this.flushAll();
+        };
+        window.addEventListener('pagehide', this.pageHideHandler);
     }
 
     /**
@@ -58,6 +69,10 @@ class SyncDebounceManager {
         if (this.visibilityHandler) {
             document.removeEventListener('visibilitychange', this.visibilityHandler);
             this.visibilityHandler = null;
+        }
+        if (this.pageHideHandler) {
+            window.removeEventListener('pagehide', this.pageHideHandler);
+            this.pageHideHandler = null;
         }
         this.callbacks = null;
         this.coldDirty = false;
@@ -158,7 +173,7 @@ class SyncDebounceManager {
     }
 
     /**
-     * Flush cold sync immediately (called on page close)
+     * Flush cold sync immediately (called on tab hide)
      */
     flushCold(): void {
         if (!this.coldDirty) return;
@@ -169,6 +184,27 @@ class SyncDebounceManager {
         }
 
         this.coldDirty = false;
+        this.callbacks?.onSyncNeeded();
+    }
+
+    /**
+     * Flush any pending sync (hot or cold) immediately — called on pagehide
+     * so pending changes are sent (best effort) before the page goes away.
+     */
+    flushAll(): void {
+        if (!this.coldDirty && !this.hotDirty) return;
+
+        if (this.coldTimer) {
+            clearTimeout(this.coldTimer);
+            this.coldTimer = null;
+        }
+        if (this.hotTimer) {
+            clearTimeout(this.hotTimer);
+            this.hotTimer = null;
+        }
+
+        this.coldDirty = false;
+        this.hotDirty = false;
         this.callbacks?.onSyncNeeded();
     }
 
