@@ -228,6 +228,16 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
         return line;
     }, 'fishing');
 
+    // Trigger: Rod dragged underwater - "Nagle prosta leszczynowa wedka zostaje wciagnieta pod wode!"
+    const rodDraggedPattern = /^Nagle .+ wedka zostaje wciagnieta pod wode!$/;
+
+    client.Triggers.registerTrigger(rodDraggedPattern, (line) => {
+        setState('idle');
+        client.FunctionalBind.clear();
+        line.color([0, line.length], COLOR_BROKEN);
+        return line;
+    }, 'fishing');
+
     // Trigger: Rod not cast - "Prosta leszczynowa wedka nie jest zarzucona."
     const rodNotCastPattern = /^.+ wedka nie jest zarzucona\.$/;
 

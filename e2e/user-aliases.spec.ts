@@ -31,7 +31,7 @@ test.describe('User aliases', () => {
 
         await aliasesModal.getByRole('button', { name: 'Dodaj alias' }).click();
 
-        const patternInput = aliasesModal.getByPlaceholder('np. ^zab (.+)$');
+        const patternInput = aliasesModal.getByPlaceholder('np. zab (.+)');
         const commandInput = aliasesModal.getByPlaceholder('np. zabij $1');
         const aliasPattern = 'fooalias';
         const aliasCommand = 'powiedz czesc';
@@ -92,7 +92,7 @@ test.describe('User aliases', () => {
         await aliasesModal.getByRole('button', {name: 'Dodaj alias'}).click();
 
         // Fill in the pattern and default command
-        await aliasesModal.getByPlaceholder('np. ^zab (.+)$').fill('testalias');
+        await aliasesModal.getByPlaceholder('np. zab (.+)').fill('testalias');
         await aliasesModal.getByPlaceholder('np. zabij $1').fill('default cmd');
 
         // Add a character override for CharAlpha:

@@ -9,7 +9,7 @@ import {
 import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent } from './UserTriggers';
 import { SUPPORTED_EVENTS, GMCP_MSG_TYPES } from './UserTriggers';
 
-const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind']);
+const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify']);
 
 const AVAILABLE_FLAGS = [
     { flag: 'i', label: 'Ignoruj wielkosc liter' },
@@ -102,6 +102,20 @@ function MacroEditor({
     pluginMacros: PluginTriggerMacro[];
     isEventTrigger?: boolean;
 }) {
+    const notificationsSupported = typeof Notification !== 'undefined';
+    const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
+        notificationsSupported ? Notification.permission : 'unsupported'
+    );
+
+    const requestNotificationPermission = async () => {
+        if (!notificationsSupported) return;
+        try {
+            setNotifPermission(await Notification.requestPermission());
+        } catch {
+            setNotifPermission(Notification.permission);
+        }
+    };
+
     return (
         <div className="d-flex align-items-start gap-2 p-2 mb-2 border rounded" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
             <div className="flex-grow-1">
@@ -126,6 +140,7 @@ function MacroEditor({
                     <option value="mute">Wycisz dzwieki</option>
                     <option value="unmute">Wlacz dzwieki</option>
                     <option value="command">Komenda</option>
+                    <option value="notify">Powiadomienie</option>
                     {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
                     {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
                     {!isEventTrigger && <option value="dim">Pulsowanie</option>}
@@ -193,6 +208,38 @@ function MacroEditor({
                         autoCapitalize="off"
                         spellCheck={false}
                     />
+                )}
+                {macro.type === 'notify' && (
+                    <>
+                        <Form.Control
+                            className="mt-1"
+                            type="text"
+                            size="sm"
+                            placeholder={isEventTrigger ? 'Tresc powiadomienia' : 'Tresc powiadomienia (puste = dopasowany tekst)'}
+                            value={macro.message || ''}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, message: e.target.value })}
+                            autoCorrect="off"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
+                        />
+                        {notifPermission !== 'granted' && (
+                            <Form.Text className="text-warning d-block">
+                                {notifPermission === 'unsupported'
+                                    ? 'Powiadomienia systemowe nie sa obslugiwane w tej przegladarce. Powiadomienie pojawi sie tylko w kliencie.'
+                                    : notifPermission === 'denied'
+                                        ? 'Powiadomienia systemowe sa zablokowane w przegladarce. Powiadomienie pojawi sie tylko w kliencie.'
+                                        : (
+                                            <>
+                                                Powiadomienia systemowe sa wylaczone - powiadomienie pojawi sie tylko w kliencie.{' '}
+                                                <Button variant="link" size="sm" className="p-0 align-baseline" onClick={requestNotificationPermission}>
+                                                    Wlacz powiadomienia systemowe
+                                                </Button>
+                                            </>
+                                        )}
+                            </Form.Text>
+                        )}
+                    </>
                 )}
                 {macro.type === 'functionalBind' && (
                     <>

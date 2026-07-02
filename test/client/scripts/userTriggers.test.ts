@@ -74,6 +74,26 @@ describe('userTriggers', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('bar');
   });
 
+  test('notify emits notify event with system flag for given message', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'notify', message: 'hello' }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+    expect(result?.text).toBe('foo');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'hello', system: true });
+  });
+
+  test('notify falls back to matched text when message is empty', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'notify' }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+    expect(result?.text).toBe('bar foo baz');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'foo', system: true });
+  });
+
   test('slowBlink applies slow blink to match', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);

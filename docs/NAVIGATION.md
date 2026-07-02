@@ -11,6 +11,7 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 | `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |
 | `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |
 | `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |
+| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |
 
 ## Automatyczne chodzenie
 

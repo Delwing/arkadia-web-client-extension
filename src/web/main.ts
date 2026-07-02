@@ -1072,13 +1072,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (notificationCenter) {
         client.on('notify', (payload) => {
-            const detail = (payload ?? {}) as { text?: string; time?: number };
+            const detail = (payload ?? {}) as { text?: string; time?: number; system?: boolean };
             const div = document.createElement('div');
             div.className = 'notification';
             div.textContent = detail.text ?? '';
             notificationCenter.appendChild(div);
             const timeout = typeof detail.time === 'number' ? detail.time : 2000;
             setTimeout(() => div.remove(), timeout);
+            if (detail.system && detail.text) {
+                client.notify(detail.text);
+            }
         });
     }
 

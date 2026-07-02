@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type RefObject } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type RefObject, type MouseEvent as ReactMouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { globalStorage } from "@modules/core/storage";
 import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
+import { LogTimeline, type TimeRange } from "./LogTimeline";
 import { isFileSaveSupported, isFileSaveActive, enableFileSave, disableFileSave, getDirectoryName, onStatusChange, getSavedToDiskSessions } from "./logFileSaver";
 import {
   type LogEntry,
@@ -24,6 +25,7 @@ import {
   getRawSessionData,
   getSessionData,
 } from "./logBrowserUtils";
+import { downloadLogAsImage } from "./logToImage";
 
 // --- Downloaded status persistence via separate IndexedDB ---
 
@@ -622,13 +624,21 @@ function LogManager({
   );
 }
 
-export function LogLine({ line, isHighlighted }: { line: FlatLogLine; isHighlighted: boolean }) {
+export function LogLine({
+  line,
+  isHighlighted,
+  onContextMenu,
+}: {
+  line: FlatLogLine;
+  isHighlighted: boolean;
+  onContextMenu?: (e: ReactMouseEvent, line: FlatLogLine) => void;
+}) {
   const classes = ["output_msg"];
   if (line.type) classes.push(line.type);
   if (isHighlighted) classes.push("logs-preview-highlight");
 
   return (
-    <div className={classes.join(" ")}>
+    <div className={classes.join(" ")} onContextMenu={onContextMenu ? (e) => onContextMenu(e, line) : undefined}>
       <div className="output_msg_text" style={{ whiteSpace: "pre-wrap" }}>
         <span className="log-time">{line.time}</span>
         <span dangerouslySetInnerHTML={{ __html: line.html }} />
@@ -742,6 +752,8 @@ export function LogBrowser() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [currentSession, setCurrentSession] = useState<string | null>(null);
   const [flatLines, setFlatLines] = useState<FlatLogLine[]>([]);
+  const [rangeFilter, setRangeFilter] = useState<TimeRange | null>(null);
+  const [lineMenu, setLineMenu] = useState<{ x: number; y: number; timestamp: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchCurrentOnly, setSearchCurrentOnly] = useState(false);
@@ -761,9 +773,27 @@ export function LogBrowser() {
   const exportWorkerRef = useRef<Worker | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const searchRequestIdRef = useRef(0);
+  // Mirrors pendingScrollTarget for the loader effect. Reading it through a ref
+  // keeps it out of the loader's dependency array, so clearing the target after
+  // a scroll-to-result does not re-trigger a reload (which would then scroll to
+  // the bottom of the log).
+  const pendingScrollTargetRef = useRef<SearchResult | null>(null);
+
+  // Narrow the rendered lines to the selected timeline window. Lines are
+  // chronologically ordered, so the range maps to a contiguous slice; the
+  // offset lets us translate search/highlight indices (into the full
+  // flatLines) back onto the visible slice.
+  const { visibleLines, visibleStartIdx } = useMemo(() => {
+    if (!rangeFilter) return { visibleLines: flatLines, visibleStartIdx: 0 };
+    let start = flatLines.findIndex(l => l.timestamp >= rangeFilter.from);
+    if (start === -1) return { visibleLines: [] as FlatLogLine[], visibleStartIdx: 0 };
+    let end = flatLines.length - 1;
+    while (end >= start && flatLines[end].timestamp > rangeFilter.to) end--;
+    return { visibleLines: flatLines.slice(start, end + 1), visibleStartIdx: start };
+  }, [flatLines, rangeFilter]);
 
   const virtualizer = useVirtualizer({
-    count: flatLines.length,
+    count: visibleLines.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 20,
     overscan: 50,
@@ -906,6 +936,55 @@ export function LogBrowser() {
     reloadSessions();
   }, [isOpen, reloadSessions]);
 
+  // Reset the timeline window whenever the selected session changes
+  useEffect(() => {
+    setRangeFilter(null);
+    setLineMenu(null);
+  }, [currentSession]);
+
+  // Right-click on a log line opens a "start/end here" context menu
+  const handleLineContextMenu = useCallback((e: ReactMouseEvent, line: FlatLogLine) => {
+    e.preventDefault();
+    setLineMenu({ x: e.clientX, y: e.clientY, timestamp: line.timestamp });
+  }, []);
+
+  // Set the start or end of the timeline window from a clicked line's timestamp
+  const setRangeBound = useCallback((kind: "start" | "end", ts: number) => {
+    setRangeFilter(prev => {
+      const min = flatLines[0]?.timestamp ?? ts;
+      const max = flatLines[flatLines.length - 1]?.timestamp ?? ts;
+      let from = prev?.from ?? min;
+      let to = prev?.to ?? max;
+      if (kind === "start") from = Math.min(ts, to);
+      else to = Math.max(ts, from);
+      if (from <= min && to >= max) return null;
+      return { from, to };
+    });
+    setLineMenu(null);
+    // Reveal the chosen boundary line once the narrowed slice has rendered:
+    // "start here" lands at the top, "end here" at the bottom.
+    setTimeout(() => {
+      const el = parentRef.current;
+      if (!el) return;
+      el.scrollTop = kind === "start" ? 0 : el.scrollHeight;
+    }, 0);
+  }, [flatLines]);
+
+  // Dismiss the line context menu on outside click, scroll, or Escape
+  useEffect(() => {
+    if (!lineMenu) return;
+    const close = () => setLineMenu(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLineMenu(null); };
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [lineMenu]);
+
   // Load session data when current session changes or modal opens
   useEffect(() => {
     if (!isOpen || !currentSession || !dbRef.current) return;
@@ -917,7 +996,8 @@ export function LogBrowser() {
         const flat = flattenLogGroups(groups);
         setFlatLines(flat);
         // Scroll to bottom after loading (unless we have a pending scroll target)
-        if (!pendingScrollTarget || pendingScrollTarget.sessionName !== currentSession) {
+        const pending = pendingScrollTargetRef.current;
+        if (!pending || pending.sessionName !== currentSession) {
           setTimeout(() => {
             if (parentRef.current) {
               parentRef.current.scrollTop = parentRef.current.scrollHeight;
@@ -930,7 +1010,7 @@ export function LogBrowser() {
     };
 
     loadSession();
-  }, [isOpen, currentSession, pendingScrollTarget]);
+  }, [isOpen, currentSession]);
 
   // Handle pending scroll target after session loads
   useEffect(() => {
@@ -947,6 +1027,7 @@ export function LogBrowser() {
         virtualizer.scrollToIndex(targetIndex, { align: "center" });
       });
     }
+    pendingScrollTargetRef.current = null;
     setPendingScrollTarget(null);
 
     // Clear highlight after 2s
@@ -983,6 +1064,9 @@ export function LogBrowser() {
     setSearchResults([]);
     setSearchSessionGroups([]);
     setActiveResultIndex(-1);
+    // Searching spans the whole session; clear any timeline narrowing so
+    // result indices line up with the full flatLines array.
+    setRangeFilter(null);
 
     const baseFlags = normalizeFlags(regex.flags);
     const globalFlags = `${baseFlags}g`;
@@ -1126,23 +1210,17 @@ export function LogBrowser() {
     setSearchSessionGroups(Array.from(sessionGroupsMap.values()));
     setActiveResultIndex(0);
 
-    // Highlight and scroll to first result
+    // Highlight and scroll to first result via the pending-scroll effect, so
+    // it runs after the range reset re-renders the full (unfiltered) list.
     if (allResults.length > 0) {
       const firstResult = allResults[0];
-      if (firstResult.sessionName === currentSession) {
-        const indices = new Set(firstResult.matches.map(m => m.flatIndex));
-        setHighlightedIndices(indices);
-        if (firstResult.matches.length > 0) {
-          virtualizer.scrollToIndex(firstResult.matches[0].flatIndex, { align: "center" });
-        }
-        setTimeout(() => setHighlightedIndices(new Set()), 2000);
-      } else {
-        // Switch to the session with first result
-        setPendingScrollTarget(firstResult);
+      pendingScrollTargetRef.current = firstResult;
+      setPendingScrollTarget(firstResult);
+      if (firstResult.sessionName !== currentSession) {
         setCurrentSession(firstResult.sessionName);
       }
     }
-  }, [searchQuery, sessions, currentSession, virtualizer, searchCurrentOnly, flatLines]);
+  }, [searchQuery, sessions, currentSession, searchCurrentOnly, flatLines]);
 
   // Handle result click
   const handleResultClick = useCallback((globalIndex: number) => {
@@ -1151,21 +1229,15 @@ export function LogBrowser() {
     setActiveResultIndex(globalIndex);
     const result = searchResults[globalIndex];
 
-    // Switch session if needed
+    // Clear any timeline narrowing so the target line is in view, then let the
+    // pending-scroll effect do the highlight/scroll against the full list.
+    setRangeFilter(null);
+    pendingScrollTargetRef.current = result;
+    setPendingScrollTarget(result);
     if (result.sessionName !== currentSession) {
-      // Set pending scroll target - will be handled by effect after session loads
-      setPendingScrollTarget(result);
       setCurrentSession(result.sessionName);
-    } else {
-      const indices = new Set(result.matches.map(m => m.flatIndex));
-      setHighlightedIndices(indices);
-      if (result.matches.length > 0) {
-        virtualizer.scrollToIndex(result.matches[0].flatIndex, { align: "center" });
-      }
-      // Clear highlight after 2s
-      setTimeout(() => setHighlightedIndices(new Set()), 2000);
     }
-  }, [searchResults, currentSession, virtualizer]);
+  }, [searchResults, currentSession]);
 
   // Navigation
   const handlePrev = useCallback(() => {
@@ -1187,7 +1259,10 @@ export function LogBrowser() {
     const tx = dbRef.current.transaction(currentSession, "readonly");
     const req = tx.objectStore(currentSession).getAll();
     req.onsuccess = () => {
-      const logs = req.result as LogEntry[];
+      const allLogs = req.result as LogEntry[];
+      const logs = rangeFilter
+        ? allLogs.filter(l => l.timestamp >= rangeFilter.from && l.timestamp <= rangeFilter.to)
+        : allLogs;
       const entries: string[] = [];
       for (const l of logs) {
         const time = formatDateTime(l.timestamp);
@@ -1212,7 +1287,7 @@ export function LogBrowser() {
       a.click();
       URL.revokeObjectURL(url);
     };
-  }, [currentSession]);
+  }, [currentSession, rangeFilter]);
 
   // Download all logs as ZIP
   const handleDownloadAll = useCallback(() => {
@@ -1278,6 +1353,26 @@ export function LogBrowser() {
       inlineStyles: styles,
     });
   }, [isExporting]);
+
+  const [isImageDownloading, setIsImageDownloading] = useState(false);
+  const handleDownloadAsImage = useCallback(async () => {
+    if (!currentSession || isImageDownloading) return;
+    const linesToRender = rangeFilter ? visibleLines : flatLines;
+    if (linesToRender.length === 0) {
+      alert("Brak linii do zapisu.");
+      return;
+    }
+    setIsImageDownloading(true);
+    try {
+      const suffix = rangeFilter ? "_zakres" : "";
+      await downloadLogAsImage(linesToRender, `${formatSessionFileName(currentSession)}${suffix}.png`);
+    } catch (error) {
+      console.error("[Logs] Image download failed:", error);
+      alert(error instanceof Error ? error.message : "Nie udalo sie zapisac obrazu.");
+    } finally {
+      setIsImageDownloading(false);
+    }
+  }, [currentSession, rangeFilter, visibleLines, flatLines, isImageDownloading]);
 
   // Delete current session
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1423,9 +1518,23 @@ export function LogBrowser() {
           <button
             id="logs-download"
             className="btn btn-secondary"
+            style={{ whiteSpace: "nowrap" }}
             onClick={handleDownload}
+            title={rangeFilter ? "Pobierz tylko zaznaczony zakres osi czasu" : "Pobierz caly log"}
           >
-            Pobierz
+            {rangeFilter ? "Pobierz zakres" : "Pobierz"}
+          </button>
+          <button
+            id="logs-download-image"
+            className="btn btn-secondary"
+            style={{ whiteSpace: "nowrap" }}
+            onClick={handleDownloadAsImage}
+            disabled={!currentSession || isImageDownloading}
+            title={rangeFilter ? "Pobierz zaznaczony zakres jako obraz PNG" : "Pobierz caly log jako obraz PNG"}
+          >
+            {isImageDownloading
+              ? "Tworzenie..."
+              : rangeFilter ? "Pobierz zakres jako obraz" : "Pobierz jako obraz"}
           </button>
           <button
             id="logs-download-all"
@@ -1553,6 +1662,14 @@ export function LogBrowser() {
           )}
         </div>
 
+        {flatLines.length > 0 && (
+          <LogTimeline
+            lines={flatLines}
+            value={rangeFilter}
+            onChange={setRangeFilter}
+          />
+        )}
+
         <div
           id="logs-preview"
           ref={parentRef}
@@ -1572,7 +1689,7 @@ export function LogBrowser() {
             }}
           >
             {virtualItems.map(virtualRow => {
-              const line = flatLines[virtualRow.index];
+              const line = visibleLines[virtualRow.index];
               return (
                 <div
                   key={virtualRow.key}
@@ -1588,13 +1705,29 @@ export function LogBrowser() {
                 >
                   <LogLine
                     line={line}
-                    isHighlighted={highlightedIndices.has(virtualRow.index)}
+                    isHighlighted={highlightedIndices.has(visibleStartIdx + virtualRow.index)}
+                    onContextMenu={handleLineContextMenu}
                   />
                 </div>
               );
             })}
           </div>
         </div>
+
+        {lineMenu && (
+          <div
+            className="logs-line-menu"
+            style={{ left: lineMenu.x, top: lineMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button type="button" onClick={() => setRangeBound("start", lineMenu.timestamp)}>
+              Zacznij od tej linii
+            </button>
+            <button type="button" onClick={() => setRangeBound("end", lineMenu.timestamp)}>
+              Zakoncz na tej linii
+            </button>
+          </div>
+        )}
       </>)}
 
       {activeTab === "manage" && (

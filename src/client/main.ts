@@ -108,6 +108,7 @@ import initLetter from './scripts/letter'
 import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
 import initMove from './scripts/move'
+import initDirectionBypass from './scripts/directionBypass'
 import initZaznaczaj from './scripts/zaznaczaj'
 import initTropBind from './scripts/trop'
 import Client from "./Client";
@@ -120,6 +121,7 @@ import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
 import initFishing from './scripts/fishing'
+import initSpiderWeb from './scripts/spiderWeb'
 import initPoczta from './scripts/poczta'
 import initLanguageTeacher from './scripts/languageTeacher'
 import initProfession from './scripts/profession'
@@ -204,6 +206,7 @@ export function registerScripts(client: Client) {
 
     initTeamBlockers(client)
     initMove(client)
+    initDirectionBypass(client, aliases)
 
     initNoExitHighlight(client)
     initTideWarningHighlight(client)
@@ -326,6 +329,7 @@ export function registerScripts(client: Client) {
     initWyroznienieOptions(client)
     initContracts(client, aliases)
     initFishing(client, aliases)
+    initSpiderWeb(client)
     initPoczta(client, aliases)
     initLanguageTeacher(client)
     initProfession(client, aliases)

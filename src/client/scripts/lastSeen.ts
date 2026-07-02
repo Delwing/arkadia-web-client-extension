@@ -3,6 +3,7 @@ import { colorString, createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "@client/ansi/FormatState.ts";
 import { subscribeMerged, refresh as refreshPeopleStore } from "@modules/data/peopleLoader";
 import type { PersonListEntry } from "@client/types/people";
+import { characterStorage } from "@modules/core/storage";
 
 const TRIGGER_TAG = "last-seen-hp";
 const TIME_TO_FORGET_MS = 15 * 60 * 1000;
@@ -30,6 +31,13 @@ export default function initLastSeen(
     const seen: Map<string, SeenEntry> = new Map();
     const idCache: Map<number, { desc?: string; hp?: number }> = new Map();
     let people: PersonListEntry[] = [];
+    let enemyGuilds: string[] = [];
+
+    const applyEnemyGuilds = (settings: any) => {
+        enemyGuilds = (settings?.enemyGuilds as string[] | undefined) ?? [];
+    };
+    applyEnemyGuilds(characterStorage.get("settings"));
+    characterStorage.onChange("settings", applyEnemyGuilds);
 
     subscribeMerged(snapshot => {
         people = snapshot ?? [];
@@ -79,8 +87,10 @@ export default function initLastSeen(
     function isEnemy(desc: string): boolean {
         const lower = desc.toLowerCase();
         return people.some(p => {
-            if (!p.isEnemy) return false;
-            return p.description.toLowerCase() === lower || p.name.toLowerCase() === lower;
+            if (p.description.toLowerCase() !== lower && p.name.toLowerCase() !== lower) {
+                return false;
+            }
+            return p.isEnemy || enemyGuilds.includes(p.guild);
         });
     }
 

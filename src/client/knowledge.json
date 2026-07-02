@@ -826,18 +826,18 @@
   {
     "Rodzaj": "Wiedza o Chaosie i jego tworach",
     "Wiedza": "Byles swiadkiem przyzwania zwierzoczleka",
-    "id": null,
+    "id": 15594,
     "Domena": "Imperium",
-    "lokalizacja": "?",
-    "note": "Czar"
+    "lokalizacja": "Event - Gory Iranna/Przeskoku/Szare/Orcal",
+    "note": "Wiedzmy z kotlem, jesli spotkasz je w gorach nie odzywaj sie na lokacji nie emotuj, badz otulony plaszczem, ukryj sie czekaj i sluchaj. Po polnocy jak zdejma z siebie czar, mozesz z nimi walczyc w pewnym momencie przyzwa zwierzoczleka"
   },
   {
     "Rodzaj": "Wiedza o Chaosie i jego tworach",
     "Wiedza": "Byles swiadkiem sabatu wiedzm",
-    "id": null,
+    "id": 15594,
     "Domena": "Imperium",
     "lokalizacja": "Event - Gory Iranna/Przeskoku/Szare/Orcal",
-    "note": "Wiedzmy z kotlem, jesli spotkasz je w gorach nie odzywaj sie na lokacji nie emotuj, badz otulony plaszczem, ukryj sie czekaj i sluchaj"
+    "note": "Wiedzmy z kotlem, jesli spotkasz je w gorach nie odzywaj sie na lokacji nie emotuj, badz otulony plaszczem, ukryj sie czekaj i sluchaj. Po polnocy jak zdejma z siebie czar wtedy zlapiesz ta wiedze.Masz okno czasowe od zachodu slonca do polnocy by je znalezc."
   },
   {
     "Rodzaj": "Wiedza o Chaosie i jego tworach",
@@ -2938,10 +2938,10 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales jak wiedzmy zrzucaly iluzje kryjaca ich prawdziwy wyglad",
-    "id": null,
+    "id": 15594,
     "Domena": "Imperium",
-    "lokalizacja": "Event - Geheimnisnacht (Sabat ) Gory Szare/Orcal/Irrana/Przeskoku",
-    "note": "Wiedzmy pojawia sie tylko w to swieto w gorach , otul sie plaszzczem,ukryty wejdz na lokacje i siedz i obserwuj. Nie emotuj ani nic nie mow bo cie zaatakuja."
+    "lokalizacja": "Event - (Sabat) Gory Szare/Orcal/Irrana/Przeskoku",
+    "note": "Wiedzmy pojawia sie tylko w to swieto w gorach , otul sie plaszzczem,ukryty wejdz na lokacje i siedz i obserwuj. Nie emotuj ani nic nie mow bo cie zaatakuja.Po polnocy jak zrzuca iluzje mozesz z nimi walczyc dopiero. Sa 3 wpisy za nie."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3486,6 +3486,22 @@
     "Domena": "Ishtar",
     "lokalizacja": "Wyzima",
     "note": "Udajesz sie do palacu pod Wyzima do maga(id 1180) \"zapytaj o specyfik\" \"zaplac czlowiekowi\" (20zk) procz lancuchow dostaniesz tez pergamin.Idziesz do sarkofagu strzygi w rezydencji (SW od Wyzimy) w NOCY gdy strzyga jest poza nim. \"zasun wieko\" \"Przerysuj wzor z pergaminu na wieko\" Moze ci sie udac za 1x a mozesz potrzebowac wiecej prob, dlatego warto pare kupic od razu od maga ( musisz relogowac po kazdym kupnie).Przy relogu odkladasz pergamin na glebe wiec podnies po zalogowaniu. Laczy sie z wiedza 317 zapoznaj sie i z nia."
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Widziales jak ktos uwolnil moc aury energii, zalewajac wszystko fala wyladowan",
+    "id": null,
+    "Domena": "?",
+    "lokalizacja": "?",
+    "note": "?"
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Widziales kogos chronionego bariera magicznych pnaczy",
+    "id": null,
+    "Domena": "?",
+    "lokalizacja": "?",
+    "note": "?"
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4638,6 +4654,14 @@
     "Domena": "Imperium",
     "lokalizacja": "Event - Cmentarze w domenie Imperium",
     "note": "Czujny mlody mezczyzna(Aubert) \"przedstaw sie\" \"zapytaj auberta o blizne\" \"zapytaj auberta o talizman\" \"zapytaj auberta o geheimnisnacht\""
+  },
+  {
+    "Rodzaj": "Wiedza o nieumarlych",
+    "Wiedza": "Spotkales licza przywolujacego nieumarlych swiatlem koscianej lampy",
+    "id": 4653,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Hexenacht - Quenelles (inne miasta?)",
+    "note": "Podczas Hexe, Spawnuje sie licz z obstawa nieumarlych, trafilismy go w quenelles w miescie. Ciezka walka +7 osob. \"ob licza\". Mozesz wejsc obejrzec go i wyjsc.Makabryczny zdeformowany ozywieniec, zakrwawiony grozny ozywieniec, potezny siwowlosy licz i zoltawy potezny szkielet."
   },
   {
     "Rodzaj": "Wiedza o pajakach i pajakowatych",
@@ -6912,6 +6936,22 @@
     "note": "\"ob potwora\" randomowa lokalizacja w puszczy."
   },
   {
+    "Rodzaj": "Wiedza o stworach pokoniunkcyjnych",
+    "Wiedza": "Analizowales szczatki fledera",
+    "id": null,
+    "Domena": "Ishtar",
+    "lokalizacja": "Saovine",
+    "note": "Wyskakuje fleder na krotka chwile, musisz zdazyc go obejrzec, przy wywolywaniu, ale tez go mozna trafic na cmentarzach podczas Sao.Wtedy go obejrzyj i wytnij szczatki."
+  },
+  {
+    "Rodzaj": "Wiedza o stworach pokoniunkcyjnych",
+    "Wiedza": "Widziales fledera, wampira nizszego",
+    "id": null,
+    "Domena": "Ishtar",
+    "lokalizacja": "Saovine",
+    "note": "Wyskakuje fleder na krotka chwile, musisz zdazyc go obejrzec, przy wywolywaniu, ale tez go mozna trafic na cmentarzach podczas Sao.Wtedy go obejrzyj i wytnij szczatki."
+  },
+  {
     "Rodzaj": "Wiedza o szczuroludziach",
     "Wiedza": "Dostarczyles cialo skavena szczurolapowi z Nuln",
     "id": 7227,
@@ -7358,5 +7398,13 @@
     "Domena": "Imperium",
     "lokalizacja": "Event - Miasta i wioski Imperium",
     "note": "Szczuply ponury mezczyzna (Vitrer)  \"zapytaj vitrera o mroczne potegi\" (wiedza o chaosie) + \"przyjrzyj sie stalowej oslonie\" (wiedza o wampirach)"
+  },
+  {
+    "Rodzaj": "Wiedza o wampirach",
+    "Wiedza": "Widziales fledera,wampira nizszego",
+    "id": null,
+    "Domena": "Ishtar",
+    "lokalizacja": "Saovine",
+    "note": "Wyskakuje fleder na krotka chwile, musisz zdazyc go obejrzec, przy wywolywaniu, ale tez go mozna trafic na cmentarzach podczas Sao."
   }
 ]

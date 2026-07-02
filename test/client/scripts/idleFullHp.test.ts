@@ -4,10 +4,9 @@ import { EventEmitter } from 'events';
 describe('idle full hp notification', () => {
   class FakeClient {
     private emitter = new EventEmitter();
-    notify = jest.fn();
-    sendEvent(type: string, detail?: any) {
+    sendEvent = jest.fn((type: string, detail?: any) => {
       this.emitter.emit(type, detail);
-    }
+    });
     on(event: string, cb: any) {
       this.emitter.on(event, cb);
     }
@@ -28,7 +27,7 @@ describe('idle full hp notification', () => {
     client.sendEvent('gmcp.char.state', { hp: 5 });
     jest.setSystemTime(120000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
-    expect(client.notify).toHaveBeenCalledWith('Masz pelne zycie');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pelne zycie', system: true });
   });
 
   test('does not notify before idle threshold', () => {
@@ -37,7 +36,7 @@ describe('idle full hp notification', () => {
     client.sendEvent('gmcp.char.state', { hp: 5 });
     jest.setSystemTime(119000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
-    expect(client.notify).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
   });
 
   test('command resets idle timer', () => {
@@ -50,6 +49,6 @@ describe('idle full hp notification', () => {
     client.sendEvent('gmcp.char.state', { hp: 5 });
     jest.setSystemTime(210000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
-    expect(client.notify).toHaveBeenCalledWith('Masz pelne zycie');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pelne zycie', system: true });
   });
 });

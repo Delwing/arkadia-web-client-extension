@@ -103,17 +103,21 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                     <div className="modal-body">
                         <div className="mb-3">
                             <label className="form-label">Wzorzec (pattern)</label>
-                            <input
-                                type="text"
-                                className="form-control font-monospace"
-                                value={pattern}
-                                onChange={e => setPattern(e.target.value)}
-                                placeholder="np. ^zab (.+)$"
-                                autoCorrect="off"
-                                autoComplete="off"
-                                autoCapitalize="off"
-                                spellCheck={false}
-                            />
+                            <div className="input-group">
+                                <span className="input-group-text font-monospace" title="Dodawane automatycznie">^</span>
+                                <input
+                                    type="text"
+                                    className="form-control font-monospace"
+                                    value={pattern}
+                                    onChange={e => setPattern(e.target.value)}
+                                    placeholder="np. zab (.+)"
+                                    autoCorrect="off"
+                                    autoComplete="off"
+                                    autoCapitalize="off"
+                                    spellCheck={false}
+                                />
+                                <span className="input-group-text font-monospace" title="Dodawane automatycznie">$</span>
+                            </div>
                             {isDuplicate && (
                                 <div className="text-danger small mt-1">Alias o takim wzorcu juz istnieje</div>
                             )}
@@ -190,7 +194,8 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                         </div>
 
                         <small className="text-secondary">
-                            Pattern jest wyrazeniem regularnym. Uzyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawic odpowiednie grupy.<br />
+                            Pattern jest wyrazeniem regularnym. Znaki <code>^</code> i <code>$</code> sa dodawane automatycznie &mdash; wzorzec musi pasowac do calej komendy.<br />
+                            Uzyj <code>$1</code>, <code>$2</code> itd. w komendzie, aby wstawic odpowiednie grupy.<br />
                             Mozesz takze korzystac ze skrotow obiektow (<code>@1</code>, <code>@A</code>, <code>@@</code>), ktore zostana rozwiniete do identyfikatorow obiektow.<br />
                             Uzyj <code>$i</code> w komendzie, aby powtorzyc ja dla zakresu, np. wzorzec <code>kok (.+)</code>, komenda <code>rozerwij $i. kokon</code> &mdash; wpisz <code>kok 1-7</code>.<br />
                             Kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik).

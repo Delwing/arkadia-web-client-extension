@@ -7,15 +7,14 @@ import { setTestSettings } from '../helpers/testSettings';
 describe('full hp timer', () => {
   class FakeClient {
     private emitter = new EventEmitter();
-    notify = jest.fn();
     println = jest.fn();
     on(event: string, cb: any) {
       this.emitter.on(event, cb);
       return () => this.emitter.off(event, cb);
     }
-    sendEvent(type: string, detail?: any) {
+    sendEvent = jest.fn((type: string, detail?: any) => {
       this.emitter.emit(type, detail);
-    }
+    });
   }
 
   beforeEach(() => {
@@ -42,7 +41,7 @@ describe('full hp timer', () => {
     const color = createColorFormat('#00ff7f');
     const msg = colorString('Jestes w pelni zdrowia.', color);
     expect(client.println).toHaveBeenCalledWith(msg);
-    expect(client.notify).toHaveBeenCalledWith('Jestes w pelni zdrowia.');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Jestes w pelni zdrowia.', system: true });
   });
 
   test('does not print message when reaching full hp from zero', () => {
@@ -53,7 +52,7 @@ describe('full hp timer', () => {
     client.sendEvent('gmcp.char.state', { hp: 6 });
     jest.advanceTimersByTime(180000);
     expect(client.println).not.toHaveBeenCalled();
-    expect(client.notify).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
   });
 
   test('does not print message when full hp is the first state update', () => {
@@ -63,7 +62,7 @@ describe('full hp timer', () => {
     client.sendEvent('gmcp.char.state', { hp: 6 });
     jest.advanceTimersByTime(180000);
     expect(client.println).not.toHaveBeenCalled();
-    expect(client.notify).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
   });
 
     test('timer is cancelled on combat', () => {
@@ -75,6 +74,6 @@ describe('full hp timer', () => {
       client.sendEvent('gmcp.objects.data', { 1: { attack_num: 2 } });
       jest.advanceTimersByTime(180000);
       expect(client.println).not.toHaveBeenCalled();
-      expect(client.notify).not.toHaveBeenCalled();
+      expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
     });
 });

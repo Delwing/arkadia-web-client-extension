@@ -7,6 +7,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage, characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
+import { enemyBindResolvers } from './enemyBindResolvers';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -181,14 +182,21 @@ export default function initEnemyBinds(
         }
 
         // Check if any object has desc that matches enemy
-        const enemies: { num: number; desc: string }[] = [];
+        const rawEnemies: { num: number; desc: string }[] = [];
         Object.keys(data).forEach(numStr => {
             const num = parseInt(numStr);
             const obj = data[numStr];
             if (obj.desc && isEnemy(obj.desc)) {
-                enemies.push({ num, desc: obj.desc });
+                rawEnemies.push({ num, desc: obj.desc });
             }
         });
+
+        // Let plugins reorder the candidate list and/or inject enemies the built-in
+        // isEnemy() check would otherwise miss, before slots are assigned.
+        const enemies = enemyBindResolvers.apply(
+            rawEnemies,
+            client.ObjectManager.getObjectsOnLocation()
+        );
 
         // If no enemies with desc, nothing to do
         if (enemies.length === 0) {

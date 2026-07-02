@@ -42,6 +42,8 @@ export type SendCommandEvent = {
 type NotificationPayload = {
     text: string;
     time?: number;
+    /** Also fire an OS/browser notification (when permission allows). Defaults to false: in-app toast only. */
+    system?: boolean;
 };
 
 type MultibindList = {

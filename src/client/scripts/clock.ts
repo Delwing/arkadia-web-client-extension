@@ -805,7 +805,7 @@ export function initClock(client: Client): ClockManager {
                     return;
                 }
             }
-            manager.setTime(domain, hour, dayOfYear);
+            manager.setTime(domain, hour, undefined, dayOfYear);
             const dayInfo = dayOfYear !== undefined ? `, dzien ${dayOfYear}` : "";
             client.println(`Ustawiono czas ${domain === "Empire" ? "Imperium" : "Ishtar"}: ${hour.toString().padStart(2, '0')}:00${dayInfo}`);
         }

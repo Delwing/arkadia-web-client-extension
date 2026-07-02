@@ -1578,6 +1578,57 @@
                             "script": "trigger_func_skrypty_ui_gags_ciosy_bron_fin()"
                           }
                         ]
+                      },
+                      {
+                        "name": "ciernisty_ciezki_morgenstern",
+                        "patterns": [
+                          {
+                            "pattern": "[Cc]iernist\\w+ ciezk\\w+ morgenster\\w+",
+                            "type": 1
+                          }
+                        ],
+                        "triggers": [
+                          {
+                            "name": "ciernisty_ciezki_morg",
+                            "patterns": [
+                              {
+                                "pattern": "^(?<damage>Ledwo zadrapujesz) (?<target>.+?) w (?<where>.+?) swoim ciernistym ciezkim morgensternem\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^(?<damage>Kaleczysz lekko) (?<target>.+?) w (?<where>.+?) zamaszystym uderzeniem swojego ciernistego ciezkiego morgensterna\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Wyprowadzonym znad glowy uderzeniem swojego ciernistego ciezkiego morgensterna (?<damage>tluczesz bolesnie) (?<target>.+?), zostawiajac na (?:jego|jej) ciele krwawiace zadrapania\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Niespodziewanym uderzeniem ciernistego ciezkiego morgensterna (?<damage>obijasz bolesnie) (?<target>.+?), zostawiajac na (?:jego|jej) ciele poszarpana rane\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Upstrzona kolcami glowica twojego ciernistego ciezkiego morgensterna trafia w (?<where>.+?), zostawiajac (?<damage>broczace krwia rany)\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Podbiegasz do przeciwnika i miazdzacym ciosem (?<damage>masakrujesz) (?<target>.+?) ciernistym ciezkim morgensternem, zanurzajac dlugie ciernie gleboko w (?:jego|jej) ciele\\.$",
+                                "type": 1
+                              }
+                            ],
+                            "script": "trigger_func_skrypty_ui_gags_ciosy_ciernisty_ciezki_morg()"
+                          },
+                          {
+                            "name": "ciernisty_ciezki_morg_fin",
+                            "patterns": [
+                              {
+                                "pattern": "^Bezlitosnym uderzeniem ciernistego ciezkiego morgensterna obalasz (?<target>.+?) na ziemie\\. Srebrzyste ciernie wnikaja w (?:jego|jej) cialo tak gleboko, ze gdy wyszarpujesz bron, zostaja na niej kawalki miesa\\.$",
+                                "type": 1
+                              }
+                            ],
+                            "script": "trigger_func_skrypty_ui_gags_ciosy_bron_fin()"
+                          }
+                        ]
                       }
                     ]
                   },

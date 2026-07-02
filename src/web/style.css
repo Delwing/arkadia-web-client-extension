@@ -912,6 +912,7 @@ h1 {
 #main_text_output_msg_wrapper {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 8px;
   font-family: monospace;
   font-size: 0.775rem;
@@ -931,6 +932,133 @@ h1 {
   position: relative;
   height: 60vh;
   background-color: var(--output-bg, #242424);
+}
+
+.logs-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 6px 0;
+  user-select: none;
+}
+
+.logs-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: var(--bs-secondary-color, #aaa);
+}
+
+.logs-timeline-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bs-body-color, #ddd);
+}
+
+.logs-timeline-reset {
+  border: none;
+  background: transparent;
+  color: var(--bs-link-color, #6ea8fe);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.logs-timeline-track {
+  position: relative;
+  height: 44px;
+  background-color: var(--popup-control-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--popup-border, rgba(255, 255, 255, 0.12));
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.logs-timeline-hist {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+/* Neutral activity bars so they're visible regardless of the accent color. */
+.logs-timeline-bar {
+  flex: 1 1 0;
+  min-height: 1px;
+  background-color: var(--popup-text, #e0e0e0);
+  opacity: 0.55;
+}
+
+.logs-timeline-bar-dim {
+  opacity: 0.18;
+}
+
+.logs-timeline-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.18);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Accent-colored vertical start/end marker lines. */
+.logs-timeline-handle {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  transform: translateX(-50%);
+  background: var(--bs-primary, #0d6efd);
+  border-radius: 2px;
+  cursor: ew-resize;
+  z-index: 2;
+  touch-action: none;
+}
+
+.logs-timeline-handle:hover {
+  background: var(--popup-accent-strong-bg, var(--bs-primary, #0d6efd));
+  width: 5px;
+}
+
+/* Right-click context menu on a log line */
+.logs-line-menu {
+  position: fixed;
+  z-index: 2000;
+  min-width: 9rem;
+  padding: 4px 0;
+  background-color: var(--bs-body-bg, #2b2b2b);
+  border: 1px solid var(--bs-border-color, #444);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  font-family: sans-serif;
+  font-size: 0.8rem;
+}
+
+.logs-line-menu button {
+  display: block;
+  width: 100%;
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--bs-body-color, #ddd);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.logs-line-menu button:hover {
+  background-color: var(--bs-primary, #0d6efd);
+  color: #fff;
+}
+
+#logs-preview .output_msg:hover {
+  background-color: rgba(110, 168, 254, 0.12);
+  cursor: context-menu;
 }
 
 #logs-search-results {
@@ -6841,12 +6969,19 @@ body.mobile-command-radial-active {
 }
 
 #notification-center {
-  position: absolute;
+  /* Sticky (not absolute): the wrapper is the scroll container, so an absolutely
+     positioned child anchors to the content top and scrolls out of view as game
+     text accumulates. Sticky keeps it pinned to the visible top of the scrollport
+     across every map-position layout. */
+  position: sticky;
   top: 3rem;
-  left: 0.5rem;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.5rem;
+  padding-left: 0.5rem;
+  /* Overlay only — never intercept clicks/selection over the text below it. */
+  pointer-events: none;
   z-index: 1104;
 }
 

@@ -9,13 +9,22 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 const POPUP_ID = 'popup:deposits';
 
-function transformItemName(item: ContainerItem): string {
+function buildItemBuffer(item: ContainerItem): AnsiAwareBuffer {
     const transforms = getTransformDefinitions();
     let buffer = new AnsiAwareBuffer(item.name);
     for (const tr of transforms) {
         buffer = tr.transform(buffer, item, '');
     }
-    return buffer.toHtml();
+    return buffer;
+}
+
+function transformItemName(item: ContainerItem): string {
+    return buildItemBuffer(item).toHtml();
+}
+
+/** Plain text of the rendered item name, including transform-added badges like "[Ag]". */
+function itemSearchText(item: ContainerItem): string {
+    return buildItemBuffer(item).text;
 }
 
 interface DepositCard {
@@ -35,7 +44,7 @@ function matchesFilter(card: DepositCard, filter: string): boolean {
     const lower = filter.toLowerCase();
     if (card.bankName.toLowerCase().includes(lower)) return true;
     if (card.deposit.items) {
-        return card.deposit.items.some(item => item.name.toLowerCase().includes(lower));
+        return card.deposit.items.some(item => itemSearchText(item).toLowerCase().includes(lower));
     }
     return false;
 }
@@ -120,7 +129,7 @@ const DepositsPopup: React.FC = () => {
                                         <div className="deposits-popup__card-status">(pusty)</div>
                                     ) : (
                                         deposit.items
-                                            .filter(item => !filter.trim() || item.name.toLowerCase().includes(filter.toLowerCase()) || bankName.toLowerCase().includes(filter.toLowerCase()))
+                                            .filter(item => !filter.trim() || itemSearchText(item).toLowerCase().includes(filter.toLowerCase()) || bankName.toLowerCase().includes(filter.toLowerCase()))
                                             .map((item, idx) => (
                                                 <div key={idx} className="deposits-popup__item-row">
                                                     <span className="deposits-popup__item-name" dangerouslySetInnerHTML={{ __html: transformItemName(item) }} />
