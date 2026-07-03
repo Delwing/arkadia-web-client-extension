@@ -15,7 +15,7 @@ import type { SyncCategory, CategoryPayload, CategoryConflictInfo } from './fire
 import { getDeviceId, loadFirebaseSettings, SYNC_CATEGORIES } from './firebaseTypes';
 import { ensureFirebaseInitialized } from './firebaseConfig';
 import { calculateChecksum, decrypt, isEncryptedData } from './firebaseCrypto';
-import { updateCache, updateCategorySyncTime } from './firebaseUnifiedSync';
+import { updateCache, recordCategorySyncState } from './firebaseUnifiedSync';
 import type { UnifiedSyncData } from './firebaseUnifiedSync';
 import type { FirebaseSyncMetadataPayload } from '@shared/events/clientEvents';
 import eventBus from '@modules/core/eventBus';
@@ -30,6 +30,11 @@ class FirebaseSyncListener {
     private passphrase: string | null = null;
     private isInitialSnapshot = true;
     private processing = false;
+    /**
+     * Latest snapshot that arrived while another was being processed.
+     * `undefined` = none pending (null is a valid snapshot value).
+     */
+    private pendingSnapshot: UnifiedSyncData | null | undefined = undefined;
 
     async start(userId: string): Promise<void> {
         if ((window as { __DISABLE_FIREBASE__?: boolean }).__DISABLE_FIREBASE__) {
@@ -87,6 +92,7 @@ class FirebaseSyncListener {
         this.lastKnownChecksums = {};
         this.pendingEncryptedPayloads = {};
         this.processing = false;
+        this.pendingSnapshot = undefined;
         eventBus.emit('firebase.listener.status', { active: false });
     }
 
@@ -141,7 +147,9 @@ class FirebaseSyncListener {
             }
         }
 
-        // Find the most recently synced payload from relevant devices
+        // Find the most recently synced payload from relevant devices.
+        // Only sync group members are considered — a foreign device's layout is
+        // never auto-applied, which is the whole point of device-scoping.
         let best: { payload: CategoryPayload; sourceDeviceId: string } | undefined;
         for (const devId of relevantIds) {
             const payload = deviceCats[devId]?.[category];
@@ -151,19 +159,17 @@ class FirebaseSyncListener {
             }
         }
 
-        // Fallback: check legacy categories.{cat} (migration from old single-slot storage)
-        if (!best) {
-            const legacyPayload = data.categories?.[category];
-            if (legacyPayload && legacyPayload.deviceId !== deviceId) {
-                best = { payload: legacyPayload, sourceDeviceId: legacyPayload.deviceId };
-            }
-        }
-
         return best?.payload;
     }
 
     private async handleSnapshot(data: UnifiedSyncData | null): Promise<void> {
-        if (this.processing) return;
+        if (this.processing) {
+            // Don't drop a snapshot that lands while a slow import is running —
+            // remember the latest one and process it afterwards, otherwise that
+            // remote change would not be applied until the next cloud write.
+            this.pendingSnapshot = data;
+            return;
+        }
         this.processing = true;
 
         try {
@@ -279,6 +285,11 @@ class FirebaseSyncListener {
             }
         } finally {
             this.processing = false;
+            if (this.pendingSnapshot !== undefined && this.active) {
+                const next = this.pendingSnapshot;
+                this.pendingSnapshot = undefined;
+                await this.handleSnapshot(next);
+            }
         }
     }
 
@@ -307,12 +318,6 @@ class FirebaseSyncListener {
                     this.lastKnownChecksums[`device:${devId}:${category}`] = payload.checksum;
                 }
             }
-        }
-
-        // Record legacy checksum too (migration fallback)
-        const legacyPayload = data.categories?.[category];
-        if (legacyPayload) {
-            this.lastKnownChecksums[category] = legacyPayload.checksum;
         }
     }
 
@@ -353,15 +358,22 @@ class FirebaseSyncListener {
         if (localCategoryData) {
             const localChecksum = await calculateChecksum(localCategoryData);
 
-            // Already in sync
-            if (localChecksum === payload.checksum) return 'skipped';
+            // Already in sync — make sure the base reflects it
+            if (localChecksum === payload.checksum) {
+                recordCategorySyncState({ [category]: payload.checksum } as Partial<Record<SyncCategory, string>>);
+                return 'skipped';
+            }
 
-            // Check if local data changed since we last synced
-            const key = this.checksumKey(category, payload.deviceId);
-            const lastKnown = this.lastKnownChecksums[key] ?? this.lastKnownChecksums[category];
-            if (lastKnown && localChecksum !== lastKnown) {
-                // Local has changed AND cloud has changed = conflict
-                return 'conflict';
+            // Conflict when local also changed since this device last synced.
+            // The persisted sync base survives restarts; the in-memory
+            // checksums are a fallback for pre-upgrade state without a base.
+            const base = loadFirebaseSettings().categorySyncChecksums[category];
+            if (base !== undefined) {
+                if (localChecksum !== base) return 'conflict';
+            } else {
+                const key = this.checksumKey(category, payload.deviceId);
+                const lastKnown = this.lastKnownChecksums[key] ?? this.lastKnownChecksums[category];
+                if (lastKnown && localChecksum !== lastKnown) return 'conflict';
             }
         }
 
@@ -377,7 +389,8 @@ class FirebaseSyncListener {
         const result = await importCategory(category, decryptedData);
 
         if (result.success) {
-            updateCategorySyncTime(category, Date.now());
+            // The applied cloud state is the new sync base for this category
+            recordCategorySyncState({ [category]: payload.checksum } as Partial<Record<SyncCategory, string>>);
             return 'applied';
         }
 

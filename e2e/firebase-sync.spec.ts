@@ -211,7 +211,6 @@ test.describe('Firebase Sync', () => {
                     autoSyncEnabled: true,
                     categorySyncTimes: {},
                     deviceId: 'test-device',
-                    lastSyncCheckTime: 0,
                 };
                 localStorage.setItem('arkadia.firebaseSettings', JSON.stringify(settings));
             });
@@ -264,7 +263,6 @@ test.describe('Firebase Sync', () => {
                         autoSyncEnabled: false,
                         categorySyncTimes: {},
                         deviceId: 'test',
-                        lastSyncCheckTime: 0,
                     };
                 }
                 return JSON.parse(raw);
@@ -298,7 +296,6 @@ test.describe('Firebase Sync', () => {
                         killCounts: timestamp - 600000, // 10 minutes ago
                     },
                     deviceId: 'test',
-                    lastSyncCheckTime: 0,
                 };
                 localStorage.setItem('arkadia.firebaseSettings', JSON.stringify(settings));
             }, now);
@@ -329,7 +326,6 @@ test.describe('Firebase Sync', () => {
                     autoSyncEnabled: false,
                     categorySyncTimes: { triggers: ts },
                     deviceId: 'test',
-                    lastSyncCheckTime: 0,
                 };
                 localStorage.setItem('arkadia.firebaseSettings', JSON.stringify(settings));
             }, oldTime);

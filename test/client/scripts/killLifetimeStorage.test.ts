@@ -8,6 +8,7 @@ import {
     getDistinctDates,
     migrateFromLocalStorage,
     importRecords,
+    importAllKillRecords,
     makeId,
 } from '@client/scripts/killLifetimeStorage';
 
@@ -207,5 +208,58 @@ describe('killLifetimeStorage', () => {
         expect(groups).toHaveLength(2);
         expect(groups[0].date).toBe('unknown');
         expect(groups[1].date).toBe('2025/1/15');
+    });
+
+    describe('importAllKillRecords merge semantics', () => {
+        test('keeps the higher local count when importing a lower one for the same record', async () => {
+            const CHARACTER = uniqueChar();
+            for (let i = 0; i < 5; i++) {
+                await recordKillToDB(CHARACTER, 'goblin', '2025/1/15');
+            }
+
+            await importAllKillRecords([{
+                id: makeId(CHARACTER, 'goblin', '2025/1/15'),
+                character: CHARACTER,
+                mob: 'goblin',
+                date: '2025/1/15',
+                count: 3,
+            }]);
+
+            const records = await getAllRecords(CHARACTER);
+            expect(records).toHaveLength(1);
+            expect(records[0].count).toBe(5);
+        });
+
+        test('takes the imported count when it is higher', async () => {
+            const CHARACTER = uniqueChar();
+            await recordKillToDB(CHARACTER, 'goblin', '2025/1/15');
+
+            await importAllKillRecords([{
+                id: makeId(CHARACTER, 'goblin', '2025/1/15'),
+                character: CHARACTER,
+                mob: 'goblin',
+                date: '2025/1/15',
+                count: 9,
+            }]);
+
+            const records = await getAllRecords(CHARACTER);
+            expect(records).toHaveLength(1);
+            expect(records[0].count).toBe(9);
+        });
+
+        test('adds records that do not exist locally', async () => {
+            const CHARACTER = uniqueChar();
+            await importAllKillRecords([{
+                id: makeId(CHARACTER, 'troll', '2025/1/16'),
+                character: CHARACTER,
+                mob: 'troll',
+                date: '2025/1/16',
+                count: 2,
+            }]);
+
+            const records = await getAllRecords(CHARACTER);
+            expect(records).toHaveLength(1);
+            expect(records[0].count).toBe(2);
+        });
     });
 });

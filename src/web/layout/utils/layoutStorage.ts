@@ -368,9 +368,14 @@ let cachedLayoutState: LayoutState | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 100;
 
-export function invalidateLayoutCache(): void {
+/** Drop the cached layout snapshot without notifying listeners. */
+export function resetLayoutCache(): void {
   cachedLayoutState = null;
   cacheTimestamp = 0;
+}
+
+export function invalidateLayoutCache(): void {
+  resetLayoutCache();
   eventBus.emit('layoutManagerStateChanged');
 }
 
@@ -445,6 +450,9 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
     }
     state.popupPanels[popupId].settings![key] = value;
     saveLayoutState(state);
+    // Keep the live WindowManager copy in sync so its next serialize() doesn't
+    // clobber this write with the stale snapshot it loaded at startup.
+    windowManager.syncPopupSetting(popupId, key, value);
   } catch (e) {
     console.error('Failed to save popup setting:', e);
   }

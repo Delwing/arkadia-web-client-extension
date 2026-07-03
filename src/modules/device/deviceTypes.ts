@@ -49,18 +49,6 @@ export interface DeviceSettings {
 }
 
 /**
- * Device registry entry stored in cloud
- */
-export interface DeviceRegistryEntry {
-    /** Device information */
-    deviceInfo: DeviceInfo;
-    /** SHA-256 checksum of settings for change detection */
-    settingsChecksum: string;
-    /** ISO timestamp of last update */
-    lastUpdated: string;
-}
-
-/**
  * Device settings export format (for file export/import)
  */
 export interface DeviceSettingsExport {
@@ -111,50 +99,6 @@ export interface SyncGroup {
 }
 
 /**
- * Synced device settings stored in cloud for a sync group
- */
-export interface SyncedDeviceSettings {
-    /** Sync group ID this belongs to */
-    groupId: string;
-    /** Version number, incremented on each change */
-    version: number;
-    /** ISO timestamp of last update */
-    updatedAt: string;
-    /** Device ID that made this change */
-    updatedByDeviceId: string;
-    /** SHA-256 checksum for change detection */
-    checksum: string;
-    /** The settings data (raw localStorage strings) */
-    settings: {
-        layoutManagerState?: string;
-        uiSettings?: string;
-        desktopButtonSettings?: string;
-        mobileButtonSettings?: string;
-        tripRoutes?: string;
-        /** Per-device active keymap ID */
-        activeKeymap?: string;
-    };
-}
-
-/**
- * Sync conflict information
- */
-export interface SyncConflict {
-    /** Sync group ID */
-    groupId: string;
-    /** Local settings version */
-    localVersion: number;
-    /** Remote settings version */
-    remoteVersion: number;
-    /** Device name that made remote change */
-    remoteUpdatedBy: string;
-    /** ISO timestamp of remote change */
-    remoteUpdatedAt: string;
-    /** Remote settings to apply if user chooses remote */
-    remoteSettings: SyncedDeviceSettings;
-}
-
-/**
  * Storage keys for device data in localStorage
  */
 export const DEVICE_STORAGE_KEYS = {
@@ -162,18 +106,17 @@ export const DEVICE_STORAGE_KEYS = {
     DEVICE_INFO: 'arkadia.deviceInfo',
     /** Imported device settings from file imports */
     IMPORTED_DEVICES: 'arkadia.importedDevices',
-    /** Combined sync state (group + version) */
+    /** Sync group membership */
     SYNC_STATE: 'arkadia.syncState',
 } as const;
 
 /**
- * Combined sync state stored in localStorage
+ * Sync state stored in localStorage. Device-scoped settings themselves travel
+ * through the regular category sync; only the group membership is kept here.
  */
 export interface SyncState {
     /** The sync group this device belongs to */
     group: SyncGroup;
-    /** Local sync version number */
-    version: number;
 }
 
 /**

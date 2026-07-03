@@ -683,6 +683,19 @@ export class WindowManager {
     };
   }
 
+  /**
+   * Mirror a popup setting written to localStorage into the live in-memory
+   * copy, so the next serialize() doesn't clobber it with the stale snapshot
+   * loaded at startup (see setPopupSetting).
+   */
+  syncPopupSetting(id: string, key: string, value: unknown): void {
+    const cur = this.popupDockState.get(id) ?? { isDocked: false };
+    this.popupDockState.set(id, {
+      ...cur,
+      settings: { ...(cur.settings ?? {}), [key]: value },
+    });
+  }
+
   // ── Lookups ────────────────────────────────────────────────────────────────
 
   /** Find which side a panel is docked to (or null). */

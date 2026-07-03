@@ -57,6 +57,7 @@ import {
     validatePayload,
     exportCategory,
     importCategory,
+    mergePerCharacterEnvelopes,
     DEFAULT_EXPORT_OPTIONS,
     type ExportOptions,
 } from '@web/options/exportUtils';
@@ -729,14 +730,25 @@ describe('exportCategory and importCategory', () => {
             expect(parsed).toHaveProperty('loggingEnabled', 'true');
         });
 
-        it('should capture desktopButtonSettings and mobileButtonSettings', async () => {
+        it('should NOT capture button settings (owned by buttons / radial categories)', async () => {
             localStorage.setItem('desktopButtonSettings', JSON.stringify({ layout: 'standard' }));
             localStorage.setItem('mobileButtonSettings', JSON.stringify({ layout: 'compact' }));
             const exported = await exportCategory('uiSettings', []);
-            expect(exported).not.toBeNull();
-            const parsed = JSON.parse(exported!);
-            expect(parsed).toHaveProperty('desktopButtonSettings');
-            expect(parsed).toHaveProperty('mobileButtonSettings');
+            // Only button data present -> nothing for uiSettings to export
+            expect(exported).toBeNull();
+        });
+
+        it('should not write button settings when importing a uiSettings payload', async () => {
+            const result = await importCategory('uiSettings', JSON.stringify({
+                uiSettings: JSON.stringify({ theme: 'dark' }),
+                desktopButtonSettings: JSON.stringify({ layout: 'standard' }),
+                mobileButtonSettings: JSON.stringify({ layout: 'compact' }),
+            }));
+            expect(result.success).toBe(true);
+            expect(localStorage.getItem('uiSettings')).toBe(JSON.stringify({ theme: 'dark' }));
+            // Legacy button fields in the payload are ignored
+            expect(localStorage.getItem('desktopButtonSettings')).toBeNull();
+            expect(localStorage.getItem('mobileButtonSettings')).toBeNull();
         });
 
         it('should return null when no uiSettings data is stored', async () => {
@@ -958,5 +970,197 @@ describe('exportCategory and importCategory', () => {
             expect(result.success).toBe(true);
             expect(result.error).toBeUndefined();
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Registry-driven generic categories
+// ---------------------------------------------------------------------------
+
+describe('registry-driven generic categories', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    it('should export binds in the historical {binds, keymaps} shape and key order', async () => {
+        localStorage.setItem('binds', 'BINDS_RAW');
+        localStorage.setItem('keymaps', 'KEYMAPS_RAW');
+        const exported = await exportCategory('binds', []);
+        expect(exported).toBe(JSON.stringify({ binds: 'BINDS_RAW', keymaps: 'KEYMAPS_RAW' }));
+    });
+
+    it('should export single-key categories in the historical shape', async () => {
+        localStorage.setItem('triggers', 'T_RAW');
+        localStorage.setItem('aliases', 'A_RAW');
+        localStorage.setItem('shortcuts', 'S_RAW');
+        expect(await exportCategory('triggers', [])).toBe(JSON.stringify({ triggers: 'T_RAW' }));
+        expect(await exportCategory('aliases', [])).toBe(JSON.stringify({ aliases: 'A_RAW' }));
+        expect(await exportCategory('shortcuts', [])).toBe(JSON.stringify({ shortcuts: 'S_RAW' }));
+    });
+
+    it('should import binds and keymaps from a binds payload', async () => {
+        const result = await importCategory('binds', JSON.stringify({ binds: 'B2', keymaps: 'K2' }));
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('binds')).toBe('B2');
+        expect(localStorage.getItem('keymaps')).toBe('K2');
+    });
+
+    it('should export character-scoped categories only for selected characters', async () => {
+        localStorage.setItem('Alice:containers', 'C_ALICE');
+        localStorage.setItem('Bob:containers', 'C_BOB');
+        const exported = await exportCategory('containers', ['Alice']);
+        expect(exported).toBe(JSON.stringify({ Alice: 'C_ALICE' }));
+    });
+
+    it('should import character-scoped categories under the declared base key', async () => {
+        const result = await importCategory('peopleEdits', JSON.stringify({ Alice: 'P_RAW' }));
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('Alice:peopleLocalEvents')).toBe('P_RAW');
+    });
+
+    it('should return null when no data exists for a generic category', async () => {
+        expect(await exportCategory('triggers', [])).toBeNull();
+        expect(await exportCategory('containers', ['Alice'])).toBeNull();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Canonical export ordering (checksum stability across devices)
+// ---------------------------------------------------------------------------
+
+describe('canonical export ordering', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    it('should export character-scoped categories with sorted character names regardless of insertion order', async () => {
+        localStorage.setItem('Zoe:deposits', 'Z');
+        localStorage.setItem('Alice:deposits', 'A');
+        localStorage.setItem('Mira:deposits', 'M');
+
+        const exported = await exportCategory('deposits', ['Zoe', 'Alice', 'Mira']);
+        expect(exported).toBe(JSON.stringify({ Alice: 'A', Mira: 'M', Zoe: 'Z' }));
+    });
+
+    it('should export characterSettings with sorted characters and sorted keys within each', async () => {
+        localStorage.setItem('Zoe:settings', 'zs');
+        localStorage.setItem('Alice:settings', 'as');
+        localStorage.setItem('Alice:kill_counter', 'ak');
+
+        const exported = await exportCategory('characterSettings', ['Zoe', 'Alice']);
+        expect(exported).toBe(JSON.stringify({
+            Alice: { 'Alice:kill_counter': 'ak', 'Alice:settings': 'as' },
+            Zoe: { 'Zoe:settings': 'zs' },
+        }));
+    });
+});
+
+// ---------------------------------------------------------------------------
+// visitedRooms union import
+// ---------------------------------------------------------------------------
+
+describe('importVisitedRooms union semantics', () => {
+    it('unions imported rooms with locally visited rooms instead of replacing them', async () => {
+        const { importVisitedRooms, exportVisitedRooms } = await import('@web/options/exportUtils');
+        const id = `UnionChar_${Date.now()}:map`;
+        const character = id.split(':')[0];
+
+        await importVisitedRooms([{ id, rooms: [1, 2, 3] }]);
+        // Second import (e.g. cloud data missing locally-explored rooms 2 and 3)
+        await importVisitedRooms([{ id, rooms: [3, 4] }]);
+
+        const exported = await exportVisitedRooms([character]);
+        const entry = exported.find(e => e.id === id);
+        expect(entry?.rooms).toEqual([1, 2, 3, 4]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// mergePerCharacterEnvelopes
+// ---------------------------------------------------------------------------
+
+describe('mergePerCharacterEnvelopes', () => {
+    it('keeps the preferred side for characters present in both envelopes', () => {
+        const merged = mergePerCharacterEnvelopes(
+            JSON.stringify({ Alice: 'local' }),
+            JSON.stringify({ Alice: 'cloud' }),
+        );
+        expect(JSON.parse(merged)).toEqual({ Alice: 'local' });
+    });
+
+    it('keeps characters exclusive to either side', () => {
+        const merged = mergePerCharacterEnvelopes(
+            JSON.stringify({ Alice: 'local' }),
+            JSON.stringify({ Bob: 'cloud' }),
+        );
+        expect(JSON.parse(merged)).toEqual({ Alice: 'local', Bob: 'cloud' });
+    });
+
+    it('produces canonical (sorted) key order', () => {
+        const merged = mergePerCharacterEnvelopes(
+            JSON.stringify({ Zoe: 'z' }),
+            JSON.stringify({ Alice: 'a' }),
+        );
+        expect(merged).toBe(JSON.stringify({ Alice: 'a', Zoe: 'z' }));
+    });
+
+    it('returns the preferred JSON unchanged when the other side is invalid', () => {
+        const preferred = JSON.stringify({ Alice: 'local' });
+        expect(mergePerCharacterEnvelopes(preferred, 'not-json')).toBe(preferred);
+    });
+
+    it('returns the preferred JSON unchanged when either side is not an object', () => {
+        const preferred = JSON.stringify({ Alice: 'local' });
+        expect(mergePerCharacterEnvelopes(preferred, JSON.stringify([1, 2]))).toBe(preferred);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// uiSettings device bundle: tripRoutes + activeKeymap
+// ---------------------------------------------------------------------------
+
+describe('uiSettings category with tripRoutes and activeKeymap', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    it('should export tripRoutes and the canonical active keymap id', async () => {
+        localStorage.setItem('uiSettings', '{"theme":"dark"}');
+        localStorage.setItem('tripRoutes', '[{"name":"route1"}]');
+        globalStorage.set('active_keymap_id', 'keymap-1');
+
+        const exported = await exportCategory('uiSettings', []);
+        expect(exported).not.toBeNull();
+        const parsed = JSON.parse(exported!);
+        expect(parsed.tripRoutes).toBe('[{"name":"route1"}]');
+        expect(parsed.activeKeymap).toBe('keymap-1');
+    });
+
+    it('should not include the active keymap when none is stored', async () => {
+        localStorage.setItem('uiSettings', '{"theme":"dark"}');
+        const exported = await exportCategory('uiSettings', []);
+        const parsed = JSON.parse(exported!);
+        expect(parsed).not.toHaveProperty('activeKeymap');
+    });
+
+    it('should import tripRoutes and the active keymap into the canonical key', async () => {
+        const result = await importCategory('uiSettings', JSON.stringify({
+            tripRoutes: '[{"name":"route2"}]',
+            activeKeymap: 'keymap-2',
+        }));
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('tripRoutes')).toBe('[{"name":"route2"}]');
+        expect(globalStorage.get('active_keymap_id')).toBe('keymap-2');
+    });
+
+    it('should skip tripRoutes and activeKeymap when skipDeviceScoped is set', async () => {
+        const result = await importCategory(
+            'uiSettings',
+            JSON.stringify({ tripRoutes: '[]', activeKeymap: 'keymap-3' }),
+            { skipDeviceScoped: true },
+        );
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('tripRoutes')).toBeNull();
+        expect(globalStorage.get('active_keymap_id')).toBeUndefined();
     });
 });

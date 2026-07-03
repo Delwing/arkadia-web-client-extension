@@ -84,17 +84,21 @@ migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();
 void migrateLayoutManagerState();
 
-// Initialize Firebase real-time sync listener (skip on localhost)
+// Initialize Firebase sync services (skip on localhost):
+// - syncListener receives remote changes in realtime
+// - syncEngine watches local changes and uploads them (debounced)
 if (!(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    import('@modules/firebase').then(({ loadFirebaseConfig, initializeFirebase, onAuthStateChanged, syncListener }) => {
+    import('@modules/firebase').then(({ loadFirebaseConfig, initializeFirebase, onAuthStateChanged, syncListener, syncEngine }) => {
         const config = loadFirebaseConfig();
         if (!config) return;
         initializeFirebase(config).then(() => {
             onAuthStateChanged((authState) => {
                 if (authState.isAuthenticated && authState.userId) {
                     syncListener.start(authState.userId);
+                    syncEngine.start();
                 } else {
                     syncListener.stop();
+                    syncEngine.stop();
                 }
             });
         }).catch(err => {
