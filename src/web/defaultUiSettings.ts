@@ -12,7 +12,13 @@ export type {
     FooterComponentConfig,
     UiSettings,
 } from '@shared/uiSettingsTypes';
-import type { FooterComponentConfig, UiSettings } from '@shared/uiSettingsTypes';
+import type { ChromeSettings, FooterComponentConfig, UiSettings } from '@shared/uiSettingsTypes';
+import {
+    defaultShellSettings,
+    defaultRenderSettings,
+    defaultMapSettings,
+    defaultBehaviorSettings,
+} from '@shared/settingsDefaults';
 
 export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'clock-display', visible: true, order: 0 },
@@ -32,63 +38,27 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'team-panel', visible: true, order: 14 },
 ];
 
-export const defaultUiSettings: UiSettings = {
-    contentFontSize: 0.775,
+/** Stock-UI chrome defaults (this UI only); references the stock footer list. */
+export const defaultChromeSettings: ChromeSettings = {
     objectsFontSize: 0.6,
-    mapScale: 0.30,
     showButtons: true,
-    hapticFeedback: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     mapPosition: 'top-overlay',
-    emojiLabels: false,
-    fightTitleIcon: true,
-    xtermPalette: 'arkadia',
     footerMode: 0,
-    explorationMode: false,
-    instantMove: true,
-    highlightCurrentRoom: true,
-    labelRenderMode: 'data',
-    transparentLabels: true,
-    outputBackground: '#242424',
-    clearInputOnSend: false,
-    fontFamily: 'default',
-    customFontUrl: '',
-    customFontFamily: '',
-    autoLowercaseCommands: false,
-    customBeepSoundKey: undefined,
-    mapRoomSize: 0.6,
-    mapLineWidth: 0.025,
-    mapPlayerMarkerStrokeColor: '#00e5b2',
-    mapPlayerMarkerStrokeAlpha: 1,
-    mapPlayerMarkerFillColor: '#00e5b2',
-    mapPlayerMarkerFillAlpha: 0,
-    mapPlayerMarkerStrokeWidth: 0.1,
-    mapPlayerMarkerSizeFactor: 1.7,
-    mapPlayerMarkerDashEnabled: true,
-    mapHighlightStrokeAlpha: 1,
-    mapHighlightFillAlpha: 0,
-    mapHighlightStrokeWidth: 0.1,
-    mapHighlightSizeFactor: 1.425,
-    mapHighlightDashEnabled: true,
-    mapHighlightShape: 'match',
-    mapRoomShape: 'rectangle',
-    mapBackgroundColor: '#000000',
-    mapLineColor: '#e1ffe1',
-    pathFindingAlgorithm: 'dijkstra',
-    objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
     footerComponents: defaultFooterComponents,
     keepMultibindsVisible: false,
-    wakeLock: true,
-    commandEcho: true,
-    outputBottomPadding: 0,
-    outputMaxElements: 1000,
-    teamNumberingMode: 'letters',
-    drinkableAsFunctionalBind: true,
     objectListBackgroundColor: '#000000',
     objectListBackgroundAlpha: 0.4,
     alwaysVisibleBars: [],
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
-    colorTheme: 'default',
-    soundCategories: {},
-    showTimestamps: false,
+};
+
+// The full stock default is composed from the concern slices — one source of
+// truth. Existing importers of `defaultUiSettings` see the identical shape.
+export const defaultUiSettings: UiSettings = {
+    ...defaultShellSettings,
+    ...defaultRenderSettings,
+    ...defaultMapSettings,
+    ...defaultBehaviorSettings,
+    ...defaultChromeSettings,
 };

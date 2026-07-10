@@ -26,6 +26,11 @@ import { globalStorage } from '@modules/core/storage';
 import { setUiPort } from '@client/ports';
 import { installContentWidthMeasurer } from '@web/contentWidthMeasurer';
 import { defaultUiSettings } from '@web/defaultUiSettings';
+import {
+    getRenderSettings,
+    setRenderSettings,
+    onRenderSettingsChange,
+} from '@modules/core/settings';
 
 // Seed default UI settings so settings-dependent scripts have sane values,
 // exactly as the real UI would provide them.
@@ -55,6 +60,29 @@ installContentWidthMeasurer(client);
 
 // --- Rendering: the entire output path is this one event subscription. --------
 const output = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
+
+// Read the shared render settings (font size, output background) through the
+// concern-scoped accessor — no dependence on the stock UI's chrome settings.
+// Applying them here proves the alt UI can consume main-profile settings; the
+// timestamps toggle below proves it can write one back without disturbing chrome.
+function applyRenderSettings(): void {
+    const render = getRenderSettings();
+    output.style.background = render.outputBackground;
+    output.style.fontSize = `${render.contentFontSize * 100}%`;
+    document.body.classList.toggle('alt-show-timestamps', render.showTimestamps);
+}
+applyRenderSettings();
+onRenderSettingsChange(applyRenderSettings);
+
+const timestampsToggle = document.getElementById('alt-timestamps') as HTMLInputElement | null;
+if (timestampsToggle) {
+    timestampsToggle.checked = getRenderSettings().showTimestamps;
+    timestampsToggle.addEventListener('change', () => {
+        // Write-back through the accessor: merges into the shared blob, leaving
+        // every stock-chrome field (footer, buttons, layout…) untouched.
+        setRenderSettings({ showTimestamps: timestampsToggle.checked });
+    });
+}
 
 eventBus.on('message', (message?: string | AnsiAwareBuffer, type?: string) => {
     const line = document.createElement('div');

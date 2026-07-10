@@ -28,32 +28,43 @@ export interface FooterComponentConfig {
     order: number;
 }
 
-export interface UiSettings {
-    contentFontSize: number;
-    objectsFontSize: number;
-    /** @deprecated Migrated to mobileButtonSettings.buttonSize */
-    buttonSize?: number;
-    mapScale: number;
-    showButtons: boolean;
-    hapticFeedback: boolean;
-    mapHeight: number;
-    mapPosition: MapPosition;
-    emojiLabels: boolean;
+// UiSettings is decomposed into concern-scoped slices so each can be owned,
+// stored, and synced independently (see the settings accessors in
+// @modules/core/settings and the decomposition plan). `UiSettings` remains the
+// full shape as the intersection of the slices, so existing consumers are
+// unaffected. The intersection also makes the partition self-checking: if a
+// field is dropped or misassigned, defaultUiSettings stops type-checking.
+
+/** Document/browser-shell flags — relevant to any UI's outer frame. */
+export interface ShellSettings {
+    wakeLock: boolean;
     fightTitleIcon: boolean;
-    xtermPalette: 'arkadia' | 'proper';
-    footerMode: number;
-    explorationMode: boolean;
-    instantMove: boolean;
-    highlightCurrentRoom: boolean;
-    labelRenderMode: 'image' | 'data' | 'none';
-    transparentLabels: boolean;
-    outputBackground: string;
-    clearInputOnSend: boolean;
+    hapticFeedback: boolean;
+}
+
+/** Terminal output + input rendering — portable across UIs. */
+export interface RenderSettings {
+    contentFontSize: number;
     fontFamily: UiFontSelection;
     customFontUrl: string;
     customFontFamily: string;
+    xtermPalette: 'arkadia' | 'proper';
+    colorTheme: ColorTheme;
+    customThemeColor?: string;
+    outputBackground: string;
+    outputMaxElements: number;
+    outputBottomPadding: number;
+    showTimestamps: boolean;
+    commandEcho: boolean;
+    clearInputOnSend: boolean;
     autoLowercaseCommands: boolean;
+    soundCategories?: SoundCategories;
     customBeepSoundKey?: string;
+}
+
+/** Map rendering — portable across UIs that draw a map. */
+export interface MapSettings {
+    mapScale: number;
     mapRoomSize: number;
     mapLineWidth: number;
     mapPlayerMarkerStrokeColor: string;
@@ -73,24 +84,39 @@ export interface UiSettings {
     mapBackgroundColor: string;
     mapLineColor: string;
     pathFindingAlgorithm: PathFindingAlgorithm;
+    highlightCurrentRoom: boolean;
+    labelRenderMode: 'image' | 'data' | 'none';
+    transparentLabels: boolean;
+    emojiLabels: boolean;
+}
+
+/** Movement / command / team behaviour the client and scripts act on. */
+export interface BehaviorSettings {
+    explorationMode: boolean;
+    instantMove: boolean;
+    drinkableAsFunctionalBind: boolean;
+    teamNumberingMode: 'letters' | 'numbers';
     objectContextMenuCommands: string[];
+}
+
+/** Stock-UI chrome — layout/panels specific to the bundled web UI. */
+export interface ChromeSettings {
+    objectsFontSize: number;
+    /** @deprecated Migrated to mobileButtonSettings.buttonSize */
+    buttonSize?: number;
+    showButtons: boolean;
+    mapHeight: number;
+    mapPosition: MapPosition;
+    footerMode: number;
     footerComponents: FooterComponentConfig[];
     keepMultibindsVisible: boolean;
-    wakeLock: boolean;
-    commandEcho: boolean;
-    outputBottomPadding: number;
-    outputMaxElements: number;
     splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
-    teamNumberingMode: 'letters' | 'numbers';
-    drinkableAsFunctionalBind: boolean;
     objectListBackgroundColor: string;
     objectListBackgroundAlpha: number;
     alwaysVisibleBars: string[];
     barOrder: string[];
-    colorTheme: ColorTheme;
-    customThemeColor?: string;
-    soundCategories?: SoundCategories;
-    showTimestamps: boolean;
 }
+
+export type UiSettings = ShellSettings & RenderSettings & MapSettings & BehaviorSettings & ChromeSettings;
