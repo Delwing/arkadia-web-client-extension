@@ -3,7 +3,7 @@ import initShop, { ShopOptions, formatItem } from "./shop";
 import loadHerbs from "./herbsLoader";
 import type { HerbsData } from "./herbsLoader";
 import { createColorFormat } from "@modules/core/Colors";
-import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
+import { getUiPort } from "@client/ports";
 
 const HERB_SHOP_LINK_COLOR = createColorFormat("#ffff00");
 
@@ -75,10 +75,10 @@ export default function initHerbShop(client: Client) {
                     line.createLink([start, end], {
                         onClick: () => client.sendCommand(buyCmd),
                         onMouseEnter: (ev) => {
-                            showHerbTooltip(herbId, herbs.herb_id_to_use[herbId], ev.pageX, ev.pageY);
+                            getUiPort().showHerbTooltip(herbId, herbs.herb_id_to_use[herbId], ev.pageX, ev.pageY);
                         },
                         onMouseLeave: () => {
-                            hideHerbTooltip();
+                            getUiPort().hideHerbTooltip();
                         },
                         title: buyCmd,
                     });

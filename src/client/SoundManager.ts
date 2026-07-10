@@ -2,7 +2,7 @@ import { globalStorage } from "@modules/core/storage";
 import { getCustomSound, getCustomSounds } from "@modules/core/customSounds";
 import type Client from "./Client";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
-import type { SoundCategories } from '@web/defaultUiSettings.ts';
+import type { SoundCategories } from '@shared/uiSettingsTypes';
 
 export type SoundKey = string;
 

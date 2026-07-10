@@ -40,8 +40,7 @@ import {
     removeAllPluginNotes,
 } from '@modules/core/pluginLocationNotesRegistry';
 import knowledgeData from '../knowledge.json';
-import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
-import { showContextMenu } from '@web/contextMenu';
+import { getUiPort } from '@client/ports';
 import {
     addKnowledgeEvent,
     parseDativeCategory,
@@ -1153,10 +1152,10 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
 
                     line.createLinksForText(tokenText, {
-                        onMouseEnter: (ev) => showBookTooltip(entry.categories, ev.pageX, ev.pageY),
-                        onMouseLeave: () => hideBookTooltip(),
+                        onMouseEnter: (ev) => getUiPort().showBookTooltip(entry.categories, ev.pageX, ev.pageY),
+                        onMouseLeave: () => getUiPort().hideBookTooltip(),
                         onContextMenu: (ev) => {
-                            hideBookTooltip();
+                            getUiPort().hideBookTooltip();
                             const items = entry.categories.map((category) => {
                                 const dative = getDativeCategoryName(category);
                                 const zglebiaj = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
@@ -1164,7 +1163,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                                 const cmd = biernik ? `otworz ${biernik};${zglebiaj}` : zglebiaj;
                                 return { label: zglebiaj, action: () => client.sendCommand(cmd) };
                             });
-                            showContextMenu(items, ev.pageX, ev.pageY);
+                            getUiPort().showContextMenu(items, ev.pageX, ev.pageY);
                         },
                     });
 

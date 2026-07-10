@@ -28,8 +28,8 @@ import {gmcp} from "./gmcp";
 import type {Settings} from "@modules/core/defaultSettings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import { characterStorage, globalStorage } from "@modules/core/storage";
-import type {UiSettings} from "@web/defaultUiSettings";
-import {defaultUiSettings} from "@web/defaultUiSettings";
+import type {UiSettings, PluginPopupConfig} from "@client/ports";
+import {getPluginHostPort} from "@client/ports";
 import {
   registerContextMenuEntry,
   registerPopupMenuEntry,
@@ -65,7 +65,7 @@ import {
   type ObjectData,
   type ObjectListEntryFilter,
   objectListFilters
-} from "@web/objectListFilters";
+} from "@modules/core/objectListFilters";
 import {
   type EnemyBindCandidate,
   type EnemyBindLocationObject,
@@ -94,16 +94,19 @@ import {
   updateTriggerMacroPluginName
 } from "@modules/core/pluginTriggerMacroRegistry";
 import type {MobileButtonSetting} from "@web/buttonSettings";
-import {shouldPopupAutoOpen, getPopupPinnedState} from "@web/layout/utils/layoutStorage";
-import {
-  registerPluginPopup,
-  unregisterPluginPopup,
-  updatePluginPopup,
-  openPluginPopup,
-  closePluginPopup,
-  getPluginPopup,
-  type PluginPopupConfig
-} from "@web/layout/pluginPopupRegistry";
+
+// Plugin-host capabilities (default UI settings + plugin-popup lifecycle) are
+// provided by the surrounding UI through the injected PluginHostPort, so this
+// file no longer imports `@web` for them. These thin, module-local bindings
+// resolve the port lazily (at call time) and preserve every existing call site.
+const shouldPopupAutoOpen = (popupId: string) => getPluginHostPort().shouldPopupAutoOpen(popupId);
+const getPopupPinnedState = (popupId: string) => getPluginHostPort().getPopupPinnedState(popupId);
+const registerPluginPopup = (config: PluginPopupConfig) => getPluginHostPort().registerPluginPopup(config);
+const unregisterPluginPopup = (popupId: string) => getPluginHostPort().unregisterPluginPopup(popupId);
+const updatePluginPopup = (popupId: string, updates: Partial<PluginPopupConfig>) => getPluginHostPort().updatePluginPopup(popupId, updates);
+const openPluginPopup = (popupId: string) => getPluginHostPort().openPluginPopup(popupId);
+const closePluginPopup = (popupId: string) => getPluginHostPort().closePluginPopup(popupId);
+const getPluginPopup = (popupId: string) => getPluginHostPort().getPluginPopup(popupId);
 import {
   setPluginLocationNote,
   removePluginLocationNote,
@@ -3185,7 +3188,7 @@ export class PluginApiImpl implements PluginApi {
 
       getUiSettings: async (): Promise<UiSettings> => {
         const stored = globalStorage.get("uiSettings");
-        return { ...defaultUiSettings, ...stored };
+        return { ...getPluginHostPort().getDefaultUiSettings(), ...stored };
       },
 
       getUiSetting: async <K extends keyof UiSettings>(key: K): Promise<UiSettings[K]> => {

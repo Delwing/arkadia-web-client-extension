@@ -72,6 +72,8 @@ import {
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 import {CommandInputController} from "./commandInput/CommandInputController";
+import {installClientPorts} from "./installClientPorts";
+import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 
 initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));
 initLogFileSaver(mudClient).catch(err => console.error('File saver init failed', err));
@@ -116,8 +118,16 @@ let mobileRadial: MobileCommandRadial | null = null;
 // the user opens Bindowanie and clicks Zapisz).
 switchKeymap(getActiveKeymapId());
 
+// Supply the web UI's implementations of the client's injectable ports
+// (tooltips, context menu, plugin-host capabilities) before any script runs.
+installClientPorts();
+
 const client = new Client(mudClient);
 registerScripts(client);
+
+// The client core is DOM-free; the web UI measures terminal column width from
+// the DOM and pushes it in.
+installContentWidthMeasurer(client);
 
 // Helper connection (optional companion app)
 const helperConnection = new HelperConnection();

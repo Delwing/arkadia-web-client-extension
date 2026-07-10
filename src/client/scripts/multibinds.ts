@@ -4,7 +4,7 @@ import {
     replaceAll as replaceMultibinds,
     subscribe as subscribeMultibinds,
     type StoredMultibindRecord,
-} from "@web/dataStores/multibindStore";
+} from "@modules/data/multibindStore";
 import { globalStorage } from "@modules/core/storage";
 import { type Bind, bindMatches } from "@modules/core/keymapTypes";
 import MapHelper from "@shared/map/MapHelper";

@@ -128,13 +128,9 @@ export default class Client {
         this.clientAdapter = clientAdapter
         attachGmcpListener(this);
 
-        this.updateContentWidth();
-        const outputWrapper = document.getElementById('main_text_output_msg_wrapper');
-        if (outputWrapper) {
-            new ResizeObserver(() => this.updateContentWidth()).observe(outputWrapper);
-        }
-        window.addEventListener('resize', () => this.updateContentWidth());
-        globalStorage.onChange('uiSettings', () => this.updateContentWidth());
+        // Terminal column width is measured from the DOM by the UI and pushed in
+        // via setContentWidth(); the client core stays DOM-free. See the web
+        // content-width measurer (src/web/contentWidthMeasurer.ts).
 
         const initialSettings = characterStorage.get('settings');
         this.attackCommand = normalizeAttackCommand(initialSettings?.attackCommand);
@@ -365,22 +361,13 @@ export default class Client {
         return rawLine + postfix
     }
 
-    updateContentWidth() {
-        const content = document.getElementById('main_text_output_msg_wrapper') as HTMLElement | null
-        const measure = document.getElementById('content-width-measure') as HTMLElement | null
-        if (!content || !measure) {
-            return
-        }
-        const style = window.getComputedStyle(content)
-        measure.style.fontFamily = style.fontFamily
-        measure.style.fontSize = style.fontSize
-        const charWidth = measure.getBoundingClientRect().width
-        const paddingLeft = parseFloat(style.paddingLeft) || 0
-        const paddingRight = parseFloat(style.paddingRight) || 0
-        const width = content.clientWidth - paddingLeft - paddingRight
-        if (charWidth > 0 && width > 0) {
-            this.contentWidth = Math.floor(width / charWidth)
-            this.sendEvent('contentWidth', this.contentWidth)
-        }
+    /**
+     * Set the terminal width (in monospace columns) that width-dependent
+     * formatting uses. Called by the UI, which owns how the width is measured
+     * (from the DOM in the web UI). Keeps the client core DOM-free.
+     */
+    setContentWidth(cols: number) {
+        this.contentWidth = cols
+        this.sendEvent('contentWidth', this.contentWidth)
     }
 }

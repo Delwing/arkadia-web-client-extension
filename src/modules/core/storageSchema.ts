@@ -8,7 +8,7 @@
 import type { Settings } from './defaultSettings';
 import type { BindSettings, KeymapStore } from './keymapTypes';
 import type { CustomSound } from './customSounds';
-import type { UiSettings } from '@web/defaultUiSettings';
+import type { UiSettings } from '@shared/uiSettingsTypes';
 import type { LayoutState } from '@web/layout/types';
 import type { DesktopButtonsSettings } from '@web/desktopButtonSettings';
 import type { Settings as MobileButtonsSettings } from '@web/mobileButtonSettings';

@@ -1,4 +1,4 @@
-import {addLocalNpc} from "@web/dataStores/npcStore";
+import {addLocalNpc} from "@modules/data/npcStore";
 import {createColorFormat} from "@modules/core/Colors";
 import Client from "./Client";
 import {Trigger} from "./Triggers";

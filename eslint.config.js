@@ -80,6 +80,23 @@ export default [
     },
   },
   {
+    // Layer boundary: the game client (src/client) must stay UI-agnostic. It may
+    // never import the web UI at runtime — it depends on the injected ports in
+    // @client/ports instead. Type-only imports are allowed for now (they are
+    // erased at build time); a few UI-specific settings/layout types are still
+    // referenced this way and are tracked as follow-up cleanups.
+    files: ['src/client/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@web', '@web/*', '@web-ui', '@web-ui/*'],
+          allowTypeImports: true,
+          message: 'src/client must not import the web UI at runtime. Use the injected ports in @client/ports (setUiPort/setPluginHostPort) instead. Type-only imports are permitted.',
+        }],
+      }],
+    },
+  },
+  {
     files: ['**/*.spec.ts', '**/*.test.ts', 'test/**/*.ts', 'e2e/**/*.ts', 'test/jest.setup.js'],
     languageOptions: {
       globals: {

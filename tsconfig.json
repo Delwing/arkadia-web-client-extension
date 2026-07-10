@@ -19,6 +19,7 @@
     "src/**/*",
     "editor/**/*",
     "viewer/**/*",
+    "alt-ui/**/*",
     "popup/**/*"
   ],
   "exclude": [

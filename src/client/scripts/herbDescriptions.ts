@@ -4,7 +4,7 @@ import {createColorFormat} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
-import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
+import { getUiPort } from "@client/ports";
 
 export const HERB_NAME_COLOR = createColorFormat("#ffffff");
 
@@ -63,10 +63,10 @@ export default async function initHerbDescriptions(client: Client) {
                             showHerbActions(id, ev);
                         },
                         onMouseEnter: (ev) => {
-                            showHerbTooltip(id, herbs.herb_id_to_use[id], ev.pageX, ev.pageY);
+                            getUiPort().showHerbTooltip(id, herbs.herb_id_to_use[id], ev.pageX, ev.pageY);
                         },
                         onMouseLeave: () => {
-                            hideHerbTooltip();
+                            getUiPort().hideHerbTooltip();
                         },
                     });
 

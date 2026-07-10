@@ -3,7 +3,7 @@ import type { HerbsData, HerbUse } from "./herbsLoader";
 import { getBindableUses, isHerbSmokable } from "./herbsLoader";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import { createColorFormat, mudletColorLine } from "@modules/core/Colors";
-import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
+import { getUiPort } from "@client/ports";
 
 const WHITE = createColorFormat('#ffffff');
 
@@ -119,10 +119,10 @@ export function buildHerbTextBuffer(
                     onHerbContextMenu(row.herbId, ev);
                 },
                 onMouseEnter: (ev) => {
-                    showHerbTooltip(row.herbId, row.actions, ev.pageX, ev.pageY);
+                    getUiPort().showHerbTooltip(row.herbId, row.actions, ev.pageX, ev.pageY);
                 },
                 onMouseLeave: () => {
-                    hideHerbTooltip();
+                    getUiPort().hideHerbTooltip();
                 },
             });
         }

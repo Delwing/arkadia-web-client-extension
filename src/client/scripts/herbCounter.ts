@@ -11,7 +11,7 @@ import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { polishWordToNumber } from "./polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
-import { showHerbTooltip, hideHerbTooltip } from "@web/herbTooltip";
+import { getUiPort } from "@client/ports";
 
 const headerColor = createColorFormat('#8470ff')
 const WHITE = createColorFormat('#ffffff');
@@ -346,10 +346,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                         showHerbActions(id, ev);
                     },
                     onMouseEnter: (ev) => {
-                        showHerbTooltip(id, herbs?.herb_id_to_use[id], ev.pageX, ev.pageY);
+                        getUiPort().showHerbTooltip(id, herbs?.herb_id_to_use[id], ev.pageX, ev.pageY);
                     },
                     onMouseLeave: () => {
-                        hideHerbTooltip();
+                        getUiPort().hideHerbTooltip();
                     },
                 });
 
@@ -368,10 +368,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                         showHerbActions(id, ev);
                     },
                     onMouseEnter: (ev) => {
-                        showHerbTooltip(id, herbs?.herb_id_to_use[id], ev.pageX, ev.pageY);
+                        getUiPort().showHerbTooltip(id, herbs?.herb_id_to_use[id], ev.pageX, ev.pageY);
                     },
                     onMouseLeave: () => {
-                        hideHerbTooltip();
+                        getUiPort().hideHerbTooltip();
                     },
                 });
 

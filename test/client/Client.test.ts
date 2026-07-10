@@ -330,18 +330,13 @@ test('sound:category with custom key plays that sound', async () => {
   expect(playedElement.src).toContain('data:audio/mp3;base64,abc');
 });
 
-test('updateContentWidth measures characters per line', () => {
-  document.body.innerHTML =
-    '<div id="panel_buttons_bottom"></div>' +
-    '<div id="main_text_output_msg_wrapper"></div>' +
-    '<span id="content-width-measure">M</span>';
-  const wrapper = document.getElementById('main_text_output_msg_wrapper')!;
-  Object.defineProperty(wrapper, 'clientWidth', { value: 100, configurable: true });
-  const measure = document.getElementById('content-width-measure')!;
-  (measure as any).getBoundingClientRect = jest.fn(() => ({ width: 10 }));
+test('setContentWidth stores the column count and emits contentWidth', () => {
   const client = new Client((global as any).clientAdapterMock as any);
-  client.updateContentWidth();
+  const emitted: number[] = [];
+  client.on('contentWidth', (cols) => emitted.push(cols));
+  client.setContentWidth(10);
   expect(client.contentWidth).toBe(10);
+  expect(emitted).toEqual([10]);
 });
 
 test('support sends commands to support leader', () => {

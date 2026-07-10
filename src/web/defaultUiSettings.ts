@@ -1,25 +1,18 @@
-import type { SoundCategory } from '@shared/events/clientEvents.ts';
-
-// string = custom sound key, null = disabled, missing key = default beep
-export type SoundCategories = Partial<Record<SoundCategory, string | null>>;
-
-type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
-
-type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
-
-export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
-
-export type MapHighlightShape = 'match' | 'rectangle' | 'roundedRectangle' | 'circle';
-
-export type PathFindingAlgorithm = 'dijkstra' | 'astar';
-
-export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'custom-dark';
-
-export interface FooterComponentConfig {
-    id: string;
-    visible: boolean;
-    order: number;
-}
+// UI settings type definitions live in `@shared/uiSettingsTypes` (UI-neutral) so
+// lower layers can reference them without importing `@web`. They are re-exported
+// here to preserve the historical `@web/defaultUiSettings` import path.
+export type {
+    SoundCategories,
+    MapPosition,
+    UiFontSelection,
+    MapRoomShape,
+    MapHighlightShape,
+    PathFindingAlgorithm,
+    ColorTheme,
+    FooterComponentConfig,
+    UiSettings,
+} from '@shared/uiSettingsTypes';
+import type { FooterComponentConfig, UiSettings } from '@shared/uiSettingsTypes';
 
 export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'clock-display', visible: true, order: 0 },
@@ -38,73 +31,6 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'world-destruction-timer', visible: true, order: 13 },
     { id: 'team-panel', visible: true, order: 14 },
 ];
-
-export interface UiSettings {
-    contentFontSize: number;
-    objectsFontSize: number;
-    /** @deprecated Migrated to mobileButtonSettings.buttonSize */
-    buttonSize?: number;
-    mapScale: number;
-    showButtons: boolean;
-    hapticFeedback: boolean;
-    mapHeight: number;
-    mapPosition: MapPosition;
-    emojiLabels: boolean;
-    fightTitleIcon: boolean;
-    xtermPalette: 'arkadia' | 'proper';
-    footerMode: number;
-    explorationMode: boolean;
-    instantMove: boolean;
-    highlightCurrentRoom: boolean;
-    labelRenderMode: 'image' | 'data' | 'none';
-    transparentLabels: boolean;
-    outputBackground: string;
-    clearInputOnSend: boolean;
-    fontFamily: UiFontSelection;
-    customFontUrl: string;
-    customFontFamily: string;
-    autoLowercaseCommands: boolean;
-    customBeepSoundKey?: string;
-    mapRoomSize: number;
-    mapLineWidth: number;
-    mapPlayerMarkerStrokeColor: string;
-    mapPlayerMarkerStrokeAlpha: number;
-    mapPlayerMarkerFillColor: string;
-    mapPlayerMarkerFillAlpha: number;
-    mapPlayerMarkerStrokeWidth: number;
-    mapPlayerMarkerSizeFactor: number;
-    mapPlayerMarkerDashEnabled: boolean;
-    mapHighlightStrokeAlpha: number;
-    mapHighlightFillAlpha: number;
-    mapHighlightStrokeWidth: number;
-    mapHighlightSizeFactor: number;
-    mapHighlightDashEnabled: boolean;
-    mapHighlightShape: MapHighlightShape;
-    mapRoomShape: MapRoomShape;
-    mapBackgroundColor: string;
-    mapLineColor: string;
-    pathFindingAlgorithm: PathFindingAlgorithm;
-    objectContextMenuCommands: string[];
-    footerComponents: FooterComponentConfig[];
-    keepMultibindsVisible: boolean;
-    wakeLock: boolean;
-    commandEcho: boolean;
-    outputBottomPadding: number;
-    outputMaxElements: number;
-    splitViewHeight?: number;
-    showCombatTimer?: boolean;
-    showTransportLabel?: boolean;
-    teamNumberingMode: 'letters' | 'numbers';
-    drinkableAsFunctionalBind: boolean;
-    objectListBackgroundColor: string;
-    objectListBackgroundAlpha: number;
-    alwaysVisibleBars: string[];
-    barOrder: string[];
-    colorTheme: ColorTheme;
-    customThemeColor?: string;
-    soundCategories?: SoundCategories;
-    showTimestamps: boolean;
-}
 
 export const defaultUiSettings: UiSettings = {
     contentFontSize: 0.775,

@@ -4,8 +4,7 @@ import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
 import {getKnowledgeStore, KnowledgeBookEntry, KnowledgeBookCategoryProgress, DEFAULT_KNOWLEDGE_CHARACTER_KEY} from "@modules/data/dataStores/knowledgeStore";
-import { showBookTooltip, hideBookTooltip } from "@web/bookTooltip";
-import { showContextMenu } from "@web/contextMenu";
+import { getUiPort } from "@client/ports";
 import { getDativeCategoryName } from "../knowledgeCategories";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {
@@ -562,7 +561,7 @@ function openBookContextMenu(client: Client, entry: BookLookupEntry, x: number, 
         const cmd = biernik ? `otworz ${biernik};${zglebiaj}` : zglebiaj;
         return { label: zglebiaj, action: () => client.sendCommand(cmd) };
     });
-    showContextMenu(items, x, y);
+    getUiPort().showContextMenu(items, x, y);
 }
 
 
@@ -740,10 +739,10 @@ async function loadMagicAndKeysFilter(client: Client) {
                     buffer.color([0, buffer.length], bookColor);
                 }
                 buffer.createLink([0, buffer.length], {
-                    onMouseEnter: (ev) => showBookTooltip(entry.categories, ev.pageX, ev.pageY),
-                    onMouseLeave: () => hideBookTooltip(),
+                    onMouseEnter: (ev) => getUiPort().showBookTooltip(entry.categories, ev.pageX, ev.pageY),
+                    onMouseLeave: () => getUiPort().hideBookTooltip(),
                     onContextMenu: (ev) => {
-                        hideBookTooltip();
+                        getUiPort().hideBookTooltip();
                         openBookContextMenu(client, entry, ev.pageX, ev.pageY);
                     },
                 });
