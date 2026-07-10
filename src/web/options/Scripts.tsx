@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Button, Form, Badge, Spinner } from "react-bootstrap";
-import { Trash2, Pencil, ExternalLink, Upload } from "lucide-react";
+import { Trash2, Pencil, ExternalLink, Upload, Sparkles } from "lucide-react";
 import { Modal } from "bootstrap";
 import { globalStorage } from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
 import type { LoadedPlugin } from "@shared/types/Plugin";
 import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPluginIds, getAllStoredPlugins } from "@client/utils/pluginStorage";
 import { storeEditorPlugin, type EditorPluginData } from "@client/utils/pluginEditorStorage";
+import { buildAiPluginPrompt } from "../aiPluginPrompt";
 import type { PluginImportWorkerResponse } from "../pluginImport.shared";
 import PluginImportWorker from "../pluginImport.worker?worker";
 
@@ -17,6 +18,7 @@ function Scripts() {
     const [storedPluginMetadata, setStoredPluginMetadata] = useState<Map<string, any>>(new Map());
     const [input, setInput] = useState("");
     const [codeModal, setCodeModal] = useState<Modal | null>(null);
+    const [aiModal, setAiModal] = useState<Modal | null>(null);
     const [uploadStatus, setUploadStatus] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +72,13 @@ function Scripts() {
             setCodeModal(modal);
         }
 
+        const aiModalEl = document.getElementById('ai-plugin-modal');
+        let aiModalInstance: Modal | null = null;
+        if (aiModalEl) {
+            aiModalInstance = new Modal(aiModalEl);
+            setAiModal(aiModalInstance);
+        }
+
         // Initial plugin info refresh
         refreshPluginInfo();
 
@@ -93,6 +102,9 @@ function Scripts() {
             if (modal) {
                 modal.dispose();
             }
+            if (aiModalInstance) {
+                aiModalInstance.dispose();
+            }
             if (window.client && handlePluginLoaded && handlePluginError && handlePluginDestroyed) {
                 window.client.off('plugin:loaded', handlePluginLoaded);
                 window.client.off('plugin:error', handlePluginError);
@@ -111,6 +123,44 @@ function Scripts() {
             };
         }
     }, [storedScripts]); // Re-bind when storedScripts changes to capture latest state
+
+    // Setup AI plugin modal handlers
+    useEffect(() => {
+        const copyBtn = document.getElementById('ai-plugin-copy');
+        const gotoPasteBtn = document.getElementById('ai-plugin-goto-paste');
+        const statusEl = document.getElementById('ai-plugin-copy-status');
+
+        const handleCopy = async () => {
+            const descriptionEl = document.getElementById('ai-plugin-description') as HTMLTextAreaElement;
+            const description = descriptionEl?.value.trim();
+            if (!description) {
+                alert("Proszę opisać, co ma robić plugin");
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(buildAiPluginPrompt(description));
+                if (statusEl) {
+                    statusEl.style.display = '';
+                    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+                }
+            } catch (error) {
+                console.error("Failed to copy AI prompt:", error);
+                alert("Nie udało się skopiować promptu do schowka");
+            }
+        };
+
+        const handleGotoPaste = () => {
+            aiModal?.hide();
+            codeModal?.show();
+        };
+
+        copyBtn?.addEventListener('click', handleCopy);
+        gotoPasteBtn?.addEventListener('click', handleGotoPaste);
+        return () => {
+            copyBtn?.removeEventListener('click', handleCopy);
+            gotoPasteBtn?.removeEventListener('click', handleGotoPaste);
+        };
+    }, [aiModal, codeModal]);
 
     function save(list: string[]) {
         setScripts(list);
@@ -341,6 +391,10 @@ function Scripts() {
                 <Button size="sm" onClick={add}>Dodaj URL</Button>
                 <Button size="sm" variant="success" onClick={() => codeModal?.show()}>
                     Wklej kod
+                </Button>
+                <Button size="sm" variant="outline-primary" onClick={() => aiModal?.show()}>
+                    <Sparkles size={14} className="me-1" />
+                    Wygeneruj z AI
                 </Button>
                 <Button size="sm" variant="warning" onClick={() => fileInputRef.current?.click()}>
                     <Upload size={14} className="me-1" />
