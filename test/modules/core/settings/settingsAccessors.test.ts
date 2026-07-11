@@ -10,13 +10,13 @@ import { defaultRenderSettings } from '@shared/settingsDefaults';
 
 beforeEach(() => localStorage.clear());
 
-describe('settings accessors (Phase 1 — backed by uiSettings blob)', () => {
+describe('settings accessors (backed by own concern-scoped keys)', () => {
     test('get returns defaults when nothing is stored', () => {
         expect(getRenderSettings()).toEqual(defaultRenderSettings);
     });
 
     test('get merges stored fields over defaults', () => {
-        globalStorage.set('uiSettings', { xtermPalette: 'proper' } as never);
+        globalStorage.set('renderSettings', { xtermPalette: 'proper' } as never);
         const r = getRenderSettings();
         expect(r.xtermPalette).toBe('proper');
         // untouched fields fall back to their defaults
@@ -31,30 +31,28 @@ describe('settings accessors (Phase 1 — backed by uiSettings blob)', () => {
         expect(r.contentFontSize).toBe(1.2);
     });
 
-    test('set preserves stock chrome fields and other slices', () => {
-        globalStorage.set('uiSettings', {
-            showButtons: false,      // chrome
-            barOrder: ['hp'],        // chrome
-            mapScale: 0.5,           // map slice
-        } as never);
+    test('set writes only its own key, never uiSettings chrome or other slices', () => {
+        globalStorage.set('uiSettings', { showButtons: false, barOrder: ['hp'] } as never);
+        globalStorage.set('mapSettings', { mapScale: 0.5 } as never);
 
         setRenderSettings({ showTimestamps: true });
 
-        const blob = globalStorage.get('uiSettings') as Record<string, unknown>;
-        expect(blob.showButtons).toBe(false);
-        expect(blob.barOrder).toEqual(['hp']);
-        expect(blob.mapScale).toBe(0.5);
-        expect(blob.showTimestamps).toBe(true);
-        // the map accessor still sees its value
+        // its own key got the write
+        expect((globalStorage.get('renderSettings') as Record<string, unknown>).showTimestamps).toBe(true);
+        // uiSettings chrome untouched
+        const chrome = globalStorage.get('uiSettings') as Record<string, unknown>;
+        expect(chrome.showButtons).toBe(false);
+        expect(chrome.barOrder).toEqual(['hp']);
+        expect('showTimestamps' in chrome).toBe(false);
+        // sibling slice untouched
         expect(getMapSettings().mapScale).toBe(0.5);
     });
 
     test('set ignores foreign keys not owned by the slice', () => {
-        // A render patch carrying a chrome key must not write that key.
         setRenderSettings({ showTimestamps: true, showButtons: false } as never);
-        const blob = globalStorage.get('uiSettings') as Record<string, unknown>;
-        expect(blob.showTimestamps).toBe(true);
-        expect('showButtons' in blob).toBe(false);
+        const stored = globalStorage.get('renderSettings') as Record<string, unknown>;
+        expect(stored.showTimestamps).toBe(true);
+        expect('showButtons' in stored).toBe(false);
     });
 
     test('onChange fires with the new slice value', () => {

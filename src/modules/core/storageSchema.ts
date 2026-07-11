@@ -8,7 +8,7 @@
 import type { Settings } from './defaultSettings';
 import type { BindSettings, KeymapStore } from './keymapTypes';
 import type { CustomSound } from './customSounds';
-import type { UiSettings } from '@shared/uiSettingsTypes';
+import type { UiSettings, ShellSettings, RenderSettings, MapSettings, BehaviorSettings } from '@shared/uiSettingsTypes';
 import type { LayoutState } from '@web/layout/types';
 import type { DesktopButtonsSettings } from '@web/desktopButtonSettings';
 import type { Settings as MobileButtonsSettings } from '@web/mobileButtonSettings';
@@ -59,6 +59,12 @@ export interface CharacterStorageSchema {
  */
 export interface GlobalStorageSchema {
     uiSettings: UiSettings;
+    // Concern-scoped slices split out of uiSettings (shared/synced). See
+    // @modules/core/settings and @shared/uiSettingsTypes.
+    shellSettings: ShellSettings;
+    renderSettings: RenderSettings;
+    mapSettings: MapSettings;
+    behaviorSettings: BehaviorSettings;
     binds: BindSettings;
     shortcuts: Record<string, ShortcutEntry>;
     triggers: UserTrigger[];
@@ -149,6 +155,10 @@ export const characterStorageKeys = [
 /** All global storage keys as a const array for runtime use. */
 export const globalStorageKeys = [
     'uiSettings',
+    'shellSettings',
+    'renderSettings',
+    'mapSettings',
+    'behaviorSettings',
     'binds',
     'shortcuts',
     'triggers',

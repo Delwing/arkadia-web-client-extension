@@ -106,12 +106,11 @@ test.describe('Team numbering mode', () => {
 
         await setTeamNumberingMode(page, 'numbers');
 
+        // teamNumberingMode is a behaviour setting (behaviorSettings key).
         const stored = await page.evaluate(() => {
-            const keys = Object.keys(localStorage);
-            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
-            if (!key) return null;
             try {
-                return JSON.parse(localStorage.getItem(key)!);
+                const raw = localStorage.getItem('behaviorSettings');
+                return raw ? JSON.parse(raw) : null;
             } catch {
                 return null;
             }

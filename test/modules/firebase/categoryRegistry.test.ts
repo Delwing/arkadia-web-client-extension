@@ -33,6 +33,10 @@ describe('CATEGORY_REGISTRY', () => {
             'containers',
             'peopleEdits',
             'knowledge',
+            'shellSettings',
+            'renderSettings',
+            'mapSettings',
+            'behaviorSettings',
         ]);
     });
 

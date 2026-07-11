@@ -110,18 +110,17 @@ test.describe('UI settings', () => {
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
 
         await page.waitForFunction(() => {
-            const keys = Object.keys(localStorage);
-            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
-            if (!key) {
-                return false;
-            }
             try {
-                const stored = localStorage.getItem(key);
-                if (!stored) {
+                // mapPosition is stock chrome (uiSettings); outputBackground is a
+                // render setting (renderSettings) after the settings split.
+                const ui = localStorage.getItem('uiSettings');
+                const render = localStorage.getItem('renderSettings');
+                if (!ui || !render) {
                     return false;
                 }
-                const parsed = JSON.parse(stored);
-                return parsed?.mapPosition === 'bottom' && parsed?.outputBackground === '#123456';
+                const uiParsed = JSON.parse(ui);
+                const renderParsed = JSON.parse(render);
+                return uiParsed?.mapPosition === 'bottom' && renderParsed?.outputBackground === '#123456';
             } catch {
                 return false;
             }
@@ -181,17 +180,26 @@ test.describe('UI settings', () => {
         );
 
         const storedSettings = await page.evaluate(() => {
-            const keys = Object.keys(localStorage);
-            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
-            if (!key) {
+            // Settings are split across concern-scoped keys; compose them the
+            // way the app's load() does before asserting on the unified shape.
+            const read = (k: string): Record<string, unknown> => {
+                try {
+                    const raw = localStorage.getItem(k);
+                    return raw ? JSON.parse(raw) : {};
+                } catch {
+                    return {};
+                }
+            };
+            if (localStorage.getItem('uiSettings') === null) {
                 return null;
             }
-            try {
-                const raw = localStorage.getItem(key);
-                return raw ? JSON.parse(raw) : null;
-            } catch {
-                return null;
-            }
+            return {
+                ...read('uiSettings'),
+                ...read('shellSettings'),
+                ...read('renderSettings'),
+                ...read('mapSettings'),
+                ...read('behaviorSettings'),
+            };
         });
 
         expect(storedSettings, 'should persist uiSettings entry in storage').toBeTruthy();

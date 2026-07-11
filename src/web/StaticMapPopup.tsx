@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapRenderer, RoomContextMenuEventDetail, type RoomClickEventDetail, type AreaExitClickEventDetail } from 'mudlet-map-renderer';
 import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
+import { onMapSettingsChange } from '@modules/core/settings';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { openMapContextMenu } from '@modules/core/contextMenus';
@@ -896,7 +897,11 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             eventBus.on('mapHighlights', highlightHandler);
             eventBus.on('mapTransportHops', transportHopsHandler);
             eventBus.on('enterLocation', moveHandler);
-            settingsUnsubscribe = globalStorage.onChange('uiSettings', settingsHandler);
+            // Redraw on map-style changes (now in mapSettings) and on stock
+            // chrome changes (mapPosition still lives in uiSettings).
+            const unsubscribeUi = globalStorage.onChange('uiSettings', settingsHandler);
+            const unsubscribeMap = onMapSettingsChange(settingsHandler);
+            settingsUnsubscribe = () => { unsubscribeUi(); unsubscribeMap(); };
             eventBus.on('mapShowGrid', gridHandler);
             eventBus.on('mapShowAreaExitLabels', areaExitLabelsHandler);
             eventBus.on('mapDataChanged', dataChangedHandler);

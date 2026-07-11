@@ -1,5 +1,5 @@
 import eventBus from "@modules/core/eventBus";
-import {globalStorage} from "@modules/core/storage";
+import {getShellSettings, onShellSettingsChange} from "@modules/core/settings";
 
 export default class FightTitle {
   private baseTitle: string;
@@ -17,15 +17,10 @@ export default class FightTitle {
       this.updateTitle(fighting);
     });
     eventBus.on("client.disconnect", () => this.reset());
-    const initialUi = globalStorage.get('uiSettings');
-    if (initialUi && typeof initialUi.fightTitleIcon === "boolean") {
-      this.enabled = initialUi.fightTitleIcon;
-    }
-    globalStorage.onChange('uiSettings', (payload) => {
-      if (payload && typeof payload.fightTitleIcon === "boolean") {
-        this.enabled = payload.fightTitleIcon;
-        this.updateTitle(this.isFighting, true);
-      }
+    this.enabled = getShellSettings().fightTitleIcon;
+    onShellSettingsChange((shell) => {
+      this.enabled = shell.fightTitleIcon;
+      this.updateTitle(this.isFighting, true);
     });
   }
 

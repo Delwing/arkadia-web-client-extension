@@ -96,15 +96,16 @@ test.describe('Xterm palette switching', () => {
         // Change to proper
         await setPalette(page, 'proper');
 
-        // Check localStorage was updated
-        const stored = await page.evaluate(() => localStorage.getItem('uiSettings'));
-        expect(stored, 'localStorage should contain settings').not.toBeNull();
+        // xtermPalette is a render setting; it lives in the renderSettings key
+        // after the settings split.
+        const stored = await page.evaluate(() => localStorage.getItem('renderSettings'));
+        expect(stored, 'localStorage should contain render settings').not.toBeNull();
         expect(stored, 'localStorage should contain proper palette').toContain('proper');
 
         // Change back to arkadia
         await setPalette(page, 'arkadia');
 
-        const storedAfter = await page.evaluate(() => localStorage.getItem('uiSettings'));
+        const storedAfter = await page.evaluate(() => localStorage.getItem('renderSettings'));
         expect(storedAfter, 'localStorage should contain arkadia palette').toContain('arkadia');
     });
 

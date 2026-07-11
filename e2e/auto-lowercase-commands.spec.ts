@@ -84,15 +84,11 @@ test.describe('Auto lowercase commands', () => {
         await setAutoLowercaseSetting(page, true);
 
         // Verify the setting was saved to localStorage
+        // autoLowercaseCommands is a render setting (renderSettings key).
         await page.waitForFunction(() => {
-            const keys = Object.keys(localStorage);
-            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
-            if (!key) return false;
             try {
-                const stored = localStorage.getItem(key);
-                if (!stored) return false;
-                const parsed = JSON.parse(stored);
-                return parsed?.autoLowercaseCommands === true;
+                const stored = localStorage.getItem('renderSettings');
+                return stored ? JSON.parse(stored)?.autoLowercaseCommands === true : false;
             } catch {
                 return false;
             }
@@ -146,19 +142,11 @@ test.describe('Auto lowercase commands', () => {
         // Enable auto lowercase and verify it's saved
         await setAutoLowercaseSetting(page, true);
 
+        // autoLowercaseCommands is a render setting (renderSettings key).
         await page.waitForFunction(() => {
-            const keys = Object.keys(localStorage);
-            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
-            if (!key) {
-                return false;
-            }
             try {
-                const stored = localStorage.getItem(key);
-                if (!stored) {
-                    return false;
-                }
-                const parsed = JSON.parse(stored);
-                return parsed?.autoLowercaseCommands === true;
+                const stored = localStorage.getItem('renderSettings');
+                return stored ? JSON.parse(stored)?.autoLowercaseCommands === true : false;
             } catch {
                 return false;
             }
@@ -174,11 +162,8 @@ test.describe('Auto lowercase commands', () => {
 
         // Verify setting persisted after reload
         const reloadedSettings = await page.evaluate(() => {
-            const keys = Object.keys(localStorage);
-            const key = keys.find((item) => item === 'uiSettings' || item.endsWith(':uiSettings'));
-            if (!key) return null;
             try {
-                const raw = localStorage.getItem(key);
+                const raw = localStorage.getItem('renderSettings');
                 return raw ? JSON.parse(raw) : null;
             } catch {
                 return null;

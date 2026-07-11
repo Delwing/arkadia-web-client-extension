@@ -3,6 +3,7 @@ import type {
     RenderSettings,
     MapSettings,
     BehaviorSettings,
+    ChromeSettings,
 } from './uiSettingsTypes';
 
 // Default values for the portable settings slices, plus the explicit field-key
@@ -97,3 +98,12 @@ export const behaviorSettingsKeys = [
     'explorationMode', 'instantMove', 'drinkableAsFunctionalBind',
     'teamNumberingMode', 'objectContextMenuCommands',
 ] as const satisfies readonly (keyof BehaviorSettings)[];
+
+// Stock-UI chrome stays in the `uiSettings` key. This list drives the save()
+// fan-out (which writes chrome fields back to `uiSettings`).
+export const chromeSettingsKeys = [
+    'objectsFontSize', 'buttonSize', 'showButtons', 'mapHeight', 'mapPosition',
+    'footerMode', 'footerComponents', 'keepMultibindsVisible', 'splitViewHeight',
+    'showCombatTimer', 'showTransportLabel', 'objectListBackgroundColor',
+    'objectListBackgroundAlpha', 'alwaysVisibleBars', 'barOrder',
+] as const satisfies readonly (keyof ChromeSettings)[];

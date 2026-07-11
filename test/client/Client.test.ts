@@ -298,8 +298,7 @@ test('sound:category with no config plays default beep', async () => {
 });
 
 test('sound:category with null config is silenced', async () => {
-  globalStorage.set('uiSettings', {
-    ...globalStorage.get('uiSettings'),
+  globalStorage.set('renderSettings', {
     soundCategories: { attack: null },
   } as any);
   const client = new Client((global as any).clientAdapterMock as any);
@@ -312,8 +311,7 @@ test('sound:category with null config is silenced', async () => {
 });
 
 test('sound:category with custom key plays that sound', async () => {
-  globalStorage.set('uiSettings', {
-    ...globalStorage.get('uiSettings'),
+  globalStorage.set('renderSettings', {
     soundCategories: { attack: 'my-sound' },
   } as any);
   const { getCustomSound } = await import('@modules/core/customSounds');

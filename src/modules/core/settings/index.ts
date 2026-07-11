@@ -21,22 +21,22 @@ export { defineUiSettingsSlice } from './defineSettingsAccessor';
  * `@shared/uiSettingsTypes` for the slice shapes.
  */
 
-const shell = defineUiSettingsSlice<ShellSettings>(shellSettingsKeys, defaultShellSettings);
+const shell = defineUiSettingsSlice<ShellSettings>(shellSettingsKeys, defaultShellSettings, 'shellSettings');
 export const getShellSettings = shell.get;
 export const setShellSettings = shell.set;
 export const onShellSettingsChange = shell.onChange;
 
-const render = defineUiSettingsSlice<RenderSettings>(renderSettingsKeys, defaultRenderSettings);
+const render = defineUiSettingsSlice<RenderSettings>(renderSettingsKeys, defaultRenderSettings, 'renderSettings');
 export const getRenderSettings = render.get;
 export const setRenderSettings = render.set;
 export const onRenderSettingsChange = render.onChange;
 
-const map = defineUiSettingsSlice<MapSettings>(mapSettingsKeys, defaultMapSettings);
+const map = defineUiSettingsSlice<MapSettings>(mapSettingsKeys, defaultMapSettings, 'mapSettings');
 export const getMapSettings = map.get;
 export const setMapSettings = map.set;
 export const onMapSettingsChange = map.onChange;
 
-const behavior = defineUiSettingsSlice<BehaviorSettings>(behaviorSettingsKeys, defaultBehaviorSettings);
+const behavior = defineUiSettingsSlice<BehaviorSettings>(behaviorSettingsKeys, defaultBehaviorSettings, 'behaviorSettings');
 export const getBehaviorSettings = behavior.get;
 export const setBehaviorSettings = behavior.set;
 export const onBehaviorSettingsChange = behavior.onChange;

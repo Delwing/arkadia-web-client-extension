@@ -12,6 +12,7 @@ import {
     WaypointOverlay
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
+import {getMapSettings, setMapSettings, getBehaviorSettings} from "@modules/core/settings";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
@@ -135,29 +136,20 @@ export class EmbeddedMap {
         let initialRoom = startId ?? 1;
         let mapPosition = 'top-overlay';
         try {
-            const parsed = globalStorage.get('uiSettings') as any;
-            if (parsed) {
-                if (typeof parsed.mapScale === 'number' && parsed.mapScale > 0) {
-                    zoom = parsed.mapScale;
-                }
-                if (typeof parsed.explorationMode === 'boolean') {
-                    explorationMode = parsed.explorationMode;
-                }
-                if (typeof parsed.instantMove === 'boolean') {
-                    instantMove = parsed.instantMove;
-                }
-                if (typeof parsed.highlightCurrentRoom === 'boolean') {
-                    highlightCurrentRoom = parsed.highlightCurrentRoom;
-                }
-                if (parsed.labelRenderMode === 'image' || parsed.labelRenderMode === 'data' || parsed.labelRenderMode === 'none') {
-                    labelRenderMode = parsed.labelRenderMode;
-                }
-                if (typeof parsed.transparentLabels === 'boolean') {
-                    transparentLabels = parsed.transparentLabels;
-                }
-                if (typeof parsed.mapPosition === 'string') {
-                    mapPosition = parsed.mapPosition;
-                }
+            const mapS = getMapSettings();
+            const behaviorS = getBehaviorSettings();
+            if (typeof mapS.mapScale === 'number' && mapS.mapScale > 0) {
+                zoom = mapS.mapScale;
+            }
+            explorationMode = behaviorS.explorationMode;
+            instantMove = behaviorS.instantMove;
+            highlightCurrentRoom = mapS.highlightCurrentRoom;
+            labelRenderMode = mapS.labelRenderMode;
+            transparentLabels = mapS.transparentLabels;
+            // mapPosition is stock chrome and stays in the uiSettings blob.
+            const chrome = globalStorage.get('uiSettings') as any;
+            if (chrome && typeof chrome.mapPosition === 'string') {
+                mapPosition = chrome.mapPosition;
             }
         } catch {
             // ignore malformed data
@@ -186,9 +178,9 @@ export class EmbeddedMap {
             settings.backgroundColor = 'transparent';
         } else {
             try {
-                const parsed = globalStorage.get('uiSettings') as any;
-                if (parsed && typeof parsed.mapBackgroundColor === 'string') {
-                    settings.backgroundColor = parsed.mapBackgroundColor;
+                const mapS = getMapSettings();
+                if (typeof mapS.mapBackgroundColor === 'string') {
+                    settings.backgroundColor = mapS.mapBackgroundColor;
                 }
             } catch {
                 // ignore
@@ -197,7 +189,7 @@ export class EmbeddedMap {
 
         // Initialize map rendering settings from storage
         try {
-            const parsed = globalStorage.get('uiSettings') as any;
+            const parsed = getMapSettings() as any;
             if (parsed) {
                 if (typeof parsed.mapRoomSize === 'number' && parsed.mapRoomSize > 0) {
                     settings.roomSize = parsed.mapRoomSize;
@@ -333,9 +325,7 @@ export class EmbeddedMap {
 
     private saveZoom() {
         try {
-            const parsed: any = globalStorage.get('uiSettings') ?? {};
-            parsed.mapScale = this.zoom;
-            globalStorage.set('uiSettings', parsed);
+            setMapSettings({ mapScale: this.zoom });
         } catch {
         }
     }

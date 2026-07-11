@@ -83,6 +83,11 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 // Map specific global keys to their export options
 export const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = {
     uiSettings: "uiSettings",
+    // Slices split out of uiSettings ride the same "interface settings" flag.
+    shellSettings: "uiSettings",
+    renderSettings: "uiSettings",
+    mapSettings: "uiSettings",
+    behaviorSettings: "uiSettings",
     binds: "binds",
     shortcuts: "shortcuts",
     triggers: "triggers",

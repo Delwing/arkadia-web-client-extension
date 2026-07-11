@@ -68,6 +68,14 @@ export const CATEGORY_REGISTRY = {
     containers: { name: 'Pojemniki', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'containers' },
     peopleEdits: { name: 'Edycje bazy postaci', group: 'character', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'peopleLocalEvents' },
     knowledge: { name: 'Wiedza', group: 'character', scope: 'shared', speed: 'hot', merge: 'append', customSync: true },
+    // Concern-scoped slices split out of uiSettings. Unlike uiSettings (device),
+    // these are shared so terminal/map/behaviour prefs sync across devices.
+    // Appended at the end to preserve historical category order (cloud payload
+    // compatibility).
+    shellSettings: { name: 'Ustawienia okna', group: 'interface', scope: 'shared', speed: 'hot', globalKeys: ['shellSettings'] },
+    renderSettings: { name: 'Wyglad tekstu', group: 'interface', scope: 'shared', speed: 'hot', globalKeys: ['renderSettings'] },
+    mapSettings: { name: 'Wyglad mapy', group: 'map', scope: 'shared', speed: 'hot', globalKeys: ['mapSettings'] },
+    behaviorSettings: { name: 'Zachowanie interfejsu', group: 'interface', scope: 'shared', speed: 'hot', globalKeys: ['behaviorSettings'] },
 } as const satisfies Record<string, CategoryDefinition>;
 
 // Sync category names (matches SyncOptions keys)

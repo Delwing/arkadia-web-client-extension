@@ -30,6 +30,7 @@ import {defaultSettings} from "@modules/core/defaultSettings";
 import { characterStorage, globalStorage } from "@modules/core/storage";
 import type {UiSettings, PluginPopupConfig} from "@client/ports";
 import {getPluginHostPort} from "@client/ports";
+import {getShellSettings, getRenderSettings, getMapSettings, getBehaviorSettings} from "@modules/core/settings";
 import {
   registerContextMenuEntry,
   registerPopupMenuEntry,
@@ -3187,8 +3188,17 @@ export class PluginApiImpl implements PluginApi {
       },
 
       getUiSettings: async (): Promise<UiSettings> => {
-        const stored = globalStorage.get("uiSettings");
-        return { ...getPluginHostPort().getDefaultUiSettings(), ...stored };
+        // Compose the unified view from the concern slices (which hold the moved
+        // fields) plus the uiSettings blob (stock chrome), so plugins see the
+        // full settings shape regardless of the physical storage split.
+        return {
+          ...getPluginHostPort().getDefaultUiSettings(),
+          ...getShellSettings(),
+          ...getRenderSettings(),
+          ...getMapSettings(),
+          ...getBehaviorSettings(),
+          ...(globalStorage.get("uiSettings") ?? {}),
+        };
       },
 
       getUiSetting: async <K extends keyof UiSettings>(key: K): Promise<UiSettings[K]> => {

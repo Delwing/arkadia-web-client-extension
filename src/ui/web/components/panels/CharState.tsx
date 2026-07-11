@@ -4,6 +4,7 @@ import {useClientEvent, useLocalStorage} from "../../hooks";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "@web/colors";
 import {UiSettings} from "@web/uiSettings.ts";
 import {globalStorage} from "@modules/core/storage";
+import {getMapSettings, onMapSettingsChange} from "@modules/core/settings";
 
 export interface CharStateData {
   hp: number;
@@ -94,7 +95,7 @@ export const CharState: React.FC = () => {
     return uiSettings.footerMode || 0;
   });
   const [useEmoji, setUseEmoji] = useState(() => {
-    return uiSettings.emojiLabels || false;
+    return getMapSettings().emojiLabels;
   });
   const [alwaysVisibleBarsState, setAlwaysVisibleBarsState] = useState<string[]>(() => {
     return uiSettings.alwaysVisibleBars || [];
@@ -135,10 +136,9 @@ export const CharState: React.FC = () => {
   });
 
   useEffect(() => {
-    return globalStorage.onChange('uiSettings', (detail) => {
-      if (detail && typeof detail.emojiLabels === "boolean") {
-        setUseEmoji(detail.emojiLabels);
-      }
+    // emojiLabels now lives in mapSettings; footerMode/alwaysVisibleBars/barOrder
+    // stay in the uiSettings (chrome) blob.
+    const unsubscribeChrome = globalStorage.onChange('uiSettings', (detail) => {
       if (detail && typeof detail.footerMode === "number") {
         setMode(detail.footerMode);
       }
@@ -149,6 +149,10 @@ export const CharState: React.FC = () => {
         setBarOrderState(detail.barOrder);
       }
     });
+    const unsubscribeMap = onMapSettingsChange((map) => {
+      setUseEmoji(map.emojiLabels);
+    });
+    return () => { unsubscribeChrome(); unsubscribeMap(); };
   }, []);
 
   // Control visibility of text/bars containers based on mode

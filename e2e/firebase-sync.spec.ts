@@ -1104,7 +1104,10 @@ test.describe('Firebase Sync', () => {
             await waitForCommandInput(page);
             await ensureGameSocket(page);
 
-            // Verify persistence
+            // Verify persistence. A directly-injected legacy blob that is never
+            // re-saved stays in the uiSettings key (load() reads it via its
+            // legacy fallback); it is only split on the next save or a versioned
+            // migration.
             const persisted = await page.evaluate(() => {
                 const raw = localStorage.getItem('uiSettings');
                 return raw ? JSON.parse(raw) : null;

@@ -9,7 +9,8 @@ import {FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener, gmcp} from "./gmcp";
-import {characterStorage, globalStorage} from "@modules/core/storage";
+import {characterStorage} from "@modules/core/storage";
+import {getBehaviorSettings, getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
@@ -64,7 +65,7 @@ export default class Client {
             this.suppressMapMoveEvent = value;
         },
         functionalBind: this.FunctionalBind,
-        shouldSetDrinkableBind: () => globalStorage.get('uiSettings')?.drinkableAsFunctionalBind !== false,
+        shouldSetDrinkableBind: () => getBehaviorSettings().drinkableAsFunctionalBind !== false,
         setPreWalkCommands: (cmds: string[]) => { this.movementManager.preWalkCommands = cmds; },
         setPostWalkCommands: (cmds: string[]) => { this.movementManager.postWalkCommands = cmds; },
     });
@@ -142,9 +143,9 @@ export default class Client {
             this.drawWeaponCommand = normalizeDrawWeaponCommand(detail?.drawWeaponCommand);
         });
 
-        globalStorage.onChange('uiSettings', (uiSettings) => {
-            if (uiSettings?.xtermPalette === 'arkadia' || uiSettings?.xtermPalette === 'proper') {
-                setXtermPalette(uiSettings.xtermPalette);
+        onRenderSettingsChange((render) => {
+            if (render.xtermPalette === 'arkadia' || render.xtermPalette === 'proper') {
+                setXtermPalette(render.xtermPalette);
             }
         });
 
@@ -196,10 +197,10 @@ export default class Client {
             deferred.forEach(fn => fn());
         });
 
-        // Apply initial uiSettings from storage
-        const initialUiSettings = globalStorage.get('uiSettings');
-        if (initialUiSettings?.xtermPalette === 'arkadia' || initialUiSettings?.xtermPalette === 'proper') {
-            setXtermPalette(initialUiSettings.xtermPalette);
+        // Apply initial palette from the render settings
+        const initialRender = getRenderSettings();
+        if (initialRender.xtermPalette === 'arkadia' || initialRender.xtermPalette === 'proper') {
+            setXtermPalette(initialRender.xtermPalette);
         }
     }
 

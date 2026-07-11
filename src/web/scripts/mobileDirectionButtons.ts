@@ -7,6 +7,7 @@ import {
 import type { MobileButtonSetting } from "../buttonSettings";
 import { defaultFontColor } from "../buttonSettings";
 import {globalStorage} from "@modules/core/storage";
+import {getShellSettings, onShellSettingsChange} from "@modules/core/settings";
 import {getShortDir} from "@shared/map/directions";
 import {
     getButtonMacroDisplayInfo,
@@ -210,19 +211,15 @@ export default class MobileDirectionButtons {
             this.resetPosition();
         });
 
-        // Listen for UI settings changes
-        const initialUi = globalStorage.get('uiSettings');
-        if (initialUi) {
-            if (typeof initialUi.hapticFeedback === 'boolean') {
-                this.hapticEnabled = initialUi.hapticFeedback !== false;
-            }
-        }
+        // Listen for settings changes. hapticFeedback is a shell setting;
+        // showButtons remains stock chrome in uiSettings.
+        this.hapticEnabled = getShellSettings().hapticFeedback !== false;
+        onShellSettingsChange((shell) => {
+            this.hapticEnabled = shell.hapticFeedback !== false;
+        });
         globalStorage.onChange('uiSettings', (settings) => {
             if (!settings) {
                 return;
-            }
-            if ("hapticFeedback" in settings) {
-                this.hapticEnabled = settings.hapticFeedback !== false;
             }
             if ("showButtons" in settings) {
                 const disabled = settings.showButtons === false;

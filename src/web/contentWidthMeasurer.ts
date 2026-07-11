@@ -1,5 +1,5 @@
 import type Client from '@client/Client';
-import { globalStorage } from '@modules/core/storage';
+import { onRenderSettingsChange } from '@modules/core/settings';
 
 const OUTPUT_ID = 'main_text_output_msg_wrapper';
 const MEASURE_ID = 'content-width-measure';
@@ -52,5 +52,6 @@ export function installContentWidthMeasurer(client: Client): void {
         new ResizeObserver(update).observe(content);
     }
     window.addEventListener('resize', update);
-    globalStorage.onChange('uiSettings', update);
+    // Re-measure when render settings (font family/size) change.
+    onRenderSettingsChange(update);
 }

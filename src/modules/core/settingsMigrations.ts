@@ -1,6 +1,12 @@
 import type { Settings, CollectOverride } from './defaultSettings';
 import { globalStorage } from './storage';
 import type { FooterComponentConfig } from '@web/defaultUiSettings';
+import {
+    shellSettingsKeys,
+    renderSettingsKeys,
+    mapSettingsKeys,
+    behaviorSettingsKeys,
+} from '@shared/settingsDefaults';
 
 interface Migration {
     version: number;
@@ -110,6 +116,11 @@ const migrations: Migration[] = [
             return cleaned as Partial<Settings>;
         },
     },
+    {
+        version: 10,
+        description: 'Split uiSettings into shell/render/map/behavior keys (handled by migrateUiSettingsSplit)',
+        migrate: settings => settings, // No-op for core Settings; actual migration is below
+    },
 ];
 
 /**
@@ -165,6 +176,57 @@ export function migrateSettings(settings: Partial<Settings>, fromVersion?: numbe
     return { settings: migratedSettings, migrated: appliedCount > 0 };
 }
 
+// uiSettings → concern-scoped keys (v10 split).
+const UI_SETTINGS_SLICE_KEYS: Record<string, readonly string[]> = {
+    shellSettings: shellSettingsKeys,
+    renderSettings: renderSettingsKeys,
+    mapSettings: mapSettingsKeys,
+    behaviorSettings: behaviorSettingsKeys,
+};
+
+/**
+ * Extract the moved slice fields out of a `uiSettings` object into the new
+ * concern-scoped keys. Writes each target key only when it is absent (so newer
+ * synced/imported slice values are never clobbered) and returns the remaining
+ * stock-chrome object. Idempotent. Shared by the startup migration and import.
+ */
+function extractUiSettingsSlices(uiSettings: Record<string, any>): Record<string, any> {
+    const chrome: Record<string, any> = { ...uiSettings };
+    for (const [target, keys] of Object.entries(UI_SETTINGS_SLICE_KEYS)) {
+        const slice: Record<string, unknown> = {};
+        for (const key of keys) {
+            if (key in chrome) {
+                slice[key] = chrome[key];
+                delete chrome[key];
+            }
+        }
+        if (Object.keys(slice).length > 0 && globalStorage.get(target as never) === undefined) {
+            globalStorage.set(target as never, slice as never);
+        }
+    }
+    return chrome;
+}
+
+/**
+ * Startup migration (v10): split the stored `uiSettings` blob into the
+ * concern-scoped keys, leaving stock chrome behind. Idempotent. MUST run before
+ * `runAllSettingsMigrations()` bumps the version counter (see main.ts ordering),
+ * otherwise the version gate would already be past 10 and it would never run.
+ */
+export function migrateUiSettingsSplit(): void {
+    if (getMigrationsVersion() >= 10) return;
+    try {
+        const raw = globalStorage.get('uiSettings') as Record<string, any> | undefined;
+        if (!raw || typeof raw !== 'object') return;
+        const chrome = extractUiSettingsSlices(raw);
+        if (Object.keys(chrome).length !== Object.keys(raw).length) {
+            globalStorage.set('uiSettings', chrome as never);
+        }
+    } catch (e) {
+        console.warn('[SettingsMigrations] uiSettings split failed:', e);
+    }
+}
+
 /**
  * Apply the relevant migrations to a single value that arrived via sync /
  * bulk import, keyed by its base storage key. Returns a JSON string ready to
@@ -192,6 +254,12 @@ export function migrateImportedValue(baseKey: string, raw: string): string {
         if (baseKey === 'mobileButtonSettings') {
             const { data, changed } = migrateMobileButtonMacroData(JSON.parse(raw));
             return changed ? JSON.stringify(data) : raw;
+        }
+        if (baseKey === 'uiSettings') {
+            // A legacy peer/backup may carry the moved fields inside uiSettings.
+            // Split them into the new keys and keep only chrome in uiSettings.
+            const parsed = JSON.parse(raw) as Record<string, any>;
+            return JSON.stringify(extractUiSettingsSlices(parsed));
         }
     } catch {
         // Fall through and return the original value untouched.

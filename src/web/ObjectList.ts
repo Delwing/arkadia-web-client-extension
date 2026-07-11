@@ -1,5 +1,6 @@
 import Client from "@client/Client";
 import {globalStorage} from "@modules/core/storage";
+import {getBehaviorSettings, onBehaviorSettingsChange} from "@modules/core/settings";
 import {createAttackController} from "@client/utils/attackController";
 import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
 import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
@@ -67,8 +68,13 @@ export default class ObjectList {
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
         eventBus.on('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
-        globalStorage.onChange('uiSettings', () => {
+        onBehaviorSettingsChange(() => {
             this.loadContextMenuCommands();
+            this.scheduleRender();
+        });
+        // Stock chrome (object-list background/font) still lives in uiSettings;
+        // re-render when it changes.
+        globalStorage.onChange('uiSettings', () => {
             this.scheduleRender();
         });
         this.render();
@@ -111,8 +117,7 @@ export default class ObjectList {
     }
 
     private loadContextMenuCommands() {
-        const uiSettings = globalStorage.get("uiSettings");
-        const commands = (uiSettings as any)?.objectContextMenuCommands;
+        const commands = getBehaviorSettings().objectContextMenuCommands;
         if (Array.isArray(commands) && commands.length > 0) {
             this.contextMenuCommands = commands.filter((c: unknown) => typeof c === 'string');
         } else {

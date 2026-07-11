@@ -1,7 +1,7 @@
 import {ClientAdapter} from "@client/Client";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
-import {globalStorage} from "@modules/core/storage";
+import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
@@ -118,23 +118,13 @@ class MudClient implements ClientAdapter {
             }
         })
 
-        // Listen for UI settings changes
-        const initialUiSettings = globalStorage.get('uiSettings');
-        if (initialUiSettings) {
-            if (typeof initialUiSettings.autoLowercaseCommands === 'boolean') {
-                this.autoLowercaseCommands = initialUiSettings.autoLowercaseCommands;
-            }
-            if (typeof initialUiSettings.commandEcho === 'boolean') {
-                this.commandEcho = initialUiSettings.commandEcho;
-            }
-        }
-        globalStorage.onChange('uiSettings', (settings) => {
-            if (typeof settings?.autoLowercaseCommands === 'boolean') {
-                this.autoLowercaseCommands = settings.autoLowercaseCommands;
-            }
-            if (typeof settings?.commandEcho === 'boolean') {
-                this.commandEcho = settings.commandEcho;
-            }
+        // Listen for render settings changes
+        const initialRender = getRenderSettings();
+        this.autoLowercaseCommands = initialRender.autoLowercaseCommands;
+        this.commandEcho = initialRender.commandEcho;
+        onRenderSettingsChange((render) => {
+            this.autoLowercaseCommands = render.autoLowercaseCommands;
+            this.commandEcho = render.commandEcho;
         });
 
         eventBus.on('playback.incomingData', (data: string, options?: { timestamp?: number }) => {

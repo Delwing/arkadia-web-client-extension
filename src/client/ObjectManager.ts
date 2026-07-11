@@ -1,6 +1,6 @@
 import Client from "./Client";
 import toTitleCase from "./utils/toTitleCase";
-import {globalStorage} from "@modules/core/storage";
+import {getBehaviorSettings} from "@modules/core/settings";
 import type {GmcpCharInfo, GmcpCharState} from "@shared/events";
 
 export interface ObjectData {
@@ -155,7 +155,7 @@ export default class ObjectManager {
             ordered.push(o);
         });
 
-        const teamNumberingMode = globalStorage.get("uiSettings")?.teamNumberingMode ?? 'letters';
+        const teamNumberingMode = getBehaviorSettings().teamNumberingMode;
 
         if (teamNumberingMode === 'numbers') {
             let index = 1;

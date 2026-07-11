@@ -1,4 +1,5 @@
 import { globalStorage } from "@modules/core/storage";
+import { getRenderSettings, onRenderSettingsChange } from "@modules/core/settings";
 import { getCustomSound, getCustomSounds } from "@modules/core/customSounds";
 import type Client from "./Client";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
@@ -117,15 +118,19 @@ export default class SoundManager {
         // Re-resolve the cached "beep" element when the custom beep selection
         // changes, so categories left on "default beep" pick up the new sound
         // without requiring a page reload.
-        globalStorage.onChange("uiSettings", (newVal, oldVal) => {
-            const newKey = (newVal as any)?.customBeepSoundKey || undefined;
-            const oldKey = (oldVal as any)?.customBeepSoundKey || undefined;
-            if (newKey !== oldKey) {
-                void this.refreshBeepSource();
+        let lastBeepKey = getRenderSettings().customBeepSoundKey || undefined;
+        onRenderSettingsChange((render) => {
+            const newKey = render.customBeepSoundKey || undefined;
+            if (newKey !== lastBeepKey) {
+                lastBeepKey = newKey;
+                void this.refreshBeepSource().catch(() => {});
             }
         });
 
-        void this.discoverAndPreload();
+        // Fire-and-forget preload; swallow rejections (e.g. audio element
+        // creation failing during test teardown) so they don't surface as
+        // unhandled rejections.
+        void this.discoverAndPreload().catch(() => {});
 
         this.installGestureListeners();
     }
@@ -268,8 +273,7 @@ export default class SoundManager {
 
     private async resolveSrc(key: SoundKey): Promise<string | undefined> {
         if (key === "beep") {
-            const uiSettings = globalStorage.get("uiSettings");
-            const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
+            const customBeepKey = getRenderSettings().customBeepSoundKey;
             if (typeof customBeepKey === "string" && customBeepKey) {
                 const sound = await getCustomSound(customBeepKey);
                 if (sound) return sound.data;
@@ -287,8 +291,8 @@ export default class SoundManager {
             const customSounds = await getCustomSounds();
             customSounds.forEach(s => keys.add(s.key));
 
-            const uiSettings = globalStorage.get("uiSettings");
-            const customBeepKey = (uiSettings as any)?.customBeepSoundKey;
+            const render = getRenderSettings();
+            const customBeepKey = render.customBeepSoundKey;
             if (typeof customBeepKey === "string" && customBeepKey) {
                 keys.add(customBeepKey);
             }
@@ -302,7 +306,7 @@ export default class SoundManager {
                 });
             });
 
-            const soundCategories: SoundCategories = (uiSettings as any)?.soundCategories ?? {};
+            const soundCategories: SoundCategories = render.soundCategories ?? {};
             Object.values(soundCategories).forEach((key) => {
                 if (typeof key === "string" && key) {
                     keys.add(key);
@@ -347,8 +351,7 @@ export default class SoundManager {
     private playCategory(category: SoundCategory): void {
         if (this.muted) return;
 
-        const uiSettings = globalStorage.get("uiSettings");
-        const soundCategories: SoundCategories = (uiSettings as any)?.soundCategories ?? {};
+        const soundCategories: SoundCategories = getRenderSettings().soundCategories ?? {};
 
         if (category in soundCategories) {
             const key = soundCategories[category];

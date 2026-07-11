@@ -31,7 +31,13 @@ import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import UiSettings from "./uiSettings/UiSettings";
-import {defaultUiSettings} from "./defaultUiSettings";
+import {
+    getRenderSettings,
+    getMapSettings,
+    getShellSettings,
+    onRenderSettingsChange,
+    onShellSettingsChange,
+} from "@modules/core/settings";
 
 import "@client/main.ts"
 import {getActiveKeymapId, switchKeymap} from "@modules/core/keymapStorage";
@@ -67,6 +73,7 @@ import {
     migrateFooterComponentVisibility,
     migrateLayoutManagerState,
     migrateMobileButtonMacroField,
+    migrateUiSettingsSplit,
     runAllSettingsMigrations
 } from "@modules/core/settingsMigrations"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
@@ -81,6 +88,9 @@ initLogFileSaver(mudClient).catch(err => console.error('File saver init failed',
 // Run migrations before initializing the client
 migrateNewlyCharacterScopedKeys();
 migrateMobileButtonMacroField();
+// Split uiSettings into concern-scoped keys before runAllSettingsMigrations()
+// bumps the version counter past this migration's gate.
+migrateUiSettingsSplit();
 runAllSettingsMigrations();
 migrateButtonSizeMultiplier();
 migrateFooterComponentVisibility();
@@ -549,7 +559,7 @@ Promise.all([mapDataPromise, colorsPromise])
         }
 
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        const savedAlgorithm = globalStorage.get('uiSettings')?.pathFindingAlgorithm;
+        const savedAlgorithm = getMapSettings().pathFindingAlgorithm;
         if (savedAlgorithm && pathFinder.setAlgorithm) {
             pathFinder.setAlgorithm(savedAlgorithm);
         }
@@ -563,7 +573,7 @@ Promise.all([mapDataPromise, colorsPromise])
             if (!currentEmbedded) return;
 
             const result = client.Map.initialize(newMapData, colors);
-            const newSavedAlgorithm = globalStorage.get('uiSettings')?.pathFindingAlgorithm;
+            const newSavedAlgorithm = getMapSettings().pathFindingAlgorithm;
             if (newSavedAlgorithm && result.pathFinder.setAlgorithm) {
                 result.pathFinder.setAlgorithm(newSavedAlgorithm);
             }
@@ -578,11 +588,9 @@ Promise.all([mapDataPromise, colorsPromise])
     });
 
 
-setOutputTimestampVisibility(globalStorage.get('uiSettings')?.showTimestamps ?? defaultUiSettings.showTimestamps);
-globalStorage.onChange('uiSettings', (settings) => {
-    if (typeof settings?.showTimestamps === 'boolean') {
-        setOutputTimestampVisibility(settings.showTimestamps);
-    }
+setOutputTimestampVisibility(getRenderSettings().showTimestamps);
+onRenderSettingsChange((render) => {
+    setOutputTimestampVisibility(render.showTimestamps);
 });
 
 // Set up message event listener for UI updates
@@ -592,7 +600,7 @@ setupOutputMessageHandler(mudClient, {
     stickyArea,
     isSplitView: () => isSplitView,
     stickyLines: STICKY_LINES,
-    maxElements: () => globalStorage.get('uiSettings')?.outputMaxElements ?? defaultUiSettings.outputMaxElements,
+    maxElements: () => getRenderSettings().outputMaxElements,
     suppressSplitView: (durationMs: number) => {
         suppressSplitViewUntil = Date.now() + durationMs;
     },
@@ -685,7 +693,7 @@ mudClient.on('client.connect', () => {
     isDisconnecting = false;
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
-    const wakeLockSetting = globalStorage.get('uiSettings')?.wakeLock;
+    const wakeLockSetting = getShellSettings().wakeLock;
     if (wakeLockSetting !== false) {
         preventTabSleep();
     }
@@ -926,18 +934,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
     const passwordInput = document.getElementById('message-input-password') as HTMLInputElement;
     const sendButton = document.getElementById('send-button') as HTMLButtonElement;
-    const uiSettingsData = globalStorage.get('uiSettings');
-    let clearInputOnSend = !!uiSettingsData?.clearInputOnSend;
-    globalStorage.onChange('uiSettings', (payload) => {
-        if (typeof payload?.clearInputOnSend === 'boolean') {
-            clearInputOnSend = payload.clearInputOnSend;
-        }
-        if (typeof payload?.wakeLock === 'boolean') {
-            if (payload.wakeLock && isConnected) {
-                preventTabSleep();
-            } else {
-                disableTabSleepPrevention();
-            }
+    let clearInputOnSend = getRenderSettings().clearInputOnSend;
+    onRenderSettingsChange((render) => {
+        clearInputOnSend = render.clearInputOnSend;
+    });
+    onShellSettingsChange((shell) => {
+        if (shell.wakeLock && isConnected) {
+            preventTabSleep();
+        } else {
+            disableTabSleepPrevention();
         }
     });
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
@@ -1521,9 +1526,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.enabled = true;
                 saveLayoutState(state);
                 invalidateLayoutCache();
-                const uiSettings = { ...defaultUiSettings, ...(globalStorage.get('uiSettings') ?? {}) };
-                uiSettings.showButtons = false;
-                globalStorage.set('uiSettings', uiSettings);
+                // showButtons is stock chrome and stays in the uiSettings blob;
+                // merge onto the existing value without reintroducing moved fields.
+                const cur = globalStorage.get('uiSettings') ?? {};
+                globalStorage.set('uiSettings', { ...cur, showButtons: false } as never);
                 suggestionEl.style.display = 'none';
             });
 

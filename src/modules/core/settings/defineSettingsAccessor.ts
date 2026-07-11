@@ -26,15 +26,22 @@ export interface SettingsAccessor<T> {
 export function defineUiSettingsSlice<T extends object>(
     fieldKeys: readonly (keyof T)[],
     defaults: T,
+    backingKey = 'uiSettings',
 ): SettingsAccessor<T> {
+    // `backingKey` is the localStorage key this slice is physically stored in.
+    // Phase 1 uses the shared `uiSettings` blob; Phase 2 flips each slice to its
+    // own key. `globalStorage` is typed by the storage schema, so the key is
+    // cast — the runtime store accepts any string key.
+    const key = backingKey as never;
+
     const readBlob = (): Record<string, unknown> =>
-        (globalStorage.get('uiSettings') as unknown as Record<string, unknown> | undefined) ?? {};
+        (globalStorage.get(key) as unknown as Record<string, unknown> | undefined) ?? {};
 
     const pick = (blob: Record<string, unknown>): Partial<T> => {
         const out: Partial<T> = {};
-        for (const key of fieldKeys) {
-            if ((key as string) in blob) {
-                (out as Record<string, unknown>)[key as string] = blob[key as string];
+        for (const field of fieldKeys) {
+            if ((field as string) in blob) {
+                (out as Record<string, unknown>)[field as string] = blob[field as string];
             }
         }
         return out;
@@ -44,18 +51,18 @@ export function defineUiSettingsSlice<T extends object>(
 
     const set = (patch: Partial<T>): void => {
         const blob = { ...readBlob() };
-        for (const key of fieldKeys) {
-            if ((key as string) in patch) {
-                blob[key as string] = (patch as Record<string, unknown>)[key as string];
+        for (const field of fieldKeys) {
+            if ((field as string) in patch) {
+                blob[field as string] = (patch as Record<string, unknown>)[field as string];
             }
         }
-        globalStorage.set('uiSettings', blob as never);
+        globalStorage.set(key, blob as never);
     };
 
     const replace = (value: T): void => set(value);
 
     const onChange = (cb: (value: T) => void): (() => void) =>
-        globalStorage.onChange('uiSettings', () => cb(get()));
+        globalStorage.onChange(key, () => cb(get()));
 
     return { get, set, replace, onChange };
 }

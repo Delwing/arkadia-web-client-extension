@@ -12,6 +12,13 @@ import {
     type UiSettings
 } from "./defaultUiSettings";
 import {globalStorage} from "@modules/core/storage";
+import {
+    setShellSettings,
+    setRenderSettings,
+    setMapSettings,
+    setBehaviorSettings,
+} from "@modules/core/settings";
+import {chromeSettingsKeys} from "@shared/settingsDefaults";
 import {loadLayoutState} from "@web/layout";
 import {applyCustomTheme, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
 
@@ -371,12 +378,26 @@ export function apply(settings: UiSettings) {
 
 export function load(): UiSettings {
     try {
-        const raw = globalStorage.get('uiSettings');
-        let parsed: any = {};
-        if (raw) {
-            parsed = raw as any;
-        }
-        if (raw || Object.keys(parsed).length > 0) {
+        // Source the raw values from the concern-scoped accessors (which hold
+        // the moved fields) plus the `uiSettings` blob (which keeps stock
+        // chrome). The validation below is unchanged — only the source moved.
+        // Compose the raw stored values: the uiSettings blob first (stock chrome,
+        // plus any not-yet-migrated legacy fields), then the concern-scoped slice
+        // keys, which are authoritative for the moved fields. Reading the slices
+        // RAW (not default-merged) means an absent slice falls back to a legacy
+        // uiSettings blob value here, with defaultUiSettings filling the rest at
+        // the return below. defaultUiSettings is applied once, at the end.
+        const readSlice = (key: 'shellSettings' | 'renderSettings' | 'mapSettings' | 'behaviorSettings'): Record<string, unknown> =>
+            (globalStorage.get(key) as unknown as Record<string, unknown> | undefined) ?? {};
+        const chrome = globalStorage.get('uiSettings');
+        const parsed: any = {
+            ...(chrome ?? {}),
+            ...readSlice('shellSettings'),
+            ...readSlice('renderSettings'),
+            ...readSlice('mapSettings'),
+            ...readSlice('behaviorSettings'),
+        };
+        {
             const mapScale = normalizeMapScale(parsed.mapScale);
             const mapPosition = mapPositions.includes(parsed.mapPosition as MapPosition)
                 ? (parsed.mapPosition as MapPosition)
@@ -589,5 +610,19 @@ export function load(): UiSettings {
 }
 
 export function save(settings: UiSettings) {
-    globalStorage.set('uiSettings', settings);
+    // Fan out the unified settings object to the concern-scoped keys; stock
+    // chrome stays in the `uiSettings` key. Each accessor.set() only writes the
+    // fields it owns, so slices never clobber one another.
+    setShellSettings(settings);
+    setRenderSettings(settings);
+    setMapSettings(settings);
+    setBehaviorSettings(settings);
+    const source = settings as unknown as Record<string, unknown>;
+    const chrome: Record<string, unknown> = {};
+    for (const key of chromeSettingsKeys) {
+        if (key in source) {
+            chrome[key] = source[key];
+        }
+    }
+    globalStorage.set('uiSettings', chrome as never);
 }

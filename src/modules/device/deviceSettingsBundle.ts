@@ -2,6 +2,7 @@ import { globalStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';
 import { loadLayoutState, saveLayoutState } from '@web/layout/utils/layoutStorage';
 import { defaultUiSettings, type UiSettings } from '@web/defaultUiSettings';
+import { chromeSettingsKeys } from '@shared/settingsDefaults';
 import {
     loadSettings as loadDesktopButtonSettings,
     saveSettings as saveDesktopButtonSettings,
@@ -31,7 +32,17 @@ function loadUiSettings(): UiSettings {
  * Save uiSettings to storage
  */
 function saveUiSettings(settings: UiSettings): void {
-    globalStorage.set('uiSettings', settings);
+    // uiSettings now holds only stock chrome; the moved fields live in the
+    // shared slice keys and sync separately. Write chrome-only so a device
+    // bundle never reintroduces stale moved fields into the uiSettings blob.
+    const source = settings as unknown as Record<string, unknown>;
+    const chrome: Record<string, unknown> = {};
+    for (const key of chromeSettingsKeys) {
+        if (key in source) {
+            chrome[key] = source[key];
+        }
+    }
+    globalStorage.set('uiSettings', chrome as never);
 }
 
 /**

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { getContextMenuEntries as getPluginContextMenuEntries } from '@modules/core/pluginUiRegistry';
-import { globalStorage } from '@modules/core/storage';
+import { setRenderSettings } from '@modules/core/settings';
 import {
     areOutputMessageTypesVisible,
     areOutputTimestampsVisible,
@@ -70,10 +70,7 @@ export function setupOutputContextMenu(outputWrapper: HTMLElement): () => void {
                 action: () => {
                     const next = !timestampsVisible;
                     setOutputTimestampVisibility(next);
-                    const current = globalStorage.get('uiSettings');
-                    if (current) {
-                        globalStorage.set('uiSettings', { ...current, showTimestamps: next });
-                    }
+                    setRenderSettings({ showTimestamps: next });
                 },
             },
             {
