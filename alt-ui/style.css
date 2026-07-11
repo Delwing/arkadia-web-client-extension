@@ -357,7 +357,7 @@ body::after {
   box-shadow: inset 0 1px 0 rgba(0,0,0,.6), inset 0 2px 0 rgba(184,150,90,.07);
 }
 
-.gems { display: flex; gap: 4px; }
+.gems { display: flex; gap: 4px; -webkit-user-select: none; user-select: none; }
 
 /* "Postep" lifted out of the gem row: a thin full-width exp-bar with one tick
    per point (WoW-style), a left label, and the track spanning the vital width. */
@@ -575,6 +575,11 @@ textarea.cmd-input {
   flex-direction: column;
   gap: 12px;
   z-index: 2;
+  /* HUD chrome (map, czas, combat, objects) is glanceable status, not prose —
+     drags should never smear a text selection across it. The game log stays
+     selectable; only these panels and the vital gems opt out. */
+  -webkit-user-select: none;
+  user-select: none;
 }
 .panel {
   flex: 1 1 0;            /* equal halves */
@@ -857,41 +862,41 @@ textarea.cmd-input {
 
 /* ============================================================
    HOVER TOOLTIP + CONTEXT MENU — herb / book descriptions
-   Carved-stone tablets cut from the same recipe as the vital
-   gems: stone texture over a dark gradient, a sunken inner
-   shadow, a soft top-gloss (::before), and a faint rim glow.
+   Flat forged panels, cut from the same recipe as the left-hand
+   .panel surfaces (matte near-black fill, solid iron border,
+   inner bronze bevel ring) so a floating tooltip / right-click
+   menu reads as the same object as the combat + map panels
+   rather than a glossy carved tablet.
    Shared by the tooltip (imperative, into #hover-tooltip) and
    the right-click menu (React, ContextMenu.tsx).
    ============================================================ */
 
-/* the shared stone surface — mirrors .gem .stone (texture + inset
-   shadow + saturate) but neutral-dark instead of hue-filled */
+/* the shared flat surface — mirrors .panel fill + .forged chrome */
 .hover-tooltip,
 .alt-context-menu {
-  border-radius: 8px;
+  border-radius: 9px;
   overflow: hidden;
-  background-color: var(--gem-dark);
+  background-color: #0a0a09;
   background-image:
-    var(--tex-stone-soft),
-    linear-gradient(180deg, #221d16 0%, #17130e 55%, #100c09 100%);
+    var(--tex-fine),
+    linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
   background-blend-mode: soft-light, normal;
-  background-size: 400px 400px, 100% 100%;
+  background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo);
   box-shadow:
-    inset 0 0 0 1px rgba(0,0,0,.65),
-    inset 0 1px 3px rgba(0,0,0,.75),
-    inset 0 1px 0 rgba(214,198,160,.05),
-    0 0 0 1px rgba(152,152,160,.14),
-    0 0 10px rgba(152,152,160,.10),
-    0 8px 26px rgba(0,0,0,.6);
+    inset 0 1px 0 rgba(184,150,90,.16),
+    inset 0 -3px 6px rgba(0,0,0,.72),
+    inset 0 0 0 1px rgba(0,0,0,.5),
+    0 3px 10px rgba(0,0,0,.6),
+    0 12px 30px rgba(0,0,0,.45);
 }
-/* top gloss + base shadow, echoing .gem .stone::after */
+/* inner bronze bevel ring, exactly as .forged::after on the left panels */
 .hover-tooltip::before,
 .alt-context-menu::before {
-  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
-    linear-gradient(180deg, transparent 55%, rgba(0,0,0,.5));
+  content: ""; position: absolute; inset: 4px; z-index: 0; pointer-events: none;
+  border-radius: 5px;
+  border: 1px solid rgba(184,150,90,.20);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
 }
 
 /* --- hover tooltip (herb effects, book categories) --- */
@@ -909,84 +914,117 @@ textarea.cmd-input {
   color: var(--parchment);
 }
 .hover-tooltip.show { display: block; }
-/* keep content above the gloss layer (::before, z-index 0) */
+/* keep content above the bevel-ring layer (::before, z-index 0) */
 .hover-tooltip__header,
 .hover-tooltip__entry { position: relative; z-index: 1; }
 .hover-tooltip__header {
+  display: flex; align-items: center; gap: 9px;
   font-family: "Cinzel", serif; font-weight: 600;
-  font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
   color: var(--bronze);
-  margin-bottom: 6px; padding-bottom: 5px;
-  box-shadow: inset 0 -1px 0 rgba(184,150,90,.18);
+  margin-bottom: 7px; padding-bottom: 7px;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
   text-shadow: 0 1px 2px rgba(0,0,0,.9);
 }
-.hover-tooltip__entry {
-  display: flex; align-items: baseline; gap: 7px;
+/* bronze romb ornament, exactly as .panel__head .orn */
+.hover-tooltip__header::before {
+  content: ""; flex: 0 0 auto;
+  width: 8px; height: 8px; transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184,150,90,.4);
 }
-.hover-tooltip__entry + .hover-tooltip__entry { margin-top: 2px; }
+.hover-tooltip__entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.hover-tooltip__entry:last-child { border-bottom: 0; }
+/* label + value share the combat row voice (.st-label): Cinzel, uppercase, spaced.
+   text-box trims Cinzel's tall leading to the caps so the row centers on the
+   visible glyphs (same fix as .panel__title), not the font's ascent/descent. */
 .hover-tooltip__label {
   flex: 0 0 auto;
-  font-family: "JetBrains Mono", monospace; font-size: 10.5px;
-  color: var(--bronze-dim); white-space: nowrap;
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 9.5px;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--parchment-dim); white-space: nowrap;
+  text-box: trim-both cap alphabetic;
 }
 .hover-tooltip__content {
   flex: 1 1 auto; min-width: 0;
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 9.5px;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--parchment);
   word-break: break-word;
   filter: saturate(.5);   /* fold effect colors into the muted forge world */
+  text-box: trim-both cap alphabetic;
 }
 
 /* --- right-click context menu --- */
 .alt-context-menu {
   position: fixed;
   z-index: 1300;
+  width: max-content;      /* grow to the widest item (text + arrow), no overlap */
   min-width: 172px;
-  max-width: 340px;
+  max-width: 380px;
   padding: 7px;
 }
-/* keep header + items above the gloss layer (::before, z-index 0) */
+/* keep header + items above the bevel-ring layer (::before, z-index 0) */
 .alt-context-menu__header,
 .alt-context-menu__items { position: relative; z-index: 1; }
 .alt-context-menu__header {
+  display: flex; align-items: center; gap: 9px;
   font-family: "Cinzel", serif; font-weight: 600;
-  font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
   color: var(--bronze);
-  padding: 3px 8px 7px;
+  padding: 4px 4px 7px;
   margin-bottom: 5px;
-  box-shadow: inset 0 -1px 0 rgba(184,150,90,.18);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
   text-shadow: 0 1px 2px rgba(0,0,0,.9);
 }
-.alt-context-menu__header--small {
-  font-size: 8.5px; letter-spacing: .14em; color: var(--bronze-dim);
+/* bronze romb ornament, exactly as .panel__head .orn */
+.alt-context-menu__header::before {
+  content: ""; flex: 0 0 auto;
+  width: 8px; height: 8px; transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184,150,90,.4);
 }
-.alt-context-menu__items { display: flex; flex-direction: column; gap: 3px; }
-/* each action is a sunken stone slot; hover warms it with a bronze rim */
+.alt-context-menu__header--small {
+  font-size: 9px; letter-spacing: .16em; color: var(--bronze-dim);
+}
+.alt-context-menu__items { display: flex; flex-direction: column; gap: 0; }
+/* each action is a flat row divided by a hairline; hover warms the fill only */
 .alt-context-menu button {
   position: relative;
-  display: block; width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  width: 100%;
   text-align: left;
-  padding: 7px 11px;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: rgba(0,0,0,.24);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), inset 0 1px 2px rgba(0,0,0,.5);
+  overflow-wrap: anywhere;   /* long labels wrap within max-width instead of clipping */
+  padding: 7px 9px;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   color: var(--parchment);
-  font-family: "EB Garamond", Georgia, serif;
-  font-size: 13px; line-height: 1.35;
+  /* same combat row voice as .st-label / the tooltip rows */
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase;
+  line-height: 1.35;
   cursor: pointer;
-  transition: color .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+  transition: color .12s ease, background-color .12s ease;
 }
+.alt-context-menu button:last-child { border-bottom: 0; }
 .alt-context-menu button:hover,
 .alt-context-menu button:focus-visible {
   outline: none;
   color: #f4ecd6;
-  background: rgba(184,150,90,.13);
-  border-color: rgba(184,150,90,.4);
-  box-shadow: inset 0 0 0 1px rgba(184,150,90,.28), 0 0 9px rgba(184,150,90,.12);
+  background: rgba(184,150,90,.12);
 }
 .alt-context-menu button.opens-window::after {
   content: "\2197";        /* north-east arrow — entry opens a window */
-  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
-  font-size: 11px; color: var(--bronze-dim); opacity: .8;
+  flex: 0 0 auto;          /* flows after the label; the 18px gap keeps them apart */
+  font-size: 11px; line-height: 1;   /* shorter than the text line so it can't grow the row */
+  color: var(--bronze-dim); opacity: .8;
 }
 
 @media (max-width: 720px) { .gem .label .name { display: none; } #main_text_output_msg_wrapper { font-size: 12px; } }
