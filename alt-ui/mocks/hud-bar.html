@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arkadia — Kokpit (mock)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     ARKADIA — alt-ui mock · "Forged" HUD
+     Palette
+       --void      warm near-black stone
+       --iron      forged frame metal
+       --bronze    filigree / hairlines
+       --parchment warm bone text
+     Vital gems (weathered, never neon):
+       blood · moss · slate · rust · amber · steel
+     ============================================================ */
+  :root {
+    --void:      #0a0908;
+    --void-2:    #12100d;
+    --iron:      #1c1a17;
+    --iron-hi:   #3a352b;
+    --iron-lo:   #0c0b09;
+    --bronze:    #b8965a;
+    --bronze-dim:#8a6d3b;
+    --parchment: #cdbfa3;
+    --parchment-dim: #8f836c;
+
+    --blood: #5c221b;
+    --moss:  #3c4626;
+    --slate: #26333f;
+    --rust:  #6f3b1f;
+    --amber: #6e5620;
+    --steel: #223c49;
+    --mana:  #352a4d;
+    --gold:  #665422;
+    --wine:  #46212f;
+    --panic: #6f2f15;
+    --ash:   #363129;
+
+    --bar-h: 42px;            /* shared height: stat pills == input line */
+
+    --gem-dark: #1a1713;      /* depleted half of a gem */
+    --rail-h: 128px;
+
+    /* --- procedural texture tiles (opaque grayscale, blended in) --- */
+    /* coarse leather pebbling */
+    --tex-coarse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.055' numOctaves='4' seed='8' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23c)'/%3E%3C/svg%3E");
+    /* fine tooth / grain */
+    --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    /* brushed, worn metal (anisotropic) */
+    --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+    /* rough mineral for the gem stones */
+    --tex-stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' seed='11' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23s)'/%3E%3C/svg%3E");
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: "EB Garamond", Georgia, serif;
+    color: var(--parchment);
+    background-color: var(--void);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* photographic stone backdrop — portrait source rotated to landscape + darkened */
+  .backdrop {
+    position: fixed;
+    top: 50%; left: 50%;
+    width: 100vh;                 /* swapped dims so a 90deg rotate covers the viewport */
+    height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    background: url("assets/bg.jpg") center center / cover no-repeat;
+    filter: brightness(.33) saturate(.73) contrast(1.05);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* gritty leather/stone hide — coarse mottle + fine tooth, blended onto the void */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: var(--tex-fine);
+    background-size: 140px 140px;
+    mix-blend-mode: soft-light;
+    opacity: .45;
+  }
+
+  /* faint drifting ember flecks */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      /* warm hearth glow rising into the HUD */
+      radial-gradient(130% 80% at 50% 128%, rgba(158,78,34,.22), transparent 55%),
+      /* corner vignette for depth + extra darkening */
+      radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+      /* drifting embers */
+      radial-gradient(1.5px 1.5px at 20% 82%, rgba(206,116,58,.5), transparent 60%),
+      radial-gradient(1.5px 1.5px at 68% 74%, rgba(206,116,58,.38), transparent 60%),
+      radial-gradient(1px 1px at 44% 90%, rgba(206,116,58,.3), transparent 60%),
+      radial-gradient(1px 1px at 82% 88%, rgba(206,116,58,.26), transparent 60%),
+      /* overall darken */
+      linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+  }
+
+  .screen {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 22px clamp(14px, 3vw, 40px) 0;
+  }
+
+  /* ---- ambient in-world text fading up into the void ---- */
+  .world {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 1180px;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 26px;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 42%);
+            mask-image: linear-gradient(180deg, transparent 0%, #000 42%);
+  }
+  .locale {
+    font-family: "Cinzel", serif;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    font-size: 13px;
+    color: var(--bronze);
+    opacity: .55;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .locale::before, .locale::after {
+    content: "";
+    height: 1px;
+    flex: 0 0 42px;
+    background: linear-gradient(90deg, transparent, var(--bronze-dim));
+  }
+  .locale::after { transform: scaleX(-1); }
+
+  .log {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--parchment-dim);
+    max-width: 860px;
+  }
+  .log p { margin: 0; }
+  .log .say  { color: #b7c79a; }
+  .log .hit  { color: #c67450; }
+  .log .name { color: #c9a86a; }
+  .log .sys  { color: #6f7c8c; font-style: italic; }
+  .log .exit { color: #7f9bb0; }
+
+  /* ============================================================
+     THE FORGED RAIL — hero
+     ============================================================ */
+  .rail {
+    max-width: 1520px;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .world { max-width: 1520px; }
+
+  /* the shared "forged iron" surface */
+  .forged {
+    position: relative;
+    background-color: #17140f;
+    background-image:
+      var(--tex-metal),
+      linear-gradient(180deg, #241f18 0%, #17140f 48%, #0e0c09 100%);
+    background-blend-mode: overlay, normal;
+    background-size: 260px 120px, 100% 100%;
+    border: 1px solid var(--iron-lo);
+    border-radius: 9px;
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.16),       /* top light lip */
+      inset 0 -3px 6px rgba(0,0,0,.72),          /* bottom shade */
+      inset 0 0 0 1px rgba(0,0,0,.5),
+      0 3px 10px rgba(0,0,0,.6),
+      0 12px 30px rgba(0,0,0,.45);
+  }
+  /* inner bronze hairline (the double border in the reference) */
+  .forged::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 5px;
+    border: 1px solid rgba(184,150,90,.20);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+    pointer-events: none;
+  }
+
+  /* ---- stat gem strip ---- each pill is its own forged setting ---- */
+  .gems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .gem {
+    --fill: 60%;
+    --hue: var(--slate);
+    position: relative;              /* the fix: children anchor to the pill */
+    flex: 1 1 116px;
+    min-width: 108px;
+    max-width: 220px;                /* a lone wrapped pill won't stretch full-width */
+    height: var(--bar-h);
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;         /* icon + value centered together */
+    gap: 7px;
+  }
+  .gem.temp { flex: 0 1 116px; min-width: 104px; padding-left: 6px; }
+
+  /* the inlaid stone — full pill body, behind the label */
+  .gem .stone {
+    position: absolute;
+    inset: 6px;                       /* full-bleed colored bar */
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,.65),
+      inset 0 1px 3px rgba(0,0,0,.75);
+    background-image:
+      var(--tex-stone),
+      /* whole bar colored: lit current | dark-tinted-same-hue depleted */
+      linear-gradient(90deg,
+        var(--hue) 0%,
+        var(--hue) var(--fill),
+        color-mix(in srgb, var(--hue) 28%, #0c0906) var(--fill),
+        color-mix(in srgb, var(--hue) 28%, #0c0906) 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 110px 110px, 100% 100%;
+    filter: saturate(.58);            /* mute the fills — less contrast on dark stone */
+  }
+  .gem.temp .stone { inset: 6px; }
+  /* glass sheen over the stone */
+  .gem .stone::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 45%),
+      linear-gradient(180deg, transparent 52%, rgba(0,0,0,.6));
+  }
+
+  /* icon niche on the left */
+  .gem .niche {
+    position: relative;              /* in-flow, sits beside the value */
+    z-index: 3;
+    display: grid;
+    place-items: center;
+  }
+  .gem .niche svg {
+    width: 16px; height: 16px;
+    stroke: #f4ecd6;
+    /* matches .v text-shadow */
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.98)) drop-shadow(0 2px 5px rgba(0,0,0,.8));
+  }
+
+  .gem .label {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+  }
+  .gem .label .k { display: none; }   /* name dropped — icon carries identity */
+  .gem .label .v {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    letter-spacing: .02em;
+    color: #f4ecd6;
+    white-space: nowrap;
+    opacity: .97;
+    /* matches .niche svg drop-shadow */
+    text-shadow:
+      0 1px 2px rgba(0,0,0,.98),
+      0 2px 5px rgba(0,0,0,.8);
+  }
+  .gem.temp .label { justify-content: center; }
+  .gem.temp .label .v { margin-left: 6px; }
+
+  /* status rim glow — real success/warning/danger semantics from colors.ts.
+     Identity hue stays; the rim signals the level. */
+  .gem::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9px;
+    pointer-events: none;
+    z-index: 4;
+  }
+  .gem.lvl-warn::before {
+    box-shadow:
+      inset 0 0 0 1px rgba(150,128,88,.34),
+      0 0 10px rgba(150,128,88,.15);
+  }
+  .gem.lvl-danger::before {
+    box-shadow:
+      inset 0 0 0 1px rgba(150,86,68,.5),
+      0 0 13px rgba(150,86,68,.24);
+    animation: dangerPulse 1.9s ease-in-out infinite;
+  }
+  @keyframes dangerPulse {
+    50% {
+      box-shadow:
+        inset 0 0 0 1px rgba(170,100,78,.7),
+        0 0 18px rgba(170,100,78,.38);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gem.lvl-danger::before { animation: none; }
+  }
+
+  /* ---- command trough ---- */
+  .command {
+    display: flex;
+    align-items: stretch;
+    height: var(--bar-h);
+    padding: 6px;
+    gap: 6px;
+  }
+  .knot {
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #221d16, #100e0b);
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.16),
+      inset 0 0 0 1px rgba(0,0,0,.5);
+  }
+  .knot svg { width: 21px; height: 21px; stroke: var(--bronze-dim); opacity: .85; }
+
+  .trough {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 15px;
+    border-radius: 5px;
+    background:
+      linear-gradient(180deg, #0b0a08, #100e0b);
+    box-shadow:
+      inset 0 2px 6px rgba(0,0,0,.85),
+      inset 0 0 0 1px rgba(184,150,90,.10);
+  }
+  .prompt {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--bronze);
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .prompt .caret {
+    width: 8px; height: 16px;
+    background: var(--bronze);
+    display: inline-block;
+    animation: blink 1.15s steps(1) infinite;
+    box-shadow: 0 0 8px rgba(184,150,90,.5);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .cmd-input {
+    flex: 1 1 auto;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--parchment);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    letter-spacing: .04em;
+  }
+  .cmd-input::placeholder { color: var(--parchment-dim); opacity: .6; }
+
+  /* small footer caption — quiet, out of the way */
+  /* ============================================================
+     SIDE PANELS — forged frames for Map + Objects
+     ============================================================ */
+  .sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 286px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 2;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* much darker interior than the default forged slab */
+    background-color: #0a0a09;
+    background-image:
+      var(--tex-fine),
+      linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 130px 130px, 100% 100%;
+  }
+  .panel__head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    box-shadow:
+      inset 0 -1px 0 rgba(0,0,0,.55),
+      inset 0 -2px 0 rgba(184,150,90,.06);
+  }
+  .panel__head .orn {
+    width: 8px; height: 8px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+    box-shadow: 0 0 6px rgba(184,150,90,.4);
+    flex: 0 0 auto;
+  }
+  .panel__title {
+    font-family: "Cinzel", serif;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--bronze);
+  }
+  .panel__meta {
+    margin-left: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9.5px;
+    letter-spacing: .04em;
+    color: var(--parchment-dim);
+    text-transform: uppercase;
+  }
+  .panel__body { padding: 11px; }
+
+  /* --- map --- */
+  .map {
+    position: relative;
+    border-radius: 5px;
+    padding: 7px;
+    background: linear-gradient(180deg, #0b0a08, #100e0b);
+    box-shadow:
+      inset 0 2px 7px rgba(0,0,0,.85),
+      inset 0 0 0 1px rgba(184,150,90,.08);
+  }
+  .map svg { display: block; width: 100%; height: auto; }
+  .mline { stroke: #6e5a34; stroke-width: 2; opacity: .4; stroke-linecap: round; }
+  .mroom { fill: #241f1a; stroke: #7a6236; stroke-width: 1; }
+  .mroom.moss  { fill: #2c3620; }
+  .mroom.steel { fill: #213039; }
+  .mroom.gold  { fill: #3a3118; }
+  .mcur {
+    fill: #c39a55;
+    stroke: #f0dca6;
+    stroke-width: 1.4;
+    filter: drop-shadow(0 0 4px rgba(199,154,85,.75));
+  }
+  .map__exits {
+    margin-top: 7px;
+    text-align: center;
+    font-family: "Cinzel", serif;
+    font-size: 9px;
+    letter-spacing: .26em;
+    color: var(--bronze-dim);
+    text-transform: uppercase;
+  }
+
+  /* --- objects (W pobliżu) --- */
+  .obj {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 1px;
+    border-bottom: 1px solid rgba(255,255,255,.035);
+  }
+  .obj:last-child { border-bottom: 0; }
+  .obj__key {
+    flex: 0 0 auto;
+    width: 20px; height: 20px;
+    display: grid;
+    place-items: center;
+    position: relative;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--bronze-dim);
+  }
+  .obj__key i { font-style: normal; position: relative; z-index: 1; }
+  .obj__key::before {                 /* bronze diamond, echoes the panel-header ◆ */
+    content: "";
+    position: absolute;
+    inset: 2px;
+    transform: rotate(45deg);
+    border-radius: 2px;
+    background: rgba(0,0,0,.3);
+    box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
+  }
+  .obj__key.you { color: var(--bronze); }
+  .obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+  .obj__name {
+    font-family: "EB Garamond", serif;
+    font-size: 13.5px;
+    color: var(--parchment);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .obj__name.target { color: #c68c84; }   /* muted avatar_target rose */
+  .obj__name.enemy  { color: #9a8fae; }   /* muted attacking lavender */
+  .obj__name.ally   { color: #8fae7a; }   /* muted teammate sage */
+  .obj__name.item   { color: var(--parchment-dim); font-style: italic; }
+  .obj__hp {
+    --hp: 60%;
+    --hue: var(--blood);
+    margin-left: auto;
+    flex: 0 0 auto;
+    width: 48px; height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+    background:
+      linear-gradient(90deg,
+        var(--hue) 0%, var(--hue) var(--hp),
+        color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
+        color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+    filter: saturate(.6);
+  }
+
+  .caption {
+    text-align: center;
+    font-family: "Cinzel", serif;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    font-size: 9.5px;
+    color: var(--bronze-dim);
+    opacity: .38;
+    padding-bottom: 5px;
+    margin-top: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prompt .caret { animation: none; }
+  }
+
+  @media (max-width: 720px) {
+    .gem { flex: 1 1 46%; }
+    .log { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+  <!-- reusable rune glyphs -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="i-hp" fill="none" stroke-width="1.6" stroke-linecap="round">
+        <path d="M10 2v16M2 10h16M4.5 4.5l11 11M15.5 4.5l-11 11"/>
+      </g>
+      <g id="i-sta" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12.5" cy="4" r="1.6"/>
+        <path d="M11 6l-3 3-4 1M11 6l2 3 3 1M9 9l-1 4-3 3M9 9l3 2 1 5"/>
+      </g>
+      <g id="i-foc" fill="none" stroke-width="1.5">
+        <path d="M2 10s3.4-5 8-5 8 5 8 5-3.4 5-8 5-8-5-8-5z"/>
+        <circle cx="10" cy="10" r="2.4"/>
+      </g>
+      <g id="i-bal" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M10 3c2.5 1.4 2.5 5.2 0 6.6-2.5-1.4-2.5-5.2 0-6.6z"/>
+        <path d="M6.5 9.7c2.7-.6 5 2.4 3.9 4.9-2.6.9-5.2-1.6-3.9-4.9z"/>
+        <path d="M13.5 9.7c-2.7-.6-5 2.4-3.9 4.9 2.6.9 5.2-1.6 3.9-4.9z"/>
+      </g>
+      <g id="i-hun" fill="none" stroke-width="1.5" stroke-linecap="round">
+        <path d="M3 9h14a7 7 0 0 1-14 0z"/>
+        <path d="M8 5c-.8-1 .4-2 0-3M11 5c-.8-1 .4-2 0-3M17 12H3"/>
+      </g>
+      <g id="i-thi" fill="none" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M10 2s5 6 5 9.5A5 5 0 0 1 5 11.5C5 8 10 2 10 2z"/>
+        <path d="M7.5 11a2.5 2.5 0 0 0 2.5 2.5"/>
+      </g>
+      <!-- fatigue: crescent moon -->
+      <g id="i-zm" fill="none" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M15.5 11.8A6.2 6.2 0 1 1 8.4 4.6a5 5 0 0 0 7.1 7.2z"/>
+      </g>
+      <!-- mana: arcane sparkle -->
+      <g id="i-mana" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M10 2.5l1.7 5.8 5.8 1.7-5.8 1.7L10 17.5l-1.7-5.8L2.5 10l5.8-1.7z"/>
+      </g>
+      <!-- encumbrance: backpack -->
+      <g id="i-obc" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M6.5 8a3.5 3.5 0 0 1 7 0v8.5h-7z"/>
+        <path d="M6.5 11.5h7M9 8.2h2v2.3H9z"/>
+      </g>
+      <!-- improve (Postep): rising chevrons -->
+      <g id="i-pos" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 11l5-5 5 5M5 15.5l5-5 5 5"/>
+      </g>
+      <!-- form (Forma): flexed arm -->
+      <g id="i-for" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6h4a3 3 0 0 1 3 3c0 3 2 4 4 4v3h-4a4 4 0 0 1-4-4"/>
+        <path d="M4 6v4"/>
+      </g>
+      <!-- intox (Upojenie): tankard -->
+      <g id="i-upi" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M5 5h8v11H5zM13 7h2.5v4H13"/>
+        <path d="M5 8h8"/>
+      </g>
+      <!-- headache (Kac): throbbing head -->
+      <g id="i-kac" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10" cy="11" r="4.5"/>
+        <path d="M10 3.5v-1.2M6 4.2l-.7-1M14 4.2l.7-1"/>
+      </g>
+      <!-- panic (Panika): alarm -->
+      <g id="i-pan" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 3l7 13H3z"/>
+        <path d="M10 8.5v3.5M10 14.2v.1"/>
+      </g>
+      <!-- celtic knot square for command end-caps -->
+      <g id="knot" fill="none" stroke-width="1.3">
+        <rect x="3" y="3" width="20" height="20" rx="2"/>
+        <path d="M8 3v6a4 4 0 0 0 4 4 4 4 0 0 0 4-4V3M3 8h6a4 4 0 0 1 4 4 4 4 0 0 1-4 4H3M23 8h-6a4 4 0 0 0-4 4 4 4 0 0 0 4 4h6M8 23v-6a4 4 0 0 1 4-4"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="backdrop"></div>
+
+  <div class="screen">
+    <aside class="sidebar">
+      <!-- MAP -->
+      <div class="forged panel">
+        <div class="panel__head">
+          <span class="orn"></span>
+          <span class="panel__title">Mapa</span>
+          <span class="panel__meta">Trakt Kupiecki</span>
+        </div>
+        <div class="panel__body">
+          <div class="map">
+            <svg viewBox="6 6 232 132" aria-hidden="true">
+              <!-- corridors -->
+              <path class="mline" d="M24.5 74.5 H232.5"/>
+              <path class="mline" d="M102.5 74.5 V22.5"/>
+              <path class="mline" d="M154.5 74.5 V126.5"/>
+              <path class="mline" d="M76.5 74.5 V100.5"/>
+              <!-- rooms -->
+              <rect class="mroom moss"  x="96"  y="16" width="13" height="13" rx="3"/>
+              <rect class="mroom moss"  x="96"  y="42" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="18"  y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="44"  y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="70"  y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom mcur"  x="96"  y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="122" y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="148" y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="174" y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="200" y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom gold"  x="226" y="68" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="70"  y="94" width="13" height="13" rx="3"/>
+              <rect class="mroom"       x="148" y="94" width="13" height="13" rx="3"/>
+              <rect class="mroom steel" x="148" y="120" width="13" height="13" rx="3"/>
+            </svg>
+          </div>
+          <div class="map__exits">Pln &middot; Wsch &middot; Pld</div>
+        </div>
+      </div>
+
+      <!-- OBJECTS / W POBLIZU -->
+      <div class="forged panel">
+        <div class="panel__head">
+          <span class="orn"></span>
+          <span class="panel__title">W poblizu</span>
+          <span class="panel__meta">4</span>
+        </div>
+        <div class="panel__body">
+          <div class="obj">
+            <span class="obj__key you"><i>@</i></span>
+            <span class="obj__name">Wedrowiec</span>
+          </div>
+          <div class="obj">
+            <span class="obj__key"><i>1</i></span>
+            <span class="obj__name target">Zbojca w skorzniach</span>
+            <span class="obj__hp" style="--hp:45%; --hue:var(--blood)"></span>
+          </div>
+          <div class="obj">
+            <span class="obj__key"><i>2</i></span>
+            <span class="obj__name enemy">Zbojca z kusza</span>
+            <span class="obj__hp" style="--hp:82%; --hue:var(--blood)"></span>
+          </div>
+          <div class="obj">
+            <span class="obj__key"><i>3</i></span>
+            <span class="obj__name item">kupiecki woz</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="world">
+      <div class="locale">Trakt Kupiecki &nbsp;·&nbsp; Rozstaje pod Wiazem</div>
+      <div class="log">
+        <p><span class="sys">Zapada zmierzch; wiatr niesie zapach dymu z pobliskiej osady.</span></p>
+        <p>Stoisz na rozstajach. Stary <span class="name">wiaz</span> rzuca dlugi cien na ubita ziemie.</p>
+        <p><span class="exit">Wyjscia:</span> polnoc, wschod, poludnie.</p>
+        <p><span class="name">Zbojca w skorznich</span> wychodzi z zarosli i dobywa ostrza.</p>
+        <p><span class="hit">Zbojca tnie cie w ramie &mdash; plynie krew.</span></p>
+        <p><span class="say">Zbojca warczy:</span> "Mieszek albo zycie, wedrowcze."</p>
+      </div>
+    </div>
+
+    <div class="rail">
+      <!-- STAT GEMS — real Char.State vitals, canonical barOrder -->
+      <div class="gems">
+        <!-- hp: raw 5 -> 6/7, isHp success -->
+        <div class="forged gem" style="--hue:var(--blood); --fill:86%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-hp" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">HP</span><span class="v">6/7</span></span>
+        </div>
+        <!-- fatigue: 2/9, flip -> low = success -->
+        <div class="forged gem" style="--hue:var(--slate); --fill:22%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-zm" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Zmeczenie</span><span class="v">2/9</span></span>
+        </div>
+        <!-- stuffed (hunger): 2/3 -> warning -->
+        <div class="forged gem lvl-warn" style="--hue:var(--amber); --fill:67%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-hun" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Glod</span><span class="v">2/3</span></span>
+        </div>
+        <!-- encumbrance: 4/6, reverse -> high = danger -->
+        <div class="forged gem lvl-danger" style="--hue:var(--rust); --fill:67%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-obc" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Obciazenie</span><span class="v">4/6</span></span>
+        </div>
+        <!-- soaked (thirst): 2/3 -> warning -->
+        <div class="forged gem lvl-warn" style="--hue:var(--steel); --fill:67%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-thi" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Pragnienie</span><span class="v">2/3</span></span>
+        </div>
+        <!-- mana: 6/8 -> success -->
+        <div class="forged gem" style="--hue:var(--mana); --fill:75%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-mana" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Mana</span><span class="v">6/8</span></span>
+        </div>
+        <!-- improve (Postep): 4/15, reverse -> low = success -->
+        <div class="forged gem" style="--hue:var(--gold); --fill:27%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-pos" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Postep</span><span class="v">4/15</span></span>
+        </div>
+        <!-- form (Forma): 3/3 -> success -->
+        <div class="forged gem" style="--hue:var(--moss); --fill:100%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-for" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Forma</span><span class="v">3/3</span></span>
+        </div>
+        <!-- intox (Upojenie): 2/9, reverse -> low = success -->
+        <div class="forged gem" style="--hue:var(--wine); --fill:22%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-upi" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Upojenie</span><span class="v">2/9</span></span>
+        </div>
+        <!-- headache (Kac): 1/6, reverse -> low = success -->
+        <div class="forged gem" style="--hue:var(--ash); --fill:17%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-kac" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Kac</span><span class="v">1/6</span></span>
+        </div>
+        <!-- panic (Panika): 1/4, reverse -> low = success -->
+        <div class="forged gem" style="--hue:var(--panic); --fill:25%">
+          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-pan" stroke="currentColor"/></svg></span>
+          <span class="stone"></span>
+          <span class="label"><span class="k">Panika</span><span class="v">1/4</span></span>
+        </div>
+      </div>
+
+      <!-- COMMAND TROUGH -->
+      <div class="forged command">
+        <span class="knot"><svg viewBox="0 0 26 26"><use href="#knot" stroke="currentColor"/></svg></span>
+        <label class="trough">
+          <span class="prompt">&gt;<span class="caret"></span></span>
+          <input class="cmd-input" type="text" placeholder="Wpisz polecenie..." autocomplete="off" spellcheck="false" />
+        </label>
+        <span class="knot"><svg viewBox="0 0 26 26" style="transform:scaleX(-1)"><use href="#knot" stroke="currentColor"/></svg></span>
+      </div>
+    </div>
+
+    <div class="caption">Arkadia &middot; Alt UI &middot; Mock</div>
+  </div>
+</body>
+</html>

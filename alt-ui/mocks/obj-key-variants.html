@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Object key — warianty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --void:#0a0908; --iron-lo:#0c0b09;
+    --bronze:#b8965a; --bronze-dim:#8a6d3b;
+    --parchment:#cdbfa3; --parchment-dim:#8f836c;
+    --blood:#5c221b;
+    --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "EB Garamond", Georgia, serif;
+    color: var(--parchment);
+    background-color: var(--void);
+    display: flex; align-items: center; justify-content: center;
+    gap: 26px; flex-wrap: wrap; padding: 40px;
+  }
+  .backdrop {
+    position: fixed; top: 50%; left: 50%;
+    width: 100vh; height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    background: url("assets/bg.jpg") center center / cover no-repeat;
+    filter: brightness(.33) saturate(.73) contrast(1.05);
+    z-index: -2; pointer-events: none;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+      linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+  }
+
+  /* forged panel (matches main mock) */
+  .panel {
+    position: relative; width: 260px;
+    border: 1px solid var(--iron-lo); border-radius: 9px;
+    overflow: hidden;
+    background-color: #0a0a09;
+    background-image: var(--tex-fine), linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 130px 130px, 100% 100%;
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.16),
+      inset 0 -3px 6px rgba(0,0,0,.72),
+      inset 0 0 0 1px rgba(0,0,0,.5),
+      0 3px 10px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.45);
+  }
+  .panel::after {
+    content: ""; position: absolute; inset: 4px; border-radius: 5px;
+    border: 1px solid rgba(184,150,90,.2);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); pointer-events: none;
+  }
+  .head {
+    display: flex; align-items: center; gap: 9px; padding: 9px 12px;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
+  }
+  .orn { width: 8px; height: 8px; transform: rotate(45deg);
+    background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+    box-shadow: 0 0 6px rgba(184,150,90,.4); flex: 0 0 auto; }
+  .title { font-family: "Cinzel", serif; font-weight: 600; font-size: 10.5px;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--bronze); }
+  .tag { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: 9px;
+    letter-spacing: .06em; color: var(--parchment-dim); text-transform: uppercase; }
+  .body { padding: 11px; }
+
+  .obj { display: flex; align-items: center; gap: 9px; padding: 6px 1px;
+    border-bottom: 1px solid rgba(255,255,255,.035); }
+  .obj:last-child { border-bottom: 0; }
+  .name { font-family: "EB Garamond", serif; font-size: 13.5px; color: var(--parchment);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .name.target { color: #c68c84; }
+  .name.enemy  { color: #9a8fae; }
+  .name.item   { color: var(--parchment-dim); font-style: italic; }
+  .hp { --hp: 60%; margin-left: auto; flex: 0 0 auto; width: 48px; height: 6px;
+    border-radius: 3px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+    background: linear-gradient(90deg, var(--blood) 0%, var(--blood) var(--hp),
+      color-mix(in srgb, var(--blood) 26%, #0c0906) var(--hp), color-mix(in srgb, var(--blood) 26%, #0c0906) 100%);
+    filter: saturate(.6); }
+
+  /* ===== KEY BASE ===== */
+  .k { flex: 0 0 auto; width: 18px; height: 18px; display: grid; place-items: center;
+    font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
+    position: relative; }
+  .k i { font-style: normal; position: relative; z-index: 1; }
+  .k.you { color: var(--bronze); }
+
+  /* ---- 1 · SLOT (current): recessed square ---- */
+  .slot .k { border-radius: 3px; background: rgba(0,0,0,.32);
+    box-shadow: inset 0 0 0 1px rgba(184,150,90,.12), inset 0 1px 2px rgba(0,0,0,.6); }
+  .slot .k.you { box-shadow: inset 0 0 0 1px rgba(184,150,90,.24), inset 0 1px 2px rgba(0,0,0,.6); }
+
+  /* ---- 2 · COIN: recessed forged disc ---- */
+  .coin .k { border-radius: 50%;
+    background: radial-gradient(circle at 50% 34%, #17140f, #0a0908);
+    box-shadow: inset 0 0 0 1px rgba(184,150,90,.16), inset 0 1px 2px rgba(0,0,0,.75), 0 1px 1px rgba(0,0,0,.5); }
+  .coin .k.you { box-shadow: inset 0 0 0 1px rgba(184,150,90,.3), inset 0 1px 2px rgba(0,0,0,.75), 0 1px 1px rgba(0,0,0,.5); }
+
+  /* ---- 3 · LOZENGE: bronze diamond medallion (echoes header ◆) ---- */
+  .loz .k { width: 20px; height: 20px; }
+  .loz .k::before { content: ""; position: absolute; inset: 2px; transform: rotate(45deg);
+    border-radius: 2px; background: rgba(0,0,0,.3);
+    box-shadow: inset 0 0 0 1px rgba(184,150,90,.2); }
+  .loz .k.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+
+  /* ---- 4 · TICK: no box, digit + left bronze rule ---- */
+  .tick .obj { gap: 11px; }
+  .tick .k { width: 14px; color: var(--bronze); }
+  .tick .k::before { content: ""; position: absolute; left: -4px; top: 2px; bottom: 2px; width: 2px;
+    border-radius: 1px; background: linear-gradient(180deg, var(--bronze-dim), transparent); opacity: .8; }
+  .tick .k.you { color: var(--parchment); }
+
+  .caption { position: fixed; bottom: 16px; left: 0; right: 0; text-align: center;
+    font-family: "Cinzel", serif; font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--bronze-dim); opacity: .5; }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+
+  <!-- template repeated per variant; variant class on .panel -->
+  <div class="panel slot">
+    <div class="head"><span class="orn"></span><span class="title">1 · Slot</span><span class="tag">obecny</span></div>
+    <div class="body">
+      <div class="obj"><span class="k you"><i>@</i></span><span class="name">Wedrowiec</span></div>
+      <div class="obj"><span class="k"><i>1</i></span><span class="name target">Zbojca w skorzniach</span><span class="hp" style="--hp:45%"></span></div>
+      <div class="obj"><span class="k"><i>2</i></span><span class="name enemy">Zbojca z kusza</span><span class="hp" style="--hp:82%"></span></div>
+      <div class="obj"><span class="k"><i>3</i></span><span class="name item">kupiecki woz</span></div>
+    </div>
+  </div>
+
+  <div class="panel coin">
+    <div class="head"><span class="orn"></span><span class="title">2 · Coin</span><span class="tag">tarcza</span></div>
+    <div class="body">
+      <div class="obj"><span class="k you"><i>@</i></span><span class="name">Wedrowiec</span></div>
+      <div class="obj"><span class="k"><i>1</i></span><span class="name target">Zbojca w skorzniach</span><span class="hp" style="--hp:45%"></span></div>
+      <div class="obj"><span class="k"><i>2</i></span><span class="name enemy">Zbojca z kusza</span><span class="hp" style="--hp:82%"></span></div>
+      <div class="obj"><span class="k"><i>3</i></span><span class="name item">kupiecki woz</span></div>
+    </div>
+  </div>
+
+  <div class="panel loz">
+    <div class="head"><span class="orn"></span><span class="title">3 · Lozenge</span><span class="tag">romb</span></div>
+    <div class="body">
+      <div class="obj"><span class="k you"><i>@</i></span><span class="name">Wedrowiec</span></div>
+      <div class="obj"><span class="k"><i>1</i></span><span class="name target">Zbojca w skorzniach</span><span class="hp" style="--hp:45%"></span></div>
+      <div class="obj"><span class="k"><i>2</i></span><span class="name enemy">Zbojca z kusza</span><span class="hp" style="--hp:82%"></span></div>
+      <div class="obj"><span class="k"><i>3</i></span><span class="name item">kupiecki woz</span></div>
+    </div>
+  </div>
+
+  <div class="panel tick">
+    <div class="head"><span class="orn"></span><span class="title">4 · Tick</span><span class="tag">bez ramki</span></div>
+    <div class="body">
+      <div class="obj"><span class="k you"><i>@</i></span><span class="name">Wedrowiec</span></div>
+      <div class="obj"><span class="k"><i>1</i></span><span class="name target">Zbojca w skorzniach</span><span class="hp" style="--hp:45%"></span></div>
+      <div class="obj"><span class="k"><i>2</i></span><span class="name enemy">Zbojca z kusza</span><span class="hp" style="--hp:82%"></span></div>
+      <div class="obj"><span class="k"><i>3</i></span><span class="name item">kupiecki woz</span></div>
+    </div>
+  </div>
+
+  <div class="caption">Object key &middot; warianty</div>
+</body>
+</html>

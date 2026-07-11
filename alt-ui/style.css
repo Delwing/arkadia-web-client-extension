@@ -1,0 +1,449 @@
+/* ============================================================
+   ARKADIA — alt-ui · "Forged" HUD
+   ============================================================ */
+:root {
+  --void:      #0a0908;
+  --void-2:    #12100d;
+  --iron:      #1c1a17;
+  --iron-hi:   #3a352b;
+  --iron-lo:   #0c0b09;
+  --bronze:    #b8965a;
+  --bronze-dim:#8a6d3b;
+  --parchment: #cdbfa3;
+  --parchment-dim: #8f836c;
+
+  --blood: #5c221b;
+  --moss:  #3c4626;
+  --slate: #26333f;
+  --rust:  #6f3b1f;
+  --amber: #6e5620;
+  --steel: #223c49;
+  --mana:  #352a4d;
+  --gold:  #665422;
+  --wine:  #46212f;
+  --panic: #6f2f15;
+  --ash:   #363129;
+
+  --bar-h: 42px;
+  --gem-dark: #1a1713;
+
+  --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+  --tex-stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' seed='11' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23s)'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "EB Garamond", Georgia, serif;
+  color: var(--parchment);
+  background-color: var(--void);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.backdrop {
+  position: fixed;
+  top: 50%; left: 50%;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  background: url("assets/bg.jpg") center center / cover no-repeat;
+  filter: brightness(.33) saturate(.73) contrast(1.05);
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background-image: var(--tex-fine);
+  background-size: 140px 140px;
+  mix-blend-mode: soft-light;
+  opacity: .45;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(130% 80% at 50% 128%, rgba(158,78,34,.22), transparent 55%),
+    radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+    radial-gradient(1.5px 1.5px at 20% 82%, rgba(206,116,58,.5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 68% 74%, rgba(206,116,58,.38), transparent 60%),
+    radial-gradient(1px 1px at 44% 90%, rgba(206,116,58,.3), transparent 60%),
+    radial-gradient(1px 1px at 82% 88%, rgba(206,116,58,.26), transparent 60%),
+    linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+}
+
+.screen {
+  /* Sidebar column width scales with the viewport so the panels stay beside the
+     output (never off-screen) from ~1200px up to ultra-wide. --side-edge is the
+     gap from the screen edge; --side-gap is the gap to the output column. */
+  --side-edge: clamp(14px, 3vw, 40px);
+  --side-w: clamp(232px, 20vw, 360px);
+  --side-gap: 16px;
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* reserve the left column for the sidebar; the output fills what remains */
+  padding: 22px var(--side-edge) 0 calc(var(--side-edge) + var(--side-w) + var(--side-gap));
+}
+
+.world {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 1520px;
+  /* left-aligned so the output hugs the sidebar at every width; on ultra-wide the
+     extra room falls to the right and simply shows more of the stone backdrop. */
+  margin: 0;
+  width: 100%;
+}
+/* location name — driven by room.short message type */
+.locale {
+  font-family: "Cinzel", serif;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--bronze);
+  opacity: .7;
+  margin: 12px 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+.locale::before, .locale::after {
+  content: "";
+  height: 1px;
+  flex: 0 0 42px;
+  background: linear-gradient(90deg, transparent, var(--bronze-dim));
+}
+.locale::after { transform: scaleX(-1); }
+.locale:empty { display: none; }
+
+/* scrollable game log, fading up into the void */
+#main_text_output_msg_wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-bottom: 22px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--parchment-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: var(--iron-hi) transparent;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 16%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 16%);
+}
+#main_text_output_msg_wrapper::-webkit-scrollbar { width: 8px; }
+#main_text_output_msg_wrapper::-webkit-scrollbar-thumb {
+  background: var(--iron-hi); border-radius: 4px;
+}
+/* preserve the xterm palette mapping, but render game output at half
+   saturation so the colors sit in the muted forge world. */
+#main_text_output_msg_wrapper p { margin: 0; filter: saturate(.5); }
+#main_text_output_msg_wrapper p.t-command { color: #c9a86a; }
+#content-width-measure {
+  visibility: hidden; position: absolute; white-space: pre;
+  font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13.5px;
+}
+
+/* ============================================================ THE RAIL */
+.rail {
+  max-width: 1520px;
+  margin: 0;             /* left-aligned, matching .world */
+  width: 100%;
+  padding-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.forged {
+  position: relative;
+  background-color: #17140f;
+  background-image:
+    var(--tex-metal),
+    linear-gradient(180deg, #241f18 0%, #17140f 48%, #0e0c09 100%);
+  background-blend-mode: overlay, normal;
+  background-size: 260px 120px, 100% 100%;
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.16),
+    inset 0 -3px 6px rgba(0,0,0,.72),
+    inset 0 0 0 1px rgba(0,0,0,.5),
+    0 3px 10px rgba(0,0,0,.6),
+    0 12px 30px rgba(0,0,0,.45);
+}
+.forged::after {
+  content: "";
+  position: absolute; inset: 4px;
+  border-radius: 5px;
+  border: 1px solid rgba(184,150,90,.20);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+  pointer-events: none;
+}
+
+.gems { display: flex; flex-wrap: wrap; gap: 12px; }
+.gem {
+  --fill: 60%;
+  --hue: var(--slate);
+  position: relative;
+  flex: 1 1 116px;
+  min-width: 108px;
+  max-width: 220px;
+  height: var(--bar-h);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.gem .stone {
+  position: absolute; inset: 6px;
+  border-radius: 4px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.65), inset 0 1px 3px rgba(0,0,0,.75);
+  background-image:
+    var(--tex-stone),
+    linear-gradient(90deg,
+      var(--hue) 0%,
+      var(--hue) var(--fill),
+      color-mix(in srgb, var(--hue) 28%, #0c0906) var(--fill),
+      color-mix(in srgb, var(--hue) 28%, #0c0906) 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 110px 110px, 100% 100%;
+  filter: saturate(.58);
+  transition: background-image .35s ease;
+}
+.gem .stone::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, transparent 52%, rgba(0,0,0,.6));
+}
+/* icon pinned to the left; value centered across the whole pill */
+.gem .niche { position: absolute; left: 12px; top: 0; bottom: 0; z-index: 3; display: grid; place-items: center; }
+.gem .niche svg {
+  width: 16px; height: 16px; stroke: #f4ecd6;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.98)) drop-shadow(0 2px 5px rgba(0,0,0,.8));
+}
+.gem .label { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; }
+.gem .label .v {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px; letter-spacing: .02em;
+  color: #f4ecd6; white-space: nowrap; opacity: .97;
+  text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 5px rgba(0,0,0,.8);
+}
+.gem::before {
+  content: ""; position: absolute; inset: 0;
+  border-radius: 9px; pointer-events: none; z-index: 4;
+}
+.gem.lvl-warn::before {
+  box-shadow: inset 0 0 0 1px rgba(150,128,88,.34), 0 0 10px rgba(150,128,88,.15);
+}
+.gem.lvl-danger::before {
+  box-shadow: inset 0 0 0 1px rgba(150,86,68,.5), 0 0 13px rgba(150,86,68,.24);
+}
+/* opposite-of-default extreme (fully encumbered, starving, ...) — pulses */
+.gem.highlight::before {
+  box-shadow: inset 0 0 0 1px rgba(214,110,74,.6), 0 0 14px rgba(214,110,74,.3);
+  animation: extremePulse 1.6s ease-in-out infinite;
+}
+@keyframes extremePulse {
+  50% { box-shadow: inset 0 0 0 1px rgba(240,132,92,.9), 0 0 22px rgba(240,132,92,.48); }
+}
+@media (prefers-reduced-motion: reduce) { .gem.highlight::before { animation: none; } }
+
+.command { display: flex; align-items: stretch; height: var(--bar-h); padding: 6px; gap: 6px; }
+.knot {
+  flex: 0 0 38px; display: grid; place-items: center; border-radius: 5px;
+  background: linear-gradient(180deg, #221d16, #100e0b);
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
+  cursor: pointer;
+}
+.knot svg { width: 21px; height: 21px; stroke: var(--bronze-dim); opacity: .85; }
+.knot.connected svg { stroke: #8fae6a; opacity: 1; }
+.knot[title] { position: relative; }
+
+.trough {
+  flex: 1 1 auto; display: flex; align-items: center; gap: 10px; padding: 0 15px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #0b0a08, #100e0b);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px rgba(184,150,90,.10);
+}
+.prompt {
+  font-family: "JetBrains Mono", monospace; color: var(--bronze); font-size: 16px;
+  display: inline-flex; align-items: center;
+}
+.cmd-input {
+  flex: 1 1 auto; background: transparent; border: 0; outline: 0;
+  color: var(--parchment); font-family: "JetBrains Mono", monospace;
+  font-size: 14px; letter-spacing: .04em;
+}
+.cmd-input::placeholder { color: var(--parchment-dim); opacity: .6; }
+
+/* ============================================================
+   SIDE PANELS — forged frames for Map + Objects
+   Bottom-left, aligned to the main output column (not the edge).
+   ============================================================ */
+.sidebar {
+  position: absolute;
+  /* Occupy the reserved left column (see .screen padding). Anchored to the screen
+     edge with the shared width var, so the panels stay fully on-screen and just to
+     the left of the output at every width from ~1200px up. */
+  left: var(--side-edge);
+  width: var(--side-w);
+  /* fill the whole screen height; the two panels split it 50/50, so the map keeps
+     a fixed height and the object list scrolls inside its own half instead of
+     pushing the map around as the object count changes. */
+  top: 22px;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 2;
+}
+.panel {
+  flex: 1 1 0;            /* equal halves */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #0a0a09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+}
+.panel__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
+}
+.panel__head .orn {
+  width: 8px; height: 8px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184,150,90,.4);
+  flex: 0 0 auto;
+}
+.panel__title {
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 10.5px;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--bronze);
+}
+.panel__meta {
+  margin-left: auto;
+  font-family: "JetBrains Mono", monospace; font-size: 9.5px;
+  letter-spacing: .04em; color: var(--parchment-dim); text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;
+}
+/* body grows to fill its panel's half; the object list scrolls inside it */
+.panel__body { padding: 11px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+/* map panel body: lay the map out to fill the half, exits pinned below it */
+.sidebar > .panel:first-child .panel__body {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* --- map (hosts the real client map renderer via #map) --- */
+.map {
+  position: relative;
+  border-radius: 5px;
+  padding: 0;
+  background: transparent;
+  flex: 1 1 auto;         /* fill the map panel's half */
+  min-height: 0;
+}
+#map { width: 100%; height: 100%; border-radius: 3px; overflow: hidden; }
+.map__exits {
+  flex: 0 0 auto;
+  margin-top: 7px; text-align: center;
+  font-family: "Cinzel", serif; font-size: 9px; letter-spacing: .26em;
+  color: var(--bronze-dim); text-transform: uppercase;
+}
+.map__exits:empty { display: none; }
+
+/* --- objects (W poblizu) --- */
+.obj {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 1px;
+  border-bottom: 1px solid rgba(255,255,255,.035);
+}
+.obj:last-child { border-bottom: 0; }
+.obj__key {
+  flex: 0 0 auto; width: 20px; height: 20px;
+  display: grid; place-items: center; position: relative;
+  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
+}
+.obj__key i { font-style: normal; position: relative; z-index: 1; }
+.obj__key::before {                 /* bronze diamond, echoes the panel-header romb */
+  content: "";
+  position: absolute; inset: 2px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  background: rgba(0,0,0,.3);
+  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
+}
+.obj__key.you { color: var(--bronze); }
+.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+/* object names share the location-header voice: Cinzel, uppercase, spaced */
+.obj__name {
+  flex: 1 1 auto; min-width: 0;
+  font-family: "Cinzel", serif; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.obj__name.target { color: #c68c84; }
+.obj__name.enemy  { color: #9a8fae; }
+.obj__name.ally   { color: #8fae7a; }
+.obj__name.item   { color: var(--parchment-dim); }
+.obj__hp {
+  --hp: 60%;
+  --hue: var(--blood);
+  margin-left: auto; flex: 0 0 auto;
+  width: 48px; height: 6px;
+  border-radius: 3px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+  background:
+    linear-gradient(90deg,
+      var(--hue) 0%, var(--hue) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+  filter: saturate(.6);
+}
+.obj--empty {
+  padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
+  font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
+}
+
+.caption {
+  /* share the output column so it centers under the output, not across the
+     full reserved-padding band */
+  max-width: 1520px; width: 100%; margin: 0;
+  text-align: center; font-family: "Cinzel", serif;
+  letter-spacing: .3em; text-transform: uppercase; font-size: 9.5px;
+  color: var(--bronze-dim); opacity: .5; padding-bottom: 5px; margin-top: 6px;
+}
+.caption #alt-status { cursor: pointer; color: var(--bronze); }
+.caption #alt-status.connected { cursor: default; color: #8fae6a; }
+
+@media (max-width: 720px) { .gem { flex: 1 1 46%; } #main_text_output_msg_wrapper { font-size: 12px; } }

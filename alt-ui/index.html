@@ -1,61 +1,114 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#000000"/>
-    <title>Arkadia - Alt UI (proof shell)</title>
-    <style>
-        :root { color-scheme: dark; }
-        * { box-sizing: border-box; }
-        html, body {
-            margin: 0; height: 100%;
-            background: #1a1a1a; color: #ddd;
-            font-family: 'Fira Code', 'Cascadia Mono', 'Consolas', monospace;
-            font-size: 14px;
-        }
-        body { display: flex; flex-direction: column; }
-        #alt-toolbar {
-            flex: 0 0 auto; display: flex; gap: 8px; align-items: center;
-            padding: 6px 10px; background: #111; border-bottom: 1px solid #333;
-        }
-        #alt-toolbar button {
-            background: #2b6; color: #061; border: none; border-radius: 4px;
-            padding: 4px 12px; font: inherit; cursor: pointer; color: #012;
-        }
-        #alt-status { margin-left: auto; opacity: 0.75; }
-        #alt-status.connected { color: #4d9; }
-        #alt-status.disconnected { color: #d66; }
-        /* The client's content-width measurer keys on these two ids. */
-        #main_text_output_msg_wrapper {
-            flex: 1 1 auto; overflow-y: auto; padding: 8px 12px;
-            white-space: pre-wrap; word-break: break-word; line-height: 1.35;
-        }
-        .alt-line.alt-type-command { color: #7bd; }
-        #content-width-measure {
-            visibility: hidden; position: absolute; white-space: pre;
-        }
-        #alt-input {
-            flex: 0 0 auto; background: #111; color: #eee; border: none;
-            border-top: 1px solid #333; padding: 8px 12px; font: inherit;
-        }
-        #alt-input:focus { outline: none; background: #161616; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0908" />
+<title>Arkadia — Kokpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<!-- critical: paint the void immediately so the JS-imported stylesheet doesn't
+     flash white on load. Background on body only (not html) so body-background
+     propagation keeps the body box transparent and the z-index:-1 backdrop shows. -->
+<style>html,body{margin:0;height:100%}body{background:#0a0908}</style>
 </head>
 <body>
-    <div id="alt-toolbar">
-        <strong>Alt UI</strong>
-        <span style="opacity:.6">— proof shell driving the client with no web UI</span>
-        <button id="alt-connect" type="button">Connect</button>
-        <label style="display:flex;gap:4px;align-items:center;cursor:pointer;opacity:.85">
-            <input id="alt-timestamps" type="checkbox"/> timestamps
-        </label>
-        <span id="alt-status" class="disconnected">disconnected</span>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="i-hp" fill="none" stroke-width="1.6" stroke-linecap="round">
+        <path d="M10 2v16M2 10h16M4.5 4.5l11 11M15.5 4.5l-11 11"/>
+      </g>
+      <g id="i-zm" fill="none" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M15.5 11.8A6.2 6.2 0 1 1 8.4 4.6a5 5 0 0 0 7.1 7.2z"/>
+      </g>
+      <g id="i-hun" fill="none" stroke-width="1.5" stroke-linecap="round">
+        <path d="M3 9h14a7 7 0 0 1-14 0z"/>
+        <path d="M8 5c-.8-1 .4-2 0-3M11 5c-.8-1 .4-2 0-3M17 12H3"/>
+      </g>
+      <g id="i-obc" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M6.5 8a3.5 3.5 0 0 1 7 0v8.5h-7z"/>
+        <path d="M6.5 11.5h7M9 8.2h2v2.3H9z"/>
+      </g>
+      <g id="i-thi" fill="none" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M10 2s5 6 5 9.5A5 5 0 0 1 5 11.5C5 8 10 2 10 2z"/>
+        <path d="M7.5 11a2.5 2.5 0 0 0 2.5 2.5"/>
+      </g>
+      <g id="i-mana" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M10 2.5l1.7 5.8 5.8 1.7-5.8 1.7L10 17.5l-1.7-5.8L2.5 10l5.8-1.7z"/>
+      </g>
+      <g id="i-pos" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 11l5-5 5 5M5 15.5l5-5 5 5"/>
+      </g>
+      <g id="i-for" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6h4a3 3 0 0 1 3 3c0 3 2 4 4 4v3h-4a4 4 0 0 1-4-4"/>
+        <path d="M4 6v4"/>
+      </g>
+      <g id="i-upi" fill="none" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M5 5h8v11H5zM13 7h2.5v4H13"/>
+        <path d="M5 8h8"/>
+      </g>
+      <g id="i-kac" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10" cy="11" r="4.5"/>
+        <path d="M10 3.5v-1.2M6 4.2l-.7-1M14 4.2l.7-1"/>
+      </g>
+      <g id="i-pan" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 3l7 13H3z"/>
+        <path d="M10 8.5v3.5M10 14.2v.1"/>
+      </g>
+      <g id="knot" fill="none" stroke-width="1.3">
+        <rect x="3" y="3" width="20" height="20" rx="2"/>
+        <path d="M8 3v6a4 4 0 0 0 4 4 4 4 0 0 0 4-4V3M3 8h6a4 4 0 0 1 4 4 4 4 0 0 1-4 4H3M23 8h-6a4 4 0 0 0-4 4 4 4 0 0 0 4 4h6M8 23v-6a4 4 0 0 1 4-4"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="backdrop"></div>
+
+  <div class="screen">
+    <aside class="sidebar">
+      <div class="forged panel">
+        <div class="panel__head">
+          <span class="orn"></span>
+          <span class="panel__title">Mapa</span>
+          <span class="panel__meta" id="alt-map-label"></span>
+        </div>
+        <div class="panel__body">
+          <div class="map"><div id="map"></div></div>
+          <div class="map__exits" id="alt-map-exits"></div>
+        </div>
+      </div>
+
+      <div class="forged panel">
+        <div class="panel__head">
+          <span class="orn"></span>
+          <span class="panel__title">W poblizu</span>
+          <span class="panel__meta" id="alt-objects-count">0</span>
+        </div>
+        <div class="panel__body" id="alt-objects"></div>
+      </div>
+    </aside>
+
+    <div class="world">
+      <div id="main_text_output_msg_wrapper"></div>
+      <span id="content-width-measure">M</span>
     </div>
-    <div id="main_text_output_msg_wrapper"></div>
-    <span id="content-width-measure">M</span>
-    <input id="alt-input" type="text" autocomplete="off" spellcheck="false"
-           placeholder="Type a command and press Enter…"/>
-    <script type="module" src="./main.ts"></script>
+
+    <div class="rail">
+      <div class="gems" id="alt-gems"></div>
+
+      <div class="forged command">
+        <span class="knot" id="alt-connect" title="Polacz"><svg viewBox="0 0 26 26"><use href="#knot" stroke="currentColor"/></svg></span>
+        <label class="trough">
+          <span class="prompt">&gt;</span>
+          <input class="cmd-input" id="alt-input" type="text" placeholder="Wpisz polecenie..." autocomplete="off" spellcheck="false" />
+        </label>
+        <span class="knot"><svg viewBox="0 0 26 26" style="transform:scaleX(-1)"><use href="#knot" stroke="currentColor"/></svg></span>
+      </div>
+    </div>
+
+    <div class="caption">Arkadia &middot; Alt UI &middot; <span id="alt-status">Polacz</span></div>
+  </div>
+  <script type="module" src="./main.ts"></script>
 </body>
 </html>
