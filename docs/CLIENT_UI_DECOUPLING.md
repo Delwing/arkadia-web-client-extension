@@ -183,8 +183,45 @@ the character-width feed (`installContentWidthMeasurer`); and — if you want th
 
 **You get for free:** transport, triggers, all GMCP parsing and game state
 (objects, team, combat, map), the plugin system, the shared settings/sync
-engines, and the real map renderer (mount `@web/embed`'s `EmbeddedMap` into a
-`#map` element and feed it `@web/mapDataLoader`).
+engines, the real map renderer (mount `@web/embed`'s `EmbeddedMap` into a
+`#map` element and feed it `@web/mapDataLoader`), and the command-line engine
+below.
+
+### Command-line input (`@web/commandInput`)
+
+The command line is more than "read a value, call `sendCommand`": it carries
+history (Mudlet-style ring, prefix auto-complete, Tab completion from the output
+buffer), multiline submit-splitting (one `sendCommand` per `\n`), and password
+mode. That logic is UI-crosscutting, so it lives in a **headless engine** that
+every UI drives — the client core never sees it (it's UI concern, hosted in
+`@web`, not `@client`).
+
+```ts
+import { CommandLineEngine } from '@web/commandInput/CommandLineEngine';
+import { domEditableField } from '@web/commandInput/editableField';
+import { localStorageHistoryStore } from '@web/commandInput/commandHistoryStore';
+import { harvestOutputWords } from '@web/commandInput/outputWords';
+
+const engine = new CommandLineEngine({
+  field: domEditableField(inputEl),            // any <input>/<textarea> (a React ref works)
+  passwordField: domEditableField(passwordEl), // masked field for echo-off
+  sendCommand: client.sendCommand.bind(client),
+  isPasswordMode: () => mudClient.isPasswordMode(),
+  getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
+  getOutputWords: () => harvestOutputWords(outputEl),
+  getClearInputOnSend: () => getRenderSettings().clearInputOnSend,
+  store: localStorageHistoryStore(),           // shared 'commandHistory' key → one history per profile
+});
+// translate your key/pointer events into engine.submit()/historyMove()/handleTabCompletion()/…
+```
+
+The engine owns no DOM and no listeners — a UI injects an `EditableField` (a
+native input/textarea already satisfies it; tests pass a fake) and a
+`CommandHistoryStore`, then routes its own events in. The stock web adapter is
+`CommandInputController`; the alt-ui React adapter is
+`alt-ui/hooks/useCommandLine.ts`. **Password mode is already decoupled**: the
+client pushes it as the `telnet.echo` bus event (server echo off ⇒ password), so
+a UI just subscribes and swaps to its masked field — no new port needed.
 
 ## Why this shape
 
@@ -206,4 +243,6 @@ engines, and the real map renderer (mount `@web/embed`'s `EmbeddedMap` into a
 - Client core: `src/client/Client.ts`, `src/client/main.ts` (`registerScripts`)
 - Width feed: `src/web/contentWidthMeasurer.ts`
 - Map embedding: `src/web/embed.ts`, `src/web/mapDataLoader.ts`
+- Command-line engine: `src/web/commandInput/{CommandLineEngine,editableField,commandHistoryStore,outputWords}.ts`; adapters `src/web/commandInput/CommandInputController.ts`, `alt-ui/hooks/useCommandLine.ts`
+- Password/echo signal: `src/shared/socket/echo.ts` → `telnet.echo` event
 - Reference UI on the seam: `alt-ui/`

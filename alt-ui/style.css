@@ -285,7 +285,7 @@ body::after {
 }
 @media (prefers-reduced-motion: reduce) { .gem.highlight::before { animation: none; } }
 
-.command { display: flex; align-items: stretch; height: var(--bar-h); padding: 6px; gap: 6px; }
+.command { display: flex; align-items: stretch; min-height: var(--bar-h); padding: 6px; gap: 6px; }
 .knot {
   flex: 0 0 38px; display: grid; place-items: center; border-radius: 5px;
   background: linear-gradient(180deg, #221d16, #100e0b);
@@ -312,6 +312,12 @@ body::after {
   font-size: 14px; letter-spacing: .04em;
 }
 .cmd-input::placeholder { color: var(--parchment-dim); opacity: .6; }
+/* the command input is a textarea for multiline entry: keep a single row flush
+   with the trough, no manual resize handle, and grow upward via JS. */
+textarea.cmd-input {
+  resize: none; line-height: 1.5; padding: 4px 0; margin: 0;
+  height: 1.5em; max-height: 9em; overflow-y: hidden; align-self: center;
+}
 
 /* ============================================================
    SIDE PANELS — forged frames for Map + Objects

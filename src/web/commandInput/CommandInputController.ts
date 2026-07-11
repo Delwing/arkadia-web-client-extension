@@ -1,4 +1,8 @@
 import type {CommandOptions} from "@client/scripts/commandPreserveCaseMode";
+import {CommandLineEngine} from "./CommandLineEngine";
+import {domEditableField} from "./editableField";
+import {localStorageHistoryStore} from "./commandHistoryStore";
+import {harvestOutputWords} from "./outputWords";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
@@ -13,27 +17,18 @@ export interface CommandInputDeps {
     getClearInputOnSend: () => boolean;
 }
 
-const HISTORY_STORAGE_KEY = 'commandHistory';
-const MAX_SAVED_ENTRIES = 1000;
-
+/**
+ * Stock-web adapter around the headless {@link CommandLineEngine}. This class
+ * owns only the web-chrome specifics — the concrete DOM elements and ids, the
+ * password-field element swap, output-buffer word harvesting, and web-only keys
+ * (PageUp/PageDown scroll, global Enter, touch swipe). All command-line logic
+ * (history, completion, submit-splitting, password branching) lives in the
+ * engine and is shared with other UIs (see `alt-ui/hooks/useCommandLine.ts`).
+ */
 export class CommandInputController {
     private readonly deps: CommandInputDeps;
     private readonly input: HTMLTextAreaElement;
-
-    // Mudlet-style history: newest at index 0, sentinel "" at front after submit
-    private historyList: string[] = [];
-    private historyBuffer = 0;
-
-    // Prefix auto-completion (Up/Down with partial text)
-    private autoCompletionCount = -1;
-
-    // Tab completion from output buffer
-    private tabCompletionTyped = '';
-    private tabCompletionCount = -1;
-    private tabCompletionOld = '';
-    private userKeptOnTyping = false;
-
-    private tabCompleteBlacklist = new Set<string>();
+    private readonly engine: CommandLineEngine;
 
     private abortController: AbortController | null = null;
 
@@ -47,9 +42,18 @@ export class CommandInputController {
     constructor(deps: CommandInputDeps) {
         this.deps = deps;
         this.input = deps.messageInput;
-        this.loadHistory();
+        this.engine = new CommandLineEngine({
+            field: domEditableField(deps.messageInput),
+            passwordField: domEditableField(deps.passwordInput),
+            sendCommand: deps.sendCommand,
+            isPasswordMode: deps.isPasswordMode,
+            getCommandLineSuggestions: deps.getCommandLineSuggestions,
+            getOutputWords: () => harvestOutputWords(this.deps.outputWrapper),
+            getClearInputOnSend: deps.getClearInputOnSend,
+            store: localStorageHistoryStore(),
+        });
 
-        (window as any).__historyDebug = () => this.getDebugState();
+        (window as any).__historyDebug = () => this.engine.getDebugState();
     }
 
     setPasswordMode(enabled: boolean): void {
@@ -74,18 +78,18 @@ export class CommandInputController {
         this.abortController = ac;
         const o = {signal: ac.signal};
 
-        this.deps.sendButton.addEventListener('click', () => this.submit(false), o);
+        this.deps.sendButton.addEventListener('click', () => this.engine.submit(false), o);
 
         this.deps.passwordInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                this.submit();
+                this.engine.submit();
             }
         }, o);
 
         document.addEventListener('keydown', (e) => this.handleGlobalKeyDown(e), o);
         this.input.addEventListener('keydown', (e) => this.handleKeyDown(e), o);
-        this.input.addEventListener('input', () => this.handleInput(), o);
+        this.input.addEventListener('input', () => this.engine.onInput(), o);
 
         // Mobile Enter interception via beforeinput
         this.input.addEventListener('keydown', (e) => {
@@ -97,7 +101,7 @@ export class CommandInputController {
         this.input.addEventListener('beforeinput', (e) => {
             if ((e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') && !this.shiftDown) {
                 e.preventDefault();
-                this.submit();
+                this.engine.submit();
             }
         }, o);
 
@@ -118,7 +122,7 @@ export class CommandInputController {
             this.swipeStartY = null;
             if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
                 e.preventDefault();
-                this.historyMove(dx < 0 ? 'up' : 'down');
+                this.engine.historyMove(dx < 0 ? 'up' : 'down');
             }
         }, o);
 
@@ -126,13 +130,13 @@ export class CommandInputController {
         if (this.deps.historyUpButton) {
             this.deps.historyUpButton.addEventListener('click', () => {
                 this.selectEntireInput();
-                this.historyMove('up');
+                this.engine.historyMove('up');
             }, o);
         }
         if (this.deps.historyDownButton) {
             this.deps.historyDownButton.addEventListener('click', () => {
                 this.selectEntireInput();
-                this.historyMove('down');
+                this.engine.historyMove('down');
             }, o);
         }
 
@@ -148,229 +152,7 @@ export class CommandInputController {
         this.abortController = null;
     }
 
-    // ── Submit ─────────────────────────────────────────────────────────
-
-    submit(focus = true): void {
-        const rawValue = this.deps.isPasswordMode()
-            ? this.deps.passwordInput.value
-            : this.input.value;
-        const commands = rawValue.split('\n');
-        const clearInputOnSend = this.deps.getClearInputOnSend();
-
-        if (rawValue.length > 0) {
-            if (!this.deps.isPasswordMode()) {
-                // Store the full input as a single history entry
-                const historyEntry = rawValue;
-
-                // Remove old sentinels and deduplicate
-                this.historyList = this.historyList.filter(h => h !== '' && h !== historyEntry);
-                this.historyList.unshift(historyEntry);
-                // Add single sentinel at front
-                this.historyList.unshift('');
-
-                // Send each line as a separate command
-                for (const command of commands) {
-                    this.deps.sendCommand(command, true, undefined, false, true);
-                }
-
-                // Reset state. When the input is cleared, browsing starts from
-                // the sentinel (index 0). When the just-sent command stays in the
-                // input, it lives at index 1, so point the buffer there — otherwise
-                // the first ArrowUp would just re-load the command already shown.
-                this.historyBuffer = clearInputOnSend ? 0 : 1;
-                this.resetAllCompletionState();
-
-                if (clearInputOnSend) {
-                    this.input.value = '';
-                    if (focus) this.input.focus();
-                } else {
-                    if (focus) this.selectEntireInput();
-                }
-
-                this.saveHistory();
-            } else {
-                // Password mode: send and clear
-                for (const command of commands) {
-                    this.deps.sendCommand(command, true, undefined, false, true);
-                }
-                this.deps.passwordInput.value = '';
-                if (focus) this.deps.passwordInput.focus();
-            }
-        } else {
-            // Empty input: send empty command
-            this.deps.sendCommand('', true);
-            if (focus) {
-                if (clearInputOnSend) {
-                    this.input.focus();
-                } else {
-                    this.selectEntireInput();
-                }
-            }
-        }
-    }
-
-    // ── History Navigation ─────────────────────────────────────────────
-
-    historyMove(direction: 'up' | 'down'): void {
-        if (this.deps.isPasswordMode()) return;
-        if (this.historyList.length === 0) return;
-
-        this.resetTabCompletionState();
-
-        if (this.allTextIsSelected() || this.inputIsEmpty()) {
-            // Mode 1: Full browse - cycle through entire history
-            this.browseHistory(direction);
-        } else {
-            // Mode 2: Prefix auto-complete
-            if (direction === 'up') {
-                this.autoCompletionCount++;
-            } else {
-                this.autoCompletionCount--;
-            }
-            this.handleAutoCompletion();
-        }
-    }
-
-    private browseHistory(direction: 'up' | 'down'): void {
-        if (direction === 'up') {
-            if (this.historyBuffer < this.historyList.length - 1) {
-                this.historyBuffer++;
-            } else {
-                return;
-            }
-        } else {
-            if (this.historyBuffer > 0) {
-                this.historyBuffer--;
-            } else {
-                return;
-            }
-        }
-
-        const entry = this.historyList[this.historyBuffer];
-        if (entry !== undefined) {
-            this.input.value = entry;
-            this.selectEntireInput();
-        }
-    }
-
-    // ── Prefix Auto-Completion (Up/Down with partial text) ─────────────
-
-    private handleAutoCompletion(): void {
-        // Get the typed portion (strip any selected suffix that was from previous completion)
-        const selStart = this.input.selectionStart ?? 0;
-        const selEnd = this.input.selectionEnd ?? this.input.value.length;
-        const typedText = selStart < selEnd ? this.input.value.substring(0, selStart) : this.input.value;
-
-        if (this.autoCompletionCount < 0) {
-            this.autoCompletionCount = -1;
-            // Restore just the typed text
-            this.input.value = typedText;
-            this.moveCursorToEnd();
-            return;
-        }
-
-        // Search for matching entries starting from autoCompletionCount
-        let matchesFound = 0;
-        for (let i = 0; i < this.historyList.length; i++) {
-            const entry = this.historyList[i];
-            if (entry && entry.startsWith(typedText) && entry !== typedText) {
-                if (matchesFound === this.autoCompletionCount) {
-                    this.input.value = entry;
-                    this.setCursorPosition(typedText.length);
-                    this.selectFromCursorToEnd(typedText.length);
-                    return;
-                }
-                matchesFound++;
-            }
-        }
-
-        // No match found at this count - clamp
-        if (matchesFound > 0) {
-            this.autoCompletionCount = matchesFound - 1;
-            // Retry with clamped count
-            let found = 0;
-            for (let i = 0; i < this.historyList.length; i++) {
-                const entry = this.historyList[i];
-                if (entry && entry.startsWith(typedText) && entry !== typedText) {
-                    if (found === this.autoCompletionCount) {
-                        this.input.value = entry;
-                        this.setCursorPosition(typedText.length);
-                        this.selectFromCursorToEnd(typedText.length);
-                        return;
-                    }
-                    found++;
-                }
-            }
-        } else {
-            // No matches at all
-            this.autoCompletionCount = -1;
-        }
-    }
-
-    // ── Tab Completion (from output buffer) ────────────────────────────
-
-    handleTabCompletion(forward: boolean): void {
-        const inputVal = this.input.value;
-
-        // First tab press: snapshot the typed text
-        if (this.tabCompletionCount === -1) {
-            this.tabCompletionTyped = inputVal;
-            this.tabCompletionOld = '';
-        }
-
-        // Find the last word being typed
-        const lastWordMatch = this.tabCompletionTyped.match(/\b(\w+)$/);
-        if (!lastWordMatch) return;
-        const lastWord = lastWordMatch[1];
-        const prefix = this.tabCompletionTyped.substring(0, this.tabCompletionTyped.length - lastWord.length);
-
-        // Build word list: plugin suggestions first, then output words (newest first)
-        const words: string[] = [];
-        const suggestions = this.deps.getCommandLineSuggestions();
-        for (const s of suggestions) {
-            if (s) words.push(s);
-        }
-        const outputWords = this.getOutputWords();
-        for (let i = outputWords.length - 1; i >= 0; i--) {
-            words.push(outputWords[i]);
-        }
-
-        // Remove blacklisted words (case-insensitive)
-        const filteredWords: string[] = [];
-        const seen = new Set<string>();
-        for (const word of words) {
-            const lower = word.toLowerCase();
-            if (this.tabCompleteBlacklist.has(lower)) continue;
-            if (!lower.startsWith(lastWord.toLowerCase())) continue;
-            if (lower === lastWord.toLowerCase()) continue; // exclude exact match
-            if (seen.has(lower)) continue;
-            seen.add(lower);
-            filteredWords.push(word);
-        }
-
-        if (filteredWords.length === 0) return;
-
-        // Cycle through matches
-        if (forward) {
-            this.tabCompletionCount++;
-            if (this.tabCompletionCount >= filteredWords.length) {
-                this.tabCompletionCount = 0;
-            }
-        } else {
-            this.tabCompletionCount--;
-            if (this.tabCompletionCount < 0) {
-                this.tabCompletionCount = filteredWords.length - 1;
-            }
-        }
-
-        const match = filteredWords[this.tabCompletionCount];
-        const newValue = prefix + match;
-        this.tabCompletionOld = newValue;
-        this.input.value = newValue;
-        this.moveCursorToEnd();
-    }
-
-    // ── Keyboard Handlers ──────────────────────────────────────────────
+    // ── Keyboard Handlers (web-chrome specific) ────────────────────────
 
     private handleGlobalKeyDown(e: KeyboardEvent): void {
         if (e.key === 'Enter') {
@@ -383,7 +165,7 @@ export class CommandInputController {
                 return;
             }
             e.preventDefault();
-            this.submit();
+            this.engine.submit();
         }
     }
 
@@ -402,101 +184,20 @@ export class CommandInputController {
         }
         if (e.key === 'ArrowUp' && !e.ctrlKey) {
             e.preventDefault();
-            this.historyMove('up');
+            this.engine.historyMove('up');
         } else if (e.key === 'ArrowDown' && !e.ctrlKey) {
             e.preventDefault();
-            this.historyMove('down');
+            this.engine.historyMove('down');
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            this.handleTabCompletion(!e.shiftKey);
+            this.engine.handleTabCompletion(!e.shiftKey);
         } else if (e.key === 'Escape') {
-            this.selectEntireInput();
-            this.historyBuffer = 0;
-            this.resetAllCompletionState();
+            this.engine.onEscape();
         } else if (e.key === 'Backspace' || e.key === 'Delete') {
-            this.historyBuffer = 0;
-            this.autoCompletionCount = -1;
-            this.tabCompletionCount = -1;
-            // Chop tabCompletionTyped if it has content
-            if (this.tabCompletionTyped.length > 0) {
-                this.tabCompletionTyped = this.tabCompletionTyped.substring(0, this.tabCompletionTyped.length - 1);
-            }
+            this.engine.onEditKey();
         } else {
             // Normal key: reset tab completion on next typing
-            this.resetTabCompletionState();
-        }
-    }
-
-    private handleInput(): void {
-        // Reset history browsing when user types
-        this.historyBuffer = 0;
-        this.autoCompletionCount = -1;
-        this.userKeptOnTyping = true;
-    }
-
-    // ── Output Word Extraction ────────────────────────────────────────
-
-    private getOutputWords(): string[] {
-        const wrapper = this.deps.outputWrapper;
-        const children = wrapper.children;
-        const words: string[] = [];
-
-        // Read last 500 lines from output DOM
-        const startIdx = Math.max(0, children.length - 500);
-        for (let i = startIdx; i < children.length; i++) {
-            const text = children[i].textContent ?? '';
-            const lineWords = text.match(/\w+/g);
-            if (lineWords) {
-                for (const w of lineWords) {
-                    if (w.length >= 2) {
-                        words.push(w);
-                    }
-                }
-            }
-        }
-
-        return words;
-    }
-
-    // ── State Management ──────────────────────────────────────────────
-
-    private resetTabCompletionState(): void {
-        this.tabCompletionCount = -1;
-        this.tabCompletionTyped = '';
-        this.tabCompletionOld = '';
-        this.userKeptOnTyping = false;
-    }
-
-    private resetAllCompletionState(): void {
-        this.autoCompletionCount = -1;
-        this.resetTabCompletionState();
-    }
-
-    // ── Persistence ───────────────────────────────────────────────────
-
-    private loadHistory(): void {
-        try {
-            const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed)) {
-                    // Stored newest-first; filter to valid non-empty strings, then add single sentinel
-                    this.historyList = parsed.filter((e: unknown) => typeof e === 'string' && e !== '');
-                    // Add single sentinel at front
-                    this.historyList.unshift('');
-                }
-            }
-        } catch {
-            // ignore corrupt storage
-        }
-    }
-
-    private saveHistory(): void {
-        try {
-            const toSave = this.historyList.slice(0, MAX_SAVED_ENTRIES);
-            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(toSave));
-        } catch {
-            // ignore storage errors
+            this.engine.resetTabCompletionState();
         }
     }
 
@@ -509,51 +210,17 @@ export class CommandInputController {
         this.input.setSelectionRange(0, this.input.value.length);
     }
 
-    private allTextIsSelected(): boolean {
-        if (document.activeElement !== this.input) return false;
-        const start = this.input.selectionStart;
-        const end = this.input.selectionEnd;
-        return start === 0 && end === this.input.value.length && end > 0;
-    }
-
-    private inputIsEmpty(): boolean {
-        return this.input.value.length === 0;
-    }
-
-    private moveCursorToEnd(): void {
-        const len = this.input.value.length;
-        this.input.setSelectionRange(len, len);
-    }
-
-    private setCursorPosition(pos: number): void {
-        this.input.setSelectionRange(pos, pos);
-    }
-
-    private selectFromCursorToEnd(cursorPos: number): void {
-        this.input.setSelectionRange(cursorPos, this.input.value.length);
-    }
-
-    // ── Blacklist ─────────────────────────────────────────────────────
+    // ── Blacklist / Debug (delegated to the engine) ────────────────────
 
     addToBlacklist(word: string): void {
-        this.tabCompleteBlacklist.add(word.toLowerCase());
+        this.engine.addToBlacklist(word);
     }
 
     removeFromBlacklist(word: string): void {
-        this.tabCompleteBlacklist.delete(word.toLowerCase());
+        this.engine.removeFromBlacklist(word);
     }
 
-    // ── Debug ─────────────────────────────────────────────────────────
-
     getDebugState(): object {
-        return {
-            historyList: [...this.historyList],
-            historyBuffer: this.historyBuffer,
-            autoCompletionCount: this.autoCompletionCount,
-            tabCompletionTyped: this.tabCompletionTyped,
-            tabCompletionCount: this.tabCompletionCount,
-            tabCompletionOld: this.tabCompletionOld,
-            userKeptOnTyping: this.userKeptOnTyping,
-        };
+        return this.engine.getDebugState();
     }
 }

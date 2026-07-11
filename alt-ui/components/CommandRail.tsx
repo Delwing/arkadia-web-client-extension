@@ -1,23 +1,17 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react';
-import { useClient } from '../client/ClientContext';
+import { useRef } from 'react';
 import { useConnection } from '../hooks/useConnection';
+import { useCommandLine } from '../hooks/useCommandLine';
 import VitalGems from './VitalGems';
 
 /** Vital gems above the command trough, with the connect knots framing it. */
 export default function CommandRail() {
-    const client = useClient();
     const { connected, connect } = useConnection();
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const passwordRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => { inputRef.current?.focus(); }, []);
-
-    const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-        if (event.key !== 'Enter') return;
-        const input = event.currentTarget;
-        const command = input.value;
-        input.value = '';
-        void client.sendCommand(command, true, undefined, false, true);
-    };
+    // History, completion, multiline, password mode and sticky focus all come
+    // from the shared command-line engine — see useCommandLine.
+    const { passwordMode } = useCommandLine({ inputRef, passwordRef });
 
     return (
         <div className="rail">
@@ -34,16 +28,25 @@ export default function CommandRail() {
                 </span>
                 <label className="trough">
                     <span className="prompt">&gt;</span>
-                    <input
+                    <textarea
                         className="cmd-input"
                         id="alt-input"
                         data-command-input=""
-                        type="text"
+                        rows={1}
                         placeholder="Wpisz polecenie..."
                         autoComplete="off"
                         spellCheck={false}
                         ref={inputRef}
-                        onKeyDown={onKeyDown}
+                        style={passwordMode ? { display: 'none' } : undefined}
+                    />
+                    <input
+                        className="cmd-input"
+                        id="alt-input-password"
+                        type="password"
+                        autoComplete="off"
+                        spellCheck={false}
+                        ref={passwordRef}
+                        style={passwordMode ? undefined : { display: 'none' }}
                     />
                 </label>
                 <span className="knot">
