@@ -372,17 +372,18 @@
     padding: 6px;
     gap: 6px;
   }
+  /* no box, no fill, no shadow trick — just the bare glyph in a flat dark
+     worn-metal tone. Any blur/offset filter mushes this fine interlace into
+     an illegible blob at 20px, so the crisp line itself carries it. */
   .knot {
     flex: 0 0 38px;
     display: grid;
     place-items: center;
-    border-radius: 5px;
-    background: linear-gradient(180deg, #221d16, #100e0b);
-    box-shadow:
-      inset 0 1px 0 rgba(184,150,90,.16),
-      inset 0 0 0 1px rgba(0,0,0,.5);
   }
-  .knot svg { width: 21px; height: 21px; stroke: var(--bronze-dim); opacity: .85; }
+  .knot svg { width: 20px; height: 20px; }
+  /* overrides the <use stroke="currentColor"> presentation attribute, which
+     otherwise wins over an inherited CSS stroke set on the ancestor svg */
+  .knot svg use { stroke: #55492f; }
 
   .trough {
     flex: 1 1 auto;
@@ -391,8 +392,7 @@
     gap: 10px;
     padding: 0 15px;
     border-radius: 5px;
-    background:
-      linear-gradient(180deg, #0b0a08, #100e0b);
+    background: linear-gradient(180deg, #0b0a08, #100e0b);
     box-shadow:
       inset 0 2px 6px rgba(0,0,0,.85),
       inset 0 0 0 1px rgba(184,150,90,.10);
@@ -665,9 +665,8 @@
         <path d="M10 3l7 13H3z"/>
         <path d="M10 8.5v3.5M10 14.2v.1"/>
       </g>
-      <!-- celtic knot square for command end-caps -->
-      <g id="knot" fill="none" stroke-width="1.3">
-        <rect x="3" y="3" width="20" height="20" rx="2"/>
+      <!-- celtic knot for command end-caps: bare interlace, no frame (a frame reads as a button border) -->
+      <g id="knot" fill="none" stroke-width="1.6" stroke-linecap="round">
         <path d="M8 3v6a4 4 0 0 0 4 4 4 4 0 0 0 4-4V3M3 8h6a4 4 0 0 1 4 4 4 4 0 0 1-4 4H3M23 8h-6a4 4 0 0 0-4 4 4 4 0 0 0 4 4h6M8 23v-6a4 4 0 0 1 4-4"/>
       </g>
     </defs>

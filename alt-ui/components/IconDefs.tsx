@@ -76,8 +76,8 @@ export default function IconDefs() {
                     <path d="M5 6l5 4 5-4" />
                     <path d="M5 11l5 4 5-4" />
                 </g>
-                <g id="knot" fill="none" strokeWidth="1.3">
-                    <rect x="3" y="3" width="20" height="20" rx="2" />
+                {/* bare interlace, no frame — the frame read as a button border */}
+                <g id="knot" fill="none" strokeWidth="1.6" strokeLinecap="round">
                     <path d="M8 3v6a4 4 0 0 0 4 4 4 4 0 0 0 4-4V3M3 8h6a4 4 0 0 1 4 4 4 4 0 0 1-4 4H3M23 8h-6a4 4 0 0 0-4 4 4 4 0 0 0 4 4h6M8 23v-6a4 4 0 0 1 4-4" />
                 </g>
 

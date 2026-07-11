@@ -455,13 +455,18 @@ body::after {
 @keyframes dangerBreath { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .gem .stone::before { animation: none !important; } }
 
+/* One continuous forged groove holds knot + trough + knot — a single carved
+   slot, not three stacked plates — so the knots read as engraving struck into
+   its ends rather than buttons sitting beside it. */
 .command { display: flex; align-items: stretch; min-height: var(--bar-h); padding: 6px; gap: 6px; }
-.knot {
-  flex: 0 0 38px; display: grid; place-items: center; border-radius: 5px;
-  background: linear-gradient(180deg, #221d16, #100e0b);
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
-}
-.knot svg { width: 21px; height: 21px; stroke: var(--bronze-dim); opacity: .85; }
+/* no box, no fill, no shadow trick — just the bare glyph in a flat dark
+   worn-metal tone. Any blur/offset filter mushes this fine interlace into
+   an illegible blob at 20px, so the crisp line itself carries it. */
+.knot { flex: 0 0 38px; display: grid; place-items: center; }
+.knot svg { width: 20px; height: 20px; }
+/* overrides the <use stroke="currentColor"> presentation attribute, which
+   otherwise wins over an inherited CSS stroke set on the ancestor svg */
+.knot svg use { stroke: #55492f; }
 
 .trough {
   flex: 1 1 auto; display: flex; align-items: center; gap: 10px; padding: 0 15px;
