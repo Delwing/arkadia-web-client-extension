@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 interface PanelProps {
     /** Header label — rendered in the forged Cinzel caps voice. */
     title: string;
+    /** Extra class(es) for the outer frame, e.g. sizing overrides per panel. */
+    className?: string;
     /** Optional right-aligned header slot (count, location label, ...). */
     meta?: ReactNode;
     /** Optional id for the meta span (kept for parity with legacy hooks). */
@@ -21,9 +23,9 @@ interface PanelProps {
  * cap-centered header. New frames should render through this rather than
  * re-declaring the markup.
  */
-export default function Panel({ title, meta, metaId, bodyId, bodyClassName, children }: PanelProps) {
+export default function Panel({ title, className, meta, metaId, bodyId, bodyClassName, children }: PanelProps) {
     return (
-        <div className="forged panel">
+        <div className={'forged panel' + (className ? ` ${className}` : '')}>
             <div className="panel__head">
                 <span className="orn" />
                 <span className="panel__title">{title}</span>

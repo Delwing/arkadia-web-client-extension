@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Emblematy gildii — galeria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --void:#0a0908; --iron-lo:#0c0b09; --iron-hi:#3a352b;
+    --bronze:#b8965a; --bronze-dim:#8a6d3b;
+    --parchment:#cdbfa3; --parchment-dim:#8f836c;
+    --gem-dark:#1a1713;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "EB Garamond", Georgia, serif;
+    color: var(--parchment); background-color: var(--void);
+    padding: 44px 48px 90px;
+  }
+  .backdrop {
+    position: fixed; top: 50%; left: 50%;
+    width: 100vh; height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    background: url("assets/bg.jpg") center center / cover no-repeat;
+    filter: brightness(.33) saturate(.73) contrast(1.05);
+    z-index: -2; pointer-events: none;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+      linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+  }
+  h1 {
+    font-family: "Cinzel", serif; font-weight: 600; font-size: 13px;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--bronze); margin: 0 0 6px;
+  }
+  .note { color: var(--parchment-dim); font-size: 13px; margin: 0 0 12px; max-width: 640px; }
+  .section {
+    font-family: "Cinzel", serif; font-size: 11px; letter-spacing: .28em;
+    text-transform: uppercase; color: var(--bronze); margin: 34px 0 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .section::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, var(--bronze-dim), transparent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 26px 18px; }
+
+  .tile { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .tile figcaption {
+    text-align: center; font-family: "Cinzel", serif; font-weight: 600;
+    font-size: 13px; letter-spacing: .1em; color: var(--parchment);
+  }
+  .tile small {
+    display: block; margin-top: 3px; font-family: "JetBrains Mono", monospace;
+    font-weight: 400; font-size: 9px; letter-spacing: .06em; color: var(--parchment-dim);
+    text-transform: none;
+  }
+
+  /* ---- big emblem medallion ---- */
+  .emblem {
+    position: relative; width: 104px; height: 104px; border-radius: 50%;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 50% 32%, rgba(184,150,90,.18), transparent 60%),
+      var(--gem-dark);
+    box-shadow:
+      inset 0 2px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 -5px 10px rgba(0,0,0,.72), 0 0 0 1px rgba(184,150,90,.14),
+      0 6px 16px rgba(0,0,0,.5);
+  }
+  .emblem::before {
+    content: ""; position: absolute; inset: 10px; border-radius: 50%;
+    border: 1px solid rgba(184,150,90,.22); box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
+  }
+  .emblem svg { width: 64px; height: 64px; color: var(--bronze); filter: drop-shadow(0 1px 0 rgba(0,0,0,.65)); }
+  .emblem--war {
+    box-shadow:
+      inset 0 2px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 -5px 10px rgba(0,0,0,.72),
+      0 0 0 1px rgba(150,52,40,.5), 0 0 16px rgba(150,44,32,.2), 0 6px 16px rgba(0,0,0,.5);
+  }
+  .emblem--civ {
+    box-shadow:
+      inset 0 2px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 -5px 10px rgba(0,0,0,.72),
+      0 0 0 1px rgba(150,124,60,.55), 0 0 16px rgba(140,150,72,.18), 0 6px 16px rgba(0,0,0,.5);
+  }
+  .emblem--war svg { color: #c59a68; }
+
+  .pip {
+    position: absolute; right: 0; bottom: 0;
+    width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: "Cinzel", serif; font-size: 17px; line-height: 1; color: var(--bronze);
+    background: radial-gradient(circle at 50% 35%, #241f18, #100e0b);
+    box-shadow: inset 0 1px 0 rgba(184,150,90,.28), inset 0 0 0 1px rgba(0,0,0,.7), 0 2px 5px rgba(0,0,0,.7);
+  }
+  .pip[data-gender="female"] { color: #c98fa8; }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <g id="e-hammer" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.4 5.2h9.2a1 1 0 0 1 1 1v2.6a1 1 0 0 1-1 1H5.4a1 1 0 0 1-1-1V6.2a1 1 0 0 1 1-1z"/>
+      <path d="M7.6 5.2v4.6M12.4 5.2v4.6"/>
+      <path d="M10 9.8V17"/>
+    </g>
+    <g id="e-flame" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2.4s4.2 4.2 4.2 8.1a4.2 4.2 0 0 1-8.4 0c0-1.6 1-2.9 1-2.9.3 1 .9 1.5.9 1.5.1-2.1 2.3-4.7 2.3-6.8z"/>
+      <path d="M10 16.6a2.3 2.3 0 0 0 2.3-2.3c0-1.3-1.3-2.4-1.3-2.4"/>
+    </g>
+    <g id="e-morningstar" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.4 16.6 9.5 10.4"/>
+      <circle cx="11.6" cy="8" r="3.1"/>
+      <path d="M11.6 3v1.9M11.6 11.1V13M6.5 8h1.9M14.8 8h1.9M8 4.4l1.35 1.35M15.2 4.4l-1.35 1.35M8 11.6l1.35-1.35M15.2 11.6l-1.35-1.35"/>
+    </g>
+    <g id="e-anchor" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10" cy="3.7" r="1.5"/>
+      <path d="M10 5.2V16.6"/>
+      <path d="M6.5 8h7"/>
+      <path d="M4.2 12.2a5.8 5.8 0 0 0 11.6 0"/>
+      <path d="M4.2 12.2 2.7 11M4.2 12.2l1.9.3M15.8 12.2 17.3 11M15.8 12.2l-1.9.3"/>
+    </g>
+    <g id="e-greatsword" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2.4v9.4"/>
+      <path d="M5.4 11.8h9.2"/>
+      <path d="M10 11.8v4"/>
+      <path d="M8.3 15.8h3.4"/>
+      <path d="M6.6 10.4 5.4 11.8 6.6 13.2M13.4 10.4 14.6 11.8 13.4 13.2"/>
+    </g>
+    <g id="e-swordshield" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.9 3.6 2.9 4.6v3.2c0 2.5 1.5 4.1 3 4.9 1.5-.8 3-2.4 3-4.9V4.6z"/>
+      <path d="M13.4 2.2V12"/>
+      <path d="M10.8 12h5.2"/>
+      <path d="M13.4 12v4.4"/>
+      <path d="M12.1 16.4h2.6"/>
+    </g>
+    <g id="e-daggers" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="rotate(40 10 6)">
+        <path d="M10 1.8 8.8 11.6 11.2 11.6z"/>
+        <path d="M7.7 11.6h4.6"/>
+        <path d="M10 11.6v3.4"/>
+        <path d="M8.8 15h2.4"/>
+      </g>
+      <g transform="rotate(-40 10 6)">
+        <path d="M10 1.8 8.8 11.6 11.2 11.6z"/>
+        <path d="M7.7 11.6h4.6"/>
+        <path d="M10 11.6v3.4"/>
+        <path d="M8.8 15h2.4"/>
+      </g>
+    </g>
+    <g id="e-arrows" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="rotate(45 10 10)">
+        <path d="M10 2.6v14.8"/>
+        <path d="M10 2.6 8.4 4.7M10 2.6 11.6 4.7"/>
+        <path d="M8.6 15.2 10 13.6 11.4 15.2M8.6 13.6 10 12 11.4 13.6"/>
+      </g>
+      <g transform="rotate(-45 10 10)">
+        <path d="M10 2.6v14.8"/>
+        <path d="M10 2.6 8.4 4.7M10 2.6 11.6 4.7"/>
+        <path d="M8.6 15.2 10 13.6 11.4 15.2M8.6 13.6 10 12 11.4 13.6"/>
+      </g>
+    </g>
+    <g id="e-spear" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2.2C9 4.1 8.1 5.7 8.1 7 8.1 8.2 9 8.8 10 8.8 11 8.8 11.9 8.2 11.9 7 11.9 5.7 11 4.1 10 2.2z"/>
+      <path d="M10 8.8V17.6"/>
+      <path d="M8.5 9.4h3"/>
+    </g>
+    <g id="e-shield" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2.6 4.6 4.5v5.1c0 3.9 2.5 6.6 5.4 7.9 2.9-1.3 5.4-4 5.4-7.9V4.5z"/>
+      <path d="M10 6.4v6.4M7.2 9.4h5.6"/>
+    </g>
+    <g id="e-scales" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10" cy="3.4" r="1"/>
+      <path d="M10 4.4V15.2"/>
+      <path d="M7.2 15.2h5.6"/>
+      <path d="M3.6 6.2h12.8"/>
+      <path d="M3.6 6.2 2 9.6h3.2zM16.4 6.2 14.8 9.6h3.2z"/>
+    </g>
+    <g id="e-bow" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7.8 2.8a9.2 9.2 0 0 1 0 14.4"/>
+      <path d="M7.8 2.8v14.4"/>
+      <path d="M2.4 10H17.2"/>
+      <path d="M17.2 10 14.7 8.3M17.2 10 14.7 11.7"/>
+      <path d="M2.4 8.4 4.2 10 2.4 11.6M3.9 8.4 5.7 10 3.9 11.6"/>
+    </g>
+    <g id="e-compass" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10" cy="10" r="7"/>
+      <path d="M10 3.2v1.6"/>
+      <path d="M10 5 11.7 10 10 15 8.3 10z"/>
+      <circle cx="10" cy="10" r=".7"/>
+    </g>
+  </defs></svg>
+
+  <h1>Emblematy gildii zawodowej — galeria</h1>
+  <p class="note">
+    Kazda gildia zawodowa w duzym medalionie, do oceny kreski. Powiedz ktore
+    poprawic — kazdy emblemat to jedna sciezka SVG w <code>&lt;defs&gt;</code>.
+  </p>
+
+  <div class="section">Bojowe</div>
+  <div class="grid">
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-hammer"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Barbarzyńca<small>mlot</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-flame"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Fanatyk<small>plomien</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-morningstar"/></svg><span class="pip" data-gender="female">♀</span></div><figcaption>Gladiator<small>morgenstern</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-anchor"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Korsarz<small>kotwica</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-greatsword"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Lancknecht<small>dwureczny miecz</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-swordshield"/></svg><span class="pip" data-gender="female">♀</span></div><figcaption>Legionista<small>miecz i tarcza</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-daggers"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Nożownik<small>dwa sztylety</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-arrows"/></svg><span class="pip" data-gender="female">♀</span></div><figcaption>Partyzant<small>skrzyzowane strzaly</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--war"><svg viewBox="0 0 20 20"><use href="#e-spear"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Strażnik<small>wlocznia</small></figcaption></figure>
+  </div>
+
+  <div class="section">Niebojowe</div>
+  <div class="grid">
+    <figure class="tile"><div class="emblem emblem--civ"><svg viewBox="0 0 20 20"><use href="#e-scales"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Kupiec<small>waga</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--civ"><svg viewBox="0 0 20 20"><use href="#e-bow"/></svg><span class="pip" data-gender="female">♀</span></div><figcaption>Myśliwy<small>luk</small></figcaption></figure>
+    <figure class="tile"><div class="emblem emblem--civ"><svg viewBox="0 0 20 20"><use href="#e-compass"/></svg><span class="pip" data-gender="male">♂</span></div><figcaption>Odkrywca<small>kompas</small></figcaption></figure>
+  </div>
+</body>
+</html>

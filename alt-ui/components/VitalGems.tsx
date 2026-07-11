@@ -63,7 +63,7 @@ export default function VitalGems() {
                 const opposite = cfg.default !== undefined ? (cfg.default > 0 ? 0 : max) : null;
                 const highlight = opposite !== null && value === opposite;
 
-                const className = ['forged', 'gem',
+                const className = ['gem',
                     level === 'warning' && 'lvl-warn',
                     level === 'danger' && 'lvl-danger',
                     highlight && 'highlight',

@@ -237,7 +237,6 @@
     justify-content: center;         /* icon + value centered together */
     gap: 7px;
   }
-  .gem.temp { flex: 0 1 116px; min-width: 104px; padding-left: 6px; }
 
   /* the inlaid stone — full pill body, behind the label */
   .gem.forged::after { inset: 3px; } /* slim frame: bezel toward the edge */
@@ -260,8 +259,8 @@
     background-blend-mode: soft-light, normal;
     background-size: 110px 110px, 100% 100%;
     filter: saturate(.58);            /* mute the fills — less contrast on dark stone */
+    transition: background-image .35s ease;
   }
-  .gem.temp .stone { inset: 4px; }
   /* glass sheen over the stone */
   .gem .stone::after {
     content: "";
@@ -272,15 +271,13 @@
       linear-gradient(180deg, transparent 52%, rgba(0,0,0,.6));
   }
 
-  /* icon niche on the left */
+  /* value on top; icon sits next to the name beneath it, sized to the text */
   .gem .niche {
-    position: relative;              /* in-flow, sits beside the value */
-    z-index: 3;
     display: grid;
     place-items: center;
   }
   .gem .niche svg {
-    width: 16px; height: 16px;
+    width: 10px; height: 10px;
     stroke: #f4ecd6;
     /* matches .v text-shadow */
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.98)) drop-shadow(0 2px 5px rgba(0,0,0,.8));
@@ -294,20 +291,11 @@
     align-items: center;
     justify-content: center;
     gap: 1px;
-    width: auto;
   }
-  .gem .label .k {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 7.5px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: #f4ecd6;
-    white-space: nowrap;
-    opacity: .72;
-    order: 2;   /* name sits below the value */
-    text-shadow:
-      0 1px 2px rgba(0,0,0,.98),
-      0 2px 4px rgba(0,0,0,.8);
+  .gem .label .line {
+    display: flex;
+    align-items: center;
+    gap: 3px;
   }
   .gem .label .v {
     font-family: "JetBrains Mono", monospace;
@@ -321,8 +309,18 @@
       0 1px 2px rgba(0,0,0,.98),
       0 2px 5px rgba(0,0,0,.8);
   }
-  .gem.temp .label { justify-content: center; }
-  .gem.temp .label .v { margin-left: 6px; }
+  .gem .label .name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 8px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: #f4ecd6;
+    white-space: nowrap;
+    opacity: .72;
+    text-shadow:
+      0 1px 2px rgba(0,0,0,.98),
+      0 2px 4px rgba(0,0,0,.8);
+  }
 
   /* status rim glow — real success/warning/danger semantics from colors.ts.
      Identity hue stays; the rim signals the level. */
@@ -347,17 +345,23 @@
     box-shadow:
       inset 0 0 0 1px rgba(150,86,68,.5),
       0 0 13px rgba(150,86,68,.24);
-    animation: dangerPulse 1.9s ease-in-out infinite;
   }
-  @keyframes dangerPulse {
+  /* opposite-of-default extreme (fully encumbered, starving, ...) — pulses */
+  .gem.highlight::before {
+    box-shadow:
+      inset 0 0 0 1px rgba(214,110,74,.6),
+      0 0 14px rgba(214,110,74,.3);
+    animation: extremePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes extremePulse {
     50% {
       box-shadow:
-        inset 0 0 0 1px rgba(170,100,78,.7),
-        0 0 18px rgba(170,100,78,.38);
+        inset 0 0 0 1px rgba(240,132,92,.9),
+        0 0 22px rgba(240,132,92,.48);
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .gem.lvl-danger::before { animation: none; }
+    .gem.highlight::before { animation: none; }
   }
 
   /* ---- command trough ---- */
@@ -756,69 +760,124 @@
       <div class="gems">
         <!-- hp: raw 5 -> 6/7, isHp success -->
         <div class="forged gem" style="--hue:var(--blood); --fill:86%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-hp" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">HP</span><span class="v">6/7</span></span>
+          <span class="label">
+            <span class="v">6/7</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-hp" stroke="currentColor"/></svg></span>
+              <span class="name">HP</span>
+            </span>
+          </span>
         </div>
         <!-- fatigue: 2/9, flip -> low = success -->
         <div class="forged gem" style="--hue:var(--slate); --fill:22%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-zm" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Zmeczenie</span><span class="v">2/9</span></span>
+          <span class="label">
+            <span class="v">2/9</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-zm" stroke="currentColor"/></svg></span>
+              <span class="name">Zmeczenie</span>
+            </span>
+          </span>
         </div>
         <!-- stuffed (hunger): 2/3 -> warning -->
         <div class="forged gem lvl-warn" style="--hue:var(--amber); --fill:67%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-hun" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Glod</span><span class="v">2/3</span></span>
+          <span class="label">
+            <span class="v">2/3</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-hun" stroke="currentColor"/></svg></span>
+              <span class="name">Glod</span>
+            </span>
+          </span>
         </div>
         <!-- encumbrance: 4/6, reverse -> high = danger -->
         <div class="forged gem lvl-danger" style="--hue:var(--rust); --fill:67%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-obc" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Obciazenie</span><span class="v">4/6</span></span>
+          <span class="label">
+            <span class="v">4/6</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-obc" stroke="currentColor"/></svg></span>
+              <span class="name">Obciazenie</span>
+            </span>
+          </span>
         </div>
         <!-- soaked (thirst): 2/3 -> warning -->
         <div class="forged gem lvl-warn" style="--hue:var(--steel); --fill:67%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-thi" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Pragnienie</span><span class="v">2/3</span></span>
+          <span class="label">
+            <span class="v">2/3</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-thi" stroke="currentColor"/></svg></span>
+              <span class="name">Pragnienie</span>
+            </span>
+          </span>
         </div>
         <!-- mana: 6/8 -> success -->
         <div class="forged gem" style="--hue:var(--mana); --fill:75%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-mana" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Mana</span><span class="v">6/8</span></span>
+          <span class="label">
+            <span class="v">6/8</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-mana" stroke="currentColor"/></svg></span>
+              <span class="name">Mana</span>
+            </span>
+          </span>
         </div>
         <!-- improve (Postep): 4/15, reverse -> low = success -->
         <div class="forged gem" style="--hue:var(--gold); --fill:27%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-pos" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Postep</span><span class="v">4/15</span></span>
+          <span class="label">
+            <span class="v">4/15</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-pos" stroke="currentColor"/></svg></span>
+              <span class="name">Postep</span>
+            </span>
+          </span>
         </div>
         <!-- form (Forma): 3/3 -> success -->
         <div class="forged gem" style="--hue:var(--moss); --fill:100%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-for" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Forma</span><span class="v">3/3</span></span>
+          <span class="label">
+            <span class="v">3/3</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-for" stroke="currentColor"/></svg></span>
+              <span class="name">Forma</span>
+            </span>
+          </span>
         </div>
         <!-- intox (Upojenie): 2/9, reverse -> low = success -->
         <div class="forged gem" style="--hue:var(--wine); --fill:22%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-upi" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Upojenie</span><span class="v">2/9</span></span>
+          <span class="label">
+            <span class="v">2/9</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-upi" stroke="currentColor"/></svg></span>
+              <span class="name">Upojenie</span>
+            </span>
+          </span>
         </div>
         <!-- headache (Kac): 1/6, reverse -> low = success -->
         <div class="forged gem" style="--hue:var(--ash); --fill:17%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-kac" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Kac</span><span class="v">1/6</span></span>
+          <span class="label">
+            <span class="v">1/6</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-kac" stroke="currentColor"/></svg></span>
+              <span class="name">Kac</span>
+            </span>
+          </span>
         </div>
         <!-- panic (Panika): 1/4, reverse -> low = success -->
         <div class="forged gem" style="--hue:var(--panic); --fill:25%">
-          <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-pan" stroke="currentColor"/></svg></span>
           <span class="stone"></span>
-          <span class="label"><span class="k">Panika</span><span class="v">1/4</span></span>
+          <span class="label">
+            <span class="v">1/4</span>
+            <span class="line">
+              <span class="niche"><svg viewBox="0 0 20 20"><use href="#i-pan" stroke="currentColor"/></svg></span>
+              <span class="name">Panika</span>
+            </span>
+          </span>
         </div>
       </div>
 

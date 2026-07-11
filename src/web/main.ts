@@ -11,12 +11,7 @@ import './layout/layout.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
-import Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import type {SendCommandEvent} from "@shared/events";
-import {registerScripts} from "@client/main";
-import {HelperConnection} from "@modules/helper/HelperConnection";
-import {setupHelperResync} from "@modules/helper/helperResync";
 import {setupOutputContextMenu} from "./outputContextMenu";
 import initPipeStatus from "./pipeStatus";
 import {Dropdown, Modal} from 'bootstrap';
@@ -25,8 +20,6 @@ import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
-import initSessionLogger from "./sessionLogger";
-import initLogFileSaver from "./logFileSaver";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
 import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
@@ -67,109 +60,27 @@ import {
     applySettings as applyMobileButtonSettings,
     loadSettings as loadMobileButtonSettings
 } from "./mobileButtonSettings"
-import {globalStorage, migrateNewlyCharacterScopedKeys} from "@modules/core/storage"
-import {
-    migrateButtonSizeMultiplier,
-    migrateFooterComponentVisibility,
-    migrateLayoutManagerState,
-    migrateMobileButtonMacroField,
-    migrateUiSettingsSplit,
-    runAllSettingsMigrations
-} from "@modules/core/settingsMigrations"
+import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
-import {refresh as refreshNpcStore, subscribe as subscribeNpcStore} from "./dataStores/npcStore";
 import {CommandInputController} from "./commandInput/CommandInputController";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
-
-initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));
-initLogFileSaver(mudClient).catch(err => console.error('File saver init failed', err));
-
-// Run migrations before initializing the client
-migrateNewlyCharacterScopedKeys();
-migrateMobileButtonMacroField();
-// Split uiSettings into concern-scoped keys before runAllSettingsMigrations()
-// bumps the version counter past this migration's gate.
-migrateUiSettingsSplit();
-runAllSettingsMigrations();
-migrateButtonSizeMultiplier();
-migrateFooterComponentVisibility();
-void migrateLayoutManagerState();
-
-// Initialize Firebase sync services (skip on localhost):
-// - syncListener receives remote changes in realtime
-// - syncEngine watches local changes and uploads them (debounced)
-if (!(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    import('@modules/firebase').then(({ loadFirebaseConfig, initializeFirebase, onAuthStateChanged, syncListener, syncEngine }) => {
-        const config = loadFirebaseConfig();
-        if (!config) return;
-        initializeFirebase(config).then(() => {
-            onAuthStateChanged((authState) => {
-                if (authState.isAuthenticated && authState.userId) {
-                    syncListener.start(authState.userId);
-                    syncEngine.start();
-                } else {
-                    syncListener.stop();
-                    syncEngine.stop();
-                }
-            });
-        }).catch(err => {
-            console.warn('[Firebase] Failed to initialize at startup:', err);
-        });
-    }).catch(() => {
-        // Firebase module not available
-    });
-}
+import {bootstrapGameClient} from "./clientBootstrap";
 
 let mobileRadial: MobileCommandRadial | null = null;
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
 
-// Supply the web UI's implementations of the client's injectable ports
-// (tooltips, context menu, plugin-host capabilities) before any script runs.
-installClientPorts();
-
-const client = new Client(mudClient);
-registerScripts(client);
+// Build the client and wire all UI-agnostic startup concerns (migrations,
+// scripts, session logging, Firebase sync, helper, sendCommand/NPC bridges)
+// through the shared bootstrap. Port implementations are the one UI-specific
+// piece, injected here before scripts run.
+const { client, helperConnection } = bootstrapGameClient({ installPorts: installClientPorts });
 
 // The client core is DOM-free; the web UI measures terminal column width from
 // the DOM and pushes it in.
 installContentWidthMeasurer(client);
-
-// Helper connection (optional companion app)
-const helperConnection = new HelperConnection();
-client.keyBindingManager.setHelperConnection(helperConnection);
-
-// Re-push all helper-side session state (window match, binds) on every
-// (re)connect, so an auto-update restart or any reconnect fully restores it.
-setupHelperResync(helperConnection);
-
-// Auto-connect: probe first, launch if not running
-if (localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {
-    helperConnection.probe().then(status => {
-        if (status) {
-            helperConnection.connect();
-        } else {
-            helperConnection.launch();
-        }
-    });
-}
-
-const handleClientCommand = ({command, echo = true, options}: SendCommandEvent) => {
-    if (typeof command !== 'string') {
-        return;
-    }
-    void client.sendCommand(command, echo, options);
-};
-
-eventBus.on('sendCommand', handleClientCommand);
-
-subscribeNpcStore(snapshot => {
-    const payload = snapshot?.all.data.map(({name, loc}) => ({name, loc})) ?? []
-    client.sendEvent("npc", payload)
-})
-void refreshNpcStore()
 
 
 const locationParam = new URLSearchParams(window.location.search).get('locationId');

@@ -2,8 +2,19 @@ export type CharGender = 'male' | 'female';
 
 export interface GmcpCharInfo {
     object_num?: number;
+    id?: number;
     name?: string;
     gender?: CharGender;
+    race?: string;
+    new_player?: boolean;
+    /** Occupational guild (e.g. "Korsarz"). */
+    guild_occ?: string;
+    /** Lay guild (e.g. "Kultysci Chaosu"). May be absent. */
+    guild_lay?: string;
+    /** Racial/origin guild (e.g. "Pochodzeniowka Twierdz Krasnoludzkich"). May be absent. */
+    guild_race?: string;
+    /** Religious guild (e.g. "Kult bogow Chaosu - Khorne"). May be absent. */
+    guild_rel?: string;
 }
 
 export interface GmcpCharState {

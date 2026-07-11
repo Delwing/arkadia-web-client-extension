@@ -24,12 +24,18 @@
   --panic: #6f2f15;
   --ash:   #363129;
 
-  --bar-h: 42px;
+  --bar-h: 36px;
   --gem-dark: #1a1713;
 
   --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
   --tex-stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' seed='11' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23s)'/%3E%3C/svg%3E");
+  /* larger, softer stone mottle for wide surfaces (popups). The gem's
+     --tex-stone is high-frequency: crisp at 42px gem size, but it tiles into
+     TV-static on a big card. This one is low-frequency (broad cloudy blotches)
+     with a couple of finer octaves and a gentle alpha ramp, over a big tile so
+     it barely repeats — it reads as weathered rock, not noise. */
+  --tex-stone-soft: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='ss'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015' numOctaves='4' seed='7' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='0 0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23ss)'/%3E%3C/svg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -84,6 +90,10 @@ body::after {
   --side-edge: clamp(14px, 3vw, 40px);
   --side-w: clamp(232px, 20vw, 360px);
   --side-gap: 16px;
+  /* gap from the viewport bottom shared by the rail plate and the sidebar, so the
+     left panels' bottoms line up with the bottom of the input/vitals panel — and
+     match the 22px top gap between the window top and the first panel */
+  --foot-gap: 22px;
   position: relative;
   z-index: 1;
   height: 100vh;
@@ -127,6 +137,119 @@ body::after {
 .locale::after { transform: scaleX(-1); }
 .locale:empty { display: none; }
 
+/* ---- character plaque — heraldic card dropped into the log on login ---- */
+.plaque {
+  align-self: flex-start;
+  max-width: min(560px, 100%);
+  margin: 14px 0 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  filter: none;                    /* opt out of the log's saturate(.5) mood */
+}
+/* Override the forged panel's brushed-metal fill: its horizontal grain reads as
+   wood on a wide, short card. Use the fine speckle over a soft vertical gradient
+   for a cleaner weathered-plate look. */
+.plaque.forged {
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #17130e 0%, #0e0c09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 140px 140px, 100% 100%;
+}
+/* engraved guild medallion — carries the occupational-guild emblem */
+.plaque__crest {
+  position: relative;
+  flex: 0 0 auto;
+  width: 58px; height: 58px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(184,150,90,.16), transparent 60%),
+    var(--gem-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.24),
+    inset 0 0 0 1px rgba(0,0,0,.6),
+    inset 0 -3px 6px rgba(0,0,0,.72),
+    0 0 0 1px rgba(184,150,90,.14);
+}
+/* etched inner ring — coin-like engrave */
+.plaque__crest::before {
+  content: "";
+  position: absolute; inset: 6px; border-radius: 50%;
+  border: 1px solid rgba(184,150,90,.22);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
+}
+.plaque__crest svg {
+  width: 38px; height: 38px;
+  color: var(--bronze);
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.65));
+}
+/* combat / non-combat rim tint (weathered, never neon) */
+.plaque__crest--war {
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+    inset 0 -3px 6px rgba(0,0,0,.72),
+    0 0 0 1px rgba(150,52,40,.5), 0 0 11px rgba(150,44,32,.18);
+}
+.plaque__crest--war svg { color: #c59a68; }
+.plaque__crest--civ {
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+    inset 0 -3px 6px rgba(0,0,0,.72),
+    0 0 0 1px rgba(150,124,60,.55), 0 0 11px rgba(140,150,72,.16);
+}
+/* gender pip — small notch overlapping the medallion */
+.plaque__pip {
+  position: absolute; right: -2px; bottom: -2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: "Cinzel", serif; font-size: 12px; line-height: 1;
+  color: var(--bronze);
+  background: radial-gradient(circle at 50% 35%, #241f18, #100e0b);
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.28), inset 0 0 0 1px rgba(0,0,0,.7), 0 1px 3px rgba(0,0,0,.7);
+}
+.plaque__pip[data-gender="female"] { color: #c98fa8; }
+.plaque__main { flex: 1 1 auto; min-width: 0; }
+.plaque__name {
+  display: block;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 20px; line-height: 1.05;
+  letter-spacing: .06em;
+  color: var(--parchment);
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+.plaque__sub {
+  display: block;
+  margin-top: 4px;
+  font-family: "Cinzel", serif;
+  font-size: 10px; letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+.plaque__guilds {
+  flex: 1 1 210px;
+  display: flex; flex-direction: column;
+  gap: 5px;
+  padding-left: 18px;
+  border-left: 1px solid rgba(184,150,90,.16);
+}
+.plaque__guild { display: flex; flex-direction: column; gap: 1px; }
+.plaque__gk {
+  font-family: "Cinzel", serif;
+  font-size: 8px; letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--parchment-dim);
+}
+.plaque__gv {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 13.5px; line-height: 1.2;
+  color: var(--parchment);
+}
+
 /* scrollable game log, fading up into the void */
 #main_text_output_msg_wrapper {
   flex: 1 1 auto;
@@ -167,7 +290,7 @@ body::after {
   max-width: 1520px;
   margin: 0;             /* left-aligned, matching .world */
   width: 100%;
-  padding-bottom: 2px;
+  padding-bottom: var(--foot-gap);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -200,27 +323,66 @@ body::after {
   pointer-events: none;
 }
 
-.gems { display: flex; flex-wrap: wrap; gap: 12px; }
+/* One shared dark plate holds the vital row and the command row. Its own
+   forged chrome (not the .forged class, which is the warmer iron used by the
+   sidebar/plaque) so the holes read as cut into one piece of steel. */
+.hud-panel {
+  position: relative;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #0c0b09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #16130e 0%, #0c0b09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.14),
+    inset 0 -3px 6px rgba(0,0,0,.72),
+    inset 0 0 0 1px rgba(0,0,0,.5),
+    0 3px 10px rgba(0,0,0,.6),
+    0 12px 30px rgba(0,0,0,.45);
+}
+.hud-panel .gems { padding: 0; }
+.hud-panel .command { padding: 0; margin: 0; }
+/* faint engraved seam parting the vital row from the input row */
+.hud-panel--seam { gap: 0; }
+.hud-panel--seam .command {
+  margin-top: 8px;
+  padding-top: 9px;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,.6), inset 0 2px 0 rgba(184,150,90,.07);
+}
+
+.gems { display: flex; gap: 6px; }
 .gem {
   --fill: 60%;
   --hue: var(--slate);
   position: relative;
-  flex: 1 1 116px;
-  min-width: 108px;
-  max-width: 220px;
+  flex: 1 1 0;
+  min-width: 0;
   height: var(--bar-h);
   padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
+  border-radius: 7px;                  /* the hole */
+  /* thick lit-steel form the button is pressed into */
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.18),
+    inset 0 -1px 0 rgba(0,0,0,.6),
+    inset 0 0 0 1px rgba(0,0,0,.8),
+    inset 0 2px 4px rgba(0,0,0,.66);
 }
-/* slim frame: pull the bezel + stone toward the edge so the border reads thin */
-.gem.forged::after { inset: 3px; }
+/* the colored convex button plugging the hole. inset 4px, radius = hole − inset
+   so the corners stay concentric with the hole. */
 .gem .stone {
   position: absolute; inset: 4px;
-  border-radius: 4px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.65), inset 0 1px 3px rgba(0,0,0,.75);
+  border-radius: 3px; overflow: hidden;
   background-image:
     var(--tex-stone),
     linear-gradient(90deg,
@@ -231,14 +393,19 @@ body::after {
   background-blend-mode: soft-light, normal;
   background-size: 110px 110px, 100% 100%;
   filter: saturate(.58);
+  /* convex cap: top light, rounded body shade, drop shadow into the hole */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -4px 8px rgba(0,0,0,.5),
+    0 1px 2px rgba(0,0,0,.7);
   transition: background-image .35s ease;
 }
 .gem .stone::after {
   content: "";
   position: absolute; inset: 0;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 45%),
-    linear-gradient(180deg, transparent 52%, rgba(0,0,0,.6));
+    linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, transparent 46%, rgba(0,0,0,.55));
 }
 /* value on top; icon sits next to the name beneath it, sized to the text */
 .gem .niche { display: grid; place-items: center; }
@@ -263,38 +430,38 @@ body::after {
   color: #f4ecd6; white-space: nowrap; opacity: .72;
   text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 4px rgba(0,0,0,.8);
 }
-/* every pill glows: grayish by default, red once it warrants attention */
-.gem::before {
-  content: ""; position: absolute; inset: 0;
-  border-radius: 9px; pointer-events: none; z-index: 4;
-  box-shadow: inset 0 0 0 1px rgba(152,152,160,.30), 0 0 9px rgba(152,152,160,.16);
+/* Level signal lives inside the button: a hot bottom-shade recolouring the cap's
+   own base — no rim, so every button keeps identical geometry. Sits under the
+   gloss (::after) as a separately-animatable layer: danger breathes, and the
+   opposite-of-default extreme (fully encumbered, starving) breathes harder. */
+.gem.lvl-warn .stone::before,
+.gem.lvl-danger .stone::before,
+.gem.highlight .stone::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
 }
-.gem.lvl-warn::before {
-  box-shadow: inset 0 0 0 1px rgba(150,128,88,.34), 0 0 10px rgba(150,128,88,.15);
+.gem.lvl-warn .stone::before {
+  background: linear-gradient(180deg, transparent 36%, rgba(196,152,72,.55));
 }
-.gem.lvl-danger::before {
-  box-shadow: inset 0 0 0 1px rgba(150,86,68,.5), 0 0 13px rgba(150,86,68,.24);
+.gem.lvl-danger .stone::before {
+  background: linear-gradient(180deg, transparent 30%, rgba(208,76,52,.72));
+  animation: dangerBreath 1.8s ease-in-out infinite;
 }
-/* opposite-of-default extreme (fully encumbered, starving, ...) — pulses */
-.gem.highlight::before {
-  box-shadow: inset 0 0 0 1px rgba(214,110,74,.6), 0 0 14px rgba(214,110,74,.3);
-  animation: extremePulse 1.6s ease-in-out infinite;
+.gem.highlight .stone::before {
+  background: linear-gradient(180deg, transparent 24%, rgba(226,84,54,.82));
+  animation: dangerBreath 1.15s ease-in-out infinite;
 }
-@keyframes extremePulse {
-  50% { box-shadow: inset 0 0 0 1px rgba(240,132,92,.9), 0 0 22px rgba(240,132,92,.48); }
-}
-@media (prefers-reduced-motion: reduce) { .gem.highlight::before { animation: none; } }
+@keyframes dangerBreath { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .gem .stone::before { animation: none !important; } }
 
 .command { display: flex; align-items: stretch; min-height: var(--bar-h); padding: 6px; gap: 6px; }
 .knot {
   flex: 0 0 38px; display: grid; place-items: center; border-radius: 5px;
   background: linear-gradient(180deg, #221d16, #100e0b);
   box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
-  cursor: pointer;
 }
 .knot svg { width: 21px; height: 21px; stroke: var(--bronze-dim); opacity: .85; }
-.knot.connected svg { stroke: #8fae6a; opacity: 1; }
-.knot[title] { position: relative; }
 
 .trough {
   flex: 1 1 auto; display: flex; align-items: center; gap: 10px; padding: 0 15px;
@@ -334,7 +501,7 @@ textarea.cmd-input {
      a fixed height and the object list scrolls inside its own half instead of
      pushing the map around as the object count changes. */
   top: 22px;
-  bottom: 14px;
+  bottom: var(--foot-gap);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -391,6 +558,107 @@ textarea.cmd-input {
 /* map panel body: lay the map out to fill the half, exits pinned below it */
 .sidebar > .panel:first-child .panel__body {
   display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* --- time / season (Czas): compact, natural height between map and objects --- */
+.panel--time { flex: 0 0 auto; }        /* opt out of the 50/50 split */
+.timepane { display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+.tp-clock { display: flex; align-items: center; gap: 10px; }
+.tp-sky { display: flex; width: 22px; height: 22px; flex: 0 0 auto; }
+.tp-sky svg { width: 22px; height: 22px; }
+.tp-day { color: #f0c25a; }
+.tp-night { color: #9fb6d6; }
+.tp-time {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 17px; font-weight: 600; line-height: 1;
+  color: var(--parchment); font-variant-numeric: tabular-nums; letter-spacing: .02em;
+}
+.tp-phase {
+  margin-left: auto;
+  font-family: "Cinzel", serif; font-size: 9px; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--bronze-dim);
+}
+.tp-date {
+  font-family: "Cinzel", serif; font-size: 9.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--parchment-dim);
+}
+.tp-doy { color: var(--bronze-dim); }
+
+/* --- combat status (Boj): weapon / cover / order / guard-release, below Czas --- */
+.panel--status { flex: 0 0 auto; }       /* natural height, like the time panel */
+/* body is a dense status list, so trim its padding — but leave the header at the
+   shared default so its title lines up with the other panels' headers */
+.panel--status .panel__body { padding: 6px 11px 8px; }
+.statpane { display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+.st-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 14px;
+}
+.st-row--idle { opacity: .42; }           /* order timer dimmed when not leading */
+/* the Puszczaj row doubles as a toggle button — strip the native chrome */
+.st-row--btn {
+  border: 0; margin: 0; padding: 1px 0; width: 100%;
+  background: transparent; color: inherit; text-align: left;
+  font: inherit; cursor: pointer;
+  border-radius: 3px;
+  transition: background-color .12s ease;
+}
+.st-row--btn:hover { background: rgba(184,150,90,.09); }
+.st-row--btn:active { background: rgba(184,150,90,.15); }
+.st-ico { display: flex; width: 16px; height: 16px; color: var(--bronze-dim); }
+.st-ico svg { width: 16px; height: 16px; }
+.st-label {
+  font-family: "Cinzel", serif; font-size: 9.5px; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--parchment-dim);
+  white-space: nowrap;
+}
+
+/* boolean state: forged LED + short mono word, right-aligned to line up */
+.st-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.st-led {
+  width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
+  background: #2a2723; box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+}
+.st-word {
+  min-width: 56px; text-align: right;
+  font-family: "JetBrains Mono", monospace; font-size: 9px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--parchment-dim);
+}
+.st-toggle--on .st-led {
+  background: #7c9a56;
+  box-shadow: 0 0 5px rgba(124,154,86,.5), inset 0 0 0 1px rgba(0,0,0,.35);
+}
+.st-toggle--on .st-word { color: #9bab7f; }
+.st-toggle--off .st-led {
+  background: #8a3b2c;
+  box-shadow: 0 0 4px rgba(138,59,44,.5), inset 0 0 0 1px rgba(0,0,0,.4);
+}
+
+/* cooldown charge bar: fills toward full as the timer runs down */
+.st-gauge {
+  position: relative;
+  width: 72px; height: 13px; flex: 0 0 auto;
+  border-radius: 3px; overflow: hidden;
+  background: linear-gradient(180deg, #0b0a08, #131109);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6), inset 0 1px 0 rgba(184,150,90,.05);
+}
+.st-gauge__fill {
+  position: absolute; inset: 0 auto 0 0;
+  border-radius: 3px 0 0 3px;
+  transition: width .1s linear;
+}
+.st-gauge--charge .st-gauge__fill { background: linear-gradient(180deg, #9a7f4c, #715a30); }
+/* muted olive, not a saturated ready-green — sits inside the forged palette */
+.st-gauge--ready .st-gauge__fill { background: linear-gradient(180deg, #5c6a45, #3e4a2c); }
+.st-gauge__num {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace; font-size: 8.5px;
+  letter-spacing: .05em; font-variant-numeric: tabular-nums;
+  color: #e8dfc8; text-shadow: 0 1px 1px rgba(0,0,0,.85);
 }
 
 /* --- map (hosts the real client map renderer via #map) --- */
@@ -468,6 +736,15 @@ textarea.cmd-input {
       color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
   filter: saturate(.6);
 }
+/* clickable object parts — number attacks, name guards, HP bar breaks/pulls back
+   (matches the stock object list). A quiet bronze lift signals the affordance. */
+.obj__key.is-clickable,
+.obj__name.is-clickable,
+.obj__hp.is-clickable { cursor: pointer; }
+.obj__key.is-clickable:hover { color: var(--bronze); }
+.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+.obj__name.is-clickable:hover { color: var(--bronze); }
+.obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
 /* the fray: which objects are attacking THIS one, colored by their side.
    red chips on your/ally row = threat; green chips on an enemy row = handled. */
 .obj__fray {
@@ -494,15 +771,153 @@ textarea.cmd-input {
   font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
 }
 
-.caption {
-  /* share the output column so it centers under the output, not across the
-     full reserved-padding band */
-  max-width: 1520px; width: 100%; margin: 0;
-  text-align: center; font-family: "Cinzel", serif;
-  letter-spacing: .3em; text-transform: uppercase; font-size: 9.5px;
-  color: var(--bronze-dim); opacity: .5; padding-bottom: 5px; margin-top: 6px;
+/* Inline connect prompt — printed into the game log while the transport is
+   down (see GameLog), removed when the socket opens. The button reads as a
+   forged call-to-action rather than a plain line of output. */
+.connect-prompt { margin: 8px 0; text-align: left; }
+.connect-link {
+  font-family: "Cinzel", serif; letter-spacing: .18em; text-transform: uppercase;
+  font-size: 12px; color: var(--bronze); cursor: pointer;
+  padding: 7px 20px; border-radius: 5px;
+  border: 1px solid rgba(184,150,90,.4);
+  background: linear-gradient(180deg, #221d16, #100e0b);
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
+  transition: color .12s, border-color .12s;
 }
-.caption #alt-status { cursor: pointer; color: var(--bronze); }
-.caption #alt-status.connected { cursor: default; color: #8fae6a; }
+.connect-link:hover { color: var(--parchment); border-color: rgba(184,150,90,.7); }
 
-@media (max-width: 720px) { .gem { flex: 1 1 46%; } #main_text_output_msg_wrapper { font-size: 12px; } }
+/* ============================================================
+   HOVER TOOLTIP + CONTEXT MENU — herb / book descriptions
+   Carved-stone tablets cut from the same recipe as the vital
+   gems: stone texture over a dark gradient, a sunken inner
+   shadow, a soft top-gloss (::before), and a faint rim glow.
+   Shared by the tooltip (imperative, into #hover-tooltip) and
+   the right-click menu (React, ContextMenu.tsx).
+   ============================================================ */
+
+/* the shared stone surface — mirrors .gem .stone (texture + inset
+   shadow + saturate) but neutral-dark instead of hue-filled */
+.hover-tooltip,
+.alt-context-menu {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--gem-dark);
+  background-image:
+    var(--tex-stone-soft),
+    linear-gradient(180deg, #221d16 0%, #17130e 55%, #100c09 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 400px 400px, 100% 100%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.65),
+    inset 0 1px 3px rgba(0,0,0,.75),
+    inset 0 1px 0 rgba(214,198,160,.05),
+    0 0 0 1px rgba(152,152,160,.14),
+    0 0 10px rgba(152,152,160,.10),
+    0 8px 26px rgba(0,0,0,.6);
+}
+/* top gloss + base shadow, echoing .gem .stone::after */
+.hover-tooltip::before,
+.alt-context-menu::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, transparent 55%, rgba(0,0,0,.5));
+}
+
+/* --- hover tooltip (herb effects, book categories) --- */
+.hover-tooltip {
+  position: absolute;
+  left: 0; top: 0;
+  z-index: 1200;
+  display: none;
+  max-width: 340px;
+  padding: 9px 12px;
+  pointer-events: none;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--parchment);
+}
+.hover-tooltip.show { display: block; }
+/* keep content above the gloss layer (::before, z-index 0) */
+.hover-tooltip__header,
+.hover-tooltip__entry { position: relative; z-index: 1; }
+.hover-tooltip__header {
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--bronze);
+  margin-bottom: 6px; padding-bottom: 5px;
+  box-shadow: inset 0 -1px 0 rgba(184,150,90,.18);
+  text-shadow: 0 1px 2px rgba(0,0,0,.9);
+}
+.hover-tooltip__entry {
+  display: flex; align-items: baseline; gap: 7px;
+}
+.hover-tooltip__entry + .hover-tooltip__entry { margin-top: 2px; }
+.hover-tooltip__label {
+  flex: 0 0 auto;
+  font-family: "JetBrains Mono", monospace; font-size: 10.5px;
+  color: var(--bronze-dim); white-space: nowrap;
+}
+.hover-tooltip__content {
+  flex: 1 1 auto; min-width: 0;
+  word-break: break-word;
+  filter: saturate(.5);   /* fold effect colors into the muted forge world */
+}
+
+/* --- right-click context menu --- */
+.alt-context-menu {
+  position: fixed;
+  z-index: 1300;
+  min-width: 172px;
+  max-width: 340px;
+  padding: 7px;
+}
+/* keep header + items above the gloss layer (::before, z-index 0) */
+.alt-context-menu__header,
+.alt-context-menu__items { position: relative; z-index: 1; }
+.alt-context-menu__header {
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--bronze);
+  padding: 3px 8px 7px;
+  margin-bottom: 5px;
+  box-shadow: inset 0 -1px 0 rgba(184,150,90,.18);
+  text-shadow: 0 1px 2px rgba(0,0,0,.9);
+}
+.alt-context-menu__header--small {
+  font-size: 8.5px; letter-spacing: .14em; color: var(--bronze-dim);
+}
+.alt-context-menu__items { display: flex; flex-direction: column; gap: 3px; }
+/* each action is a sunken stone slot; hover warms it with a bronze rim */
+.alt-context-menu button {
+  position: relative;
+  display: block; width: 100%;
+  text-align: left;
+  padding: 7px 11px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: rgba(0,0,0,.24);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), inset 0 1px 2px rgba(0,0,0,.5);
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 13px; line-height: 1.35;
+  cursor: pointer;
+  transition: color .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.alt-context-menu button:hover,
+.alt-context-menu button:focus-visible {
+  outline: none;
+  color: #f4ecd6;
+  background: rgba(184,150,90,.13);
+  border-color: rgba(184,150,90,.4);
+  box-shadow: inset 0 0 0 1px rgba(184,150,90,.28), 0 0 9px rgba(184,150,90,.12);
+}
+.alt-context-menu button.opens-window::after {
+  content: "\2197";        /* north-east arrow — entry opens a window */
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  font-size: 11px; color: var(--bronze-dim); opacity: .8;
+}
+
+@media (max-width: 720px) { .gem .label .name { display: none; } #main_text_output_msg_wrapper { font-size: 12px; } }

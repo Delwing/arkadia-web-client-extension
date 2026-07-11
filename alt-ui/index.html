@@ -15,6 +15,10 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- Hover tooltip anchor for herb/book descriptions. The shared
+       @shared/dom/tooltip primitive renders into this by id; kept a sibling of
+       #root so React never manages it. Styled by the .hover-tooltip rules. -->
+  <div id="hover-tooltip" class="hover-tooltip"></div>
   <script type="module" src="./main.tsx"></script>
 </body>
 </html>
