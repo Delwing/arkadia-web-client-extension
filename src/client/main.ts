@@ -21,6 +21,7 @@ import initWorldDestructionTimer from './scripts/worldDestructionTimer'
 import initBinds from './scripts/binds'
 import initTempBinds from './scripts/tempBinds'
 import initWalkCommands from './scripts/walkCommands'
+import initDirectionBinds from './scripts/directionBinds'
 import initEnemyBinds from './scripts/enemyBinds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
@@ -235,6 +236,7 @@ export function registerScripts(client: Client) {
     initBinds(client, aliases)
     initTempBinds(client, aliases)
     initWalkCommands(client, aliases)
+    initDirectionBinds(client)
     initEnemyBinds(client, aliases)
     initChatHistory(client, aliases)
     initMoveMode(client)

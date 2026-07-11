@@ -35,6 +35,13 @@ export interface UiPort {
     showBookTooltip(categories: string[], x: number, y: number): void;
     hideBookTooltip(): void;
     showContextMenu(items: ContextMenuEntry[], x: number, y: number, options?: ContextMenuOptions): void;
+    /**
+     * Optional: whether global keybinds (e.g. direction/movement keys) should be
+     * suppressed right now, for UI state the client can't see — e.g. an open
+     * modal dialog. Omitted → never suppressed. Typing in a non-command text
+     * field is handled by the shared handler and does not need this hook.
+     */
+    shouldSuppressKeys?(): boolean;
 }
 
 const noopUiPort: UiPort = {

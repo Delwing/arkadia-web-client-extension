@@ -40,7 +40,6 @@ import {
 } from "@modules/core/settings";
 
 import "@client/main.ts"
-import {getActiveKeymapId, switchKeymap} from "@modules/core/keymapStorage";
 import NoSleep from 'nosleep.js';
 import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
@@ -123,10 +122,8 @@ if (!(window.location.hostname === 'localhost' || window.location.hostname === '
 
 let mobileRadial: MobileCommandRadial | null = null;
 
-// Populate the flat 'binds' storage key from the active keymap so that
-// Client picks up keybinds on first read (fixes binds not working until
-// the user opens Bindowanie and clicks Zapisz).
-switchKeymap(getActiveKeymapId());
+// The client seeds `binds` from the active keymap itself (KeyBindingManager),
+// so any UI — including this one — picks up keybinds without a UI-side step.
 
 // Supply the web UI's implementations of the client's injectable ports
 // (tooltips, context menu, plugin-host capabilities) before any script runs.
@@ -253,29 +250,6 @@ function disableTabSleepPrevention() {
     wakeLockEnabled = false;
     updateWakeLockButton();
 }
-
-const isDirectionMap = (value: unknown): value is Record<string, Partial<RawDirectionBind> | undefined> => {
-    if (!value || typeof value !== 'object') return false;
-    const entries = Object.entries(value as Record<string, unknown>);
-    return entries.every(([, entry]) => {
-        if (entry === undefined) return true;
-        if (!entry || typeof entry !== 'object') return false;
-        const candidate = entry as Record<string, unknown>;
-        if ('key' in candidate && typeof candidate.key !== 'string') {
-            return false;
-        }
-        const flags: Array<'ctrl' | 'alt' | 'shift'> = ['ctrl', 'alt', 'shift'];
-        return flags.every(flag => !(flag in candidate) || typeof candidate[flag] === 'boolean');
-    });
-};
-
-globalStorage.onChange('binds', (detail) => {
-    const payload = detail as { directions?: unknown } | undefined;
-    const directions = payload?.directions;
-    if (isDirectionMap(directions)) {
-        applyDirectionBinds(directions);
-    }
-});
 
 const iframeContainerEl = document.getElementById("iframe-container") as HTMLElement | null;
 const mainContainerEl = document.getElementById("main-container") as HTMLElement | null;
@@ -746,116 +720,10 @@ document.addEventListener('visibilitychange', () => {
 });
 
 
-interface DirectionBinding {
-    code: string;
-    direction: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
-}
-
-interface RawDirectionBind {
-    key: string;
-    ctrl?: boolean;
-    alt?: boolean;
-    shift?: boolean;
-}
-
-const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
-    n: {key: 'Numpad8'},
-    s: {key: 'Numpad2'},
-    w: {key: 'Numpad4'},
-    e: {key: 'Numpad6'},
-    nw: {key: 'Numpad7'},
-    ne: {key: 'Numpad9'},
-    sw: {key: 'Numpad1'},
-    se: {key: 'Numpad3'},
-    u: {key: 'NumpadMultiply'},
-    d: {key: 'NumpadDivide'},
-    zerknij: {key: 'Numpad5'},
-    special: {key: 'Numpad0'},
-};
-
-// Build initial direction bindings from stored binds (if any) so that
-// custom direction keys work immediately after reload without re-saving.
-const storedBindsForDirs = globalStorage.get('binds');
-let directionBindings: DirectionBinding[] = buildDirectionBindings(
-    (storedBindsForDirs as any)?.directions ?? undefined
-);
-
-function buildDirectionBindings(dirs?: Record<string, Partial<RawDirectionBind> | undefined>): DirectionBinding[] {
-    const resolved: DirectionBinding[] = Object.entries(DEFAULT_DIRECTION_BINDS).map(([direction, fallback]) => {
-        const override = dirs?.[direction];
-        const source = (override && override.key) ? override : fallback;
-        return {
-            direction,
-            code: source.key,
-            ctrl: !!source.ctrl,
-            alt: !!source.alt,
-            shift: !!source.shift,
-        };
-    });
-
-    return resolved;
-}
-
-function applyDirectionBinds(dirs: Record<string, Partial<RawDirectionBind> | undefined> | undefined) {
-    directionBindings = buildDirectionBindings(dirs || undefined);
-}
-
-function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding) {
-    return event.code === binding.code &&
-        event.ctrlKey === !!binding.ctrl &&
-        event.altKey === !!binding.alt &&
-        event.shiftKey === !!binding.shift;
-}
-
-// Add global keydown event listener for numpad directions
-document.addEventListener('keydown', (e) => {
-    const active = document.activeElement as HTMLElement | null;
-    const modalOpen = document.querySelector('.modal.show');
-    if (modalOpen && (!active || active.id !== 'message-input')) {
-        // Ignore all keybinds when any modal dialog is open, except for the main
-        // command input which is hidden behind the modal anyway
-        return;
-    }
-
-    if (active &&
-        active.id !== 'message-input' &&
-        (active.matches('input, textarea') || active.isContentEditable)) {
-        return;
-    }
-    const binding = directionBindings.find(item => matchesDirectionBinding(e, item));
-    if (binding) {
-        e.preventDefault();
-        if (binding.direction === 'special') {
-            const exits = client.Map.currentRoom?.specialExits ?? {};
-            const first = Object.keys(exits)[0];
-            if (first) {
-                eventBus.emit('sendCommand', {command: first});
-            }
-        } else {
-            client.sendCommand(binding.direction);
-        }
-    }
-});
-
-// Helper bind support for directions
-client.on('helperBind', (bindName) => {
-    const dirMatch = bindName.match(/^dir_(.+)$/);
-    if (dirMatch) {
-        const dir = dirMatch[1];
-        if (dir === 'special') {
-            const exits = client.Map.currentRoom?.specialExits ?? {};
-            const first = Object.keys(exits)[0];
-            if (first) {
-                eventBus.emit('sendCommand', {command: first});
-            }
-        } else {
-            client.sendCommand(dir);
-        }
-    }
-});
+// Direction (numpad movement) keybinds and the `binds` seed now live in the
+// client (src/client/scripts/directionBinds.ts + KeyBindingManager), so every
+// UI gets them identically. This UI only supplies the modal-open suppression
+// via UiPort.shouldSuppressKeys (see installClientPorts).
 
 document.addEventListener('DOMContentLoaded', () => {
     // Request persistent storage

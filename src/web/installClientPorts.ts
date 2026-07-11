@@ -28,6 +28,8 @@ export function installClientPorts(): void {
         showBookTooltip,
         hideBookTooltip,
         showContextMenu,
+        // Suppress global (direction) keybinds while a Bootstrap modal is open.
+        shouldSuppressKeys: () => !!document.querySelector('.modal.show'),
     });
 
     setPluginHostPort({

@@ -2,6 +2,7 @@ import type Client from "./Client";
 import { formatLabel } from "./scripts/functionalBind";
 import { globalStorage } from "@modules/core/storage";
 import { bindMatches } from "@modules/core/keymapTypes";
+import { switchKeymap, getActiveKeymapId } from "@modules/core/keymapStorage";
 import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HotkeyMsg } from "@modules/helper/helperProtocol";
 import { registerHelperBind } from "@modules/helper/helperBindRegistry";
@@ -33,12 +34,27 @@ export default class KeyBindingManager {
 
     constructor(client: Client, helperConnection?: HelperConnection) {
         this.client = client;
+        this.seedBindsFromActiveKeymap();
         this.setupKeydownListener();
         this.setupBindsListener();
         this.setupHelperBindListener();
         this.registerBuiltInHelperBinds();
         if (helperConnection) {
             this.setupHelperListener(helperConnection);
+        }
+    }
+
+    // Any UI that builds a Client gets its keybinds seeded from the active keymap.
+    // The flat `binds` key is what every keybind consumer reads; until it is
+    // written the configured binds silently don't fire. Only seed when absent so
+    // we don't clobber an existing binds set or force keymap migration.
+    private seedBindsFromActiveKeymap() {
+        try {
+            if (!globalStorage.get('binds')) {
+                switchKeymap(getActiveKeymapId());
+            }
+        } catch {
+            // ignore malformed keymap data
         }
     }
 
