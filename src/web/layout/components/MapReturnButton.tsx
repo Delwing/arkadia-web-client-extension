@@ -1,48 +1,32 @@
-import {useCallback, useEffect, useState, useRef} from 'react';
+import {useCallback, useEffect, useState} from 'react';
+import {getEmbeddedMap, subscribeEmbeddedMap} from '@web/embedRegistry';
 
 export function MapReturnButton() {
   const [isVisible, setIsVisible] = useState(false);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-
-  const getEmbedded = useCallback(() => {
-    return (globalThis as any).embedded;
-  }, []);
 
   useEffect(() => {
-    const trySubscribe = () => {
-      const embedded = getEmbedded();
-      if (!embedded?.onViewChange) return false;
-
-      // Set initial state
+    // Re-attach whenever the map instance arrives or is replaced, rather than
+    // polling globalThis on a timer.
+    let unsubscribeView: (() => void) | null = null;
+    const unsubscribeMap = subscribeEmbeddedMap((embedded) => {
+      unsubscribeView?.();
+      unsubscribeView = null;
+      if (!embedded) return;
       setIsVisible(!embedded.isViewingPlayerPosition);
-
-      // Subscribe to changes
-      unsubscribeRef.current = embedded.onViewChange((isViewingPlayer: boolean) => {
+      unsubscribeView = embedded.onViewChange((isViewingPlayer: boolean) => {
         setIsVisible(!isViewingPlayer);
       });
-      return true;
-    };
-
-    // Try to subscribe immediately
-    if (trySubscribe()) return;
-
-    // Poll until embedded is available
-    const interval = setInterval(() => {
-      if (trySubscribe()) {
-        clearInterval(interval);
-      }
-    }, 100);
+    });
 
     return () => {
-      clearInterval(interval);
-      unsubscribeRef.current?.();
+      unsubscribeMap();
+      unsubscribeView?.();
     };
-  }, [getEmbedded]);
+  }, []);
 
   const handleClick = useCallback(() => {
-    const embedded = getEmbedded();
-    embedded?.returnToPlayer?.();
-  }, [getEmbedded]);
+    getEmbeddedMap()?.returnToPlayer?.();
+  }, []);
 
   if (!isVisible) return null;
 

@@ -1,11 +1,11 @@
 import { useState, type CSSProperties } from 'react';
 import { getColorLevel } from '@web/colors';
-import { globalStorage } from '@modules/core/storage';
 import { useClientEvent } from '../hooks/useClientEvent';
 
 // Config mirrors the stock CharState DEFAULT_CONFIG; hue + icon are HUD styling.
 interface VitalCfg {
     key: string;
+    name: string;
     icon: string;
     hue: string;
     max: number;
@@ -14,18 +14,19 @@ interface VitalCfg {
     transform?: (value: number, max: number) => { value: number; max: number };
 }
 
+// Names match the stock UI's ASCII transliterations (BarOrderSettings DISPLAY_NAMES).
 const VITALS: VitalCfg[] = [
-    { key: 'hp', icon: 'i-hp', hue: '--blood', max: 6, transform: (v, m) => ({ value: v + 1, max: m + 1 }) },
-    { key: 'fatigue', icon: 'i-zm', hue: '--slate', max: 9, flip: true },
-    { key: 'stuffed', icon: 'i-hun', hue: '--amber', max: 3, default: 3 },
-    { key: 'encumbrance', icon: 'i-obc', hue: '--rust', max: 6, default: 0 },
-    { key: 'soaked', icon: 'i-thi', hue: '--steel', max: 3, default: 3 },
-    { key: 'mana', icon: 'i-mana', hue: '--mana', max: 8, default: 8 },
-    { key: 'improve', icon: 'i-pos', hue: '--gold', max: 15, default: 0 },
-    { key: 'form', icon: 'i-for', hue: '--moss', max: 3, default: 3 },
-    { key: 'intox', icon: 'i-upi', hue: '--wine', max: 9, default: 0 },
-    { key: 'headache', icon: 'i-kac', hue: '--ash', max: 6, default: 0 },
-    { key: 'panic', icon: 'i-pan', hue: '--panic', max: 4, default: 0 },
+    { key: 'hp', name: 'HP', icon: 'i-hp', hue: '--blood', max: 6, transform: (v, m) => ({ value: v + 1, max: m + 1 }) },
+    { key: 'fatigue', name: 'Zmeczenie', icon: 'i-zm', hue: '--slate', max: 9, flip: true },
+    { key: 'stuffed', name: 'Glod', icon: 'i-hun', hue: '--amber', max: 3, default: 3 },
+    { key: 'encumbrance', name: 'Obciazenie', icon: 'i-obc', hue: '--rust', max: 6, default: 0 },
+    { key: 'soaked', name: 'Pragnienie', icon: 'i-thi', hue: '--steel', max: 3, default: 3 },
+    { key: 'mana', name: 'Mana', icon: 'i-mana', hue: '--mana', max: 8, default: 8 },
+    { key: 'improve', name: 'Postep', icon: 'i-pos', hue: '--gold', max: 15, default: 0 },
+    { key: 'form', name: 'Forma', icon: 'i-for', hue: '--moss', max: 3, default: 3 },
+    { key: 'intox', name: 'Upojenie', icon: 'i-upi', hue: '--wine', max: 9, default: 0 },
+    { key: 'headache', name: 'Kac', icon: 'i-kac', hue: '--ash', max: 6, default: 0 },
+    { key: 'panic', name: 'Panika', icon: 'i-pan', hue: '--panic', max: 4, default: 0 },
 ];
 
 export default function VitalGems() {
@@ -39,20 +40,16 @@ export default function VitalGems() {
         setCharOptions(prev => ({ ...prev, ...(options as { form?: number }) }));
     });
 
-    const alwaysVisible: string[] = globalStorage.get('uiSettings')?.alwaysVisibleBars ?? [];
-
     return (
         <div className="gems" id="alt-gems">
             {VITALS.map((cfg) => {
                 const raw = vitalState[cfg.key];
                 const defined = typeof raw === 'number';
 
-                let visible = defined;
-                if (cfg.key === 'form' && raw === 0 && (charOptions.form ?? 0) === 0) visible = false;
-                if (defined && !alwaysVisible.includes(cfg.key) && cfg.default !== undefined && raw === cfg.default) {
-                    visible = false;
-                }
-                if (!visible) return null;
+                // All vitals show by default; hide only bars with no GMCP data yet,
+                // and "form" when the character has no fighting form at all (N/A).
+                if (!defined) return null;
+                if (cfg.key === 'form' && raw === 0 && (charOptions.form ?? 0) === 0) return null;
 
                 let value = raw;
                 let max = cfg.max;
@@ -79,11 +76,16 @@ export default function VitalGems() {
 
                 return (
                     <div key={cfg.key} className={className} style={style}>
-                        <span className="niche">
-                            <svg viewBox="0 0 20 20"><use href={`#${cfg.icon}`} stroke="currentColor" /></svg>
-                        </span>
                         <span className="stone" />
-                        <span className="label"><span className="v">{value}/{max}</span></span>
+                        <span className="label">
+                            <span className="v">{value}/{max}</span>
+                            <span className="line">
+                                <span className="niche">
+                                    <svg viewBox="0 0 20 20"><use href={`#${cfg.icon}`} stroke="currentColor" /></svg>
+                                </span>
+                                <span className="name">{cfg.name}</span>
+                            </span>
+                        </span>
                     </div>
                 );
             })}

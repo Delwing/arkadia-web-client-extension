@@ -11,6 +11,7 @@ import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopup
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
 import { TransportHopsOverlay, type TransportHopMarker } from './transportHopsOverlay';
+import { getEmbeddedMap } from './embedRegistry';
 
 const TRANSPORT_HOPS_OVERLAY_ID = 'transport-hops';
 
@@ -58,7 +59,7 @@ function StaticMapMenu({
     const toggleRef = useRef<HTMLButtonElement>(null);
     const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
 
-    const getEmbedded = useCallback(() => (globalThis as any).embedded, []);
+    const getEmbedded = useCallback(() => getEmbeddedMap(), []);
 
     const calculateDropdownPosition = useCallback(() => {
         if (toggleRef.current) {
@@ -136,7 +137,7 @@ function StaticMapMenu({
         renderer.drawArea(areaId, 0);
 
         const area = embedded.reader.getArea?.(areaId);
-        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${areaId}`;
+        const areaName = area?.getAreaName?.() ?? `Obszar ${areaId}`;
         const rooms = area?.getRooms?.() ?? [];
         const roomsAtLevel = rooms.filter((r: any) => r.z === 0);
 
@@ -290,7 +291,7 @@ function StaticMapMenu({
         renderer.updatePositionMarker(embedded.currentRoom);
 
         const area = embedded.reader.getArea?.(room.area);
-        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+        const areaName = area?.getAreaName?.() ?? `Obszar ${room.area}`;
 
         setState(s => {
             // Check if centering on player brings us back to initial room
@@ -447,8 +448,8 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         titleRoomId: null,
         titleAreaName: '',
         followPlayer: false,
-        showGrid: (globalThis as any).embedded?.settings?.gridEnabled ?? false,
-        showAreaExitLabels: (globalThis as any).embedded?.settings?.areaExitLabels ?? true,
+        showGrid: getEmbeddedMap()?.settings?.gridEnabled ?? false,
+        showAreaExitLabels: getEmbeddedMap()?.settings?.areaExitLabels ?? true,
     });
     const [note, setNote] = useState<LocationNote | null>(null);
     const [mapNote, setMapNote] = useState<string | null>(null);
@@ -463,7 +464,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     // Keep ref in sync with state
     followPlayerRef.current = state.followPlayer;
 
-    const getEmbedded = useCallback(() => (globalThis as any).embedded, []);
+    const getEmbedded = useCallback(() => getEmbeddedMap(), []);
 
     const renderPathsAndHighlights = useCallback(() => {
         const renderer = rendererRef.current;
@@ -549,7 +550,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
             if (instance.initialAreaId && !instance.initialRoomId) {
                 const areaId = instance.initialAreaId;
                 const area = embedded.reader.getArea?.(areaId);
-                const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${areaId}`;
+                const areaName = area?.getAreaName?.() ?? `Obszar ${areaId}`;
                 const rooms = area?.getRooms?.() ?? [];
 
                 renderer.drawArea(areaId, 0);
@@ -637,7 +638,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
                         // Get area name for title
                         const area = embedded.reader.getArea?.(room.area);
-                        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+                        const areaName = area?.getAreaName?.() ?? `Obszar ${room.area}`;
 
                         setState(s => ({
                             ...s,
@@ -709,7 +710,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                         renderer.setPosition(ev.id);
 
                         const area = embedded.reader.getArea?.(room.area);
-                        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+                        const areaName = area?.getAreaName?.() ?? `Obszar ${room.area}`;
 
                         setState(currentState => ({
                             ...currentState,
@@ -767,7 +768,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                 }
 
                 const area = embedded.reader.getArea?.(room.area);
-                const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+                const areaName = area?.getAreaName?.() ?? `Obszar ${room.area}`;
 
                 setState(s => ({
                     ...s,

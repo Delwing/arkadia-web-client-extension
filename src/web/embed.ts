@@ -9,7 +9,8 @@ import {
     LabelRenderMode, MapRenderer,
     ExplorationLens,
     ALL_VISIBLE,
-    WaypointOverlay
+    WaypointOverlay,
+    type PathFinder
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
 import {getMapSettings, setMapSettings, getBehaviorSettings} from "@modules/core/settings";
@@ -94,6 +95,14 @@ export class EmbeddedMap {
     public reader: MapReader;
     public renderer: MapRenderer;
     public readonly settings: Settings;
+    /**
+     * Path finder for the currently loaded map. Produced alongside the reader by
+     * `client.Map.initialize()` and assigned by whoever constructs the map (each
+     * UI). Kept as a first-class field so consumers read `embedded.pathFinder`
+     * directly instead of casting a bag-of-any onto the instance. Null until the
+     * owner assigns it and re-assigned on every map-data reload.
+     */
+    public pathFinder: PathFinder | null = null;
     public currentRoom: any;
     private zoom: number;
     private explorationMode = false;

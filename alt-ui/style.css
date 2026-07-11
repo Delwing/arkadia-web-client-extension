@@ -139,7 +139,7 @@ body::after {
   gap: 4px;
   padding-bottom: 22px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 13.5px;
+  font-size: 12.5px;
   line-height: 1.65;
   color: var(--parchment-dim);
   white-space: pre-wrap;
@@ -159,7 +159,7 @@ body::after {
 #main_text_output_msg_wrapper p.t-command { color: #c9a86a; }
 #content-width-measure {
   visibility: hidden; position: absolute; white-space: pre;
-  font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13.5px;
+  font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;
 }
 
 /* ============================================================ THE RAIL */
@@ -215,8 +215,10 @@ body::after {
   justify-content: center;
   gap: 7px;
 }
+/* slim frame: pull the bezel + stone toward the edge so the border reads thin */
+.gem.forged::after { inset: 3px; }
 .gem .stone {
-  position: absolute; inset: 6px;
+  position: absolute; inset: 4px;
   border-radius: 4px; overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.65), inset 0 1px 3px rgba(0,0,0,.75);
   background-image:
@@ -238,22 +240,34 @@ body::after {
     linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 45%),
     linear-gradient(180deg, transparent 52%, rgba(0,0,0,.6));
 }
-/* icon pinned to the left; value centered across the whole pill */
-.gem .niche { position: absolute; left: 12px; top: 0; bottom: 0; z-index: 3; display: grid; place-items: center; }
+/* value on top; icon sits next to the name beneath it, sized to the text */
+.gem .niche { display: grid; place-items: center; }
 .gem .niche svg {
-  width: 16px; height: 16px; stroke: #f4ecd6;
+  width: 10px; height: 10px; stroke: #f4ecd6;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,.98)) drop-shadow(0 2px 5px rgba(0,0,0,.8));
 }
-.gem .label { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; }
+.gem .label {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.gem .label .line { display: flex; align-items: center; gap: 3px; }
 .gem .label .v {
   font-family: "JetBrains Mono", monospace;
   font-size: 11.5px; letter-spacing: .02em;
   color: #f4ecd6; white-space: nowrap; opacity: .97;
   text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 5px rgba(0,0,0,.8);
 }
+.gem .label .name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px; letter-spacing: .05em; text-transform: uppercase;
+  color: #f4ecd6; white-space: nowrap; opacity: .72;
+  text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 4px rgba(0,0,0,.8);
+}
+/* every pill glows: grayish by default, red once it warrants attention */
 .gem::before {
   content: ""; position: absolute; inset: 0;
   border-radius: 9px; pointer-events: none; z-index: 4;
+  box-shadow: inset 0 0 0 1px rgba(152,152,160,.30), 0 0 9px rgba(152,152,160,.16);
 }
 .gem.lvl-warn::before {
   box-shadow: inset 0 0 0 1px rgba(150,128,88,.34), 0 0 10px rgba(150,128,88,.15);
@@ -337,7 +351,9 @@ body::after {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 9px 12px;
+  /* extra top padding centers the title between the forged bevel (inset 4px)
+     and the divider below, not between the panel's outer edge and the divider */
+  padding: 11px 12px 7px;
   box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
 }
 .panel__head .orn {
@@ -348,14 +364,21 @@ body::after {
   flex: 0 0 auto;
 }
 .panel__title {
+  flex: 0 0 auto;             /* never shrink/ellipsize the title */
   font-family: "Cinzel", serif; font-weight: 600; font-size: 10.5px;
   letter-spacing: .22em; text-transform: uppercase; color: var(--bronze);
+  /* trim the line box to the caps so the header centers on the visible glyphs,
+     not on the font's (all-caps-unused) ascent/descent leading */
+  text-box: trim-both cap alphabetic;
 }
 .panel__meta {
+  /* right-aligned; grows left into the free space beside the title and only
+     ellipsizes once it actually meets the title (min-width:0 lets it shrink) */
   margin-left: auto;
+  flex: 0 1 auto; min-width: 0;
   font-family: "JetBrains Mono", monospace; font-size: 9.5px;
   letter-spacing: .04em; color: var(--parchment-dim); text-transform: uppercase;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* body grows to fill its panel's half; the object list scrolls inside it */
 .panel__body { padding: 11px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -384,11 +407,20 @@ body::after {
 
 /* --- objects (W poblizu) --- */
 .obj {
-  display: flex; align-items: center; gap: 9px;
+  position: relative;
   padding: 5px 1px;
   border-bottom: 1px solid rgba(255,255,255,.035);
 }
 .obj:last-child { border-bottom: 0; }
+.obj__main { display: flex; align-items: center; gap: 9px; }
+/* you or an ally is being hit by an enemy — a blood edge in the body gutter */
+.obj--threatened::before {
+  content: "";
+  position: absolute; left: -7px; top: 3px; bottom: 3px; width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, rgba(190,72,52,.9), rgba(120,42,30,.5));
+  box-shadow: 0 0 6px rgba(160,60,44,.5);
+}
 .obj__key {
   flex: 0 0 auto; width: 20px; height: 20px;
   display: grid; place-items: center; position: relative;
@@ -430,6 +462,27 @@ body::after {
       color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
   filter: saturate(.6);
 }
+/* the fray: which objects are attacking THIS one, colored by their side.
+   red chips on your/ally row = threat; green chips on an enemy row = handled. */
+.obj__fray {
+  display: flex; align-items: center; gap: 6px;
+  margin: 3px 0 1px 29px;   /* line up under the name, past the key diamond */
+}
+.obj__fray-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.atk {
+  flex: 0 0 auto;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
+  border-radius: 3px;
+  color: var(--parchment-dim);
+  background: rgba(0,0,0,.32);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
+.atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
+.atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+
 .obj--empty {
   padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
   font-size: 12.5px; color: var(--parchment-dim); opacity: .6;

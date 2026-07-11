@@ -1,5 +1,6 @@
 import type Client from '@client/Client';
 import { EmbeddedMap } from '@web/embed';
+import { setEmbeddedMap } from '@web/embedRegistry';
 import { loadMapData, loadColors, subscribeToMapData } from '@web/mapDataLoader';
 import { DarkModern } from 'mudlet-map-renderer';
 
@@ -59,20 +60,20 @@ export async function mountForgedMap(client: Client): Promise<void> {
         const [mapData, colors] = await Promise.all([loadMapData(), loadColors()]);
         const { startId, reader, pathFinder } = client.Map.initialize(mapData, colors);
         const embedded = new EmbeddedMap(reader, startId);
-        (embedded as unknown as { pathFinder: unknown }).pathFinder = pathFinder;
+        embedded.pathFinder = pathFinder;
 
         applyForgedSettings(embedded);
         embedded.renderer.setStyle(FORGED_MAP_STYLE);
         embedded.refreshRender();
         embedded.refresh();
-        (globalThis as unknown as { embedded: unknown }).embedded = embedded;
+        setEmbeddedMap(embedded);
 
         subscribeToMapData((newMapData) => {
             if (!newMapData) return;
             const r = client.Map.initialize(newMapData, colors);
             embedded.reload(r.reader);
             embedded.renderer.setStyle(FORGED_MAP_STYLE); // reload() rebuilt the renderer
-            (embedded as unknown as { pathFinder: unknown }).pathFinder = r.pathFinder;
+            embedded.pathFinder = r.pathFinder;
         }, { emitInitial: false });
     } catch (err) {
         console.error('[alt-ui] map mount failed', err);

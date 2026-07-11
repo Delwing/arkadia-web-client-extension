@@ -43,6 +43,7 @@ import "@client/main.ts"
 import NoSleep from 'nosleep.js';
 import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
+import {getEmbeddedMap, setEmbeddedMap} from "./embedRegistry.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {LocationLabel} from "@web-ui/components/map/LocationLabel"
@@ -538,12 +539,12 @@ Promise.all([mapDataPromise, colorsPromise])
             pathFinder.setAlgorithm(savedAlgorithm);
         }
         const embedded = new EmbeddedMap(reader, startId);
-        (embedded as any).pathFinder = pathFinder;
-        (globalThis as any).embedded = embedded;
+        embedded.pathFinder = pathFinder;
+        setEmbeddedMap(embedded);
 
         subscribeToMapData((newMapData) => {
             if (!newMapData) return;
-            const currentEmbedded = (globalThis as any).embedded as EmbeddedMap | undefined;
+            const currentEmbedded = getEmbeddedMap();
             if (!currentEmbedded) return;
 
             const result = client.Map.initialize(newMapData, colors);
@@ -552,7 +553,7 @@ Promise.all([mapDataPromise, colorsPromise])
                 result.pathFinder.setAlgorithm(newSavedAlgorithm);
             }
             currentEmbedded.reload(result.reader);
-            (currentEmbedded as any).pathFinder = result.pathFinder;
+            currentEmbedded.pathFinder = result.pathFinder;
             eventBus.emit('mapDataChanged');
         }, { emitInitial: false });
     })

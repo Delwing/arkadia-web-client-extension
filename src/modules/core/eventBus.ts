@@ -2,12 +2,17 @@ import type { ClientEvents } from "@shared/events";
 
 export type { ClientEvents, KnownEvents, KnowledgeReportAction, SendCommandEvent } from "@shared/events";
 
-type Params<T> = [T] extends [void]
+// Public aliases for the argument/listener shapes derived from an event's payload
+// type, so consumers (e.g. typed React hooks) can build fully-typed wrappers
+// around `eventBus.on` without re-deriving the tuple logic or resorting to casts.
+export type { Params as EventArgs, Handler as EventListener };
+
+export type Params<T> = [T] extends [void]
     ? []
     : [T] extends [any[]]
         ? T
         : [T];
-type Handler<T> = (...args: Params<T>) => void;
+export type Handler<T> = (...args: Params<T>) => void;
 type ListenerEntry<T> = {
     handler: Handler<T> | false;
     once: boolean;

@@ -12,6 +12,7 @@ import {
     type UiSettings
 } from "./defaultUiSettings";
 import {globalStorage} from "@modules/core/storage";
+import {getEmbeddedMap} from "./embedRegistry";
 import {
     setShellSettings,
     setRenderSettings,
@@ -325,7 +326,7 @@ export function apply(settings: UiSettings) {
     if (content) {
         content.scrollTop = content.scrollHeight;
     }
-    const embedded = (globalThis as any).embedded;
+    const embedded = getEmbeddedMap();
     if (embedded?.renderer) {
         embedded.setZoom?.(mapScale);
         embedded.setExplorationMode?.(settings.explorationMode);

@@ -7,6 +7,18 @@ const MAX_LINES = 500;
 const textOf = (message: string | AnsiAwareBuffer): string =>
     message instanceof AnsiAwareBuffer ? message.text : message;
 
+// The client emits string output (e.g. command echoes) HTML-encoded — resolveObjectIds
+// and echoCommand produce `&lt;desc&gt;` for the stock UI's innerHTML renderer. We render
+// via textContent, so decode those entities back to literal characters first.
+// (Decode &amp; last so an escaped entity like `&amp;lt;` survives as `&lt;`.)
+const decodeEntities = (text: string): string =>
+    text
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&');
+
 /**
  * The game log. Output is high-throughput and `AnsiAwareBuffer.toDom()` yields
  * raw DOM nodes, so the log is rendered imperatively into a ref'd container
@@ -47,7 +59,7 @@ export default function GameLog() {
             if (message instanceof AnsiAwareBuffer) {
                 line.appendChild(message.toDom());
             } else {
-                line.textContent = message;
+                line.textContent = decodeEntities(message);
             }
             appendLine(line);
         });

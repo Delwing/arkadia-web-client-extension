@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { getEmbeddedMap } from './embedRegistry';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getSnapshot as getNpcSnapshot, type NpcListEntry } from '@web/dataStores/npcStore';
@@ -78,7 +79,7 @@ const RoomInfoPopup: React.FC = () => {
 
     const handleOpen = useCallback((data: { roomId: number }) => {
         currentRoomIdRef.current = data.roomId;
-        const embedded = (globalThis as any).embedded;
+        const embedded = getEmbeddedMap();
         if (!embedded?.reader) return;
 
         const room = embedded.reader.getRoom(data.roomId);
@@ -107,7 +108,7 @@ const RoomInfoPopup: React.FC = () => {
         }
 
         const area = embedded.reader.getArea(room.area);
-        const areaName = area?.getAreaName?.() ?? area?.areaName ?? `Obszar ${room.area}`;
+        const areaName = area?.getAreaName?.() ?? `Obszar ${room.area}`;
         const envColor = embedded.reader.getColorValue?.(room.env) ?? null;
 
         setRoomData({

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useClient } from '../client/ClientContext';
 import { useClientEvent } from '../hooks/useClientEvent';
 import { mountForgedMap, computeExits } from '../map/forgedMap';
+import Panel from './Panel';
 
 /**
  * Hosts the real client map renderer. The renderer mounts imperatively into the
@@ -26,16 +27,9 @@ export default function MapPanel() {
     useClientEvent('enterLocation', () => setExits(computeExits(client)));
 
     return (
-        <div className="forged panel">
-            <div className="panel__head">
-                <span className="orn" />
-                <span className="panel__title">Mapa</span>
-                <span className="panel__meta" id="alt-map-label">{label}</span>
-            </div>
-            <div className="panel__body">
-                <div className="map"><div id="map" /></div>
-                <div className="map__exits" id="alt-map-exits">{exits}</div>
-            </div>
-        </div>
+        <Panel title="Mapa" meta={label} metaId="alt-map-label">
+            <div className="map"><div id="map" /></div>
+            <div className="map__exits" id="alt-map-exits">{exits}</div>
+        </Panel>
     );
 }

@@ -240,9 +240,10 @@
   .gem.temp { flex: 0 1 116px; min-width: 104px; padding-left: 6px; }
 
   /* the inlaid stone — full pill body, behind the label */
+  .gem.forged::after { inset: 3px; } /* slim frame: bezel toward the edge */
   .gem .stone {
     position: absolute;
-    inset: 6px;                       /* full-bleed colored bar */
+    inset: 4px;                       /* full-bleed colored bar, thin border */
     border-radius: 4px;
     overflow: hidden;
     box-shadow:
@@ -260,7 +261,7 @@
     background-size: 110px 110px, 100% 100%;
     filter: saturate(.58);            /* mute the fills — less contrast on dark stone */
   }
-  .gem.temp .stone { inset: 6px; }
+  .gem.temp .stone { inset: 4px; }
   /* glass sheen over the stone */
   .gem .stone::after {
     content: "";
@@ -289,11 +290,25 @@
     position: relative;
     z-index: 2;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 1px;
     width: auto;
   }
-  .gem .label .k { display: none; }   /* name dropped — icon carries identity */
+  .gem .label .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 7.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #f4ecd6;
+    white-space: nowrap;
+    opacity: .72;
+    order: 2;   /* name sits below the value */
+    text-shadow:
+      0 1px 2px rgba(0,0,0,.98),
+      0 2px 4px rgba(0,0,0,.8);
+  }
   .gem .label .v {
     font-family: "JetBrains Mono", monospace;
     font-size: 11.5px;
@@ -318,6 +333,10 @@
     border-radius: 9px;
     pointer-events: none;
     z-index: 4;
+    /* every pill glows: grayish by default */
+    box-shadow:
+      inset 0 0 0 1px rgba(152,152,160,.30),
+      0 0 9px rgba(152,152,160,.16);
   }
   .gem.lvl-warn::before {
     box-shadow:
@@ -581,8 +600,8 @@
   <!-- reusable rune glyphs -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
-      <g id="i-hp" fill="none" stroke-width="1.6" stroke-linecap="round">
-        <path d="M10 2v16M2 10h16M4.5 4.5l11 11M15.5 4.5l-11 11"/>
+      <g id="i-hp" fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M10 16.8C10 16.8 3.2 12.4 3.2 7.6A3.4 3.4 0 0 1 10 5.9 3.4 3.4 0 0 1 16.8 7.6C16.8 12.4 10 16.8 10 16.8Z"/>
       </g>
       <g id="i-sta" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12.5" cy="4" r="1.6"/>
@@ -605,9 +624,9 @@
         <path d="M10 2s5 6 5 9.5A5 5 0 0 1 5 11.5C5 8 10 2 10 2z"/>
         <path d="M7.5 11a2.5 2.5 0 0 0 2.5 2.5"/>
       </g>
-      <!-- fatigue: crescent moon -->
-      <g id="i-zm" fill="none" stroke-width="1.5" stroke-linejoin="round">
-        <path d="M15.5 11.8A6.2 6.2 0 1 1 8.4 4.6a5 5 0 0 0 7.1 7.2z"/>
+      <!-- fatigue: hourglass (energy draining) -->
+      <g id="i-zm" fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M5.5 3.5H14.5L10 10L14.5 16.5H5.5L10 10Z"/>
       </g>
       <!-- mana: arcane sparkle -->
       <g id="i-mana" fill="none" stroke-width="1.4" stroke-linejoin="round">

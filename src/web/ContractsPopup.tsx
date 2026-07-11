@@ -4,6 +4,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import type { Contract } from '@client/scripts/contracts';
+import { getEmbeddedMap } from './embedRegistry';
 
 interface ContractsPopupPayload {
     contracts: Contract[];
@@ -16,7 +17,7 @@ const ONE_INGAME_DAY_MS = 48 * 60 * 1000; // 48 real minutes = 1 in-game day
 
 function getDistance(fromId: number | null, toId: number | null): number | null {
     if (fromId === null || toId === null) return null;
-    const embedded = (globalThis as any).embedded;
+    const embedded = getEmbeddedMap();
     if (!embedded?.pathFinder) return null;
     const path = embedded.pathFinder.findPath(fromId, toId);
     return path ? path.length - 1 : null;

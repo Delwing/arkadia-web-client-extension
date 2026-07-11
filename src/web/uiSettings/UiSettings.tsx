@@ -4,6 +4,7 @@ import { globalStorage } from "@modules/core/storage";
 import { getCustomSounds, saveCustomSounds, type CustomSound } from "@modules/core/customSounds";
 import { loadLayoutState, resetLayoutState, saveLayoutState } from "@web/layout";
 import { apply, load, normalizeMapScale, save, type UiSettings as UiSettingsType } from "../uiSettingsCore";
+import { getEmbeddedMap } from "../embedRegistry";
 import { defaultUiSettings } from "../defaultUiSettings";
 import GeneralTab from "./tabs/GeneralTab";
 import FooterTab from "./tabs/FooterTab";
@@ -91,7 +92,7 @@ function UiSettings({ soundManager, onEnableNotifications }: UiSettingsProps) {
     }, [tab]);
 
     const refreshExplorationStats = () => {
-        const map = (globalThis as any).embedded;
+        const map = getEmbeddedMap();
         if (map?.getVisitedCount && map?.getRoomCount) {
             setExplorationStats(`(${map.getVisitedCount()}/${map.getRoomCount()})`);
         }
@@ -110,10 +111,10 @@ function UiSettings({ soundManager, onEnableNotifications }: UiSettingsProps) {
     const onRefreshMap = async () => {
         setRefreshing(true);
         try {
-            const { forceRefreshMapData, loadColors } = await import("../mapDataLoader");
-            const [mapData, colors] = await Promise.all([forceRefreshMapData(), loadColors()]);
-            const embedded = (globalThis as any).embedded;
-            if (embedded?.initialize) embedded.initialize(mapData, colors);
+            // Refreshing the shared map data notifies subscribers (see main.ts),
+            // which reload the live EmbeddedMap in place.
+            const { forceRefreshMapData } = await import("../mapDataLoader");
+            await forceRefreshMapData();
             await updateMapVersion();
         } catch (error) {
             console.error("Failed to refresh map data:", error);

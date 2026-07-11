@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Object list — atakujacy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --void:#0a0908; --iron-lo:#0c0b09;
+    --bronze:#b8965a; --bronze-dim:#8a6d3b;
+    --parchment:#cdbfa3; --parchment-dim:#8f836c;
+    --blood:#5c221b;
+    --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "EB Garamond", Georgia, serif;
+    color: var(--parchment);
+    background-color: var(--void);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+  }
+  .backdrop {
+    position: fixed; top: 50%; left: 50%;
+    width: 100vh; height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    background: url("assets/bg.jpg") center center / cover no-repeat;
+    filter: brightness(.33) saturate(.73) contrast(1.05);
+    z-index: -2; pointer-events: none;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+      linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+  }
+
+  .panel {
+    position: relative; width: 300px;
+    border: 1px solid var(--iron-lo); border-radius: 9px;
+    overflow: hidden;
+    background-color: #0a0a09;
+    background-image: var(--tex-fine), linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 130px 130px, 100% 100%;
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.16),
+      inset 0 -3px 6px rgba(0,0,0,.72),
+      inset 0 0 0 1px rgba(0,0,0,.5),
+      0 3px 10px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.45);
+  }
+  .panel::after {
+    content: ""; position: absolute; inset: 4px; border-radius: 5px;
+    border: 1px solid rgba(184,150,90,.2);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); pointer-events: none;
+  }
+  .panel__head {
+    display: flex; align-items: center; gap: 9px; padding: 11px 12px 7px;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
+  }
+  .orn { width: 8px; height: 8px; transform: rotate(45deg);
+    background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+    box-shadow: 0 0 6px rgba(184,150,90,.4); flex: 0 0 auto; }
+  .panel__title { flex: 0 0 auto; font-family: "Cinzel", serif; font-weight: 600; font-size: 10.5px;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--bronze);
+    text-box: trim-both cap alphabetic; }
+  .panel__meta { margin-left: auto; flex: 0 1 auto; min-width: 0;
+    font-family: "JetBrains Mono", monospace; font-size: 9.5px;
+    letter-spacing: .04em; color: var(--parchment-dim); text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .panel__body { padding: 11px; }
+
+  /* ===== mirrors alt-ui/style.css .obj block ===== */
+  .obj { position: relative; padding: 5px 1px; border-bottom: 1px solid rgba(255,255,255,.035); }
+  .obj:last-child { border-bottom: 0; }
+  .obj__main { display: flex; align-items: center; gap: 9px; }
+  .obj--threatened::before {
+    content: ""; position: absolute; left: -7px; top: 3px; bottom: 3px; width: 2px;
+    border-radius: 1px;
+    background: linear-gradient(180deg, rgba(190,72,52,.9), rgba(120,42,30,.5));
+    box-shadow: 0 0 6px rgba(160,60,44,.5);
+  }
+  .obj__key { flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center;
+    position: relative; font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim); }
+  .obj__key i { font-style: normal; position: relative; z-index: 1; }
+  .obj__key::before { content: ""; position: absolute; inset: 2px; transform: rotate(45deg);
+    border-radius: 2px; background: rgba(0,0,0,.3); box-shadow: inset 0 0 0 1px rgba(184,150,90,.2); }
+  .obj__key.you { color: var(--bronze); }
+  .obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+  .obj__name { flex: 1 1 auto; min-width: 0; font-family: "Cinzel", serif; text-transform: uppercase;
+    font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obj__name.target { color: #c68c84; }
+  .obj__name.enemy  { color: #9a8fae; }
+  .obj__name.ally   { color: #8fae7a; }
+  .obj__name.item   { color: var(--parchment-dim); }
+  .obj__hp { --hp: 60%; --hue: var(--blood); margin-left: auto; flex: 0 0 auto;
+    width: 48px; height: 6px; border-radius: 3px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+    background: linear-gradient(90deg, var(--hue) 0%, var(--hue) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp), color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+    filter: saturate(.6); }
+
+  .obj__fray { display: flex; align-items: center; gap: 6px; margin: 3px 0 1px 29px; }
+  .obj__fray-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+  .atk { flex: 0 0 auto; min-width: 15px; height: 15px; padding: 0 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
+    border-radius: 3px; color: var(--parchment-dim);
+    background: rgba(0,0,0,.32); box-shadow: inset 0 0 0 1px rgba(0,0,0,.5); }
+  .atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
+  .atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
+  .atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+
+  .caption { position: fixed; bottom: 16px; left: 0; right: 0; text-align: center;
+    font-family: "Cinzel", serif; font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--bronze-dim); opacity: .5; }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+
+  <div class="panel">
+    <div class="panel__head"><span class="orn"></span><span class="panel__title">W poblizu</span><span class="panel__meta">6</span></div>
+    <div class="panel__body">
+      <!-- you, being hit by two enemies -->
+      <div class="obj obj--threatened">
+        <div class="obj__main">
+          <span class="obj__key you"><i>@</i></span>
+          <span class="obj__name">Wedrowiec</span>
+        </div>
+        <div class="obj__fray">
+          <span class="obj__fray-chips"><span class="atk atk--enemy">1</span><span class="atk atk--enemy">2</span></span>
+        </div>
+      </div>
+      <!-- ally, being hit by an enemy -->
+      <div class="obj obj--threatened">
+        <div class="obj__main">
+          <span class="obj__key"><i>A</i></span>
+          <span class="obj__name ally">Grombardyn</span>
+          <span class="obj__hp" style="--hp:88%"></span>
+        </div>
+        <div class="obj__fray">
+          <span class="obj__fray-chips"><span class="atk atk--enemy">2</span></span>
+        </div>
+      </div>
+      <!-- avatar target enemy, handled by you + an ally -->
+      <div class="obj">
+        <div class="obj__main">
+          <span class="obj__key"><i>1</i></span>
+          <span class="obj__name target">Zbojca w skorzniach</span>
+          <span class="obj__hp" style="--hp:45%"></span>
+        </div>
+        <div class="obj__fray">
+          <span class="obj__fray-chips"><span class="atk atk--you">@</span></span>
+        </div>
+      </div>
+      <!-- enemy, only an ally on it -->
+      <div class="obj">
+        <div class="obj__main">
+          <span class="obj__key"><i>2</i></span>
+          <span class="obj__name enemy">Zbojca z kusza</span>
+          <span class="obj__hp" style="--hp:82%"></span>
+        </div>
+        <div class="obj__fray">
+          <span class="obj__fray-chips"><span class="atk atk--ally">A</span></span>
+        </div>
+      </div>
+      <!-- unengaged enemy, no attackers -->
+      <div class="obj">
+        <div class="obj__main">
+          <span class="obj__key"><i>3</i></span>
+          <span class="obj__name enemy">Zbojca z toporem</span>
+          <span class="obj__hp" style="--hp:100%"></span>
+        </div>
+      </div>
+      <!-- plain item -->
+      <div class="obj">
+        <div class="obj__main">
+          <span class="obj__key"><i>4</i></span>
+          <span class="obj__name item">kupiecki woz</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="caption">Object list &middot; kto atakuje</div>
+</body>
+</html>

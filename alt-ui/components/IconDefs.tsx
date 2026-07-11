@@ -6,11 +6,17 @@ export default function IconDefs() {
     return (
         <svg width="0" height="0" style={{ position: 'absolute' }}>
             <defs>
-                <g id="i-hp" fill="none" strokeWidth="1.6" strokeLinecap="round">
-                    <path d="M10 2v16M2 10h16M4.5 4.5l11 11M15.5 4.5l-11 11" />
+                <g id="i-hp" fill="none" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
+                    <path d="M10 16.8C10 16.8 3.2 12.4 3.2 7.6A3.4 3.4 0 0 1 10 5.9 3.4 3.4 0 0 1 16.8 7.6C16.8 12.4 10 16.8 10 16.8Z" />
                 </g>
-                <g id="i-zm" fill="none" strokeWidth="1.5" strokeLinejoin="round">
-                    <path d="M15.5 11.8A6.2 6.2 0 1 1 8.4 4.6a5 5 0 0 0 7.1 7.2z" />
+                <g id="i-zm" fill="none" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
+                    <circle cx="12.6" cy="4" r="2" />
+                    <path d="M11.7 5.9 9 11" />
+                    <path d="M9 11 12 12.6 12.4 15.8" />
+                    <path d="M9 11 6.6 13.9 4.7 15.6" />
+                    <path d="M11 6.7 14 7.3 13.4 9.4" />
+                    <path d="M11 6.7 8.4 7.1 7 9" />
+                    <path d="M2 7h3.2M1.4 10.5h3M2 14h3.2" />
                 </g>
                 <g id="i-hun" fill="none" strokeWidth="1.5" strokeLinecap="round">
                     <path d="M3 9h14a7 7 0 0 1-14 0z" />

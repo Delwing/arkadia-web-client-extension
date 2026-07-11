@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { subscribeEmbeddedMap } from '@web/embedRegistry';
 
 interface MapViewingState {
   isViewingDifferentArea: boolean;
@@ -14,48 +15,34 @@ export function useMapViewingState(): MapViewingState {
     isViewingDifferentArea: false,
     viewedAreaName: undefined,
   });
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-
-  const getEmbedded = useCallback(() => {
-    return (globalThis as any).embedded;
-  }, []);
 
   useEffect(() => {
-    const trySubscribe = () => {
-      const embedded = getEmbedded();
-      if (!embedded?.onViewChange) return false;
+    // Re-attach whenever the map instance arrives or is replaced, rather than
+    // polling globalThis on a timer.
+    let unsubscribeView: (() => void) | null = null;
+    const unsubscribeMap = subscribeEmbeddedMap((embedded) => {
+      unsubscribeView?.();
+      unsubscribeView = null;
+      if (!embedded) return;
 
-      // Set initial state
       setState({
         isViewingDifferentArea: !embedded.isViewingPlayerPosition,
-        viewedAreaName: embedded.getViewedAreaName?.(),
+        viewedAreaName: embedded.getViewedAreaName(),
       });
 
-      // Subscribe to changes
-      unsubscribeRef.current = embedded.onViewChange((isViewingPlayer: boolean, areaName?: string) => {
+      unsubscribeView = embedded.onViewChange((isViewingPlayer: boolean, areaName?: string) => {
         setState({
           isViewingDifferentArea: !isViewingPlayer,
           viewedAreaName: areaName,
         });
       });
-      return true;
-    };
-
-    // Try to subscribe immediately
-    if (trySubscribe()) return;
-
-    // Poll until embedded is available
-    const interval = setInterval(() => {
-      if (trySubscribe()) {
-        clearInterval(interval);
-      }
-    }, 100);
+    });
 
     return () => {
-      clearInterval(interval);
-      unsubscribeRef.current?.();
+      unsubscribeMap();
+      unsubscribeView?.();
     };
-  }, [getEmbedded]);
+  }, []);
 
   return state;
 }

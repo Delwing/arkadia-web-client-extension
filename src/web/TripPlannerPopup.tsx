@@ -5,6 +5,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { SEGMENT_COLORS } from '@shared/map/MapHelper';
 import { getMapDestinations } from '@modules/core/mapDestinationsProvider';
+import { getEmbeddedMap } from './embedRegistry';
 import {
     DndContext,
     closestCenter,
@@ -90,7 +91,7 @@ function saveRoutesToStorage(routes: SavedRoute[]) {
 }
 
 function getEmbedded() {
-    return (globalThis as any).embedded;
+    return getEmbeddedMap();
 }
 
 function getCurrentRoomId(): number | null {

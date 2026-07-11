@@ -10,6 +10,7 @@ import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
+import { getEmbeddedMap } from './embedRegistry';
 
 const POPUP_ID = 'popup:knowledgeDetails';
 
@@ -87,7 +88,7 @@ function isUnavailable(entry: KnowledgeDetailsReportEntry): boolean {
 }
 
 function getEmbedded() {
-  return (globalThis as any).embedded;
+  return getEmbeddedMap();
 }
 
 function getAreaForRoom(roomId: number): string | undefined {
@@ -97,7 +98,7 @@ function getAreaForRoom(roomId: number): string | undefined {
   if (!room) return undefined;
   const area = embedded.reader.getArea?.(room.area);
   if (!area) return undefined;
-  return area.getAreaName?.() ?? area.areaName;
+  return area.getAreaName?.();
 }
 
 function getCurrentArea(): string | undefined {

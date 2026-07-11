@@ -3,6 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { getPopupSetting, setPopupSetting } from '../../layout/utils/layoutStorage';
+import { getEmbeddedMap } from '@web/embedRegistry';
 
 interface MapHeaderMenuProps {
   className?: string;
@@ -36,7 +37,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   const getEmbedded = useCallback(() => {
-    return (globalThis as any).embedded;
+    return getEmbeddedMap();
   }, []);
 
   // Emit label visibility state on mount and when it changes
