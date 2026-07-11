@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import {bindMatches} from "@modules/core/keymapTypes";
+import {shouldIgnoreGlobalKeybind} from "../keybindGuard";
 import type {FunctionalBindCategory} from "./functionalBindCategories";
 import {CATEGORY_LABELS, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCategories";
 
@@ -274,17 +275,10 @@ export class FunctionalBindManager {
     }
 
     private handleKeyDown(ev: KeyboardEvent) {
-        // Don't fire binds when a modal is open (e.g., bind capture in settings)
-        // unless the focused element is the main command input behind the modal.
-        const active = document.activeElement as HTMLElement | null;
-        const modalOpen = document.querySelector('.modal.show');
-        if (modalOpen && (!active || active.id !== 'message-input')) {
-            return;
-        }
-        // Don't fire binds when typing in an input/textarea (other than the command input)
-        if (active &&
-            active.id !== 'message-input' &&
-            (active.matches('input, textarea') || active.isContentEditable)) {
+        // Shared, UI-agnostic guard: don't fire while typing in a non-command
+        // field or when the UI suppresses keybinds (e.g. an open modal). The
+        // command input opts back in via [data-command-input].
+        if (shouldIgnoreGlobalKeybind()) {
             return;
         }
 

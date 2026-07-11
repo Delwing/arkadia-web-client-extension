@@ -137,8 +137,8 @@ Firebase category registry; see `SYNCHRONIZACJA.md`.
 
 ## Building a UI
 
-A UI is an HTML entry + a bootstrap module. The minimal recipe (see
-`alt-ui/main.ts` for a full example):
+A UI is an HTML entry + a bootstrap module. The minimal recipe (see the React
+`alt-ui/` app — `main.tsx` + `client/bootstrap.ts` — for a full example):
 
 ```ts
 import mudClient from '@web/MudClient';        // transport (WebSocket/telnet-proxy)

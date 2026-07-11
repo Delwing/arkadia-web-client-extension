@@ -1,6 +1,6 @@
 import type Client from "../Client";
 import { globalStorage } from "@modules/core/storage";
-import { getUiPort } from "../ports";
+import { shouldIgnoreGlobalKeybind } from "../keybindGuard";
 
 /**
  * Direction (numpad movement) keybinds.
@@ -74,18 +74,6 @@ function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding
         event.shiftKey === !!binding.shift;
 }
 
-function isTextField(el: Element | null): boolean {
-    if (!el) return false;
-    const html = el as HTMLElement;
-    return (typeof html.matches === 'function' && html.matches('input, textarea')) ||
-        html.isContentEditable === true;
-}
-
-function isCommandInput(el: Element | null): boolean {
-    const html = el as HTMLElement | null;
-    return !!html && typeof html.matches === 'function' && html.matches('[data-command-input]');
-}
-
 function sendDirection(client: Client, direction: string): void {
     if (direction === 'special') {
         const exits = client.Map.currentRoom?.specialExits ?? {};
@@ -109,13 +97,7 @@ export default function initDirectionBinds(client: Client): void {
     });
 
     window.addEventListener('keydown', (event) => {
-        const active = document.activeElement;
-        // The command input opts back in; otherwise suppress while typing in a
-        // text field or when the UI reports it should (e.g. an open modal).
-        if (!isCommandInput(active)) {
-            if (isTextField(active)) return;
-            if (getUiPort().shouldSuppressKeys?.()) return;
-        }
+        if (shouldIgnoreGlobalKeybind()) return;
         const binding = directionBindings.find(b => matchesDirectionBinding(event, b));
         if (!binding) return;
         event.preventDefault();
