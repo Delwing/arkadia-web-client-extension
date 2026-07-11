@@ -40,55 +40,81 @@ export default function VitalGems() {
         setCharOptions(prev => ({ ...prev, ...(options as { form?: number }) }));
     });
 
+    // "improve" (Postep) is lifted out of the gem row and shown as a thin,
+    // full-width segmented bar above it — one tick per point, WoW exp-bar style.
+    const improveCfg = VITALS.find((c) => c.key === 'improve')!;
+    // TEMP: force the XP bar to a fixed value to preview it, ignoring GMCP.
+    const improveValue = 7;
+
     return (
-        <div className="gems" id="alt-gems">
-            {VITALS.map((cfg) => {
-                const raw = vitalState[cfg.key];
-                const defined = typeof raw === 'number';
+        <>
+            <div className="gems" id="alt-gems">
+                {VITALS.filter((cfg) => cfg.key !== 'improve').map((cfg) => {
+                    const raw = vitalState[cfg.key];
+                    const defined = typeof raw === 'number';
 
-                // All vitals show by default; hide only bars with no GMCP data yet,
-                // and "form" when the character has no fighting form at all (N/A).
-                if (!defined) return null;
-                if (cfg.key === 'form' && raw === 0 && (charOptions.form ?? 0) === 0) return null;
+                    // All vitals show by default; hide only bars with no GMCP data yet,
+                    // and "form" when the character has no fighting form at all (N/A).
+                    if (!defined) return null;
+                    if (cfg.key === 'form' && raw === 0 && (charOptions.form ?? 0) === 0) return null;
 
-                let value = raw;
-                let max = cfg.max;
-                if (cfg.transform) ({ value, max } = cfg.transform(value, max));
-                value = Math.max(0, Math.min(max, value));
-                const ratio = max === 0 ? 0 : value / max;
-                const reverse = cfg.default === 0 || cfg.flip === true;
-                const level = getColorLevel(value, max, reverse, cfg.key === 'hp');
-                // "highlight" = the bar hit the opposite extreme from its resting
-                // default (fully encumbered, starving, etc.) — this is what pulses.
-                const opposite = cfg.default !== undefined ? (cfg.default > 0 ? 0 : max) : null;
-                const highlight = opposite !== null && value === opposite;
+                    let value = raw;
+                    let max = cfg.max;
+                    if (cfg.transform) ({ value, max } = cfg.transform(value, max));
+                    value = Math.max(0, Math.min(max, value));
+                    const ratio = max === 0 ? 0 : value / max;
+                    const reverse = cfg.default === 0 || cfg.flip === true;
+                    const level = getColorLevel(value, max, reverse, cfg.key === 'hp');
+                    // "highlight" = the bar hit the opposite extreme from its resting
+                    // default (fully encumbered, starving, etc.) — this is what pulses.
+                    const opposite = cfg.default !== undefined ? (cfg.default > 0 ? 0 : max) : null;
+                    const highlight = opposite !== null && value === opposite;
 
-                const className = ['gem',
-                    level === 'warning' && 'lvl-warn',
-                    level === 'danger' && 'lvl-danger',
-                    highlight && 'highlight',
-                ].filter(Boolean).join(' ');
+                    const className = ['gem',
+                        level === 'warning' && 'lvl-warn',
+                        level === 'danger' && 'lvl-danger',
+                        highlight && 'highlight',
+                    ].filter(Boolean).join(' ');
 
-                const style = {
-                    '--hue': `var(${cfg.hue})`,
-                    '--fill': `${Math.round(ratio * 100)}%`,
-                } as CSSProperties;
+                    const style = {
+                        '--hue': `var(${cfg.hue})`,
+                        '--fill': `${Math.round(ratio * 100)}%`,
+                    } as CSSProperties;
 
-                return (
-                    <div key={cfg.key} className={className} style={style}>
-                        <span className="stone" />
-                        <span className="label">
-                            <span className="v">{value}/{max}</span>
-                            <span className="line">
-                                <span className="niche">
-                                    <svg viewBox="0 0 20 20"><use href={`#${cfg.icon}`} stroke="currentColor" /></svg>
+                    return (
+                        <div key={cfg.key} className={className} style={style}>
+                            <span className="stone" />
+                            <span className="label">
+                                <span className="v">{value}/{max}</span>
+                                <span className="line">
+                                    <span className="niche">
+                                        <svg viewBox="0 0 20 20"><use href={`#${cfg.icon}`} stroke="currentColor" /></svg>
+                                    </span>
+                                    <span className="name">{cfg.name}</span>
                                 </span>
-                                <span className="name">{cfg.name}</span>
                             </span>
-                        </span>
-                    </div>
-                );
-            })}
-        </div>
+                        </div>
+                    );
+                })}
+            </div>
+            {improveValue !== null && (
+                <div
+                    className="improve-bar"
+                    style={{ '--hue': `var(${improveCfg.hue})` } as CSSProperties}
+                    title={`${improveCfg.name} ${improveValue}/${improveCfg.max}`}
+                >
+                    <span className="improve-label">
+                        <svg viewBox="0 0 20 20"><use href={`#${improveCfg.icon}`} stroke="currentColor" /></svg>
+                        Postepy
+                    </span>
+                    <span className="improve-track">
+                        {Array.from({ length: improveCfg.max }, (_, i) => (
+                            <span key={i} className={'improve-seg' + (i < improveValue ? ' on' : '')} />
+                        ))}
+                    </span>
+                    <span className="improve-value">{improveValue}/{improveCfg.max}</span>
+                </div>
+            )}
+        </>
     );
 }
