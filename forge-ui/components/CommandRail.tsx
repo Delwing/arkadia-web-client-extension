@@ -1,8 +1,17 @@
 import { useRef } from 'react';
 import { useCommandLine } from '../hooks/useCommandLine';
+import MultiBindStrip from '@web-ui/footer/MultiBindStrip';
+import FooterStrip from '@web-ui/footer/FooterStrip';
 import VitalGems from './VitalGems';
 
-/** Vital gems above the command trough, with decorative knots framing it. */
+/**
+ * The bottom HUD plate: one forged panel stacking, top to bottom, the location
+ * binds, the footer status chips, the vital gems and the command trough — each
+ * band parted from the next by an engraved seam so they read as cut into one
+ * piece of steel. The location-bind and footer bands are always mounted (they
+ * self-empty rather than unmount), so the plate keeps a stable height and never
+ * shifts as rooms change.
+ */
 export default function CommandRail() {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const passwordRef = useRef<HTMLInputElement>(null);
@@ -13,9 +22,17 @@ export default function CommandRail() {
 
     return (
         <div className="rail">
-            {/* Vital row and command row share one forged plate, parted by a seam. */}
-            <div className="hud-panel hud-panel--seam">
+            <div className="hud-panel">
+                {/* Forge wraps the shared bind row in its own always-present band
+                    (alwaysVisible) so the plate keeps a stable height. */}
+                <div className="multibind-strip">
+                    <MultiBindStrip alwaysVisible />
+                </div>
+                <div className="hud-seam" />
+                <FooterStrip />
+                <div className="hud-seam" />
                 <VitalGems />
+                <div className="hud-seam" />
 
                 <div className="command">
                     <span className="knot">

@@ -328,7 +328,7 @@ body::after {
    sidebar/plaque) so the holes read as cut into one piece of steel. */
 .hud-panel {
   position: relative;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -347,15 +347,157 @@ body::after {
     0 3px 10px rgba(0,0,0,.6),
     0 12px 30px rgba(0,0,0,.45);
 }
+.hud-panel { gap: 0; }
 .hud-panel .gems { padding: 0; }
 .hud-panel .command { padding: 0; margin: 0; }
-/* faint engraved seam parting the vital row from the input row */
-.hud-panel--seam { gap: 0; }
-.hud-panel--seam .command {
-  margin-top: 8px;
-  padding-top: 9px;
-  box-shadow: inset 0 1px 0 rgba(0,0,0,.6), inset 0 2px 0 rgba(184,150,90,.07);
+
+/* Engraved seam parting two bands of the plate — a dark groove lit by a hairline
+   bronze highlight along its lower edge, so the bands read as milled from one
+   piece of steel. Used between binds / footer / gems / command. */
+.hud-seam {
+  height: 0;
+  margin: 5px 2px;
+  border-top: 1px solid rgba(0,0,0,.6);
+  box-shadow: 0 1px 0 rgba(184,150,90,.07);
 }
+
+/* ---- location-bind band (top of the plate) ------------------------------- */
+/* Always mounted so the plate height is stable; self-empties to the placeholder
+   when the current room has no binds. */
+.multibind-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 21px;              /* reserve one pill-row so binds never shift the plate */
+  padding: 0 2px;
+}
+/* the shared MultiBindStrip's placeholder (src/ui/web/footer) */
+.multi-bind-empty {
+  font-family: "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 9.5px;
+  color: var(--parchment-dim);
+  opacity: .5;
+}
+/* the shared bind pills — forge skins the .multi-bind class contract */
+.multi-bind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--iron-hi);
+  background: linear-gradient(180deg, #201b13, #14100b);
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12.5px;
+  line-height: 1.15;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.1);
+  transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  appearance: none; -webkit-appearance: none;
+}
+.multi-bind:hover { border-color: var(--bronze-dim); background: linear-gradient(180deg, #2a2318, #181310); }
+.multi-bind:active { transform: translateY(1px); }
+.multi-bind:disabled { cursor: default; opacity: .55; }
+.multi-bind-key { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; font-size: 10.5px; color: var(--bronze); }
+.multi-bind-action { color: var(--parchment-dim); }
+/* location binds read apart from the plain numbered multibinds: the room bind in
+   warm amber, the drinkable bind in a cool blue — key tinted, border echoes it */
+.multi-bind--room { border-color: #5a4423; }
+.multi-bind--room .multi-bind-key { color: #e0a94a; }
+.multi-bind--drink { border-color: #2f4a5a; }
+.multi-bind--drink .multi-bind-key { color: #79b3d6; }
+
+/* ---- footer status-chip band -------------------------------------------- */
+.footer-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 21px;             /* fajka alone keeps this filled; reserves the row */
+  padding: 0 2px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 6px;
+  /* Weathered stone, matching the vital gems (.gem .stone): the isotropic
+     --tex-stone speckle soft-lit over a dark iron gradient — reads as chiselled
+     rock, not the brushed/wood grain of --tex-metal. A dark scrim rides on top
+     of the speckle so soft-light can't lift the pill into a mid-tone; that keeps
+     the fill deep and the value text (and its urgency tint) high-contrast. */
+  background-color: #0c0905;
+  background-image:
+    linear-gradient(rgba(8,6,3,.5), rgba(8,6,3,.5)),
+    var(--tex-stone),
+    linear-gradient(180deg, #16110a, #070502);
+  background-blend-mode: normal, soft-light, normal;
+  background-size: 100% 100%, 90px 90px, 100% 100%;
+  border: 1px solid #33291b;
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.09), inset 0 -2px 5px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.55);
+  white-space: nowrap;
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  appearance: none; -webkit-appearance: none;
+}
+.chip--act { cursor: pointer; transition: border-color .15s ease, transform .1s ease; }
+.chip--act:hover { border-color: var(--bronze-dim); }
+.chip--act:active { transform: translateY(1px); }
+.chip__ico { flex: 0 0 auto; width: 14px; height: 14px; display: grid; place-items: center; color: var(--bronze); }
+.chip__ico svg { width: 14px; height: 14px; }
+/* icon, label and value all vertically centered on one axis — line-height:1 on
+   both text spans keeps their optical centers true, so nothing rides high/low */
+.chip__text { display: inline-flex; align-items: center; gap: 5px; }
+.chip__lab {
+  font-family: "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-size: 8.5px;
+  line-height: 1;
+  color: var(--bronze);
+  text-shadow: 0 1px 1px rgba(0,0,0,.6);
+  /* Cinzel caps sit high in their em-box, so metric centering floats them above
+     the monospace value; nudge down to line up their optical centers. */
+  transform: translateY(2px);
+}
+.chip__val {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 10px;
+  line-height: 1;
+  color: #e3d8bf;
+  text-shadow: 0 1px 1px rgba(0,0,0,.7);
+  font-variant-numeric: tabular-nums;
+}
+/* semantic urgency — tints the icon + value, never the whole chip. Explicit
+   bright hexes (NOT the dark --amber/--moss gem hues) so they carry on the deep
+   stone fill. */
+.chip--ok     .chip__val { color: #a6c46f; } .chip--ok     .chip__ico { color: #a6c46f; }
+.chip--warn   .chip__val { color: #e6ad4e; } .chip--warn   .chip__ico { color: #e6ad4e; }
+.chip--danger .chip__val { color: #e07a4f; } .chip--danger .chip__ico { color: #e07a4f; }
+
+/* fajka ember — sits where the icon would; glows and pulses while lit */
+.chip__ember {
+  flex: 0 0 auto;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #4a3a22, #2a2114 70%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.chip__ember--lit {
+  background: radial-gradient(circle at 45% 40%, #fff6cc, #ffd24a 35%, #ff7a18 70%, #a52600);
+  box-shadow: 0 0 6px 1px rgba(255,140,40,.6);
+  animation: chipEmber 2.4s ease-in-out infinite;
+}
+@keyframes chipEmber {
+  0%, 100% { opacity: .82; box-shadow: 0 0 5px 1px rgba(255,140,40,.5); }
+  50%      { opacity: 1;   box-shadow: 0 0 9px 2px rgba(255,150,50,.7); }
+}
+@media (prefers-reduced-motion: reduce) { .chip__ember--lit { animation: none; } }
 
 .gems { display: flex; gap: 4px; -webkit-user-select: none; user-select: none; }
 

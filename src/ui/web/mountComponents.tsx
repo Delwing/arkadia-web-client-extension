@@ -9,7 +9,6 @@ import {
   CharStateInfo,
   ReleaseGuardTimer,
   BreakItemWarning,
-  MultiBinds,
   CharState,
   AttackMode,
   PackageStatus,
@@ -20,6 +19,8 @@ import {
   PlaybackControls
 } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
+import MultiBindStrip from "./footer/MultiBindStrip";
+import PluginFooterItems from "./footer/PluginFooterItems";
 
 type MountResult = {
   destroy: () => void;
@@ -45,7 +46,6 @@ export const mountMigratedComponents = (): MountResult => {
     { id: "world-destruction-timer", Component: WorldDestructionTimer },
     { id: "state-info", Component: CharStateInfo },
     { id: "break-item-warning", Component: BreakItemWarning },
-    { id: "multi-binds", Component: MultiBinds },
     { id: "mail-status", Component: MailStatus },
     { id: "weapon-state", Component: WeaponState },
     { id: "team-panel", Component: TeamPanel },
@@ -61,6 +61,30 @@ export const mountMigratedComponents = (): MountResult => {
       console.warn(`Container #${id} not found, skipping mount for ${Component.name}`);
     }
   });
+
+  // MultiBinds is special: it mounts into the persistent #multi-binds container
+  // (kept by index.html so main.ts's cached reference + split-view MutationObserver
+  // stay valid) and toggles that container's `active` class via onActiveChange —
+  // the same DOM contract the stock CSS, the split-view hook and e2e expect.
+  const multiBindsContainer = document.getElementById("multi-binds");
+  if (multiBindsContainer) {
+    const root = createRoot(multiBindsContainer);
+    root.render(
+      <MultiBindStrip
+        onActiveChange={(active) => multiBindsContainer.classList.toggle("active", active)}
+      />
+    );
+    roots.push(root);
+  }
+
+  // Plugin (and other dynamically-registered) footer items render from the
+  // common footerRegistry into the stock footer's #plugin-footer-components slot.
+  const pluginFooterContainer = document.getElementById("plugin-footer-components");
+  if (pluginFooterContainer) {
+    const root = createRoot(pluginFooterContainer);
+    root.render(<PluginFooterItems />);
+    roots.push(root);
+  }
 
   // CharState is special - it uses portals to render to #char-state-text and #char-state-bars
   // We mount it to a hidden container so it can manage its own rendering

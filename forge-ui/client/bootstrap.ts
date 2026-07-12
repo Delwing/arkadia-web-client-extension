@@ -6,6 +6,8 @@ import { bootstrapGameClient } from '@web/clientBootstrap';
 import { showHerbTooltip, hideHerbTooltip } from '@web/herbTooltip';
 import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
 import { showContextMenu } from '@web/contextMenu';
+import { getAttackController } from './attackController';
+import { registerBuiltinFooterItems } from '@web-ui/footer/builtinItems';
 
 /**
  * Build the game client for the Forged HUD.
@@ -40,6 +42,16 @@ export function createClient(): Client {
             showContextMenu,
         }),
     });
+
+    // Instantiate the attack controller once at boot (not lazily on first attack),
+    // so the footer Atk chip's mode changes persist and drive team-attack behaviour
+    // from the start, and the initial `attackMode` event reaches the chip.
+    getAttackController(client);
+
+    // Put the built-in footer chips into the common registry; the registry then
+    // applies the user's footer config (show/hide + order) before the HUD renders
+    // them. The forge HUD is the UI that shows built-ins in the footer.
+    registerBuiltinFooterItems();
 
     return client;
 }
