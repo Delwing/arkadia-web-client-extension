@@ -20,7 +20,7 @@
   display: flex;
   flex-direction: column;
   padding: 8px;
-  gap: 12px;
+  gap: 6px;
 }
 
 #content-area {
@@ -36,7 +36,7 @@
 
 /* Gap between the output (main) and the docked sides, like the forge sidebar. */
 body.layout-manager-enabled #content-area {
-  gap: 12px;
+  gap: 6px;
 }
 
 body.layout-manager-enabled #content-area > .world {
@@ -242,23 +242,23 @@ body.layout-manager-enabled #content-area > .world {
   overflow: hidden;
 }
 
-/* ── Gaps between docked windows (forge sidebar's 12px rhythm) ───────────── */
+/* ── Gaps between docked windows (forge sidebar's rhythm, halved) ─────────── */
 /* Tab-group panels are `.managed-panel` but NOT `.docked-panel`, so without this
-   they'd miss the 6px inset and fill their dock cell edge-to-edge — reading as a
+   they'd miss the 3px inset and fill their dock cell edge-to-edge — reading as a
    wider/taller box than a single docked window. Match the inset. */
 .managed-panel.docked-panel,
 .managed-panel.tab-group-panel {
-  margin: 6px;
+  margin: 3px;
 }
 
 /* In "rails span everything" mode the left/right rails span the input row, so
    the command rail's own bottom breathing room (.rail padding-bottom, 22px)
    would push the footer plate's bottom below the docked panels. Replace it with
-   exactly the docked-panel margin (see `.managed-panel.docked-panel` below, 6px)
+   exactly the docked-panel margin (see `.managed-panel.docked-panel` below, 3px)
    so the footer plate's bottom edge lines up with the rail panels' bottoms — and
    with an empty bottom dock. */
 body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
-  padding-bottom: 6px;
+  padding-bottom: 3px;
 }
 
 /* Forge caps the output column and command rail at max-width:1520px (readability
