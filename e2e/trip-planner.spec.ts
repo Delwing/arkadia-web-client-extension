@@ -86,7 +86,7 @@ test.describe('Trip Planner Popup', () => {
         // Add another stop via the ID input
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('3');
-        const addButton = popup.locator('.trip-planner-btn', { hasText: 'Dodaj' });
+        const addButton = popup.locator('.popup-btn', { hasText: 'Dodaj' });
         await addButton.click();
 
         // Title should reflect 2 stops
@@ -105,7 +105,7 @@ test.describe('Trip Planner Popup', () => {
         // Add a second stop
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('3');
-        const addButton = popup.locator('.trip-planner-btn', { hasText: 'Dodaj' });
+        const addButton = popup.locator('.popup-btn', { hasText: 'Dodaj' });
         await addButton.click();
         await expect(popup.locator('.trip-planner-stop')).toHaveCount(2);
 
@@ -141,7 +141,7 @@ test.describe('Trip Planner Popup', () => {
         // Add another stop
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('3');
-        await popup.locator('.trip-planner-btn', { hasText: 'Dodaj' }).click();
+        await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
         await expect(popup.locator('.trip-planner-stop')).toHaveCount(2);
 
         // Click clear button
@@ -160,7 +160,7 @@ test.describe('Trip Planner Popup', () => {
         // Remove the stop
         await popup.locator('.trip-planner-stop-remove').click();
 
-        const prowadzButton = popup.locator('.trip-planner-action-btn--primary', { hasText: 'Prowadz' });
+        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadz' });
         await expect(prowadzButton).toBeDisabled();
     });
 
@@ -169,7 +169,7 @@ test.describe('Trip Planner Popup', () => {
         const popup = page.locator(TRIP_PLANNER_SELECTOR);
         await expect(popup).toBeVisible();
 
-        const prowadzButton = popup.locator('.trip-planner-action-btn--primary', { hasText: 'Prowadz' });
+        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadz' });
         await expect(prowadzButton).toBeEnabled();
     });
 
@@ -221,7 +221,7 @@ test.describe('Trip Planner Popup', () => {
         // Add room 4 (north of room 3)
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('4');
-        await popup.locator('.trip-planner-btn', { hasText: 'Dodaj' }).click();
+        await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         // Total distance should be shown (2 + 1 = 3)
         await expect(popup.locator('.trip-planner-total')).toContainText('Laczna odleglosc: 3');
@@ -235,12 +235,12 @@ test.describe('Trip Planner Popup', () => {
         // Add another stop
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('3');
-        await popup.locator('.trip-planner-btn', { hasText: 'Dodaj' }).click();
+        await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         // Save route
         const routeNameInput = popup.locator('.trip-planner-input[type="text"]');
         await routeNameInput.fill('Testowa trasa');
-        const saveButton = popup.locator('.trip-planner-btn', { hasText: 'Zapisz' });
+        const saveButton = popup.locator('.popup-btn', { hasText: 'Zapisz' });
         await saveButton.click();
 
         // Clear stops
@@ -251,7 +251,7 @@ test.describe('Trip Planner Popup', () => {
         // Load route
         const routeSelect = popup.locator('.trip-planner-select').first();
         await routeSelect.selectOption('Testowa trasa');
-        const loadButton = popup.locator('.trip-planner-btn', { hasText: 'Wczytaj' });
+        const loadButton = popup.locator('.popup-btn', { hasText: 'Wczytaj' });
         await loadButton.click();
 
         // Stops should be restored
@@ -267,7 +267,7 @@ test.describe('Trip Planner Popup', () => {
         // Save route
         const routeNameInput = popup.locator('.trip-planner-input[type="text"]');
         await routeNameInput.fill('Do usuniecia');
-        const saveButton = popup.locator('.trip-planner-btn', { hasText: 'Zapisz' });
+        const saveButton = popup.locator('.popup-btn', { hasText: 'Zapisz' });
         await saveButton.click();
 
         // Select and delete the saved route
@@ -307,10 +307,10 @@ test.describe('Trip Planner Popup', () => {
 
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('2');
-        await popup.locator('.trip-planner-btn', { hasText: 'Dodaj' }).click();
+        await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         await idInput.fill('3');
-        await popup.locator('.trip-planner-btn', { hasText: 'Dodaj' }).click();
+        await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         const numbers = popup.locator('.trip-planner-stop-number');
         await expect(numbers.nth(0)).toHaveText('1.');
@@ -329,7 +329,7 @@ test.describe('Trip Planner Popup', () => {
         // Try to add ID 0
         const idInput = popup.locator('.trip-planner-input[type="number"]');
         await idInput.fill('0');
-        await popup.locator('.trip-planner-btn', { hasText: 'Dodaj' }).click();
+        await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         // Should still show empty state
         await expect(popup).toContainText('Brak przystankow');
@@ -341,7 +341,7 @@ test.describe('Trip Planner Popup', () => {
         await expect(popup).toBeVisible();
 
         // Click Prowadz - this should update the location label with path arrow
-        const prowadzButton = popup.locator('.trip-planner-action-btn--primary', { hasText: 'Prowadz' });
+        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadz' });
         await prowadzButton.click();
 
         // The location label should show a path to room 3
