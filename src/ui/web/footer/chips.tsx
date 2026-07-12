@@ -211,9 +211,13 @@ export function CoverChip() {
   useClientEvent<boolean>("releaseGuard", (v) => setGuard(Boolean(v)));
   useClientEvent<number | null>("coverTimer", (v) => setCover(v));
   const active = cover != null && cover > 0;
+  // Value/tone stay tied to the cover cooldown (countdown + amber while
+  // recharging, "OK"/green when ready). The "puszczaj zaslony" toggle is shown
+  // separately by tinting the shield in: an outline shield means covers are
+  // auto-released (the default), a filled-in shield means the guard is held.
   return (
     <Chip
-      icon={<ChipIcon name="shield" />}
+      icon={<ChipIcon name="shield" fill={!guard} />}
       label="Zaslona"
       value={active ? cover!.toFixed(1) : "OK"}
       tone={active ? "warn" : "ok"}

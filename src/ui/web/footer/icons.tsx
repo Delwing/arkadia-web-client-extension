@@ -88,10 +88,16 @@ const PATHS: Record<string, ReactNode> = {
 
 export type ChipIconName = keyof typeof PATHS;
 
-/** A chip's leading glyph, wrapped in the `.chip__ico` slot the skins size. */
-export function ChipIcon({ name }: { name: ChipIconName }) {
+/**
+ * A chip's leading glyph, wrapped in the `.chip__ico` slot the skins size.
+ * `fill` adds the `chip__ico--fill` modifier so the skin can tint the glyph's
+ * interior a shade of the icon colour (rather than leaving a bare outline) — a
+ * cheap on/off state signal localised to the icon, e.g. the shield filling in
+ * when the cover guard is held.
+ */
+export function ChipIcon({ name, fill = false }: { name: ChipIconName; fill?: boolean }) {
   return (
-    <span className="chip__ico">
+    <span className={fill ? "chip__ico chip__ico--fill" : "chip__ico"}>
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         {PATHS[name]}
       </svg>

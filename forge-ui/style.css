@@ -450,6 +450,9 @@ body::after {
 .chip--act:active { transform: translateY(1px); }
 .chip__ico { flex: 0 0 auto; width: 14px; height: 14px; display: grid; place-items: center; color: var(--bronze); }
 .chip__ico svg { width: 14px; height: 14px; }
+/* Filled state (e.g. cover shield when the guard is held): a soft translucent
+   tint of the icon colour behind the crisp outline, rather than a solid block. */
+.chip__ico--fill svg { fill: color-mix(in srgb, currentColor 26%, transparent); }
 /* icon, label and value all vertically centered on one axis — line-height:1 on
    both text spans keeps their optical centers true, so nothing rides high/low */
 .chip__text { display: inline-flex; align-items: center; gap: 5px; }
