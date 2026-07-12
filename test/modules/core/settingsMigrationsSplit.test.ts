@@ -10,17 +10,21 @@ describe('migrateUiSettingsSplit', () => {
         globalStorage.set('settingsMigrationsVersion', 9 as never);
         globalStorage.set('uiSettings', {
             xtermPalette: 'proper',      // render
-            mapScale: 0.5,               // map
+            mapLineColor: '#abcabc',     // map
             wakeLock: false,             // shell
             teamNumberingMode: 'numbers',// behavior
             showButtons: false,          // chrome (stays)
             barOrder: ['hp'],            // chrome (stays)
+            // device-scoped view prefs — stay in the uiSettings blob (not synced)
+            mapScale: 0.5,
+            contentFontSize: 1.2,
+            outputMaxElements: 500,
         } as never);
 
         migrateUiSettingsSplit();
 
         expect((globalStorage.get('renderSettings') as Record<string, unknown>).xtermPalette).toBe('proper');
-        expect((globalStorage.get('mapSettings') as Record<string, unknown>).mapScale).toBe(0.5);
+        expect((globalStorage.get('mapSettings') as Record<string, unknown>).mapLineColor).toBe('#abcabc');
         expect((globalStorage.get('shellSettings') as Record<string, unknown>).wakeLock).toBe(false);
         expect((globalStorage.get('behaviorSettings') as Record<string, unknown>).teamNumberingMode).toBe('numbers');
 
@@ -29,9 +33,14 @@ describe('migrateUiSettingsSplit', () => {
         expect(chrome.barOrder).toEqual(['hp']);
         // moved fields removed from the blob
         expect('xtermPalette' in chrome).toBe(false);
-        expect('mapScale' in chrome).toBe(false);
+        expect('mapLineColor' in chrome).toBe(false);
         expect('wakeLock' in chrome).toBe(false);
         expect('teamNumberingMode' in chrome).toBe(false);
+        // device-scoped view prefs stay behind in the device-scoped blob
+        expect(chrome.mapScale).toBe(0.5);
+        expect(chrome.contentFontSize).toBe(1.2);
+        expect(chrome.outputMaxElements).toBe(500);
+        expect(globalStorage.get('mapSettings') as Record<string, unknown>).not.toHaveProperty('mapScale');
     });
 
     test('is idempotent — a second run changes nothing', () => {

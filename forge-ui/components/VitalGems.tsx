@@ -43,8 +43,12 @@ export default function VitalGems() {
     // "improve" (Postep) is lifted out of the gem row and shown as a thin,
     // full-width segmented bar above it — one tick per point, WoW exp-bar style.
     const improveCfg = VITALS.find((c) => c.key === 'improve')!;
-    // TEMP: force the XP bar to a fixed value to preview it, ignoring GMCP.
-    const improveValue = 7;
+    // Read the live "improve" points from GMCP like every other vital; the bar
+    // stays hidden (null) until char.state provides a value.
+    const improveRaw = vitalState[improveCfg.key];
+    const improveValue = typeof improveRaw === 'number'
+        ? Math.max(0, Math.min(improveCfg.max, improveRaw))
+        : null;
 
     return (
         <>
