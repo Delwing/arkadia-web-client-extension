@@ -106,14 +106,21 @@ body.layout-manager-enabled #content-area > .world {
    layout.css's `.docked-panel--popup .docked-panel__header` (0,2,0, earlier in
    source) — otherwise DOCKED POPUPS keep the compact stock header (padding 0,
    justify space-between) and look malformed while floating popups get forged. */
+/* Pin the header to a fixed height so every window's chrome is identical
+   regardless of which controls it carries. With `height:auto` the row grew to
+   its tallest child, so a panel whose actions include a taller control (e.g. the
+   map's 22px `.map-header-menu__image-btn`) rendered a 40px header while a panel
+   with only the 20px icon buttons (e.g. "W poblizu") rendered 38px. 38px matches
+   the tab-bar parity height below, unifying single, tabbed and floating headers.
+   align-items:center keeps every control vertically centred within it. */
 .managed-panel .managed-panel__header {
-  height: auto;
+  height: 38px;
   min-height: 0;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 9px;
-  padding: 11px 12px 7px;
+  padding: 5px 12px 0 15px;
   background: transparent;
   border: none;
   box-shadow:

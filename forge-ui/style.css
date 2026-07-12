@@ -463,7 +463,7 @@ body::after {
   text-shadow: 0 1px 1px rgba(0,0,0,.6);
   /* Cinzel caps sit high in their em-box, so metric centering floats them above
      the monospace value; nudge down to line up their optical centers. */
-  transform: translateY(2px);
+  /*transform: translateY(2px);*/
 }
 .chip__val {
   font-family: ui-monospace, "JetBrains Mono", monospace;
