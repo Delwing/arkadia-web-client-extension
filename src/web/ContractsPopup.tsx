@@ -100,7 +100,7 @@ const ContractsPopup: React.FC = () => {
         <div className="contracts-sort-buttons">
             <button
                 type="button"
-                className={`contracts-sort-btn${sortMode === 'distance' ? ' contracts-sort-btn--active' : ''}`}
+                className={`popup-btn${sortMode === 'distance' ? ' popup-btn--primary' : ''}`}
                 onClick={() => setSortMode('distance')}
                 title="Sortuj po odleglosci"
             >
@@ -108,7 +108,7 @@ const ContractsPopup: React.FC = () => {
             </button>
             <button
                 type="button"
-                className={`contracts-sort-btn${sortMode === 'time' ? ' contracts-sort-btn--active' : ''}`}
+                className={`popup-btn${sortMode === 'time' ? ' popup-btn--primary' : ''}`}
                 onClick={() => setSortMode('time')}
                 title="Sortuj po czasie"
             >
@@ -131,9 +131,9 @@ const ContractsPopup: React.FC = () => {
             headerActions={headerActions}
         >
             {sortedContracts.length === 0 ? (
-                <div className="contracts-empty">Brak aktywnych zlecen.</div>
+                <div className="popup-empty">Brak aktywnych zlecen.</div>
             ) : (
-                <div className="contracts-list">
+                <div className="popup-list contracts-list">
                     {sortedContracts.map(({ contract, distance }) => {
                         const daysRemaining = getDaysRemaining(contract);
                         const isUrgent = daysRemaining <= 2;
@@ -165,7 +165,7 @@ const ContractsPopup: React.FC = () => {
                                     {contract.locationId && (
                                         <button
                                             type="button"
-                                            className="contract-prowadz-btn"
+                                            className="popup-btn popup-btn--primary"
                                             onClick={() => handleProwadz(contract.locationId!)}
                                             title="Prowadz do lokacji"
                                         >

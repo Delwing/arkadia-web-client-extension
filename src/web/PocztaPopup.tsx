@@ -61,35 +61,35 @@ const PocztaPopup: React.FC = () => {
         <div className="poczta-tabs">
             <button
                 type="button"
-                className={`poczta-tab-btn${activeTab === 'nieprzeczytane' ? ' poczta-tab-btn--active' : ''}`}
+                className={`popup-btn${activeTab === 'nieprzeczytane' ? ' popup-btn--primary' : ''}`}
                 onClick={() => handleTabChange('nieprzeczytane')}
             >
                 Nowe
             </button>
             <button
                 type="button"
-                className={`poczta-tab-btn${activeTab === 'odebrane' ? ' poczta-tab-btn--active' : ''}`}
+                className={`popup-btn${activeTab === 'odebrane' ? ' popup-btn--primary' : ''}`}
                 onClick={() => handleTabChange('odebrane')}
             >
                 Odebrane
             </button>
             <button
                 type="button"
-                className={`poczta-tab-btn${activeTab === 'wyslane' ? ' poczta-tab-btn--active' : ''}`}
+                className={`popup-btn${activeTab === 'wyslane' ? ' popup-btn--primary' : ''}`}
                 onClick={() => handleTabChange('wyslane')}
             >
                 Wyslane
             </button>
             <button
                 type="button"
-                className={`poczta-tab-btn${activeTab === 'niewyslane' ? ' poczta-tab-btn--active' : ''}`}
+                className={`popup-btn${activeTab === 'niewyslane' ? ' popup-btn--primary' : ''}`}
                 onClick={() => handleTabChange('niewyslane')}
             >
                 Niewyslane
             </button>
             <button
                 type="button"
-                className="poczta-tab-btn poczta-refresh-btn"
+                className="popup-btn poczta-refresh-btn"
                 onClick={handleRefresh}
                 disabled={!isConnected || isLoading}
                 title="Odswiez"
@@ -113,12 +113,12 @@ const PocztaPopup: React.FC = () => {
             headerActions={headerActions}
         >
             {!isConnected ? (
-                <div className="poczta-empty">Nie polaczono.</div>
+                <div className="popup-empty">Nie polaczono.</div>
             ) : isLoading ? (
                 <div className="poczta-loading">Ladowanie...</div>
             ) : mails.length === 0 ? (
                 <div
-                    className="poczta-empty">{hasFetched ? 'Brak listow.' : 'Kliknij \u21BB aby zaladowac listy.'}</div>
+                    className="popup-empty">{hasFetched ? 'Brak listow.' : 'Kliknij \u21BB aby zaladowac listy.'}</div>
             ) : (
                 <div className="poczta-list">
                     {[...mails].reverse().map((mail) => {

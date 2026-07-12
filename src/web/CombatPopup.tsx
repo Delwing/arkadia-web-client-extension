@@ -131,7 +131,7 @@ const CombatPopup: React.FC = () => {
                 onScroll={handleScroll}
             >
                 {displayedMessages.length === 0 ? (
-                    <div className="combat-popup__empty">
+                    <div className="popup-empty">
                         Brak wiadomosci walki.
                     </div>
                 ) : (

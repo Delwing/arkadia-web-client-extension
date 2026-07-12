@@ -41,7 +41,7 @@ const LetterViewPopup: React.FC = () => {
         <div className="letter-view-actions">
             <button
                 type="button"
-                className="letter-view-action-btn"
+                className="popup-btn"
                 onClick={handleReply}
                 title="Odpowiedz"
             >
@@ -49,7 +49,7 @@ const LetterViewPopup: React.FC = () => {
             </button>
             <button
                 type="button"
-                className="letter-view-action-btn"
+                className="popup-btn"
                 onClick={handleForward}
                 title="Przekaz dalej"
             >
@@ -102,7 +102,7 @@ const LetterViewPopup: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="letter-view-empty">Brak listu.</div>
+                <div className="popup-empty">Brak listu.</div>
             )}
         </DockablePopupWrapper>
     );

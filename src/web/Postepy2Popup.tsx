@@ -332,7 +332,7 @@ const Postepy2Popup: React.FC = () => {
     const renderDailyTab = () => (
         <div className="postepy2-entries">
             {data.length === 0 ? (
-                <div className="postepy2-empty">Brak danych.</div>
+                <div className="popup-empty">Brak danych.</div>
             ) : (
                 data.map((entry, index) => (
                     <div key={index} className="postepy2-entry postepy2-entry--with-noform">
@@ -380,7 +380,7 @@ const Postepy2Popup: React.FC = () => {
     const renderMonthlyTab = () => (
         <div className="postepy2-entries">
             {monthlyData.length === 0 ? (
-                <div className="postepy2-empty">Brak danych.</div>
+                <div className="popup-empty">Brak danych.</div>
             ) : (
                 monthlyData.map((entry, index) => (
                     <div key={index} className="postepy2-entry">
@@ -396,7 +396,7 @@ const Postepy2Popup: React.FC = () => {
     const renderYearlyTab = () => (
         <div className="postepy2-entries">
             {yearlyData.length === 0 ? (
-                <div className="postepy2-empty">Brak danych.</div>
+                <div className="popup-empty">Brak danych.</div>
             ) : (
                 yearlyData.map((entry, index) => (
                     <div key={index} className="postepy2-entry">
@@ -415,7 +415,7 @@ const Postepy2Popup: React.FC = () => {
     const renderNoFormTab = () => (
         <div className="postepy2-entries">
             {noFormData.length === 0 ? (
-                <div className="postepy2-empty">Brak postepow bez formy.</div>
+                <div className="popup-empty">Brak postepow bez formy.</div>
             ) : (
                 <>
                     {noFormData.map((entry, index) => (
@@ -453,7 +453,7 @@ const Postepy2Popup: React.FC = () => {
                     {dailyChartData.length > 0 ? (
                         <SimpleBarChart data={dailyChartData} maxBars={30} />
                     ) : (
-                        <div className="postepy2-empty">Brak danych.</div>
+                        <div className="popup-empty">Brak danych.</div>
                     )}
                 </div>
                 <div className="postepy2-graph-section">
@@ -461,7 +461,7 @@ const Postepy2Popup: React.FC = () => {
                     {monthlyChartData.length > 0 ? (
                         <SimpleBarChart data={monthlyChartData} maxBars={12} />
                     ) : (
-                        <div className="postepy2-empty">Brak danych.</div>
+                        <div className="popup-empty">Brak danych.</div>
                     )}
                 </div>
             </div>
@@ -489,7 +489,7 @@ const Postepy2Popup: React.FC = () => {
                 )}
                 <button
                     type="button"
-                    className="postepy2-import-button"
+                    className="popup-btn popup-btn--md postepy2-import-button"
                     onClick={handleImportClick}
                     disabled={importState.phase === 'loading'}
                 >
@@ -567,38 +567,38 @@ const Postepy2Popup: React.FC = () => {
                 </div>
             )}
 
-            <div className="postepy2-tabs">
+            <div className="popup-tabs postepy2-tabs">
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'daily' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'daily' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('daily')}
                 >
                     Dni
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'monthly' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'monthly' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('monthly')}
                 >
                     Miesiace
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'yearly' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'yearly' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('yearly')}
                 >
                     Lata
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'noform' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'noform' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('noform')}
                 >
                     Bez formy
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'graphs' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'graphs' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('graphs')}
                 >
                     Wykresy

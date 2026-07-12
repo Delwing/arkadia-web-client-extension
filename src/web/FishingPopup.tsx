@@ -125,7 +125,7 @@ const FishingPopup: React.FC = () => {
                     {fishingState === 'idle' && (
                         <button
                             type="button"
-                            className="fishing-btn fishing-btn--cast"
+                            className="popup-btn popup-btn--lg fishing-btn--cast"
                             onClick={handleCast}
                         >
                             Zarzuc wedke
@@ -135,14 +135,14 @@ const FishingPopup: React.FC = () => {
                         <>
                             <button
                                 type="button"
-                                className="fishing-btn fishing-btn--pull"
+                                className="popup-btn popup-btn--lg fishing-btn--pull"
                                 onClick={handlePull}
                             >
                                 Wyciagnij wedke
                             </button>
                             <button
                                 type="button"
-                                className={`fishing-btn fishing-btn--strike ${fishingState === 'biting' ? 'fishing-btn--biting' : ''}`}
+                                className={`popup-btn popup-btn--lg fishing-btn--strike ${fishingState === 'biting' ? 'fishing-btn--biting' : ''}`}
                                 onClick={handleStrike}
                             >
                                 Zatnij rybe

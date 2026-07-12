@@ -272,7 +272,7 @@ const GroupRowView: React.FC<{
                     {others.length > 0 && (
                         <button
                             type="button"
-                            className="oswajanie-iconbtn"
+                            className="popup-btn popup-btn--icon"
                             title="Polacz z innym pokarmem (wspolny licznik)"
                             onClick={openMenu}
                         >
@@ -282,7 +282,7 @@ const GroupRowView: React.FC<{
                     {multiFood && (
                         <button
                             type="button"
-                            className="oswajanie-iconbtn oswajanie-iconbtn--danger"
+                            className="popup-btn popup-btn--icon oswajanie-iconbtn--danger"
                             title="Rozdziel polaczone pokarmy"
                             onClick={() => void dissolveFoodGroup(group.repFood)}
                         >
@@ -309,7 +309,7 @@ const AnimalsView: React.FC<{ data: AnimalsData | null; onSelect: (a: string) =>
     return (
         <div>
             <div className="oswajanie-topbar">
-                <select className="oswajanie-select" value={data.selected} onChange={(e) => onSelect(e.target.value)}>
+                <select className="popup-input oswajanie-select" value={data.selected} onChange={(e) => onSelect(e.target.value)}>
                     {data.animals.map(({ animal, active }) => (
                         <option key={animal} value={animal}>
                             {animal}
@@ -319,7 +319,7 @@ const AnimalsView: React.FC<{ data: AnimalsData | null; onSelect: (a: string) =>
                 </select>
                 <button
                     type="button"
-                    className={data.selectedActive ? 'oswajanie-btn' : 'oswajanie-btn oswajanie-btn--success'}
+                    className={data.selectedActive ? 'popup-btn popup-btn--md' : 'popup-btn popup-btn--md popup-btn--success'}
                     onClick={() => void setAnimalActive(data.selected, !data.selectedActive)}
                 >
                     {data.selectedActive ? 'Deaktywuj' : 'Aktywuj'}
@@ -464,12 +464,12 @@ const HelpView: React.FC = () => {
 
             <div className="oswajanie-popup__subheading">Kopia zapasowa:</div>
             <div className="oswajanie-controls">
-                <button type="button" className="oswajanie-btn oswajanie-btn--success" onClick={() => void exportDatabase()}>
+                <button type="button" className="popup-btn popup-btn--md popup-btn--success" onClick={() => void exportDatabase()}>
                     Eksportuj baze (JSON)
                 </button>
                 <button
                     type="button"
-                    className="oswajanie-btn oswajanie-btn--danger"
+                    className="popup-btn popup-btn--md popup-btn--danger"
                     onClick={() => {
                         if (window.confirm('Import z pliku nadpisze baze oswajania tej postaci. Kontynuowac?')) {
                             void importDatabaseFromFile();
@@ -564,12 +564,12 @@ const OswajaniePopup: React.FC = () => {
             initialHeight={500}
             bodyClassName="oswajanie-popup"
         >
-            <nav className="oswajanie-nav">
+            <nav className="oswajanie-nav popup-tabs">
                 {TABS.map((t) => (
                     <button
                         key={t.view}
                         type="button"
-                        className={view === t.view ? 'oswajanie-tab is-active' : 'oswajanie-tab'}
+                        className={view === t.view ? 'popup-tab popup-tab--active' : 'popup-tab'}
                         onClick={() => setView(t.view)}
                     >
                         {t.view === 'help' && <PawPrint size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />}
@@ -578,9 +578,11 @@ const OswajaniePopup: React.FC = () => {
                 ))}
             </nav>
 
-            {view === 'animals' && <AnimalsView data={animalsData} onSelect={setSelectedAnimal} />}
-            {view === 'history' && <HistoryView rows={historyRows} />}
-            {view === 'help' && <HelpView />}
+            <div className="oswajanie-content">
+                {view === 'animals' && <AnimalsView data={animalsData} onSelect={setSelectedAnimal} />}
+                {view === 'history' && <HistoryView rows={historyRows} />}
+                {view === 'help' && <HelpView />}
+            </div>
         </DockablePopupWrapper>
     );
 };

@@ -7,6 +7,10 @@
  * map mount, game-log append) runs inside component effects.
  */
 import './style.css';
+// Shared, var-driven popup body styles (see src/web/popups/popups.css). forge's
+// `--popup-*` remap under `.panel--floating` (components/floatingPopup.css)
+// themes these for free — so popup contents render forged, not unstyled.
+import '@web/popups/popups.css';
 import { createRoot } from 'react-dom/client';
 import { setDockingSupported } from '@web/layout/utils/layoutStorage';
 import { createClient } from './client/bootstrap';
@@ -26,3 +30,7 @@ createRoot(document.getElementById('root')!).render(
         <App />
     </ClientProvider>,
 );
+
+
+
+

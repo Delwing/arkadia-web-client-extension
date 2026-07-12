@@ -287,7 +287,7 @@ const ZlomPopup: React.FC = () => {
                     {isOpen && (
                         <div className="zlom-note-popover" ref={noteEditorRef}>
                             <textarea
-                                className="zlom-note-textarea"
+                                className="popup-input zlom-note-textarea"
                                 autoFocus
                                 value={noteEditor!.value}
                                 onChange={(e) => setNoteEditor({ ...noteEditor!, value: e.target.value })}
@@ -303,8 +303,8 @@ const ZlomPopup: React.FC = () => {
                                 placeholder="Notatka..."
                             />
                             <div className="zlom-note-popover__actions">
-                                <button type="button" className="zlom-header-btn" onClick={() => setNoteEditor(null)}>Anuluj</button>
-                                <button type="button" className="zlom-header-btn" onClick={saveNoteEditor}>Zapisz</button>
+                                <button type="button" className="popup-btn" onClick={() => setNoteEditor(null)}>Anuluj</button>
+                                <button type="button" className="popup-btn" onClick={saveNoteEditor}>Zapisz</button>
                             </div>
                         </div>
                     )}
@@ -451,7 +451,7 @@ const ZlomPopup: React.FC = () => {
         <>
             <button
                 type="button"
-                className="zlom-header-btn"
+                className="popup-btn"
                 onClick={handleExport}
                 title="Zapisz baze do pliku JSON"
                 disabled={importState.phase === 'loading'}
@@ -460,7 +460,7 @@ const ZlomPopup: React.FC = () => {
             </button>
             <button
                 type="button"
-                className="zlom-header-btn"
+                className="popup-btn"
                 onClick={handleJsonImportClick}
                 title="Wczytaj baze z pliku JSON"
                 disabled={importState.phase === 'loading'}
@@ -469,7 +469,7 @@ const ZlomPopup: React.FC = () => {
             </button>
             <button
                 type="button"
-                className="zlom-header-btn"
+                className="popup-btn"
                 onClick={handleImportClick}
                 title="Importuj baze z pliku Mudleta"
                 disabled={importState.phase === 'loading'}
@@ -585,21 +585,21 @@ const ZlomPopup: React.FC = () => {
             <div className="postepy2-tabs">
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'bronie' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'bronie' ? 'popup-tab--active' : ''}`}
                     onClick={() => setActiveTab('bronie')}
                 >
                     Bronie ({total.bronie})
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'tarcze' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'tarcze' ? 'popup-tab--active' : ''}`}
                     onClick={() => setActiveTab('tarcze')}
                 >
                     Tarcze ({total.tarcze})
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'zbroje' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'zbroje' ? 'popup-tab--active' : ''}`}
                     onClick={() => setActiveTab('zbroje')}
                 >
                     Zbroje ({total.zbroje})
@@ -608,7 +608,7 @@ const ZlomPopup: React.FC = () => {
 
             <div className="zlom-content postepy2-content">
                 {entries.length === 0 ? (
-                    <div className="postepy2-empty">Brak zapisanych pozycji.</div>
+                    <div className="popup-empty">Brak zapisanych pozycji.</div>
                 ) : (
                     <table className="zlom-table">
                         <thead>{tableHead}</thead>

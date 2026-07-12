@@ -481,21 +481,21 @@ const KnowledgeReport: React.FC = () => {
               </span>
             </div>
             <div className="knowledge-library-actions">
-              <button type="button" className="knowledge-library-lead"
+              <button type="button" className="popup-btn popup-btn--md popup-btn--pill popup-btn--primary"
                 onClick={() => handleLeadToLibrary(library.locationId)}
                 title="Prowadz do biblioteki"
               >
                 Prowadz
               </button>
               {mode === 'active' ? (
-                <button type="button" className="knowledge-library-action"
+                <button type="button" className="popup-btn popup-btn--md popup-btn--pill popup-btn--success"
                   onClick={() => handleCompleteLibrary(library.id)}
                   disabled={library.remaining === 0}
                 >
                   Zakoncz biblioteke
                 </button>
               ) : (
-                <button type="button" className="knowledge-library-reset"
+                <button type="button" className="popup-btn popup-btn--md popup-btn--pill"
                   onClick={() => handleResetLibrary(library.id)}
                 >
                   Resetuj biblioteke

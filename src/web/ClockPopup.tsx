@@ -177,7 +177,7 @@ const ClockPopup: React.FC = () => {
     const headerActions = (
         <button
             type="button"
-            className={`clock-header-toggle${showEdit ? ' clock-header-toggle--active' : ''}`}
+            className={`popup-btn clock-header-toggle${showEdit ? ' popup-btn--primary' : ''}`}
             onClick={() => setShowEdit(!showEdit)}
             title={showEdit ? 'Ukryj edycje' : 'Ustaw czas'}
         >
@@ -197,11 +197,11 @@ const ClockPopup: React.FC = () => {
             bodyClassName="clock-window-body"
             headerActions={headerActions}
         >
-            <div className="clock-tabs">
+            <div className="popup-tabs clock-tabs">
                 <button
                     type="button"
-                    className={`clock-tab-button ${
-                        activeTab === 'Empire' ? 'clock-tab-button--active' : ''
+                    className={`popup-tab ${
+                        activeTab === 'Empire' ? 'popup-tab--active' : ''
                     }`}
                     onClick={() => setActiveTab('Empire')}
                 >
@@ -209,8 +209,8 @@ const ClockPopup: React.FC = () => {
                 </button>
                 <button
                     type="button"
-                    className={`clock-tab-button ${
-                        activeTab === 'Ishtar' ? 'clock-tab-button--active' : ''
+                    className={`popup-tab ${
+                        activeTab === 'Ishtar' ? 'popup-tab--active' : ''
                     }`}
                     onClick={() => setActiveTab('Ishtar')}
                 >
@@ -269,7 +269,7 @@ const ClockPopup: React.FC = () => {
                                     <div className="clock-set-time-controls">
                                         <input
                                             type="number"
-                                            className="clock-set-time-input"
+                                            className="popup-input clock-set-time-input"
                                             min={0}
                                             max={23}
                                             value={setHourValue}
@@ -280,7 +280,7 @@ const ClockPopup: React.FC = () => {
                                         <span className="clock-set-time-colon">:</span>
                                         <input
                                             type="number"
-                                            className="clock-set-time-input"
+                                            className="popup-input clock-set-time-input"
                                             min={0}
                                             max={59}
                                             value={setMinuteValue}
@@ -314,7 +314,7 @@ const ClockPopup: React.FC = () => {
                                         <div className="clock-set-time-row">
                                             <span className="clock-detail-label">Miesiac:</span>
                                             <select
-                                                className="clock-set-time-select"
+                                                className="popup-input clock-set-time-select"
                                                 value={selectedMonth}
                                                 onChange={(e) => {
                                                     setSelectedMonth(e.target.value);
@@ -332,7 +332,7 @@ const ClockPopup: React.FC = () => {
                                                 <span className="clock-detail-label">Dzien:</span>
                                                 <input
                                                     type="number"
-                                                    className="clock-set-time-input"
+                                                    className="popup-input clock-set-time-input"
                                                     min={1}
                                                     max={selectedMonthLength}
                                                     value={setDayOfMonthValue}
@@ -348,7 +348,7 @@ const ClockPopup: React.FC = () => {
                                         <span className="clock-detail-label">Dzien roku:</span>
                                         <input
                                             type="number"
-                                            className="clock-set-time-input"
+                                            className="popup-input clock-set-time-input"
                                             min={1}
                                             max={maxDay}
                                             value={setDayOfYearValue}
@@ -361,7 +361,7 @@ const ClockPopup: React.FC = () => {
                                 <div className="clock-set-time-row clock-set-time-row--action">
                                     <button
                                         type="button"
-                                        className="clock-set-time-button"
+                                        className="popup-btn popup-btn--md popup-btn--primary"
                                         onClick={handleSetTime}
                                         disabled={!isHourValid || !isMinuteValid || !isDayValid}
                                     >

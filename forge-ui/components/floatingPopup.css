@@ -9,11 +9,12 @@
  *      `.panel--floating` and map them to the forge palette. Every popup that
  *      respects the variables is then themed for free.
  *
- * NOTE: the structural popup rules themselves still live in the stock
- * `style.css` (scattered, not imported here). Only skroty's rules are mirrored
- * below for now — carrying the rest over is a separate consolidation step. Once
- * a shared popup stylesheet exists, this file keeps only the modifier + the
- * variable mapping. No stock component is touched; all class-based.
+ * The structural popup rules now live in the shared, var-driven
+ * `src/web/popups/popups.css` (imported by both UIs from the entry points), so
+ * this file carries only the floating MODIFIER + the `--popup-*` variable
+ * mapping. As popups are migrated into that shared sheet they get themed here
+ * for free via the mapping below. No stock component is touched; all
+ * class-based.
  */
 
 /* ── Floating modifier: a fixed, self-sized window instead of a flex child ─
@@ -50,7 +51,12 @@
    tokens so popups read as forged. Data colors (--popup-data-*) are left as
    the stock semantic hues, only gently desaturated to sit in the muted world
    (mirrors how forge mutes game output). */
-.panel--floating {
+/* Popups (`.panel--floating`) AND any menu/overlay a popup portals to the body
+   (`[data-popup-overlay]`, e.g. oswajanie's food-link menu). The portaled node
+   lives outside the floating frame, so without this it wouldn't inherit the
+   forge palette and would render with undefined vars (transparent). */
+.panel--floating,
+[data-popup-overlay] {
     --popup-bg: transparent;
     --popup-section-bg: rgba(10, 9, 8, .55);
     --popup-subtle-bg: rgba(255, 255, 255, .03);
@@ -66,16 +72,87 @@
     --popup-text: var(--parchment);
     --popup-text-strong: var(--parchment);
     --popup-text-bright: var(--parchment);
-    --popup-text-subtle: var(--parchment-dim);
-    --popup-text-medium: var(--parchment-dim);
-    --popup-text-dim: var(--parchment-dim);
-    --popup-text-dimmer: var(--parchment-dim);
-    --popup-text-faint: var(--parchment-dim);
+    /* Graduated dim scale instead of collapsing every level onto --parchment-dim
+       (#8f836c) — that flat floor left secondary/hint text low-contrast on the
+       dark ground. These warm parchment tones step down from near-parchment to
+       just above the floor, so hints stay legible and hierarchy is preserved. */
+    --popup-text-subtle: #c2b596;
+    --popup-text-medium: #b7aa8b;
+    --popup-text-dim: #ac9f80;
+    --popup-text-dimmer: #a09374;
+    --popup-text-faint: #94886f;
     --popup-accent: var(--bronze);
     --popup-accent-bg: rgba(110, 86, 32, .28);
     --popup-accent-hover-bg: rgba(110, 86, 32, .45);
     --popup-accent-subtle-bg: rgba(110, 86, 32, .18);
     --popup-accent-border: var(--bronze-dim);
+    /* accent variants → forge bronze (not stock blue) so toggles/highlights
+       read as forged */
+    --popup-accent-dim-bg: rgba(110, 86, 32, .14);
+    --popup-accent-strong-bg: rgba(110, 86, 32, .22);
+    --popup-accent-strong-hover-bg: rgba(110, 86, 32, .34);
+    --popup-accent-strong-active-bg: rgba(110, 86, 32, .5);
+    --popup-accent-team-bg: rgba(110, 86, 32, .12);
+    --popup-accent-team-hover-bg: rgba(110, 86, 32, .2);
+    --popup-border-stronger: var(--bronze-dim);
+    /* inputs → forge control chrome */
+    --popup-input-bg: rgba(28, 26, 23, .8);
+    --popup-input-text: var(--parchment);
+    --popup-input-focus-border: var(--bronze-dim);
+    /* Game-output font: many popups render text with `var(--output-font-family),
+       monospace` (combat log, letter body, knowledge, chart labels…). The stock
+       UI resolves this to the player's mono font; forge never set it, so those
+       popups fell back to the generic browser monospace. Point it at forge's own
+       mono (the same face its game log uses) so they read as forged. */
+    --output-font-family: "JetBrains Mono", ui-monospace, monospace;
+
+    /* ── Status + data hues, RE-TINTED for the forge world ───────────────────
+       forge imports its OWN style.css, so it does NOT inherit stock's :root
+       `--popup-*` defaults — every var a popup uses is defined here (an undefined
+       one renders blank, which is what once made postepy2's chart bars vanish).
+       Unlike the stock UI we do NOT keep the vivid tailwind hues: bright green
+       success buttons / purple chart bars read as foreign in the bronze world.
+       Instead the semantic families are mapped to forge's earthy palette — moss
+       for good, terracotta/blood for bad, gold for warning — and the data hues
+       are muted, warm-shifted versions that still read distinct but sit in the
+       forged mood. (The `filter: saturate(.7)` below stays as a safety net for
+       the few remaining literal game hues in popups.css.) */
+    --popup-success: #8fa15f;              /* muted moss-sage */
+    --popup-success-light: #aebd85;
+    --popup-success-bg: rgba(96, 116, 58, .22);
+    --popup-success-hover-bg: rgba(96, 116, 58, .34);
+    --popup-success-border: rgba(120, 140, 80, .42);
+    --popup-success-subtle-bg: rgba(96, 116, 58, .13);
+    --popup-success-active-bg: rgba(96, 116, 58, .42);
+    --popup-warning: #c79a4c;              /* gold-ochre */
+    --popup-warning-light: #dcb972;
+    --popup-warning-border: rgba(160, 122, 52, .42);
+    --popup-warning-bg: rgba(150, 112, 42, .22);
+    --popup-warning-hover-bg: rgba(150, 112, 42, .34);
+    --popup-danger: #b35d45;               /* muted terracotta / blood */
+    --popup-danger-light: #c67e66;
+    --popup-danger-soft: #c67e66;
+    --popup-danger-bg: rgba(140, 52, 36, .24);
+    --popup-danger-hover-bg: rgba(140, 52, 36, .36);
+    --popup-danger-subtle-bg: rgba(140, 52, 36, .13);
+    --popup-danger-border: rgba(160, 72, 52, .42);
+    --popup-danger-active-bg: rgba(140, 52, 36, .44);
+    --popup-data-yellow: #cbb35a;
+    --popup-data-gold: #c9a94e;
+    --popup-data-green: #8fa15f;
+    --popup-data-green-light: #aebd85;
+    --popup-data-blue: #7f96a4;            /* muted steel */
+    --popup-data-orange: #c0894c;          /* ember */
+    --popup-data-orange-warm: #c0904e;
+    --popup-data-orange-light: #c99a5e;
+    --popup-data-pink: #c096a1;            /* dusty rose */
+    --popup-data-purple: #9384a2;          /* muted mauve */
+    --popup-data-purple-light: #a698b6;
+    --popup-data-gray: #8f836c;            /* parchment-dim */
+    --popup-data-gray-light: #a89a80;
+    --popup-data-tomato: #c06a54;
+    --popup-data-magic-green: #92ab7c;
+    --popup-data-spring-green: #92ab7c;
 }
 
 /* mute the (intentionally kept) data hues into the forge world */
@@ -87,21 +164,39 @@
     filter: saturate(.7);
 }
 
-/* ── Scrollbars, matching forge-ui (thin, iron thumb) ──────────────────── */
+/* A portaled overlay (e.g. the oswajanie food-link menu) floats over arbitrary
+   content, so it needs an OPAQUE surface — the in-panel section/bg vars are
+   intentionally translucent, which looks like a bug on a free-floating menu. */
+[data-popup-overlay] {
+    --popup-bg: #211d16;
+    --popup-section-bg: #211d16;
+}
+
+/* ── Scrollbars, matching forge-ui (thin, iron thumb). Also cover portaled
+   overlays (they live outside `.panel--floating`, so they'd get the native
+   scrollbar otherwise). ─────────────────────────────────────────────────── */
 .panel--floating,
-.panel--floating * {
+.panel--floating *,
+[data-popup-overlay],
+[data-popup-overlay] * {
     scrollbar-width: thin;
     scrollbar-color: var(--iron-hi) transparent;
 }
-.panel--floating ::-webkit-scrollbar {
+.panel--floating ::-webkit-scrollbar,
+[data-popup-overlay]::-webkit-scrollbar,
+[data-popup-overlay] ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
-.panel--floating ::-webkit-scrollbar-thumb {
+.panel--floating ::-webkit-scrollbar-thumb,
+[data-popup-overlay]::-webkit-scrollbar-thumb,
+[data-popup-overlay] ::-webkit-scrollbar-thumb {
     background: var(--iron-hi);
     border-radius: 4px;
 }
-.panel--floating ::-webkit-scrollbar-track {
+.panel--floating ::-webkit-scrollbar-track,
+[data-popup-overlay]::-webkit-scrollbar-track,
+[data-popup-overlay] ::-webkit-scrollbar-track {
     background: transparent;
 }
 
@@ -168,107 +263,35 @@
     background-color: rgba(110, 86, 32, .28);
 }
 
-.forge-floating__close {
+/* Close button: no border/background, just the glyph. Scoped under
+   .forge-floating__head-actions so it OUT-RANKS the generic `button` rule above
+   (0,0,2,0 > 0,0,1,1) — otherwise that rule's background/border/font-size/padding
+   silently win and the glyph never gets a centered box. A fixed square with flex
+   centering keeps the "×" optically centred regardless of the font's side
+   bearings. */
+.forge-floating__head-actions .forge-floating__close {
     flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
     background: none;
     border: none;
+    border-radius: 4px;
     color: var(--parchment-dim);
     font-family: "Cinzel", serif;
     font-size: 1.1rem;
     line-height: 1;
-    cursor: pointer;
-    padding: 0 0.1rem;
-    /* override the generic head-actions button rules above */
     text-transform: none;
     letter-spacing: 0;
+    cursor: pointer;
     transition: color .15s ease, text-shadow .15s ease;
 }
-.forge-floating__close:hover {
+.forge-floating__head-actions .forge-floating__close:hover {
     color: var(--bronze);
     text-shadow: 0 0 8px rgba(184, 150, 90, .5);
     background: none;
     border-color: transparent;
-}
-
-/* ── Skroty popup — VERBATIM stock rules (var-driven), scoped to the floating
-   host so they only apply here. These mirror src/web/style.css exactly; the
-   forge look comes entirely from the variable mapping above, not from edited
-   values. The only additions are forge-only wrap fixes so the action row
-   reflows instead of overflowing at narrow widths. */
-.panel--floating .skroty-window-body {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.5rem;
-    overflow: auto;
-    background-color: var(--popup-bg);
-}
-.panel--floating .skroty-empty {
-    color: var(--popup-text-dim);
-    text-align: center;
-    padding: 1rem;
-    font-style: italic;
-}
-.panel--floating .skroty-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-}
-.panel--floating .skroty-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.35rem 0.5rem;
-    background-color: var(--popup-subtle-bg);
-    border-radius: 0.25rem;
-}
-.panel--floating .skroty-item-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;         /* forge-only: reflow instead of overflow */
-}
-.panel--floating .skroty-item-key {
-    color: var(--popup-data-green);
-    font-weight: 600;
-    font-size: 0.85rem;
-}
-.panel--floating .skroty-item-id {
-    color: var(--popup-text-dimmer);
-    font-size: 0.75rem;
-}
-.panel--floating .skroty-item-label {
-    color: rgba(255, 165, 0, 0.7);
-    font-size: 0.7rem;
-    padding-left: 0.1rem;
-}
-.panel--floating .skroty-item-actions {
-    display: flex;
-    gap: 0.25rem;
-    margin-left: auto;
-    flex-wrap: wrap;         /* forge-only: reflow instead of overflow */
-}
-.panel--floating .skroty-btn {
-    background-color: var(--popup-control-bg);
-    border: 1px solid var(--popup-border-control);
-    color: var(--popup-text-medium);
-    font-size: 0.7rem;
-    padding: 0.15rem 0.4rem;
-    border-radius: 0.2rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-.panel--floating .skroty-btn:hover {
-    background-color: var(--popup-control-active-bg);
-    color: var(--popup-text-strong);
-}
-.panel--floating .skroty-btn--primary {
-    background-color: var(--popup-accent-bg);
-    border-color: var(--popup-accent-border);
-    color: var(--popup-accent);
-}
-.panel--floating .skroty-btn--primary:hover {
-    background-color: var(--popup-accent-hover-bg);
-    border-color: var(--popup-accent);
 }

@@ -8,6 +8,7 @@ import './themes/dark-neutral.css'
 import './themes/light-parchment.css'
 import './themes/light-silver.css'
 import './layout/layout.css'
+import './popups/popups.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -1445,3 +1446,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 window.client = mudClient;
+
+
+

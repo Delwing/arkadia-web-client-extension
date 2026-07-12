@@ -236,21 +236,21 @@ const Zabici2Popup: React.FC = () => {
             <div className="postepy2-tabs">
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'all' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'all' ? 'popup-tab--active' : ''}`}
                     onClick={() => setActiveTab('all')}
                 >
                     Wszystkie
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'daily' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'daily' ? 'popup-tab--active' : ''}`}
                     onClick={() => setActiveTab('daily')}
                 >
                     Wg dnia
                 </button>
                 <button
                     type="button"
-                    className={`postepy2-tab-button ${activeTab === 'yearly' ? 'postepy2-tab-button--active' : ''}`}
+                    className={`popup-tab ${activeTab === 'yearly' ? 'popup-tab--active' : ''}`}
                     onClick={() => setActiveTab('yearly')}
                 >
                     Lata

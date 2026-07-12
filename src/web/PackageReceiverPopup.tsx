@@ -90,7 +90,7 @@ const PackageReceiverPopup: React.FC = () => {
         <div className="package-receiver__sort-buttons">
             <button
                 type="button"
-                className="package-receiver__sort-btn"
+                className="popup-btn"
                 onClick={handleRefreshNpcs}
                 title="Aktualizuj liste NPC"
             >
@@ -98,7 +98,7 @@ const PackageReceiverPopup: React.FC = () => {
             </button>
             <button
                 type="button"
-                className="package-receiver__sort-btn"
+                className="popup-btn"
                 onClick={handleExportNpcs}
                 title="Eksportuj liste NPC"
             >
@@ -106,7 +106,7 @@ const PackageReceiverPopup: React.FC = () => {
             </button>
             <button
                 type="button"
-                className="package-receiver__sort-btn"
+                className="popup-btn"
                 onClick={handleClearNpcs}
                 title="Wyczysc liste NPC"
             >

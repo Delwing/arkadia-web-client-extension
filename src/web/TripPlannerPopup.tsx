@@ -431,7 +431,7 @@ const TripPlannerPopup: React.FC = () => {
                         <div className="trip-planner-label">Zapisane trasy:</div>
                         <div className="trip-planner-input-row">
                             <select
-                                className="trip-planner-select"
+                                className="popup-input trip-planner-select"
                                 value={selectedRoute}
                                 onChange={e => setSelectedRoute(e.target.value)}
                             >
@@ -444,7 +444,7 @@ const TripPlannerPopup: React.FC = () => {
                             </select>
                             <button
                                 type="button"
-                                className="trip-planner-btn"
+                                className="popup-btn popup-btn--md"
                                 onClick={handleLoadRoute}
                                 disabled={!selectedRoute}
                                 title="Wczytaj trase"
@@ -453,7 +453,7 @@ const TripPlannerPopup: React.FC = () => {
                             </button>
                             <button
                                 type="button"
-                                className="trip-planner-btn trip-planner-btn--danger"
+                                className="popup-btn popup-btn--md trip-planner-btn--danger"
                                 onClick={handleDeleteRoute}
                                 disabled={!selectedRoute}
                                 title="Usun zapisana trase"
@@ -468,7 +468,7 @@ const TripPlannerPopup: React.FC = () => {
                 <div className="trip-planner-section">
                     <div className="trip-planner-label">Przystanki:</div>
                     {stops.length === 0 ? (
-                        <div className="trip-planner-empty">Brak przystankow. Dodaj lokacje ponizej.</div>
+                        <div className="popup-empty trip-planner-empty">Brak przystankow. Dodaj lokacje ponizej.</div>
                     ) : (
                         <DndContext
                             sensors={sensors}
@@ -532,7 +532,7 @@ const TripPlannerPopup: React.FC = () => {
                         <div className="trip-planner-input-row">
                             <input
                                 type="number"
-                                className="trip-planner-input"
+                                className="popup-input trip-planner-input"
                                 value={idInput}
                                 onChange={e => setIdInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -541,7 +541,7 @@ const TripPlannerPopup: React.FC = () => {
                             />
                             <button
                                 type="button"
-                                className="trip-planner-btn"
+                                className="popup-btn popup-btn--md"
                                 onClick={addStopById}
                             >
                                 Dodaj
@@ -550,7 +550,7 @@ const TripPlannerPopup: React.FC = () => {
                     ) : (
                         <div className="trip-planner-input-row">
                             <select
-                                className="trip-planner-select"
+                                className="popup-input trip-planner-select"
                                 value={selectedShortcut}
                                 onChange={e => setSelectedShortcut(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -564,7 +564,7 @@ const TripPlannerPopup: React.FC = () => {
                             </select>
                             <button
                                 type="button"
-                                className="trip-planner-btn"
+                                className="popup-btn popup-btn--md"
                                 onClick={addStopByShortcut}
                             >
                                 Dodaj
@@ -580,14 +580,14 @@ const TripPlannerPopup: React.FC = () => {
                         <div className="trip-planner-input-row">
                             <input
                                 type="text"
-                                className="trip-planner-input"
+                                className="popup-input trip-planner-input"
                                 value={routeName}
                                 onChange={e => setRouteName(e.target.value)}
                                 placeholder="Nazwa trasy"
                             />
                             <button
                                 type="button"
-                                className="trip-planner-btn"
+                                className="popup-btn popup-btn--md"
                                 onClick={handleSaveRoute}
                                 disabled={!routeName.trim()}
                             >
@@ -601,7 +601,7 @@ const TripPlannerPopup: React.FC = () => {
                 <div className="trip-planner-actions">
                     <button
                         type="button"
-                        className="trip-planner-action-btn trip-planner-action-btn--primary"
+                        className="popup-btn popup-btn--md trip-planner-action-btn popup-btn--primary"
                         onClick={handleProwadz}
                         disabled={stops.length === 0}
                         title="Pokaz sciezke na mapie"
@@ -610,7 +610,7 @@ const TripPlannerPopup: React.FC = () => {
                     </button>
                     <button
                         type="button"
-                        className="trip-planner-action-btn trip-planner-action-btn--danger"
+                        className="popup-btn popup-btn--md trip-planner-action-btn trip-planner-action-btn--danger"
                         onClick={clearStops}
                         disabled={stops.length === 0}
                         title="Wyczysc wszystkie przystanki"

@@ -203,7 +203,7 @@ const DataSourcesPopup: React.FC = () => {
   const headerActions = selectedSource ? null : (
     <button
       type="button"
-      className="data-sources-popup__refresh-all"
+      className="popup-btn"
       onClick={handleRefreshAll}
       disabled={refreshingAll}
       title="Odśwież wszystkie źródła"
@@ -232,7 +232,7 @@ const DataSourcesPopup: React.FC = () => {
           <div className="data-sources-detail__header">
             <button
               type="button"
-              className="data-sources-back-btn"
+              className="popup-btn"
               onClick={() => setSelectedId(null)}
               title="Powrót do listy"
             >
@@ -241,7 +241,7 @@ const DataSourcesPopup: React.FC = () => {
             <span className="data-sources-detail__title">{selectedSource.label}</span>
             <button
               type="button"
-              className="data-sources-refresh-btn"
+              className="popup-btn"
               onClick={() => handleDetailRefresh(selectedSource)}
               disabled={selectedRow?.loading}
               title="Pobierz teraz"
@@ -288,7 +288,7 @@ const DataSourcesPopup: React.FC = () => {
                   <td className="data-sources-action-cell">
                     <button
                       type="button"
-                      className="data-sources-preview-btn"
+                      className="popup-btn"
                       onClick={() => setSelectedId(source.id)}
                       title="Pokaż surowe dane"
                     >
@@ -296,7 +296,7 @@ const DataSourcesPopup: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      className="data-sources-refresh-btn"
+                      className="popup-btn"
                       onClick={() => handleRefresh(source)}
                       disabled={row?.loading}
                       title="Pobierz teraz"

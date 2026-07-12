@@ -384,14 +384,14 @@ const SunTrackerPopup: React.FC = () => {
                 <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
                     <button
                         type="button"
-                        className={`clock-tab-button ${activeTab === 'Empire' ? 'clock-tab-button--active' : ''}`}
+                        className={`popup-tab ${activeTab === 'Empire' ? 'popup-tab--active' : ''}`}
                         onClick={() => setActiveTab('Empire')}
                     >
                         Imperium
                     </button>
                     <button
                         type="button"
-                        className={`clock-tab-button ${activeTab === 'Ishtar' ? 'clock-tab-button--active' : ''}`}
+                        className={`popup-tab ${activeTab === 'Ishtar' ? 'popup-tab--active' : ''}`}
                         onClick={() => setActiveTab('Ishtar')}
                     >
                         Ishtar

@@ -61,18 +61,18 @@ const SkrotyPopup: React.FC = () => {
             bodyClassName="skroty-window-body"
         >
             {shortcuts.length === 0 ? (
-                <div className="skroty-empty">Brak zapisanych skrotow.</div>
+                <div className="popup-empty">Brak zapisanych skrotow.</div>
             ) : (
-                <div className="skroty-list">
+                <div className="popup-list">
                     {shortcuts.map(shortcut => (
-                        <div key={shortcut.key} className="skroty-item">
-                            <div className="skroty-item-row">
+                        <div key={shortcut.key} className="popup-item">
+                            <div className="popup-row">
                                 <span className="skroty-item-key">{shortcut.key}</span>
                                 <span className="skroty-item-id">({shortcut.id})</span>
-                                <div className="skroty-item-actions">
+                                <div className="popup-toolbar">
                                     <button
                                         type="button"
-                                        className="skroty-btn"
+                                        className="popup-btn"
                                         onClick={() => handleProwadz(shortcut.id)}
                                         title="Pokaz sciezke na mapie"
                                     >
@@ -80,7 +80,7 @@ const SkrotyPopup: React.FC = () => {
                                     </button>
                                     <button
                                         type="button"
-                                        className="skroty-btn"
+                                        className="popup-btn"
                                         onClick={() => handlePokaz(shortcut.id)}
                                         title="Wycentruj mape na lokacji"
                                     >
@@ -88,7 +88,7 @@ const SkrotyPopup: React.FC = () => {
                                     </button>
                                     <button
                                         type="button"
-                                        className="skroty-btn"
+                                        className="popup-btn"
                                         onClick={() => handleUstaw(shortcut.id)}
                                         title="Ustaw lokacje na mapie"
                                     >
@@ -96,7 +96,7 @@ const SkrotyPopup: React.FC = () => {
                                     </button>
                                     <button
                                         type="button"
-                                        className="skroty-btn skroty-btn--primary"
+                                        className="popup-btn popup-btn--primary"
                                         onClick={() => handleIdz(shortcut.id)}
                                         title="Rozpocznij chodzenie do lokacji"
                                     >

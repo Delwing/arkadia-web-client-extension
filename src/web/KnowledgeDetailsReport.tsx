@@ -809,7 +809,7 @@ const KnowledgeDetailsReport: React.FC = () => {
                   <button
                     key={item.id}
                     type="button"
-                    className="knowledge-details-nav-button"
+                    className="popup-btn popup-btn--md popup-btn--pill knowledge-details-nav-button"
                     onClick={() => handleNavigate(item.id)}
                   >
                     {item.label}
