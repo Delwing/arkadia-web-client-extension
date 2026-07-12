@@ -101,8 +101,16 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
         eventBus.emit("combat.popup.open");
     }
 
+    // "Postawa" combat-readiness popup (weapon / cover / guard / order status).
+    // Distinct from the combat message log above.
+    function openStatusPopup() {
+        eventBus.emit("combatStatus.popup.open");
+    }
+
     if (aliases) {
         aliases.push({ pattern: /^\/walka okno$/, callback: openPopup });
         aliases.push({ pattern: /^\/walkaw$/, callback: openPopup });
+        aliases.push({ pattern: /^\/postawa okno$/, callback: openStatusPopup });
+        aliases.push({ pattern: /^\/postawaw$/, callback: openStatusPopup });
     }
 }

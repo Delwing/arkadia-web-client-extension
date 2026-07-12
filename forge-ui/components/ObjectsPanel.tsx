@@ -123,7 +123,7 @@ function ObjectRow({ row, actions }: { row: Row; actions: ObjectActions }) {
     );
 }
 
-export default function ObjectsPanel() {
+export default function ObjectsPanel({ bare = false }: { bare?: boolean } = {}) {
     const client = useClient();
     const objects = useObjects(client);
 
@@ -186,11 +186,20 @@ export default function ObjectsPanel() {
         return { o, allegiance, nameClass: nameClassFor(o, allegiance), attackers, threatened };
     });
 
+    const body = rows.length === 0
+        ? <div className="obj--empty">Pustka.</div>
+        : rows.map((row) => <ObjectRow key={row.o.num} row={row} actions={actions} />);
+
+    // Bare mode: render just the body, no forged Panel chrome — used when the
+    // shared dock manager owns the panel frame (title/header/bevel) and only
+    // needs the "W poblizu" content portaled into its built-in objectList slot.
+    if (bare) {
+        return <div className="panel__body obj-list-bare" id="alt-objects">{body}</div>;
+    }
+
     return (
         <Panel title="W poblizu" meta={objects.length} metaId="alt-objects-count" bodyId="alt-objects">
-            {rows.length === 0
-                ? <div className="obj--empty">Pustka.</div>
-                : rows.map((row) => <ObjectRow key={row.o.num} row={row} actions={actions} />)}
+            {body}
         </Panel>
     );
 }

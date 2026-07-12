@@ -265,6 +265,7 @@ export function migrateLayoutState(legacy: LegacyLayoutState): LayoutState {
 
   return {
     enabled: !!legacy.enabled,
+    spanningDocks: 'topBottom',
     enabledPanels: {
       objectList: legacy.enabledPanels?.objectList ?? true,
     },
@@ -305,6 +306,7 @@ export function loadLayoutState(): LayoutState {
       }
       const state: LayoutState = {
         enabled: !!stored.enabled,
+        spanningDocks: stored.spanningDocks === 'leftRight' ? 'leftRight' : 'topBottom',
         enabledPanels: {
           objectList: stored.enabledPanels?.objectList ?? true,
         },
@@ -404,6 +406,21 @@ export function setDockingSupported(supported: boolean): void {
 
 export function isDockingSupported(): boolean {
   return dockingSupported;
+}
+
+// ─── UI capability: can this shell render "left/right rails span everything"? ──
+// The vertical span mode needs the shell to provide #layout-left/right-dock-host
+// elements (children of #main-container) to portal the rails into. Only the
+// forge shell does; the stock shell never opts in, so the shared `spanningDocks`
+// flag is a no-op there even though it lives in the shared persisted state.
+let railSpanSupported = false;
+
+export function setRailSpanSupported(supported: boolean): void {
+  railSpanSupported = supported;
+}
+
+export function isRailSpanSupported(): boolean {
+  return railSpanSupported;
 }
 
 // ─── Popup helpers used by popup components on mount ──────────────────────

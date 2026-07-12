@@ -1,0 +1,82 @@
+/* World-time ("Czas") popup — the in-game season / date / time-of-day widget
+   ported from forge-ui's TimePanel into a shared dockable popup. Self-contained
+   and themed through the shared --popup-* variables so it reads correctly in
+   both the stock UI and forge-ui. Distinct `wt-` class names avoid colliding
+   with forge's global `.tp-*` rules. */
+
+.world-time-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 11px;
+  overflow: hidden;
+}
+
+.wt-clock {
+  display: flex;
+  align-items: stretch;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+}
+/* season stacked directly over the world date, pinned to the right of the clock */
+.wt-cal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+  text-align: right;
+}
+/* sun/moon icon + time are one vertically-centered unit */
+.wt-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* icon fills the full height of the two right-hand rows */
+.wt-sky {
+  display: flex;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+.wt-sky svg {
+  width: 28px;
+  height: 28px;
+}
+.wt-day {
+  color: #f0c25a;
+}
+.wt-night {
+  color: #9fb6d6;
+}
+.wt-time {
+  font-family: var(--output-font-family, ui-monospace, monospace);
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--popup-text-bright, #e8dfc8);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+/* season label — mirrors forge's header meta: mono, uppercase, season-coloured */
+.wt-season {
+  font-family: var(--output-font-family, ui-monospace, monospace);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* world date — mirrors forge's .tp-date: Cinzel caps, parchment-dim */
+.wt-date {
+  font-family: "Cinzel", serif;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--popup-text-dim, #b7aa8b);
+}
+/* day-of-year — forge's .tp-doy: dimmed bronze, a notch below the date colour */
+.wt-doy {
+  color: var(--popup-accent-border, #9a7b3e);
+}

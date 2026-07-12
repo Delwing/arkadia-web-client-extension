@@ -17,10 +17,12 @@ import {
   WindowRecord,
 } from './types';
 import {
+  isRailSpanSupported,
   loadLayoutState,
   resetLayoutState,
   saveLayoutStateDebounced,
 } from './utils/layoutStorage';
+import type { SpanningDocks } from './types';
 import { windowManager, WindowManager } from './WindowManager';
 import eventBus from '@modules/core/eventBus';
 
@@ -44,6 +46,13 @@ export interface LayoutContextValue {
   disableLayoutMode: () => void;
   toggleLayoutMode: () => void;
   resetLayout: () => void;
+
+  // Dock span orientation ("rails span everything" switch)
+  /** Effective state: 'leftRight' only when the flag is set AND the active
+   *  shell supports rail-span (provides the host divs). */
+  railsVertical: boolean;
+  setSpanningDocks: (v: SpanningDocks) => void;
+  toggleSpanningDocks: () => void;
 
   // Popup dock state pass-throughs
   getPopupDockState: (id: string) => PopupPanelDockState | undefined;
@@ -91,6 +100,8 @@ export function LayoutProvider({
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const isLayoutMode = layoutState.enabled;
+  const railsVertical =
+    layoutState.spanningDocks === 'leftRight' && isRailSpanSupported();
 
   // Subscribe to manager changes + debounce persistence.
   // Force a snapshot bump right after subscribing — child useEffects (e.g.
@@ -127,15 +138,20 @@ export function LayoutProvider({
     body.classList.remove('layout-map-enabled');
     body.classList.remove('layout-objectlist-enabled');
 
+    body.classList.remove('layout-rails-vertical');
+
     if (isLayoutMode) {
       body.classList.add('layout-manager-enabled');
       body.classList.add('layout-map-enabled');
       if (layoutState.enabledPanels.objectList) {
         body.classList.add('layout-objectlist-enabled');
       }
+      if (railsVertical) {
+        body.classList.add('layout-rails-vertical');
+      }
     }
     onLayoutModeChange?.(isLayoutMode);
-  }, [isLayoutMode, layoutState.enabledPanels.objectList, onLayoutModeChange]);
+  }, [isLayoutMode, layoutState.enabledPanels.objectList, railsVertical, onLayoutModeChange]);
 
   // Drag body class.
   useEffect(() => {
@@ -161,6 +177,18 @@ export function LayoutProvider({
     const fresh = resetLayoutState();
     windowManager.loadState(fresh);
   }, []);
+
+  const setSpanningDocks = useCallback(
+    (v: SpanningDocks) => windowManager.setSpanningDocks(v),
+    []
+  );
+  const toggleSpanningDocks = useCallback(
+    () =>
+      windowManager.setSpanningDocks(
+        windowManager.getSpanningDocks() === 'leftRight' ? 'topBottom' : 'leftRight'
+      ),
+    []
+  );
 
   const getPopupDockState = useCallback(
     (id: string) => windowManager.getPopupDockState(id),
@@ -203,6 +231,9 @@ export function LayoutProvider({
       disableLayoutMode,
       toggleLayoutMode,
       resetLayout,
+      railsVertical,
+      setSpanningDocks,
+      toggleSpanningDocks,
       getPopupDockState,
       updatePopupDockState,
       getBuiltInPanelState,
@@ -219,6 +250,9 @@ export function LayoutProvider({
       disableLayoutMode,
       toggleLayoutMode,
       resetLayout,
+      railsVertical,
+      setSpanningDocks,
+      toggleSpanningDocks,
       getPopupDockState,
       updatePopupDockState,
       getBuiltInPanelState,

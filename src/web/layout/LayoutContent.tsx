@@ -12,9 +12,19 @@ import type { DockSide } from './types';
 interface LayoutContentProps {
   mapElement: HTMLElement | null;
   objectListElement: HTMLElement | null;
+  /** Override the built-in objectList panel's title (default "Kondycje"). */
+  objectListTitle?: string;
+  /** Custom content for the objectList panel; when set, the legacy
+   *  #objects-list DOM relocation is bypassed. */
+  renderObjectList?: () => React.ReactNode;
 }
 
-export function LayoutContent({ mapElement, objectListElement }: LayoutContentProps) {
+export function LayoutContent({
+  mapElement,
+  objectListElement,
+  objectListTitle,
+  renderObjectList,
+}: LayoutContentProps) {
   const {
     manager,
     layoutState,
@@ -22,6 +32,7 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
     dragState,
     isLayoutMode,
     updateDragState,
+    railsVertical,
   } = useLayoutManager();
 
   // Open built-in panel records as needed (managed by enabledPanels flag).
@@ -35,26 +46,30 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
     }
     manager.open('map', { title: 'Mapa' });
     if (layoutState.enabledPanels.objectList) {
-      manager.open('objectList', { title: 'Kondycje' });
+      manager.open('objectList', { title: objectListTitle ?? 'Kondycje' });
     } else if (manager.has('objectList')) {
       manager.close('objectList');
     }
     // loadVersion in deps so Restore Default / device-sync import re-opens
     // built-ins after the manager's live-windows map is cleared by loadState.
-  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion]);
+  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion, objectListTitle]);
 
-  // Apply CSS variables to #content-area for the grid to work.
-  // Critical: a drag-target side must size the grid column even when it has
-  // no windows yet — otherwise the empty DockArea renders at 0 width and
-  // dockDetect's bounding-rect test rejects it as out-of-bounds.
-  // Bottom dock is NOT part of the grid (it's portaled below #input-area).
+  // Apply CSS variables that size the dock grid tracks. They live on
+  // #main-container (falling back to #content-area) so BOTH grids can read them:
+  // the horizontal-priority grid on #content-area (top/left/right) inherits them,
+  // while the vertical-priority "rails span everything" grid on #main-container
+  // (left/right rails + top/bottom/input rows) reads them directly.
+  // Critical: a drag-target side must size its track even when it has no windows
+  // yet — otherwise the empty DockArea renders at 0px and dockDetect's
+  // bounding-rect test rejects it as out-of-bounds.
   useEffect(() => {
-    const contentArea = document.getElementById('content-area');
-    if (!contentArea) return;
+    const host =
+      document.getElementById('main-container') ??
+      document.getElementById('content-area');
+    if (!host) return;
+    const sides: DockSide[] = ['left', 'top', 'right', 'bottom'];
     if (!isLayoutMode) {
-      contentArea.style.removeProperty('--dock-left-size');
-      contentArea.style.removeProperty('--dock-top-size');
-      contentArea.style.removeProperty('--dock-right-size');
+      for (const side of sides) host.style.removeProperty(`--dock-${side}-size`);
       return;
     }
     const sideHasContent = (side: DockSide) => {
@@ -67,9 +82,9 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
       sideHasContent(side) || sideIsDragTarget(side)
         ? `${layoutState.dockExtents[side]}px`
         : '0px';
-    contentArea.style.setProperty('--dock-left-size', sizeFor('left'));
-    contentArea.style.setProperty('--dock-top-size', sizeFor('top'));
-    contentArea.style.setProperty('--dock-right-size', sizeFor('right'));
+    for (const side of sides) {
+      host.style.setProperty(`--dock-${side}-size`, sizeFor(side));
+    }
   }, [layoutState, isLayoutMode, dragState]);
 
   const setExtent = useCallback(
@@ -148,30 +163,34 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
           />
         )}
         {showSide('left') && (
-          <DockArea
-            side="left"
-            root={layoutState.dockTrees.left}
-            windows={visibleWindows}
-            extent={layoutState.dockExtents.left}
-            dragState={dragState}
-            manager={manager}
-            onSetExtent={setExtent}
-            onDragStateChange={updateDragState}
-            onTitlebarContextMenu={handleTitlebarContextMenu}
-          />
+          <SideDockPortal side="left" vertical={railsVertical}>
+            <DockArea
+              side="left"
+              root={layoutState.dockTrees.left}
+              windows={visibleWindows}
+              extent={layoutState.dockExtents.left}
+              dragState={dragState}
+              manager={manager}
+              onSetExtent={setExtent}
+              onDragStateChange={updateDragState}
+              onTitlebarContextMenu={handleTitlebarContextMenu}
+            />
+          </SideDockPortal>
         )}
         {showSide('right') && (
-          <DockArea
-            side="right"
-            root={layoutState.dockTrees.right}
-            windows={visibleWindows}
-            extent={layoutState.dockExtents.right}
-            dragState={dragState}
-            manager={manager}
-            onSetExtent={setExtent}
-            onDragStateChange={updateDragState}
-            onTitlebarContextMenu={handleTitlebarContextMenu}
-          />
+          <SideDockPortal side="right" vertical={railsVertical}>
+            <DockArea
+              side="right"
+              root={layoutState.dockTrees.right}
+              windows={visibleWindows}
+              extent={layoutState.dockExtents.right}
+              dragState={dragState}
+              manager={manager}
+              onSetExtent={setExtent}
+              onDragStateChange={updateDragState}
+              onTitlebarContextMenu={handleTitlebarContextMenu}
+            />
+          </SideDockPortal>
         )}
       </div>
 
@@ -201,9 +220,11 @@ export function LayoutContent({ mapElement, objectListElement }: LayoutContentPr
           <MapPanel mapElement={mapElement} />
         </BuiltInPortal>
       )}
-      {objectListElement && manager.has('objectList') && (
+      {manager.has('objectList') && (renderObjectList || objectListElement) && (
         <BuiltInPortal id="objectList" manager={manager}>
-          <ObjectListPanel objectListElement={objectListElement} />
+          {renderObjectList
+            ? renderObjectList()
+            : <ObjectListPanel objectListElement={objectListElement} />}
         </BuiltInPortal>
       )}
 
@@ -250,5 +271,26 @@ function BuiltInPortal({
 function BottomDockPortal({ children }: { children: React.ReactNode }) {
   const host = document.getElementById('layout-bottom-dock-host');
   if (!host) return null;
+  return createPortal(<>{children}</>, host);
+}
+
+/** In "rails span everything" (vertical) mode the left/right DockAreas must
+ *  escape #content-area and become tracks of the #main-container grid so they
+ *  span the full height past the input + bottom dock. When a host div is present
+ *  (only the forge shell provides one), portal into it; otherwise — and in the
+ *  default horizontal mode — render inline so #content-area's grid places it. */
+function SideDockPortal({
+  side,
+  vertical,
+  children,
+}: {
+  side: 'left' | 'right';
+  vertical: boolean;
+  children: React.ReactNode;
+}) {
+  const host = vertical
+    ? document.getElementById(`layout-${side}-dock-host`)
+    : null;
+  if (!host) return <>{children}</>;
   return createPortal(<>{children}</>, host);
 }

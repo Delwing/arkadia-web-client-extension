@@ -243,16 +243,21 @@ export function BreakItemChip() {
   const [data, setData] = useState<{ text: string; command?: string } | null>(null);
   useClientEvent<{ text: string; command?: string } | null>("breakItem", (v) => setData(v));
   if (!data) return null;
-  const onClick = data.command
-    ? () => { eventBus.emit("sendCommand", { command: data.command! }); setData(null); }
-    : undefined;
+  // Always clickable, mirroring the stock BreakItemWarning: a click fires the
+  // repair/put-down command when the game supplied one, and always dismisses the
+  // chip. Without this the four command-less break warnings render as an inert
+  // <div> the user can neither act on nor clear.
+  const onClick = () => {
+    if (data.command) eventBus.emit("sendCommand", { command: data.command });
+    setData(null);
+  };
   return (
     <Chip
       icon={<ChipIcon name="warn" />}
       label="Uwaga"
       value={data.text}
       tone="danger"
-      title={onClick ? "Napraw sprzet" : undefined}
+      title={data.command ? "Napraw sprzet" : "Odrzuc ostrzezenie"}
       onClick={onClick}
     />
   );

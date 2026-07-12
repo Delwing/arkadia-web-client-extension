@@ -75,19 +75,42 @@ export function detectDock(mx: number, my: number): DetectionResult {
   }
 
   // Fallback: bootstrap the first drag into an as-yet-unrendered empty dock.
+  // Empty left/right sides live along the edges of the shell: in vertical
+  // ("rails span everything") mode that's the full-height #main-container; in the
+  // default horizontal mode it's #content-area. Top stays against #content-area.
+  const vertical = document.body.classList.contains('layout-rails-vertical');
+  const railHost = document.getElementById(vertical ? 'main-container' : 'content-area');
+  if (railHost) {
+    const r = railHost.getBoundingClientRect();
+    if (my >= r.top && my <= r.bottom) {
+      if (
+        !document.querySelector('.dock-area-left') &&
+        mx >= r.left &&
+        mx - r.left < EMPTY_DOCK_ZONE
+      ) {
+        return { side: 'left', slotIndex: 0 };
+      }
+      if (
+        !document.querySelector('.dock-area-right') &&
+        mx <= r.right &&
+        r.right - mx < EMPTY_DOCK_ZONE
+      ) {
+        return { side: 'right', slotIndex: 0 };
+      }
+    }
+  }
   const vp = document.getElementById('content-area');
   if (vp) {
     const r = vp.getBoundingClientRect();
-    if (mx >= r.left && mx <= r.right && my >= r.top && my <= r.bottom) {
-      if (!document.querySelector('.dock-area-left') && mx - r.left < EMPTY_DOCK_ZONE) {
-        return { side: 'left', slotIndex: 0 };
-      }
-      if (!document.querySelector('.dock-area-right') && r.right - mx < EMPTY_DOCK_ZONE) {
-        return { side: 'right', slotIndex: 0 };
-      }
-      if (!document.querySelector('.dock-area-top') && my - r.top < EMPTY_DOCK_ZONE) {
-        return { side: 'top', slotIndex: 0 };
-      }
+    if (
+      mx >= r.left &&
+      mx <= r.right &&
+      my >= r.top &&
+      my <= r.bottom &&
+      !document.querySelector('.dock-area-top') &&
+      my - r.top < EMPTY_DOCK_ZONE
+    ) {
+      return { side: 'top', slotIndex: 0 };
     }
   }
   return { side: null, slotIndex: 0 };

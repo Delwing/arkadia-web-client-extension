@@ -6,6 +6,7 @@ import { bootstrapGameClient } from '@web/clientBootstrap';
 import { showHerbTooltip, hideHerbTooltip } from '@web/herbTooltip';
 import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
 import { showContextMenu } from '@web/contextMenu';
+import ObjectList from '@web/ObjectList';
 import { getAttackController } from './attackController';
 import { registerBuiltinFooterItems } from '@web-ui/footer/builtinItems';
 
@@ -47,6 +48,13 @@ export function createClient(): Client {
     // so the footer Atk chip's mode changes persist and drive team-attack behaviour
     // from the start, and the initial `attackMode` event reaches the chip.
     getAttackController(client);
+
+    // Drive the built-in Kondycje (object list) panel. Forge renders it via the
+    // shared `ObjectListPanel`, which only relocates the `#objects-list` node —
+    // the class that actually consumes `gmcp.objects.*` and paints that node is
+    // `ObjectList`. Stock instantiates it in main.ts; without it here the panel
+    // stays empty (e.g. `/demo_kondycje` emits mock GMCP with no consumer).
+    new ObjectList(client);
 
     // Put the built-in footer chips into the common registry; the registry then
     // applies the user's footer config (show/hide + order) before the HUD renders

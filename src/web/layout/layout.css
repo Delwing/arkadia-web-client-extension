@@ -1,6 +1,8 @@
 /* Layout Manager Styles */
 
-/* When layout manager is enabled, use CSS Grid for content area */
+/* When layout manager is enabled, use CSS Grid for content area.
+   Default ("horizontal") priority: top/bottom span the full width, left/right
+   are sandwiched in the central band. */
 body.layout-manager-enabled #content-area {
   display: grid;
   grid-template-areas:
@@ -8,6 +10,65 @@ body.layout-manager-enabled #content-area {
     "left   main  right";
   grid-template-columns: var(--dock-left-size, 0px) 1fr var(--dock-right-size, 0px);
   grid-template-rows: var(--dock-top-size, 0px) 1fr;
+}
+
+/* ── Vertical priority: left/right rails span the whole shell ───────────────
+   The left/right DockAreas are portaled out of #content-area into the
+   #layout-left/right-dock-host divs (children of #main-container), so the rails
+   become full-height tracks of the #main-container grid. The central column
+   then stacks the content (top dock + main), the input bar and the bottom dock
+   between the rails. Only active when the shell opts in (adds
+   .layout-rails-vertical + provides the host divs — currently forge-ui). */
+body.layout-manager-enabled.layout-rails-vertical #main-container {
+  display: grid;
+  grid-template-columns:
+    var(--dock-left-size, 0px) minmax(0, 1fr) var(--dock-right-size, 0px);
+  grid-template-rows: minmax(0, 1fr) auto var(--dock-bottom-size, 0px);
+  grid-template-areas:
+    "left content right"
+    "left input   right"
+    "left bottom  right";
+  /* Row-gap MUST be 0: the rails span all three rows, so a row-gap would leave
+     the rails hanging below the input whenever the bottom dock is empty (0px
+     row). The content->input rhythm is restored via #input-area margin below.
+     Keep the 12px column rhythm between the rails and the central column. */
+  gap: 0 12px;
+}
+
+
+/* In vertical mode #content-area holds only the top dock + main output. */
+body.layout-manager-enabled.layout-rails-vertical #content-area {
+  grid-area: content;
+  display: grid;
+  grid-template-areas:
+    "top"
+    "main";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--dock-top-size, 0px) minmax(0, 1fr);
+}
+
+body.layout-manager-enabled.layout-rails-vertical #input-area {
+  grid-area: input;
+  /* Restore the content->input rhythm the row-gap used to give, as margin so it
+     lands INSIDE the input's row (which the rails span) — the rails stay
+     continuous and their bottom edge lines up exactly with the input when the
+     bottom dock is empty. */
+  margin-top: 12px;
+}
+
+/* The bottom dock host is display:contents, so its child .dock-zone--bottom is
+   the grid item — give it the bottom row of the central column. */
+body.layout-manager-enabled.layout-rails-vertical .dock-zone--bottom {
+  grid-area: bottom;
+}
+
+/* Rail host divs are transparent to layout (display:contents): empty in
+   horizontal mode, and in vertical mode they hoist the portaled .dock-zone--*
+   rail into the #main-container grid, where its own grid-area:left/right (set
+   below) places it spanning every row. */
+#layout-left-dock-host,
+#layout-right-dock-host {
+  display: contents;
 }
 
 /* Bottom dock host lives below #input-area as a sibling in #main-container's
@@ -1216,6 +1277,14 @@ body.layout-manager-enabled .compass-rose-box {
   animation: dock-drop-preview-pulse 1.2s ease-in-out infinite;
 }
 .dock-panel-slot--preview {
+  pointer-events: none;
+}
+
+/* Fill preview for a wholly-empty dock side being drag-targeted (no leaf ghost
+   can render there). Inset slightly so it reads as a panel-sized drop target. */
+.dock-drop-preview--empty {
+  margin: 6px;
+  border-radius: 6px;
   pointer-events: none;
 }
 

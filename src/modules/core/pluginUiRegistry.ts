@@ -26,10 +26,10 @@ export function registerPopupMenuEntry(
   label: string | Node,
   onSelect: () => void
 ): PopupMenuEntryRecord {
+  // The stock UI hosts this entry inside #input-area's dropdown. Alternate UIs
+  // (e.g. forge-ui) don't render that menu, so fall back to a detached element
+  // instead of throwing — plugins still get a working handle and don't fail to load.
   const menu = getMenuListElement();
-  if (!menu) {
-    throw new Error("Popup menu element not found");
-  }
 
   const existing = popupMenuEntries.get(id);
   if (existing) {
@@ -57,7 +57,7 @@ export function registerPopupMenuEntry(
 
   button.addEventListener("click", listener);
   listItem.appendChild(button);
-  menu.appendChild(listItem);
+  menu?.appendChild(listItem);
 
   const record: PopupMenuEntryRecord = {
     id,

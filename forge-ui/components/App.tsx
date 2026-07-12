@@ -1,46 +1,66 @@
-import { Fragment } from 'react';
+import { useEffect, useMemo } from 'react';
+import { LayoutManagerWrapper } from '@web/layout';
 import IconDefs from './IconDefs';
-import Sidebar from './Sidebar';
 import World from './World';
 import CommandRail from './CommandRail';
 import ContextMenu from './ContextMenu';
-import { POPUP_CATALOG } from '@web/popups/popupCatalog';
-import FloatingPopupHost from './FloatingPopupHost';
-import './floatingPopup.css';
+import { useClient } from '../client/ClientContext';
+import { mountForgedMap } from '../map/forgedMap';
+import ObjectsPanel from './ObjectsPanel';
 
 /**
- * The Forged HUD shell. `IconDefs` seeds the SVG symbol library; `.backdrop` is
- * the stone image; `.screen` reserves the left gutter for the sidebar and lays
- * out the output and command rail. `ContextMenu` portals to the body, rendering
- * herb/book right-click menus off the shared store. When the transport is down,
- * the connect action is an inline prompt in the game log (see GameLog).
+ * SPIKE — the Forged HUD shell rebuilt on the SHARED dock manager.
+ *
+ * The DOM mirrors the stock skeleton ids (`#main-container` > `#content-area`
+ * grid + `#input-area` + `#layout-bottom-dock-host`) so the shared
+ * `LayoutManagerWrapper` works with ZERO changes to src/web/layout/*: the dock
+ * grid activates on `#content-area`, the bottom dock portals below the input,
+ * and every catalog / non-catalog / plugin popup mounts from the wrapper. The
+ * forged look comes entirely from layout-theme.css.
+ *
+ * The built-in map panel is fed the real forged map (`#map`, styled DarkModern
+ * by mountForgedMap); the built-in objectList slot renders the forged
+ * "W poblizu" panel (ObjectsPanel) instead of the stock "Kondycje" list.
  */
 export default function App() {
+    const client = useClient();
+
+    // The static #map host lives in index.html (offscreen). Hand it to the
+    // built-in MapPanel, which relocates it into whichever dock/float owns it.
+    const mapElement = useMemo(() => document.getElementById('map'), []);
+
+    // Mount the real forged map into #map. EmbeddedMap binds to #map by id, so
+    // this works whether or not MapPanel has already relocated the node.
+    useEffect(() => {
+        void mountForgedMap(client);
+    }, [client]);
+
     return (
         <>
             <IconDefs />
             <div className="backdrop" />
-            <div className="screen">
-                <Sidebar />
-                <World />
-                <CommandRail />
+            <div className="screen" id="main-container">
+                {/* Rail hosts (siblings of #content-area) — in "rails span
+                    everything" mode the left/right DockAreas portal in here so
+                    they become full-height tracks of the #main-container grid.
+                    display:contents keeps them inert otherwise. */}
+                <div id="layout-left-dock-host" />
+                <div id="content-area">
+                    <World />
+                    <LayoutManagerWrapper
+                        mapElement={mapElement}
+                        objectListElement={null}
+                        objectListTitle="W poblizu"
+                        renderObjectList={() => <ObjectsPanel bare />}
+                    />
+                </div>
+                <div id="layout-right-dock-host" />
+                <div id="input-area">
+                    <CommandRail />
+                </div>
+                <div id="layout-bottom-dock-host" />
             </div>
             <ContextMenu />
-
-            {/* Stock dockable popups, reused verbatim from the shared catalog and
-                shown as plain floating windows. Each popup is headless until its
-                open event fires; FloatingPopupHost supplies the floating frame,
-                drag, resize and close. Staggered so multiple opens don't stack. */}
-            {POPUP_CATALOG.map(({ id, Component }, i) => (
-                <Fragment key={id}>
-                    <Component />
-                    <FloatingPopupHost
-                        popupId={id}
-                        initialX={120 + (i % 6) * 26}
-                        initialY={90 + (i % 6) * 26}
-                    />
-                </Fragment>
-            ))}
         </>
     );
 }

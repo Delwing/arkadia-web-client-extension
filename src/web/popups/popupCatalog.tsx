@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import ChatPopup from '../ChatPopup';
 import ClockPopup from '../ClockPopup';
 import CombatPopup from '../CombatPopup';
+import CombatStatusPopup from '../CombatStatusPopup';
 import ContractsPopup from '../ContractsPopup';
 import DataSourcesPopup from '../DataSourcesPopup';
 import DepositsPopup from '../DepositsPopup';
@@ -28,6 +29,7 @@ import SunTrackerPopup from '../SunTrackerPopup';
 import TransportRoutePopup from '../TransportRoutePopup';
 import TransportTimesDebugPopup from '../TransportTimesDebugPopup';
 import TripPlannerPopup from '../TripPlannerPopup';
+import WorldTimePopup from '../WorldTimePopup';
 import WalkerPopup from '../WalkerPopup';
 import Zabici2Popup from '../Zabici2Popup';
 import ZabiciPopup from '../ZabiciPopup';
@@ -61,6 +63,7 @@ export interface PopupCatalogEntry {
  */
 export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:clock', Component: ClockPopup },
+    { id: 'popup:worldTime', Component: WorldTimePopup },
     { id: 'popup:contracts', Component: ContractsPopup },
     { id: 'popup:fishing', Component: FishingPopup },
     { id: 'popup:herb', Component: HerbManager },
@@ -70,6 +73,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:knowledgeDetails', Component: KnowledgeDetailsReport },
     { id: 'popup:chat', Component: ChatPopup },
     { id: 'popup:combat', Component: CombatPopup },
+    { id: 'popup:combatStatus', Component: CombatStatusPopup },
     { id: 'popup:postepy', Component: PostepyPopup },
     { id: 'popup:postepy2', Component: Postepy2Popup },
     { id: 'popup:zabici', Component: ZabiciPopup },

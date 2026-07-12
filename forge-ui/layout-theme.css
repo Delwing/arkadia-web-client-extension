@@ -1,0 +1,398 @@
+/* ============================================================
+   forge-ui · Forged re-skin of the shared dock manager
+   ============================================================
+
+   Makes every docked / floating window from src/web/layout render as a native
+   Forged panel — same plate, bronze bevel ring, ornament header and Cinzel
+   title as forge-ui's own `.forged.panel`, AND themes the popup CONTENT via the
+   full `--popup-*` remap forge has always used (ported from the old
+   components/floatingPopup.css). Purely CSS overrides — ZERO changes to
+   src/web/layout/*.
+
+   Deliberately NOT styled yet: the header control buttons (pin / lock / reset /
+   popout / close). */
+
+/* ── Shell: #main-container column flex, #content-area grid host ──────────── */
+#main-container {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 12px;
+}
+
+#content-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+#input-area {
+  flex: 0 0 auto;
+}
+
+/* Gap between the output (main) and the docked sides, like the forge sidebar. */
+body.layout-manager-enabled #content-area {
+  gap: 12px;
+}
+
+body.layout-manager-enabled #content-area > .world {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ── Accent / surface tokens the shared dock CSS reads ───────────────────── */
+:root {
+  --surface-ground: transparent;   /* dock zones show the stone backdrop */
+  --surface-border: transparent;   /* no hard grid lines; splitters bronze on hover */
+  --bs-primary: var(--bronze);
+}
+
+/* ── The plate — every managed window becomes a forged panel ──────────────
+   Mirrors style.css `.panel` fill + `.forged` border/shadow. */
+.managed-panel {
+  position: relative;
+  overflow: hidden;
+  background-color: #0a0a09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  color: var(--parchment);
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+}
+
+/* `.docked-panel` forces `box-shadow:none !important`, so re-assert with
+   !important; floating inherits from the base rule. */
+.managed-panel.docked-panel,
+.managed-panel.tab-group-panel,
+.managed-panel.floating-panel {
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.16),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.6),
+    0 12px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+.managed-panel.floating-panel {
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+}
+
+/* forge `.forged::after` — inner bronze bevel ring. */
+.managed-panel::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 5px;
+  border: 1px solid rgba(184, 150, 90, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ── Header — forge `.panel__head` (ornament + Cinzel title + divider) ─────
+   Override the docked/floating header specifics (fixed height, tight padding,
+   and — crucially — the floating header's `justify-content:space-between`, which
+   otherwise spreads ornament/title/actions apart). */
+/* Compound `.managed-panel .managed-panel__header` (0,2,0) so it outranks
+   layout.css's `.docked-panel--popup .docked-panel__header` (0,2,0, earlier in
+   source) — otherwise DOCKED POPUPS keep the compact stock header (padding 0,
+   justify space-between) and look malformed while floating popups get forged. */
+.managed-panel .managed-panel__header {
+  height: auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 11px 12px 7px;
+  background: transparent;
+  border: none;
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 -2px 0 rgba(184, 150, 90, 0.06);
+}
+
+/* Bronze romb ornament, prepended as the first flex item (forge `.orn`). */
+.managed-panel .managed-panel__header::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184, 150, 90, 0.4);
+}
+
+/* Title — forge `.panel__title`. Compound selector outranks layout.css's
+   `.docked-panel--popup .docked-panel__title`. */
+.managed-panel__header .managed-panel__title {
+  flex: 0 0 auto;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+
+/* Controls sit at the right. */
+.managed-panel__header-actions {
+  margin-left: auto;
+}
+
+/* ── Tab bar height parity ─────────────────────────────────────────────────
+   A tab group's tab bar carries `.managed-panel__header`, so it inherited the
+   forged header's tall 11/7 padding wrapped AROUND the 28px tab items — making a
+   tabbed window's chrome noticeably taller than a single window's header. Pin the
+   bar to the single forged header height and let the tabs fill it (no vertical
+   padding), so tabbed and single docked windows take the same space. The 8px
+   ornament keeps its fixed size (align-items:stretch only stretches auto-height
+   items); the tabs (height:auto) stretch to the bar. */
+.managed-panel .managed-panel__header.tab-group-tabbar {
+  height: 38px;
+  min-height: 0;
+  padding: 0 12px;
+  gap: 9px;
+  align-items: stretch;
+}
+.managed-panel .tab-group-tabbar .tab-group-tab {
+  height: auto;
+}
+/* align-items:stretch would top-align the fixed-height ornament — re-center it. */
+.managed-panel .managed-panel__header.tab-group-tabbar::before {
+  align-self: center;
+}
+
+/* Unified forged voice for custom header ACTION buttons — one style every
+   text action button reuses (the objectList "Lista" mode toggle, chat team
+   toggle, popup headerActions…), rather than each carrying its own stock CSS.
+   Scoped to DIRECT-child buttons so it spares the nested icon toggles
+   (.map-header-menu__toggle + its dropdown items) and the icon control buttons
+   (.panel-button: pin / lock / close / reset / popout). */
+.managed-panel__header-actions > button:not(.panel-button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "Cinzel", serif;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--parchment-dim);
+  background-color: rgba(28, 26, 23, 0.8);
+  border: 1px solid var(--iron-lo);
+  border-radius: 4px;
+  padding: 3px 6px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.managed-panel__header-actions > button:not(.panel-button):hover {
+  color: var(--parchment);
+  border-color: var(--bronze-dim);
+  background-color: rgba(42, 37, 28, 0.9);
+}
+/* toggled/active state (e.g. objectList non-list mode) reads as bronze */
+.managed-panel__header-actions > button:not(.panel-button)[class*="--active"] {
+  color: var(--bronze);
+  border-color: var(--bronze-dim);
+  background-color: rgba(110, 86, 32, 0.28);
+}
+
+/* Content fills the plate below the header, above the bevel ring. */
+.managed-panel__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Let the docked map sit on the forged plate rather than a hard black box. */
+.map-panel-container {
+  background: transparent;
+}
+
+/* The map canvas paints edge-to-edge, so without this it bleeds into the 4px
+   band under the bevel ring — square corners poking past the rounded ring. Inset
+   the map content inside the ring (ring is at inset 4px, radius 5px) and clip the
+   canvas to a matching radius so it stays cleanly within the border. Scoped to
+   the map panel via :has() so other panels' content is untouched. The container
+   is width/height:100% of the content box, so padding here shrinks it and the
+   renderer's ResizeObserver re-centers at the new size. */
+.managed-panel__content:has(.map-panel-container) {
+  padding: 5px;
+}
+.map-panel-container {
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* ── Gaps between docked windows (forge sidebar's 12px rhythm) ───────────── */
+/* Tab-group panels are `.managed-panel` but NOT `.docked-panel`, so without this
+   they'd miss the 6px inset and fill their dock cell edge-to-edge — reading as a
+   wider/taller box than a single docked window. Match the inset. */
+.managed-panel.docked-panel,
+.managed-panel.tab-group-panel {
+  margin: 6px;
+}
+
+/* In "rails span everything" mode the left/right rails span the input row, so
+   the command rail's own bottom breathing room (.rail padding-bottom, 22px)
+   would push the footer plate's bottom below the docked panels. Replace it with
+   exactly the docked-panel margin (see `.managed-panel.docked-panel` below, 6px)
+   so the footer plate's bottom edge lines up with the rail panels' bottoms — and
+   with an empty bottom dock. */
+body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
+  padding-bottom: 6px;
+}
+
+/* Forge caps the output column and command rail at max-width:1520px (readability
+   on ultra-wide screens). In vertical mode the left/right rails already bound the
+   width, so let the output AND footer fill the full span between them. */
+body.layout-manager-enabled.layout-rails-vertical .world,
+body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
+  max-width: none;
+}
+
+
+/* ============================================================================
+   POPUP CONTENT THEMING — the full `--popup-*` remap forge has always used
+   (ported verbatim from the old components/floatingPopup.css). Scoped to every
+   managed window + any body-portaled overlay, so popup buttons / inputs /
+   dropdowns / tags / charts read as forged instead of the stock dark defaults.
+   ============================================================================ */
+.managed-panel,
+[data-popup-overlay] {
+  --popup-bg: transparent;
+  --popup-section-bg: rgba(10, 9, 8, 0.55);
+  --popup-subtle-bg: rgba(255, 255, 255, 0.03);
+  --popup-hover-bg: rgba(184, 150, 90, 0.10);
+  --popup-control-bg: rgba(28, 26, 23, 0.8);
+  --popup-control-hover-bg: rgba(42, 37, 28, 0.9);
+  --popup-control-active-bg: rgba(42, 37, 28, 1);
+  --popup-control-pressed-bg: rgba(52, 46, 34, 1);
+  --popup-border: var(--iron-lo);
+  --popup-border-subtle: var(--iron-lo);
+  --popup-border-control: var(--iron-lo);
+  --popup-border-strong: var(--bronze-dim);
+  --popup-border-stronger: var(--bronze-dim);
+  --popup-text: var(--parchment);
+  --popup-text-strong: var(--parchment);
+  --popup-text-bright: var(--parchment);
+  --popup-text-subtle: #c2b596;
+  --popup-text-medium: #b7aa8b;
+  --popup-text-dim: #ac9f80;
+  --popup-text-dimmer: #a09374;
+  --popup-text-faint: #94886f;
+  --popup-accent: var(--bronze);
+  --popup-accent-bg: rgba(110, 86, 32, 0.28);
+  --popup-accent-hover-bg: rgba(110, 86, 32, 0.45);
+  --popup-accent-subtle-bg: rgba(110, 86, 32, 0.18);
+  --popup-accent-border: var(--bronze-dim);
+  --popup-accent-dim-bg: rgba(110, 86, 32, 0.14);
+  --popup-accent-strong-bg: rgba(110, 86, 32, 0.22);
+  --popup-accent-strong-hover-bg: rgba(110, 86, 32, 0.34);
+  --popup-accent-strong-active-bg: rgba(110, 86, 32, 0.5);
+  --popup-accent-team-bg: rgba(110, 86, 32, 0.12);
+  --popup-accent-team-hover-bg: rgba(110, 86, 32, 0.2);
+  --popup-input-bg: rgba(28, 26, 23, 0.8);
+  --popup-input-text: var(--parchment);
+  --popup-input-focus-border: var(--bronze-dim);
+  --output-font-family: "JetBrains Mono", ui-monospace, monospace;
+
+  /* status + data hues, re-tinted for the forge world */
+  --popup-success: #8fa15f;
+  --popup-success-light: #aebd85;
+  --popup-success-bg: rgba(96, 116, 58, 0.22);
+  --popup-success-hover-bg: rgba(96, 116, 58, 0.34);
+  --popup-success-border: rgba(120, 140, 80, 0.42);
+  --popup-success-subtle-bg: rgba(96, 116, 58, 0.13);
+  --popup-success-active-bg: rgba(96, 116, 58, 0.42);
+  --popup-warning: #c79a4c;
+  --popup-warning-light: #dcb972;
+  --popup-warning-border: rgba(160, 122, 52, 0.42);
+  --popup-warning-bg: rgba(150, 112, 42, 0.22);
+  --popup-warning-hover-bg: rgba(150, 112, 42, 0.34);
+  --popup-danger: #b35d45;
+  --popup-danger-light: #c67e66;
+  --popup-danger-soft: #c67e66;
+  --popup-danger-bg: rgba(140, 52, 36, 0.24);
+  --popup-danger-hover-bg: rgba(140, 52, 36, 0.36);
+  --popup-danger-subtle-bg: rgba(140, 52, 36, 0.13);
+  --popup-danger-border: rgba(160, 72, 52, 0.42);
+  --popup-danger-active-bg: rgba(140, 52, 36, 0.44);
+  --popup-data-yellow: #cbb35a;
+  --popup-data-gold: #c9a94e;
+  --popup-data-green: #8fa15f;
+  --popup-data-green-light: #aebd85;
+  --popup-data-blue: #7f96a4;
+  --popup-data-orange: #c0894c;
+  --popup-data-orange-warm: #c0904e;
+  --popup-data-orange-light: #c99a5e;
+  --popup-data-pink: #c096a1;
+  --popup-data-purple: #9384a2;
+  --popup-data-purple-light: #a698b6;
+  --popup-data-gray: #8f836c;
+  --popup-data-gray-light: #a89a80;
+  --popup-data-tomato: #c06a54;
+  --popup-data-magic-green: #92ab7c;
+  --popup-data-spring-green: #92ab7c;
+}
+
+/* A portaled overlay floats over arbitrary content → needs an OPAQUE surface. */
+[data-popup-overlay] {
+  --popup-bg: #211d16;
+  --popup-section-bg: #211d16;
+}
+
+/* Action-toolbar dropdowns (the shared `.map-header-menu__dropdown` used by the
+   map, object-list/"kondycje", static-map and chat header menus) render INLINE
+   inside the panel — not through a body portal — so they inherit the panel's
+   transparent `--popup-bg`. They float (position: fixed) over arbitrary content,
+   so like a portaled overlay they need an OPAQUE surface; without it the menu
+   shows straight through to whatever sits behind the popup. */
+.managed-panel .map-header-menu__dropdown {
+  --popup-bg: #211d16;
+}
+
+/* Mute the (intentionally kept) data hues into the forge world. */
+.managed-panel .dockable-popup-body {
+  filter: saturate(0.7);
+}
+
+/* Give popup bodies breathing room inside the bevel ring. */
+.docked-panel--popup .docked-panel__content,
+.floating-panel .floating-panel__content {
+  padding: 2px 6px 6px;
+}
+
+/* Thin iron scrollbars, matching forge-ui. */
+.managed-panel,
+.managed-panel *,
+[data-popup-overlay],
+[data-popup-overlay] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--iron-hi) transparent;
+}
+.managed-panel ::-webkit-scrollbar,
+[data-popup-overlay] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.managed-panel ::-webkit-scrollbar-thumb,
+[data-popup-overlay] ::-webkit-scrollbar-thumb {
+  background: var(--iron-hi);
+  border-radius: 4px;
+}
+.managed-panel ::-webkit-scrollbar-track,
+[data-popup-overlay] ::-webkit-scrollbar-track {
+  background: transparent;
+}

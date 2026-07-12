@@ -57,7 +57,11 @@ export function DockArea({
     const startPos = horizontal ? e.clientX : e.clientY;
     const startSize = horizontal ? el.offsetWidth : el.offsetHeight;
     const flip = side === 'right' || side === 'bottom' ? -1 : 1;
-    const contentArea = document.getElementById('content-area');
+    // The dock-size vars live on #main-container (see LayoutContent) so both the
+    // horizontal (#content-area) and vertical (#main-container) grids reflow.
+    const gridHost =
+      document.getElementById('main-container') ??
+      document.getElementById('content-area');
     const cssVar = `--dock-${side}-size`;
     let lastSize = startSize;
     const onMove = (ev: PointerEvent) => {
@@ -65,9 +69,9 @@ export function DockArea({
         80,
         startSize + ((horizontal ? ev.clientX : ev.clientY) - startPos) * flip
       );
-      // Drive the grid column via the CSS variable so the whole layout reflows
+      // Drive the grid track via the CSS variable so the whole layout reflows
       // live during drag.
-      contentArea?.style.setProperty(cssVar, `${lastSize}px`);
+      gridHost?.style.setProperty(cssVar, `${lastSize}px`);
       el.style[horizontal ? 'width' : 'height'] = `${lastSize}px`;
     };
     const onUp = () => {
@@ -80,6 +84,12 @@ export function DockArea({
   };
 
   const edgeSplitClass = `dock-edge-splitter dock-edge-splitter-${side}`;
+
+  // A wholly-empty dock side has no leaves to host the inline split/slot ghost,
+  // so drag-targeting it would show no cue at all. Render a fill preview instead
+  // so an empty side reads as a valid drop target while dragging over it.
+  const isEmptyTarget =
+    dragState?.potentialDock === side && (!root || root.children.length === 0);
 
   return (
     <div
@@ -94,6 +104,7 @@ export function DockArea({
           style={{ flex: 1, minWidth: 0, minHeight: 0 }}
         />
       )}
+      {isEmptyTarget && <div className="dock-drop-preview dock-drop-preview--empty" />}
       <div className={edgeSplitClass} onPointerDown={handleEdgePointerDown} />
     </div>
   );

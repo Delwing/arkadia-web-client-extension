@@ -272,6 +272,7 @@ export interface KnownEvents {
     "clock.update": ClockUpdatePayload;
     "clock.domain.active": ClockDomainActivePayload;
     "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+    "worldTime.popup.open": void;
     "clock.mismatch": ClockMismatchPayload;
     "clock.sunrise": ClockSunEventPayload;
     "clock.sunset": ClockSunEventPayload;
@@ -300,6 +301,7 @@ export interface KnownEvents {
     "combat.newMessage": CombatEntry;
     "combat.cleared": void;
     "combat.popup.open": void;
+    "combatStatus.popup.open": void;
     "combat.settingsChanged": Record<CombatMessageType, boolean>;
     "stat.updated": CombatStatsSnapshot;
     "stat.cleared": void;

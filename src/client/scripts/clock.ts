@@ -786,6 +786,13 @@ export function initClock(client: Client): ClockManager {
         }
     })
 
+    // Compact "Czas" season/date/time-of-day widget (ported from forge-ui's
+    // TimePanel) — distinct from the full clock/calendar popup ("Zegar") above.
+    client.aliases.push({
+        pattern: /^\/czasw$/,
+        callback: () => eventBus.emit("worldTime.popup.open"),
+    })
+
     client.aliases.push({
         pattern: /^\/czas\s+(imperium|ishtar)\s+(\d+)(?:\s+(\d+))?$/i,
         callback: (matches: RegExpMatchArray) => {

@@ -51,6 +51,7 @@ export const crossDir = (side: DockSide): SplitDir =>
 // Built-in popup types
 export type BuiltInPopupType =
   | 'clock'
+  | 'worldTime'
   | 'contracts'
   | 'letter'
   | 'herb'
@@ -58,6 +59,7 @@ export type BuiltInPopupType =
   | 'knowledgeDetails'
   | 'chat'
   | 'combat'
+  | 'combatStatus'
   | 'postepy'
   | 'postepy2'
   | 'zabici'
@@ -194,9 +196,22 @@ export interface BuiltInPanelState {
   settings?: Record<string, unknown>;
 }
 
+/**
+ * Which pair of edge docks spans the full extent of the shell:
+ *   - 'topBottom' (default): top/bottom span the full width, left/right are
+ *     sandwiched in the central band (the classic layout).
+ *   - 'leftRight': left/right rails span the full height, top/bottom (and the
+ *     input bar) sit between them in the central column.
+ * Only honoured by shells that opt in via setRailSpanSupported(true) and provide
+ * #layout-left/right-dock-host elements (currently forge-ui).
+ */
+export type SpanningDocks = 'topBottom' | 'leftRight';
+
 export interface LayoutState {
   /** Whether layout manager mode is enabled. */
   enabled: boolean;
+  /** Which pair of edge docks spans the full extent (see SpanningDocks). */
+  spanningDocks: SpanningDocks;
   /** Which panels are managed by layout manager. */
   enabledPanels: {
     objectList: boolean;
@@ -260,6 +275,7 @@ export const DEFAULT_DOCK_EXTENTS: Record<DockSide, number> = {
 
 export const DEFAULT_LAYOUT: LayoutState = {
   enabled: false,
+  spanningDocks: 'topBottom',
   enabledPanels: {
     objectList: true,
   },

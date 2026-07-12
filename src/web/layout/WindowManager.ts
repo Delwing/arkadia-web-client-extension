@@ -109,6 +109,8 @@ export class WindowManager {
   /** Whether the layout manager is in "managed" mode. */
   private enabled = false;
   private enabledPanels: LayoutState['enabledPanels'] = { objectList: true };
+  /** Which edge docks span the full extent (see SpanningDocks). */
+  private spanningDocks: LayoutState['spanningDocks'] = 'topBottom';
 
   /** Z-index counter for bringToFront. */
   private nextZ = 100;
@@ -164,6 +166,7 @@ export class WindowManager {
 
   loadState(state: LayoutState): void {
     this.enabled = state.enabled;
+    this.spanningDocks = state.spanningDocks ?? 'topBottom';
     this.enabledPanels = { ...state.enabledPanels };
     this.builtInPanelState = { ...state.builtInPanels };
     this.popupDockState = new Map(Object.entries(state.popupPanels ?? {}));
@@ -223,6 +226,7 @@ export class WindowManager {
 
     return {
       enabled: this.enabled,
+      spanningDocks: this.spanningDocks,
       enabledPanels: { ...this.enabledPanels },
       windows: windowsObj,
       dockTrees: this.cloneTrees(),
@@ -240,6 +244,15 @@ export class WindowManager {
   setEnabled(v: boolean): void {
     if (this.enabled === v) return;
     this.enabled = v;
+    this.notify();
+  }
+
+  getSpanningDocks(): LayoutState['spanningDocks'] {
+    return this.spanningDocks;
+  }
+  setSpanningDocks(v: LayoutState['spanningDocks']): void {
+    if (this.spanningDocks === v) return;
+    this.spanningDocks = v;
     this.notify();
   }
 
