@@ -88,7 +88,7 @@ body::after {
      output (never off-screen) from ~1200px up to ultra-wide. --side-edge is the
      gap from the screen edge; --side-gap is the gap to the output column. */
   --side-edge: clamp(14px, 3vw, 40px);
-  --side-w: clamp(232px, 20vw, 360px);
+  --side-w: clamp(278px, 24vw, 432px);
   --side-gap: 16px;
   /* gap from the viewport bottom shared by the rail plate and the sidebar, so the
      left panels' bottoms line up with the bottom of the input/vitals panel — and
@@ -637,7 +637,11 @@ textarea.cmd-input {
 /* --- time / season (Czas): compact, natural height, pinned above the map --- */
 .panel--time { flex: 0 0 auto; }        /* opt out of the 50/50 split */
 .timepane { display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
-.tp-clock { display: flex; align-items: center; gap: 10px; }
+/* outer row is baseline-aligned so the date sits on the clock's baseline; it
+   wraps below when the row is too narrow */
+.tp-clock { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; }
+/* sun/moon icon + time are one vertically-centered unit */
+.tp-now { display: flex; align-items: center; gap: 10px; }
 .tp-sky { display: flex; width: 22px; height: 22px; flex: 0 0 auto; }
 .tp-sky svg { width: 22px; height: 22px; }
 .tp-day { color: #f0c25a; }
@@ -647,12 +651,8 @@ textarea.cmd-input {
   font-size: 17px; font-weight: 600; line-height: 1;
   color: var(--parchment); font-variant-numeric: tabular-nums; letter-spacing: .02em;
 }
-.tp-phase {
-  margin-left: auto;
-  font-family: "Cinzel", serif; font-size: 9px; letter-spacing: .2em;
-  text-transform: uppercase; color: var(--bronze-dim);
-}
 .tp-date {
+  margin-left: auto;   /* pin to the right of the clock; wraps below when the row is too narrow */
   font-family: "Cinzel", serif; font-size: 9.5px; letter-spacing: .12em;
   text-transform: uppercase; color: var(--parchment-dim);
 }

@@ -4,12 +4,13 @@ import Panel from './Panel';
 
 type Domain = 'Empire' | 'Ishtar';
 
-// Season index → Polish name + hue, matching the stock seasonPrint script.
+// Season index → Polish name + hue. Muted, parchment-friendly tones (the stock
+// seasonPrint script's pure colors are too saturated for the forged palette).
 const SEASONS = [
-    { name: 'Wiosna', color: '#00ff7f' }, // wiosna (spring)
-    { name: 'Lato', color: '#ffff00' },   // lato (summer)
-    { name: 'Jesien', color: '#ff8c00' }, // jesien (autumn)
-    { name: 'Zima', color: '#00bfff' },   // zima (winter)
+    { name: 'Wiosna', color: '#8fbf94' }, // wiosna (spring) — muted sage
+    { name: 'Lato', color: '#d6c06e' },   // lato (summer) — muted wheat gold
+    { name: 'Jesien', color: '#cc8a55' }, // jesien (autumn) — muted amber
+    { name: 'Zima', color: '#8fb2c9' },   // zima (winter) — muted slate blue
 ];
 
 interface ClockSnapshot {
@@ -74,24 +75,29 @@ export default function TimePanel() {
     return (
         <Panel title="Czas" className="panel--time" meta={meta} bodyClassName="timepane">
             <div className="tp-clock">
-                {daylight !== undefined && (
-                    <span className={`tp-sky ${daylight ? 'tp-day' : 'tp-night'}`}>
-                        <svg viewBox="0 0 20 20">
-                            <use href={daylight ? '#i-sun' : '#i-moon'} stroke="currentColor" />
-                        </svg>
+                {/* Sun/moon icon and time are one centered unit; the date hangs off
+                    to the right, baseline-aligned to the clock. */}
+                <span className="tp-now">
+                    {daylight !== undefined && (
+                        <span className={`tp-sky ${daylight ? 'tp-day' : 'tp-night'}`}>
+                            <svg viewBox="0 0 20 20">
+                                <use href={daylight ? '#i-sun' : '#i-moon'} stroke="currentColor" />
+                            </svg>
+                        </span>
+                    )}
+                    <span className="tp-time">{time ?? '--:--'}</span>
+                </span>
+                {/* Date sits to the right of the clock when the row is wide enough,
+                    and wraps onto its own line below when it isn't. The day/night
+                    phase word is intentionally dropped — the sun/moon icon already
+                    conveys it. */}
+                {clock?.dayLabel && (
+                    <span className="tp-date">
+                        {clock.dayLabel}
+                        {clock.dayOfYear ? <span className="tp-doy"> &middot; dzien {clock.dayOfYear}</span> : null}
                     </span>
                 )}
-                <span className="tp-time">{time ?? '--:--'}</span>
-                {daylight !== undefined && (
-                    <span className="tp-phase">{daylight ? 'Dzien' : 'Noc'}</span>
-                )}
             </div>
-            {clock?.dayLabel && (
-                <div className="tp-date">
-                    {clock.dayLabel}
-                    {clock.dayOfYear ? <span className="tp-doy"> &middot; dzien {clock.dayOfYear}</span> : null}
-                </div>
-            )}
         </Panel>
     );
 }

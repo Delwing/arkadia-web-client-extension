@@ -145,6 +145,12 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
             (mudClient.isPasswordMode() ? password : input)?.focus();
         }, o);
 
+        // Match the initial height to what the first keystroke would grow it to.
+        // The CSS single-row height doesn't account for the textarea's vertical
+        // padding, so without this the first input() event snaps the trough taller
+        // by one padding's worth. Growing once on mount absorbs that jump.
+        autoGrow(input);
+
         // Initial focus on mount (unless the game already asked for a password).
         if (!mudClient.isPasswordMode()) input.focus();
 
