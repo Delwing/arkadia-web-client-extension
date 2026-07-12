@@ -32,6 +32,12 @@ const inside = (el: Element, mx: number, my: number): boolean => {
  *     leaf is a direct child of the side's root, a positional slot insert.
  */
 export function detectDock(mx: number, my: number): DetectionResult {
+  // When the UI is locked, no drag ever docks or splits: floating windows stay
+  // floating (they still move/resize), and the docked layout can't be mutated.
+  if (document.body.classList.contains('layout-locked')) {
+    return { side: null, slotIndex: 0 };
+  }
+
   // ── Bottom dock special-case (lives below #input-area). ──
   const bottomDock = document.querySelector<HTMLElement>('.dock-area-bottom');
   const inputArea = document.getElementById('input-area');

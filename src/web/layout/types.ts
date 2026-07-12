@@ -212,6 +212,13 @@ export interface LayoutState {
   enabled: boolean;
   /** Which pair of edge docks spans the full extent (see SpanningDocks). */
   spanningDocks: SpanningDocks;
+  /**
+   * When true, the docked layout is frozen: dock/split resizing, splitting and
+   * re-docking are disabled and docked windows hide their header controls
+   * (close/popout/pin/lock/reset). Floating windows are unaffected — they can
+   * still spawn, move, resize and close.
+   */
+  uiLocked: boolean;
   /** Which panels are managed by layout manager. */
   enabledPanels: {
     objectList: boolean;
@@ -276,6 +283,7 @@ export const DEFAULT_DOCK_EXTENTS: Record<DockSide, number> = {
 export const DEFAULT_LAYOUT: LayoutState = {
   enabled: false,
   spanningDocks: 'topBottom',
+  uiLocked: false,
   enabledPanels: {
     objectList: true,
   },

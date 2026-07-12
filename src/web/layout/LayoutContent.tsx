@@ -33,6 +33,8 @@ export function LayoutContent({
     isLayoutMode,
     updateDragState,
     railsVertical,
+    uiLocked,
+    toggleUiLocked,
   } = useLayoutManager();
 
   // Open built-in panel records as needed (managed by enabledPanels flag).
@@ -101,6 +103,8 @@ export function LayoutContent({
   const handleTitlebarContextMenu = useCallback(
     (e: React.MouseEvent, windowId: string) => {
       if (!windowId) return;
+      // Always open — when locked the menu offers only unlock (splits hidden),
+      // so the lock can be toggled back off from the same place.
       e.preventDefault();
       setSplitMenu({ x: e.clientX, y: e.clientY, windowId });
     },
@@ -240,6 +244,8 @@ export function LayoutContent({
         <SplitContextMenu
           x={splitMenu.x}
           y={splitMenu.y}
+          locked={uiLocked}
+          onToggleLock={toggleUiLocked}
           onClose={() => setSplitMenu(null)}
           onSplit={(dir, before) => {
             manager.splitWithPlaceholder(splitMenu.windowId, dir, before);

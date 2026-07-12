@@ -54,6 +54,11 @@ export interface LayoutContextValue {
   setSpanningDocks: (v: SpanningDocks) => void;
   toggleSpanningDocks: () => void;
 
+  // UI lock (freezes the docked layout; floating windows stay interactive)
+  uiLocked: boolean;
+  setUiLocked: (v: boolean) => void;
+  toggleUiLocked: () => void;
+
   // Popup dock state pass-throughs
   getPopupDockState: (id: string) => PopupPanelDockState | undefined;
   updatePopupDockState: (id: string, patch: Partial<PopupPanelDockState>) => void;
@@ -102,6 +107,7 @@ export function LayoutProvider({
   const isLayoutMode = layoutState.enabled;
   const railsVertical =
     layoutState.spanningDocks === 'leftRight' && isRailSpanSupported();
+  const uiLocked = layoutState.uiLocked;
 
   // Subscribe to manager changes + debounce persistence.
   // Force a snapshot bump right after subscribing — child useEffects (e.g.
@@ -139,6 +145,7 @@ export function LayoutProvider({
     body.classList.remove('layout-objectlist-enabled');
 
     body.classList.remove('layout-rails-vertical');
+    body.classList.remove('layout-locked');
 
     if (isLayoutMode) {
       body.classList.add('layout-manager-enabled');
@@ -149,9 +156,21 @@ export function LayoutProvider({
       if (railsVertical) {
         body.classList.add('layout-rails-vertical');
       }
+      if (uiLocked) {
+        body.classList.add('layout-locked');
+      }
     }
     onLayoutModeChange?.(isLayoutMode);
-  }, [isLayoutMode, layoutState.enabledPanels.objectList, railsVertical, onLayoutModeChange]);
+  }, [isLayoutMode, layoutState.enabledPanels.objectList, railsVertical, uiLocked, onLayoutModeChange]);
+
+  // Toggle the UI lock from anywhere (client alias, menu) via the event bus, so
+  // one command works across every UI without wiring a control into each shell.
+  useEffect(() => {
+    const unsub = eventBus.on('layout.toggleLock', () => {
+      windowManager.setUiLocked(!windowManager.isUiLocked());
+    });
+    return unsub;
+  }, []);
 
   // Drag body class.
   useEffect(() => {
@@ -187,6 +206,12 @@ export function LayoutProvider({
       windowManager.setSpanningDocks(
         windowManager.getSpanningDocks() === 'leftRight' ? 'topBottom' : 'leftRight'
       ),
+    []
+  );
+
+  const setUiLocked = useCallback((v: boolean) => windowManager.setUiLocked(v), []);
+  const toggleUiLocked = useCallback(
+    () => windowManager.setUiLocked(!windowManager.isUiLocked()),
     []
   );
 
@@ -234,6 +259,9 @@ export function LayoutProvider({
       railsVertical,
       setSpanningDocks,
       toggleSpanningDocks,
+      uiLocked,
+      setUiLocked,
+      toggleUiLocked,
       getPopupDockState,
       updatePopupDockState,
       getBuiltInPanelState,
@@ -253,6 +281,9 @@ export function LayoutProvider({
       railsVertical,
       setSpanningDocks,
       toggleSpanningDocks,
+      uiLocked,
+      setUiLocked,
+      toggleUiLocked,
       getPopupDockState,
       updatePopupDockState,
       getBuiltInPanelState,

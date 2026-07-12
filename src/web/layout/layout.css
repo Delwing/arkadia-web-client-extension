@@ -86,6 +86,28 @@ body.layout-objectlist-enabled #objects-list {
   display: none !important;
 }
 
+/* ── UI lock ────────────────────────────────────────────────────────────────
+   Freezes the docked layout. Docked + tab-group windows hide their header
+   controls (close / popout / pin / lock / reset) and their resize/split handles
+   go inert. Floating windows are untouched (their own controls/edges keep their
+   default classes), so they still spawn, move, resize and close. Drag-to-dock,
+   undock and the split context menu are disabled in JS (dockDetect /
+   startUndockableDrag / handleTitlebarContextMenu). */
+body.layout-locked .docked-panel .panel-button,
+body.layout-locked .tab-group-panel .panel-button {
+  display: none;
+}
+body.layout-locked .dock-edge-splitter,
+body.layout-locked .layout-splitter {
+  pointer-events: none;
+  cursor: default;
+}
+/* Docked titlebars/tabs are no longer draggable — drop the grab cursor. */
+body.layout-locked .docked-panel__header,
+body.layout-locked .tab-group-tab {
+  cursor: default;
+}
+
 /* Layout Manager Root - must use display:contents to not interfere with grid */
 #layout-manager-root {
   display: contents;
@@ -1481,6 +1503,11 @@ body.layout-manager-enabled .compass-rose-box {
   color: var(--bs-primary, #589aff);
   line-height: 0;
   flex: 0 0 auto;
+}
+.layout-split-menu__sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--surface-border, #333);
 }
 /* Splitter between sibling cells in a split node. */
 .layout-splitter {

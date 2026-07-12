@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { PanelBottom, PanelLeft, PanelRight, PanelTop, type LucideIcon } from 'lucide-react';
+import { Lock, LockOpen, PanelBottom, PanelLeft, PanelRight, PanelTop, type LucideIcon } from 'lucide-react';
 import type { SplitDir } from '../types';
 
 interface SplitContextMenuProps {
@@ -9,6 +9,10 @@ interface SplitContextMenuProps {
   onClose: () => void;
   /** dir = split axis, before = new empty cell goes before the panel. */
   onSplit: (dir: SplitDir, before: boolean) => void;
+  /** Whether the UI is currently locked (frozen docked layout). */
+  locked: boolean;
+  /** Toggle the UI lock. */
+  onToggleLock: () => void;
 }
 
 const ITEMS: Array<{ label: string; dir: SplitDir; before: boolean; Icon: LucideIcon }> = [
@@ -20,7 +24,7 @@ const ITEMS: Array<{ label: string; dir: SplitDir; before: boolean; Icon: Lucide
 
 /** Small context menu offering to split a docked panel, inserting an empty
  *  placeholder cell beside it that a window can then be dropped into. */
-export function SplitContextMenu({ x, y, onClose, onSplit }: SplitContextMenuProps) {
+export function SplitContextMenu({ x, y, onClose, onSplit, locked, onToggleLock }: SplitContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +52,8 @@ export function SplitContextMenu({ x, y, onClose, onSplit }: SplitContextMenuPro
       className="layout-split-menu dropdown-menu show"
       style={{ position: 'fixed', left: x, top: y, zIndex: 2000, display: 'block' }}
     >
-      {ITEMS.map(item => (
+      {/* Splitting is a layout mutation, so it's only offered while unlocked. */}
+      {!locked && ITEMS.map(item => (
         <button
           key={item.label}
           type="button"
@@ -61,6 +66,20 @@ export function SplitContextMenu({ x, y, onClose, onSplit }: SplitContextMenuPro
           {item.label}
         </button>
       ))}
+      {!locked && <div className="layout-split-menu__sep" />}
+      <button
+        type="button"
+        className="dropdown-item layout-split-menu__item"
+        onClick={() => {
+          onToggleLock();
+          onClose();
+        }}
+      >
+        <span className="layout-split-menu__icon">
+          {locked ? <LockOpen size={16} /> : <Lock size={16} />}
+        </span>
+        {locked ? 'Odblokuj interfejs' : 'Zablokuj interfejs'}
+      </button>
     </div>,
     document.body
   );

@@ -1,4 +1,5 @@
 import People from "./People";
+import eventBus from "@modules/core/eventBus";
 import registerLuaGagTriggers from "./scripts/luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
@@ -165,6 +166,13 @@ export function registerScripts(client: Client) {
         callback: (matches: RegExpMatchArray) => {
             emitFakeLine(client, matches[2], matches[1] || undefined)
         }
+    })
+    // Lock / unlock the docked UI (freezes dock resizing, splitting and re-docking
+    // and hides docked window controls; floating windows stay interactive). Works
+    // in every UI — the active LayoutProvider handles the event. See LayoutState.uiLocked.
+    aliases.push({
+        pattern: /^\/blokada$/,
+        callback: () => eventBus.emit("layout.toggleLock"),
     })
     aliases.push({
         pattern: /^\/reload-plugins$/,

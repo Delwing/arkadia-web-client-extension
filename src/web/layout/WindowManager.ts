@@ -111,6 +111,8 @@ export class WindowManager {
   private enabledPanels: LayoutState['enabledPanels'] = { objectList: true };
   /** Which edge docks span the full extent (see SpanningDocks). */
   private spanningDocks: LayoutState['spanningDocks'] = 'topBottom';
+  /** When true, the docked layout is frozen (see LayoutState.uiLocked). */
+  private uiLocked = false;
 
   /** Z-index counter for bringToFront. */
   private nextZ = 100;
@@ -167,6 +169,7 @@ export class WindowManager {
   loadState(state: LayoutState): void {
     this.enabled = state.enabled;
     this.spanningDocks = state.spanningDocks ?? 'topBottom';
+    this.uiLocked = state.uiLocked ?? false;
     this.enabledPanels = { ...state.enabledPanels };
     this.builtInPanelState = { ...state.builtInPanels };
     this.popupDockState = new Map(Object.entries(state.popupPanels ?? {}));
@@ -227,6 +230,7 @@ export class WindowManager {
     return {
       enabled: this.enabled,
       spanningDocks: this.spanningDocks,
+      uiLocked: this.uiLocked,
       enabledPanels: { ...this.enabledPanels },
       windows: windowsObj,
       dockTrees: this.cloneTrees(),
@@ -253,6 +257,15 @@ export class WindowManager {
   setSpanningDocks(v: LayoutState['spanningDocks']): void {
     if (this.spanningDocks === v) return;
     this.spanningDocks = v;
+    this.notify();
+  }
+
+  isUiLocked(): boolean {
+    return this.uiLocked;
+  }
+  setUiLocked(v: boolean): void {
+    if (this.uiLocked === v) return;
+    this.uiLocked = v;
     this.notify();
   }
 

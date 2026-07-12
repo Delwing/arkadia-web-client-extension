@@ -27,6 +27,12 @@ export interface UndockableDragOptions {
  * remainder of the drag, performing dock detection on each move.
  */
 export function startUndockableDrag(opts: UndockableDragOptions): void {
+  // When the UI is locked, docked windows are frozen — no move, undock, re-dock
+  // or drag-to-split. (Callers still run their pre-drag work, e.g. a tab click
+  // switching the active tab, before invoking this.) Floating windows use
+  // startFloatingDrag instead, so they remain fully draggable.
+  if (document.body.classList.contains('layout-locked')) return;
+
   const { id, manager, sourceEl, clickClientX, clickClientY, onDragStateChange, ctrlForcesFloat } = opts;
 
   const sourceRect = sourceEl?.getBoundingClientRect();

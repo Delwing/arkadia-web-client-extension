@@ -302,6 +302,7 @@ export interface KnownEvents {
     "combat.cleared": void;
     "combat.popup.open": void;
     "combatStatus.popup.open": void;
+    "layout.toggleLock": void;
     "combat.settingsChanged": Record<CombatMessageType, boolean>;
     "stat.updated": CombatStatsSnapshot;
     "stat.cleared": void;

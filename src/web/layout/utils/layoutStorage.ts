@@ -266,6 +266,7 @@ export function migrateLayoutState(legacy: LegacyLayoutState): LayoutState {
   return {
     enabled: !!legacy.enabled,
     spanningDocks: 'topBottom',
+    uiLocked: false,
     enabledPanels: {
       objectList: legacy.enabledPanels?.objectList ?? true,
     },
@@ -307,6 +308,7 @@ export function loadLayoutState(): LayoutState {
       const state: LayoutState = {
         enabled: !!stored.enabled,
         spanningDocks: stored.spanningDocks === 'leftRight' ? 'leftRight' : 'topBottom',
+        uiLocked: !!stored.uiLocked,
         enabledPanels: {
           objectList: stored.enabledPanels?.objectList ?? true,
         },
