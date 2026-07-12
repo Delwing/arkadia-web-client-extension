@@ -4,17 +4,17 @@ import TimePanel from './TimePanel';
 import StatusPanel from './StatusPanel';
 
 /**
- * Left-gutter column: map on top, nearby objects below (they split the leftover
- * height 50/50 by CSS). The compact time/season and combat-status panels sit
- * between them at their natural height.
+ * Left-gutter column: the compact time/season clock sits on top, then the map
+ * and nearby-objects list (they split the leftover height 50/50 by CSS), with
+ * the combat-status panel pinned below at its natural height.
  */
 export default function Sidebar() {
     return (
         <aside className="sidebar">
-            <MapPanel />
             <TimePanel />
-            <StatusPanel />
+            <MapPanel />
             <ObjectsPanel />
+            <StatusPanel />
         </aside>
     );
 }

@@ -27,7 +27,7 @@ export default function MapPanel() {
     useClientEvent('enterLocation', () => setExits(computeExits(client)));
 
     return (
-        <Panel title="Mapa" meta={label} metaId="alt-map-label">
+        <Panel title="Mapa" className="panel--map" meta={label} metaId="alt-map-label">
             <div className="map"><div id="map" /></div>
             <div className="map__exits" id="alt-map-exits">{exits}</div>
         </Panel>

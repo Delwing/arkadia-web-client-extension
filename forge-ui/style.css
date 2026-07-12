@@ -575,7 +575,7 @@ textarea.cmd-input {
   flex-direction: column;
   gap: 12px;
   z-index: 2;
-  /* HUD chrome (map, czas, combat, objects) is glanceable status, not prose —
+  /* HUD chrome (czas, map, objects, combat) is glanceable status, not prose —
      drags should never smear a text selection across it. The game log stays
      selectable; only these panels and the vital gems opt out. */
   -webkit-user-select: none;
@@ -630,11 +630,11 @@ textarea.cmd-input {
 /* body grows to fill its panel's half; the object list scrolls inside it */
 .panel__body { padding: 11px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 /* map panel body: lay the map out to fill the half, exits pinned below it */
-.sidebar > .panel:first-child .panel__body {
+.panel--map .panel__body {
   display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* --- time / season (Czas): compact, natural height between map and objects --- */
+/* --- time / season (Czas): compact, natural height, pinned above the map --- */
 .panel--time { flex: 0 0 auto; }        /* opt out of the 50/50 split */
 .timepane { display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
 .tp-clock { display: flex; align-items: center; gap: 10px; }
@@ -658,7 +658,7 @@ textarea.cmd-input {
 }
 .tp-doy { color: var(--bronze-dim); }
 
-/* --- combat status (Boj): weapon / cover / order / guard-release, below Czas --- */
+/* --- combat status (Boj): weapon / cover / order / guard-release, below the objects --- */
 .panel--status { flex: 0 0 auto; }       /* natural height, like the time panel */
 /* body is a dense status list, so trim its padding — but leave the header at the
    shared default so its title lines up with the other panels' headers */
