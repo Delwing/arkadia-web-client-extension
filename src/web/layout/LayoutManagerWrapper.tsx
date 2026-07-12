@@ -3,41 +3,12 @@ import { LayoutProvider } from './LayoutContext';
 import { LayoutContent } from './LayoutContent';
 import { setPopupPortalContainer } from './popupPortal';
 import { PluginPopupRenderer } from './pluginPopupRenderer';
-import ClockPopup from '../ClockPopup';
-import ContractsPopup from '../ContractsPopup';
-import FishingPopup from '../FishingPopup';
+import { POPUP_CATALOG } from '../popups/popupCatalog';
+// Non-catalog popups: they don't use the shared popupRegistry/DockablePopupWrapper
+// (own chrome, portal to body) or are multi-instance — mounted directly here.
 import LetterComposer from '../LetterComposer';
-import HerbManager from '../herbs/HerbManager';
-import HerbTextWindow from '../herbs/HerbTextWindow';
-import KnowledgeReport from '../KnowledgeReport';
-import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
-import ChatPopup from '../ChatPopup';
-import CombatPopup from '../CombatPopup';
-import PostepyPopup from '../PostepyPopup';
-import Postepy2Popup from '../Postepy2Popup';
-import ZabiciPopup from '../ZabiciPopup';
-import Zabici2Popup from '../Zabici2Popup';
-import SkrotyPopup from '../SkrotyPopup';
-import TripPlannerPopup from '../TripPlannerPopup';
-import PeopleBrowser from '../PeopleBrowser/PeopleBrowser';
-import ObjectListDemoPopup from '../ObjectListDemoPopup';
-import WalkerPopup from '../WalkerPopup';
-import PocztaPopup from '../PocztaPopup';
-import LetterViewPopup from '../LetterViewPopup';
-import RoomInfoPopup from '../RoomInfoPopup';
 import StaticMapPopupManager from '../StaticMapPopup';
-import DepositsPopup from '../DepositsPopup';
-import PackageReceiverPopup from '../PackageReceiverPopup';
-import LootPopup from '../LootPopup';
-import ProfessionPopup from '../ProfessionPopup';
-import SunTrackerPopup from '../SunTrackerPopup';
-import TransportRoutePopup from '../TransportRoutePopup';
 import TransportDebugPopup from '../TransportDebugPopup';
-import TransportTimesDebugPopup from '../TransportTimesDebugPopup';
-import ZlomPopup from '../ZlomPopup';
-import StatPopup from '../StatPopup';
-import OswajaniePopup from '../OswajaniePopup';
-import DataSourcesPopup from '../DataSourcesPopup';
 
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
@@ -75,41 +46,13 @@ export function LayoutManagerWrapper({
         mapElement={mapElement}
         objectListElement={objectListElement}
       />
-      {/* Popup components - rendered inside LayoutProvider for docking support */}
-      <ClockPopup />
-      <ContractsPopup />
-      <FishingPopup />
+      {/* Standard dockable popups — single source of truth shared with forge-ui */}
+      {POPUP_CATALOG.map(({ id, Component }) => (
+        <Component key={id} />
+      ))}
+      {/* Non-catalog popups (own chrome / multi-instance) */}
       <LetterComposer />
-      <HerbManager />
-      <HerbTextWindow />
-      <KnowledgeReport />
-      <KnowledgeDetailsReport />
-      <ChatPopup />
-      <CombatPopup />
-      <PostepyPopup />
-      <Postepy2Popup />
-      <ZabiciPopup />
-      <Zabici2Popup />
-      <SkrotyPopup />
-      <TripPlannerPopup />
-      <PeopleBrowser />
-      <ObjectListDemoPopup />
-      <WalkerPopup />
-      <PocztaPopup />
-      <LetterViewPopup />
-      <RoomInfoPopup />
-      <DepositsPopup />
-      <PackageReceiverPopup />
-      <LootPopup />
-      <ProfessionPopup />
-      <SunTrackerPopup />
-      <TransportRoutePopup />
       <TransportDebugPopup />
-      <TransportTimesDebugPopup />
-      <ZlomPopup />
-      <StatPopup />
-      <OswajaniePopup />
-      <DataSourcesPopup />
       <StaticMapPopupManager />
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />

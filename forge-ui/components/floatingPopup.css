@@ -1,0 +1,274 @@
+/*
+ * Floating popup host — reuses the sidebar's `.forged.panel` chrome verbatim so
+ * a reused stock popup looks identical to the left-hand panels. Two jobs:
+ *
+ *   1. The floating-window MODIFIER (fixed position, own size, resize grips).
+ *   2. THEMING stock popup content the right way: stock popups are built on a
+ *      large set of `--popup-*` semantic variables, so instead of re-writing
+ *      each popup's rules in forge tokens, we OVERRIDE those variables under
+ *      `.panel--floating` and map them to the forge palette. Every popup that
+ *      respects the variables is then themed for free.
+ *
+ * NOTE: the structural popup rules themselves still live in the stock
+ * `style.css` (scattered, not imported here). Only skroty's rules are mirrored
+ * below for now — carrying the rest over is a separate consolidation step. Once
+ * a shared popup stylesheet exists, this file keeps only the modifier + the
+ * variable mapping. No stock component is touched; all class-based.
+ */
+
+/* ── Floating modifier: a fixed, self-sized window instead of a flex child ─
+   Width/height are set inline from the popup's declared geometry; this only
+   supplies positioning, a fallback min-size, and the floating shadow. */
+.panel.panel--floating {
+    position: fixed;
+    z-index: 4000;
+    flex: 0 0 auto;          /* opt out of the sidebar's 50/50 split */
+    min-width: 220px;
+    min-height: 120px;
+    border-radius: 9px;      /* .panel clips square corners; round like .forged */
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -3px 6px rgba(0, 0, 0, .72),
+        inset 0 0 0 1px rgba(0, 0, 0, .5),
+        0 6px 16px rgba(0, 0, 0, .6),
+        0 18px 44px rgba(0, 0, 0, .5);
+}
+
+.panel__head--drag {
+    cursor: move;
+}
+
+/* Inset the scrolling body inside the bronze bevel (.forged::after is at 4px),
+   so its scrollbar sits inside the frame instead of riding the rounded edge. */
+.panel--floating .panel__body {
+    margin: 2px 6px 6px;
+    padding: 6px 8px;
+}
+
+/* ── Stock `--popup-*` semantics, remapped to the forge palette ─────────────
+   Neutral chrome (surfaces, text, borders, controls, accent) maps to forge
+   tokens so popups read as forged. Data colors (--popup-data-*) are left as
+   the stock semantic hues, only gently desaturated to sit in the muted world
+   (mirrors how forge mutes game output). */
+.panel--floating {
+    --popup-bg: transparent;
+    --popup-section-bg: rgba(10, 9, 8, .55);
+    --popup-subtle-bg: rgba(255, 255, 255, .03);
+    --popup-hover-bg: rgba(184, 150, 90, .10);
+    --popup-control-bg: rgba(28, 26, 23, .8);
+    --popup-control-hover-bg: rgba(42, 37, 28, .9);
+    --popup-control-active-bg: rgba(42, 37, 28, 1);
+    --popup-control-pressed-bg: rgba(52, 46, 34, 1);
+    --popup-border: var(--iron-lo);
+    --popup-border-subtle: var(--iron-lo);
+    --popup-border-control: var(--iron-lo);
+    --popup-border-strong: var(--bronze-dim);
+    --popup-text: var(--parchment);
+    --popup-text-strong: var(--parchment);
+    --popup-text-bright: var(--parchment);
+    --popup-text-subtle: var(--parchment-dim);
+    --popup-text-medium: var(--parchment-dim);
+    --popup-text-dim: var(--parchment-dim);
+    --popup-text-dimmer: var(--parchment-dim);
+    --popup-text-faint: var(--parchment-dim);
+    --popup-accent: var(--bronze);
+    --popup-accent-bg: rgba(110, 86, 32, .28);
+    --popup-accent-hover-bg: rgba(110, 86, 32, .45);
+    --popup-accent-subtle-bg: rgba(110, 86, 32, .18);
+    --popup-accent-border: var(--bronze-dim);
+}
+
+/* mute the (intentionally kept) data hues into the forge world */
+.panel--floating .dockable-popup-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    filter: saturate(.7);
+}
+
+/* ── Scrollbars, matching forge-ui (thin, iron thumb) ──────────────────── */
+.panel--floating,
+.panel--floating * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--iron-hi) transparent;
+}
+.panel--floating ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.panel--floating ::-webkit-scrollbar-thumb {
+    background: var(--iron-hi);
+    border-radius: 4px;
+}
+.panel--floating ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ── Resize grips (edges + corners) ────────────────────────────────────── */
+.forge-resize {
+    position: absolute;
+    z-index: 6;              /* above .forged::after bevel and body content */
+    touch-action: none;
+}
+.forge-resize--n,
+.forge-resize--s { left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+.forge-resize--e,
+.forge-resize--w { top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+.forge-resize--n { top: 0; }
+.forge-resize--s { bottom: 0; }
+.forge-resize--e { right: 0; }
+.forge-resize--w { left: 0; }
+.forge-resize--ne,
+.forge-resize--nw,
+.forge-resize--se,
+.forge-resize--sw { width: 12px; height: 12px; }
+.forge-resize--ne { top: 0; right: 0; cursor: nesw-resize; }
+.forge-resize--sw { bottom: 0; left: 0; cursor: nesw-resize; }
+.forge-resize--nw { top: 0; left: 0; cursor: nwse-resize; }
+.forge-resize--se { bottom: 0; right: 0; cursor: nwse-resize; }
+
+/* header controls: popup actions + close, right-aligned. The popup actions are
+   the stock `headerActions` nodes (e.g. Postepy "kopiuj jako obraz", Chat team
+   toggle) rendered verbatim; the generic rules below give their buttons a
+   forged voice without per-popup CSS. */
+.forge-floating__head-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--parchment-dim);
+}
+.forge-floating__head-actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: "Cinzel", serif;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--parchment-dim);
+    background-color: rgba(28, 26, 23, .8);
+    border: 1px solid var(--iron-lo);
+    border-radius: 4px;
+    padding: 3px 6px;
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.forge-floating__head-actions button:hover {
+    color: var(--parchment);
+    border-color: var(--bronze-dim);
+    background-color: rgba(42, 37, 28, .9);
+}
+/* active/toggled state (e.g. chat "Druzyna" on) reads as bronze */
+.forge-floating__head-actions button[class*="--active"] {
+    color: var(--bronze);
+    border-color: var(--bronze-dim);
+    background-color: rgba(110, 86, 32, .28);
+}
+
+.forge-floating__close {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: var(--parchment-dim);
+    font-family: "Cinzel", serif;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.1rem;
+    /* override the generic head-actions button rules above */
+    text-transform: none;
+    letter-spacing: 0;
+    transition: color .15s ease, text-shadow .15s ease;
+}
+.forge-floating__close:hover {
+    color: var(--bronze);
+    text-shadow: 0 0 8px rgba(184, 150, 90, .5);
+    background: none;
+    border-color: transparent;
+}
+
+/* ── Skroty popup — VERBATIM stock rules (var-driven), scoped to the floating
+   host so they only apply here. These mirror src/web/style.css exactly; the
+   forge look comes entirely from the variable mapping above, not from edited
+   values. The only additions are forge-only wrap fixes so the action row
+   reflows instead of overflowing at narrow widths. */
+.panel--floating .skroty-window-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.5rem;
+    overflow: auto;
+    background-color: var(--popup-bg);
+}
+.panel--floating .skroty-empty {
+    color: var(--popup-text-dim);
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+}
+.panel--floating .skroty-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.panel--floating .skroty-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.35rem 0.5rem;
+    background-color: var(--popup-subtle-bg);
+    border-radius: 0.25rem;
+}
+.panel--floating .skroty-item-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;         /* forge-only: reflow instead of overflow */
+}
+.panel--floating .skroty-item-key {
+    color: var(--popup-data-green);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.panel--floating .skroty-item-id {
+    color: var(--popup-text-dimmer);
+    font-size: 0.75rem;
+}
+.panel--floating .skroty-item-label {
+    color: rgba(255, 165, 0, 0.7);
+    font-size: 0.7rem;
+    padding-left: 0.1rem;
+}
+.panel--floating .skroty-item-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: auto;
+    flex-wrap: wrap;         /* forge-only: reflow instead of overflow */
+}
+.panel--floating .skroty-btn {
+    background-color: var(--popup-control-bg);
+    border: 1px solid var(--popup-border-control);
+    color: var(--popup-text-medium);
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.2rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.panel--floating .skroty-btn:hover {
+    background-color: var(--popup-control-active-bg);
+    color: var(--popup-text-strong);
+}
+.panel--floating .skroty-btn--primary {
+    background-color: var(--popup-accent-bg);
+    border-color: var(--popup-accent-border);
+    color: var(--popup-accent);
+}
+.panel--floating .skroty-btn--primary:hover {
+    background-color: var(--popup-accent-hover-bg);
+    border-color: var(--popup-accent);
+}

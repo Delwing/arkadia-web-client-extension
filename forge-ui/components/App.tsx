@@ -1,8 +1,12 @@
+import { Fragment } from 'react';
 import IconDefs from './IconDefs';
 import Sidebar from './Sidebar';
 import World from './World';
 import CommandRail from './CommandRail';
 import ContextMenu from './ContextMenu';
+import { POPUP_CATALOG } from '@web/popups/popupCatalog';
+import FloatingPopupHost from './FloatingPopupHost';
+import './floatingPopup.css';
 
 /**
  * The Forged HUD shell. `IconDefs` seeds the SVG symbol library; `.backdrop` is
@@ -22,6 +26,21 @@ export default function App() {
                 <CommandRail />
             </div>
             <ContextMenu />
+
+            {/* Stock dockable popups, reused verbatim from the shared catalog and
+                shown as plain floating windows. Each popup is headless until its
+                open event fires; FloatingPopupHost supplies the floating frame,
+                drag, resize and close. Staggered so multiple opens don't stack. */}
+            {POPUP_CATALOG.map(({ id, Component }, i) => (
+                <Fragment key={id}>
+                    <Component />
+                    <FloatingPopupHost
+                        popupId={id}
+                        initialX={120 + (i % 6) * 26}
+                        initialY={90 + (i % 6) * 26}
+                    />
+                </Fragment>
+            ))}
         </>
     );
 }
