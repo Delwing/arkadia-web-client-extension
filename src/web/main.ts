@@ -28,6 +28,7 @@ import {
     getRenderSettings,
     getMapSettings,
     getShellSettings,
+    getDeviceViewSettings,
     onRenderSettingsChange,
     onShellSettingsChange,
 } from "@modules/core/settings";
@@ -486,7 +487,7 @@ setupOutputMessageHandler(mudClient, {
     stickyArea,
     isSplitView: () => isSplitView,
     stickyLines: STICKY_LINES,
-    maxElements: () => getRenderSettings().outputMaxElements,
+    maxElements: () => getDeviceViewSettings().outputMaxElements,
     suppressSplitView: (durationMs: number) => {
         suppressSplitViewUntil = Date.now() + durationMs;
     },

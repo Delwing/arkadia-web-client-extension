@@ -30,7 +30,7 @@ export interface UseCommandLineArgs {
 }
 
 /**
- * Alt-ui React adapter over the headless {@link CommandLineEngine}. It gives the
+ * Forge-ui React adapter over the headless {@link CommandLineEngine}. It gives the
  * Forged HUD input the same behaviour the stock UI has — command history + prefix
  * auto-complete, Tab completion from the output buffer, multiline entry, password
  * mode driven by telnet ECHO, and sticky focus — without re-implementing any of

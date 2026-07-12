@@ -13,7 +13,7 @@ import {
     type PathFinder
 } from "mudlet-map-renderer";
 import {characterStorage, globalStorage} from "@modules/core/storage";
-import {getMapSettings, setMapSettings, getBehaviorSettings} from "@modules/core/settings";
+import {getMapSettings, getDeviceViewSettings, setDeviceViewSettings, getBehaviorSettings} from "@modules/core/settings";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
 import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip";
@@ -147,8 +147,9 @@ export class EmbeddedMap {
         try {
             const mapS = getMapSettings();
             const behaviorS = getBehaviorSettings();
-            if (typeof mapS.mapScale === 'number' && mapS.mapScale > 0) {
-                zoom = mapS.mapScale;
+            const mapScale = getDeviceViewSettings().mapScale;
+            if (typeof mapScale === 'number' && mapScale > 0) {
+                zoom = mapScale;
             }
             explorationMode = behaviorS.explorationMode;
             instantMove = behaviorS.instantMove;
@@ -334,7 +335,7 @@ export class EmbeddedMap {
 
     private saveZoom() {
         try {
-            setMapSettings({ mapScale: this.zoom });
+            setDeviceViewSettings({ mapScale: this.zoom });
         } catch {
         }
     }

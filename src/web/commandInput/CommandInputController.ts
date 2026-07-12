@@ -23,7 +23,7 @@ export interface CommandInputDeps {
  * password-field element swap, output-buffer word harvesting, and web-only keys
  * (PageUp/PageDown scroll, global Enter, touch swipe). All command-line logic
  * (history, completion, submit-splitting, password branching) lives in the
- * engine and is shared with other UIs (see `alt-ui/hooks/useCommandLine.ts`).
+ * engine and is shared with other UIs (see `forge-ui/hooks/useCommandLine.ts`).
  */
 export class CommandInputController {
     private readonly deps: CommandInputDeps;

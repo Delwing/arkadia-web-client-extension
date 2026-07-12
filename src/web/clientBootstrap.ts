@@ -26,8 +26,8 @@ export interface GameClientBootstrap {
  * UI needs: settings migrations, feature scripts, session logging, Firebase sync,
  * the helper companion, and the sendCommand / NPC bridges.
  *
- * This is the shared seam between the stock UI (`src/web/main.ts`) and any alt UI
- * (`alt-ui/`). UI-specific wiring stays with the caller: port implementations are
+ * This is the shared seam between the stock UI (`src/web/main.ts`) and any forge UI
+ * (`forge-ui/`). UI-specific wiring stays with the caller: port implementations are
  * injected via `installPorts` (run before `registerScripts`), and DOM-bound work
  * (the content-width measurer, output rendering, connect chrome) is done by the UI
  * after this returns. Seeding `uiSettings` is intentionally left to the caller so

@@ -3,12 +3,14 @@ import type {
     RenderSettings,
     MapSettings,
     BehaviorSettings,
+    DeviceViewSettings,
 } from '@shared/uiSettingsTypes';
 import {
     defaultShellSettings, shellSettingsKeys,
     defaultRenderSettings, renderSettingsKeys,
     defaultMapSettings, mapSettingsKeys,
     defaultBehaviorSettings, behaviorSettingsKeys,
+    defaultDeviceViewSettings, deviceViewSettingsKeys,
 } from '@shared/settingsDefaults';
 import { defineUiSettingsSlice } from './defineSettingsAccessor';
 
@@ -40,3 +42,11 @@ const behavior = defineUiSettingsSlice<BehaviorSettings>(behaviorSettingsKeys, d
 export const getBehaviorSettings = behavior.get;
 export const setBehaviorSettings = behavior.set;
 export const onBehaviorSettingsChange = behavior.onChange;
+
+// Device-scoped view prefs (font size, map zoom, output buffer size). Unlike the
+// slices above, these are physically backed by the device-scoped `uiSettings`
+// blob, so they stay per-device rather than syncing across devices.
+const deviceView = defineUiSettingsSlice<DeviceViewSettings>(deviceViewSettingsKeys, defaultDeviceViewSettings, 'uiSettings');
+export const getDeviceViewSettings = deviceView.get;
+export const setDeviceViewSettings = deviceView.set;
+export const onDeviceViewSettingsChange = deviceView.onChange;

@@ -1,5 +1,5 @@
 /**
- * Alt UI — the "Forged" HUD (React).
+ * Forge UI — the "Forged" HUD (React).
  *
  * Builds the full game client (transport, triggers, rendering, input, vitals)
  * via the same stable contract the stock UI uses, then renders the HUD around it.

@@ -17,7 +17,7 @@ interface PanelProps {
 }
 
 /**
- * Shared "forged" frame shell for the alt-ui side panels. Owns the outer
+ * Shared "forged" frame shell for the forge-ui side panels. Owns the outer
  * `.forged.panel` chrome, the header row (ornament + title + optional meta) and
  * the scrollable body, so every panel gets the same bevel, divider and
  * cap-centered header. New frames should render through this rather than

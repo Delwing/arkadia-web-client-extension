@@ -18,6 +18,7 @@ import {
     defaultRenderSettings,
     defaultMapSettings,
     defaultBehaviorSettings,
+    defaultDeviceViewSettings,
 } from '@shared/settingsDefaults';
 
 export const defaultFooterComponents: FooterComponentConfig[] = [
@@ -40,6 +41,9 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
 
 /** Stock-UI chrome defaults (this UI only); references the stock footer list. */
 export const defaultChromeSettings: ChromeSettings = {
+    // Device-scoped view prefs (font size / map zoom / buffer size) are part of
+    // the chrome blob, so their defaults come from the shared source of truth.
+    ...defaultDeviceViewSettings,
     objectsFontSize: 0.6,
     showButtons: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,

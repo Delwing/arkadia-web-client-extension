@@ -4,7 +4,7 @@
  * engine-internal detail).
  *
  * The default `localStorageHistoryStore` keeps history under a single shared key
- * so every UI on the same profile (stock web + alt-ui) reads and writes one
+ * so every UI on the same profile (stock web + forge-ui) reads and writes one
  * history. History is device-local by nature, so it is intentionally *not*
  * routed through the synced settings slices.
  */

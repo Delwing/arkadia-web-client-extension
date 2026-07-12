@@ -4,7 +4,7 @@ The game client (`src/client`) is UI-agnostic. It knows how to talk to Arkadia
 — transport, telnet/GMCP, triggers, ANSI rendering, combat/team/object state,
 plugins — but it knows **nothing** about React, the DOM, or the stock web app.
 A UI is something you plug *around* the client, not something the client depends
-on. This is what makes it possible to build a second UI (see `alt-ui/`) that
+on. This is what makes it possible to build a second UI (see `forge-ui/`) that
 drives the real client with none of the stock chrome.
 
 This document explains the seam and how to build a UI on top of it.
@@ -13,7 +13,7 @@ This document explains the seam and how to build a UI on top of it.
 
 ```
         ┌─────────────────────────────────────────────┐
-        │  UI  (src/web, alt-ui, or your own)          │
+        │  UI  (src/web, forge-ui, or your own)          │
         │   - renders output, panels, input            │
         │   - injects ports at bootstrap               │
         └───────────────┬─────────────────────────────┘
@@ -67,7 +67,7 @@ cleanups — relocating them to `@shared` would make the boundary type-clean too
 
 Ports invert the dependency: the client declares an interface and calls a
 getter; the UI injects an implementation once at bootstrap. The default is a
-**no-op**, so the client runs headless (an alt UI with no tooltips just doesn't
+**no-op**, so the client runs headless (an forge UI with no tooltips just doesn't
 set them).
 
 ### `UiPort` — transient UI (`src/client/ports/uiPort.ts`)
@@ -124,21 +124,28 @@ import { getRenderSettings, setRenderSettings, onRenderSettingsChange } from '@m
 
 | Accessor | Slice (`@shared/uiSettingsTypes`) | Examples |
 |---|---|---|
-| `*RenderSettings` | `RenderSettings` | fonts, `xtermPalette`, `outputBackground`, timestamps, command echo, sounds |
-| `*MapSettings` | `MapSettings` | `mapScale`, room size/shape, marker, colours, pathfinding |
+| `*RenderSettings` | `RenderSettings` | font family, `xtermPalette`, `outputBackground`, timestamps, command echo, sounds |
+| `*MapSettings` | `MapSettings` | room size/shape, marker, colours, pathfinding |
 | `*ShellSettings` | `ShellSettings` | `wakeLock`, `fightTitleIcon`, haptics |
 | `*BehaviorSettings` | `BehaviorSettings` | exploration/instant move, team numbering, object menu commands |
+| `*DeviceViewSettings` | `DeviceViewSettings` | `contentFontSize`, `mapScale`, `outputMaxElements` |
 
 Each accessor `get()` default-merges its slice; `set(patch)` writes only its own
-slice; `onChange(cb)` fires on slice changes. Stock-only chrome (buttons,
-footer, layout, split view, bar order, …) stays in the `uiSettings` blob and is
-ignored by alt UIs. These slice keys are shared and sync across devices via the
-Firebase category registry; see `SYNCHRONIZACJA.md`.
+slice; `onChange(cb)` fires on slice changes. The Render/Map/Shell/Behavior slice
+keys are **shared** and sync across devices via the Firebase category registry;
+see `SYNCHRONIZACJA.md`.
+
+`DeviceViewSettings` is the exception: font size, map zoom, and output-buffer size
+are physically stored in the **device-scoped** `uiSettings` blob (they are part of
+`ChromeSettings`), so they stay tuned per physical device rather than syncing —
+a small desktop font and a large phone font don't fight each other. Stock-only
+chrome (buttons, footer, layout, split view, bar order, …) also lives in the
+`uiSettings` blob and is ignored by forge UIs.
 
 ## Building a UI
 
 A UI is an HTML entry + a bootstrap module. The minimal recipe (see the React
-`alt-ui/` app — `main.tsx` + `client/bootstrap.ts` — for a full example):
+`forge-ui/` app — `main.tsx` + `client/bootstrap.ts` — for a full example):
 
 ```ts
 import mudClient from '@web/MudClient';        // transport (WebSocket/telnet-proxy)
@@ -218,15 +225,15 @@ const engine = new CommandLineEngine({
 The engine owns no DOM and no listeners — a UI injects an `EditableField` (a
 native input/textarea already satisfies it; tests pass a fake) and a
 `CommandHistoryStore`, then routes its own events in. The stock web adapter is
-`CommandInputController`; the alt-ui React adapter is
-`alt-ui/hooks/useCommandLine.ts`. **Password mode is already decoupled**: the
+`CommandInputController`; the forge-ui React adapter is
+`forge-ui/hooks/useCommandLine.ts`. **Password mode is already decoupled**: the
 client pushes it as the `telnet.echo` bus event (server echo off ⇒ password), so
 a UI just subscribes and swaps to its masked field — no new port needed.
 
 ## Why this shape
 
 - **Ports over imports** keeps the dependency arrow pointing one way and lets
-  the client run headless (tests, an alt UI, a future non-web host).
+  the client run headless (tests, an forge UI, a future non-web host).
 - **Accessors over storage keys** let the physical storage move (it already did:
   the monolithic `uiSettings` blob was split into synced slices) without
   touching a single consumer.
@@ -243,6 +250,6 @@ a UI just subscribes and swaps to its masked field — no new port needed.
 - Client core: `src/client/Client.ts`, `src/client/main.ts` (`registerScripts`)
 - Width feed: `src/web/contentWidthMeasurer.ts`
 - Map embedding: `src/web/embed.ts`, `src/web/mapDataLoader.ts`
-- Command-line engine: `src/web/commandInput/{CommandLineEngine,editableField,commandHistoryStore,outputWords}.ts`; adapters `src/web/commandInput/CommandInputController.ts`, `alt-ui/hooks/useCommandLine.ts`
+- Command-line engine: `src/web/commandInput/{CommandLineEngine,editableField,commandHistoryStore,outputWords}.ts`; adapters `src/web/commandInput/CommandInputController.ts`, `forge-ui/hooks/useCommandLine.ts`
 - Password/echo signal: `src/shared/socket/echo.ts` → `telnet.echo` event
-- Reference UI on the seam: `alt-ui/`
+- Reference UI on the seam: `forge-ui/`

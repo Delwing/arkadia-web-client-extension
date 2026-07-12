@@ -1,7 +1,7 @@
 /**
  * A single editable text field, reduced to just the operations the command-line
  * engine needs. This is the seam that lets the engine run over *any* UI's input
- * element — the stock web `<textarea>`, an alt-ui React `<textarea>`, or a fake
+ * element — the stock web `<textarea>`, an forge-ui React `<textarea>`, or a fake
  * in a unit test — without the engine ever touching the DOM directly.
  *
  * A native `HTMLInputElement`/`HTMLTextAreaElement` already satisfies almost all

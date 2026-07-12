@@ -26,7 +26,7 @@ export function computeExits(client: Client): string {
 
 /** Force the forged look on a freshly built renderer's Settings. */
 function applyForgedSettings(embedded: EmbeddedMap): void {
-    // Disregard the user's stock map client settings; the alt UI has its own
+    // Disregard the user's stock map client settings; the forge UI has its own
     // parchment-on-void aesthetic. Mutating the retained `settings` object means
     // these persist across reload()'s renderer rebuild.
     const s = embedded.settings;
@@ -76,6 +76,6 @@ export async function mountForgedMap(client: Client): Promise<void> {
             embedded.pathFinder = r.pathFinder;
         }, { emitInitial: false });
     } catch (err) {
-        console.error('[alt-ui] map mount failed', err);
+        console.error('[forge-ui] map mount failed', err);
     }
 }

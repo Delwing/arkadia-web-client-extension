@@ -19,7 +19,7 @@
     "src/**/*",
     "editor/**/*",
     "viewer/**/*",
-    "alt-ui/**/*",
+    "forge-ui/**/*",
     "popup/**/*"
   ],
   "exclude": [

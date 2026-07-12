@@ -34,7 +34,7 @@ export interface CommandLineEngineDeps {
  * It owns no DOM and no listeners. A UI drives it by translating its own
  * keyboard/pointer events into these method calls and injecting an
  * {@link EditableField} + {@link CommandHistoryStore}. The stock web UI
- * (`CommandInputController`) and the alt-ui React hook (`useCommandLine`) are
+ * (`CommandInputController`) and the forge-ui React hook (`useCommandLine`) are
  * both thin adapters over this class.
  */
 export class CommandLineEngine {

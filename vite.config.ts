@@ -68,7 +68,7 @@ export default defineConfig({
                 editor: resolve('editor/index.html'),
                 viewer: resolve('viewer/index.html'),
                 'log-viewer': resolve('log-viewer/index.html'),
-                'alt-ui': resolve('alt-ui/index.html'),
+                'forge-ui': resolve('forge-ui/index.html'),
                 popup: resolve('popup/index.html'),
             },
             output: {

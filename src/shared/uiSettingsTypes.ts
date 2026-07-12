@@ -44,7 +44,6 @@ export interface ShellSettings {
 
 /** Terminal output + input rendering — portable across UIs. */
 export interface RenderSettings {
-    contentFontSize: number;
     fontFamily: UiFontSelection;
     customFontUrl: string;
     customFontFamily: string;
@@ -52,7 +51,6 @@ export interface RenderSettings {
     colorTheme: ColorTheme;
     customThemeColor?: string;
     outputBackground: string;
-    outputMaxElements: number;
     outputBottomPadding: number;
     showTimestamps: boolean;
     commandEcho: boolean;
@@ -64,7 +62,6 @@ export interface RenderSettings {
 
 /** Map rendering — portable across UIs that draw a map. */
 export interface MapSettings {
-    mapScale: number;
     mapRoomSize: number;
     mapLineWidth: number;
     mapPlayerMarkerStrokeColor: string;
@@ -99,8 +96,20 @@ export interface BehaviorSettings {
     objectContextMenuCommands: string[];
 }
 
+/**
+ * Device-scoped view preferences. Physically stored in the device-scoped
+ * `uiSettings` blob (they are part of `ChromeSettings`), so font size, map zoom,
+ * and output-buffer size stay tuned per physical device instead of syncing
+ * across all of a user's devices like the portable render/map slices do.
+ */
+export interface DeviceViewSettings {
+    contentFontSize: number;
+    mapScale: number;
+    outputMaxElements: number;
+}
+
 /** Stock-UI chrome — layout/panels specific to the bundled web UI. */
-export interface ChromeSettings {
+export interface ChromeSettings extends DeviceViewSettings {
     objectsFontSize: number;
     /** @deprecated Migrated to mobileButtonSettings.buttonSize */
     buttonSize?: number;

@@ -4,11 +4,12 @@ import type {
     MapSettings,
     BehaviorSettings,
     ChromeSettings,
+    DeviceViewSettings,
 } from './uiSettingsTypes';
 
 // Default values for the portable settings slices, plus the explicit field-key
 // lists that drive the settings accessors (@modules/core/settings). These live
-// in @shared so both the client and any UI (including the alt UI) can use them
+// in @shared so both the client and any UI (including the forge UI) can use them
 // without importing @web. Stock-chrome defaults stay in @web/defaultUiSettings
 // (they reference stock-only values like the footer component list).
 
@@ -19,14 +20,12 @@ export const defaultShellSettings: ShellSettings = {
 };
 
 export const defaultRenderSettings: RenderSettings = {
-    contentFontSize: 0.775,
     fontFamily: 'default',
     customFontUrl: '',
     customFontFamily: '',
     xtermPalette: 'arkadia',
     colorTheme: 'default',
     outputBackground: '#242424',
-    outputMaxElements: 1000,
     outputBottomPadding: 0,
     showTimestamps: false,
     commandEcho: true,
@@ -37,7 +36,6 @@ export const defaultRenderSettings: RenderSettings = {
 };
 
 export const defaultMapSettings: MapSettings = {
-    mapScale: 0.30,
     mapRoomSize: 0.6,
     mapLineWidth: 0.025,
     mapPlayerMarkerStrokeColor: '#00e5b2',
@@ -63,6 +61,16 @@ export const defaultMapSettings: MapSettings = {
     emojiLabels: false,
 };
 
+// Device-scoped view prefs. Stored inside the device-scoped `uiSettings` blob
+// (part of ChromeSettings), so they are read/written through the deviceView
+// accessor rather than the portable render/map slices — keeping font size, map
+// zoom, and buffer size per-device instead of syncing across devices.
+export const defaultDeviceViewSettings: DeviceViewSettings = {
+    contentFontSize: 0.775,
+    mapScale: 0.30,
+    outputMaxElements: 1000,
+};
+
 export const defaultBehaviorSettings: BehaviorSettings = {
     explorationMode: false,
     instantMove: true,
@@ -78,14 +86,14 @@ export const shellSettingsKeys = [
 ] as const satisfies readonly (keyof ShellSettings)[];
 
 export const renderSettingsKeys = [
-    'contentFontSize', 'fontFamily', 'customFontUrl', 'customFontFamily',
+    'fontFamily', 'customFontUrl', 'customFontFamily',
     'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground',
-    'outputMaxElements', 'outputBottomPadding', 'showTimestamps', 'commandEcho',
+    'outputBottomPadding', 'showTimestamps', 'commandEcho',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',
 ] as const satisfies readonly (keyof RenderSettings)[];
 
 export const mapSettingsKeys = [
-    'mapScale', 'mapRoomSize', 'mapLineWidth', 'mapPlayerMarkerStrokeColor',
+    'mapRoomSize', 'mapLineWidth', 'mapPlayerMarkerStrokeColor',
     'mapPlayerMarkerStrokeAlpha', 'mapPlayerMarkerFillColor', 'mapPlayerMarkerFillAlpha',
     'mapPlayerMarkerStrokeWidth', 'mapPlayerMarkerSizeFactor', 'mapPlayerMarkerDashEnabled',
     'mapHighlightStrokeAlpha', 'mapHighlightFillAlpha', 'mapHighlightStrokeWidth',
@@ -99,9 +107,18 @@ export const behaviorSettingsKeys = [
     'teamNumberingMode', 'objectContextMenuCommands',
 ] as const satisfies readonly (keyof BehaviorSettings)[];
 
+// Device-scoped view prefs read/written through the deviceView accessor. Kept
+// distinct from the portable slices so they never move out of `uiSettings`
+// during the v10 split migration (they are absent from the slice key-lists).
+export const deviceViewSettingsKeys = [
+    'contentFontSize', 'mapScale', 'outputMaxElements',
+] as const satisfies readonly (keyof DeviceViewSettings)[];
+
 // Stock-UI chrome stays in the `uiSettings` key. This list drives the save()
-// fan-out (which writes chrome fields back to `uiSettings`).
+// fan-out (which writes chrome fields back to `uiSettings`). It includes the
+// device-scoped view prefs above, so save() persists them to `uiSettings`.
 export const chromeSettingsKeys = [
+    'contentFontSize', 'mapScale', 'outputMaxElements',
     'objectsFontSize', 'buttonSize', 'showButtons', 'mapHeight', 'mapPosition',
     'footerMode', 'footerComponents', 'keepMultibindsVisible', 'splitViewHeight',
     'showCombatTimer', 'showTransportLabel', 'objectListBackgroundColor',

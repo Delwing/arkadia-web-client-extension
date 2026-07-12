@@ -6,7 +6,7 @@ import { createAttackController } from '@client/utils/attackController';
  *
  * `createAttackController` registers bus/storage listeners and emits an initial
  * `attackMode` event, so it must run exactly once per client — not once per
- * component mount. The stock UI gets its instance from `ObjectList`; the alt UI
+ * component mount. The stock UI gets its instance from `ObjectList`; the forge UI
  * never builds that, so we memoize here and hand the same instance to every
  * consumer (currently the object list).
  */
