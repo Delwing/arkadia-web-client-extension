@@ -1,10 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { windowManager } from '@web/layout/WindowManager';
 import {
   getBuiltInPanelSetting,
   setBuiltInPanelSetting,
   getPopupSetting,
   setPopupSetting,
+  getPopupPinnedState,
+  shouldPopupAutoOpen,
+  getPinnedPopupsByPrefix,
+  setDockingSupported,
   loadLayoutState,
   saveLayoutState,
   invalidateLayoutCache,
@@ -63,5 +67,82 @@ describe('popup settings persistence', () => {
     // Reload as if the page was refreshed.
     invalidateLayoutCache();
     expect(getPopupSetting('popup:chat', 'showTeamOnly', false)).toBe(true);
+  });
+});
+
+describe('docked-but-unpinned popup pin state on reload', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+  });
+
+  it('reads a docked popup that was unpinned as auto-open but NOT pinned', () => {
+    // Simulate the persisted state after: pin popup -> dock it -> unpin it.
+    // Unpinning clears persistOpen; docking keeps isDocked true.
+    const state = loadLayoutState();
+    state.enabled = true;
+    state.popupPanels['popup:test'] = { isDocked: true, persistOpen: false };
+    saveLayoutState(state);
+
+    // Reload as if the page was refreshed.
+    invalidateLayoutCache();
+
+    // Still docked => the popup must reappear on reload...
+    expect(shouldPopupAutoOpen('popup:test')).toBe(true);
+    // ...but it must NOT come back pinned (the previous bug forced it pinned
+    // because the hooks seeded isPinned from shouldPopupAutoOpen).
+    expect(getPopupPinnedState('popup:test')).toBe(false);
+  });
+});
+
+describe('docking capability gating (forge-ui vs stock UI)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+  });
+
+  // Global flag defaults to true; restore it so it doesn't bleed across tests.
+  afterEach(() => {
+    setDockingSupported(true);
+  });
+
+  function persist(popupPanels: Record<string, { isDocked: boolean; persistOpen?: boolean }>) {
+    const state = loadLayoutState();
+    state.enabled = true;
+    Object.assign(state.popupPanels, popupPanels);
+    saveLayoutState(state);
+    invalidateLayoutCache();
+  }
+
+  it('does NOT auto-open a docked-only popup when docking is unsupported (forge-ui)', () => {
+    persist({ 'popup:docked': { isDocked: true }, 'popup:pinned': { isDocked: false, persistOpen: true } });
+
+    setDockingSupported(false);
+
+    // Docking-only popup stays closed; a pinned popup still auto-opens.
+    expect(shouldPopupAutoOpen('popup:docked')).toBe(false);
+    expect(shouldPopupAutoOpen('popup:pinned')).toBe(true);
+  });
+
+  it('DOES auto-open a docked-only popup when docking is supported (stock UI)', () => {
+    persist({ 'popup:docked': { isDocked: true } });
+
+    // Default (true).
+    expect(shouldPopupAutoOpen('popup:docked')).toBe(true);
+  });
+
+  it('getPinnedPopupsByPrefix excludes docked-only popups when docking is unsupported', () => {
+    persist({
+      'map:a': { isDocked: true },
+      'map:b': { isDocked: false, persistOpen: true },
+    });
+
+    setDockingSupported(false);
+    expect(getPinnedPopupsByPrefix('map:').sort()).toEqual(['map:b']);
+
+    setDockingSupported(true);
+    expect(getPinnedPopupsByPrefix('map:').sort()).toEqual(['map:a', 'map:b']);
   });
 });

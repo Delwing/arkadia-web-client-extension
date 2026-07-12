@@ -388,12 +388,31 @@ function getCachedLayoutState(): LayoutState {
   return cachedLayoutState;
 }
 
+// ─── UI capability: does the active UI render dock slots? ─────────────────
+// The stock UI has a layout manager with dockable slots; alternate UIs
+// (forge-ui) render popups only as plain floating windows and have no docking.
+// Because both UIs share the same persisted `layoutManagerState`, a popup
+// docked in the stock UI would otherwise auto-open in forge-ui too. When
+// docking is unsupported, only pinned (persistOpen) popups auto-open — a
+// merely-docked popup does not. Defaults to true (stock UI); forge-ui flips it
+// off at boot via setDockingSupported(false).
+let dockingSupported = true;
+
+export function setDockingSupported(supported: boolean): void {
+  dockingSupported = supported;
+}
+
+export function isDockingSupported(): boolean {
+  return dockingSupported;
+}
+
 // ─── Popup helpers used by popup components on mount ──────────────────────
 
 /**
  * Returns true if this popup should auto-open on page load — either it was
- * pinned, or it was last seen docked, or it currently appears as a docked
- * WindowRecord in the persisted layout.
+ * pinned, or (only when the active UI supports docking) it was last seen
+ * docked, or it currently appears as a docked WindowRecord in the persisted
+ * layout.
  */
 export function shouldPopupAutoOpen(popupId: string): boolean {
   try {
@@ -402,6 +421,11 @@ export function shouldPopupAutoOpen(popupId: string): boolean {
 
     const popupState = stored.popupPanels[popupId];
     if (popupState?.persistOpen) return true;
+
+    // Docking is a stock-UI concept. In a UI with no dock slots (forge-ui),
+    // a merely-docked popup must NOT auto-open — otherwise every popup docked
+    // in the stock UI pops open here as a floating window.
+    if (!dockingSupported) return false;
     if (popupState?.isDocked) return true;
 
     const w = stored.windows[popupId];
@@ -501,7 +525,14 @@ export function getPinnedPopupsByPrefix(prefix: string): string[] {
     for (const id of Object.keys(stored.popupPanels)) {
       if (!id.startsWith(prefix)) continue;
       const s = stored.popupPanels[id];
-      if (s?.persistOpen || s?.isDocked) {
+      if (s?.persistOpen) {
+        result.push(id);
+        continue;
+      }
+      // Docked-only popups auto-open just in dock-capable UIs (see
+      // shouldPopupAutoOpen); forge-ui restores only pinned ones.
+      if (!dockingSupported) continue;
+      if (s?.isDocked) {
         result.push(id);
         continue;
       }

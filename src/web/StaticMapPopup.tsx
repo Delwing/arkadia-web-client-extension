@@ -7,7 +7,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { openMapContextMenu } from '@modules/core/contextMenus';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
-import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting, shouldPopupAutoOpen } from './layout/utils/layoutStorage';
+import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupPinnedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting } from './layout/utils/layoutStorage';
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
 import { TransportHopsOverlay, type TransportHopMarker } from './transportHopsOverlay';
@@ -437,7 +437,9 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
     const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
     const rendererRef = useRef<MapRenderer | null>(null);
     const [isOpen, setIsOpen] = useState(true);
-    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(popupId));
+    // Seed pinned from the persisted pin flag only. shouldPopupAutoOpen is also
+    // true while docked, which would keep a docked popup stuck as pinned on reload.
+    const [isPinned, setIsPinned] = useState(() => getPopupPinnedState(popupId));
     const [isLocked, setIsLocked] = useState(() => getPopupLockedState(popupId));
     const [state, setState] = useState<StaticMapState>({
         viewedAreaId: null,

@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useState} from 'react';
 import eventBus, {type ClientEvents} from '@modules/core/eventBus';
-import {getPopupLockedState, shouldPopupAutoOpen} from '../layout/utils/layoutStorage';
+import {getPopupLockedState, getPopupPinnedState, shouldPopupAutoOpen} from '../layout/utils/layoutStorage';
 
 export interface UsePopupOptions<K extends keyof ClientEvents = keyof ClientEvents> {
     /** Event name that triggers opening the popup */
@@ -75,7 +75,11 @@ export function usePopup<K extends keyof ClientEvents = keyof ClientEvents>(
     options?: UsePopupOptions<K>,
 ): UsePopupResult {
     const [isOpen, setIsOpen] = useState(() => shouldPopupAutoOpen(popupId));
-    const [isPinned, setIsPinned] = useState(() => shouldPopupAutoOpen(popupId));
+    // Seed pinned from the true persisted pin flag (persistOpen), NOT from
+    // shouldPopupAutoOpen — the latter is also true whenever the popup is
+    // docked, which would resurrect a pinned status the user had cleared while
+    // the popup stayed docked (it can never read back as unpinned on reload).
+    const [isPinned, setIsPinned] = useState(() => getPopupPinnedState(popupId));
     const [isLocked, setIsLocked] = useState(() => getPopupLockedState(popupId));
     // Track reset trigger - increments on each reset request
     const [resetCounter, setResetCounter] = useState(0);
@@ -118,7 +122,9 @@ export function usePopup<K extends keyof ClientEvents = keyof ClientEvents>(
             if (data && typeof data === 'object' && 'type' in data && data.type === 'import') {
                 if (shouldPopupAutoOpen(popupId)) {
                     setIsOpen(true);
-                    setIsPinned(true);
+                    // Mirror the imported pin flag rather than forcing pinned —
+                    // a docked-but-unpinned popup must not become pinned on import.
+                    setIsPinned(getPopupPinnedState(popupId));
                 }
             }
         });
