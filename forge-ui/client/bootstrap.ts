@@ -1,11 +1,8 @@
 import type Client from '@client/Client';
 import { globalStorage } from '@modules/core/storage';
-import { setUiPort } from '@client/ports';
 import { defaultUiSettings } from '@web/defaultUiSettings';
 import { bootstrapGameClient } from '@web/clientBootstrap';
-import { showHerbTooltip, hideHerbTooltip } from '@web/herbTooltip';
-import { showBookTooltip, hideBookTooltip } from '@web/bookTooltip';
-import { showContextMenu } from '@web/contextMenu';
+import { installClientPorts } from '@web/installClientPorts';
 import ObjectList from '@web/ObjectList';
 import { getAttackController } from './attackController';
 import { registerBuiltinFooterItems } from '@web-ui/footer/builtinItems';
@@ -22,27 +19,27 @@ import { registerBuiltinFooterItems } from '@web-ui/footer/builtinItems';
  * by the HUD. The React tree consumes the client via ClientContext; DOM-bound
  * wiring (width measurer, map mount) runs later, in component effects.
  *
+ * Ports are installed via the shared `installClientPorts`, the same seam the
+ * stock UI uses — it wires BOTH the `UiPort` (herb/book tooltips + context menus)
+ * and the `PluginHostPort` (default UI settings + the plugin-popup lifecycle).
+ * Installing the plugin-host port is what lets plugin popups actually open here:
+ * plugins register their popups through `PluginApi`, and `LayoutManagerWrapper`
+ * renders them via `PluginPopupRenderer` — without the port those calls no-op.
+ *
  * Herb/book tooltips reuse the framework-neutral `@shared/dom/tooltip` (via the
  * `@web` adapters) — they render into the `#hover-tooltip` element in index.html,
  * styled by forge-ui's own forged tooltip CSS. Context menus route to the shared
- * `contextMenuStore`: the book menu comes through this port, while the herb menu
- * writes to that store directly (via `@modules/core/contextMenus`), so pointing
- * the port at the same store lets one `<ContextMenu>` component render both.
+ * `contextMenuStore`: the book/output menu comes through the port, while the herb
+ * menu writes to that store directly (via `@modules/core/contextMenus`), so
+ * pointing the port at the same store lets one `<ContextMenu>` component render
+ * all of them.
  */
 export function createClient(): Client {
     if (!globalStorage.get('uiSettings')) {
         globalStorage.set('uiSettings', defaultUiSettings);
     }
 
-    const { client } = bootstrapGameClient({
-        installPorts: () => setUiPort({
-            showHerbTooltip,
-            hideHerbTooltip,
-            showBookTooltip,
-            hideBookTooltip,
-            showContextMenu,
-        }),
-    });
+    const { client } = bootstrapGameClient({ installPorts: installClientPorts });
 
     // Instantiate the attack controller once at boot (not lazily on first attack),
     // so the footer Atk chip's mode changes persist and drive team-attack behaviour
