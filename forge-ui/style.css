@@ -28,7 +28,6 @@
   --gem-dark: #1a1713;
 
   --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-  --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
   --tex-stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' seed='11' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23s)'/%3E%3C/svg%3E");
   /* larger, softer stone mottle for wide surfaces (popups). The gem's
      --tex-stone is high-frequency: crisp at 42px gem size, but it tiles into
@@ -300,10 +299,10 @@ body::after {
   position: relative;
   background-color: #17140f;
   background-image:
-    var(--tex-metal),
+    var(--tex-fine),
     linear-gradient(180deg, #241f18 0%, #17140f 48%, #0e0c09 100%);
-  background-blend-mode: overlay, normal;
-  background-size: 260px 120px, 100% 100%;
+  background-blend-mode: soft-light, normal;
+  background-size: 140px 140px, 100% 100%;
   border: 1px solid var(--iron-lo);
   border-radius: 9px;
   box-shadow:
@@ -428,7 +427,7 @@ body::after {
   border-radius: 6px;
   /* Weathered stone, matching the vital gems (.gem .stone): the isotropic
      --tex-stone speckle soft-lit over a dark iron gradient — reads as chiselled
-     rock, not the brushed/wood grain of --tex-metal. A dark scrim rides on top
+     rock, not a brushed/wood grain. A dark scrim rides on top
      of the speckle so soft-light can't lift the pill into a mid-tone; that keeps
      the fill deep and the value text (and its urgency tint) high-contrast. */
   background-color: #0c0905;

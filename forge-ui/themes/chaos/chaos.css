@@ -48,6 +48,12 @@ html[data-god] .prompt {
 html[data-god] .locale { opacity: .9; text-shadow: 0 0 10px rgba(var(--fu-accent-rgb), .35); }
 html[data-god] .panel__title,
 html[data-god] .managed-panel__header .managed-panel__title { text-shadow: 0 0 8px rgba(var(--fu-accent-rgb), .3); }
+/* the location header's flanking rules default to --bronze-dim (metal); match
+   them to the accent so the divider reads as one piece with the accent text */
+html[data-god] .locale::before,
+html[data-god] .locale::after {
+  background: linear-gradient(90deg, transparent, var(--fu-accent));
+}
 
 /* ── ambient backdrop haze: swap forge's ember-orange for the patron's
    rising glow + sparks, plus a soft full-field accent wash so the big output
@@ -90,11 +96,23 @@ html[data-god] .hud-panel {
 html[data-god] .forged {
   background-color: color-mix(in srgb, var(--fu-tint) 3%, #17140f);
   background-image:
-    var(--tex-metal),
+    var(--tex-fine),
     linear-gradient(180deg,
       color-mix(in srgb, var(--fu-tint) 4.5%, #241f18) 0%,
       color-mix(in srgb, var(--fu-tint) 3%, #17140f) 48%,
       color-mix(in srgb, var(--fu-tint) 2%, #0e0c09) 100%);
+}
+/* The character plaque is a small card, not a forged plate: the brushed-metal
+   grain + heavy gradient read as an oversized wooden panel here. Keep it a tiny
+   god-tinted plaque — fine speckle over a soft vertical fade, like the panels. */
+html[data-god] .plaque.forged {
+  background-color: color-mix(in srgb, var(--fu-tint) 2.5%, #0c0b09);
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--fu-tint) 4%, #16130e) 0%,
+      color-mix(in srgb, var(--fu-tint) 2.5%, #0c0b09) 55%,
+      color-mix(in srgb, var(--fu-tint) 1.5%, #070605) 100%);
 }
 /* footer detail surfaces: command well + location-bind pills */
 html[data-god] .trough {
