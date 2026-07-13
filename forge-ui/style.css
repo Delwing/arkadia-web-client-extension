@@ -460,8 +460,7 @@ body::after {
   font-family: "Cinzel", serif;
   text-transform: uppercase;
   letter-spacing: .09em;
-  font-size: 8.5px;
-  line-height: 1;
+  font-size: 9px;
   color: var(--bronze);
   text-shadow: 0 1px 1px rgba(0,0,0,.6);
   /* Cinzel caps sit high in their em-box, so metric centering floats them above
