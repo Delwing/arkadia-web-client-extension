@@ -11,7 +11,13 @@ import './style.css';
 import '@web/popups/popups.css';
 // SPIKE: adopt the shared dock/layout manager in forge. layout.css brings the
 // dock grid + panel/floating chrome; layout-theme.css re-skins it forged.
-import '@web/layout/layout.css';
+// NOTE: layout.css is intentionally NOT JS-imported here — it is pulled in via an
+// `@import` at the TOP of layout-theme.css instead. A JS-imported layout.css is
+// shared across three entries, so Rollup extracts it into its own CSS chunk that
+// the built HTML links AFTER forge's entry CSS — flipping the cascade in prod
+// (fine in dev) so every forge override that ties layout.css loses. The @import
+// inlines layout.css into forge's entry chunk in source order, ahead of the
+// overrides, so prod matches dev. See layout-theme.css.
 import './layout-theme.css';
 // Chaos-god theme variants (Mutanci Chaosu). chaos.css is scoped under
 // html[data-god]; applyGod sets that attribute from ?god=/localStorage, so with
