@@ -1,3 +1,13 @@
+/* Load the shared dock/layout base FIRST, in-chunk, so every override below
+   reliably wins in production. layout.css is imported by three entries, so a
+   JS import turns it into a shared chunk that the built HTML links AFTER forge's
+   entry CSS — dev (per-import <style> tags, source order) worked, prod (GitHub
+   Pages) didn't, and forge panels lost their background/map fill/title layout.
+   `@import` inlines it here, ahead of the overrides, matching dev. Must stay the
+   first rule in this file (CSS requires @import before other rules) and forge's
+   main.tsx must NOT also JS-import layout.css. */
+@import '../src/web/layout/layout.css';
+
 /* ============================================================
    forge-ui · Forged re-skin of the shared dock manager
    ============================================================
@@ -53,16 +63,11 @@ body.layout-manager-enabled #content-area > .world {
 }
 
 /* ── The plate — every managed window becomes a forged panel ──────────────
-   Mirrors style.css `.panel` fill + `.forged` border/shadow.
-   Doubled `.managed-panel.managed-panel` (0,2,0) so this plate fill outranks
-   layout.css's base `.managed-panel { background: var(--popup-bg, ...) }` (0,1,0)
-   REGARDLESS of stylesheet order. In dev, layout-theme.css is injected after
-   layout.css so a plain (0,1,0) selector won on source order; the production
-   bundle hoists the shared layout.css AFTER this file, flipping the tie so
-   layout.css's shorthand (which resolves to transparent here — forge sets
-   --popup-bg:transparent below) wiped the plate. Winning by specificity keeps
-   the fill order-independent. */
-.managed-panel.managed-panel {
+   Mirrors style.css `.panel` fill + `.forged` border/shadow. Wins over
+   layout.css's base `.managed-panel` at equal specificity because layout.css is
+   @import-ed above this file (see the header note) — so source order is now
+   guaranteed in prod as well as dev. */
+.managed-panel {
   position: relative;
   overflow: hidden;
   background-color: #0a0a09;
