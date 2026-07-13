@@ -116,7 +116,7 @@ body::after {
 }
 /* location name — driven by room.short message type */
 .locale {
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   letter-spacing: .22em;
   text-transform: uppercase;
   font-size: 13px;
@@ -167,19 +167,19 @@ body::after {
   display: grid; place-items: center;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 34%, rgba(184,150,90,.16), transparent 60%),
+    radial-gradient(circle at 50% 34%, rgba(var(--fu-metal-rgb, 184,150,90),.16), transparent 60%),
     var(--gem-dark);
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.24),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.24),
     inset 0 0 0 1px rgba(0,0,0,.6),
     inset 0 -3px 6px rgba(0,0,0,.72),
-    0 0 0 1px rgba(184,150,90,.14);
+    0 0 0 1px rgba(var(--fu-metal-rgb, 184,150,90),.14);
 }
 /* etched inner ring — coin-like engrave */
 .plaque__crest::before {
   content: "";
   position: absolute; inset: 6px; border-radius: 50%;
-  border: 1px solid rgba(184,150,90,.22);
+  border: 1px solid rgba(var(--fu-metal-rgb, 184,150,90),.22);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
 }
 .plaque__crest svg {
@@ -190,14 +190,14 @@ body::after {
 /* combat / non-combat rim tint (weathered, never neon) */
 .plaque__crest--war {
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.24), inset 0 0 0 1px rgba(0,0,0,.6),
     inset 0 -3px 6px rgba(0,0,0,.72),
     0 0 0 1px rgba(150,52,40,.5), 0 0 11px rgba(150,44,32,.18);
 }
 .plaque__crest--war svg { color: #c59a68; }
 .plaque__crest--civ {
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.24), inset 0 0 0 1px rgba(0,0,0,.6),
     inset 0 -3px 6px rgba(0,0,0,.72),
     0 0 0 1px rgba(150,124,60,.55), 0 0 11px rgba(140,150,72,.16);
 }
@@ -206,16 +206,16 @@ body::after {
   position: absolute; right: -2px; bottom: -2px;
   width: 20px; height: 20px; border-radius: 50%;
   display: grid; place-items: center;
-  font-family: "Cinzel", serif; font-size: 12px; line-height: 1;
+  font-family: var(--fu-display, "Cinzel"), serif; font-size: 12px; line-height: 1;
   color: var(--bronze);
   background: radial-gradient(circle at 50% 35%, #241f18, #100e0b);
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.28), inset 0 0 0 1px rgba(0,0,0,.7), 0 1px 3px rgba(0,0,0,.7);
+  box-shadow: inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.28), inset 0 0 0 1px rgba(0,0,0,.7), 0 1px 3px rgba(0,0,0,.7);
 }
 .plaque__pip[data-gender="female"] { color: #c98fa8; }
 .plaque__main { flex: 1 1 auto; min-width: 0; }
 .plaque__name {
   display: block;
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   font-weight: 600;
   font-size: 20px; line-height: 1.05;
   letter-spacing: .06em;
@@ -225,7 +225,7 @@ body::after {
 .plaque__sub {
   display: block;
   margin-top: 4px;
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   font-size: 10px; letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--bronze);
@@ -235,11 +235,11 @@ body::after {
   display: flex; flex-direction: column;
   gap: 5px;
   padding-left: 18px;
-  border-left: 1px solid rgba(184,150,90,.16);
+  border-left: 1px solid rgba(var(--fu-metal-rgb, 184,150,90),.16);
 }
 .plaque__guild { display: flex; flex-direction: column; gap: 1px; }
 .plaque__gk {
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   font-size: 8px; letter-spacing: .22em;
   text-transform: uppercase;
   color: var(--parchment-dim);
@@ -307,7 +307,7 @@ body::after {
   border: 1px solid var(--iron-lo);
   border-radius: 9px;
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.16),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.16),
     inset 0 -3px 6px rgba(0,0,0,.72),
     inset 0 0 0 1px rgba(0,0,0,.5),
     0 3px 10px rgba(0,0,0,.6),
@@ -317,7 +317,7 @@ body::after {
   content: "";
   position: absolute; inset: 4px;
   border-radius: 5px;
-  border: 1px solid rgba(184,150,90,.20);
+  border: 1px solid rgba(var(--fu-metal-rgb, 184,150,90),.20);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
   pointer-events: none;
 }
@@ -340,7 +340,7 @@ body::after {
   border: 1px solid var(--iron-lo);
   border-radius: 9px;
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.14),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.14),
     inset 0 -3px 6px rgba(0,0,0,.72),
     inset 0 0 0 1px rgba(0,0,0,.5),
     0 3px 10px rgba(0,0,0,.6),
@@ -357,7 +357,7 @@ body::after {
   height: 0;
   margin: 5px 2px;
   border-top: 1px solid rgba(0,0,0,.6);
-  box-shadow: 0 1px 0 rgba(184,150,90,.07);
+  box-shadow: 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.07);
 }
 
 /* ---- location-bind band (top of the plate) ------------------------------- */
@@ -373,7 +373,7 @@ body::after {
 }
 /* the shared MultiBindStrip's placeholder (src/ui/web/footer) */
 .multi-bind-empty {
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   text-transform: uppercase;
   letter-spacing: .12em;
   font-size: 9.5px;
@@ -395,7 +395,7 @@ body::after {
   font-size: 12.5px;
   line-height: 1.15;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.1);
+  box-shadow: inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.1);
   transition: border-color .15s ease, background .15s ease, transform .1s ease;
   appearance: none; -webkit-appearance: none;
 }
@@ -439,7 +439,7 @@ body::after {
   background-blend-mode: normal, soft-light, normal;
   background-size: 100% 100%, 90px 90px, 100% 100%;
   border: 1px solid #33291b;
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.09), inset 0 -2px 5px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.55);
+  box-shadow: inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.09), inset 0 -2px 5px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.55);
   white-space: nowrap;
   color: var(--parchment);
   font-family: "EB Garamond", Georgia, serif;
@@ -457,7 +457,7 @@ body::after {
    both text spans keeps their optical centers true, so nothing rides high/low */
 .chip__text { display: inline-flex; align-items: center; gap: 5px; }
 .chip__lab {
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   text-transform: uppercase;
   letter-spacing: .09em;
   font-size: 9px;
@@ -580,7 +580,7 @@ body::after {
   border-radius: 7px;                  /* the hole */
   /* thick lit-steel form the button is pressed into */
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.18),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.18),
     inset 0 -1px 0 rgba(0,0,0,.6),
     inset 0 0 0 1px rgba(0,0,0,.8),
     inset 0 2px 4px rgba(0,0,0,.66);
@@ -679,7 +679,7 @@ body::after {
   flex: 1 1 auto; display: flex; align-items: center; gap: 10px; padding: 0 15px;
   border-radius: 5px;
   background: linear-gradient(180deg, #0b0a08, #100e0b);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px rgba(184,150,90,.10);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px rgba(var(--fu-metal-rgb, 184,150,90),.10);
 }
 .prompt {
   font-family: "JetBrains Mono", monospace; color: var(--bronze); font-size: 16px;
@@ -744,18 +744,18 @@ textarea.cmd-input {
   /* extra top padding centers the title between the forged bevel (inset 4px)
      and the divider below, not between the panel's outer edge and the divider */
   padding: 11px 12px 7px;
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(var(--fu-metal-rgb, 184,150,90),.06);
 }
 .panel__head .orn {
   width: 8px; height: 8px;
   transform: rotate(45deg);
   background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
-  box-shadow: 0 0 6px rgba(184,150,90,.4);
+  box-shadow: 0 0 6px rgba(var(--fu-metal-rgb, 184,150,90),.4);
   flex: 0 0 auto;
 }
 .panel__title {
   flex: 0 0 auto;             /* never shrink/ellipsize the title */
-  font-family: "Cinzel", serif; font-weight: 600; font-size: 10.5px;
+  font-family: var(--fu-display, "Cinzel"), serif; font-weight: 600; font-size: 10.5px;
   letter-spacing: .22em; text-transform: uppercase; color: var(--bronze);
   /* trim the line box to the caps so the header centers on the visible glyphs,
      not on the font's (all-caps-unused) ascent/descent leading */
@@ -796,7 +796,7 @@ textarea.cmd-input {
 }
 .tp-date {
   margin-left: auto;   /* pin to the right of the clock; wraps below when the row is too narrow */
-  font-family: "Cinzel", serif; font-size: 9.5px; letter-spacing: .12em;
+  font-family: var(--fu-display, "Cinzel"), serif; font-size: 9.5px; letter-spacing: .12em;
   text-transform: uppercase; color: var(--parchment-dim);
 }
 .tp-doy { color: var(--bronze-dim); }
@@ -823,12 +823,12 @@ textarea.cmd-input {
   border-radius: 3px;
   transition: background-color .12s ease;
 }
-.st-row--btn:hover { background: rgba(184,150,90,.09); }
-.st-row--btn:active { background: rgba(184,150,90,.15); }
+.st-row--btn:hover { background: rgba(var(--fu-metal-rgb, 184,150,90),.09); }
+.st-row--btn:active { background: rgba(var(--fu-metal-rgb, 184,150,90),.15); }
 .st-ico { display: flex; width: 16px; height: 16px; color: var(--bronze-dim); }
 .st-ico svg { width: 16px; height: 16px; }
 .st-label {
-  font-family: "Cinzel", serif; font-size: 9.5px; font-weight: 600;
+  font-family: var(--fu-display, "Cinzel"), serif; font-size: 9.5px; font-weight: 600;
   letter-spacing: .16em; text-transform: uppercase; color: var(--parchment-dim);
   white-space: nowrap;
 }
@@ -860,7 +860,7 @@ textarea.cmd-input {
   width: 72px; height: 13px; flex: 0 0 auto;
   border-radius: 3px; overflow: hidden;
   background: linear-gradient(180deg, #0b0a08, #131109);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6), inset 0 1px 0 rgba(184,150,90,.05);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6), inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.05);
 }
 .st-gauge__fill {
   position: absolute; inset: 0 auto 0 0;
@@ -891,7 +891,7 @@ textarea.cmd-input {
 .map__exits {
   flex: 0 0 auto;
   margin-top: 7px; text-align: center;
-  font-family: "Cinzel", serif; font-size: 9px; letter-spacing: .26em;
+  font-family: var(--fu-display, "Cinzel"), serif; font-size: 9px; letter-spacing: .26em;
   color: var(--bronze-dim); text-transform: uppercase;
 }
 .map__exits:empty { display: none; }
@@ -924,14 +924,14 @@ textarea.cmd-input {
   transform: rotate(45deg);
   border-radius: 2px;
   background: rgba(0,0,0,.3);
-  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
+  box-shadow: inset 0 0 0 1px rgba(var(--fu-metal-rgb, 184,150,90),.2);
 }
 .obj__key.you { color: var(--bronze); }
-.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(var(--fu-metal-rgb, 184,150,90),.4); }
 /* object names share the location-header voice: Cinzel, uppercase, spaced */
 .obj__name {
   flex: 1 1 auto; min-width: 0;
-  font-family: "Cinzel", serif; text-transform: uppercase;
+  font-family: var(--fu-display, "Cinzel"), serif; text-transform: uppercase;
   font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -959,7 +959,7 @@ textarea.cmd-input {
 .obj__name.is-clickable,
 .obj__hp.is-clickable { cursor: pointer; }
 .obj__key.is-clickable:hover { color: var(--bronze); }
-.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(var(--fu-metal-rgb, 184,150,90),.5); }
 .obj__name.is-clickable:hover { color: var(--bronze); }
 .obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
 /* the fray: which objects are attacking THIS one, colored by their side.
@@ -981,7 +981,7 @@ textarea.cmd-input {
 }
 .atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
 .atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
-.atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+.atk--you   { color: var(--bronze); background: rgba(var(--fu-metal-rgb, 184,150,90),.13); box-shadow: inset 0 0 0 1px rgba(var(--fu-metal-rgb, 184,150,90),.5); }
 
 .obj--empty {
   padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
@@ -993,15 +993,15 @@ textarea.cmd-input {
    forged call-to-action rather than a plain line of output. */
 .connect-prompt { margin: 8px 0; text-align: left; }
 .connect-link {
-  font-family: "Cinzel", serif; letter-spacing: .18em; text-transform: uppercase;
+  font-family: var(--fu-display, "Cinzel"), serif; letter-spacing: .18em; text-transform: uppercase;
   font-size: 12px; color: var(--bronze); cursor: pointer;
   padding: 7px 20px; border-radius: 5px;
-  border: 1px solid rgba(184,150,90,.4);
+  border: 1px solid rgba(var(--fu-metal-rgb, 184,150,90),.4);
   background: linear-gradient(180deg, #221d16, #100e0b);
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
+  box-shadow: inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.16), inset 0 0 0 1px rgba(0,0,0,.5);
   transition: color .12s, border-color .12s;
 }
-.connect-link:hover { color: var(--parchment); border-color: rgba(184,150,90,.7); }
+.connect-link:hover { color: var(--parchment); border-color: rgba(var(--fu-metal-rgb, 184,150,90),.7); }
 
 /* ============================================================
    HOVER TOOLTIP + CONTEXT MENU — herb / book descriptions
@@ -1027,7 +1027,7 @@ textarea.cmd-input {
   background-size: 130px 130px, 100% 100%;
   border: 1px solid var(--iron-lo);
   box-shadow:
-    inset 0 1px 0 rgba(184,150,90,.16),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90),.16),
     inset 0 -3px 6px rgba(0,0,0,.72),
     inset 0 0 0 1px rgba(0,0,0,.5),
     0 3px 10px rgba(0,0,0,.6),
@@ -1038,7 +1038,7 @@ textarea.cmd-input {
 .alt-context-menu::before {
   content: ""; position: absolute; inset: 4px; z-index: 0; pointer-events: none;
   border-radius: 5px;
-  border: 1px solid rgba(184,150,90,.20);
+  border: 1px solid rgba(var(--fu-metal-rgb, 184,150,90),.20);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
 }
 
@@ -1062,11 +1062,11 @@ textarea.cmd-input {
 .hover-tooltip__entry { position: relative; z-index: 1; }
 .hover-tooltip__header {
   display: flex; align-items: center; gap: 9px;
-  font-family: "Cinzel", serif; font-weight: 600;
+  font-family: var(--fu-display, "Cinzel"), serif; font-weight: 600;
   font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
   color: var(--bronze);
   margin-bottom: 7px; padding-bottom: 7px;
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(var(--fu-metal-rgb, 184,150,90),.06);
   text-shadow: 0 1px 2px rgba(0,0,0,.9);
 }
 /* bronze romb ornament, exactly as .panel__head .orn */
@@ -1074,7 +1074,7 @@ textarea.cmd-input {
   content: ""; flex: 0 0 auto;
   width: 8px; height: 8px; transform: rotate(45deg);
   background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
-  box-shadow: 0 0 6px rgba(184,150,90,.4);
+  box-shadow: 0 0 6px rgba(var(--fu-metal-rgb, 184,150,90),.4);
 }
 .hover-tooltip__entry {
   display: flex; align-items: center; gap: 8px;
@@ -1087,14 +1087,14 @@ textarea.cmd-input {
    visible glyphs (same fix as .panel__title), not the font's ascent/descent. */
 .hover-tooltip__label {
   flex: 0 0 auto;
-  font-family: "Cinzel", serif; font-weight: 600; font-size: 9.5px;
+  font-family: var(--fu-display, "Cinzel"), serif; font-weight: 600; font-size: 9.5px;
   letter-spacing: .16em; text-transform: uppercase;
   color: var(--parchment-dim); white-space: nowrap;
   text-box: trim-both cap alphabetic;
 }
 .hover-tooltip__content {
   flex: 1 1 auto; min-width: 0;
-  font-family: "Cinzel", serif; font-weight: 600; font-size: 9.5px;
+  font-family: var(--fu-display, "Cinzel"), serif; font-weight: 600; font-size: 9.5px;
   letter-spacing: .16em; text-transform: uppercase;
   color: var(--parchment);
   word-break: break-word;
@@ -1116,12 +1116,12 @@ textarea.cmd-input {
 .alt-context-menu__items { position: relative; z-index: 1; }
 .alt-context-menu__header {
   display: flex; align-items: center; gap: 9px;
-  font-family: "Cinzel", serif; font-weight: 600;
+  font-family: var(--fu-display, "Cinzel"), serif; font-weight: 600;
   font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
   color: var(--bronze);
   padding: 4px 4px 7px;
   margin-bottom: 5px;
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(184,150,90,.06);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(var(--fu-metal-rgb, 184,150,90),.06);
   text-shadow: 0 1px 2px rgba(0,0,0,.9);
 }
 /* bronze romb ornament, exactly as .panel__head .orn */
@@ -1129,7 +1129,7 @@ textarea.cmd-input {
   content: ""; flex: 0 0 auto;
   width: 8px; height: 8px; transform: rotate(45deg);
   background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
-  box-shadow: 0 0 6px rgba(184,150,90,.4);
+  box-shadow: 0 0 6px rgba(var(--fu-metal-rgb, 184,150,90),.4);
 }
 .alt-context-menu__header--small {
   font-size: 9px; letter-spacing: .16em; color: var(--bronze-dim);
@@ -1150,7 +1150,7 @@ textarea.cmd-input {
   box-shadow: none;
   color: var(--parchment);
   /* same combat row voice as .st-label / the tooltip rows */
-  font-family: "Cinzel", serif; font-weight: 600;
+  font-family: var(--fu-display, "Cinzel"), serif; font-weight: 600;
   font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase;
   line-height: 1.35;
   cursor: pointer;
@@ -1161,7 +1161,7 @@ textarea.cmd-input {
 .alt-context-menu button:focus-visible {
   outline: none;
   color: #f4ecd6;
-  background: rgba(184,150,90,.12);
+  background: rgba(var(--fu-metal-rgb, 184,150,90),.12);
 }
 .alt-context-menu button.opens-window::after {
   content: "\2197";        /* north-east arrow — entry opens a window */

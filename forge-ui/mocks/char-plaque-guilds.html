@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Character plaque — sigile stowarzyszen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --void:#0a0908; --iron-lo:#0c0b09; --iron-hi:#3a352b;
+    --bronze:#b8965a; --bronze-dim:#8a6d3b;
+    --parchment:#cdbfa3; --parchment-dim:#8f836c;
+    --gem-dark:#1a1713;
+    --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "EB Garamond", Georgia, serif;
+    color: var(--parchment); background-color: var(--void);
+    padding: 44px 48px 80px;
+  }
+  .backdrop {
+    position: fixed; top: 50%; left: 50%;
+    width: 100vh; height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    background: url("assets/bg.jpg") center center / cover no-repeat;
+    filter: brightness(.33) saturate(.73) contrast(1.05);
+    z-index: -2; pointer-events: none;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+      linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+  }
+  h1 {
+    font-family: "Cinzel", serif; font-weight: 600; font-size: 13px;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--bronze);
+    margin: 0 0 6px;
+  }
+  .note { color: var(--parchment-dim); font-size: 13px; margin: 0 0 8px; max-width: 680px; }
+  .note code { color: var(--bronze); font-family: "JetBrains Mono", monospace; font-size: 12px; }
+  .section {
+    font-family: "Cinzel", serif; font-size: 11px; letter-spacing: .28em;
+    text-transform: uppercase; color: var(--bronze); margin: 36px 0 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .section span { color: var(--parchment-dim); letter-spacing: .12em; font-size: 9px; }
+  .section::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, var(--bronze-dim), transparent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 14px; }
+
+  /* ---- forged base ---- */
+  .forged {
+    position: relative;
+    background-color: #17140f;
+    background-image: var(--tex-metal), linear-gradient(180deg, #241f18 0%, #17140f 48%, #0e0c09 100%);
+    background-blend-mode: overlay, normal; background-size: 260px 120px, 100% 100%;
+    border: 1px solid var(--iron-lo); border-radius: 9px;
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.16), inset 0 -3px 6px rgba(0,0,0,.72),
+      inset 0 0 0 1px rgba(0,0,0,.5), 0 3px 10px rgba(0,0,0,.6), 0 12px 30px rgba(0,0,0,.45);
+  }
+  .forged::after {
+    content: ""; position: absolute; inset: 4px; border-radius: 5px;
+    border: 1px solid rgba(184,150,90,.20); box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); pointer-events: none;
+  }
+
+  /* ---- association card ---- */
+  .card { display: flex; align-items: center; gap: 15px; padding: 14px 15px; }
+  .card__body { min-width: 0; }
+  .card__name {
+    font-family: "Cinzel", serif; font-weight: 600; font-size: 14.5px;
+    letter-spacing: .03em; color: var(--parchment); line-height: 1.1;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  }
+  .card__field {
+    margin-top: 5px; font-family: "Cinzel", serif; font-size: 8.5px;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--bronze-dim);
+  }
+
+  /* ---- emblem medallion — association sigil ---- */
+  .emblem {
+    position: relative; flex: 0 0 auto;
+    width: 56px; height: 56px; border-radius: 50%;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 50% 34%, rgba(184,150,90,.16), transparent 60%),
+      var(--gem-dark);
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 -3px 6px rgba(0,0,0,.72), 0 0 0 1px rgba(184,150,90,.14);
+  }
+  .emblem::before {
+    content: ""; position: absolute; inset: 6px; border-radius: 50%;
+    border: 1px solid rgba(184,150,90,.22);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
+  }
+  .emblem svg {
+    width: 32px; height: 32px; color: var(--bronze);
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,.65));
+  }
+  /* faction rim tints (weathered, never neon) */
+  .emblem--ishtar {
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 -3px 6px rgba(0,0,0,.72),
+      0 0 0 1px rgba(92,138,150,.5), 0 0 12px rgba(78,128,140,.16);
+  }
+  .emblem--imperium {
+    box-shadow:
+      inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6),
+      inset 0 -3px 6px rgba(0,0,0,.72),
+      0 0 0 1px rgba(150,60,44,.52), 0 0 12px rgba(150,52,38,.18);
+  }
+  .emblem--imperium svg { color: #c59a68; }
+  .emblem--hist { opacity: .82; }
+  .emblem--hist svg { color: var(--bronze-dim); }
+  .grid--hist .card { opacity: .78; }
+
+  /* live-plaque strip at the bottom, to see it in a log row */
+  .log { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.65; color: var(--parchment-dim); max-width: 620px; }
+  .plaque { align-self: flex-start; max-width: min(560px, 100%); margin: 14px 0 10px; padding: 14px 18px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .plaque__crest { position: relative; flex: 0 0 auto; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 34%, rgba(184,150,90,.16), transparent 60%), var(--gem-dark);
+    box-shadow: inset 0 1px 0 rgba(184,150,90,.24), inset 0 0 0 1px rgba(0,0,0,.6), inset 0 -3px 6px rgba(0,0,0,.72), 0 0 0 1px rgba(184,150,90,.14); }
+  .plaque__crest svg { width: 30px; height: 30px; color: var(--bronze); }
+  .plaque__main { flex: 1 1 auto; min-width: 0; }
+  .plaque__name { font-family: "Cinzel", serif; font-weight: 600; font-size: 20px; line-height: 1.05; letter-spacing: .06em; color: var(--parchment); }
+  .plaque__sub { margin-top: 3px; font-family: "Cinzel", serif; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--bronze); }
+  .plaque__guilds { flex: 1 1 210px; display: flex; flex-direction: column; gap: 6px; padding-left: 18px; border-left: 1px solid rgba(184,150,90,.16); }
+  .plaque__guild { display: flex; align-items: center; gap: 9px; }
+  .plaque__gsig { flex: 0 0 auto; width: 22px; height: 22px; }
+  .plaque__gsig svg { width: 22px; height: 22px; color: var(--bronze); opacity: .92; }
+  .plaque__gtext { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .plaque__gk { font-family: "Cinzel", serif; font-size: 8px; letter-spacing: .22em; text-transform: uppercase; color: var(--parchment-dim); }
+  .plaque__gv { font-family: "EB Garamond", Georgia, serif; font-size: 13.5px; line-height: 1.2; color: var(--parchment); }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+
+  <!-- ============ association sigil library (0-20 grid, hairline engrave) ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+
+    <!-- ISHTAR -->
+    <!-- Cech Kupcow Novigradu — merchant's purse + minted coin -->
+    <g id="g-purse" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6.4 9C6.4 7.8 13.6 7.8 13.6 9L15 15.4A2 2 0 0 1 13 17.4H7A2 2 0 0 1 5 15.4Z"/>
+      <path d="M7.6 9C7.2 7.2 8.8 5.6 10 5.6 11.2 5.6 12.8 7.2 12.4 9"/>
+      <circle cx="10" cy="13" r="1.9"/>
+      <path d="M10 11.6V14.4M8.7 13H11.3"/>
+    </g>
+    <!-- Elfy z Gor Sinych — twin peaks under an elven spark -->
+    <g id="g-peakstar" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.8 16.4 7.6 8.4 10.8 12.6 14 8 17.2 16.4"/>
+      <path d="M2.8 16.4H17.2"/>
+      <path d="M10 2.2V5.6M8.3 3.9H11.7M8.8 2.7 11.2 5.1M11.2 2.7 8.8 5.1"/>
+    </g>
+    <!-- Komando Scoia'tael — crossed arrows behind a squirrel-tail plume -->
+    <g id="g-scoiatael" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 16 12.5 7.5M4 16l.4-2.6M4 16l2.6-.4"/>
+      <path d="M16 16 7.5 7.5M16 16l-.4-2.6M16 16l-2.6-.4"/>
+      <path d="M10 9.2C7.2 8.6 6.3 5.2 8.2 3.4 9.8 1.9 12.6 2.4 13.4 4 12 3.3 10.4 4 10 5.8 9.6 7.4 10.2 8.3 11.4 8.7"/>
+    </g>
+    <!-- Korsarze ze Skellige — longship with square sail -->
+    <g id="g-longship" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 13.4C6 15.8 14 15.8 17 13.4"/>
+      <path d="M4.6 14.8C7.6 16.9 12.4 16.9 15.4 14.8"/>
+      <path d="M3 13.4C2 12 2.9 10.3 4.4 10.8 3.7 11.4 3.9 12.5 4.9 12.4"/>
+      <path d="M10 3.4V13.4"/>
+      <path d="M10 4.2H15.6V9.4H10M10 6.8H15.6"/>
+    </g>
+    <!-- Krasnoludy z Mahakamu — crossed hammer + pick -->
+    <g id="g-hammerpick" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.6 16 11.4 6.8"/>
+      <path d="M10 5.4 13.2 3.7 14.2 5.4 11 7.1Z"/>
+      <path d="M14.4 16 8.6 6.8"/>
+      <path d="M6.2 6.6C7.6 4.3 11.6 4.1 13.6 6.4"/>
+    </g>
+    <!-- Osadnicy spod Puszczy Shekhal — homestead cabin -->
+    <g id="g-homestead" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.6 9.4 10 4.4 16.4 9.4"/>
+      <path d="M5.2 9V16H14.8V9"/>
+      <path d="M8.4 16V11.4H11.6V16"/>
+      <path d="M10 4.4V2.8H12.2"/>
+    </g>
+    <!-- Ochotniczy Hufiec Mahakamu — halberd (infantry polearm) -->
+    <g id="g-broadaxe" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.4 4.4V17.6"/>
+      <path d="M9.4 1.8 8.3 4.4H10.5Z"/>
+      <path d="M9.4 5.6C13 5.3 15.4 6.6 15.2 8.6L9.4 9.4Z"/>
+      <path d="M9.4 6.4C7.6 6.2 6.2 6.8 5.8 8"/>
+    </g>
+    <!-- Stowarzyszenie Gnomich Wynalazcow — cog + spark -->
+    <g id="g-cog" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10" cy="10" r="4.4"/>
+      <circle cx="10" cy="10" r="1.6"/>
+      <path d="M10 3.2V1.9M10 18.1V16.8M3.2 10H1.9M18.1 10H16.8M5.2 5.2 4.3 4.3M15.7 15.7 14.8 14.8M14.8 5.2 15.7 4.3M4.3 15.7 5.2 14.8"/>
+    </g>
+    <!-- Mieszkancy Zajazdu 'Bialy Kiel' — a great fang -->
+    <g id="g-fang" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 3.2C7.4 7 6.9 12 9 16.2 9.6 13.4 10.4 13.4 11 16.2 13.1 12 12.6 7 10 3.2Z"/>
+      <path d="M6.5 5.4C7.4 6.7 7.3 8.3 6.4 9.6M13.5 5.4C12.6 6.7 12.7 8.3 13.6 9.6"/>
+    </g>
+    <!-- VII Brygada Armii Lyrii — brigade shield, chevron + three pales -->
+    <g id="g-brigade" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2.8 15 4.8V9.6C15 13 12.7 15.4 10 16.8 7.3 15.4 5 13 5 9.6V4.8Z"/>
+      <path d="M6.6 8.2 10 10.6 13.4 8.2"/>
+      <path d="M8.6 12V14M10 12V14M11.4 12V14"/>
+    </g>
+
+    <!-- IMPERIUM -->
+    <!-- Elfy z Lasu Loren — leaf-crowned tree -->
+    <g id="g-loren" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 17V9"/>
+      <path d="M10 3C6.2 6 6.2 10 10 12.2 13.8 10 13.8 6 10 3Z"/>
+      <path d="M10 5.2V11M10 7 8.2 6.4M10 7 11.8 6.4M10 9 8.4 8.4M10 9 11.6 8.4"/>
+    </g>
+    <!-- Kompania Gryfa — griffin head -->
+    <g id="g-griffin" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.6 6.6C11.6 4.8 8.6 5.2 7 7.1"/>
+      <path d="M7 7.1 3.2 8.7C4.4 9.1 5.2 9.3 6 9.1"/>
+      <path d="M3.2 8.7C3 9.5 3.8 9.9 4.4 9.5"/>
+      <path d="M6 9.1 7.4 10.7C9.4 12.1 12.2 11.6 13.4 9.4"/>
+      <path d="M13.6 6.6C14.4 8.4 14.2 9.9 13.4 9.4"/>
+      <path d="M13.4 6.2 15.4 4.9M13.6 7.2 15.6 6.6"/>
+      <circle cx="9.6" cy="7.9" r=".7"/>
+    </g>
+    <!-- Krasnoludy z Gor Kranca Swiata — runed anvil -->
+    <g id="g-anvil" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.6 8.8H13C15.2 8.8 15.2 10.6 13 10.6H10.6V12.4H12.4V14.4H6V12.4H7.8V10.6C6 10.6 5.1 9.9 4.6 8.8Z"/>
+      <path d="M8.7 6.6 9.5 5.4 11 6.6"/>
+    </g>
+    <!-- Mutanci Chaosu — eight-pointed Chaos star -->
+    <g id="g-chaos" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 10V2.4M10 2.4 8.9 3.6M10 2.4 11.1 3.6"/>
+      <path d="M10 10V17.6M10 17.6 8.9 16.4M10 17.6 11.1 16.4"/>
+      <path d="M10 10H2.4M2.4 10 3.6 8.9M2.4 10 3.6 11.1"/>
+      <path d="M10 10H17.6M17.6 10 16.4 8.9M17.6 10 16.4 11.1"/>
+      <path d="M10 10 4.6 4.6M4.6 4.6 6.3 4.6M4.6 4.6 4.6 6.3"/>
+      <path d="M10 10 15.4 15.4M15.4 15.4 13.7 15.4M15.4 15.4 15.4 13.7"/>
+      <path d="M10 10 15.4 4.6M15.4 4.6 13.7 4.6M15.4 4.6 15.4 6.3"/>
+      <path d="M10 10 4.6 15.4M4.6 15.4 6.3 15.4M4.6 15.4 4.6 13.7"/>
+    </g>
+    <!-- Ogrza Kompania — spiked club -->
+    <g id="g-club" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8.2 17 11 9.4"/>
+      <path d="M11.6 3.6C14.4 4.2 15.6 7.6 13.2 9.6 11.2 11.2 8.6 9.8 9 7.2 9.3 5.4 10.1 4.1 11.6 3.6Z"/>
+      <path d="M12.9 4.3 13.9 3.3M14.7 6.1 16 5.9M13.4 9 14.4 10M10.2 5 9.2 4.4"/>
+    </g>
+    <!-- Rodzina Alderazzi — dagger through a rose -->
+    <g id="g-rosedagger" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 11.8C8.5 11.8 8 10.3 9 9.8 8.2 9.4 8.5 7.8 10 7.8 11.5 7.8 11.8 9.4 11 9.8 12 10.3 11.5 11.8 10 11.8Z"/>
+      <path d="M9.4 9.8C9.4 9 10.6 9 10.6 9.8"/>
+      <path d="M8.2 11.4 6.6 12M11.8 11.4 13.4 12M10 11.8V15.2"/>
+      <path d="M10 2.4V14.6M8.4 6H11.6"/>
+      <circle cx="10" cy="2.4" r=".7"/>
+    </g>
+    <!-- Szkola Walki Domu von Raugen — crossed rapiers + coronet -->
+    <g id="g-rapiers" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.5 16 14 6.5"/>
+      <path d="M5.6 14.9C4.1 14.4 4.3 12.9 5.3 13.2"/>
+      <path d="M15.5 16 6 6.5"/>
+      <path d="M14.4 14.9C15.9 14.4 15.7 12.9 14.7 13.2"/>
+      <path d="M7.6 5.6 8.2 3.8 10 5 11.8 3.8 12.4 5.6"/>
+    </g>
+    <!-- Zakon Sigmara — twin-tailed comet -->
+    <g id="g-comet" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="13" cy="6" r="2"/>
+      <path d="M13 2.6V1.6M16.4 6H17.4M15.4 3.6 16.1 2.9"/>
+      <path d="M11.4 7C8.6 9.8 6.2 12.6 4.2 16.6"/>
+      <path d="M12.8 8.4C10.6 11 8.8 13.6 7.2 16.8"/>
+    </g>
+    <!-- Zgromadzenie Halflingow — round hearth-door in a hill -->
+    <g id="g-halfling" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.8 15.6C2.8 10.2 6.6 6.6 10 6.6 13.4 6.6 17.2 10.2 17.2 15.6"/>
+      <path d="M2.4 15.6H17.6"/>
+      <circle cx="10" cy="12" r="2.9"/>
+      <path d="M10 9.1V14.9"/>
+      <circle cx="11.5" cy="12" r=".45"/>
+    </g>
+
+    <!-- HISTORICAL -->
+    <!-- Tancerze Wojny — twin dancing crescent blades -->
+    <g id="g-wardancer" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 14.5C8 10.5 11 6.5 15 5.2 12 6.8 8 10.6 6.4 15.5"/>
+      <path d="M16 14.5C12 10.5 9 6.5 5 5.2 8 6.8 12 10.6 13.6 15.5"/>
+    </g>
+    <!-- Berserkerzy ze Skellige — bear head -->
+    <g id="g-bear" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="6.4" cy="6.2" r="1.7"/>
+      <circle cx="13.6" cy="6.2" r="1.7"/>
+      <path d="M5 9.2C5 6.7 7.4 5.4 10 5.4 12.6 5.4 15 6.7 15 9.2 15 13.2 12.5 15.6 10 15.6 7.5 15.6 5 13.2 5 9.2Z"/>
+      <path d="M8.4 11.8C8.4 13.9 11.6 13.9 11.6 11.8"/>
+      <path d="M9.1 11.2H10.9L10 12.2Z"/>
+      <circle cx="7.9" cy="9" r=".55"/>
+      <circle cx="12.1" cy="9" r=".55"/>
+    </g>
+    <!-- Elfy z Lasu Drakwald — stag antlers -->
+    <g id="g-antler" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 16.5V7"/>
+      <path d="M10 11.5 7 8.6 6.6 6M7 8.6 5.4 7.8"/>
+      <path d="M10 11.5 13 8.6 13.4 6M13 8.6 14.6 7.8"/>
+      <path d="M10 7.4 8.4 5.6M10 7.4 11.6 5.6"/>
+    </g>
+    <!-- Lesniczy — hunting horn -->
+    <g id="g-horn" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.6 8.2C8.4 6.2 13.4 7.4 15.6 11.4"/>
+      <path d="M15.6 11.4 17.2 9.8M15.6 11.4 16.6 13.2"/>
+      <circle cx="4.6" cy="8.2" r=".9"/>
+      <path d="M6.2 9C8 11.6 11 10.4 12.6 9"/>
+    </g>
+    <!-- Zabojcy Trolli — slayer's crossed axes + crest -->
+    <g id="g-slayer" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.6 16 11.6 7.2"/>
+      <path d="M10.8 5.6C13.2 5 15 6.8 14.2 8.8L11.4 7Z"/>
+      <path d="M14.4 16 8.4 7.2"/>
+      <path d="M9.2 5.6C6.8 5 5 6.8 5.8 8.8L8.6 7Z"/>
+      <path d="M8.6 5.4 8.2 2.8M10 5.2V2.4M11.4 5.4 11.8 2.8"/>
+    </g>
+  </defs></svg>
+
+  <h1>Character plaque — sigile stowarzyszen</h1>
+  <p class="note">
+    Herby dla wszystkich stowarzyszen z wiki (brak kanonicznej heraldyki &mdash; kazdy
+    zaprojektowany od zera z motywu). Ta sama grawerowana kreska co emblematy gildii
+    zawodowej. Rant: <code>Ishtar</code> chlodny stalowy, <code>Imperium</code> krwawy.
+    Znacznik pod nazwa to pole GMCP, ktorym stowarzyszenie prawdopodobnie przychodzi
+    (<code>guild_lay</code> / <code>guild_race</code>) &mdash; do potwierdzenia.
+  </p>
+
+  <div class="section">Ishtar <span>frakcja &middot; 10 stowarzyszen</span></div>
+  <div class="grid">
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-purse"/></svg></div><div class="card__body"><div class="card__name">Cech Kupcow Novigradu</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-peakstar"/></svg></div><div class="card__body"><div class="card__name">Elfy z Gor Sinych</div><div class="card__field">Pochodzenie</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-scoiatael"/></svg></div><div class="card__body"><div class="card__name">Komando Scoia'tael</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-longship"/></svg></div><div class="card__body"><div class="card__name">Korsarze ze Skellige</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-hammerpick"/></svg></div><div class="card__body"><div class="card__name">Krasnoludy z Mahakamu</div><div class="card__field">Pochodzenie</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-homestead"/></svg></div><div class="card__body"><div class="card__name">Osadnicy spod Puszczy Shekhal</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-broadaxe"/></svg></div><div class="card__body"><div class="card__name">Ochotniczy Hufiec Mahakamu</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-cog"/></svg></div><div class="card__body"><div class="card__name">Gnomi Wynalazcy</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-fang"/></svg></div><div class="card__body"><div class="card__name">Zajazd 'Bialy Kiel'</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--ishtar"><svg viewBox="0 0 20 20"><use href="#g-brigade"/></svg></div><div class="card__body"><div class="card__name">VII Brygada Armii Lyrii</div><div class="card__field">Gildia</div></div></div>
+  </div>
+
+  <div class="section">Imperium <span>frakcja &middot; 9 stowarzyszen</span></div>
+  <div class="grid">
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-loren"/></svg></div><div class="card__body"><div class="card__name">Elfy z Lasu Loren</div><div class="card__field">Pochodzenie</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-griffin"/></svg></div><div class="card__body"><div class="card__name">Kompania Gryfa</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-anvil"/></svg></div><div class="card__body"><div class="card__name">Krasnoludy z Gor Kranca Swiata</div><div class="card__field">Pochodzenie</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-chaos"/></svg></div><div class="card__body"><div class="card__name">Mutanci Chaosu</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-club"/></svg></div><div class="card__body"><div class="card__name">Ogrza Kompania</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-rosedagger"/></svg></div><div class="card__body"><div class="card__name">Rodzina Alderazzi</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-rapiers"/></svg></div><div class="card__body"><div class="card__name">Szkola Walki von Raugen</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-comet"/></svg></div><div class="card__body"><div class="card__name">Zakon Sigmara</div><div class="card__field">Gildia</div></div></div>
+    <div class="card forged"><div class="emblem emblem--imperium"><svg viewBox="0 0 20 20"><use href="#g-halfling"/></svg></div><div class="card__body"><div class="card__name">Zgromadzenie Halflingow</div><div class="card__field">Pochodzenie</div></div></div>
+  </div>
+
+  <div class="section">Historyczne <span>nieaktywne &middot; 5 stowarzyszen</span></div>
+  <div class="grid grid--hist">
+    <div class="card forged"><div class="emblem emblem--hist"><svg viewBox="0 0 20 20"><use href="#g-wardancer"/></svg></div><div class="card__body"><div class="card__name">Tancerze Wojny</div><div class="card__field">Historyczne</div></div></div>
+    <div class="card forged"><div class="emblem emblem--hist"><svg viewBox="0 0 20 20"><use href="#g-bear"/></svg></div><div class="card__body"><div class="card__name">Berserkerzy ze Skellige</div><div class="card__field">Historyczne</div></div></div>
+    <div class="card forged"><div class="emblem emblem--hist"><svg viewBox="0 0 20 20"><use href="#g-antler"/></svg></div><div class="card__body"><div class="card__name">Elfy z Lasu Drakwald</div><div class="card__field">Historyczne</div></div></div>
+    <div class="card forged"><div class="emblem emblem--hist"><svg viewBox="0 0 20 20"><use href="#g-horn"/></svg></div><div class="card__body"><div class="card__name">Lesniczy</div><div class="card__field">Historyczne</div></div></div>
+    <div class="card forged"><div class="emblem emblem--hist"><svg viewBox="0 0 20 20"><use href="#g-slayer"/></svg></div><div class="card__body"><div class="card__name">Zabojcy Trolli</div><div class="card__field">Historyczne</div></div></div>
+  </div>
+
+  <div class="section">Na tabliczce <span>podglad &middot; sigil per wiersz gildii</span></div>
+  <div class="log">
+    <p style="margin:0 0 2px;color:var(--parchment-dim)">Osiadasz na grzbiecie wierzchowca.</p>
+    <div class="plaque forged">
+      <div class="plaque__crest"><svg viewBox="0 0 20 20"><use href="#g-longship"/></svg></div>
+      <div class="plaque__main">
+        <div class="plaque__name">Dargoth</div>
+        <div class="plaque__sub">Krasnolud &middot; Korsarz</div>
+      </div>
+      <div class="plaque__guilds">
+        <div class="plaque__guild">
+          <span class="plaque__gsig"><svg viewBox="0 0 20 20"><use href="#g-longship"/></svg></span>
+          <span class="plaque__gtext"><span class="plaque__gk">Gildia</span><span class="plaque__gv">Korsarze ze Skellige</span></span>
+        </div>
+        <div class="plaque__guild">
+          <span class="plaque__gsig"><svg viewBox="0 0 20 20"><use href="#g-hammerpick"/></svg></span>
+          <span class="plaque__gtext"><span class="plaque__gk">Pochodzenie</span><span class="plaque__gv">Krasnoludy z Mahakamu</span></span>
+        </div>
+      </div>
+    </div>
+    <p style="margin:0;color:var(--parchment-dim)">Ruszasz na poludnie.</p>
+  </div>
+</body>
+</html>

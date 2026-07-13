@@ -13,6 +13,11 @@ import '@web/popups/popups.css';
 // dock grid + panel/floating chrome; layout-theme.css re-skins it forged.
 import '@web/layout/layout.css';
 import './layout-theme.css';
+// Chaos-god theme variants (Mutanci Chaosu). chaos.css is scoped under
+// html[data-god]; applyGod sets that attribute from ?god=/localStorage, so with
+// no god selected the stock Forged look is untouched.
+import './themes/chaos/chaos.css';
+import './themes/chaos/applyGod';
 import { createRoot } from 'react-dom/client';
 import {
     setDockingSupported,

@@ -1,0 +1,207 @@
+/* ============================================================
+   forge-ui · "Mutanci Chaosu" — Chaos-god theme variants
+   ------------------------------------------------------------
+   Four switchable Warhammer Chaos-god reskins of the Forged HUD,
+   selected by [data-god] on <html> (see applyGod.ts). Everything
+   here is scoped under html[data-god]; with no attribute set, the
+   stock Forged (bronze) look is completely untouched.
+
+   forge-ui is token-driven, so most of each reskin is a token
+   remap:
+     --bronze / --bronze-dim  →  the god's METAL (brass/gold/…)
+     --fu-display             →  gothic display font (Metamorphous)
+     --fu-accent / -rgb       →  the god's ACCENT (blood/warp/…), a
+                                 NEW token this file introduces and
+                                 pushes onto the big titles, prompt,
+                                 popup accents, ambient glow + marks.
+     --god-mark               →  the patron's sigil, swapped in for
+                                 the diamond header ornament.
+   The metal keeps bevels/labels metallic (as the mock did); the
+   accent carries titles, the location header, the command prompt,
+   popup highlights and the ambient haze.
+   ============================================================ */
+
+/* ── shared across all four gods ─────────────────────────────── */
+html[data-god] {
+  --fu-display: "Metamorphous";
+  /* surface-fill tint hue. Separate from --fu-accent (titles/marks) so a god
+     with a bright accent can tint its plates with a darker, muted version and
+     not read louder than the others. Defaults to the accent. */
+  --fu-tint: var(--fu-accent);
+}
+
+/* gothic titles sit tighter than Cinzel — pull the tracking in a touch */
+html[data-god] .locale,
+html[data-god] .panel__title,
+html[data-god] .managed-panel__header .managed-panel__title {
+  letter-spacing: .16em;
+}
+
+/* ACCENT onto the display-level text (metal stays on the small labels,
+   bevels and dividers via the --bronze remap below) */
+html[data-god] .locale,
+html[data-god] .panel__title,
+html[data-god] .managed-panel__header .managed-panel__title,
+html[data-god] .prompt {
+  color: var(--fu-accent);
+}
+html[data-god] .locale { opacity: .9; text-shadow: 0 0 10px rgba(var(--fu-accent-rgb), .35); }
+html[data-god] .panel__title,
+html[data-god] .managed-panel__header .managed-panel__title { text-shadow: 0 0 8px rgba(var(--fu-accent-rgb), .3); }
+
+/* ── ambient backdrop haze: swap forge's ember-orange for the patron's
+   rising glow + sparks, plus a soft full-field accent wash so the big output
+   area and inter-panel gaps read tinted (forge's body::after is hardcoded). ── */
+html[data-god] body::after {
+  background:
+    radial-gradient(130% 80% at 50% 128%, rgba(var(--fu-glow-rgb), .15), transparent 55%),
+    radial-gradient(120% 95% at 50% 50%, rgba(var(--fu-accent-rgb), .022), transparent 72%),
+    radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+    radial-gradient(1.5px 1.5px at 20% 82%, rgba(var(--fu-spark-rgb), .5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 68% 74%, rgba(var(--fu-spark-rgb), .38), transparent 60%),
+    radial-gradient(1px 1px at 44% 90%, rgba(var(--fu-spark-rgb), .3), transparent 60%),
+    radial-gradient(1px 1px at 82% 88%, rgba(var(--fu-spark-rgb), .26), transparent 60%),
+    linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
+}
+
+/* ── SURFACE TINT — bleed the patron colour into the neutral plate FILLS, so
+   panels, docked windows and the footer read tinted (not just their text +
+   edges). Reproduces forge's dark gradients with a color-mix of the accent;
+   blend-mode + background-size carry over from the base rules. ───────────── */
+html[data-god] .managed-panel,
+html[data-god] .panel {
+  background-color: color-mix(in srgb, var(--fu-tint) 2.5%, #0a0a09);
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--fu-tint) 4%, #111110) 0%,
+      color-mix(in srgb, var(--fu-tint) 2.5%, #0a0a09) 55%,
+      color-mix(in srgb, var(--fu-tint) 1.5%, #070706) 100%);
+}
+html[data-god] .hud-panel {
+  background-color: color-mix(in srgb, var(--fu-tint) 2.5%, #0c0b09);
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--fu-tint) 4.5%, #16130e) 0%,
+      color-mix(in srgb, var(--fu-tint) 2.5%, #0c0b09) 55%,
+      color-mix(in srgb, var(--fu-tint) 1.5%, #070605) 100%);
+}
+html[data-god] .forged {
+  background-color: color-mix(in srgb, var(--fu-tint) 3%, #17140f);
+  background-image:
+    var(--tex-metal),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--fu-tint) 4.5%, #241f18) 0%,
+      color-mix(in srgb, var(--fu-tint) 3%, #17140f) 48%,
+      color-mix(in srgb, var(--fu-tint) 2%, #0e0c09) 100%);
+}
+/* footer detail surfaces: command well + location-bind pills */
+html[data-god] .trough {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--fu-tint) 3%, #0b0a08),
+    color-mix(in srgb, var(--fu-tint) 2%, #100e0b));
+}
+/* ── FOOTER PILLS — chips + multibinds are foreground chrome meant to READ as
+   themed, so they carry the patron colour far more strongly than the big plates
+   (which stay a whisper). This is where the Khorne/Tzeentch mismatch lived: the
+   pill bodies stayed warm-brown and the multibind key/room/drink kept stock
+   bronze/amber/blue. Everything below is driven by the god tokens. ─────────── */
+html[data-god] .chip {
+  background-color: color-mix(in srgb, var(--fu-tint) 10%, #0c0905);
+  background-image:
+    linear-gradient(rgba(8,6,3,.5), rgba(8,6,3,.5)),
+    var(--tex-stone),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--fu-tint) 15%, #16110a),
+      color-mix(in srgb, var(--fu-tint) 6%, #070502));
+  border-color: color-mix(in srgb, var(--fu-accent) 24%, #33291b);
+}
+
+html[data-god] .multi-bind {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--fu-tint) 16%, #201b13),
+    color-mix(in srgb, var(--fu-tint) 9%, #14100b));
+  border-color: color-mix(in srgb, var(--fu-accent) 30%, var(--iron-hi));
+}
+html[data-god] .multi-bind:hover {
+  border-color: var(--fu-accent);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--fu-tint) 22%, #2a2318),
+    color-mix(in srgb, var(--fu-tint) 12%, #181310));
+}
+html[data-god] .multi-bind-key { color: var(--fu-accent); }
+/* room / drink binds stay DISTINCT — accent vs metal — rather than the stock
+   amber/blue, which clashed with several patrons */
+html[data-god] .multi-bind--room { border-color: color-mix(in srgb, var(--fu-accent) 42%, var(--iron-hi)); }
+html[data-god] .multi-bind--room .multi-bind-key { color: var(--fu-accent); }
+html[data-god] .multi-bind--drink { border-color: var(--bronze-dim); }
+html[data-god] .multi-bind--drink .multi-bind-key { color: var(--bronze); }
+
+/* ── header ornament → patron mark. Forge's diamond `.orn` (sidebar) and
+   the docked/floating header `::before` diamond both become the god sigil.
+   Bumped a touch larger than the 8px diamond so the painted mark reads. ── */
+html[data-god] .panel__head .orn,
+html[data-god] .managed-panel .managed-panel__header::before {
+  width: 13px; height: 13px;
+  transform: none;
+  background: var(--god-mark) center / contain no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+}
+
+/* ── popup accents: forge's --popup-accent* are bronze-olive rgba literals;
+   re-tint them to the patron accent so selected/active popup controls pop. ── */
+html[data-god] .managed-panel,
+html[data-god] [data-popup-overlay] {
+  --popup-accent: var(--fu-accent);
+  --popup-accent-border: var(--fu-accent);
+  --popup-accent-bg: rgba(var(--fu-accent-rgb), .24);
+  --popup-accent-hover-bg: rgba(var(--fu-accent-rgb), .38);
+  --popup-accent-subtle-bg: rgba(var(--fu-accent-rgb), .16);
+  --popup-accent-dim-bg: rgba(var(--fu-accent-rgb), .12);
+  --popup-accent-strong-bg: rgba(var(--fu-accent-rgb), .22);
+  --popup-accent-strong-hover-bg: rgba(var(--fu-accent-rgb), .34);
+  --popup-accent-strong-active-bg: rgba(var(--fu-accent-rgb), .5);
+  --popup-accent-team-bg: rgba(var(--fu-accent-rgb), .12);
+  --popup-accent-team-hover-bg: rgba(var(--fu-accent-rgb), .2);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PER-GOD PALETTES
+   --bronze/-dim = metal · --fu-accent(-rgb) = accent ·
+   --fu-glow/spark-rgb = ambient · --god-mark = sigil
+   ════════════════════════════════════════════════════════════ */
+
+/* KHORNE — the Blood God: arterial red + hot brass, no sorcery */
+html[data-god="khorne"] {
+  --bronze: #b0882a; --bronze-dim: #79601e; --fu-metal-rgb: 176,136,42;
+  --fu-accent: #f23b22; --fu-accent-rgb: 242,59,34;
+  --fu-glow-rgb: 150,18,10; --fu-spark-rgb: 242,59,34;
+  --god-mark: url("./marks/Mark_of_Khorne.webp");
+}
+
+/* NURGLE — the Plague God: pestilent green + corroded bronze */
+html[data-god="nurgle"] {
+  --bronze: #7d7a34; --bronze-dim: #565426; --fu-metal-rgb: 125,122,52;
+  --fu-tint: #566020;   /* bright green stays on titles/marks; plates use dark olive */
+  --fu-accent: #bcd23c; --fu-accent-rgb: 188,210,60;
+  --fu-glow-rgb: 90,110,30; --fu-spark-rgb: 188,210,60;
+  --god-mark: url("./marks/Counter-Corruption-Nurgle.webp");
+}
+
+/* TZEENTCH — the Changer of Ways: warpfire blue + sorcerer's gold */
+html[data-god="tzeentch"] {
+  --bronze: #c3a23c; --bronze-dim: #8a7226; --fu-metal-rgb: 195,162,60;
+  --fu-accent: #57a0ee; --fu-accent-rgb: 87,160,238;
+  --fu-glow-rgb: 26,74,150; --fu-spark-rgb: 87,160,238;
+  --god-mark: url("./marks/Tzeentch.webp");
+}
+
+/* SLAANESH — the Dark Prince: magenta/violet + silver-lilac */
+html[data-god="slaanesh"] {
+  --bronze: #b79ab0; --bronze-dim: #7d6a78; --fu-metal-rgb: 183,154,176;
+  --fu-accent: #e04fae; --fu-accent-rgb: 224,79,174;
+  --fu-glow-rgb: 150,30,110; --fu-spark-rgb: 224,79,174;
+  --god-mark: url("./marks/MarkofSlaanesh2-0.webp");
+}

@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0d0a07" />
+<title>Arkadia — SGW: przyrzady (gauges, rury, dzwignie)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&family=Special+Elite&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   ARKADIA — "Stowarzyszenie Gnomich Wynalazcow" (SGW)
+   Steampunk / clockwork re-skin of forge-ui
+   ------------------------------------------------------------
+   A STANDALONE DESIGN MOCK. Same layout skeleton as forge-ui's
+   "Forged" HUD (main output, footer HUD plate, map + status
+   panels, one floating popup) — retinted into a gnomish
+   inventors' workshop aboard the airship Parseval.
+
+   FIVE palettes, switched via the top bar (sets [data-dept] on
+   <html>). Only the ACCENT tokens change per department; the
+   brass-and-walnut shell + type stay constant. Every accent —
+   glows, sparks, the gaslight ember — is driven by tokens
+   (hexes + RGB triples for rgba() glows), so a department swap
+   is a token remap only. This is exactly how it would wire into
+   forge-ui as body.theme-sgw-<dept>.
+
+   The five faces mirror the guild's real structure (per wiki):
+   the whole Stowarzyszenie (base) + the four Wydzialy:
+   Automatyki Uzytkowej, Awioniki Stosowanej, Alchemii i
+   Swiatopoznawstwa, Gorniczo-Maszynowy.
+   ============================================================ */
+
+/* ── BASE = the whole Stowarzyszenie (brass + copper + gaslight) ── */
+:root {
+  /* structural shell — constant across departments */
+  --void:     #0d0a07;
+  --iron:     #1d160f;
+  --iron-hi:  #3d2e1c;
+  --iron-lo:  #0b0805;
+  --bone:     #dccaa2;
+  --bone-dim: #94826a;
+  --bar-h: 36px;
+  --gem-dark: #17120c;
+
+  /* PRIMARY ACCENT (forge's --bronze slot) — polished brass */
+  --brass:     #c39a3e;
+  --brass-dim: #876723;
+  --brass-hot: #e8c25c;
+  --rust:      #5a3320;   /* oxidised copper — health-gem + danger fills */
+  --accent-rgb:     195,154,62;
+  --accent-hot-rgb: 232,194,92;
+
+  /* SECONDARY METAL trim — copper */
+  --copper:    #b06a3a;
+  --copper-dim:#7c4826;
+  --copper-hi: #d98d52;
+
+  /* STEAM / VAPOUR hues — vents, thriving, "magic" */
+  --steam:     #6fb0ad;
+  --steam-hot: #9fe0dc;
+  --steam-rgb: 111,176,173;
+  --aether:    #8a6ec0;   /* aetheric charge / mana */
+
+  /* ambient backdrop + gaslight ember (retinted per department) */
+  --glow-main-rgb: 150,110,40;
+  --glow-sec-rgb:  120,80,44;
+  --spark-rgb:     232,194,92;
+  --spark2-rgb:    214,141,82;
+  --ember: radial-gradient(circle at 45% 40%, #fff2cc, #ffcf6a 35%, #e0a53a 70%, #7a4a12);
+  --ember-glow: 232,194,92;
+  --dept-mark: none;   /* whole-society view keeps the drawn cog; wydzialy override */
+
+  /* ── BRASS HARDWARE — constant physical shell across all departments.
+       Rivets/bolts stay brass so they read as hardware; only the accent
+       "energy" (glows, needle, marks) tints per wydzial. ── */
+  --bolt:    radial-gradient(circle at 47% 39%, #f7e8bf 0 1.1px, #dcb864 1.5px 2.7px, #8a6528 2.9px 3.7px, rgba(0,0,0,.5) 3.8px 4.5px, transparent 4.7px);
+  --bolt-sm: radial-gradient(circle at 47% 39%, #f7e8bf 0 .7px, #dcb864 1px 2px, #8a6528 2.2px 2.9px, rgba(0,0,0,.5) 3px 3.6px, transparent 3.8px);
+  --gear-big: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='21.2,12 18.1,14.53 18.5,18.5 14.53,18.1 12,21.2 9.47,18.1 5.5,18.5 5.9,14.53 2.8,12 5.9,9.47 5.5,5.5 9.47,5.9 12,2.8 14.53,5.9 18.5,5.5 18.1,9.47' fill='%23b8933f'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%230d0a07'/%3E%3Ccircle cx='12' cy='12' r='4.7' fill='none' stroke='%238a6528' stroke-width='1'/%3E%3C/svg%3E");
+
+  /* department sigils — inline, authored once, reused by the
+     switcher swatches AND the whole-UI mark swap (see bottom) */
+  --mark-auto: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23c9a24a' stroke-width='1.05' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7.6' cy='8' r='3.2'/%3E%3Ccircle cx='7.6' cy='8' r='1.1'/%3E%3Cpath d='M10.8 8 11.75 8 M9.86 10.26 10.53 10.93 M7.6 11.2 7.6 12.15 M5.34 10.26 4.67 10.93 M4.4 8 3.45 8 M5.34 5.74 4.67 5.07 M7.6 4.8 7.6 3.85 M9.86 5.74 10.53 5.07'/%3E%3Ccircle cx='13.4' cy='13' r='2'/%3E%3Ccircle cx='13.4' cy='13' r='0.7'/%3E%3Cpath d='M15.4 13 16.15 13 M14.4 14.73 14.78 15.38 M12.4 14.73 12.02 15.38 M11.4 13 10.65 13 M12.4 11.27 12.02 10.62 M14.4 11.27 14.78 10.62'/%3E%3C/svg%3E");
+  --mark-avio: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23c9a24a' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='10' cy='8' rx='6.2' ry='3.1'/%3E%3Cpath d='M7 5.3C6.1 6.9 6.1 9.1 7 10.7'/%3E%3Cpath d='M12.8 5.1C13.9 6.8 13.9 9.2 12.8 10.9'/%3E%3Cpath d='M15.8 8 18.2 6 17.6 8 18.2 10Z'/%3E%3Cpath d='M8 11.2H12V13.1H8Z'/%3E%3Cpath d='M8.7 10.9V11.2 M11.3 10.9V11.2'/%3E%3C/svg%3E");
+  --mark-alch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23c9a24a' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8.7 3.6H11.3 M9.5 3.6V7.2C9.5 7.2 5.8 12 5.8 14.2A4.2 4.2 0 0 0 14.2 14.2C14.2 12 10.5 7.2 10.5 7.2V3.6'/%3E%3Cpath d='M6.9 12.4C8.3 13.5 11.7 13.5 13.1 12.4'/%3E%3Ccircle cx='8.9' cy='13' r='0.5'/%3E%3Ccircle cx='11' cy='13.4' r='0.45'/%3E%3Cpath d='M10 0.9V2.7 M9.1 1.8H10.9 M9.4 1.2 10.6 2.4 M10.6 1.2 9.4 2.4'/%3E%3C/svg%3E");
+  --mark-mine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23c9a24a' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5 6.6 13.4'/%3E%3Cpath d='M12.4 4.2C14.6 3.9 16.1 5.6 15.8 7.8C14.4 6.2 13.2 5.4 11.4 5.6'/%3E%3Ccircle cx='6.4' cy='13.6' r='2.1'/%3E%3Ccircle cx='6.4' cy='13.6' r='0.7'/%3E%3Cpath d='M8.5 13.6 9.25 13.6 M7.45 15.42 7.83 16.07 M5.35 15.42 4.97 16.07 M4.3 13.6 3.55 13.6 M5.35 11.78 4.97 11.13 M7.45 11.78 7.83 11.13'/%3E%3C/svg%3E");
+
+  --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+  --tex-stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' seed='11' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23s)'/%3E%3C/svg%3E");
+}
+
+/* ── AUTOMATYKA UZYTKOWA · applied automation — polished clockwork gold ── */
+:root[data-dept="auto"] {
+  --brass:#d8ad3c; --brass-dim:#9a7a22; --brass-hot:#f4d052; --rust:#5c3d10;
+  --accent-rgb:216,173,60; --accent-hot-rgb:244,208,82;
+  --copper:#c98a3a; --copper-dim:#8c5e22; --copper-hi:#e6ad52;
+  --steam:#8fbf5a; --steam-hot:#c2e67a; --steam-rgb:143,191,90;   /* efficiency reads green */
+  --aether:#b48a3a;
+  --dept-mark:var(--mark-auto);
+  --glow-main-rgb:150,116,30; --glow-sec-rgb:120,90,30;
+  --spark-rgb:244,208,82; --spark2-rgb:230,180,90;
+  --ember:radial-gradient(circle at 45% 40%,#fff4cc,#ffd85a 35%,#e8bb34 70%,#6e4e0e);
+  --ember-glow:244,208,82;
+}
+
+/* ── AWIONIKA STOSOWANA · applied avionics — sky steel-blue + silver ── */
+:root[data-dept="avio"] {
+  --brass:#5a86c4; --brass-dim:#365f96; --brass-hot:#84b0ea; --rust:#16324f;
+  --accent-rgb:90,134,196; --accent-hot-rgb:132,176,234;
+  --copper:#8fa2b6; --copper-dim:#5f7186; --copper-hi:#b6c8dc;    /* brushed silver */
+  --steam:#8fd0e0; --steam-hot:#bff0fa; --steam-rgb:143,208,224;  /* cloud + vapour */
+  --aether:#6a7ad0;
+  --dept-mark:var(--mark-avio);
+  --glow-main-rgb:36,80,140; --glow-sec-rgb:80,110,150;
+  --spark-rgb:132,176,234; --spark2-rgb:190,224,244;
+  --ember:radial-gradient(circle at 45% 40%,#e6f0ff,#8fb6f0 35%,#5a86c4 70%,#16345a);
+  --ember-glow:132,176,234;
+}
+
+/* ── ALCHEMIA I SWIATOPOZNAWSTWO · alchemy + world-science — vials & violet ── */
+:root[data-dept="alch"] {
+  --brass:#6fae4a; --brass-dim:#487a2c; --brass-hot:#9ad866; --rust:#2c3f16;
+  --accent-rgb:111,174,74; --accent-hot-rgb:154,216,102;
+  --copper:#9a8a44; --copper-dim:#6a5e2c; --copper-hi:#c0b25a;    /* muted brass */
+  --steam:#9be07a; --steam-hot:#c6f0a4; --steam-rgb:155,224,122;
+  --aether:#a05ad0;                                               /* strong reagent violet */
+  --dept-mark:var(--mark-alch);
+  --glow-main-rgb:60,120,40; --glow-sec-rgb:110,60,150;
+  --spark-rgb:154,216,102; --spark2-rgb:170,110,210;
+  --ember:radial-gradient(circle at 45% 40%,#eafce0,#9be07a 35%,#5aa63a 70%,#204818);
+  --ember-glow:154,216,102;
+}
+
+/* ── GORNICZO-MASZYNOWY · mining & machinery — molten forge orange + coal ── */
+:root[data-dept="mine"] {
+  --brass:#d8802e; --brass-dim:#9a5418; --brass-hot:#f4a24a; --rust:#5a2410;
+  --accent-rgb:216,128,46; --accent-hot-rgb:244,162,74;
+  --copper:#b0532e; --copper-dim:#7c381e; --copper-hi:#d67a48;
+  --steam:#c9963a; --steam-hot:#e6bd58; --steam-rgb:201,150,58;   /* heat-haze amber */
+  --aether:#a85a2e;
+  --dept-mark:var(--mark-mine);
+  --glow-main-rgb:150,60,20; --glow-sec-rgb:120,50,18;
+  --spark-rgb:244,162,74; --spark2-rgb:230,120,50;
+  --ember:radial-gradient(circle at 45% 40%,#fff0cc,#ffb04a 35%,#e0701c 70%,#6e2c06);
+  --ember-glow:244,162,74;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "EB Garamond", Georgia, serif;
+  color: var(--bone);
+  background-color: var(--void);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── ambient backdrop: walnut deck, rising gaslight haze + brass sparks ── */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background-image: var(--tex-fine);
+  background-size: 140px 140px;
+  mix-blend-mode: soft-light;
+  opacity: .5;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(140% 90% at 50% 130%, rgba(var(--glow-main-rgb),.30), transparent 55%),
+    radial-gradient(80% 70% at 12% 116%, rgba(var(--glow-sec-rgb),.12), transparent 60%),
+    radial-gradient(120% 125% at 50% 42%, rgba(0,0,0,.18) 8%, rgba(0,0,0,.55) 55%, rgba(0,0,0,.88) 100%),
+    radial-gradient(1.6px 1.6px at 22% 82%, rgba(var(--spark-rgb),.55), transparent 60%),
+    radial-gradient(1.4px 1.4px at 66% 76%, rgba(var(--spark-rgb),.42), transparent 60%),
+    radial-gradient(1.2px 1.2px at 44% 90%, rgba(var(--spark2-rgb),.30), transparent 60%),
+    radial-gradient(1px 1px at 82% 86%, rgba(var(--spark-rgb),.30), transparent 60%),
+    linear-gradient(rgba(0,0,0,.42), rgba(0,0,0,.42));
+}
+
+/* ============================================================
+   DEPARTMENT SWITCHER
+   ============================================================ */
+.deptbar {
+  position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+  z-index: 60; display: flex; gap: 4px; padding: 4px;
+  border-radius: 999px;
+  background: rgba(13,10,7,.82);
+  border: 1px solid var(--iron-hi);
+  box-shadow: 0 4px 16px rgba(0,0,0,.6), inset 0 1px 0 rgba(196,150,90,.08);
+  backdrop-filter: blur(3px);
+}
+.deptbar button {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: "Oswald", sans-serif; font-weight: 500; font-size: 12px; letter-spacing: .07em;
+  text-transform: uppercase; cursor: pointer;
+  padding: 4px 12px 4px 8px; border-radius: 999px;
+  border: 1px solid transparent; background: transparent; color: var(--bone-dim);
+  transition: color .15s, background .15s, border-color .15s;
+}
+.deptbar button:hover { color: var(--bone); }
+.deptbar button.is-active {
+  color: #f5ecd6; border-color: var(--brass-dim);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),.4), rgba(var(--accent-rgb),.16));
+  text-shadow: 0 0 8px rgba(var(--accent-rgb),.5);
+}
+
+/* ============================================================
+   SHELL
+   ============================================================ */
+.screen {
+  --side-edge: clamp(14px, 3vw, 40px);
+  --side-w: clamp(278px, 24vw, 432px);
+  --side-gap: 16px;
+  --foot-gap: 22px;
+  position: relative; z-index: 1;
+  height: 100vh; display: flex; flex-direction: column;
+  padding: 44px var(--side-edge) 0 calc(var(--side-edge) + var(--side-w) + var(--side-gap));
+}
+.world { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; max-width: 1520px; width: 100%; }
+
+/* ── cog ornament (society seal) ── */
+.cog { width: 14px; height: 14px; flex: 0 0 auto; color: var(--brass); filter: drop-shadow(0 0 5px rgba(var(--accent-rgb),.55)); }
+.cog svg { width: 100%; height: 100%; display: block; }
+
+/* ============================================================
+   MAIN OUTPUT
+   ============================================================ */
+.locale {
+  font-family: "Oswald", sans-serif; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;
+  font-size: 15px; color: var(--brass-hot); opacity: .9;
+  margin: 12px 0 2px; display: flex; align-items: center; gap: 12px; flex: 0 0 auto;
+  text-shadow: 0 0 10px rgba(var(--accent-rgb),.35);
+}
+.locale::before, .locale::after { content: ""; height: 1px; flex: 0 0 42px; background: linear-gradient(90deg, transparent, var(--brass-dim)); }
+.locale::after { transform: scaleX(-1); }
+
+.log {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 12px 4px 20px; font-size: 16px; line-height: 1.62; filter: saturate(.94);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 26px); mask-image: linear-gradient(180deg, transparent 0, #000 26px);
+}
+.log p { margin: 0 0 3px; }
+.log .say    { color: #e0d1a9; }
+.log .emote  { color: var(--bone-dim); font-style: italic; }
+.log .spark  { color: var(--brass-hot); }
+.log .fix    { color: var(--steam-hot); }
+.log .aether { color: color-mix(in srgb, var(--aether) 60%, #e0d1a9); }
+.log .exits  { color: var(--copper-hi); letter-spacing: .04em; }
+.log .cmd    { color: var(--copper-hi); }
+.log .cmd::before { content: "> "; color: var(--brass); }
+.log .steam  { color: var(--steam-hot); text-shadow: 0 0 8px rgba(var(--steam-rgb),.5); }
+
+/* ── character plaque ── */
+.plaque { position: relative; align-self: flex-start; max-width: min(560px, 100%); margin: 14px 0 14px; padding: 14px 18px; display: flex; align-items: center; gap: 18px; filter: none; }
+/* the plaque is a bolted brass placard — rivet all four corners */
+.plaque::before {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
+  background:
+    var(--bolt) 9px 9px / 17px 17px no-repeat,
+    var(--bolt) calc(100% - 9px) 9px / 17px 17px no-repeat,
+    var(--bolt) 9px calc(100% - 9px) / 17px 17px no-repeat,
+    var(--bolt) calc(100% - 9px) calc(100% - 9px) / 17px 17px no-repeat;
+}
+.plaque__crest {
+  position: relative; flex: 0 0 auto; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 50% 34%, rgba(var(--accent-rgb),.22), transparent 62%), var(--gem-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(196,150,90,.20), inset 0 0 0 1px rgba(0,0,0,.6), inset 0 -3px 6px rgba(0,0,0,.72),
+    0 0 0 1px rgba(var(--accent-rgb),.55), 0 0 14px rgba(var(--accent-rgb),.28);
+}
+.plaque__crest::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; border: 1px solid rgba(156,125,56,.3); }
+.plaque__crest .cog { width: 34px; height: 34px; }
+.plaque__id { display: flex; flex-direction: column; gap: 3px; }
+.plaque__name { font-family: "Oswald", sans-serif; font-size: 23px; font-weight: 600; letter-spacing: .04em; color: var(--bone); text-shadow: 0 1px 0 rgba(0,0,0,.7); }
+.plaque__title { font-family: "EB Garamond", serif; font-style: italic; font-size: 14px; color: var(--brass-hot); }
+.plaque__meta { margin-top: 4px; display: flex; gap: 14px; font-family: "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--bone-dim); }
+.plaque__meta b { color: var(--copper-hi); font-weight: 500; }
+
+/* ============================================================
+   BRASS PLATE
+   ============================================================ */
+.plate {
+  position: relative; background-color: #191109;
+  background-image: var(--tex-metal), linear-gradient(180deg, #241a10 0%, #170f08 48%, #0c0805 100%);
+  background-blend-mode: overlay, normal; background-size: 260px 120px, 100% 100%;
+  border: 1px solid var(--iron-lo); border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(196,150,90,.14), inset 0 -3px 6px rgba(0,0,0,.74), inset 0 0 0 1px rgba(0,0,0,.5), 0 3px 10px rgba(0,0,0,.62), 0 12px 30px rgba(0,0,0,.5);
+}
+.plate::after { content: ""; position: absolute; inset: 4px; border-radius: 5px; border: 1px solid rgba(156,125,56,.22); box-shadow: inset 0 0 0 1px rgba(0,0,0,.4); pointer-events: none; }
+/* the brushed --tex-metal grain reads as WOOD on a wide/tall card — swap in the
+   fine speckle over a soft vertical gradient (as forge-ui does for .plaque.forged) */
+.plaque.plate, .floater.plate {
+  background-image: var(--tex-fine), linear-gradient(180deg, #1c130b 0%, #120b06 55%, #080503 100%);
+  background-blend-mode: soft-light, normal; background-size: 140px 140px, 100% 100%;
+}
+
+/* ============================================================
+   FOOTER HUD PLATE
+   ============================================================ */
+.rail { position: relative; width: 100%; padding-bottom: var(--foot-gap); flex: 0 0 auto; padding-top: 12px; }
+.hud-panel {
+  position: relative; z-index: 1; padding: 12px 7px; display: flex; flex-direction: column;
+  background-color: #0c0805;
+  background-image: var(--tex-fine), linear-gradient(180deg, #18110a 0%, #0c0805 55%, #060403 100%);
+  background-blend-mode: soft-light, normal; background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo); border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(196,150,90,.12), inset 0 -3px 6px rgba(0,0,0,.74), inset 0 0 0 1px rgba(0,0,0,.5), 0 3px 10px rgba(0,0,0,.62), 0 12px 30px rgba(0,0,0,.5);
+}
+/* riveted brass rail dividing the HUD sections */
+.hud-seam { position: relative; height: 4px; margin: 6px 3px; border-radius: 2px; background: linear-gradient(180deg, #3a2c17, #160f08); box-shadow: inset 0 1px 0 rgba(246,230,188,.16), inset 0 -1px 1px rgba(0,0,0,.6), 0 1px 1px rgba(0,0,0,.5); }
+.hud-seam::before, .hud-seam::after { content: ""; position: absolute; top: 50%; width: 5px; height: 5px; border-radius: 50%; transform: translateY(-50%); background: var(--bolt-sm); }
+.hud-seam::before { left: 4px; }
+.hud-seam::after  { right: 4px; }
+
+/* multibinds */
+.multibind-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-height: 21px; padding: 0 2px; }
+.multi-bind {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--iron-hi); background: linear-gradient(180deg, #241710, #16100a); color: var(--bone);
+  font-family: "EB Garamond", Georgia, serif; font-size: 12.5px; line-height: 1.15; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(196,150,90,.08); transition: border-color .15s, background .15s, transform .1s;
+}
+.multi-bind:hover { border-color: var(--brass-dim); background: linear-gradient(180deg, #2c1c12, #1a120b); }
+.multi-bind:active { transform: translateY(1px); }
+.multi-bind-key { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 10.5px; color: var(--brass-hot); }
+.multi-bind-action { color: var(--bone-dim); }
+.multi-bind--room .multi-bind-key { color: var(--steam-hot); }
+
+/* chips */
+.footer-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-height: 21px; padding: 0 2px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 6px; border-radius: 6px;
+  background-color: #0d0805;
+  background-image: linear-gradient(rgba(8,5,3,.5), rgba(8,5,3,.5)), var(--tex-stone), linear-gradient(180deg, #180d07, #080402);
+  background-blend-mode: normal, soft-light, normal; background-size: 100% 100%, 90px 90px, 100% 100%;
+  border: 1px solid #33231b;
+  box-shadow: inset 0 1px 0 rgba(196,150,90,.08), inset 0 -2px 5px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.55);
+  white-space: nowrap; color: var(--bone); font-family: "EB Garamond", Georgia, serif;
+}
+.chip__ico { flex: 0 0 auto; width: 14px; height: 14px; display: grid; place-items: center; color: var(--brass-hot); }
+.chip__ico svg { width: 14px; height: 14px; }
+.chip__lab { font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; font-size: 10px; color: var(--copper-hi); text-shadow: 0 1px 1px rgba(0,0,0,.6); }
+.chip__val { font-family: "JetBrains Mono", monospace; font-size: 10px; line-height: 1; color: #e9dcbe; text-shadow: 0 1px 1px rgba(0,0,0,.7); font-variant-numeric: tabular-nums; }
+.chip--ok     .chip__val { color: var(--steam-hot); } .chip--ok     .chip__ico { color: var(--steam-hot); }
+.chip--warn   .chip__val { color: #e6ad4e; }         .chip--warn   .chip__ico { color: #e6ad4e; }
+.chip--danger .chip__val { color: var(--brass-hot); }.chip--danger .chip__ico { color: var(--brass-hot); }
+.chip__ember { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 7px 1px rgba(var(--ember-glow),.6); animation: ember 2.4s ease-in-out infinite; }
+@keyframes ember { 0%,100%{opacity:.82} 50%{opacity:1} }
+
+/* vital gems */
+.gems { display: flex; gap: 4px; padding: 2px; }
+.gem {
+  --fill: 60%; --hue: var(--rust);
+  position: relative; flex: 1 1 0; min-width: 0; height: var(--bar-h); padding: 6px;
+  display: flex; align-items: center; justify-content: center; border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(196,150,90,.16), inset 0 -1px 0 rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.8), inset 0 2px 4px rgba(0,0,0,.66);
+}
+.gem .stone {
+  position: absolute; inset: 4px; border-radius: 3px; overflow: hidden;
+  background-image: var(--tex-stone), linear-gradient(90deg, var(--hue) 0%, var(--hue) var(--fill), color-mix(in srgb, var(--hue) 26%, #0c0605) var(--fill), color-mix(in srgb, var(--hue) 26%, #0c0605) 100%);
+  background-blend-mode: soft-light, normal; background-size: 110px 110px, 100% 100%; filter: saturate(.82);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -4px 8px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.7);
+}
+.gem .stone::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,0) 42%), linear-gradient(180deg, transparent 46%, rgba(0,0,0,.55)); }
+.gem .label { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.gem .v { font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: #f4ecd6; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 5px rgba(0,0,0,.8); }
+.gem .name { font-family: "JetBrains Mono", monospace; font-size: 8px; letter-spacing: .05em; text-transform: uppercase; color: #f4ecd6; opacity: .72; text-shadow: 0 1px 2px rgba(0,0,0,.98); }
+.gem.lvl-danger .stone::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, transparent 28%, rgba(var(--accent-hot-rgb),.78)); animation: breath 1.5s ease-in-out infinite; }
+@keyframes breath { 50% { opacity: .4; } }
+
+/* command line */
+.command { display: flex; align-items: stretch; min-height: var(--bar-h); padding: 6px; gap: 6px; }
+.knot { flex: 0 0 40px; display: grid; place-items: center; }
+/* boiler pressure gauge with a live sweeping needle */
+.gauge { position: relative; width: 27px; height: 27px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 36%, #2b1d10, #150e07 68%, #0b0705);
+  box-shadow: 0 0 0 1px #7c5a24, inset 0 0 0 2px #3a2a15, inset 0 2px 5px rgba(0,0,0,.8), inset 0 -1px 0 rgba(246,230,188,.14), 0 1px 2px rgba(0,0,0,.6); }
+.gauge::before { content: ""; position: absolute; inset: 3.5px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 7%, var(--bone-dim) 0 .7px, transparent 1px),
+    radial-gradient(circle at 88% 30%, var(--bone-dim) 0 .6px, transparent .9px),
+    radial-gradient(circle at 12% 30%, var(--bone-dim) 0 .6px, transparent .9px),
+    radial-gradient(circle at 88% 66%, rgba(var(--accent-hot-rgb),.8) 0 .7px, transparent 1px);
+  opacity: .75; }
+.gauge__needle { position: absolute; left: 50%; top: 50%; width: 1.6px; height: 9px; border-radius: 1px;
+  background: linear-gradient(var(--brass-hot), var(--brass-dim)); transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotate(34deg); box-shadow: 0 0 3px rgba(var(--accent-hot-rgb),.7);
+  animation: needle-sweep 4.2s ease-in-out infinite; }
+.gauge__hub { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; border-radius: 50%;
+  transform: translate(-50%, -50%); background: var(--brass-hot); box-shadow: 0 0 0 1px #6a4c1e, 0 0 4px rgba(var(--accent-hot-rgb),.5); }
+@keyframes needle-sweep { 0%,100% { transform: translate(-50%,-100%) rotate(26deg); } 50% { transform: translate(-50%,-100%) rotate(58deg); } }
+.trough { flex: 1 1 auto; display: flex; align-items: center; gap: 10px; padding: 0 15px; border-radius: 5px; background: linear-gradient(180deg, #0b0805, #100b07); box-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px rgba(156,125,56,.1); }
+.prompt { font-family: "JetBrains Mono", monospace; color: var(--brass-hot); font-size: 16px; }
+.cmd-input { flex: 1 1 auto; background: transparent; border: 0; outline: 0; color: var(--bone); font-family: "JetBrains Mono", monospace; font-size: 14px; letter-spacing: .04em; }
+.cmd-input::placeholder { color: var(--bone-dim); opacity: .6; }
+
+/* ============================================================
+   SIDEBAR PANELS
+   ============================================================ */
+.sidebar { position: absolute; left: var(--side-edge); width: var(--side-w); top: 44px; bottom: var(--foot-gap); display: flex; flex-direction: column; gap: 12px; z-index: 2; -webkit-user-select: none; user-select: none; }
+.panel {
+  position: relative;
+  flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 9px;
+  background-color: #0b0906;
+  background-image: var(--tex-fine), linear-gradient(180deg, #13110c 0%, #0b0906 55%, #070604 100%);
+  background-blend-mode: soft-light, normal; background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo); box-shadow: inset 0 1px 0 rgba(196,150,90,.10), 0 3px 10px rgba(0,0,0,.55);
+}
+.panel__head { position: relative; display: flex; align-items: center; gap: 9px; padding: 11px 12px 8px; box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(var(--accent-rgb),.14); }
+/* two bottom rivets bolting the panel's face plate on */
+.panel::before {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
+  background:
+    var(--bolt-sm) 8px calc(100% - 8px) / 15px 15px no-repeat,
+    var(--bolt-sm) calc(100% - 8px) calc(100% - 8px) / 15px 15px no-repeat;
+}
+/* engraved brass nameplate, screwed on at both ends */
+.panel__title { position: relative; flex: 0 0 auto; padding: 3px 14px; border-radius: 3px; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--brass-hot); text-shadow: 0 1px 0 rgba(0,0,0,.6), 0 0 8px rgba(var(--accent-rgb),.25); background: linear-gradient(180deg, #3a2c17, #211609); box-shadow: inset 0 1px 0 rgba(246,230,188,.16), inset 0 -1px 2px rgba(0,0,0,.6), 0 1px 1px rgba(0,0,0,.5); border: 1px solid rgba(0,0,0,.45); }
+.panel__title::before, .panel__title::after { content: ""; position: absolute; top: 50%; width: 4px; height: 4px; border-radius: 50%; transform: translateY(-50%); background: var(--bolt-sm); }
+.panel__title::before { left: 4px; }
+.panel__title::after  { right: 4px; }
+.panel__meta { margin-left: auto; flex: 0 1 auto; min-width: 0; font-family: "JetBrains Mono", monospace; font-size: 9.5px; letter-spacing: .04em; color: var(--bone-dim); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel__body { padding: 11px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+.panel--time { flex: 0 0 auto; }
+.panel--time .panel__body { padding: 9px 12px 11px; }
+.tp-clock { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tp-time { font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 500; color: var(--bone); font-variant-numeric: tabular-nums; }
+.tp-date { margin-left: auto; font-family: "Oswald", sans-serif; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--bone-dim); }
+.tp-moon { color: var(--brass-hot); font-size: 13px; }
+
+.panel--map { flex: 1.3 1 0; }
+.mapview {
+  position: relative; width: 100%; height: 100%; border-radius: 5px; overflow: hidden;
+  background: radial-gradient(90% 70% at 50% 42%, rgba(var(--steam-rgb),.10), transparent 60%), radial-gradient(60% 60% at 50% 120%, rgba(var(--accent-rgb),.18), transparent 60%), linear-gradient(180deg, #0d0b08, #070604);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6), inset 0 2px 10px rgba(0,0,0,.7);
+}
+.mapview svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* recolor the schematic per department (CSS beats the SVG presentation attributes) */
+.map-here rect { stroke: var(--brass-hot); }
+.map-here circle { fill: var(--brass-hot); }
+.map-here { filter: drop-shadow(0 0 6px rgba(var(--accent-hot-rgb),.8)); }
+.map-worksite { stroke: var(--steam); }
+
+.panel--status { flex: 0 0 auto; }
+.panel--status .panel__body { padding: 7px 12px 10px; }
+.statpane { display: flex; flex-direction: column; gap: 4px; }
+.st-row { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 9px; min-height: 16px; }
+.st-ico { color: var(--copper); display: grid; place-items: center; }
+.st-ico svg { width: 13px; height: 13px; }
+.st-lab { font-family: "EB Garamond", serif; font-size: 13.5px; color: var(--bone-dim); }
+.st-val { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--bone); }
+.st-val.hot  { color: var(--brass-hot); }
+.st-val.good { color: var(--steam-hot); }
+
+.objlist { display: flex; flex-direction: column; gap: 5px; }
+.obj { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.obj__dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; background: var(--brass); box-shadow: 0 0 6px rgba(var(--accent-rgb),.6); }
+.obj__dot--foe { background: var(--steam); box-shadow: 0 0 6px rgba(var(--steam-rgb),.6); }
+.obj__name { color: var(--bone); }
+.obj__tag { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--bone-dim); }
+
+/* ============================================================
+   FLOATING POPUP
+   ============================================================ */
+.floater { position: fixed; right: clamp(24px, 4vw, 64px); top: 96px; width: 320px; z-index: 20; border-radius: 9px; }
+.pop-head { position: relative; height: 40px; display: flex; align-items: center; gap: 9px; padding: 6px 12px 0 14px; box-shadow: inset 0 -1px 0 rgba(0,0,0,.55), inset 0 -2px 0 rgba(var(--accent-rgb),.12); }
+.pop-title { position: relative; padding: 3px 13px; border-radius: 3px; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .13em; text-transform: uppercase; color: var(--brass-hot); text-shadow: 0 1px 0 rgba(0,0,0,.6); background: linear-gradient(180deg, #3a2c17, #211609); box-shadow: inset 0 1px 0 rgba(246,230,188,.16), inset 0 -1px 2px rgba(0,0,0,.6), 0 1px 1px rgba(0,0,0,.5); border: 1px solid rgba(0,0,0,.45); }
+.pop-title::before, .pop-title::after { content: ""; position: absolute; top: 50%; width: 4px; height: 4px; border-radius: 50%; transform: translateY(-50%); background: var(--bolt-sm); }
+.pop-title::before { left: 4px; }
+.pop-title::after  { right: 4px; }
+/* bolt the popup placard at its bottom corners */
+.floater::before {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
+  background:
+    var(--bolt-sm) 9px calc(100% - 9px) / 15px 15px no-repeat,
+    var(--bolt-sm) calc(100% - 9px) calc(100% - 9px) / 15px 15px no-repeat;
+}
+.pop-actions { margin-left: auto; display: flex; gap: 5px; }
+.pop-btn { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 4px; border: 1px solid var(--iron-hi); background: rgba(30,20,14,.8); color: var(--bone-dim); cursor: pointer; font-family: "JetBrains Mono", monospace; font-size: 11px; line-height: 1; transition: color .15s, border-color .15s, background .15s; }
+.pop-btn:hover { color: var(--brass-hot); border-color: var(--brass-dim); background: rgba(44,28,18,.9); }
+.pop-body { position: relative; z-index: 1; padding: 10px 14px 14px; }
+
+.roster { display: flex; flex-direction: column; gap: 7px; }
+.mate { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 7px; background: rgba(255,255,255,.02); border: 1px solid var(--iron-lo); }
+.mate__sigil { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, rgba(var(--accent-rgb),.25), var(--gem-dark)); box-shadow: inset 0 0 0 1px rgba(0,0,0,.6), 0 0 0 1px rgba(var(--accent-rgb),.4); color: var(--brass-hot); }
+.mate__sigil .cog { width: 13px; height: 13px; }
+.mate__id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mate__name { font-family: "EB Garamond", serif; font-size: 15px; color: var(--bone); }
+.mate__role { font-family: "JetBrains Mono", monospace; font-size: 8.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--bone-dim); }
+.mate__hp { width: 62px; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(0,0,0,.6); box-shadow: inset 0 1px 2px rgba(0,0,0,.8); }
+.mate__hp > span { display: block; height: 100%; background: linear-gradient(90deg, var(--copper-dim), var(--brass-hot)); }
+.mate__hp--good > span { background: linear-gradient(90deg, color-mix(in srgb, var(--steam) 60%, #000), var(--steam-hot)); }
+
+.pop-foot { display: flex; gap: 6px; margin-top: 11px; }
+.pop-cta { flex: 1 1 0; padding: 6px 8px; border-radius: 6px; font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; font-size: 11px; cursor: pointer; border: 1px solid var(--iron-hi); background: rgba(30,20,14,.8); color: var(--bone-dim); transition: color .15s, border-color .15s, background .15s; }
+.pop-cta:hover { color: var(--bone); border-color: var(--brass-dim); background: rgba(44,28,18,.9); }
+.pop-cta--primary { color: #f5ecd6; border-color: var(--brass-dim); background: linear-gradient(180deg, rgba(var(--accent-rgb),.5), rgba(var(--accent-rgb),.24)); }
+.pop-cta--primary:hover { background: linear-gradient(180deg, rgba(var(--accent-rgb),.62), rgba(var(--accent-rgb),.32)); border-color: var(--brass); }
+
+/* ============================================================
+   DEPARTMENT MARKS — hand-drawn engraved sigils for the four
+   wydzialy, used as heraldic accents. Selecting a wydzial swaps
+   EVERY drawn cog for that department's sigil (--dept-mark); the
+   whole-society view has no attribute set, so it keeps the cog
+   everywhere. Scoped OUT of the switcher: the "Stowarzyszenie"
+   button (.db-cog) always stays a cog, and the wydzial buttons
+   carry their own fixed .dm marks. One rule covers all sizes
+   because the mark is a contain-fit background sized to each box.
+   ============================================================ */
+.dm {
+  --mark: none; width: 16px; height: 16px; flex: 0 0 auto; display: inline-block;
+  background: var(--mark) center/contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+}
+.dm--auto { --mark: var(--mark-auto); }
+.dm--avio { --mark: var(--mark-avio); }
+.dm--alch { --mark: var(--mark-alch); }
+.dm--mine { --mark: var(--mark-mine); }
+
+:root[data-dept] .cog:not(.db-cog) svg { visibility: hidden; }
+:root[data-dept] .cog:not(.db-cog) {
+  background: var(--dept-mark) center/contain no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.75));
+}
+
+/* the big control plate: four hefty corner bolts in the gutter + an
+   inset brass frame line — no marching-rivet rows (they read as dots) */
+.hud-panel::after {
+  content: ""; position: absolute; inset: 4px; z-index: 3; pointer-events: none; border-radius: 6px;
+  border: 1px solid rgba(156,125,56,.22); box-shadow: inset 0 0 0 1px rgba(0,0,0,.4);
+  background:
+    var(--bolt) 4px 4px / 18px 18px no-repeat,
+    var(--bolt) calc(100% - 4px) 4px / 18px 18px no-repeat,
+    var(--bolt) 4px calc(100% - 4px) / 18px 18px no-repeat,
+    var(--bolt) calc(100% - 4px) calc(100% - 4px) / 18px 18px no-repeat;
+}
+
+/* exposed gearwork turning behind the footer plate corners */
+.cogwork { position: absolute; z-index: 0; pointer-events: none; background: var(--gear-big) center / contain no-repeat; opacity: .16; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.cogwork--a { width: 56px; height: 56px; animation: cw-spin 26s linear infinite; }
+.cogwork--b { width: 40px; height: 40px; animation: cw-spin-rev 18s linear infinite; }
+@keyframes cw-spin     { to { transform: rotate(360deg); } }
+@keyframes cw-spin-rev { to { transform: rotate(-360deg); } }
+/* the society seal on the plaque ticks over slowly */
+.plaque__crest .cog svg { animation: cw-spin 22s linear infinite; transform-origin: 50% 50%; }
+
+/* ============================================================
+   ANALOG VITAL GAUGES — brass-bezelled needle dials replacing
+   the flat gem bars. Each needle + value arc is driven by --fill.
+   ============================================================ */
+.dialbank { position: relative; display: flex; gap: 6px; padding: 20px 6px 6px; align-items: flex-start; justify-content: space-around; }
+.dial-unit { position: relative; flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+/* short feeder pipe + flange dropping from the manifold into each dial */
+.feed { position: relative; width: 8px; height: 14px; margin-bottom: -6px; border-radius: 0 0 3px 3px; z-index: 3;
+  background: linear-gradient(90deg, #241a0c, #c9a24a 42%, #f6e8bf 50%, #c9a24a 58%, #201708); box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); }
+.feed::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 15px; height: 7px; border-radius: 50%; transform: translateX(-50%);
+  background: radial-gradient(circle at 45% 35%, #f6e8bf, #c9a24a 45%, #6a4c1e 82%); box-shadow: 0 1px 2px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.3); }
+.dial { position: relative; width: 84px; height: 84px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 36%, #2c1d10, #150e07 68%, #0b0705);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.7), inset 0 3px 7px rgba(0,0,0,.72), 0 3px 6px rgba(0,0,0,.5); }
+.dial::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; z-index: -1;
+  background: conic-gradient(#382a16, #d8b25e, #6a4c1e, #f3e2b6, #4a3418, #c9a24a, #7c5a24, #f3e2b6, #382a16);
+  box-shadow: 0 2px 4px rgba(0,0,0,.6); }
+.dial svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dial__read { position: absolute; left: 0; right: 0; bottom: 17px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 11px; color: #f4ecd6; text-shadow: 0 1px 2px rgba(0,0,0,.95); font-variant-numeric: tabular-nums; }
+.dial__read small { font-size: 7.5px; letter-spacing: .08em; color: var(--bone-dim); }
+.dial__name { font-family: "Oswald", sans-serif; font-weight: 500; font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--bone-dim); }
+.dial-unit.is-danger .dial__name { color: var(--brass-hot); }
+.dial-unit.is-danger .dial { animation: dial-alarm 1.6s ease-in-out infinite; }
+@keyframes dial-alarm { 50% { box-shadow: inset 0 0 0 1px rgba(var(--accent-hot-rgb),.6), inset 0 3px 7px rgba(0,0,0,.72), 0 0 10px rgba(var(--accent-hot-rgb),.4); } }
+
+/* horizontal brass manifold feeding all four dials */
+.manifold { position: absolute; top: 12px; left: 7%; right: 7%; height: 9px; border-radius: 5px; z-index: 2;
+  background: linear-gradient(180deg, #201708, #c9a24a 38%, #f6e8bf 50%, #c9a24a 62%, #1c1407);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 2px 3px rgba(0,0,0,.55); }
+.manifold::before, .manifold::after { content: ""; position: absolute; top: 50%; width: 12px; height: 13px; border-radius: 3px; transform: translateY(-50%);
+  background: linear-gradient(90deg, #201708, #d8b25e 45%, #f6e8bf 52%, #b8933f 60%, #1c1407); box-shadow: inset 0 0 0 1px rgba(0,0,0,.4); }
+.manifold::before { left: -8px; } .manifold::after { right: -8px; }
+
+/* ============================================================
+   BRASS PIPES — vertical conduit running the sidebar gutter
+   ============================================================ */
+.conduit { position: absolute; right: -10px; top: 26px; bottom: 30px; width: 9px; z-index: 5; border-radius: 5px;
+  background: linear-gradient(90deg, #1c1407, #b8933f 40%, #f6e8bf 50%, #b8933f 60%, #180f06);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 2px 0 4px rgba(0,0,0,.5); }
+.conduit .flange { position: absolute; left: 50%; width: 20px; height: 12px; border-radius: 4px; transform: translateX(-50%);
+  background: linear-gradient(90deg, #1c1407, #d8b25e 44%, #f6e8bf 52%, #b8933f 60%, #180f06);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.6); }
+.conduit .flange::before, .conduit .flange::after { content: ""; position: absolute; top: 50%; width: 3px; height: 3px; border-radius: 50%; transform: translateY(-50%); background: radial-gradient(circle at 40% 35%, #f6e8bf, #8a6528); }
+.conduit .flange::before { left: 3px; } .conduit .flange::after { right: 3px; }
+.conduit .valve { position: absolute; left: 50%; bottom: -14px; width: 30px; height: 30px; border-radius: 50%; transform: translateX(-50%);
+  border: 3px solid #b8933f; background: radial-gradient(circle at 50% 42%, #2a1d10, #120c07);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5), 0 0 0 1px #6a4c1e, 0 2px 4px rgba(0,0,0,.6); }
+.conduit .valve::before, .conduit .valve::after { content: ""; position: absolute; left: 50%; top: 50%; background: #c9a24a; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+.conduit .valve::before { width: 26px; height: 3px; border-radius: 2px; transform: translate(-50%,-50%); }
+.conduit .valve::after  { width: 3px; height: 26px; border-radius: 2px; transform: translate(-50%,-50%); }
+
+/* ============================================================
+   KNIFE-SWITCH LEVERS — physical toggles replacing multibind pills
+   ============================================================ */
+.lever-bank { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 2px; }
+.lever { display: inline-flex; align-items: center; gap: 9px; padding: 3px 12px 3px 5px; border-radius: 7px;
+  background: linear-gradient(180deg, #241710, #150e08); border: 1px solid var(--iron-hi);
+  box-shadow: inset 0 1px 0 rgba(246,230,188,.08), 0 1px 2px rgba(0,0,0,.5); cursor: pointer; }
+.lever__sw { position: relative; flex: 0 0 auto; width: 27px; height: 19px; border-radius: 4px;
+  background: linear-gradient(180deg, #0b0704, #171009); box-shadow: inset 0 1px 3px rgba(0,0,0,.85), inset 0 0 0 1px rgba(0,0,0,.6); }
+.lever__sw::before, .lever__sw::after { content: ""; position: absolute; bottom: 3.5px; width: 4px; height: 4px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f3e2b6, #8a6528 85%); }
+.lever__sw::before { left: 4px; } .lever__sw::after { right: 4px; }
+.lever__arm { position: absolute; left: 6px; bottom: 5.5px; width: 4px; height: 16px; border-radius: 2px; transform-origin: 50% 100%;
+  background: linear-gradient(180deg, #f6e8bf, #c9a24a 46%, #7c5a24); box-shadow: 0 1px 2px rgba(0,0,0,.6);
+  transform: rotate(-30deg); transition: transform .15s; }
+.lever__arm::after { content: ""; position: absolute; top: -4px; left: 50%; width: 9px; height: 9px; border-radius: 50%; transform: translateX(-50%);
+  background: radial-gradient(circle at 38% 32%, #fbeecb, #d8b25e 46%, #6a4c1e 86%); box-shadow: 0 1px 2px rgba(0,0,0,.65); }
+.lever.on .lever__arm { transform: rotate(32deg); }
+.lever.on .lever__sw::after { box-shadow: 0 0 5px 1px rgba(var(--accent-hot-rgb),.7); }
+.lever__key { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 10.5px; color: var(--brass-hot); }
+.lever--room .lever__key { color: var(--steam-hot); }
+.lever__act { font-family: "EB Garamond", Georgia, serif; font-size: 12.5px; color: var(--bone-dim); }
+.lever:hover { border-color: var(--brass-dim); }
+.lever:hover .lever__act { color: var(--bone); }
+
+/* scrollbars + caption */
+* { scrollbar-width: thin; scrollbar-color: var(--iron-hi) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--iron-hi); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+.mock-note { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 40; font-family: "Special Elite", "JetBrains Mono", monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--bone-dim); opacity: .55; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- society seal: a single cog -->
+    <g id="cog-pts" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="6"/>
+      <circle cx="12" cy="12" r="2.4"/>
+      <path d="M12 3.4V6 M12 18V20.6 M3.4 12H6 M18 12H20.6 M5.9 5.9 7.7 7.7 M16.3 16.3 18.1 18.1 M18.1 5.9 16.3 7.7 M7.7 16.3 5.9 18.1"/>
+    </g>
+  </defs>
+</svg>
+
+<!-- ═══════════ DEPARTMENT SWITCHER ═══════════ -->
+<div class="deptbar">
+  <button data-set="all" class="is-active"><span class="cog db-cog" style="width:15px;height:15px"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span>Stowarzyszenie</button>
+  <button data-set="auto"><i class="dm dm--auto"></i>Automatyka</button>
+  <button data-set="avio"><i class="dm dm--avio"></i>Awionika</button>
+  <button data-set="alch"><i class="dm dm--alch"></i>Alchemia</button>
+  <button data-set="mine"><i class="dm dm--mine"></i>Gornictwo</button>
+</div>
+
+<div class="screen">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="conduit">
+      <span class="flange" style="top:6%"></span>
+      <span class="flange" style="top:40%"></span>
+      <span class="flange" style="top:74%"></span>
+      <span class="valve"></span>
+    </div>
+    <section class="panel panel--time">
+      <div class="panel__head">
+        <span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span>
+        <span class="panel__title">Chronometr</span>
+        <span class="panel__meta">Sezon Pary &middot; Miesiac Kola</span>
+      </div>
+      <div class="panel__body">
+        <div class="tp-clock">
+          <span class="tp-moon">&#9881;</span>
+          <span class="tp-time">09:42</span>
+          <span class="tp-date">Dzwon poranny &middot; dzien 214</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel--map">
+      <div class="panel__head">
+        <span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span>
+        <span class="panel__title">Mapa</span>
+        <span class="panel__meta">Sterowiec Parseval</span>
+      </div>
+      <div class="panel__body" style="padding:8px">
+        <div class="mapview">
+          <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+            <g stroke="#5a4632" stroke-width="2" fill="none" opacity=".8">
+              <path d="M100 100 L100 55 M100 100 L145 100 M100 100 L100 150 M100 100 L58 128 M100 55 L100 30 M145 100 L172 78"/>
+            </g>
+            <g fill="#1a1512" stroke="#6a5232" stroke-width="1.5">
+              <rect x="88" y="43" width="24" height="24" rx="3"/>
+              <rect x="88" y="18" width="24" height="24" rx="3"/>
+              <rect x="133" y="88" width="24" height="24" rx="3"/>
+              <rect x="160" y="66" width="24" height="24" rx="3"/>
+              <rect x="46" y="116" width="24" height="24" rx="3"/>
+            </g>
+            <rect class="map-worksite" x="88" y="138" width="24" height="24" rx="3" fill="#101a19" stroke-width="1.5" opacity=".9"/>
+            <g class="map-here">
+              <rect x="86" y="86" width="28" height="28" rx="4" fill="#241608" stroke-width="2"/>
+              <circle cx="100" cy="100" r="4"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel--status">
+      <div class="panel__head">
+        <span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span>
+        <span class="panel__title">Warsztat</span>
+        <span class="panel__meta">projekt</span>
+      </div>
+      <div class="panel__body">
+        <div class="statpane">
+          <div class="st-row"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3 a4 4 0 0 0-4 6 L4 15 l2 2 6-6 a4 4 0 0 0 6-4 l-3 3-2-2 3-3"/></svg></span><span class="st-lab">Narzedzie</span><span class="st-val">klucz nastawny</span></div>
+          <div class="st-row"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 13 15 9 M12 4 V6"/></svg></span><span class="st-lab">Kociol</span><span class="st-val good">pod para</span></div>
+          <div class="st-row"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 4v4 M12 16v4 M4 12h4 M16 12h4"/></svg></span><span class="st-lab">Zawor</span><span class="st-val">otwarty</span></div>
+          <div class="st-row"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14 h6 l-1 8 9-12 h-6 z"/></svg></span><span class="st-lab">Iskrownik</span><span class="st-val hot">naladowany</span></div>
+        </div>
+        <div style="height:1px;margin:9px 0;background:rgba(var(--accent-rgb),.2)"></div>
+        <div class="objlist">
+          <div class="obj"><span class="obj__dot obj__dot--foe"></span><span class="obj__name">wadliwy automat</span><span class="obj__tag">usterka</span></div>
+          <div class="obj"><span class="obj__dot"></span><span class="obj__name">Leskap</span><span class="obj__tag">zespol</span></div>
+          <div class="obj"><span class="obj__dot"></span><span class="obj__name">skrzynka czesci</span><span class="obj__tag">obiekt</span></div>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ═══════════ MAIN OUTPUT + FOOTER ═══════════ -->
+  <main class="world">
+    <div class="locale">Ladownia Sterowca Parseval</div>
+
+    <div class="log">
+      <p class="cmd">rozejrzyj sie</p>
+      <p>Stoisz posrod ciasnej ladowni wielkiego sterowca. Mosiezne rury oplataja grodzie,
+         a swiatlo lamp gazowych migocze na tarczach niezliczonych manometrow. Gdzies pod
+         pokladem miarowo <span class="steam">syczy zawor bezpieczenstwa</span>.</p>
+      <p class="exits">Wyjscia: dziob, rufa, w dol (maszynownia).</p>
+
+      <div class="plaque plate">
+        <div class="plaque__crest"><span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span></div>
+        <div class="plaque__id">
+          <div class="plaque__name">Fizzwick</div>
+          <div class="plaque__title">Konstruktor Osobliwosci</div>
+          <div class="plaque__meta">
+            <span>WYDZIAL &middot; <b>Automatyki</b></span>
+            <span>RANGA &middot; <b>Inzynier</b></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="say">Leskap mowi: Podkrec ciut sprezyne, bo automat znowu kula na lewa strone.</p>
+      <p class="emote">* wadliwy automat drga, sypiac snopem iskier z przegubu *</p>
+      <p class="cmd">przykrec zawor kluczem</p>
+      <p><span class="spark">Zawor ustepuje z metalicznym zgrzytem</span> i wskazowka manometru pelznie w bezpieczna strefe.</p>
+      <p class="aether">Kryszatal eteryczny w rdzeniu automatu rozblyska — cala konstrukcja lagodnie brzeczy.</p>
+      <p class="fix">Dokrecasz obluzowana przekladnie; mechanizm wraca do rownego, cichego tykania.</p>
+      <p class="emote">* kociol wypuszcza oblok pary z gwizdem *</p>
+    </div>
+
+    <div class="rail">
+      <span class="cogwork cogwork--a" style="top:-16px;left:-20px"></span>
+      <span class="cogwork cogwork--b" style="top:2px;left:24px"></span>
+      <span class="cogwork cogwork--a" style="top:-18px;right:-22px"></span>
+      <span class="cogwork cogwork--b" style="bottom:8px;right:30px"></span>
+      <div class="hud-panel">
+        <div class="lever-bank">
+          <button class="lever lever--room on"><span class="lever__sw"><i class="lever__arm"></i></span><span class="lever__key">R</span><span class="lever__act">uruchom automat</span></button>
+          <button class="lever on"><span class="lever__sw"><i class="lever__arm"></i></span><span class="lever__key">1</span><span class="lever__act">otworz zawor</span></button>
+          <button class="lever"><span class="lever__sw"><i class="lever__arm"></i></span><span class="lever__key">2</span><span class="lever__act">nakrec sprezyne</span></button>
+          <button class="lever"><span class="lever__sw"><i class="lever__arm"></i></span><span class="lever__key">3</span><span class="lever__act">test cisnienia</span></button>
+        </div>
+        <div class="hud-seam"></div>
+        <div class="footer-strip">
+          <span class="chip"><span class="chip__ember"></span><span class="chip__lab">Iskra</span><span class="chip__val">stala</span></span>
+          <span class="chip chip--ok"><span class="chip__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 3v3 M12 18v3 M3 12h3 M18 12h3"/></svg></span><span class="chip__lab">Sprawnosc</span><span class="chip__val">+3</span></span>
+          <span class="chip chip--warn"><span class="chip__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12 15 8"/></svg></span><span class="chip__lab">Cisnienie</span><span class="chip__val">78%</span></span>
+          <span class="chip chip--danger"><span class="chip__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3 v6 M17 3 v6 M5 9 h14 v3 a7 7 0 0 1-14 0 z"/></svg></span><span class="chip__lab">Przeciek</span><span class="chip__val">2</span></span>
+        </div>
+        <div class="hud-seam"></div>
+        <div class="dialbank">
+          <div class="manifold"></div>
+
+          <div class="dial-unit">
+            <span class="feed"></span>
+            <div class="dial">
+              <svg viewBox="0 0 72 72">
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--bone-dim)" stroke-width="3.4" stroke-dasharray="1.4 11.13" stroke-linecap="round" opacity=".5"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--brass-hot)" stroke-width="4.2" stroke-linecap="round" stroke-dasharray="99.2 300"/>
+                <g transform="rotate(435.6 36 36)"><line x1="36" y1="37" x2="36" y2="14" stroke="#f4e8ca" stroke-width="1.8" stroke-linecap="round"/><line x1="36" y1="36" x2="36" y2="43" stroke="#8a6528" stroke-width="2.2" stroke-linecap="round"/></g>
+                <circle cx="36" cy="36" r="3.6" style="fill:var(--brass-hot)" stroke="#241a0c" stroke-width="1"/>
+                <circle cx="36" cy="36" r="1.5" fill="#140d07"/>
+              </svg>
+              <div class="dial__read">312<small>/400</small></div>
+            </div>
+            <span class="dial__name">Zdrowie</span>
+          </div>
+
+          <div class="dial-unit is-danger">
+            <span class="feed"></span>
+            <div class="dial">
+              <svg viewBox="0 0 72 72">
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--bone-dim)" stroke-width="3.4" stroke-dasharray="1.4 11.13" stroke-linecap="round" opacity=".5"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--copper-hi)" stroke-width="4.2" stroke-linecap="round" stroke-dasharray="28 300"/>
+                <g transform="rotate(284.4 36 36)"><line x1="36" y1="37" x2="36" y2="14" stroke="#f4e8ca" stroke-width="1.8" stroke-linecap="round"/><line x1="36" y1="36" x2="36" y2="43" stroke="#8a6528" stroke-width="2.2" stroke-linecap="round"/></g>
+                <circle cx="36" cy="36" r="3.6" style="fill:var(--copper-hi)" stroke="#241a0c" stroke-width="1"/>
+                <circle cx="36" cy="36" r="1.5" fill="#140d07"/>
+              </svg>
+              <div class="dial__read">18<small>/80</small></div>
+            </div>
+            <span class="dial__name">Zmeczenie</span>
+          </div>
+
+          <div class="dial-unit">
+            <span class="feed"></span>
+            <div class="dial">
+              <svg viewBox="0 0 72 72">
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--bone-dim)" stroke-width="3.4" stroke-dasharray="1.4 11.13" stroke-linecap="round" opacity=".5"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--aether)" stroke-width="4.2" stroke-linecap="round" stroke-dasharray="81.4 300"/>
+                <g transform="rotate(397.8 36 36)"><line x1="36" y1="37" x2="36" y2="14" stroke="#f4e8ca" stroke-width="1.8" stroke-linecap="round"/><line x1="36" y1="36" x2="36" y2="43" stroke="#8a6528" stroke-width="2.2" stroke-linecap="round"/></g>
+                <circle cx="36" cy="36" r="3.6" style="fill:var(--aether)" stroke="#241a0c" stroke-width="1"/>
+                <circle cx="36" cy="36" r="1.5" fill="#140d07"/>
+              </svg>
+              <div class="dial__read">96<small>/150</small></div>
+            </div>
+            <span class="dial__name">Eter</span>
+          </div>
+
+          <div class="dial-unit">
+            <span class="feed"></span>
+            <div class="dial">
+              <svg viewBox="0 0 72 72">
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--bone-dim)" stroke-width="3.4" stroke-dasharray="1.4 11.13" stroke-linecap="round" opacity=".5"/>
+                <path d="M16.9 55.1 A27 27 0 1 1 55.1 55.1" fill="none" style="stroke:var(--steam)" stroke-width="4.2" stroke-linecap="round" stroke-dasharray="112 300"/>
+                <g transform="rotate(462.6 36 36)"><line x1="36" y1="37" x2="36" y2="14" stroke="#f4e8ca" stroke-width="1.8" stroke-linecap="round"/><line x1="36" y1="36" x2="36" y2="43" stroke="#8a6528" stroke-width="2.2" stroke-linecap="round"/></g>
+                <circle cx="36" cy="36" r="3.6" style="fill:var(--steam)" stroke="#241a0c" stroke-width="1"/>
+                <circle cx="36" cy="36" r="1.5" fill="#140d07"/>
+              </svg>
+              <div class="dial__read">6.2<small>bar</small></div>
+            </div>
+            <span class="dial__name">Cisnienie</span>
+          </div>
+        </div>
+        <div class="hud-seam"></div>
+        <div class="command">
+          <span class="knot"><span class="gauge"><span class="gauge__needle"></span><span class="gauge__hub"></span></span></span>
+          <div class="trough">
+            <span class="prompt">&raquo;</span>
+            <input class="cmd-input" placeholder="wydaj polecenie maszynie..." value="przykrec zawor glowny" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════ FLOATING POPUP ═══════════ -->
+<div class="floater plate">
+  <div class="pop-head">
+    <span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span>
+    <span class="pop-title">Zespol Warsztatowy</span>
+    <span class="pop-actions">
+      <button class="pop-btn" title="przypnij">&#9633;</button>
+      <button class="pop-btn" title="zamknij">&times;</button>
+    </span>
+  </div>
+  <div class="pop-body">
+    <div class="roster">
+      <div class="mate">
+        <span class="mate__sigil"><span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span></span>
+        <span class="mate__id"><span class="mate__name">Fizzwick</span><span class="mate__role">Inzynier &middot; ty</span></span>
+        <span class="mate__hp"><span style="width:78%"></span></span>
+      </div>
+      <div class="mate">
+        <span class="mate__sigil"><span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span></span>
+        <span class="mate__id"><span class="mate__name">Leskap</span><span class="mate__role">Mistrz Awioniki</span></span>
+        <span class="mate__hp mate__hp--good"><span style="width:92%"></span></span>
+      </div>
+      <div class="mate">
+        <span class="mate__sigil"><span class="cog"><svg viewBox="0 0 24 24"><use href="#cog-pts"/></svg></span></span>
+        <span class="mate__id"><span class="mate__name">Trantka</span><span class="mate__role">Alchemiczka</span></span>
+        <span class="mate__hp"><span style="width:41%"></span></span>
+      </div>
+    </div>
+    <div class="pop-foot">
+      <button class="pop-cta">Rozejdzcie sie</button>
+      <button class="pop-cta pop-cta--primary">Do warsztatu!</button>
+    </div>
+  </div>
+</div>
+
+<div class="mock-note">SGW &middot; wariant przyrzadowy &middot; zegary &middot; rury &middot; dzwignie</div>
+
+<script>
+  document.querySelectorAll('.deptbar button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var d = b.dataset.set;
+      if (d === 'all') delete document.documentElement.dataset.dept;
+      else document.documentElement.dataset.dept = d;
+      document.querySelectorAll('.deptbar button').forEach(function (x) {
+        x.classList.toggle('is-active', x === b);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

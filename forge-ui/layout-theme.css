@@ -82,7 +82,7 @@ body.layout-manager-enabled #content-area > .world {
 .managed-panel.tab-group-panel,
 .managed-panel.floating-panel {
   box-shadow:
-    inset 0 1px 0 rgba(184, 150, 90, 0.16),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90), 0.16),
     inset 0 -3px 6px rgba(0, 0, 0, 0.72),
     inset 0 0 0 1px rgba(0, 0, 0, 0.5),
     0 3px 10px rgba(0, 0, 0, 0.6),
@@ -100,7 +100,7 @@ body.layout-manager-enabled #content-area > .world {
   position: absolute;
   inset: 4px;
   border-radius: 5px;
-  border: 1px solid rgba(184, 150, 90, 0.2);
+  border: 1px solid rgba(var(--fu-metal-rgb, 184,150,90), 0.2);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   z-index: 3;
@@ -133,7 +133,7 @@ body.layout-manager-enabled #content-area > .world {
   border: none;
   box-shadow:
     inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    inset 0 -2px 0 rgba(184, 150, 90, 0.06);
+    inset 0 -2px 0 rgba(var(--fu-metal-rgb, 184,150,90), 0.06);
 }
 
 /* Bronze romb ornament, prepended as the first flex item (forge `.orn`). */
@@ -144,14 +144,14 @@ body.layout-manager-enabled #content-area > .world {
   flex: 0 0 auto;
   transform: rotate(45deg);
   background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
-  box-shadow: 0 0 6px rgba(184, 150, 90, 0.4);
+  box-shadow: 0 0 6px rgba(var(--fu-metal-rgb, 184,150,90), 0.4);
 }
 
 /* Title — forge `.panel__title`. Compound selector outranks layout.css's
    `.docked-panel--popup .docked-panel__title`. */
 .managed-panel__header .managed-panel__title {
   flex: 0 0 auto;
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   font-weight: 600;
   font-size: 10.5px;
   letter-spacing: 0.22em;
@@ -197,7 +197,7 @@ body.layout-manager-enabled #content-area > .world {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   font-size: 8.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -289,7 +289,7 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   --popup-bg: transparent;
   --popup-section-bg: rgba(10, 9, 8, 0.55);
   --popup-subtle-bg: rgba(255, 255, 255, 0.03);
-  --popup-hover-bg: rgba(184, 150, 90, 0.10);
+  --popup-hover-bg: rgba(var(--fu-metal-rgb, 184,150,90), 0.10);
   --popup-control-bg: rgba(28, 26, 23, 0.8);
   --popup-control-hover-bg: rgba(42, 37, 28, 0.9);
   --popup-control-active-bg: rgba(42, 37, 28, 1);
@@ -429,7 +429,7 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   border-radius: 7px;
   padding: 5px;
   box-shadow:
-    inset 0 1px 0 rgba(184, 150, 90, 0.14),
+    inset 0 1px 0 rgba(var(--fu-metal-rgb, 184,150,90), 0.14),
     0 3px 10px rgba(0, 0, 0, 0.6),
     0 12px 30px rgba(0, 0, 0, 0.45);
 }
@@ -440,7 +440,7 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   border-radius: 4px;
   padding: 6px 10px;
   width: 100%;
-  font-family: "Cinzel", serif;
+  font-family: var(--fu-display, "Cinzel"), serif;
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -451,7 +451,7 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
 .layout-split-menu .dropdown-item.layout-split-menu__item:hover,
 .layout-split-menu .dropdown-item.layout-split-menu__item:focus {
   color: var(--parchment);
-  background: rgba(184, 150, 90, 0.12);
+  background: rgba(var(--fu-metal-rgb, 184,150,90), 0.12);
 }
 .layout-split-menu .layout-split-menu__icon {
   color: var(--bronze);
