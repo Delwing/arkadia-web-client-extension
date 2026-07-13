@@ -53,8 +53,16 @@ body.layout-manager-enabled #content-area > .world {
 }
 
 /* ── The plate — every managed window becomes a forged panel ──────────────
-   Mirrors style.css `.panel` fill + `.forged` border/shadow. */
-.managed-panel {
+   Mirrors style.css `.panel` fill + `.forged` border/shadow.
+   Doubled `.managed-panel.managed-panel` (0,2,0) so this plate fill outranks
+   layout.css's base `.managed-panel { background: var(--popup-bg, ...) }` (0,1,0)
+   REGARDLESS of stylesheet order. In dev, layout-theme.css is injected after
+   layout.css so a plain (0,1,0) selector won on source order; the production
+   bundle hoists the shared layout.css AFTER this file, flipping the tie so
+   layout.css's shorthand (which resolves to transparent here — forge sets
+   --popup-bg:transparent below) wiped the plate. Winning by specificity keeps
+   the fill order-independent. */
+.managed-panel.managed-panel {
   position: relative;
   overflow: hidden;
   background-color: #0a0a09;
