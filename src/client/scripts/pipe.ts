@@ -2,25 +2,15 @@ import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
 import { getHerbManager } from "@modules/core/herbManagerProvider";
 import loadHerbs, { isHerbSmokable } from "./herbsLoader";
+import { OTHER_OWNER_WORDS_ALT } from "./otherOwner";
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 
-// A pipe burning out is shown to the whole room, so another character's pipe
-// would otherwise match the burn-out trigger. Their pipe names its owner: an
-// introduced character as a capitalized name (already excluded by the
-// lowercase adjective run in the pattern) or an unintroduced one as
-// "jakiegos/jakiejs tam <rasa>". These are the genitive owner words to reject.
-const PIPE_OWNER_WORDS = [
-    "jakiegos", "jakiejs",
-    "elfa", "elfki", "mezczyzny", "kobiety", "ogra", "ogrzycy",
-    "krasnoluda", "krasnoludki", "polelfa", "polelfki", "niziolka", "niziolki",
-    "halflinga", "halflinki", "mutanta", "mutantki", "gnoma", "gnomki",
-].join("|");
-
-// "Stara podniszczona fajka wypala sie i gasnie." — your own pipe only (the
-// negative lookahead drops lines naming another character as the owner).
+// "Stara podniszczona fajka wypala sie i gasnie." — your own pipe only. A pipe
+// burning out is shown to the whole room, so the negative lookahead drops lines
+// naming another character as the owner (see otherOwner.ts).
 const PIPE_BURN_OUT = new RegExp(
-    `^(?!.*\\b(?:${PIPE_OWNER_WORDS})\\b)[A-Z][a-z]+(?: [a-z]+)* fajka(?: [a-z]+)* wypala sie i gasnie\\.$`,
+    `^(?!.*\\b(?:${OTHER_OWNER_WORDS_ALT})\\b)[A-Z][a-z]+(?: [a-z]+)* fajka(?: [a-z]+)* wypala sie i gasnie\\.$`,
 );
 
 /**
