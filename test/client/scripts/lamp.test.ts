@@ -78,7 +78,7 @@ describe('lamp triggers', () => {
 
   test("keeps running when another person's pipe burns out (unintroduced race)", () => {
     startLamp();
-    parse('Stara wygieta fajka jakiegos tam krasnoluda wypala sie i gasnie.');
+    parse('Stara wygieta fajka krzepkiego lysego krasnoluda wypala sie i gasnie.');
     expect(stopped()).toBe(false);
   });
 
@@ -96,7 +96,7 @@ describe('lamp triggers', () => {
 
   test("keeps running when another person's lamp burns out (unintroduced race)", () => {
     startLamp();
-    parse('Lampka oliwna jakiegos tam elfa wypala sie i gasnie.');
+    parse('Lampka oliwna wysokiego jasnowlosego elfa wypala sie i gasnie.');
     expect(stopped()).toBe(false);
   });
 

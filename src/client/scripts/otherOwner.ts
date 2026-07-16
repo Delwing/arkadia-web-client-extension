@@ -6,14 +6,14 @@
 //   * an introduced character, as a capitalized name in the middle of the
 //     sentence ("Stara wygieta fajka Pabla wypala sie i gasnie.") — already
 //     excluded by patterns that only allow lowercase words around the noun; or
-//   * an unintroduced character, as a genitive "jakiegos/jakiejs tam <rasa>"
-//     ("... fajka jakiegos tam krasnoluda wypala sie i gasnie.").
+//   * an unintroduced character, as two adjectives followed by their race in
+//     the genitive ("... fajka krzepkiego lysego krasnoluda wypala sie i
+//     gasnie.") — the adjectives vary, so the race noun is the reliable anchor.
 //
-// These are the genitive owner words that flag the second form. Drop a line
+// These are the genitive race nouns that flag the second form. Drop a line
 // containing any of them: the item belongs to someone else, so it must not
 // drive your own state.
 export const OTHER_OWNER_WORDS = [
-    "jakiegos", "jakiejs",
     "elfa", "elfki", "mezczyzny", "kobiety", "ogra", "ogrzycy",
     "krasnoluda", "krasnoludki", "polelfa", "polelfki", "niziolka", "niziolki",
     "halflinga", "halflinki", "mutanta", "mutantki", "gnoma", "gnomki",

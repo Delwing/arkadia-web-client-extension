@@ -95,7 +95,7 @@ describe('pipe', () => {
   test("ignores another player's pipe burning out (unintroduced race)", () => {
     characterStorage.setCharacter('PipeTester9');
     characterStorage.set('pipe_filled', true);
-    feed('Stara wygieta fajka jakiegos tam krasnoluda wypala sie i gasnie.');
+    feed('Stara wygieta fajka krzepkiego lysego krasnoluda wypala sie i gasnie.');
     expect(sendEvent).not.toHaveBeenCalled();
     expect(characterStorage.get('pipe_filled')).toBe(true);
   });
