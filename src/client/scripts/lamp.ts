@@ -1,5 +1,17 @@
 import Client from "../Client";
 import {takeFromBag} from "./bagManager";
+import {OTHER_OWNER_WORDS_ALT} from "./otherOwner";
+
+// "... lampa wypala sie i gasnie." — your own lamp running out. The same
+// room-wide "wypala sie i gasnie." phrasing is used by other items (a pipe) and
+// by other characters' lamps, so match the lamp noun positively rather than
+// blacklisting everything else, and drop lines naming another owner (see
+// otherOwner.ts). An introduced owner appears as a capitalized name after the
+// noun, excluded by only allowing lowercase words there; the leading capital is
+// optional so a bare "lampa wypala sie i gasnie." still matches.
+const LAMP_BURN_OUT = new RegExp(
+    `^(?!.*\\b(?:${OTHER_OWNER_WORDS_ALT})\\b)(?:[A-Z][a-z]+(?: [a-z]+)* )?[Ll]amp[a-z]+(?: [a-z]+)* wypala sie i gasnie\\.$`,
+);
 
 export default function initLamp(client: Client) {
     const tag = 'lamp'
@@ -65,12 +77,7 @@ export default function initLamp(client: Client) {
         /^Gasisz(?: [a-z ]+)? lampe/,
         /nie jest zapalona\.$/,
         /^[ >]*Probujesz zapalic [a-z ]+ jest wyczerpana\.$/,
-        // The lamp running out ("... lampa wypala sie i gasnie."). A pipe burning
-        // out uses the same phrasing, so reject any line naming a pipe ("fajka") —
-        // it may name its owner ("... fajka jakiegos tam krasnoluda wypala sie i
-        // gasnie.") or carry adjectives after the noun, which a single-word
-        // lookbehind on "fajka" would miss.
-        /^(?!.*\bfajk).* wypala sie i gasnie\.$/,
+        LAMP_BURN_OUT,
         /^[ >]*Woda szybko gasi(?: .*)? lampe\.$/
     ]
     const refillPattern = /^[ >]*Dopelniasz(?: [a-z ]+)? [a-z]+ oleju/

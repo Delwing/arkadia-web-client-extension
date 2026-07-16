@@ -59,31 +59,56 @@ describe('lamp triggers', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('napelnij lampe olejem');
   });
 
-  test('stops the timer when the lamp burns out', () => {
+  const startLamp = () => {
     parse('Zapalasz swoja lampe.');
     jest.clearAllMocks();
+  };
+
+  test('stops the timer when the lamp burns out (bare)', () => {
+    startLamp();
     parse('lampa wypala sie i gasnie.');
     expect(stopped()).toBe(true);
   });
 
+  test('stops the timer when the lamp burns out (with description)', () => {
+    startLamp();
+    parse('Lampka oliwna wypala sie i gasnie.');
+    expect(stopped()).toBe(true);
+  });
+
   test("keeps running when another person's pipe burns out (unintroduced race)", () => {
-    parse('Zapalasz swoja lampe.');
-    jest.clearAllMocks();
+    startLamp();
     parse('Stara wygieta fajka jakiegos tam krasnoluda wypala sie i gasnie.');
     expect(stopped()).toBe(false);
   });
 
   test("keeps running when another person's pipe burns out (introduced name)", () => {
-    parse('Zapalasz swoja lampe.');
-    jest.clearAllMocks();
+    startLamp();
     parse('Stara wygieta fajka Pabla wypala sie i gasnie.');
     expect(stopped()).toBe(false);
   });
 
   test('keeps running when your own pipe burns out', () => {
-    parse('Zapalasz swoja lampe.');
-    jest.clearAllMocks();
+    startLamp();
     parse('Kosciana fajka zwienczona osmolonymi piorami wypala sie i gasnie.');
+    expect(stopped()).toBe(false);
+  });
+
+  test("keeps running when another person's lamp burns out (unintroduced race)", () => {
+    startLamp();
+    parse('Lampka oliwna jakiegos tam elfa wypala sie i gasnie.');
+    expect(stopped()).toBe(false);
+  });
+
+  test("keeps running when another person's lamp burns out (introduced name)", () => {
+    startLamp();
+    parse('Lampka oliwna Pabla wypala sie i gasnie.');
+    expect(stopped()).toBe(false);
+  });
+
+  test('keeps running when an unrelated item burns out', () => {
+    startLamp();
+    parse('Pochodnia wypala sie i gasnie.');
     expect(stopped()).toBe(false);
   });
 });
