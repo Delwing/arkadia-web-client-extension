@@ -65,7 +65,12 @@ export default function initLamp(client: Client) {
         /^Gasisz(?: [a-z ]+)? lampe/,
         /nie jest zapalona\.$/,
         /^[ >]*Probujesz zapalic [a-z ]+ jest wyczerpana\.$/,
-        /(?<!fajka) wypala sie i gasnie\.$/,
+        // The lamp running out ("... lampa wypala sie i gasnie."). A pipe burning
+        // out uses the same phrasing, so reject any line naming a pipe ("fajka") —
+        // it may name its owner ("... fajka jakiegos tam krasnoluda wypala sie i
+        // gasnie.") or carry adjectives after the noun, which a single-word
+        // lookbehind on "fajka" would miss.
+        /^(?!.*\bfajk).* wypala sie i gasnie\.$/,
         /^[ >]*Woda szybko gasi(?: .*)? lampe\.$/
     ]
     const refillPattern = /^[ >]*Dopelniasz(?: [a-z ]+)? [a-z]+ oleju/

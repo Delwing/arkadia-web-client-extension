@@ -21,12 +21,22 @@ describe('lamp triggers', () => {
   let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initLamp((client as unknown) as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     jest.clearAllMocks();
   });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  const stopped = () =>
+    (client.sendEvent as jest.Mock).mock.calls.some(
+      ([event, value]) => event === 'lampTimer' && value === null,
+    );
 
   test('binds empty bottle handling', () => {
     parse('butelka oleju jest pusta.');
@@ -47,5 +57,33 @@ describe('lamp triggers', () => {
     callback();
     expect(takeFromBag).toHaveBeenCalledWith(client, 'olej');
     expect(client.sendCommand).toHaveBeenCalledWith('napelnij lampe olejem');
+  });
+
+  test('stops the timer when the lamp burns out', () => {
+    parse('Zapalasz swoja lampe.');
+    jest.clearAllMocks();
+    parse('lampa wypala sie i gasnie.');
+    expect(stopped()).toBe(true);
+  });
+
+  test("keeps running when another person's pipe burns out (unintroduced race)", () => {
+    parse('Zapalasz swoja lampe.');
+    jest.clearAllMocks();
+    parse('Stara wygieta fajka jakiegos tam krasnoluda wypala sie i gasnie.');
+    expect(stopped()).toBe(false);
+  });
+
+  test("keeps running when another person's pipe burns out (introduced name)", () => {
+    parse('Zapalasz swoja lampe.');
+    jest.clearAllMocks();
+    parse('Stara wygieta fajka Pabla wypala sie i gasnie.');
+    expect(stopped()).toBe(false);
+  });
+
+  test('keeps running when your own pipe burns out', () => {
+    parse('Zapalasz swoja lampe.');
+    jest.clearAllMocks();
+    parse('Kosciana fajka zwienczona osmolonymi piorami wypala sie i gasnie.');
+    expect(stopped()).toBe(false);
   });
 });
