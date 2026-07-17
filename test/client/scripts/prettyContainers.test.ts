@@ -312,6 +312,19 @@ describe('prettyContainers with real Client', () => {
       expect(sendSpy).toHaveBeenCalled();
       expect(sendSpy.mock.calls[0][0]).toBe('ob plecak');
     });
+
+    test('sends ob command with multi-word target', () => {
+      const sendSpy = jest.spyOn(mockAdapter, 'send');
+
+      const alias = client.aliases.find(a => a.pattern.test('/przejrzyj drugi stojak'));
+      expect(alias).toBeDefined();
+
+      const match = '/przejrzyj drugi stojak'.match(alias!.pattern);
+      alias!.callback(match!);
+
+      expect(sendSpy).toHaveBeenCalled();
+      expect(sendSpy.mock.calls[0][0]).toBe('ob drugi stojak');
+    });
   });
 
   describe('item categorization', () => {
