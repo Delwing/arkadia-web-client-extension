@@ -295,6 +295,11 @@ body::after {
   position: sticky;
   bottom: 0;
   z-index: 2;
+  /* Don't let flex shrink this: it's a flex child of the column wrapper and its
+     overflow:hidden sticky-area can collapse to 0, so with the default
+     flex-shrink:1 the whole footer (and any dragged height) gets squashed to a
+     sliver the moment the log overflows. flex:none keeps height authoritative. */
+  flex: 0 0 auto;
   height: 15rem;
   max-height: 50vh;
   overflow: hidden;
