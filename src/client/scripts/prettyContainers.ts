@@ -806,7 +806,7 @@ export default function initContainers(client: Client) {
     characterStorage.onChange('settings', applyContainerSettings);
 
     client.aliases.push({
-        pattern: /^\/przejrzyj(?: (\w+))?$/,
+        pattern: /^\/przejrzyj(?: (.+))?$/,
         callback: (m?: RegExpMatchArray) => {
             filter = magicAndKeysFilter;
             plugLinks = true;
