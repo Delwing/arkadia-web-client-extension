@@ -531,13 +531,10 @@ function listItemStyle(settings: DesktopButtonSetting): React.CSSProperties {
         backgroundColor: hexToRgba(settings.color, settings.backgroundOpacity),
         color: settings.fontColor,
         fontSize: settings.fontSize,
-        border: '1px solid rgba(160, 208, 224, 0.6)',
-        borderRadius: 4,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         textAlign: 'center',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.25)',
         cursor: 'pointer',
         flexShrink: 0,
     };

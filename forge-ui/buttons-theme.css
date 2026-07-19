@@ -1,0 +1,174 @@
+/* Load the shared button base stylesheets FIRST, in-chunk, so the overrides
+   below reliably win in production. Each of these is JS-imported by more than
+   one entry (stock + forge, at least), so a JS import turns it into a shared
+   chunk that the built HTML links AFTER forge's entry CSS — dev (per-import
+   <style> tags, source order) would work, prod would not (same class of bug
+   layout-theme.css's header documents for layout.css). `@import` inlines them
+   here, ahead of the overrides, matching dev. Must stay the first rules in
+   this file (CSS requires @import before other rules) and forge's main.tsx
+   must JS-import only this file, not the three below. */
+@import '../src/ui/web/buttons/desktopButtons.css';
+@import '../src/ui/web/buttons/mobileCommandRadial.css';
+@import '../src/ui/web/buttons/mobileDirectionButtons.css';
+
+/* ============================================================
+   forge-ui skin for the shared runtime button components
+   (src/ui/web/buttons/{DesktopButtons,MobileDirectionButtons,
+   MobileCommandRadial}.tsx).
+   ============================================================
+
+   These components are shared with stock — this file only overrides cosmetic
+   properties (border/radius/shadow/font/background-image), never touching
+   stock's look or the `background-color` itself: that stays exactly where
+   settings put it (inline, from the component).
+
+   Modeled directly on the right-click context menu (.alt-context-menu /
+   ContextMenu.tsx, see style.css) rather than the .chip/.gem family: same
+   matte --tex-fine surface + iron border + bronze-hairline bevel, same
+   Cinzel/uppercase/letter-spaced label voice, same warm bronze hover wash
+   (rgba(184,150,90,..) tint) instead of a plain brightness/border change.
+   The `--btn-wash` custom property (default transparent) lets :hover/
+   highlighted states add that tint without restating the whole
+   background-image stack. `background-color` stays inline/settings-driven —
+   it now reads as a tinted matte surface rather than a flat chip, the same
+   way the menu's dark fill would tint if given a colored background. Only
+   `.mobile-direction-buttons`' box-shadow needs `!important`: the component
+   computes it inline per-instance from the background's alpha
+   (`computeBoxShadow`), and the plate should always read as forged steel
+   regardless of that. */
+
+:is(.desktop-button, .desktop-button-list-item, .mobile-button, .mobile-command-radial__command) {
+    --btn-wash: rgba(184, 150, 90, 0);
+    background-image:
+        linear-gradient(var(--btn-wash), var(--btn-wash)),
+        linear-gradient(rgba(8, 7, 5, .42), rgba(8, 7, 5, .42)),
+        var(--tex-fine),
+        linear-gradient(180deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, 0) 30%, rgba(0, 0, 0, .34) 100%);
+    background-blend-mode: normal, normal, soft-light, overlay;
+    background-size: 100% 100%, 100% 100%, 130px 130px, 100% 100%;
+    font-family: "Cinzel", serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+    transition: color .12s ease, border-color .15s ease;
+}
+
+:is(.desktop-button, .mobile-button, .mobile-command-radial__command):hover {
+    --btn-wash: rgba(184, 150, 90, .16);
+    color: #f4ecd6;
+}
+
+/* ── Desktop buttons ─────────────────────────────────────── */
+.desktop-button {
+    border: 1px solid var(--iron-lo);
+    border-radius: 6px;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 2px 6px rgba(0, 0, 0, .5);
+}
+
+.desktop-button:hover {
+    border-color: var(--bronze-dim);
+}
+
+.desktop-button:active {
+    transform: translateY(1px);
+}
+
+.desktop-button.active {
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 0 0 2px var(--bronze-dim);
+}
+
+.desktop-button-list-item {
+    border: 1px solid var(--iron-lo);
+    border-radius: 6px;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .14),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 2px 6px rgba(0, 0, 0, .5);
+}
+
+/* ── Mobile direction pad ────────────────────────────────── */
+.mobile-direction-buttons {
+    border: 1px solid var(--iron-lo);
+    border-radius: 9px;
+    background-image:
+        linear-gradient(rgba(8, 7, 5, .55), rgba(8, 7, 5, .55)),
+        var(--tex-fine),
+        linear-gradient(180deg, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, 0) 25%, rgba(0, 0, 0, .35) 100%);
+    background-blend-mode: normal, soft-light, overlay;
+    background-size: 100% 100%, 130px 130px, 100% 100%;
+    /* Overrides the inline, settings-computed shadow — see file header. */
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -3px 6px rgba(0, 0, 0, .72),
+        inset 0 0 0 1px rgba(0, 0, 0, .5),
+        0 3px 10px rgba(0, 0, 0, .6) !important;
+}
+
+.mobile-button {
+    border: 1px solid var(--iron-lo);
+    border-radius: 6px;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 2px 6px rgba(0, 0, 0, .5);
+}
+
+.mobile-button:active {
+    transform: translateY(1px);
+}
+
+.mobile-button.active {
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 0 0 2px var(--bronze-dim);
+}
+
+/* ── Mobile command radial ───────────────────────────────── */
+.mobile-command-radial::before {
+    background: rgba(10, 9, 8, .55);
+}
+
+.mobile-command-radial__command {
+    border: 1px solid var(--iron-lo);
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .18),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 6px 18px rgba(0, 0, 0, .55);
+}
+
+.mobile-command-radial__command--highlighted {
+    --btn-wash: rgba(184, 150, 90, .22);
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .22),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 8px 22px rgba(0, 0, 0, .65),
+        0 0 0 2px var(--bronze-dim);
+}
+
+.mobile-command-radial__threshold {
+    border-color: rgba(184, 150, 90, .45);
+    background: rgba(10, 9, 8, .35);
+}
+
+.mobile-command-radial__selected {
+    color: var(--parchment);
+    font-family: "Cinzel", serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+}

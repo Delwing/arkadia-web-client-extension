@@ -77,6 +77,9 @@
 }
 
 .desktop-button-list-item {
+  border: 1px solid rgba(160, 208, 224, 0.6);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   transition: filter 0.15s ease;
   opacity: 1;
 }
