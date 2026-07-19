@@ -69,6 +69,7 @@
    lives outside the floating frame, so without this it wouldn't inherit the
    forge palette and would render with undefined vars (transparent). */
 .panel--floating,
+.forge-menu-modal,
 [data-popup-overlay] {
     --popup-bg: transparent;
     --popup-section-bg: rgba(10, 9, 8, .55);

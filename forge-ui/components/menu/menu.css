@@ -1,0 +1,488 @@
+/* ============================================================
+   forge-ui · command-rail menu (button + dropdown) and the
+   forged modal shell that hosts the stock settings/editors.
+   ============================================================ */
+
+/* ── Command-rail button ─────────────────────────────────── */
+.forge-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.forge-menu__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    color: var(--parchment-dim);
+    background: rgba(28, 26, 23, .55);
+    border: 1px solid var(--iron-lo);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.forge-menu__button:hover,
+.forge-menu__button--open {
+    color: var(--bronze);
+    border-color: var(--bronze-dim);
+    background: rgba(42, 37, 28, .8);
+}
+
+/* ── Dropdown list (opens upward from the rail) ──────────── */
+.forge-menu__list {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    z-index: 4200;
+    min-width: 190px;
+    max-height: 70vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 5px;
+    list-style: none;
+    background-color: #14110c;
+    background-image: var(--tex-fine);
+    background-size: 130px 130px;
+    background-blend-mode: soft-light;
+    border: 1px solid var(--iron-lo);
+    border-radius: 8px;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .14),
+        0 10px 30px rgba(0, 0, 0, .6);
+}
+.forge-menu__item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 10px;
+    color: var(--parchment);
+    background: none;
+    border: none;
+    border-radius: 5px;
+    font-family: "EB Garamond", Georgia, serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color .12s ease, background-color .12s ease;
+}
+.forge-menu__item:hover {
+    color: var(--bronze);
+    background: rgba(184, 150, 90, .10);
+}
+.forge-menu__divider {
+    height: 1px;
+    margin: 5px 6px;
+    background: linear-gradient(90deg, transparent, var(--iron-hi), transparent);
+}
+
+/* ── Forged modal shell ──────────────────────────────────── */
+.forge-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4vh 3vw;
+    background: rgba(6, 5, 4, .62);
+    backdrop-filter: blur(2px);
+}
+.panel.panel--modal {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 10px;
+    background-color: #0a0a09;
+    background-image:
+        var(--tex-stone-soft),
+        var(--tex-fine),
+        linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
+    background-blend-mode: soft-light, soft-light, normal;
+    background-size: 400px 400px, 130px 130px, 100% 100%;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 0 0 1px rgba(0, 0, 0, .5),
+        0 18px 60px rgba(0, 0, 0, .6);
+}
+.forge-menu-modal--md { max-width: 520px; }
+.forge-menu-modal--lg { max-width: 860px; }
+.forge-menu-modal--xl { max-width: 1160px; }
+
+.forge-menu-modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 2px 6px;
+    padding: 10px 12px;
+    overflow: auto;
+    color: var(--parchment);
+}
+.forge-menu-modal__footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0 6px 6px;
+    padding: 8px 12px 4px;
+    border-top: 1px solid var(--iron-lo);
+}
+
+.forge-menu-modal__head-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.forge-menu-modal__close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--parchment-dim);
+    font-family: "Cinzel", serif;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s ease, text-shadow .15s ease;
+}
+.forge-menu-modal__close:hover {
+    color: var(--bronze);
+    text-shadow: 0 0 8px rgba(184, 150, 90, .5);
+}
+
+.forge-menu-loading {
+    margin: auto;
+    padding: 24px;
+    color: var(--parchment-dim);
+    font-family: "Cinzel", serif;
+    letter-spacing: .08em;
+    text-align: center;
+}
+
+.forge-menu-qr {
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+}
+.forge-menu-qr img {
+    background: #fff;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+/* Thin forged scrollbars inside the modal (portaled outside .panel--floating). */
+.forge-menu-modal,
+.forge-menu-modal * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--iron-hi) transparent;
+}
+.forge-menu-modal ::-webkit-scrollbar { width: 8px; height: 8px; }
+.forge-menu-modal ::-webkit-scrollbar-thumb { background: var(--iron-hi); border-radius: 4px; }
+.forge-menu-modal ::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================
+   Scoped Bootstrap-form subset.
+
+   The stock settings/editors are built with Bootstrap utility classes
+   (btn, form-control, nav-tabs, table, …). forge deliberately does NOT load
+   Bootstrap CSS globally (its Reboot would, e.g., add margins to the game
+   log's <p> lines), so this reimplements just the primitives these editors
+   use, scoped under `.forge-menu-modal` and mapped to the forge palette.
+   ============================================================ */
+
+/* Layout utilities used inside the option bodies. */
+.forge-menu-modal .d-flex { display: flex; }
+.forge-menu-modal .flex-column { flex-direction: column; }
+.forge-menu-modal .flex-wrap { flex-wrap: wrap; }
+.forge-menu-modal .flex-fill { flex: 1 1 auto; }
+.forge-menu-modal .flex-grow-1 { flex-grow: 1; }
+.forge-menu-modal .align-items-center { align-items: center; }
+.forge-menu-modal .justify-content-between { justify-content: space-between; }
+.forge-menu-modal .justify-content-end { justify-content: flex-end; }
+.forge-menu-modal .ms-auto { margin-left: auto; }
+.forge-menu-modal .w-100 { width: 100%; }
+.forge-menu-modal .h-100 { height: 100%; }
+.forge-menu-modal .gap-1 { gap: .25rem; }
+.forge-menu-modal .gap-2 { gap: .5rem; }
+.forge-menu-modal .gap-3 { gap: 1rem; }
+.forge-menu-modal .overflow-auto { overflow: auto; }
+.forge-menu-modal .text-muted { color: var(--parchment-dim); }
+.forge-menu-modal .small { font-size: .85em; }
+
+/* Buttons. */
+.forge-menu-modal .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-family: "EB Garamond", Georgia, serif;
+    font-size: 14px;
+    line-height: 1.2;
+    color: var(--parchment);
+    background-color: rgba(28, 26, 23, .8);
+    border: 1px solid var(--iron-lo);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.forge-menu-modal .btn:hover {
+    color: var(--parchment);
+    border-color: var(--bronze-dim);
+    background-color: rgba(42, 37, 28, .9);
+}
+.forge-menu-modal .btn:disabled { opacity: .5; cursor: not-allowed; }
+.forge-menu-modal .btn-sm { padding: 3px 8px; font-size: 12.5px; }
+.forge-menu-modal .btn-lg { padding: 9px 16px; font-size: 15px; }
+.forge-menu-modal .btn-primary {
+    color: #f2e6cc;
+    background-color: rgba(110, 86, 32, .5);
+    border-color: var(--bronze-dim);
+}
+.forge-menu-modal .btn-primary:hover {
+    background-color: rgba(110, 86, 32, .7);
+    border-color: var(--bronze);
+}
+.forge-menu-modal .btn-danger,
+.forge-menu-modal .btn-outline-danger {
+    color: #d79a86;
+    border-color: rgba(160, 72, 52, .5);
+    background-color: rgba(140, 52, 36, .22);
+}
+.forge-menu-modal .btn-danger:hover,
+.forge-menu-modal .btn-outline-danger:hover {
+    color: #e6ad99;
+    background-color: rgba(140, 52, 36, .38);
+}
+.forge-menu-modal .btn-success {
+    color: #c3d29c;
+    border-color: rgba(120, 140, 80, .5);
+    background-color: rgba(96, 116, 58, .26);
+}
+.forge-menu-modal .btn-close {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    color: var(--parchment-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0;
+}
+.forge-menu-modal .btn-close::before { content: "\00d7"; font-size: 18px; }
+.forge-menu-modal .btn-close:hover { color: var(--bronze); }
+
+/* Text inputs, selects, textareas. */
+.forge-menu-modal .form-control,
+.forge-menu-modal .form-select,
+.forge-menu-modal input[type="text"],
+.forge-menu-modal input[type="number"],
+.forge-menu-modal input[type="search"],
+.forge-menu-modal input[type="password"],
+.forge-menu-modal textarea,
+.forge-menu-modal select {
+    display: block;
+    width: 100%;
+    padding: 6px 9px;
+    font-family: "EB Garamond", Georgia, serif;
+    font-size: 14px;
+    color: var(--parchment);
+    background-color: rgba(20, 18, 15, .85);
+    border: 1px solid var(--iron-lo);
+    border-radius: 5px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.forge-menu-modal .form-control-sm { padding: 3px 7px; font-size: 12.5px; }
+.forge-menu-modal .form-control:focus,
+.forge-menu-modal .form-select:focus,
+.forge-menu-modal textarea:focus,
+.forge-menu-modal select:focus,
+.forge-menu-modal input:focus {
+    outline: none;
+    border-color: var(--bronze-dim);
+    box-shadow: 0 0 0 2px rgba(110, 86, 32, .25);
+}
+.forge-menu-modal .form-control::placeholder { color: var(--parchment-dim); }
+.forge-menu-modal .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238f836c' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 14px;
+    padding-right: 28px;
+}
+.forge-menu-modal option { color: var(--parchment); background-color: #14110c; }
+.forge-menu-modal .form-label {
+    display: inline-block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--parchment-dim);
+}
+
+/* Checkboxes / switches. */
+.forge-menu-modal .form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: auto;
+    padding-left: 0;
+    margin-bottom: 4px;
+}
+.forge-menu-modal .form-check-input {
+    appearance: none;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    background-color: rgba(20, 18, 15, .9);
+    border: 1px solid var(--iron-hi);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.forge-menu-modal .form-check-input:checked {
+    background-color: var(--bronze-dim);
+    border-color: var(--bronze);
+}
+.forge-menu-modal .form-check-input:checked::after {
+    content: "\2713";
+    display: block;
+    text-align: center;
+    line-height: 14px;
+    font-size: 11px;
+    color: #14110c;
+}
+.forge-menu-modal .form-switch .form-check-input {
+    width: 32px;
+    border-radius: 10px;
+    position: relative;
+}
+.forge-menu-modal .form-switch .form-check-input::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--parchment-dim);
+    transition: transform .15s ease;
+}
+.forge-menu-modal .form-switch .form-check-input:checked::after {
+    transform: translateX(15px);
+    background: #14110c;
+    line-height: normal;
+}
+.forge-menu-modal .form-check-label { cursor: pointer; }
+.forge-menu-modal .form-range { width: 100%; accent-color: var(--bronze); }
+
+/* Tabs / pills. */
+.forge-menu-modal .nav { display: flex; flex-wrap: wrap; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.forge-menu-modal .nav-tabs { border-bottom: 1px solid var(--iron-lo); }
+.forge-menu-modal .nav-link {
+    padding: 6px 12px;
+    color: var(--parchment-dim);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    font-family: "Cinzel", serif;
+    font-size: 12.5px;
+    letter-spacing: .04em;
+}
+.forge-menu-modal .nav-link:hover { color: var(--parchment); }
+.forge-menu-modal .nav-tabs .nav-link.active {
+    color: var(--bronze);
+    background-color: rgba(28, 26, 23, .7);
+    border-color: var(--iron-lo) var(--iron-lo) transparent;
+}
+.forge-menu-modal .nav-pills .nav-link.active {
+    color: #f2e6cc;
+    background-color: rgba(110, 86, 32, .5);
+    border-radius: 5px;
+}
+
+/* Tables. */
+.forge-menu-modal .table { width: 100%; border-collapse: collapse; color: var(--parchment); font-size: 13.5px; }
+.forge-menu-modal .table th,
+.forge-menu-modal .table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--iron-lo);
+    text-align: left;
+}
+.forge-menu-modal .table th { color: var(--parchment-dim); font-family: "Cinzel", serif; font-size: 11.5px; letter-spacing: .04em; }
+.forge-menu-modal .table-hover tbody tr:hover { background: rgba(184, 150, 90, .07); }
+
+/* Cards / list groups / alerts / badges. */
+.forge-menu-modal .card,
+.forge-menu-modal .list-group-item {
+    background-color: rgba(20, 18, 15, .55);
+    border: 1px solid var(--iron-lo);
+    border-radius: 6px;
+    color: var(--parchment);
+}
+.forge-menu-modal .card { padding: 0; }
+.forge-menu-modal .card-body { padding: 10px 12px; }
+.forge-menu-modal .list-group { display: flex; flex-direction: column; gap: 4px; padding: 0; margin: 0; list-style: none; }
+.forge-menu-modal .list-group-item { padding: 8px 10px; }
+.forge-menu-modal .alert {
+    padding: 8px 12px;
+    border: 1px solid var(--iron-lo);
+    border-radius: 6px;
+    background: rgba(28, 26, 23, .6);
+    color: var(--parchment);
+}
+.forge-menu-modal .alert-danger { border-color: rgba(160, 72, 52, .5); background: rgba(140, 52, 36, .18); }
+.forge-menu-modal .alert-warning { border-color: rgba(160, 122, 52, .5); background: rgba(150, 112, 42, .18); }
+.forge-menu-modal .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    font-size: 11.5px;
+    color: #f2e6cc;
+    background-color: rgba(110, 86, 32, .45);
+    border: 1px solid var(--bronze-dim);
+    border-radius: 999px;
+}
+
+/* Input groups. */
+.forge-menu-modal .input-group { display: flex; align-items: stretch; }
+.forge-menu-modal .input-group > * { border-radius: 0; }
+.forge-menu-modal .input-group > *:first-child { border-radius: 5px 0 0 5px; }
+.forge-menu-modal .input-group > *:last-child { border-radius: 0 5px 5px 0; }
+.forge-menu-modal .input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 6px 9px;
+    color: var(--parchment-dim);
+    background: rgba(28, 26, 23, .8);
+    border: 1px solid var(--iron-lo);
+    font-size: 13px;
+}
+
+/* The docs body rendered by mountDocs. */
+.forge-docs-host .docs-content { line-height: 1.55; }
+.forge-docs-host .docs-content h1,
+.forge-docs-host .docs-content h2,
+.forge-docs-host .docs-content h3 { font-family: "Cinzel", serif; color: var(--bronze); }
+.forge-docs-host .docs-content a { color: var(--bronze); }
+.forge-docs-host .docs-content code {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    background: rgba(0, 0, 0, .35);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+.forge-docs-host .docs-nav .btn.active {
+    color: var(--bronze);
+    border-color: var(--bronze-dim);
+}

@@ -19,6 +19,9 @@ import '@web/popups/popups.css';
 // inlines layout.css into forge's entry chunk in source order, ahead of the
 // overrides, so prod matches dev. See layout-theme.css.
 import './layout-theme.css';
+// Command-rail menu button, its dropdown, and the forged modal shell (with a
+// scoped Bootstrap-form subset) that hosts the stock settings/editors.
+import './components/menu/menu.css';
 import { createRoot } from 'react-dom/client';
 import {
     setDockingSupported,

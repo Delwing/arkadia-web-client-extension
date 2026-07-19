@@ -3,6 +3,7 @@ import { useCommandLine } from '../hooks/useCommandLine';
 import MultiBindStrip from '@web-ui/footer/MultiBindStrip';
 import FooterStrip from '@web-ui/footer/FooterStrip';
 import VitalGems from './VitalGems';
+import Menu from './Menu';
 
 /**
  * The bottom HUD plate: one forged panel stacking, top to bottom, the location
@@ -66,6 +67,7 @@ export default function CommandRail() {
                             <use href="#knot" stroke="currentColor" />
                         </svg>
                     </span>
+                    <Menu />
                 </div>
             </div>
         </div>

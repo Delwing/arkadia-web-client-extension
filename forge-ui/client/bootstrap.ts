@@ -1,4 +1,5 @@
 import type Client from '@client/Client';
+import type { HelperConnection } from '@modules/helper/HelperConnection';
 import { globalStorage } from '@modules/core/storage';
 import { defaultUiSettings } from '@web/defaultUiSettings';
 import { bootstrapGameClient } from '@web/clientBootstrap';
@@ -6,6 +7,16 @@ import { installClientPorts } from '@web/installClientPorts';
 import ObjectList from '@web/ObjectList';
 import { getAttackController } from './attackController';
 import { registerBuiltinFooterItems } from '@web-ui/footer/builtinItems';
+
+// The helper companion connection built during bootstrap. The Helper settings
+// panel (opened from the forge menu) needs the live instance; capturing it here
+// avoids prop-drilling it through the React tree.
+let helperConnection: HelperConnection | null = null;
+
+/** The helper connection created by {@link createClient}, or null before boot. */
+export function getHelperConnection(): HelperConnection | null {
+    return helperConnection;
+}
 
 /**
  * Build the game client for the Forged HUD.
@@ -39,7 +50,9 @@ export function createClient(): Client {
         globalStorage.set('uiSettings', defaultUiSettings);
     }
 
-    const { client } = bootstrapGameClient({ installPorts: installClientPorts });
+    const boot = bootstrapGameClient({ installPorts: installClientPorts });
+    const { client } = boot;
+    helperConnection = boot.helperConnection;
 
     // Instantiate the attack controller once at boot (not lazily on first attack),
     // so the footer Atk chip's mode changes persist and drive team-attack behaviour
