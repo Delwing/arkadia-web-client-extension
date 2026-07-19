@@ -1238,3 +1238,23 @@ textarea.cmd-input {
 .alt-context-menu--compact button { padding: 5px 8px; }
 
 @media (max-width: 720px) { .gem .label .name { display: none; } #main_text_output_msg_wrapper { font-size: 12px; } }
+
+/* Temporary way back to the stock UI (see ShellPickerButton) — pinned out of
+   the way of the HUD chrome until Phase 2 gives forge its own settings surface. */
+.shell-picker-button {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 40;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--parchment-dim);
+  background: var(--iron);
+  border: 1px solid var(--iron-hi);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.shell-picker-button:hover {
+  color: var(--parchment);
+  border-color: var(--bronze-dim);
+}

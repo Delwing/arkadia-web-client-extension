@@ -9,7 +9,7 @@
 import './style.css';
 // Shared, var-driven popup body styles (see src/web/popups/popups.css).
 import '@web/popups/popups.css';
-// SPIKE: adopt the shared dock/layout manager in forge. layout.css brings the
+// Forge adopts the shared dock/layout manager. layout.css brings the
 // dock grid + panel/floating chrome; layout-theme.css re-skins it forged.
 // NOTE: layout.css is intentionally NOT JS-imported here — it is pulled in via an
 // `@import` at the TOP of layout-theme.css instead. A JS-imported layout.css is
@@ -34,23 +34,23 @@ import { createClient } from './client/bootstrap';
 import { ClientProvider } from './client/ClientContext';
 import App from './components/App';
 
-// SPIKE: forge now renders real dock slots (via LayoutManagerWrapper), so
+// Forge renders real dock slots (via LayoutManagerWrapper), so
 // docking IS supported here. Must run before the first popup component mounts
 // (usePopup reads this synchronously).
 setDockingSupported(true);
 
-// SPIKE: forge provides #layout-left/right-dock-host, so it can render the
+// Forge provides #layout-left/right-dock-host, so it can render the
 // "left/right rails span everything" mode. Gate the shared spanningDocks flag on
 // this capability so the stock UI (no host divs) ignores it. Must run before the
 // first LayoutProvider mount.
 setRailSpanSupported(true);
 
-// SPIKE: the built-in objectList slot renders forge's "W poblizu" panel, so
+// The built-in objectList slot renders forge's "W poblizu" panel, so
 // retitle its header and drop the stock "Lista"/timers actions. Process-local —
 // does not touch the shared state, so the stock UI keeps "Kondycje".
 setObjectListChrome({ title: 'W poblizu', hideStockActions: true });
 
-// SPIKE: force layout mode on so the dock grid activates, keep the built-in
+// Force layout mode on so the dock grid activates, keep the built-in
 // objectList slot enabled (forge renders the forged "W poblizu" panel into it),
 // and default to the vertical rail-span arrangement. NOTE: this persists to the
 // SHARED `layoutManagerState` key — enabling layout mode in the stock UI too.

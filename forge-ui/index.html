@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
+<!-- Shell picker: redirect to the stock UI if this device prefers it, before
+     the main bundle loads, so there's no flash of the wrong shell. See
+     index.html's matching script — same `uiSettings` blob, read via raw
+     localStorage for the same load-order reason. Relative redirect so this
+     works whether the site is served from a domain root or a subpath. -->
+<script>
+    try {
+        var uiSettingsRaw = localStorage.getItem('uiSettings');
+        var uiSettingsParsed = uiSettingsRaw ? JSON.parse(uiSettingsRaw) : null;
+        if (uiSettingsParsed && uiSettingsParsed.preferredShell === 'stock') {
+            location.replace('../');
+        }
+    } catch (e) {}
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0a0908" />
@@ -19,7 +33,7 @@
        @shared/dom/tooltip primitive renders into this by id; kept a sibling of
        #root so React never manages it. Styled by the .hover-tooltip rules. -->
   <div id="hover-tooltip" class="hover-tooltip"></div>
-  <!-- SPIKE: offscreen host for the built-in map panel. The shared MapPanel
+  <!-- Offscreen host for the built-in map panel. The shared MapPanel
        relocates #map into whichever dock/float shell owns it; EmbeddedMap binds
        to #map by id, so it must exist (attached) before the map is mounted. -->
   <div id="fu-offscreen" aria-hidden="true"

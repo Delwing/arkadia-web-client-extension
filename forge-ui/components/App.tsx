@@ -4,12 +4,13 @@ import IconDefs from './IconDefs';
 import World from './World';
 import CommandRail from './CommandRail';
 import ContextMenu from './ContextMenu';
+import ShellPickerButton from './ShellPickerButton';
 import { useClient } from '../client/ClientContext';
 import { mountForgedMap } from '../map/forgedMap';
 import ObjectsPanel from './ObjectsPanel';
 
 /**
- * SPIKE — the Forged HUD shell rebuilt on the SHARED dock manager.
+ * The Forged HUD shell, built on the SHARED dock manager.
  *
  * The DOM mirrors the stock skeleton ids (`#main-container` > `#content-area`
  * grid + `#input-area` + `#layout-bottom-dock-host`) so the shared
@@ -61,6 +62,7 @@ export default function App() {
                 <div id="layout-bottom-dock-host" />
             </div>
             <ContextMenu />
+            <ShellPickerButton />
         </>
     );
 }

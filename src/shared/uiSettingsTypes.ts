@@ -106,6 +106,15 @@ export interface DeviceViewSettings {
     contentFontSize: number;
     mapScale: number;
     outputMaxElements: number;
+    /**
+     * Which shell this device should load: the stock UI or the Forged HUD
+     * (`forge-ui/`). Device-scoped like the rest of this slice, and optional so
+     * existing stored blobs (and `defaultUiSettings`/`defaultChromeSettings`,
+     * which predate this field) don't need updating — an absent value means
+     * "no preference set," not "stock." See `index.html` / `forge-ui/index.html`
+     * for the redirect that reads it.
+     */
+    preferredShell?: 'stock' | 'forge';
 }
 
 /** Stock-UI chrome — layout/panels specific to the bundled web UI. */

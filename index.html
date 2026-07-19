@@ -1,6 +1,22 @@
 <!doctype html>
 <html lang="en">
 <head>
+    <!-- Shell picker: redirect to forge-ui if this device prefers it, before the
+         (large) main bundle loads, so there's no flash of the wrong shell. Reads
+         the same `uiSettings` blob @modules/core/settings' getDeviceViewSettings/
+         setDeviceViewSettings read/write, via raw localStorage — kept
+         dependency-free purely for load-order reasons. Relative redirect so this
+         works whether the site is served from a domain root or a subpath (e.g.
+         a GitHub Pages project page). -->
+    <script>
+        try {
+            var uiSettingsRaw = localStorage.getItem('uiSettings');
+            var uiSettingsParsed = uiSettingsRaw ? JSON.parse(uiSettingsRaw) : null;
+            if (uiSettingsParsed && uiSettingsParsed.preferredShell === 'forge') {
+                location.replace('forge-ui/');
+            }
+        } catch (e) {}
+    </script>
     <!-- Google tag (gtag.js) -->
     <script>
         // Only load Google Analytics if not in test mode
