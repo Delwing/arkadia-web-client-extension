@@ -3,9 +3,9 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import eventBus from '@modules/core/eventBus';
 import mudClient from '@web/MudClient';
 import { setupOutputContextMenu } from '@web/outputContextMenu';
+import { setupOutputMessageHandler } from '@shared/dom/outputMessageHandler';
 import { buildCharPlaque } from './charPlaque';
 
-const MAX_LINES = 500;
 // How many trailing lines the split-view sticky area mirrors while scrolled up.
 const STICKY_LINES = 50;
 
@@ -41,6 +41,7 @@ const buildMessageLine = (message: string | AnsiAwareBuffer, type?: string): HTM
     if (type) line.className = `t-${type.replace(/[^a-z0-9]+/gi, '-')}`;
     if (message instanceof AnsiAwareBuffer) {
         line.appendChild(message.toDom());
+        message.notifyRender(line);
     } else {
         line.textContent = decodeEntities(message);
     }
@@ -50,13 +51,18 @@ const buildMessageLine = (message: string | AnsiAwareBuffer, type?: string): HTM
 /**
  * The game log. Output is high-throughput and `AnsiAwareBuffer.toDom()` yields
  * raw DOM nodes, so the log is rendered imperatively into a ref'd container
- * (subscribing to the 'message' event) rather than through React state.
+ * rather than through React state — via the shared output-message engine
+ * (`@shared/dom/outputMessageHandler`), which also drives the stock UI's log.
+ * That engine owns split-view detection, trimming, and sticky-area mirroring;
+ * this component only supplies the forged `<p>`-per-line message shape (via
+ * `buildMessageNode`) and a few forge-only inline chrome lines (connect
+ * prompt, character plaque, room-short locale) appended through the engine's
+ * `appendNode`.
  *
  * Split-scroll: the wrapper carries a sticky `#split-bottom` (mirroring the stock
  * output wrapper — `#split-handle` + `#sticky-area`). Scrolling up into scrollback
  * reveals it, pinning the newest `STICKY_LINES` at the bottom so live output stays
- * visible while you read history; scrolling back to the bottom hides it again. New
- * lines are inserted *before* `#split-bottom` so it always stays last.
+ * visible while you read history; scrolling back to the bottom hides it again.
  */
 export default function GameLog() {
     const outputRef = useRef<HTMLDivElement>(null);
@@ -71,159 +77,26 @@ export default function GameLog() {
         const stickyArea = stickyAreaRef.current;
         if (!output || !splitBottom || !splitHandle || !stickyArea) return;
 
-        // Split-view is off (pinned to bottom) until the user scrolls up. While on,
-        // trimming and auto-scroll pause so the scrollback the user is reading is stable.
-        let isSplitView = false;
-        // Debounce window that swallows split-view toggles right after a change or
-        // during output bursts, so the split view doesn't flicker.
-        let suppressSplitViewUntil = 0;
+        const handler = setupOutputMessageHandler(mudClient, {
+            outputWrapper: output,
+            splitBottom,
+            splitHandle,
+            stickyArea,
+            stickyLines: STICKY_LINES,
+            maxElements: 500,
+            buildMessageNode: (message, type) => {
+                if (message === undefined || message === null) return null;
 
-        // At bottom when the scroll position (plus the sticky footer height) reaches
-        // the end. splitBottom is display:none while hidden, so its height is 0 then.
-        const isAtBottom = () =>
-            output.scrollTop + output.clientHeight + splitBottom.clientHeight >= output.scrollHeight - 1;
-
-        // Rebuilders for the most recent output lines. The split-view sticky footer
-        // is re-derived by calling these (each yields a FRESH, live node) instead of
-        // cloneNode'ing the visible nodes — cloning drops the per-node
-        // click/hyperlink listeners `toDom()` attaches, which would leave links and
-        // object menus dead in the sticky mirror. Transient chrome (the connect
-        // prompt) passes no rebuilder, so it is not mirrored.
-        const recent: Array<() => HTMLElement> = [];
-
-        const refreshStickyArea = () => {
-            stickyArea.replaceChildren();
-            const start = Math.max(0, recent.length - STICKY_LINES);
-            for (let i = start; i < recent.length; i++) {
-                stickyArea.appendChild(recent[i]());
-            }
-        };
-
-        const appendLine = (el: HTMLElement, rebuild?: () => HTMLElement) => {
-            const atBottom = isAtBottom();
-            // Keep #split-bottom last: insert output before it, never after.
-            output.insertBefore(el, splitBottom);
-
-            if (rebuild) {
-                recent.push(rebuild);
-                while (recent.length > STICKY_LINES) recent.shift();
-            }
-
-            // Trim only while pinned to the bottom — removing the oldest nodes while
-            // the user reads scrollback would shift what they're looking at. (The
-            // count excludes the always-present #split-bottom.)
-            if (!isSplitView) {
-                while (output.childElementCount - 1 > MAX_LINES) {
-                    const first = output.firstElementChild;
-                    if (!first || first === splitBottom) break;
-                    output.removeChild(first);
+                // room.short renders inline in the log flow with the forged location style.
+                if (type === 'room.short') {
+                    const name = textOf(message).trim();
+                    if (!name) return null;
+                    return buildLocale(name);
                 }
-            }
 
-            if (isSplitView) {
-                // Mirror the new line into the sticky footer (fresh, live node) and
-                // cap its length.
-                if (rebuild) {
-                    stickyArea.appendChild(rebuild());
-                    while (stickyArea.childElementCount > STICKY_LINES && stickyArea.firstElementChild) {
-                        stickyArea.removeChild(stickyArea.firstElementChild);
-                    }
-                }
-            } else if (atBottom) {
-                output.scrollTop = output.scrollHeight;
-            }
-        };
-
-        // ── Split-view toggling ─────────────────────────────────────────────────
-        const checkSplitView = () => {
-            if (Date.now() < suppressSplitViewUntil) return;
-            if (isAtBottom()) {
-                if (isSplitView) {
-                    isSplitView = false;
-                    suppressSplitViewUntil = Date.now() + 150;
-                    splitBottom.classList.add('split-hidden');
-                    stickyArea.replaceChildren();
-                }
-            } else if (!isSplitView) {
-                isSplitView = true;
-                suppressSplitViewUntil = Date.now() + 150;
-                splitBottom.classList.remove('split-hidden');
-                refreshStickyArea();
-            }
-        };
-        output.addEventListener('scroll', checkSplitView);
-
-        // Preemptively open the split view on scroll-up wheel to avoid a 1-frame
-        // jitter: 'wheel' fires before the compositor processes the scroll.
-        const onWheel = (e: WheelEvent) => {
-            if (
-                e.deltaY < 0 &&
-                !isSplitView &&
-                Date.now() >= suppressSplitViewUntil &&
-                output.scrollHeight > output.clientHeight &&
-                isAtBottom()
-            ) {
-                isSplitView = true;
-                suppressSplitViewUntil = Date.now() + 150;
-                splitBottom.classList.remove('split-hidden');
-                refreshStickyArea();
-            }
-        };
-        output.addEventListener('wheel', onWheel, { passive: true });
-
-        // ── Split-handle drag (resize the sticky footer) ────────────────────────
-        let isDraggingSplit = false;
-        const onSplitDragMove = (e: MouseEvent | TouchEvent) => {
-            if (!isDraggingSplit) return;
-            e.preventDefault();
-            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-            const wrapperRect = output.getBoundingClientRect();
-            const newHeight = Math.max(60, wrapperRect.bottom - clientY);
-            splitBottom.style.height = `${newHeight}px`;
-        };
-        const onSplitDragEnd = () => {
-            if (!isDraggingSplit) return;
-            isDraggingSplit = false;
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
-            document.removeEventListener('mousemove', onSplitDragMove);
-            document.removeEventListener('mouseup', onSplitDragEnd);
-            document.removeEventListener('touchmove', onSplitDragMove);
-            document.removeEventListener('touchend', onSplitDragEnd);
-            suppressSplitViewUntil = Date.now() + 150;
-            refreshStickyArea();
-        };
-        const onSplitDragStart = (e: MouseEvent | TouchEvent) => {
-            if (e.type === 'mousedown') e.preventDefault();
-            isDraggingSplit = true;
-            // Hold the split view open for the whole drag.
-            suppressSplitViewUntil = Infinity;
-            document.body.style.cursor = 'ns-resize';
-            document.body.style.userSelect = 'none';
-            document.addEventListener('mousemove', onSplitDragMove);
-            document.addEventListener('mouseup', onSplitDragEnd);
-            document.addEventListener('touchmove', onSplitDragMove, { passive: false });
-            document.addEventListener('touchend', onSplitDragEnd);
-        };
-        splitHandle.addEventListener('mousedown', onSplitDragStart);
-        splitHandle.addEventListener('touchstart', onSplitDragStart, { passive: true });
-
-        // Keep the view pinned to the bottom when the wrapper resizes (map/footer
-        // toggling, window resize) — unless the user has scrolled up into split view.
-        let previousHeight = output.clientHeight;
-        const resizeObserver = new ResizeObserver(() => {
-            const newHeight = output.clientHeight;
-            if (newHeight === previousHeight) return;
-            const wasAtBottom =
-                output.scrollTop + previousHeight + splitBottom.clientHeight >= output.scrollHeight - 1;
-            previousHeight = newHeight;
-            if (!isSplitView && wasAtBottom) {
-                requestAnimationFrame(() => {
-                    output.scrollTop = output.scrollHeight;
-                });
-            }
+                return buildMessageLine(message, type);
+            },
         });
-        resizeObserver.observe(output);
 
         // Right-click menu on the output (popup launchers + plugin entries). The
         // shared setup routes through the same contextMenuStore the forged
@@ -253,7 +126,8 @@ export default function GameLog() {
             button.addEventListener('click', () => mudClient.connect());
             el.appendChild(button);
             connectPrompt = el;
-            appendLine(el);
+            // Transient chrome — not mirrored into the sticky footer.
+            handler.appendNode(el);
         };
         const offConnect = eventBus.on('client.connect', removeConnectPrompt);
         const offDisconnect = eventBus.on('client.disconnect', showConnectPrompt);
@@ -269,38 +143,15 @@ export default function GameLog() {
             const id = info.object_num !== undefined ? String(info.object_num) : info.name.trim().toLowerCase();
             if (id === plaqueCharId) return;
             plaqueCharId = id;
-            appendLine(buildCharPlaque(info), () => buildCharPlaque(info));
-        });
-
-        const off = eventBus.on('message', (message?: string | AnsiAwareBuffer, type?: string) => {
-            if (message === undefined) return;
-
-            // room.short renders inline in the log flow with the forged location style.
-            if (type === 'room.short') {
-                const name = textOf(message).trim();
-                if (!name) return;
-                appendLine(buildLocale(name), () => buildLocale(name));
-                return;
-            }
-
-            appendLine(buildMessageLine(message, type), () => buildMessageLine(message, type));
+            handler.appendNode(buildCharPlaque(info), () => buildCharPlaque(info));
         });
 
         return () => {
-            output.removeEventListener('scroll', checkSplitView);
-            output.removeEventListener('wheel', onWheel);
-            splitHandle.removeEventListener('mousedown', onSplitDragStart);
-            splitHandle.removeEventListener('touchstart', onSplitDragStart);
-            document.removeEventListener('mousemove', onSplitDragMove);
-            document.removeEventListener('mouseup', onSplitDragEnd);
-            document.removeEventListener('touchmove', onSplitDragMove);
-            document.removeEventListener('touchend', onSplitDragEnd);
-            resizeObserver.disconnect();
             teardownContextMenu();
             offConnect();
             offDisconnect();
             offPlaque();
-            off();
+            handler.destroy();
         };
     }, []);
 

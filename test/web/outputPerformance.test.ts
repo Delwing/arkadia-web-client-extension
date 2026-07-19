@@ -6,6 +6,7 @@ describe('output performance measurements', () => {
     document.body.innerHTML = `
       <div id="main_text_output_msg_wrapper">
         <div id="split-bottom" class="split-hidden">
+          <div id="split-handle"></div>
           <div id="sticky-area"></div>
         </div>
       </div>
@@ -15,13 +16,14 @@ describe('output performance measurements', () => {
   test('logs timing for handling websocket output', () => {
     const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
     const splitBottom = document.getElementById('split-bottom') as HTMLElement;
+    const splitHandle = document.getElementById('split-handle') as HTMLElement;
     const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 
-    const cleanup = setupOutputMessageHandler(arkadiaClient, {
+    const handler = setupOutputMessageHandler(arkadiaClient, {
       outputWrapper,
       splitBottom,
+      splitHandle,
       stickyArea,
-      isSplitView: () => false,
       stickyLines: 15,
     });
 
@@ -52,7 +54,7 @@ describe('output performance measurements', () => {
       const burstDuration = measure(1000);
       console.log(`[performance] Time to handle 1000 lines: ${burstDuration.toFixed(3)} ms`);
     } finally {
-      cleanup();
+      handler.destroy();
     }
   });
 });

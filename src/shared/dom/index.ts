@@ -7,3 +7,4 @@ export {
     toggleOutputMessageTypeVisibility,
     setupOutputMessageHandler,
 } from './outputMessageHandler';
+export type {BuildMessageNode, OutputMessageHandler} from './outputMessageHandler';

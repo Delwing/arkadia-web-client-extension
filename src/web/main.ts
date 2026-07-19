@@ -201,132 +201,46 @@ progressContainer.style.display = 'none';
 
 const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
+const splitHandle = document.getElementById('split-handle')!;
 const stickyArea = document.getElementById('sticky-area') as HTMLElement;
 const multiBindsElement = document.getElementById('multi-binds');
-let isSplitView = false;
 const STICKY_LINES = 50;
 const DOUBLE_CLICK_TIMEOUT_MS = 300;
-let suppressSplitViewUntil = 0;
-let lastMultiBindsState = multiBindsElement?.classList.contains('active') ?? false;
 
-function refreshStickyArea() {
-    stickyArea.innerHTML = '';
-    const nodes = Array.from(outputWrapper.children).filter(n => n !== splitBottom);
-    const start = Math.max(0, nodes.length - STICKY_LINES);
-    for (let i = start; i < nodes.length; i++) {
-        stickyArea.appendChild(nodes[i].cloneNode(true));
-    }
-}
+setOutputTimestampVisibility(getRenderSettings().showTimestamps);
+onRenderSettingsChange((render) => {
+    setOutputTimestampVisibility(render.showTimestamps);
+});
 
-function checkSplitView() {
-    // Skip check if we're in a suppression period
-    if (Date.now() < suppressSplitViewUntil) {
-        return;
-    }
-
-    // Also check if multibinds state just changed
-    const currentMultiBindsState = multiBindsElement?.classList.contains('active') ?? false;
-    if (currentMultiBindsState !== lastMultiBindsState) {
-        lastMultiBindsState = currentMultiBindsState;
-        // Suppress for longer when state changes
-        suppressSplitViewUntil = Date.now() + 250;
-        return;
-    }
-
-    const atBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
-    if (atBottom) {
-        if (isSplitView) {
-            isSplitView = false;
-            suppressSplitViewUntil = Date.now() + 150;
-            splitBottom.classList.add('split-hidden');
-            stickyArea.innerHTML = '';
-        }
-    } else if (!isSplitView) {
-        isSplitView = true;
-        suppressSplitViewUntil = Date.now() + 150;
-        splitBottom.classList.remove('split-hidden');
-        refreshStickyArea();
-    }
-}
-
-outputWrapper.addEventListener('scroll', checkSplitView);
-
-// Preemptively show split view on wheel scroll-up to prevent 1-frame jitter.
-// The 'wheel' event fires BEFORE the compositor processes the scroll, so showing
-// the split view here ensures it's visible in the same frame as the scroll.
-outputWrapper.addEventListener('wheel', (e) => {
-    if (e.deltaY < 0 && !isSplitView && Date.now() >= suppressSplitViewUntil && outputWrapper.scrollHeight > outputWrapper.clientHeight) {
-        const atBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
-        if (atBottom) {
-            isSplitView = true;
-            suppressSplitViewUntil = Date.now() + 150;
-            splitBottom.classList.remove('split-hidden');
-            refreshStickyArea();
-        }
-    }
-}, {passive: true});
-
-// Split view resize handle drag logic
-const splitHandle = document.getElementById('split-handle')!;
-let isDraggingSplit = false;
-
-function onSplitDragStart(e: MouseEvent | TouchEvent) {
-    if (e.type === 'mousedown') e.preventDefault();
-    isDraggingSplit = true;
-    suppressSplitViewUntil = Infinity;
-    document.body.style.cursor = 'ns-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onSplitDragMove);
-    document.addEventListener('mouseup', onSplitDragEnd);
-    document.addEventListener('touchmove', onSplitDragMove, { passive: false });
-    document.addEventListener('touchend', onSplitDragEnd);
-}
-
-function onSplitDragMove(e: MouseEvent | TouchEvent) {
-    if (!isDraggingSplit) return;
-    e.preventDefault();
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const wrapperRect = outputWrapper.getBoundingClientRect();
-    const newHeight = Math.max(60, wrapperRect.bottom - clientY);
-    splitBottom.style.height = newHeight + 'px';
-}
-
-function onSplitDragEnd() {
-    if (!isDraggingSplit) return;
-    isDraggingSplit = false;
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    document.removeEventListener('mousemove', onSplitDragMove);
-    document.removeEventListener('mouseup', onSplitDragEnd);
-    document.removeEventListener('touchmove', onSplitDragMove);
-    document.removeEventListener('touchend', onSplitDragEnd);
-    refreshStickyArea();
-    suppressSplitViewUntil = Date.now() + 300;
-    // Persist split view height to UI settings
-    const height = splitBottom.clientHeight;
-    if (height >= 60) {
+// Scroll/wheel/resize/drag split-view detection, trimming, and sticky-mirror
+// live in the shared engine (also used by forge-ui).
+const outputMessageHandler = setupOutputMessageHandler(mudClient, {
+    outputWrapper,
+    splitBottom,
+    splitHandle,
+    stickyArea,
+    stickyLines: STICKY_LINES,
+    maxElements: () => getDeviceViewSettings().outputMaxElements,
+    onSplitViewResize: (heightPx) => {
+        if (heightPx < 60) return;
         const settings = globalStorage.get('uiSettings');
         if (settings) {
-            settings.splitViewHeight = height;
+            settings.splitViewHeight = heightPx;
             globalStorage.set('uiSettings', settings);
         }
-    }
-}
+    },
+});
 
-splitHandle.addEventListener('mousedown', onSplitDragStart);
-splitHandle.addEventListener('touchstart', onSplitDragStart, { passive: true });
-
-// Observe multibinds appearance/disappearance to prevent split view activation
+// Multibinds appearing or disappearing is stock-only layout churn, so its
+// extra suppression + forced rescroll stays here, layered on top of the
+// shared engine via the returned handle.
 if (multiBindsElement) {
-    // Watch for multibinds class changes and suppress immediately BEFORE layout changes
     const mutationObserver = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                // Class changed - suppress split view checks immediately for longer duration
-                suppressSplitViewUntil = Date.now() + 500;
-                lastMultiBindsState = multiBindsElement.classList.contains('active');
+                outputMessageHandler.suppressSplitView(500);
 
-                // Also force scroll to bottom after layout settles
+                // Force scroll to bottom after layout settles
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         const isAtBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
@@ -342,23 +256,6 @@ if (multiBindsElement) {
         attributes: true,
         attributeFilter: ['class']
     });
-
-    // Also use ResizeObserver as a backup for any other layout changes
-    let previousHeight = outputWrapper.clientHeight;
-    const resizeObserver = new ResizeObserver(() => {
-        const newHeight = outputWrapper.clientHeight;
-        if (newHeight !== previousHeight) {
-            const wasAtBottom = outputWrapper.scrollTop + previousHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
-            if (wasAtBottom) {
-                suppressSplitViewUntil = Date.now() + 500;
-                requestAnimationFrame(() => {
-                    outputWrapper.scrollTop = outputWrapper.scrollHeight;
-                });
-            }
-            previousHeight = newHeight;
-        }
-    });
-    resizeObserver.observe(outputWrapper);
 }
 
 setupOutputContextMenu(outputWrapper);
@@ -475,24 +372,6 @@ Promise.all([mapDataPromise, colorsPromise])
         console.error('Failed to load map data or colors:', error);
     });
 
-
-setOutputTimestampVisibility(getRenderSettings().showTimestamps);
-onRenderSettingsChange((render) => {
-    setOutputTimestampVisibility(render.showTimestamps);
-});
-
-// Set up message event listener for UI updates
-setupOutputMessageHandler(mudClient, {
-    outputWrapper,
-    splitBottom,
-    stickyArea,
-    isSplitView: () => isSplitView,
-    stickyLines: STICKY_LINES,
-    maxElements: () => getDeviceViewSettings().outputMaxElements,
-    suppressSplitView: (durationMs: number) => {
-        suppressSplitViewUntil = Date.now() + durationMs;
-    },
-});
 
 // Track connection state
 let isConnected = false;
@@ -614,7 +493,7 @@ document.addEventListener('visibilitychange', () => {
 
     if (!document.hidden) {
         // Suppress split view checks during tab reactivation reflow
-        suppressSplitViewUntil = Date.now() + 500;
+        outputMessageHandler.suppressSplitView(500);
 
         const socketOpen = mudClient.isSocketOpen();
         if (socketOpen && !isConnected) {

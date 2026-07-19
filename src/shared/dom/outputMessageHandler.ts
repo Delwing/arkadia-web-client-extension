@@ -5,17 +5,49 @@ type MessageHandlerClient = {
     off(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
 };
 
+export type BuildMessageNode = (
+    message: string | AnsiAwareBuffer | undefined,
+    type: string | undefined,
+    timestamp: number,
+) => HTMLElement | null;
+
 type OutputHandlerOptions = {
     outputWrapper: HTMLElement;
     splitBottom: HTMLElement;
+    splitHandle: HTMLElement;
     stickyArea: HTMLElement;
-    isSplitView: () => boolean;
     stickyLines: number;
     // Either a fixed cap or a getter resolved on each message, so the setting
     // can be changed at runtime without tearing down the handler.
     maxElements?: number | (() => number);
     trimSlack?: number;
-    suppressSplitView?: (durationMs: number) => void;
+    // Builds the DOM node for one message. Defaults to the stock `.output_msg`
+    // wrapper (timestamp/type spans + content). A host with its own message
+    // shape (e.g. forge-ui's plain `<p>` lines) supplies its own builder here
+    // and gets the rest of the engine — split view, trimming, sticky mirroring —
+    // for free. Return `null` to skip the message entirely (e.g. a blank
+    // room-name line).
+    buildMessageNode?: BuildMessageNode;
+    // Fired when the user finishes dragging the split-view resize handle, with
+    // the committed height in px. Hosts that persist a preferred height (stock)
+    // hook in here; hosts that don't (forge-ui) simply omit it.
+    onSplitViewResize?: (heightPx: number) => void;
+};
+
+export type OutputMessageHandler = {
+    destroy(): void;
+    isSplitView(): boolean;
+    // Suppresses split-view (re)detection for the given duration. Exposed so a
+    // host can debounce its own layout churn (stock suppresses across
+    // multibinds show/hide) without reaching into the engine's internals.
+    suppressSplitView(durationMs: number): void;
+    // Appends an arbitrary node through the same insert/trim/scroll/sticky-mirror
+    // pipeline as an incoming client message. `rebuild` — when provided — must
+    // return a fresh, independently-live equivalent node; it is called again
+    // (never cloned) to populate the sticky-view mirror, so per-node listeners
+    // (hyperlinks, click handlers) stay intact there too. Omit it for transient
+    // chrome that should not be mirrored (e.g. a connect prompt).
+    appendNode(node: HTMLElement, rebuild?: () => HTMLElement): void;
 };
 
 const TIMESTAMP_CLASS = 'output-show-timestamps';
@@ -98,6 +130,9 @@ export function toggleOutputMessageTypeVisibility() {
     setOutputMessageTypeVisibility(!messageTypesVisible);
 }
 
+// The stock `.output_msg` wrapper: timestamp + type spans plus the message
+// content. The default `buildMessageNode` — hosts with their own message
+// shape (forge-ui) supply their own builder instead.
 function createMessageWrapper(
     message: string | AnsiAwareBuffer,
     type: string | undefined,
@@ -146,45 +181,73 @@ function createMessageWrapper(
     return wrapper;
 }
 
+const defaultBuildMessageNode: BuildMessageNode = (message, type, timestamp) => {
+    // Allow empty strings to render as empty lines, but skip undefined/null.
+    if (message === undefined || message === null) {
+        return null;
+    }
+    return createMessageWrapper(message, type, timestamp);
+};
+
 export function setupOutputMessageHandler(
     client: MessageHandlerClient,
     {
         outputWrapper,
         splitBottom,
+        splitHandle,
         stickyArea,
-        isSplitView,
         stickyLines,
         maxElements = 1000,
         trimSlack = 100,
-        suppressSplitView,
+        buildMessageNode = defaultBuildMessageNode,
+        onSplitViewResize,
     }: OutputHandlerOptions,
-) {
+): OutputMessageHandler {
     currentOutputWrapper = outputWrapper;
     currentStickyArea = stickyArea;
     applyTimestampVisibility();
     applyMessageTypeVisibility();
 
-    const handleMessage = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
-        // Allow empty strings to render as empty lines, but skip undefined/null
-        if (message === undefined || message === null) {
-            return;
+    // Split view is off (pinned to bottom) until the user scrolls up. While on,
+    // trimming and auto-scroll pause so the scrollback the user is reading stays
+    // put. Debounce window swallows split-view (re)detection right after a
+    // change or during output/layout bursts, so the split view doesn't flicker.
+    let isSplitViewState = false;
+    let suppressSplitViewUntil = 0;
+
+    // Rebuilders for the most recent lines (messages and any host-appended
+    // nodes with a `rebuild`). The sticky mirror is re-derived by calling these
+    // — each yields a FRESH, live node — instead of cloneNode'ing the visible
+    // ones, which would drop per-node listeners (hyperlinks, object menus).
+    const recent: Array<() => HTMLElement> = [];
+
+    const refreshStickyArea = () => {
+        stickyArea.replaceChildren();
+        const start = Math.max(0, recent.length - stickyLines);
+        for (let i = start; i < recent.length; i++) {
+            stickyArea.appendChild(recent[i]());
         }
+    };
 
-        const timestampValue = typeof timestamp === 'number' ? timestamp : Date.now();
-        const wrapper = createMessageWrapper(message, type, timestampValue);
+    const isAtBottom = () =>
+        outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
 
-        outputWrapper.insertBefore(wrapper, splitBottom);
+    const appendNode = (node: HTMLElement, rebuild?: () => HTMLElement) => {
+        // Keep splitBottom last: insert output before it, never after.
+        outputWrapper.insertBefore(node, splitBottom);
+
+        if (rebuild) {
+            recent.push(rebuild);
+            while (recent.length > stickyLines) recent.shift();
+        }
 
         const maxElementsValue = typeof maxElements === 'function' ? maxElements() : maxElements;
 
-        // Trim in batches, and only while the user is not scrolled up into
-        // split view — otherwise removing the oldest nodes would shift the
-        // content they are reading. When split view closes, the accumulated
-        // excess drains on the next message via the `> maxElements + trimSlack`
-        // check. The user ends up at the bottom anyway thanks to the
-        // requestAnimationFrame(scrollToBottom) below, so no scrollTop
-        // compensation is needed here.
-        if (!isSplitView() && outputWrapper.childElementCount - 1 > maxElementsValue + trimSlack) {
+        // Trim in batches, and only while the user is not scrolled up into split
+        // view — otherwise removing the oldest nodes would shift the content
+        // they are reading. When split view closes, the accumulated excess
+        // drains on the next message via the `> maxElements + trimSlack` check.
+        if (!isSplitViewState && outputWrapper.childElementCount - 1 > maxElementsValue + trimSlack) {
             while (outputWrapper.childElementCount - 1 > maxElementsValue) {
                 const first = outputWrapper.firstElementChild;
                 if (first === splitBottom) {
@@ -202,39 +265,147 @@ export function setupOutputMessageHandler(
             }
         }
 
-        if (isSplitView()) {
-            // Create a fresh wrapper with new event listeners for sticky area
-            const stickyWrapper = createMessageWrapper(message, type, timestampValue);
-            stickyArea.appendChild(stickyWrapper);
-            while (stickyArea.childElementCount > stickyLines) {
-                const firstSticky = stickyArea.firstElementChild;
-                if (firstSticky) {
-                    stickyArea.removeChild(firstSticky);
-                } else {
-                    break;
+        if (isSplitViewState) {
+            if (rebuild) {
+                stickyArea.appendChild(rebuild());
+                while (stickyArea.childElementCount > stickyLines && stickyArea.firstElementChild) {
+                    stickyArea.removeChild(stickyArea.firstElementChild);
                 }
             }
         } else {
-            // Suppress split view checks to prevent blinking when text is being output
-            if (suppressSplitView) {
-                suppressSplitView(250);
-            }
-            // Defer scroll to next frame to allow layout changes (e.g., multibinds) to settle first
+            // Suppress split view checks to prevent blinking when text is being output.
+            suppressSplitViewUntil = Date.now() + 250;
+            // Defer scroll to next frame to allow layout changes (e.g., multibinds) to settle first.
             requestAnimationFrame(() => {
                 outputWrapper.scrollTop = outputWrapper.scrollHeight;
             });
         }
     };
 
+    const checkSplitView = () => {
+        if (Date.now() < suppressSplitViewUntil) return;
+        if (isAtBottom()) {
+            if (isSplitViewState) {
+                isSplitViewState = false;
+                suppressSplitViewUntil = Date.now() + 150;
+                splitBottom.classList.add('split-hidden');
+                stickyArea.replaceChildren();
+            }
+        } else if (!isSplitViewState) {
+            isSplitViewState = true;
+            suppressSplitViewUntil = Date.now() + 150;
+            splitBottom.classList.remove('split-hidden');
+            refreshStickyArea();
+        }
+    };
+    outputWrapper.addEventListener('scroll', checkSplitView);
+
+    // Preemptively open the split view on scroll-up wheel to avoid a 1-frame
+    // jitter: 'wheel' fires before the compositor processes the scroll.
+    const onWheel = (e: WheelEvent) => {
+        if (
+            e.deltaY < 0 &&
+            !isSplitViewState &&
+            Date.now() >= suppressSplitViewUntil &&
+            outputWrapper.scrollHeight > outputWrapper.clientHeight &&
+            isAtBottom()
+        ) {
+            isSplitViewState = true;
+            suppressSplitViewUntil = Date.now() + 150;
+            splitBottom.classList.remove('split-hidden');
+            refreshStickyArea();
+        }
+    };
+    outputWrapper.addEventListener('wheel', onWheel, {passive: true});
+
+    // Split-handle drag (resize the sticky footer).
+    let isDraggingSplit = false;
+    const onSplitDragMove = (e: MouseEvent | TouchEvent) => {
+        if (!isDraggingSplit) return;
+        e.preventDefault();
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const wrapperRect = outputWrapper.getBoundingClientRect();
+        const newHeight = Math.max(60, wrapperRect.bottom - clientY);
+        splitBottom.style.height = `${newHeight}px`;
+    };
+    const onSplitDragEnd = () => {
+        if (!isDraggingSplit) return;
+        isDraggingSplit = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onSplitDragMove);
+        document.removeEventListener('mouseup', onSplitDragEnd);
+        document.removeEventListener('touchmove', onSplitDragMove);
+        document.removeEventListener('touchend', onSplitDragEnd);
+        suppressSplitViewUntil = Date.now() + 300;
+        refreshStickyArea();
+        onSplitViewResize?.(splitBottom.clientHeight);
+    };
+    const onSplitDragStart = (e: MouseEvent | TouchEvent) => {
+        if (e.type === 'mousedown') e.preventDefault();
+        isDraggingSplit = true;
+        // Hold the split view open for the whole drag.
+        suppressSplitViewUntil = Infinity;
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        document.addEventListener('mousemove', onSplitDragMove);
+        document.addEventListener('mouseup', onSplitDragEnd);
+        document.addEventListener('touchmove', onSplitDragMove, {passive: false});
+        document.addEventListener('touchend', onSplitDragEnd);
+    };
+    splitHandle.addEventListener('mousedown', onSplitDragStart);
+    splitHandle.addEventListener('touchstart', onSplitDragStart, {passive: true});
+
+    // Keep the view pinned to the bottom when the wrapper resizes (map/footer
+    // toggling, window resize, multibinds appearing) — unless the user has
+    // scrolled up into split view.
+    let previousHeight = outputWrapper.clientHeight;
+    const resizeObserver = new ResizeObserver(() => {
+        const newHeight = outputWrapper.clientHeight;
+        if (newHeight === previousHeight) return;
+        const wasAtBottom =
+            outputWrapper.scrollTop + previousHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
+        previousHeight = newHeight;
+        if (!isSplitViewState && wasAtBottom) {
+            requestAnimationFrame(() => {
+                outputWrapper.scrollTop = outputWrapper.scrollHeight;
+            });
+        }
+    });
+    resizeObserver.observe(outputWrapper);
+
+    const handleMessage = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => {
+        const timestampValue = typeof timestamp === 'number' ? timestamp : Date.now();
+        const node = buildMessageNode(message, type, timestampValue);
+        if (!node) return;
+        appendNode(node, () => buildMessageNode(message, type, timestampValue) as HTMLElement);
+    };
+
     client.on('message', handleMessage);
 
-    return () => {
-        client.off('message', handleMessage);
-        if (currentOutputWrapper === outputWrapper) {
-            currentOutputWrapper = null;
-        }
-        if (currentStickyArea === stickyArea) {
-            currentStickyArea = null;
-        }
+    return {
+        destroy() {
+            client.off('message', handleMessage);
+            outputWrapper.removeEventListener('scroll', checkSplitView);
+            outputWrapper.removeEventListener('wheel', onWheel);
+            splitHandle.removeEventListener('mousedown', onSplitDragStart);
+            splitHandle.removeEventListener('touchstart', onSplitDragStart);
+            document.removeEventListener('mousemove', onSplitDragMove);
+            document.removeEventListener('mouseup', onSplitDragEnd);
+            document.removeEventListener('touchmove', onSplitDragMove);
+            document.removeEventListener('touchend', onSplitDragEnd);
+            resizeObserver.disconnect();
+            if (currentOutputWrapper === outputWrapper) {
+                currentOutputWrapper = null;
+            }
+            if (currentStickyArea === stickyArea) {
+                currentStickyArea = null;
+            }
+        },
+        isSplitView: () => isSplitViewState,
+        suppressSplitView: (durationMs: number) => {
+            suppressSplitViewUntil = Date.now() + durationMs;
+        },
+        appendNode,
     };
 }
