@@ -3104,30 +3104,11 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   }
 }
 
-/* Direction Buttons (visible on both mobile and desktop) */
-.mobile-direction-buttons {
-  position: fixed;
-  left: 5px;
-  top: 160px; /* Position relative to top */
-  z-index: 1000;
-  gap: 10px;
-  background-color: rgba(135, 206, 235, 0.7); /* Sky blue with transparency */
-  padding: 5px;
-  border-radius: 5px;
-  transition: opacity 0.2s ease; /* Smooth transition for opacity changes */
-  touch-action: none; /* Prevent scrolling when interacting with the buttons */
-  user-select: none; /* Prevent text selection */
-  -webkit-user-select: none;
-  -webkit-touch-callout: none; /* Disable long-press menu on iOS */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow by default */
-  display: grid;
-  grid-template-columns: repeat(4, auto);
-}
-
-.mobile-direction-buttons.collapsed {
-  gap: 0;
-  grid-template-columns: auto !important;
-}
+/* Direction Buttons (visible on both mobile and desktop) — moved to
+   src/ui/web/buttons/mobileDirectionButtons.css (shared with forge-ui, since
+   MobileDirectionButtons is now a shared React component imported from
+   @web-ui/buttons/MobileDirectionButtons). Imported below. The settings-editor
+   preview grid below (#mobile-buttons-preview*) stays here — it's stock-only. */
 
 #mobile-buttons-preview,
 #mobile-buttons-preview-solo,
@@ -3570,113 +3551,21 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   outline-offset: 1px;
 }
 
-.mobile-direction-buttons.collapsed button:not(#buttons-toggle),
-.mobile-direction-buttons.collapsed #z-buttons-list,
-.mobile-direction-buttons.collapsed #zas-buttons-list,
-.mobile-direction-buttons.collapsed #w-buttons-list,
-.mobile-direction-buttons.collapsed #prze-buttons-list,
-.mobile-direction-buttons.collapsed #idz-buttons-list {
-  display: none;
-}
-
-/* Mobile command radial — moved to src/ui/web/buttons/mobileCommandRadial.css
-   (shared with forge-ui, since MobileCommandRadial is now a shared React
-   component imported from @web-ui/buttons/MobileCommandRadial). Imported below. */
-
-.mobile-button {
-  width: 36px;
-  height: 36px;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  font-size: 14px;
-  border: 1px solid #a0d0e0;
-  border-radius: 4px;
-  background-color: #6EB4DC; /* Darker sky blue for better contrast */
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
-  touch-action: manipulation; /* Improve touch behavior */
-}
-
-.mobile-button.empty {
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
+/* Mobile direction buttons runtime CSS (.mobile-button, .direction-button,
+   .mobile-z-buttons, the collapsed-state rule, etc.) — moved to
+   src/ui/web/buttons/mobileDirectionButtons.css (shared with forge-ui, since
+   MobileDirectionButtons is now a shared React component imported from
+   @web-ui/buttons/MobileDirectionButtons). Imported below. Still relied on
+   here by the settings-editor preview grid above (.preview .mobile-button*),
+   which stays stock-only. */
 
 .mobile-direction-buttons.preview .mobile-button.empty {
   border: 1px dashed #888;
 }
 
-.mobile-button.active {
-  filter: brightness(85%);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-}
-
-.direction-button {
-  --color: #6CA6CD;
-  --active-color: #2fa7c5;
-  background-color: var(--color);
-}
-
-.direction-button.exit-available {
-  background-color: var(--active-color) !important;
-}
-
-.mobile-button-text {
-  font-size: 9px; /* Smaller font for 'zerknij' text */
-  padding: 1px; /* Minimal padding */
-  line-height: 1; /* Tighter line height */
-  white-space: normal; /* Allow text to wrap */
-  text-align: center; /* Center the text */
-  overflow-wrap: break-word; /* Break words if necessary */
-}
-
-#c-button {
-  background-color: #6CA6CD; /* Slightly darker sky blue */
-}
-
-/* Dragging state for mobile buttons */
-.mobile-direction-buttons.dragging {
-  cursor: grabbing;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  transition: none; /* Disable transitions during drag for better performance */
-  z-index: 1001; /* Ensure it stays on top while dragging */
-}
-
-/* Disable button clicks during dragging */
-.mobile-button.no-click {
-  pointer-events: none; /* Disable click events */
-}
-
-.mobile-z-buttons {
-  position: absolute;
-  right: 100%;
-  top: 4px;
-  margin-right: 5px;
-  display: none;
-  grid-template-columns: 1fr;
-  grid-auto-rows: 36px;
-  gap: 5px;
-}
-
-.mobile-idz-buttons {
-  position: absolute;
-  right: 100%;
-  top: 4px;
-  margin-right: 5px;
-  display: none;
-  grid-template-columns: 1fr;
-  grid-auto-rows: 36px;
-  gap: 5px;
-}
-.mobile-idz-buttons .mobile-button {
-  width: 72px;
-}
+/* Mobile command radial — moved to src/ui/web/buttons/mobileCommandRadial.css
+   (shared with forge-ui, since MobileCommandRadial is now a shared React
+   component imported from @web-ui/buttons/MobileCommandRadial). Imported below. */
 
 /* Desktop Buttons — moved to src/ui/web/buttons/desktopButtons.css (shared
    with forge-ui, since DesktopButtons is now a shared React component

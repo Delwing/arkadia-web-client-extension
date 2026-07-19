@@ -4,6 +4,7 @@ import MultiBindStrip from '@web-ui/footer/MultiBindStrip';
 import FooterStrip from '@web-ui/footer/FooterStrip';
 import DesktopButtons from '@web-ui/buttons/DesktopButtons';
 import MobileCommandRadial from '@web-ui/buttons/MobileCommandRadial';
+import MobileDirectionButtons from '@web-ui/buttons/MobileDirectionButtons';
 import VitalGems from './VitalGems';
 import Menu from './Menu';
 import { useClient } from '../client/ClientContext';
@@ -27,10 +28,11 @@ export default function CommandRail() {
 
     return (
         <div className="rail">
-            {/* Shared with stock (src/ui/web/buttons) — both portal their own
+            {/* Shared with stock (src/ui/web/buttons) — each portals its own
                 document.body-level overlay, so they're inert here beyond mounting. */}
             <DesktopButtons client={client} />
             <MobileCommandRadial client={client} />
+            <MobileDirectionButtons client={client} messageInputId="alt-input" />
             <div className="hud-panel">
                 {/* Forge wraps the shared bind row in its own always-present band
                     (alwaysVisible) so the plate keeps a stable height. */}

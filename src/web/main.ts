@@ -11,6 +11,7 @@ import './layout/layout.css'
 import './popups/popups.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
+import '@web-ui/buttons/mobileDirectionButtons.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -23,7 +24,7 @@ import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
-import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
+import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
 import UiSettings from "./uiSettings/UiSettings";
@@ -60,10 +61,6 @@ import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import HelperSettings from "./options/HelperSettings.tsx"
 import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
-import {
-    applySettings as applyMobileButtonSettings,
-    loadSettings as loadMobileButtonSettings
-} from "./mobileButtonSettings"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {CommandInputController} from "./commandInput/CommandInputController";
@@ -1203,20 +1200,13 @@ document.addEventListener('DOMContentLoaded', () => {
     registerEnemyStatusFilter(client);
     new ObjectList(client);
 
-    // Initialize mobile direction buttons
-    new MobileDirectionButtons(client);
-
-    // Desktop buttons & mobile command radial — shared React components
-    // (src/ui/web/buttons), also mounted by forge-ui. Both portal their own
-    // container to document.body, so the mount roots here are just detached
-    // hosts, never themselves appended.
+    // Mobile direction buttons, desktop buttons & mobile command radial —
+    // shared React components (src/ui/web/buttons), also mounted by forge-ui.
+    // Each portals its own container to document.body, so the mount roots
+    // here are just detached hosts, never themselves appended.
+    createRoot(document.createElement('div')).render(createElement(MobileDirectionButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(MobileCommandRadial, { client }));
-
-    const mobileSettings = loadMobileButtonSettings();
-    const inTeam = !!client.TeamManager.isInAnyTeam?.();
-    const isLeader = !!client.TeamManager.isLeader?.();
-    applyMobileButtonSettings(mobileSettings, inTeam, isLeader);
 
     const uiSettingsRoot = document.getElementById('ui-settings-root');
     if (uiSettingsRoot) {

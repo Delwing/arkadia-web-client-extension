@@ -27,6 +27,7 @@ import './components/menu/menu.css';
 // colors are inline/data-driven, not themed here.
 import '@web-ui/buttons/desktopButtons.css';
 import '@web-ui/buttons/mobileCommandRadial.css';
+import '@web-ui/buttons/mobileDirectionButtons.css';
 import { createRoot } from 'react-dom/client';
 import {
     setDockingSupported,
