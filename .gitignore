@@ -12,6 +12,7 @@ playwright-report/
 blob-report/
 test-results/
 coverage/
+bench/render-benchmark-results.json
 .claude/
 !/.claude/
 /.claude/*

@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "serve:examples": "node examples/server.cjs"
+    "serve:examples": "node examples/server.cjs",
+    "bench:render": "node bench/render-benchmark.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
