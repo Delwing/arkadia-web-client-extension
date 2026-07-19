@@ -24,6 +24,29 @@ const decodeEntities = (text: string): string =>
         .replace(/&#39;/g, "'")
         .replace(/&amp;/g, '&');
 
+// The location line rendered inline for `room.short`.
+const buildLocale = (name: string): HTMLElement => {
+    const el = document.createElement('div');
+    el.className = 'locale';
+    el.textContent = name;
+    return el;
+};
+
+// A single output line. `AnsiAwareBuffer.toDom()` reattaches the per-node
+// click/hyperlink listeners each call, so calling this again to build the
+// split-view sticky copy yields a fully live (clickable) mirror — unlike
+// cloneNode, which would drop those listeners.
+const buildMessageLine = (message: string | AnsiAwareBuffer, type?: string): HTMLElement => {
+    const line = document.createElement('p');
+    if (type) line.className = `t-${type.replace(/[^a-z0-9]+/gi, '-')}`;
+    if (message instanceof AnsiAwareBuffer) {
+        line.appendChild(message.toDom());
+    } else {
+        line.textContent = decodeEntities(message);
+    }
+    return line;
+};
+
 /**
  * The game log. Output is high-throughput and `AnsiAwareBuffer.toDom()` yields
  * raw DOM nodes, so the log is rendered imperatively into a ref'd container
@@ -60,19 +83,31 @@ export default function GameLog() {
         const isAtBottom = () =>
             output.scrollTop + output.clientHeight + splitBottom.clientHeight >= output.scrollHeight - 1;
 
+        // Rebuilders for the most recent output lines. The split-view sticky footer
+        // is re-derived by calling these (each yields a FRESH, live node) instead of
+        // cloneNode'ing the visible nodes — cloning drops the per-node
+        // click/hyperlink listeners `toDom()` attaches, which would leave links and
+        // object menus dead in the sticky mirror. Transient chrome (the connect
+        // prompt) passes no rebuilder, so it is not mirrored.
+        const recent: Array<() => HTMLElement> = [];
+
         const refreshStickyArea = () => {
             stickyArea.replaceChildren();
-            const nodes = Array.from(output.children).filter((n) => n !== splitBottom);
-            const start = Math.max(0, nodes.length - STICKY_LINES);
-            for (let i = start; i < nodes.length; i++) {
-                stickyArea.appendChild(nodes[i].cloneNode(true));
+            const start = Math.max(0, recent.length - STICKY_LINES);
+            for (let i = start; i < recent.length; i++) {
+                stickyArea.appendChild(recent[i]());
             }
         };
 
-        const appendLine = (el: HTMLElement) => {
+        const appendLine = (el: HTMLElement, rebuild?: () => HTMLElement) => {
             const atBottom = isAtBottom();
             // Keep #split-bottom last: insert output before it, never after.
             output.insertBefore(el, splitBottom);
+
+            if (rebuild) {
+                recent.push(rebuild);
+                while (recent.length > STICKY_LINES) recent.shift();
+            }
 
             // Trim only while pinned to the bottom — removing the oldest nodes while
             // the user reads scrollback would shift what they're looking at. (The
@@ -86,10 +121,13 @@ export default function GameLog() {
             }
 
             if (isSplitView) {
-                // Mirror the new line into the sticky footer and cap its length.
-                stickyArea.appendChild(el.cloneNode(true));
-                while (stickyArea.childElementCount > STICKY_LINES && stickyArea.firstElementChild) {
-                    stickyArea.removeChild(stickyArea.firstElementChild);
+                // Mirror the new line into the sticky footer (fresh, live node) and
+                // cap its length.
+                if (rebuild) {
+                    stickyArea.appendChild(rebuild());
+                    while (stickyArea.childElementCount > STICKY_LINES && stickyArea.firstElementChild) {
+                        stickyArea.removeChild(stickyArea.firstElementChild);
+                    }
                 }
             } else if (atBottom) {
                 output.scrollTop = output.scrollHeight;
@@ -187,10 +225,13 @@ export default function GameLog() {
         });
         resizeObserver.observe(output);
 
-        // Right-click menu on the output (timestamps/types toggles, copy-as-image,
-        // popup launchers). The shared setup routes through the same contextMenuStore
-        // the forged <ContextMenu> renders.
-        const teardownContextMenu = setupOutputContextMenu(output);
+        // Right-click menu on the output (popup launchers + plugin entries). The
+        // shared setup routes through the same contextMenuStore the forged
+        // <ContextMenu> renders. We render plain forged lines, not the shared
+        // `.output_msg` wrappers, so opt out of the timestamp/type toggles and
+        // copy-as-image / save-as-HTML entries — they operate on that structure
+        // and would no-op here.
+        const teardownContextMenu = setupOutputContextMenu(output, { messageWrappersSupported: false });
 
         // When the transport is down there is no persistent connect button — the
         // action lives inline in the log: a "Polacz" prompt is printed while
@@ -228,7 +269,7 @@ export default function GameLog() {
             const id = info.object_num !== undefined ? String(info.object_num) : info.name.trim().toLowerCase();
             if (id === plaqueCharId) return;
             plaqueCharId = id;
-            appendLine(buildCharPlaque(info));
+            appendLine(buildCharPlaque(info), () => buildCharPlaque(info));
         });
 
         const off = eventBus.on('message', (message?: string | AnsiAwareBuffer, type?: string) => {
@@ -238,21 +279,11 @@ export default function GameLog() {
             if (type === 'room.short') {
                 const name = textOf(message).trim();
                 if (!name) return;
-                const el = document.createElement('div');
-                el.className = 'locale';
-                el.textContent = name;
-                appendLine(el);
+                appendLine(buildLocale(name), () => buildLocale(name));
                 return;
             }
 
-            const line = document.createElement('p');
-            if (type) line.className = `t-${type.replace(/[^a-z0-9]+/gi, '-')}`;
-            if (message instanceof AnsiAwareBuffer) {
-                line.appendChild(message.toDom());
-            } else {
-                line.textContent = decodeEntities(message);
-            }
-            appendLine(line);
+            appendLine(buildMessageLine(message, type), () => buildMessageLine(message, type));
         });
 
         return () => {
