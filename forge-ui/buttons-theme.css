@@ -21,10 +21,16 @@
    properties, never touching stock's look.
 
    Modeled directly on the right-click context menu (.alt-context-menu /
-   ContextMenu.tsx, see style.css): the same matte --tex-fine surface, iron
-   border, and Cinzel/uppercase/letter-spaced label voice, not just a family
-   resemblance. Per-button color (settings-driven, chosen by the user or a
-   shared JS default) is demoted from "the fill" to "an accent": each
+   ContextMenu.tsx, see style.css): the same matte --tex-fine surface and iron
+   border. The label font is Cinzel too, but NOT uppercase/letter-spaced/bold
+   like the menu's own — these buttons are tiny (down to 20px square, per the
+   button-size slider in the settings editor) and label text is plain-case
+   from settings (macro labels like "wesprzyj", direction glyphs), so the
+   menu's full uppercase-letter-spaced-600-weight treatment reliably overflowed
+   the button at small sizes; plain-case Cinzel at a lighter weight keeps the
+   family resemblance while actually fitting. Per-button color (settings-
+   driven, chosen by the user or a shared JS default) is demoted from "the
+   fill" to "an accent": each
    component additionally exposes it as the `--btn-accent` (or, for the whole
    direction pad, `--pad-accent`) custom property alongside its real inline
    `backgroundColor` — inert for stock, since stock's CSS never references it
@@ -56,9 +62,7 @@
         inset 0 0 0 1px rgba(0, 0, 0, .35),
         0 2px 6px rgba(0, 0, 0, .5);
     font-family: "Cinzel", serif;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .02em;
+    font-weight: 500;
     text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
     transition: color .12s ease, border-color .15s ease;
 }
