@@ -258,7 +258,6 @@ body::after {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 4px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 12.5px;
@@ -271,6 +270,12 @@ body::after {
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 16%);
           mask-image: linear-gradient(180deg, transparent 0%, #000 16%);
 }
+/* Pin output to the bottom while short, yet keep scrollback reachable when it
+   overflows. `justify-content: flex-end` would do the pinning but makes the top
+   overflow unreachable in Chromium (scrollHeight never exceeds clientHeight), so
+   the log couldn't be scrolled up at all. The auto-margin spacer collapses to 0
+   once content overflows, restoring normal top-anchored, scrollable flow. */
+#main_text_output_msg_wrapper::before { content: ""; margin-top: auto; }
 #main_text_output_msg_wrapper::-webkit-scrollbar { width: 8px; }
 #main_text_output_msg_wrapper::-webkit-scrollbar-thumb {
   background: var(--iron-hi); border-radius: 4px;
@@ -282,6 +287,53 @@ body::after {
 #content-width-measure {
   visibility: hidden; position: absolute; white-space: pre;
   font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;
+}
+
+/* split-scroll: a sticky footer that mirrors the newest lines while the user
+   reads scrollback. Opaque over the void so scrollback never bleeds through. */
+#split-bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  /* Don't let flex shrink this: it's a flex child of the column wrapper and its
+     overflow:hidden sticky-area can collapse to 0, so with the default
+     flex-shrink:1 the whole footer (and any dragged height) gets squashed to a
+     sliver the moment the log overflows. flex:none keeps height authoritative. */
+  flex: 0 0 auto;
+  height: 15rem;
+  max-height: 50vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--void);
+  border-top: 1px solid var(--iron-hi);
+  box-shadow: 0 -10px 18px -6px rgba(0,0,0,.75);
+  /* undo the wrapper's top fade so the pinned lines stay fully legible */
+  -webkit-mask-image: none;
+          mask-image: none;
+}
+#split-bottom.split-hidden { display: none; }
+#split-handle {
+  flex: 0 0 auto;
+  height: 3px;
+  background: var(--iron-hi);
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  z-index: 3;
+}
+#split-handle:hover,
+#split-handle:active { background: var(--bronze); }
+#sticky-area {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-top: 4px;
+  background: var(--void);
 }
 
 /* ============================================================ THE RAIL */
@@ -1169,5 +1221,20 @@ textarea.cmd-input {
   font-size: 11px; line-height: 1;   /* shorter than the text line so it can't grow the row */
   color: var(--bronze-dim); opacity: .8;
 }
+
+/* Multi-column layout — the output right-click menu opens with columns:2 so its
+   ~two dozen launchers stay compact instead of running off the bottom edge. */
+.alt-context-menu--columns-2 { max-width: 560px; }
+.alt-context-menu--columns-2 .alt-context-menu__items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+}
+.alt-context-menu--columns-2 .alt-context-menu__items button {
+  min-width: 0;
+  gap: 10px;
+}
+/* denser rows for long lists */
+.alt-context-menu--compact button { padding: 5px 8px; }
 
 @media (max-width: 720px) { .gem .label .name { display: none; } #main_text_output_msg_wrapper { font-size: 12px; } }

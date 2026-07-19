@@ -110,11 +110,17 @@ export default function ContextMenu() {
 
     const header = snapshot.options?.header;
     const smallHeader = snapshot.options?.smallHeader;
+    const columns = snapshot.options?.columns ?? 0;
+    const compact = snapshot.options?.compact;
 
     return createPortal(
         <div
             ref={menuRef}
-            className="alt-context-menu"
+            className={
+                'alt-context-menu' +
+                (columns > 1 ? ` alt-context-menu--columns-${columns}` : '') +
+                (compact ? ' alt-context-menu--compact' : '')
+            }
             style={{
                 left: pos?.x ?? snapshot.x,
                 top: pos?.y ?? snapshot.y,

@@ -51,7 +51,23 @@ function iconLabel(Icon: LucideIcon, text: string): ReactNode {
     );
 }
 
-export function setupOutputContextMenu(outputWrapper: HTMLElement): () => void {
+export interface OutputContextMenuOptions {
+    /**
+     * Whether the host renders the shared `.output_msg` message wrappers (the
+     * `setupOutputMessageHandler` structure with `.output-timestamp` /
+     * `.output-message-type` / `.output_msg_content` spans). The timestamp/type
+     * toggles and copy-as-image / save-as-HTML entries all operate on that
+     * structure, so a host that renders its own plain output (e.g. forge-ui)
+     * passes `false` to omit them rather than offering entries that no-op.
+     * Defaults to `true` (the stock UI).
+     */
+    messageWrappersSupported?: boolean;
+}
+
+export function setupOutputContextMenu(
+    outputWrapper: HTMLElement,
+    { messageWrappersSupported = true }: OutputContextMenuOptions = {},
+): () => void {
     const handler = (event: MouseEvent) => {
         if (event.defaultPrevented) return;
         const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
@@ -64,22 +80,26 @@ export function setupOutputContextMenu(outputWrapper: HTMLElement): () => void {
         const typesVisible = areOutputMessageTypesVisible();
         const hasSelection = !window.getSelection()?.isCollapsed;
 
-        const items: ContextMenuEntry[] = [
-            {
-                label: timestampsVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
-                action: () => {
-                    const next = !timestampsVisible;
-                    setOutputTimestampVisibility(next);
-                    setRenderSettings({ showTimestamps: next });
-                },
-            },
-            {
-                label: typesVisible ? 'Ukryj typy wiadomości' : 'Pokaż typy wiadomości',
-                action: () => setOutputMessageTypeVisibility(!typesVisible),
-            },
-        ];
+        const items: ContextMenuEntry[] = [];
 
-        if (hasSelection) {
+        if (messageWrappersSupported) {
+            items.push(
+                {
+                    label: timestampsVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',
+                    action: () => {
+                        const next = !timestampsVisible;
+                        setOutputTimestampVisibility(next);
+                        setRenderSettings({ showTimestamps: next });
+                    },
+                },
+                {
+                    label: typesVisible ? 'Ukryj typy wiadomości' : 'Pokaż typy wiadomości',
+                    action: () => setOutputMessageTypeVisibility(!typesVisible),
+                },
+            );
+        }
+
+        if (hasSelection && messageWrappersSupported) {
             items.push({
                 label: 'Kopiuj jako obraz',
                 action: () => {
