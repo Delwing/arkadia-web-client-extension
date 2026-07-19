@@ -10,6 +10,7 @@ import './themes/light-silver.css'
 import './layout/layout.css'
 import './popups/popups.css'
 import '@web-ui/buttons/desktopButtons.css'
+import '@web-ui/buttons/mobileCommandRadial.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -23,8 +24,8 @@ import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
-import MobileCommandRadial from "./scripts/mobileCommandRadial";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
+import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
 import UiSettings from "./uiSettings/UiSettings";
 import {
     getRenderSettings,
@@ -69,8 +70,6 @@ import {CommandInputController} from "./commandInput/CommandInputController";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
-
-let mobileRadial: MobileCommandRadial | null = null;
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
@@ -295,14 +294,9 @@ outputWrapper.addEventListener('click', (event) => {
     lastClickTarget = event.target;
 });
 
-// Middle mouse button opens radial menu
-outputWrapper.addEventListener('mousedown', (event) => {
-    if (event.button !== 1) {
-        return;
-    }
-    event.preventDefault();
-    mobileRadial?.showAt(event.clientX, event.clientY);
-});
+// Middle-mouse-click-opens-radial-menu now lives inside the shared
+// MobileCommandRadial component itself (src/ui/web/buttons) — it wires its
+// own mousedown listener onto the content area.
 
 function updateProgress(p: number, loaded?: number, total?: number) {
     progressContainer.style.display = 'block';
@@ -1211,12 +1205,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize mobile direction buttons
     new MobileDirectionButtons(client);
-    mobileRadial = new MobileCommandRadial(client);
 
-    // Desktop buttons — shared React component (src/ui/web/buttons), also
-    // mounted by forge-ui. It portals its own container to document.body, so
-    // the mount root here is just a detached host, never itself appended.
+    // Desktop buttons & mobile command radial — shared React components
+    // (src/ui/web/buttons), also mounted by forge-ui. Both portal their own
+    // container to document.body, so the mount roots here are just detached
+    // hosts, never themselves appended.
     createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
+    createRoot(document.createElement('div')).render(createElement(MobileCommandRadial, { client }));
 
     const mobileSettings = loadMobileButtonSettings();
     const inTeam = !!client.TeamManager.isInAnyTeam?.();

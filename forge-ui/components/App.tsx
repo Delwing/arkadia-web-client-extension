@@ -4,7 +4,6 @@ import IconDefs from './IconDefs';
 import World from './World';
 import CommandRail from './CommandRail';
 import ContextMenu from './ContextMenu';
-import ShellPickerButton from './ShellPickerButton';
 import { useClient } from '../client/ClientContext';
 import { mountForgedMap } from '../map/forgedMap';
 import ObjectsPanel from './ObjectsPanel';
@@ -62,7 +61,6 @@ export default function App() {
                 <div id="layout-bottom-dock-host" />
             </div>
             <ContextMenu />
-            <ShellPickerButton />
         </>
     );
 }

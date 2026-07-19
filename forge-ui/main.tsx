@@ -22,9 +22,11 @@ import './layout-theme.css';
 // Command-rail menu button, its dropdown, and the forged modal shell (with a
 // scoped Bootstrap-form subset) that hosts the stock settings/editors.
 import './components/menu/menu.css';
-// Desktop buttons — shared React component (@web-ui/buttons/DesktopButtons),
-// structural CSS (position/touch-action/etc.); per-button colors are inline.
+// Desktop buttons & mobile command radial — shared React components
+// (@web-ui/buttons), structural CSS (position/touch-action/etc.); per-button
+// colors are inline/data-driven, not themed here.
 import '@web-ui/buttons/desktopButtons.css';
+import '@web-ui/buttons/mobileCommandRadial.css';
 import { createRoot } from 'react-dom/client';
 import {
     setDockingSupported,

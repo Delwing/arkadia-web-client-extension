@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { UiSettings } from "../../uiSettingsCore";
 import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiSettingsCore";
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
-import { getDeviceViewSettings, setDeviceViewSettings } from "@modules/core/settings";
 import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
 
 interface GeneralTabProps {
@@ -157,41 +156,7 @@ function GeneralTab({
                 <CheckboxRow id="ui-show-buttons" label="Pokaż przyciski na ekranie" checked={draft.showButtons} onChange={(v) => update({ showButtons: v })} />
                 <CheckboxRow id="ui-haptic-feedback" label="Wibracje przycisków mobilnych" checked={draft.hapticFeedback} onChange={(v) => update({ hapticFeedback: v })} />
             </SettingsSection>
-
-            <ShellPickerSection />
         </>
-    );
-}
-
-/**
- * Switches which shell this device loads next: the stock UI or the Forged HUD
- * (`forge-ui/`). Deliberately outside the draft/save flow above — a shell
- * switch reloads immediately rather than waiting on the tab's own Save button,
- * and it's a device-local preference, not something to bundle with unrelated
- * pending edits. Persists via the shared `preferredShell` device setting; the
- * inline script at the top of `index.html` / `forge-ui/index.html` reads it on
- * next load and redirects if it doesn't match the page you're on.
- */
-function ShellPickerSection() {
-    const [preferredShell, setPreferredShell] = useState(() => getDeviceViewSettings().preferredShell ?? 'stock');
-
-    return (
-        <SettingsSection title="Interfejs">
-            <SelectField
-                id="ui-preferred-shell"
-                label="Wygląd interfejsu (wymaga przeładowania)"
-                value={preferredShell}
-                onChange={(v) => {
-                    const next = v as 'stock' | 'forge';
-                    setPreferredShell(next);
-                    setDeviceViewSettings({ preferredShell: next });
-                    window.location.reload();
-                }}
-            >
-                <option value="stock">Klasyczny</option>
-                <option value="forge">Kuty HUD (eksperymentalny)</option>
-            </SelectField>
-        </SettingsSection>
     );
 }
 
