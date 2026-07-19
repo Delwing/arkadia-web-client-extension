@@ -69,6 +69,7 @@ export default defineConfig({
                 viewer: resolve('viewer/index.html'),
                 'log-viewer': resolve('log-viewer/index.html'),
                 'forge-ui': resolve('forge-ui/index.html'),
+                'xterm-ui': resolve('xterm-ui/index.html'),
                 popup: resolve('popup/index.html'),
             },
             output: {

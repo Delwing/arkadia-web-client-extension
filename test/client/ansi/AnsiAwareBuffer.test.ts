@@ -140,4 +140,35 @@ describe("AnsiAwareBuffer", () => {
         expect(segments[1].state?.foreground).toEqual({ space: "hex", color: "#bb0000" });
         expect(segments[1].state?.slowBlink).toBeUndefined();
     });
+
+    describe("toAnsi", () => {
+        it("round-trips a coloured segment through 24-bit SGR codes", () => {
+            const buffer = new AnsiAwareBuffer("\u001b[31mRed\u001b[0mPlain");
+            const ansi = buffer.toAnsi();
+            // #bb0000 -> 187,0,0
+            expect(ansi).toBe("\u001b[0m\u001b[38;2;187;0;0mRed\u001b[0mPlain\u001b[0m");
+        });
+
+        it("reflects bold/underline/strikethrough as SGR attribute codes", () => {
+            const buffer = new AnsiAwareBuffer();
+            buffer.append("hi", { bold: true, underline: true, strikethrough: true });
+            expect(buffer.toAnsi()).toBe("\u001b[0m\u001b[1;4;9mhi\u001b[0m");
+        });
+
+        it("swaps foreground/background when inverse is set", () => {
+            const buffer = new AnsiAwareBuffer();
+            buffer.append("hi", {
+                inverse: true,
+                foreground: { space: "rgb", r: 1, g: 2, b: 3 },
+                background: { space: "rgb", r: 4, g: 5, b: 6 },
+            });
+            expect(buffer.toAnsi()).toBe("\u001b[0m\u001b[38;2;4;5;6;48;2;1;2;3mhi\u001b[0m");
+        });
+
+        it("drops hyperlink metadata (no ANSI equivalent) but keeps the text", () => {
+            const buffer = new AnsiAwareBuffer("Look here");
+            buffer.createLink([0, 4], { title: "look" });
+            expect(buffer.toAnsi()).toBe("\u001b[0mLook\u001b[0m here\u001b[0m");
+        });
+    });
 });

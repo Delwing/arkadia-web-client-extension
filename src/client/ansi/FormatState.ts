@@ -959,6 +959,54 @@ export class AnsiAwareBuffer {
         return fragment;
     }
 
+    /**
+     * Serializes the buffer back to raw ANSI (24-bit SGR) escape sequences, for
+     * terminal emulators (e.g. xterm.js) that render escape codes directly rather
+     * than DOM/HTML. Hyperlinks and the dim/blink CSS-only effects have no ANSI
+     * equivalent and are dropped; use toDom()/toHtml() when those matter.
+     */
+    toAnsi(): string {
+        let ansi = "";
+        for (const segment of this.segments) {
+            const state = segment.state;
+            if (!state || isDefaultState(state)) {
+                ansi += `${ESC}[0m${segment.text}`;
+                continue;
+            }
+
+            const codes: string[] = [];
+            // Handle inverse first (swaps foreground and background), same as toHtml/toDom.
+            const fg = state.inverse ? state.background : state.foreground;
+            const bg = state.inverse ? state.foreground : state.background;
+            if (fg) codes.push(...this.colorToSgr(fg, false));
+            if (bg) codes.push(...this.colorToSgr(bg, true));
+            if (state.bold) codes.push("1");
+            if (state.italic) codes.push("3");
+            if (state.underline) codes.push("4");
+            if (state.slowBlink) codes.push("5");
+            if (state.rapidBlink) codes.push("6");
+            if (state.strikethrough) codes.push("9");
+
+            ansi += `${ESC}[0m`;
+            if (codes.length > 0) {
+                ansi += `${ESC}[${codes.join(";")}m`;
+            }
+            ansi += segment.text;
+        }
+        if (this.segments.length > 0) {
+            ansi += `${ESC}[0m`;
+        }
+        return ansi;
+    }
+
+    private colorToSgr(color: FormatColor, background: boolean): string[] {
+        const hex = this.colorToHex(color);
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [background ? "48" : "38", "2", String(r), String(g), String(b)];
+    }
+
     private escapeHtml(text: string): string {
         return text
             .replace(/&/g, "&amp;")
