@@ -9,6 +9,7 @@ import './themes/light-parchment.css'
 import './themes/light-silver.css'
 import './layout/layout.css'
 import './popups/popups.css'
+import '@web-ui/buttons/desktopButtons.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -22,8 +23,8 @@ import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import MobileDirectionButtons from "./scripts/mobileDirectionButtons";
-import DesktopButtons from "./scripts/desktopButtons";
 import MobileCommandRadial from "./scripts/mobileCommandRadial";
+import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import UiSettings from "./uiSettings/UiSettings";
 import {
     getRenderSettings,
@@ -1212,8 +1213,10 @@ document.addEventListener('DOMContentLoaded', () => {
     new MobileDirectionButtons(client);
     mobileRadial = new MobileCommandRadial(client);
 
-    // Initialize desktop buttons
-    new DesktopButtons(client);
+    // Desktop buttons — shared React component (src/ui/web/buttons), also
+    // mounted by forge-ui. It portals its own container to document.body, so
+    // the mount root here is just a detached host, never itself appended.
+    createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
 
     const mobileSettings = loadMobileButtonSettings();
     const inTeam = !!client.TeamManager.isInAnyTeam?.();

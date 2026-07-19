@@ -2,8 +2,10 @@ import { useRef } from 'react';
 import { useCommandLine } from '../hooks/useCommandLine';
 import MultiBindStrip from '@web-ui/footer/MultiBindStrip';
 import FooterStrip from '@web-ui/footer/FooterStrip';
+import DesktopButtons from '@web-ui/buttons/DesktopButtons';
 import VitalGems from './VitalGems';
 import Menu from './Menu';
+import { useClient } from '../client/ClientContext';
 
 /**
  * The bottom HUD plate: one forged panel stacking, top to bottom, the location
@@ -14,6 +16,7 @@ import Menu from './Menu';
  * shifts as rooms change.
  */
 export default function CommandRail() {
+    const client = useClient();
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -23,6 +26,9 @@ export default function CommandRail() {
 
     return (
         <div className="rail">
+            {/* Shared with stock (src/ui/web/buttons) — portals its own
+                document.body-level overlay, so it's inert here beyond mounting. */}
+            <DesktopButtons client={client} />
             <div className="hud-panel">
                 {/* Forge wraps the shared bind row in its own always-present band
                     (alwaysVisible) so the plate keeps a stable height. */}

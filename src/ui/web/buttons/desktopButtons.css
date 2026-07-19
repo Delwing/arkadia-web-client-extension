@@ -1,0 +1,93 @@
+/* Desktop Buttons — shared between stock and forge-ui (src/ui/web/buttons/DesktopButtons.tsx).
+   Structural rules only (position/pointer-events/touch-action/etc.) — per-button
+   colors are set inline by the component from user settings. */
+.desktop-buttons-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.desktop-button {
+  position: fixed;
+  min-width: 40px;
+  min-height: 24px;
+  padding: 4px 8px;
+  font-size: 11px;
+  border: 1px solid rgba(160, 208, 224, 0.6);
+  border-radius: 4px;
+  background-color: rgba(110, 180, 220, 0.85);
+  color: #f1f5f9;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: auto;
+  word-break: break-word;
+  line-height: 1.2;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  opacity: 1;
+}
+
+.desktop-button:hover {
+  filter: brightness(1.1);
+}
+
+.desktop-button:active {
+  filter: brightness(0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.desktop-button.dragging {
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transform: scale(1.02);
+  transition: none;
+}
+
+.desktop-buttons-container.drag-locked .desktop-button {
+  cursor: pointer;
+}
+
+.desktop-button.active {
+  filter: brightness(1.15);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Hold glow effect for buttons - uses --hold-glow-color CSS variable set by JS */
+.mobile-button.hold-glow,
+.desktop-button.hold-glow {
+  box-shadow: 0 0 8px 3px var(--hold-glow-color, rgba(255, 255, 255, 0.6)), 0 0 16px 6px var(--hold-glow-color, rgba(255, 255, 255, 0.3));
+  filter: brightness(1.15);
+}
+
+/* Desktop Button List */
+.desktop-button-list {
+  position: fixed;
+  display: flex;
+  gap: 4px;
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+.desktop-button-list-item {
+  transition: filter 0.15s ease;
+  opacity: 1;
+}
+
+.desktop-button-list-item:hover {
+  filter: brightness(1.1);
+}
+
+.desktop-button-list-empty {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+}
