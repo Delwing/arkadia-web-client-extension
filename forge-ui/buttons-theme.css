@@ -18,34 +18,43 @@
    ============================================================
 
    These components are shared with stock — this file only overrides cosmetic
-   properties (border/radius/shadow/font/background-image), never touching
-   stock's look or the `background-color` itself: that stays exactly where
-   settings put it (inline, from the component).
+   properties, never touching stock's look.
 
    Modeled directly on the right-click context menu (.alt-context-menu /
-   ContextMenu.tsx, see style.css) rather than the .chip/.gem family: same
-   matte --tex-fine surface + iron border + bronze-hairline bevel, same
-   Cinzel/uppercase/letter-spaced label voice, same warm bronze hover wash
-   (rgba(184,150,90,..) tint) instead of a plain brightness/border change.
-   The `--btn-wash` custom property (default transparent) lets :hover/
-   highlighted states add that tint without restating the whole
-   background-image stack. `background-color` stays inline/settings-driven —
-   it now reads as a tinted matte surface rather than a flat chip, the same
-   way the menu's dark fill would tint if given a colored background. Only
-   `.mobile-direction-buttons`' box-shadow needs `!important`: the component
-   computes it inline per-instance from the background's alpha
-   (`computeBoxShadow`), and the plate should always read as forged steel
-   regardless of that. */
+   ContextMenu.tsx, see style.css): the same matte --tex-fine surface, iron
+   border, and Cinzel/uppercase/letter-spaced label voice, not just a family
+   resemblance. Per-button color (settings-driven, chosen by the user or a
+   shared JS default) is demoted from "the fill" to "an accent": each
+   component additionally exposes it as the `--btn-accent` (or, for the whole
+   direction pad, `--pad-accent`) custom property alongside its real inline
+   `backgroundColor` — inert for stock, since stock's CSS never references it
+   — and this file uses that var only for the border, the same way
+   `.multi-bind--room`/`.multi-bind--drink` tint a neutral pill's border
+   rather than filling it.
 
-:is(.desktop-button, .desktop-button-list-item, .mobile-button, .mobile-command-radial__command) {
-    --btn-wash: rgba(184, 150, 90, 0);
+   `background-color`/`background-image` need `!important` here: they're the
+   one thing that must beat the inline style (there's no way to "read" an
+   arbitrary inline color back out in CSS to redirect it elsewhere), so every
+   button gets the same flat matte fill regardless of its accent.
+   `.mobile-button:not(.empty)` keeps mobile's invisible spacer buttons
+   actually invisible — the shared `.empty` rule further down still wins on
+   border/box-shadow via specificity, but background-color here would
+   otherwise out-rank it on !important alone. */
+
+:is(.desktop-button, .desktop-button-list-item, .mobile-command-radial__command),
+.mobile-button:not(.empty) {
+    background-color: #0a0a09 !important;
     background-image:
-        linear-gradient(var(--btn-wash), var(--btn-wash)),
-        linear-gradient(rgba(8, 7, 5, .42), rgba(8, 7, 5, .42)),
         var(--tex-fine),
-        linear-gradient(180deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, 0) 30%, rgba(0, 0, 0, .34) 100%);
-    background-blend-mode: normal, normal, soft-light, overlay;
-    background-size: 100% 100%, 100% 100%, 130px 130px, 100% 100%;
+        linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%) !important;
+    background-blend-mode: soft-light, normal !important;
+    background-size: 130px 130px, 100% 100% !important;
+    border: 1px solid var(--btn-accent, var(--iron-lo));
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -2px 4px rgba(0, 0, 0, .6),
+        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        0 2px 6px rgba(0, 0, 0, .5);
     font-family: "Cinzel", serif;
     font-weight: 600;
     text-transform: uppercase;
@@ -54,31 +63,25 @@
     transition: color .12s ease, border-color .15s ease;
 }
 
-:is(.desktop-button, .mobile-button, .mobile-command-radial__command):hover {
-    --btn-wash: rgba(184, 150, 90, .16);
-    color: #f4ecd6;
-}
-
-/* ── Desktop buttons ─────────────────────────────────────── */
-.desktop-button {
-    border: 1px solid var(--iron-lo);
+.desktop-button,
+.desktop-button-list-item,
+.mobile-button {
     border-radius: 6px;
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .16),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 2px 6px rgba(0, 0, 0, .5);
 }
 
-.desktop-button:hover {
+:is(.desktop-button, .mobile-button, .mobile-command-radial__command):hover {
+    color: #f4ecd6;
     border-color: var(--bronze-dim);
 }
 
-.desktop-button:active {
+.desktop-button:active,
+.mobile-button:active {
     transform: translateY(1px);
 }
 
-.desktop-button.active {
+.desktop-button.active,
+.mobile-button.active {
+    border-color: var(--bronze-dim);
     box-shadow:
         inset 0 1px 0 rgba(184, 150, 90, .16),
         inset 0 -2px 4px rgba(0, 0, 0, .6),
@@ -86,25 +89,16 @@
         0 0 0 2px var(--bronze-dim);
 }
 
-.desktop-button-list-item {
-    border: 1px solid var(--iron-lo);
-    border-radius: 6px;
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .14),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 2px 6px rgba(0, 0, 0, .5);
-}
-
-/* ── Mobile direction pad ────────────────────────────────── */
+/* ── Mobile direction pad (the plate itself, not its buttons) ───────── */
 .mobile-direction-buttons {
-    border: 1px solid var(--iron-lo);
+    border: 1px solid var(--pad-accent, var(--iron-lo));
     border-radius: 9px;
+    background-color: #0a0a09 !important;
     background-image:
-        linear-gradient(rgba(8, 7, 5, .55), rgba(8, 7, 5, .55)),
         var(--tex-fine),
-        linear-gradient(180deg, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, 0) 25%, rgba(0, 0, 0, .35) 100%);
-    background-blend-mode: normal, soft-light, overlay;
-    background-size: 100% 100%, 130px 130px, 100% 100%;
+        linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%) !important;
+    background-blend-mode: soft-light, normal !important;
+    background-size: 130px 130px, 100% 100% !important;
     /* Overrides the inline, settings-computed shadow — see file header. */
     box-shadow:
         inset 0 1px 0 rgba(184, 150, 90, .16),
@@ -113,44 +107,13 @@
         0 3px 10px rgba(0, 0, 0, .6) !important;
 }
 
-.mobile-button {
-    border: 1px solid var(--iron-lo);
-    border-radius: 6px;
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .16),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 2px 6px rgba(0, 0, 0, .5);
-}
-
-.mobile-button:active {
-    transform: translateY(1px);
-}
-
-.mobile-button.active {
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .16),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 0 0 2px var(--bronze-dim);
-}
-
 /* ── Mobile command radial ───────────────────────────────── */
 .mobile-command-radial::before {
     background: rgba(10, 9, 8, .55);
 }
 
-.mobile-command-radial__command {
-    border: 1px solid var(--iron-lo);
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .18),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 6px 18px rgba(0, 0, 0, .55);
-}
-
 .mobile-command-radial__command--highlighted {
-    --btn-wash: rgba(184, 150, 90, .22);
+    border-color: var(--bronze-dim);
     box-shadow:
         inset 0 1px 0 rgba(184, 150, 90, .22),
         inset 0 -2px 4px rgba(0, 0, 0, .6),

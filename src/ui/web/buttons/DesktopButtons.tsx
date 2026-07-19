@@ -18,6 +18,13 @@ const DRAG_MOVE_THRESHOLD = 10; // px to consider as movement
 
 type PressStart = { time: number; x: number; y: number; settings: DesktopButtonSetting; btn: HTMLButtonElement };
 
+/** `--btn-accent` carries the button's plain chosen/default color as a CSS
+ * custom property alongside the real (settings-driven) `backgroundColor` —
+ * inert for stock, but lets forge-ui's theme re-purpose the color as a border/
+ * ring accent on a neutral surface instead of a flat fill (see
+ * forge-ui/buttons-theme.css). */
+type CSSVarStyle = React.CSSProperties & { '--btn-accent'?: string };
+
 /**
  * Shared, host-agnostic rewrite of the stock `DesktopButtons` class (see
  * `src/web/scripts/desktopButtons.ts`) as a React component both the stock UI
@@ -487,7 +494,8 @@ export default function DesktopButtons({ client }: { client: Client }) {
                                 backgroundColor: hexToRgba(color, btnSettings.backgroundOpacity),
                                 color: btnSettings.fontColor,
                                 fontSize: btnSettings.fontSize,
-                            }}
+                                '--btn-accent': color,
+                            } as CSSVarStyle}
                             data-move-mode-label={btnSettings.macroType === 'moveMode' ? (btnSettings.label || '') : undefined}
                             onClick={(e) => handleClick(e, btnSettings)}
                             onMouseDown={(e) => handleMouseDown(e, btnSettings)}
@@ -521,7 +529,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
     return createPortal(content, document.body);
 }
 
-function listItemStyle(settings: DesktopButtonSetting): React.CSSProperties {
+function listItemStyle(settings: DesktopButtonSetting): CSSVarStyle {
     return {
         boxSizing: 'border-box',
         width: settings.width,
@@ -531,6 +539,7 @@ function listItemStyle(settings: DesktopButtonSetting): React.CSSProperties {
         backgroundColor: hexToRgba(settings.color, settings.backgroundOpacity),
         color: settings.fontColor,
         fontSize: settings.fontSize,
+        '--btn-accent': settings.color,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',

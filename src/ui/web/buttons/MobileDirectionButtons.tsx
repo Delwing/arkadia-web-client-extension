@@ -52,7 +52,7 @@ const emptyButton: MobileButtonSetting = { macroType: 'empty', label: '', color:
 
 type PressStart = { time: number; x: number; y: number; cfg: MobileButtonSetting; btn: HTMLButtonElement };
 
-type CSSVarStyle = React.CSSProperties & { '--color'?: string; '--active-color'?: string };
+type CSSVarStyle = React.CSSProperties & { '--color'?: string; '--active-color'?: string; '--btn-accent'?: string; '--pad-accent'?: string };
 
 function getCurrentOrientation(): Orientation {
     if (window.matchMedia) {
@@ -765,7 +765,8 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
                 gap: `${settings.buttonGap ?? defaultButtonGap}px`,
                 backgroundColor: activeSet.background,
                 boxShadow: computeBoxShadow(activeSet.background),
-            }}
+                '--pad-accent': activeSet.background,
+            } as CSSVarStyle}
         >
             {activeSet.order.map((id) => {
                 const cfg: MobileButtonSetting = activeSet.buttons[id] || defaultSettings[id] || emptyButton;
@@ -793,6 +794,7 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
                 } else {
                     style.backgroundColor = visual.color;
                     style.color = cfg.fontColor || defaultFontColor;
+                    style['--btn-accent'] = visual.color;
                     if (visual.useColorVars) {
                         style['--color'] = visual.color;
                         style['--active-color'] = visual.activeColor || '#2fa7c5';

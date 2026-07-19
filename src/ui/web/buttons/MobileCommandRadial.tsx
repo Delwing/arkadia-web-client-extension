@@ -102,10 +102,14 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
                 if (!cmd.element) return;
                 if (cmd.id === id) {
                     cmd.element.classList.add('mobile-command-radial__command--highlighted');
-                    if (cmd.activeColor) cmd.element.style.backgroundColor = cmd.activeColor;
+                    if (cmd.activeColor) {
+                        cmd.element.style.backgroundColor = cmd.activeColor;
+                        cmd.element.style.setProperty('--btn-accent', cmd.activeColor);
+                    }
                 } else {
                     cmd.element.classList.remove('mobile-command-radial__command--highlighted');
                     cmd.element.style.backgroundColor = cmd.color || 'rgba(110, 180, 220, 0.85)';
+                    cmd.element.style.setProperty('--btn-accent', cmd.color || 'rgba(110, 180, 220, 0.85)');
                 }
             });
             highlightedCommandId = id;
@@ -148,6 +152,7 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
                 button.style.left = `${centerX + x}px`;
                 button.style.top = `${centerY + y}px`;
                 button.style.backgroundColor = cmd.color || 'rgba(110, 180, 220, 0.85)';
+                button.style.setProperty('--btn-accent', cmd.color || 'rgba(110, 180, 220, 0.85)');
                 button.style.color = cmd.fontColor || '#f1f5f9';
                 button.dataset.commandId = cmd.id;
                 fragment.appendChild(button);
