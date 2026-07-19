@@ -95,6 +95,16 @@ body.layout-manager-enabled #content-area > .world {
 }
 
 .managed-panel.floating-panel {
+  /* Re-assert `position: fixed` from layout.css's `.floating-panel`. The
+     `.managed-panel { position: relative }` rule above is sourced AFTER the
+     @import at equal specificity, so it would otherwise win and make floating
+     windows `position: relative` — their `left/top` would then offset from
+     their normal-flow position inside `.floating-window-root` instead of the
+     viewport. The first floating window (flow origin 0,0) still lands right,
+     but a second one (e.g. the letter popup opened over the poczta popup) gets
+     shoved down by the first window's box, and dragging jumps by that offset.
+     This compound selector (0,2,0) outranks `.managed-panel` (0,1,0). */
+  position: fixed;
   border: 1px solid var(--iron-lo);
   border-radius: 9px;
 }

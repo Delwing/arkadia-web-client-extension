@@ -75,7 +75,13 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
 
     const finishReadingLetter = () => {
         if (currentLetter && currentLetter.number !== undefined) {
-            currentLetter.body = [...letterBodyLines];
+            // Drop the blank padding lines the pager prints around the body so
+            // the letter view doesn't open with stray empty rows above/below the
+            // text. Internal blanks (paragraph breaks) are preserved.
+            const body = [...letterBodyLines];
+            while (body.length && body[0].trim() === '') body.shift();
+            while (body.length && body[body.length - 1].trim() === '') body.pop();
+            currentLetter.body = body;
             eventBus.emit("poczta.letter.loaded", currentLetter as LetterContent);
         }
         isReadingLetter = false;
@@ -231,7 +237,19 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     }, tag);
 
     client.Triggers.registerTrigger(/^/, (line) => {
-        if (!isReadingLetter || !currentLetter) return line;
+        if (!isReadingLetter) return line;
+
+        if (!currentLetter) {
+            // We've issued `przeczytaj list N` but the "List: N" header hasn't
+            // arrived yet. The pager emits blank padding lines here that would
+            // otherwise leak into the main game output — swallow them. A
+            // non-blank line at this point means the letter isn't loading (e.g.
+            // "Nie ma takiego listu."), so stop capturing and let it through.
+            if (line.text.trim() === '') return null;
+            isReadingLetter = false;
+            return line;
+        }
+
         if (!currentLetter.date) return null;
 
         letterBodyLines.push(line.text);
