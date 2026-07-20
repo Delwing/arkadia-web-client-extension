@@ -1,0 +1,38 @@
+/* ============================================================
+   Stock UI cascade lock.
+   ============================================================
+
+   These stylesheets MUST load in this order, right after the bootswatch
+   darkly base (imported just before this file in main.ts): the darkly base
+   first, then style.css and the colour themes overriding it, then layout.
+
+   The problem this solves: forge-ui now transitively imports several of these
+   (e.g. Settings.tsx pulls in ./style.css; layout.css/themes likewise), which
+   turns them into chunks SHARED between the stock and forge entries. Rollup
+   then extracts each shared sheet into its own CSS chunk and links them in the
+   built stock HTML in an order it chooses — which put the darkly base AFTER
+   style.css, flipping stock's cascade so the login inputs, the connect button,
+   and the Bootstrap modals lost their theming (white char input, unrounded
+   "Połącz", grey modal headers over blue bodies).
+
+   `@import` inlines each sheet's content into THIS file's chunk in source
+   order, so they are no longer separately-extractable shared chunks from the
+   stock entry's point of view — the order is fixed and cannot be reshuffled by
+   chunk splitting. forge keeps its own (JS-imported) copies. This is the same
+   fix master applied for layout.css (156a1eeb) and forge uses in
+   layout-theme.css / buttons-theme.css.
+
+   The darkly base is @imported here too (rather than JS-imported in main.ts):
+   Rollup was extracting the node_modules CSS into its own vendor chunk and
+   linking it AFTER the entry chunk, so even as main.ts's first import it lost
+   to style.css. Inlining it at the top of this file pins it first, in-chunk. */
+@import 'bootswatch/dist/darkly/bootstrap.min.css';
+@import './style.css';
+@import './themes/fantasy.css';
+@import './themes/forest.css';
+@import './themes/icy.css';
+@import './themes/gray.css';
+@import './themes/dark-neutral.css';
+@import './themes/light-parchment.css';
+@import './themes/light-silver.css';
+@import './layout/layout.css';

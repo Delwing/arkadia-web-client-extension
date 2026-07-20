@@ -1,13 +1,6 @@
-import 'bootswatch/dist/darkly/bootstrap.min.css';
-import './style.css'
-import './themes/fantasy.css'
-import './themes/forest.css'
-import './themes/icy.css'
-import './themes/gray.css'
-import './themes/dark-neutral.css'
-import './themes/light-parchment.css'
-import './themes/light-silver.css'
-import './layout/layout.css'
+// The darkly base + style.css + colour themes + layout.css, @imported into one
+// chunk (main-theme.css) to lock the stock cascade order — see that file for why.
+import './main-theme.css'
 import './popups/popups.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
