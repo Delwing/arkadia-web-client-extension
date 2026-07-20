@@ -40,6 +40,20 @@
   position: relative;
 }
 
+/* Stock's global style.css is pulled in lazily the first time a settings modal
+   opens (options/Settings.tsx imports it), and it sets opaque backgrounds on
+   #content-area (var(--surface-content), grey) and #main_text_output_msg_wrapper
+   (var(--bs-body-bg), blue). Those ids exist in forge's tree too, forge wants
+   them transparent so the forged background shows through, and the stock rules
+   match forge's specificity but load LATER — so once any modal has been opened
+   they win and leave a stray grey/blue panel behind the output. Re-assert
+   transparency at higher specificity (scoped under #root, which wraps only
+   forge's tree) so it holds regardless of load order. */
+#root #content-area,
+#root #main_text_output_msg_wrapper {
+  background: transparent;
+}
+
 #input-area {
   flex: 0 0 auto;
 }

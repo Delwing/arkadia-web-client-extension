@@ -88,7 +88,10 @@
     inset: 0;
     z-index: 5000;
     display: flex;
-    align-items: center;
+    /* Top-align (not centred): a modal whose body changes height between tabs
+       would otherwise shift vertically on every tab switch as the centred
+       position recomputes. Pinning the top keeps it steady, matching stock. */
+    align-items: flex-start;
     justify-content: center;
     padding: 4vh 3vw;
     background: rgba(6, 5, 4, .62);
@@ -430,6 +433,9 @@
 .forge-menu-modal .list-group-item { padding: 8px 10px; }
 .forge-menu-modal .alert {
     padding: 8px 12px;
+    /* Bootstrap's default alert spacing, which the components rely on to
+       separate a leading info banner from the controls below it. */
+    margin-bottom: 1rem;
     border: 1px solid var(--iron-lo);
     border-radius: 6px;
     background: rgba(28, 26, 23, .6);
