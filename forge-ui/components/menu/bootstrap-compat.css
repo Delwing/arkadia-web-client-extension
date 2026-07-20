@@ -1,0 +1,371 @@
+/* ============================================================
+   forge-ui · Bootstrap compatibility layer for menu-hosted modals
+   ============================================================
+
+   The stock settings/editors (mounted by MenuModalHost) are built with
+   Bootstrap utility classes and a handful of stock-specific layout classes
+   (.ui-settings-layout, .ui-settings-section, …). forge deliberately does NOT
+   load Bootstrap globally — its Reboot would restyle the game log — and only
+   ONE stock component (options/Settings.tsx) transitively imports the stock
+   global style.css, so whether these classes resolved used to depend on which
+   modal you opened first (open Aliasy cold → full-width buttons, no column
+   layout; open Ustawienia first → Bootstrap leaks in and it works). This file
+   makes the modal chrome self-sufficient: every utility the editors use is
+   redefined here, scoped under `.forge-menu-modal` so it can never leak onto
+   forge's own chrome, and mapped to the forge palette where it carries colour.
+
+   Utilities carry `!important` to match Bootstrap's own semantics (the editors
+   were authored expecting utilities to win over component defaults). Component
+   reskins (.btn, .form-control, .nav-link, …) live in menu.css and win on
+   specificity there; nothing here touches them. */
+
+/* ── Display ─────────────────────────────────────────────── */
+.forge-menu-modal .d-none { display: none !important; }
+.forge-menu-modal .d-inline { display: inline !important; }
+.forge-menu-modal .d-inline-block { display: inline-block !important; }
+.forge-menu-modal .d-block { display: block !important; }
+.forge-menu-modal .d-grid { display: grid !important; }
+.forge-menu-modal .d-flex { display: flex !important; }
+.forge-menu-modal .d-inline-flex { display: inline-flex !important; }
+
+/* ── Flex ────────────────────────────────────────────────── */
+.forge-menu-modal .flex-row { flex-direction: row !important; }
+.forge-menu-modal .flex-column { flex-direction: column !important; }
+.forge-menu-modal .flex-wrap { flex-wrap: wrap !important; }
+.forge-menu-modal .flex-nowrap { flex-wrap: nowrap !important; }
+.forge-menu-modal .flex-fill { flex: 1 1 auto !important; }
+.forge-menu-modal .flex-grow-0 { flex-grow: 0 !important; }
+.forge-menu-modal .flex-grow-1 { flex-grow: 1 !important; }
+.forge-menu-modal .flex-shrink-0 { flex-shrink: 0 !important; }
+.forge-menu-modal .flex-shrink-1 { flex-shrink: 1 !important; }
+.forge-menu-modal .align-items-start { align-items: flex-start !important; }
+.forge-menu-modal .align-items-center { align-items: center !important; }
+.forge-menu-modal .align-items-end { align-items: flex-end !important; }
+.forge-menu-modal .align-items-stretch { align-items: stretch !important; }
+.forge-menu-modal .align-items-baseline { align-items: baseline !important; }
+.forge-menu-modal .align-self-start { align-self: flex-start !important; }
+.forge-menu-modal .align-self-center { align-self: center !important; }
+.forge-menu-modal .align-self-end { align-self: flex-end !important; }
+.forge-menu-modal .align-self-stretch { align-self: stretch !important; }
+.forge-menu-modal .justify-content-start { justify-content: flex-start !important; }
+.forge-menu-modal .justify-content-center { justify-content: center !important; }
+.forge-menu-modal .justify-content-end { justify-content: flex-end !important; }
+.forge-menu-modal .justify-content-between { justify-content: space-between !important; }
+.forge-menu-modal .justify-content-around { justify-content: space-around !important; }
+.forge-menu-modal .justify-content-evenly { justify-content: space-evenly !important; }
+.forge-menu-modal .gap-0 { gap: 0 !important; }
+.forge-menu-modal .gap-1 { gap: .25rem !important; }
+.forge-menu-modal .gap-2 { gap: .5rem !important; }
+.forge-menu-modal .gap-3 { gap: 1rem !important; }
+.forge-menu-modal .gap-4 { gap: 1.5rem !important; }
+.forge-menu-modal .gap-5 { gap: 3rem !important; }
+
+/* ── Sizing ──────────────────────────────────────────────── */
+.forge-menu-modal .w-25 { width: 25% !important; }
+.forge-menu-modal .w-50 { width: 50% !important; }
+.forge-menu-modal .w-75 { width: 75% !important; }
+.forge-menu-modal .w-100 { width: 100% !important; }
+.forge-menu-modal .w-auto { width: auto !important; }
+.forge-menu-modal .h-25 { height: 25% !important; }
+.forge-menu-modal .h-50 { height: 50% !important; }
+.forge-menu-modal .h-75 { height: 75% !important; }
+.forge-menu-modal .h-100 { height: 100% !important; }
+.forge-menu-modal .h-auto { height: auto !important; }
+.forge-menu-modal .mw-100 { max-width: 100% !important; }
+.forge-menu-modal .mh-100 { max-height: 100% !important; }
+
+/* ── Text ────────────────────────────────────────────────── */
+.forge-menu-modal .text-start { text-align: left !important; }
+.forge-menu-modal .text-center { text-align: center !important; }
+.forge-menu-modal .text-end { text-align: right !important; }
+.forge-menu-modal .text-nowrap { white-space: nowrap !important; }
+.forge-menu-modal .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forge-menu-modal .text-uppercase { text-transform: uppercase !important; }
+.forge-menu-modal .text-lowercase { text-transform: lowercase !important; }
+.forge-menu-modal .text-capitalize { text-transform: capitalize !important; }
+.forge-menu-modal .text-decoration-none { text-decoration: none !important; }
+.forge-menu-modal .fst-italic { font-style: italic !important; }
+.forge-menu-modal .fw-light { font-weight: 300 !important; }
+.forge-menu-modal .fw-normal { font-weight: 400 !important; }
+.forge-menu-modal .fw-semibold { font-weight: 600 !important; }
+.forge-menu-modal .fw-bold { font-weight: 700 !important; }
+.forge-menu-modal .small { font-size: .85em !important; }
+.forge-menu-modal .text-muted { color: var(--parchment-dim) !important; }
+.forge-menu-modal .text-secondary { color: var(--parchment-dim) !important; }
+.forge-menu-modal .text-body { color: var(--parchment) !important; }
+.forge-menu-modal .text-light { color: #e9dfca !important; }
+.forge-menu-modal .text-dark { color: #14110c !important; }
+.forge-menu-modal .text-danger { color: #d79a86 !important; }
+.forge-menu-modal .text-success { color: #b9cd8f !important; }
+.forge-menu-modal .text-warning { color: #d8b46a !important; }
+.forge-menu-modal .text-info { color: #9fc4d0 !important; }
+.forge-menu-modal .text-primary { color: var(--bronze) !important; }
+
+/* ── Borders & radius ────────────────────────────────────── */
+.forge-menu-modal .border { border: 1px solid var(--iron-lo) !important; }
+.forge-menu-modal .border-0 { border: 0 !important; }
+.forge-menu-modal .border-top { border-top: 1px solid var(--iron-lo) !important; }
+.forge-menu-modal .border-bottom { border-bottom: 1px solid var(--iron-lo) !important; }
+.forge-menu-modal .border-start { border-left: 1px solid var(--iron-lo) !important; }
+.forge-menu-modal .border-end { border-right: 1px solid var(--iron-lo) !important; }
+.forge-menu-modal .border-secondary { border-color: var(--iron-hi) !important; }
+.forge-menu-modal .rounded { border-radius: .375rem !important; }
+.forge-menu-modal .rounded-0 { border-radius: 0 !important; }
+.forge-menu-modal .rounded-1 { border-radius: .25rem !important; }
+.forge-menu-modal .rounded-2 { border-radius: .375rem !important; }
+.forge-menu-modal .rounded-3 { border-radius: .5rem !important; }
+.forge-menu-modal .rounded-circle { border-radius: 50% !important; }
+.forge-menu-modal .rounded-pill { border-radius: 50rem !important; }
+
+/* ── Position ────────────────────────────────────────────── */
+.forge-menu-modal .position-relative { position: relative !important; }
+.forge-menu-modal .position-absolute { position: absolute !important; }
+.forge-menu-modal .position-static { position: static !important; }
+
+/* ── Backgrounds (mapped to the forge palette) ───────────── */
+.forge-menu-modal .bg-dark { background-color: rgba(10, 9, 8, .85) !important; }
+.forge-menu-modal .bg-secondary { background-color: rgba(28, 26, 23, .8) !important; }
+.forge-menu-modal .bg-warning { background-color: rgba(150, 112, 42, .25) !important; }
+.forge-menu-modal .bg-danger { background-color: rgba(140, 52, 36, .25) !important; }
+.forge-menu-modal .bg-success { background-color: rgba(96, 116, 58, .25) !important; }
+.forge-menu-modal .bg-transparent { background-color: transparent !important; }
+
+/* ── Overflow / misc ─────────────────────────────────────── */
+.forge-menu-modal .overflow-auto { overflow: auto !important; }
+.forge-menu-modal .overflow-hidden { overflow: hidden !important; }
+.forge-menu-modal .overflow-visible { overflow: visible !important; }
+.forge-menu-modal .user-select-none { user-select: none !important; }
+.forge-menu-modal .visually-hidden {
+    position: absolute !important; width: 1px !important; height: 1px !important;
+    padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;
+}
+.forge-menu-modal .invisible { visibility: hidden !important; }
+
+/* ── Grid rows & gutters ─────────────────────────────────── */
+.forge-menu-modal .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -.5rem;
+    margin-left: -.5rem;
+}
+.forge-menu-modal .row > * { padding-right: .5rem; padding-left: .5rem; }
+.forge-menu-modal .col { flex: 1 0 0%; }
+.forge-menu-modal .g-0 { margin-right: 0; margin-left: 0; }
+.forge-menu-modal .g-0 > * { padding-right: 0; padding-left: 0; }
+.forge-menu-modal .g-1 { --fg-gtr: .25rem; }
+.forge-menu-modal .g-2 { --fg-gtr: .5rem; }
+.forge-menu-modal .g-3 { --fg-gtr: 1rem; }
+.forge-menu-modal .g-1, .forge-menu-modal .g-2, .forge-menu-modal .g-3 {
+    margin-right: calc(-.5 * var(--fg-gtr));
+    margin-left: calc(-.5 * var(--fg-gtr));
+    row-gap: var(--fg-gtr);
+}
+.forge-menu-modal .g-1 > *, .forge-menu-modal .g-2 > *, .forge-menu-modal .g-3 > * {
+    padding-right: calc(.5 * var(--fg-gtr));
+    padding-left: calc(.5 * var(--fg-gtr));
+}
+
+/* ── Responsive flex/width (>=768px) ─────────────────────── */
+@media (min-width: 768px) {
+    .forge-menu-modal .d-md-none { display: none !important; }
+    .forge-menu-modal .d-md-block { display: block !important; }
+    .forge-menu-modal .d-md-flex { display: flex !important; }
+    .forge-menu-modal .d-md-inline-flex { display: inline-flex !important; }
+    .forge-menu-modal .flex-md-row { flex-direction: row !important; }
+    .forge-menu-modal .flex-md-column { flex-direction: column !important; }
+    .forge-menu-modal .align-items-md-center { align-items: center !important; }
+    .forge-menu-modal .align-items-md-start { align-items: flex-start !important; }
+    .forge-menu-modal .align-items-md-end { align-items: flex-end !important; }
+    .forge-menu-modal .w-md-auto { width: auto !important; }
+    .forge-menu-modal .w-md-25 { width: 25% !important; }
+    .forge-menu-modal .w-md-50 { width: 50% !important; }
+    .forge-menu-modal .w-md-100 { width: 100% !important; }
+}
+
+/* ── Extra form primitives ───────────────────────────────── */
+.forge-menu-modal .form-text { margin-top: 4px; font-size: 12.5px; color: var(--parchment-dim); }
+.forge-menu-modal .form-select-sm { padding: 3px 26px 3px 7px; font-size: 12.5px; }
+.forge-menu-modal .form-control-color {
+    width: 3rem; height: 2rem; padding: 3px; cursor: pointer;
+}
+.forge-menu-modal input[type="color"].form-control-color::-webkit-color-swatch-wrapper { padding: 0; }
+.forge-menu-modal input[type="color"].form-control-color::-webkit-color-swatch { border: none; border-radius: 3px; }
+
+/* ============================================================
+   Stock settings-panel layout classes.
+
+   .ui-settings-layout / .character-settings-layout give the settings body its
+   multi-column (masonry) flow; the sections are self-contained cards. These
+   live in stock's global style.css, which forge doesn't load — reimplement
+   them here in the forge palette, scoped to the modal, so the panels lay out
+   the same on both hosts.
+   ============================================================ */
+.forge-menu-modal .ui-settings-layout,
+.forge-menu-modal .character-settings-layout { display: block; }
+
+@media (min-width: 768px) {
+    .forge-menu-modal .ui-settings-layout,
+    .forge-menu-modal .character-settings-layout { column-count: 2; column-gap: 1rem; }
+}
+@media (min-width: 1200px) {
+    .forge-menu-modal .ui-settings-layout,
+    .forge-menu-modal .character-settings-layout { column-count: 3; }
+}
+
+.forge-menu-modal .ui-settings-section,
+.forge-menu-modal .character-settings-section {
+    background-color: rgba(20, 18, 15, .55);
+    border: 1px solid var(--iron-lo);
+    border-radius: .5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .10),
+        0 .5rem 1.25rem rgba(0, 0, 0, .35);
+    break-inside: avoid;
+    margin-bottom: 1rem;
+}
+.forge-menu-modal .ui-settings-section-title,
+.forge-menu-modal .character-settings-section-title {
+    font-family: "Cinzel", serif;
+    font-size: .95rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: var(--bronze);
+    margin: 0;
+}
+.forge-menu-modal .ui-settings-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* spacing + grid columns (generated) follow */
+
+/* ── Spacing scale ───────────────────────────────────────── */
+.forge-menu-modal .m-0 { margin: 0 !important; }
+.forge-menu-modal .m-1 { margin: .25rem !important; }
+.forge-menu-modal .m-2 { margin: .5rem !important; }
+.forge-menu-modal .m-3 { margin: 1rem !important; }
+.forge-menu-modal .m-4 { margin: 1.5rem !important; }
+.forge-menu-modal .m-5 { margin: 3rem !important; }
+.forge-menu-modal .m-auto { margin: auto !important; }
+.forge-menu-modal .mt-0 { margin-top: 0 !important; }
+.forge-menu-modal .mt-1 { margin-top: .25rem !important; }
+.forge-menu-modal .mt-2 { margin-top: .5rem !important; }
+.forge-menu-modal .mt-3 { margin-top: 1rem !important; }
+.forge-menu-modal .mt-4 { margin-top: 1.5rem !important; }
+.forge-menu-modal .mt-5 { margin-top: 3rem !important; }
+.forge-menu-modal .mt-auto { margin-top: auto !important; }
+.forge-menu-modal .mb-0 { margin-bottom: 0 !important; }
+.forge-menu-modal .mb-1 { margin-bottom: .25rem !important; }
+.forge-menu-modal .mb-2 { margin-bottom: .5rem !important; }
+.forge-menu-modal .mb-3 { margin-bottom: 1rem !important; }
+.forge-menu-modal .mb-4 { margin-bottom: 1.5rem !important; }
+.forge-menu-modal .mb-5 { margin-bottom: 3rem !important; }
+.forge-menu-modal .mb-auto { margin-bottom: auto !important; }
+.forge-menu-modal .ms-0 { margin-left: 0 !important; }
+.forge-menu-modal .ms-1 { margin-left: .25rem !important; }
+.forge-menu-modal .ms-2 { margin-left: .5rem !important; }
+.forge-menu-modal .ms-3 { margin-left: 1rem !important; }
+.forge-menu-modal .ms-4 { margin-left: 1.5rem !important; }
+.forge-menu-modal .ms-5 { margin-left: 3rem !important; }
+.forge-menu-modal .ms-auto { margin-left: auto !important; }
+.forge-menu-modal .me-0 { margin-right: 0 !important; }
+.forge-menu-modal .me-1 { margin-right: .25rem !important; }
+.forge-menu-modal .me-2 { margin-right: .5rem !important; }
+.forge-menu-modal .me-3 { margin-right: 1rem !important; }
+.forge-menu-modal .me-4 { margin-right: 1.5rem !important; }
+.forge-menu-modal .me-5 { margin-right: 3rem !important; }
+.forge-menu-modal .me-auto { margin-right: auto !important; }
+.forge-menu-modal .mx-0 { margin-left: 0 !important; margin-right: 0 !important; }
+.forge-menu-modal .mx-1 { margin-left: .25rem !important; margin-right: .25rem !important; }
+.forge-menu-modal .mx-2 { margin-left: .5rem !important; margin-right: .5rem !important; }
+.forge-menu-modal .mx-3 { margin-left: 1rem !important; margin-right: 1rem !important; }
+.forge-menu-modal .mx-4 { margin-left: 1.5rem !important; margin-right: 1.5rem !important; }
+.forge-menu-modal .mx-5 { margin-left: 3rem !important; margin-right: 3rem !important; }
+.forge-menu-modal .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.forge-menu-modal .my-0 { margin-top: 0 !important; margin-bottom: 0 !important; }
+.forge-menu-modal .my-1 { margin-top: .25rem !important; margin-bottom: .25rem !important; }
+.forge-menu-modal .my-2 { margin-top: .5rem !important; margin-bottom: .5rem !important; }
+.forge-menu-modal .my-3 { margin-top: 1rem !important; margin-bottom: 1rem !important; }
+.forge-menu-modal .my-4 { margin-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
+.forge-menu-modal .my-5 { margin-top: 3rem !important; margin-bottom: 3rem !important; }
+.forge-menu-modal .my-auto { margin-top: auto !important; margin-bottom: auto !important; }
+.forge-menu-modal .p-0 { padding: 0 !important; }
+.forge-menu-modal .p-1 { padding: .25rem !important; }
+.forge-menu-modal .p-2 { padding: .5rem !important; }
+.forge-menu-modal .p-3 { padding: 1rem !important; }
+.forge-menu-modal .p-4 { padding: 1.5rem !important; }
+.forge-menu-modal .p-5 { padding: 3rem !important; }
+.forge-menu-modal .pt-0 { padding-top: 0 !important; }
+.forge-menu-modal .pt-1 { padding-top: .25rem !important; }
+.forge-menu-modal .pt-2 { padding-top: .5rem !important; }
+.forge-menu-modal .pt-3 { padding-top: 1rem !important; }
+.forge-menu-modal .pt-4 { padding-top: 1.5rem !important; }
+.forge-menu-modal .pt-5 { padding-top: 3rem !important; }
+.forge-menu-modal .pb-0 { padding-bottom: 0 !important; }
+.forge-menu-modal .pb-1 { padding-bottom: .25rem !important; }
+.forge-menu-modal .pb-2 { padding-bottom: .5rem !important; }
+.forge-menu-modal .pb-3 { padding-bottom: 1rem !important; }
+.forge-menu-modal .pb-4 { padding-bottom: 1.5rem !important; }
+.forge-menu-modal .pb-5 { padding-bottom: 3rem !important; }
+.forge-menu-modal .ps-0 { padding-left: 0 !important; }
+.forge-menu-modal .ps-1 { padding-left: .25rem !important; }
+.forge-menu-modal .ps-2 { padding-left: .5rem !important; }
+.forge-menu-modal .ps-3 { padding-left: 1rem !important; }
+.forge-menu-modal .ps-4 { padding-left: 1.5rem !important; }
+.forge-menu-modal .ps-5 { padding-left: 3rem !important; }
+.forge-menu-modal .pe-0 { padding-right: 0 !important; }
+.forge-menu-modal .pe-1 { padding-right: .25rem !important; }
+.forge-menu-modal .pe-2 { padding-right: .5rem !important; }
+.forge-menu-modal .pe-3 { padding-right: 1rem !important; }
+.forge-menu-modal .pe-4 { padding-right: 1.5rem !important; }
+.forge-menu-modal .pe-5 { padding-right: 3rem !important; }
+.forge-menu-modal .px-0 { padding-left: 0 !important; padding-right: 0 !important; }
+.forge-menu-modal .px-1 { padding-left: .25rem !important; padding-right: .25rem !important; }
+.forge-menu-modal .px-2 { padding-left: .5rem !important; padding-right: .5rem !important; }
+.forge-menu-modal .px-3 { padding-left: 1rem !important; padding-right: 1rem !important; }
+.forge-menu-modal .px-4 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+.forge-menu-modal .px-5 { padding-left: 3rem !important; padding-right: 3rem !important; }
+.forge-menu-modal .py-0 { padding-top: 0 !important; padding-bottom: 0 !important; }
+.forge-menu-modal .py-1 { padding-top: .25rem !important; padding-bottom: .25rem !important; }
+.forge-menu-modal .py-2 { padding-top: .5rem !important; padding-bottom: .5rem !important; }
+.forge-menu-modal .py-3 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+.forge-menu-modal .py-4 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+.forge-menu-modal .py-5 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+
+/* grid columns (base) */
+.forge-menu-modal .col-1 { flex: 0 0 auto; width: 8.333333%; }
+.forge-menu-modal .col-2 { flex: 0 0 auto; width: 16.666667%; }
+.forge-menu-modal .col-3 { flex: 0 0 auto; width: 25%; }
+.forge-menu-modal .col-4 { flex: 0 0 auto; width: 33.333333%; }
+.forge-menu-modal .col-5 { flex: 0 0 auto; width: 41.666667%; }
+.forge-menu-modal .col-6 { flex: 0 0 auto; width: 50%; }
+.forge-menu-modal .col-7 { flex: 0 0 auto; width: 58.333333%; }
+.forge-menu-modal .col-8 { flex: 0 0 auto; width: 66.666667%; }
+.forge-menu-modal .col-9 { flex: 0 0 auto; width: 75%; }
+.forge-menu-modal .col-10 { flex: 0 0 auto; width: 83.333333%; }
+.forge-menu-modal .col-11 { flex: 0 0 auto; width: 91.666667%; }
+.forge-menu-modal .col-12 { flex: 0 0 auto; width: 100%; }
+.forge-menu-modal .col-auto { flex: 0 0 auto; width: auto; }
+
+/* grid columns (md, >=768px) */
+@media (min-width: 768px) {
+    .forge-menu-modal .col-md-1 { flex: 0 0 auto; width: 8.333333%; }
+    .forge-menu-modal .col-md-2 { flex: 0 0 auto; width: 16.666667%; }
+    .forge-menu-modal .col-md-3 { flex: 0 0 auto; width: 25%; }
+    .forge-menu-modal .col-md-4 { flex: 0 0 auto; width: 33.333333%; }
+    .forge-menu-modal .col-md-5 { flex: 0 0 auto; width: 41.666667%; }
+    .forge-menu-modal .col-md-6 { flex: 0 0 auto; width: 50%; }
+    .forge-menu-modal .col-md-7 { flex: 0 0 auto; width: 58.333333%; }
+    .forge-menu-modal .col-md-8 { flex: 0 0 auto; width: 66.666667%; }
+    .forge-menu-modal .col-md-9 { flex: 0 0 auto; width: 75%; }
+    .forge-menu-modal .col-md-10 { flex: 0 0 auto; width: 83.333333%; }
+    .forge-menu-modal .col-md-11 { flex: 0 0 auto; width: 91.666667%; }
+    .forge-menu-modal .col-md-12 { flex: 0 0 auto; width: 100%; }
+    .forge-menu-modal .col-md-auto { flex: 0 0 auto; width: auto; }
+}

@@ -77,6 +77,11 @@ const TITLES: Record<ModalKey, string> = {
 };
 
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
+    // The two dense settings panels flow their sections into a 2–3 column
+    // masonry (see .ui-settings-layout in bootstrap-compat.css); give them the
+    // wide shell so all three columns fit, matching stock's wide settings modal.
+    options: 'xl',
+    ui: 'xl',
     characters: 'md',
     helper: 'xl',
     logs: 'xl',

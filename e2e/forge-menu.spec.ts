@@ -33,6 +33,26 @@ test.describe('forge menu', () => {
         await expect(modal).toHaveCount(0);
     });
 
+    test('ui settings tabs isolate their panels', async ({ page }) => {
+        // Regression: the tabbed settings panels hide inactive tabs with the
+        // Bootstrap `.d-none` utility, which only existed in the (conditionally
+        // loaded) stock global CSS — so opened cold, every tab's content used
+        // to stack at once. forge's scoped Bootstrap subset now defines it.
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Interfejs' }).click();
+        const modal = page.locator('.forge-menu-modal');
+        await expect(modal).toBeVisible();
+        // Ogólne is the default tab: its content shows, the Mapa tab's is hidden.
+        const general = modal.getByRole('heading', { name: 'Menedżer Okien' });
+        const mapMarker = modal.getByRole('heading', { name: 'Marker gracza' });
+        await expect(general).toBeVisible();
+        await expect(mapMarker).toBeHidden();
+        // Switching tabs swaps which panel is visible.
+        await modal.getByRole('button', { name: 'Mapa', exact: true }).click();
+        await expect(mapMarker).toBeVisible();
+        await expect(general).toBeHidden();
+    });
+
     test('opens the documentation with content', async ({ page }) => {
         await page.locator('.forge-menu__button').click();
         await page.locator('.forge-menu__list').getByRole('button', { name: 'Dokumentacja' }).click();
