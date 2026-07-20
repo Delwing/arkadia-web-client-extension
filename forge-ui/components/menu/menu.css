@@ -326,6 +326,25 @@
     color: var(--parchment-dim);
 }
 
+/* Colour inputs. The generic `.form-control` rule above stretches every control
+   to full width; a `<input type=color>` must instead be a small fixed swatch
+   (stock: `.form-control-color` / `.mobile-buttons-background-color`, 1.75rem).
+   `input[type=color]` outspecifies `.form-control`, so this wins regardless of
+   source order. */
+.forge-menu-modal input[type="color"] {
+    display: inline-block;
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    flex: 0 0 auto;
+    padding: 2px;
+    background-color: rgba(20, 18, 15, .85);
+    cursor: pointer;
+}
+.forge-menu-modal input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.forge-menu-modal input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+.forge-menu-modal input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
+
 /* Checkboxes / switches. */
 .forge-menu-modal .form-check {
     display: flex;
@@ -544,6 +563,65 @@
     background: rgba(28, 26, 23, .8);
     border: 1px solid var(--iron-lo);
     font-size: 13px;
+}
+
+/* ============================================================
+   Stock component-specific classes used by menu-hosted editors.
+
+   These live in stock's global style.css (not Bootstrap), which forge doesn't
+   load, so they need re-declaring here, scoped to the modal and mapped to the
+   forge palette. Only the ones that actually break layout when missing.
+   ============================================================ */
+
+/* Mobile-buttons background row (Przyciski → Kolor tła): a swatch, an alpha
+   slider and a reset button on one line. */
+.forge-menu-modal .mobile-buttons-background-section {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background-color: rgba(20, 18, 15, .55);
+    border: 1px solid var(--iron-lo);
+    border-radius: .5rem;
+    padding: .5rem .75rem;
+    margin-bottom: 1rem;
+}
+.forge-menu-modal .mobile-buttons-background-section .form-label {
+    margin: 0;
+    white-space: nowrap;
+}
+.forge-menu-modal .mobile-buttons-background-controls {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex: 1;
+}
+.forge-menu-modal .mobile-buttons-background-alpha {
+    flex: 1;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+}
+.forge-menu-modal .mobile-buttons-background-alpha-value {
+    font-size: .75rem;
+    color: var(--parchment-dim);
+    min-width: 2rem;
+    text-align: right;
+}
+
+/* The button-layout preview grid (Przyciski) reuses the runtime
+   `.mobile-direction-buttons` class, whose shared CSS pins it `position:fixed`
+   at the on-screen keypad's spot. Stock neutralises that with
+   `#mobile-buttons-preview* { position:static }`; forge doesn't load those id
+   rules, so without this the preview flies out of the modal to the keypad
+   position. Re-pin it into the modal's flow as an inline grid. */
+.forge-menu-modal .mobile-direction-buttons.preview {
+    position: static;
+    z-index: auto;
+    inset: auto;
+    border: 2px dashed var(--iron-hi);
+    border-radius: 5px;
+    box-shadow: none;
 }
 
 /* The docs body rendered by mountDocs. */
