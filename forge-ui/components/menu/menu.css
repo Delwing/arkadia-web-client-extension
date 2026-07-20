@@ -454,6 +454,83 @@
     border-radius: 999px;
 }
 
+/* Nested Bootstrap modals.
+
+   A few editors open a secondary dialog by rendering `.modal.show.d-block`
+   inline (AliasEditModal, TriggerEditModal, CollectOverridesModal — the "add /
+   edit" form). Stock relies on global Bootstrap to turn that into a centred
+   overlay; forge has none, so without this the whole dialog dumps into the flow
+   of the list modal (header, body and footer stacked with no chrome). Give it
+   forged overlay chrome. The element carries an inline `z-index:1060`; it lives
+   inside the menu modal's stacking context (backdrop z-index 5000), so it paints
+   above the list behind it, and the backdrop's `backdrop-filter` makes this
+   `position:fixed` child fill the already-full-viewport backdrop. */
+.forge-menu-modal .modal {
+    position: fixed;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+.forge-menu-modal .modal-dialog {
+    position: relative;
+    width: auto;
+    max-width: 500px;
+    margin: 1.75rem auto;
+    pointer-events: none;
+}
+.forge-menu-modal .modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+.forge-menu-modal .modal-sm { max-width: 320px; }
+.forge-menu-modal .modal-lg,
+.forge-menu-modal .modal-xl { max-width: 800px; }
+.forge-menu-modal .modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: #0f0d0a;
+    background-image:
+        var(--tex-fine),
+        linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 130px 130px, 100% 100%;
+    border: 1px solid var(--iron-hi);
+    border-radius: 10px;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        0 18px 60px rgba(0, 0, 0, .7);
+}
+.forge-menu-modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--iron-lo);
+}
+.forge-menu-modal .modal-title {
+    margin: 0;
+    font-family: "Cinzel", serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: var(--bronze);
+}
+.forge-menu-modal .modal-body { padding: 16px; }
+.forge-menu-modal .modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--iron-lo);
+}
+
 /* Input groups. */
 .forge-menu-modal .input-group { display: flex; align-items: stretch; }
 .forge-menu-modal .input-group > * { border-radius: 0; }

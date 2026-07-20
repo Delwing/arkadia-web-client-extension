@@ -61,4 +61,30 @@ test.describe('forge menu', () => {
         await expect(modal.locator('.panel__title')).toHaveText('Dokumentacja');
         await expect(modal.locator('.docs-content')).not.toBeEmpty();
     });
+
+    test('nested edit sub-modal opens as a centred overlay', async ({ page }) => {
+        // The editors (Aliasy, Triggery, …) open their "add / edit" form as an
+        // inline Bootstrap `.modal.show.d-block`. forge loads no global
+        // Bootstrap, so without the scoped `.modal*` chrome in menu.css that
+        // form used to dump into the list's flow with no header/footer framing.
+        // It must instead render as a fixed, full-viewport overlay with a
+        // bounded content card.
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Aliasy' }).click();
+        const modal = page.locator('.forge-menu-modal');
+        await expect(modal).toBeVisible();
+
+        await modal.getByRole('button', { name: 'Dodaj alias' }).click();
+        const dialog = modal.locator('.modal.show');
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveCSS('position', 'fixed');
+        // The header lays out its title and close button on one row.
+        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj alias');
+        await expect(dialog.locator('.modal-content')).toBeVisible();
+
+        // Backdrop click on the sub-modal dismisses just it, not the list.
+        await dialog.click({ position: { x: 5, y: 5 } });
+        await expect(dialog).toHaveCount(0);
+        await expect(modal).toBeVisible();
+    });
 });
