@@ -19,6 +19,24 @@
    reskins (.btn, .form-control, .nav-link, …) live in menu.css and win on
    specificity there; nothing here touches them. */
 
+/* ── Reboot normalization ────────────────────────────────────
+   forge doesn't load Bootstrap's Reboot (it would restyle the game log), but
+   the editors were authored against it: they lean on Reboot zeroing the
+   heading/paragraph/list top margins and controlling the bottom margin via
+   utilities (.mb-0/.mb-1/…). Without it the browser defaults apply — an <h6>
+   keeps its ~1.33em top margin, which is exactly why e.g. every guild header in
+   the Gildie tab pushed its row far apart. Re-apply just the block-margin part
+   of Reboot, scoped to the modal. */
+.forge-menu-modal h1, .forge-menu-modal h2, .forge-menu-modal h3,
+.forge-menu-modal h4, .forge-menu-modal h5, .forge-menu-modal h6 {
+    margin-top: 0;
+    margin-bottom: .5rem;
+    line-height: 1.2;
+}
+.forge-menu-modal p { margin-top: 0; margin-bottom: 1rem; }
+.forge-menu-modal ul, .forge-menu-modal ol { margin-top: 0; margin-bottom: 1rem; }
+.forge-menu-modal hr { margin: 1rem 0; }
+
 /* ── Display ─────────────────────────────────────────────── */
 .forge-menu-modal .d-none { display: none !important; }
 .forge-menu-modal .d-inline { display: inline !important; }
