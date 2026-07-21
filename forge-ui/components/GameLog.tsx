@@ -158,6 +158,10 @@ export default function GameLog() {
     return (
         <div id="main_text_output_msg_wrapper" ref={outputRef}>
             <div id="split-bottom" className="split-hidden" ref={splitBottomRef}>
+                {/* Viewport-fixed clone of body's backdrop, clipped to #split-bottom
+                    (see style.css) so the sticky footer reads as a seamless
+                    continuation of the transparent output rather than a black shelf. */}
+                <div id="split-scenery"><div className="split-stone" /></div>
                 <div id="split-handle" ref={splitHandleRef} />
                 <div id="sticky-area" ref={stickyAreaRef} />
             </div>
