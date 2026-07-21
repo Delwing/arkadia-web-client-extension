@@ -1,0 +1,116 @@
+// ============================================================
+//  Real Bootstrap, compiled scoped to the forge menu modal.
+//
+//  The stock settings/editors (Opcje, Ustawienia UI, Triggery, Aliasy, …) are
+//  authored against Bootstrap. forge can't load Bootstrap globally — its Reboot
+//  and component rules would repaint forge's entire custom chrome (game log,
+//  rail, panels), not just the modal. So instead of hand-reimplementing a scoped
+//  subset, this compiles the REAL Bootstrap source with every rule nested under
+//  `.forge-menu-modal`, i.e. `.btn` → `.forge-menu-modal .btn`. Plain descendant
+//  selectors — no runtime `@scope` feature needed (works in every browser), and
+//  no `:root`→`:scope` string surgery.
+//
+//  Theming: forge's palette is applied two ways —
+//    1. Compile-time Sass overrides below for Bootstrap's *compiled-literal*
+//       properties (fonts, input background, active/checked accent, range thumb,
+//       focus ring) — things not driven by `--bs-*` CSS variables at runtime.
+//    2. `--bs-*` variable overrides in menu.css (unlayered → always win over the
+//       layered Bootstrap here) for everything variable-driven: body/link/border
+//       colours and the per-variant button / alert / nav / table / card tokens.
+//  `data-bs-theme="dark"` on the dialog (MenuModal.tsx) supplies the dark base.
+//
+//  Loaded lazily (first modal open, via scopedModalCss.ts) so the stylesheet
+//  stays out of forge's initial chunk.
+// ============================================================
+
+// ── Configuration (Sass only — produces no CSS) ─────────────
+@import "bootstrap/scss/functions";
+
+// forge compile-time theme. These feed Bootstrap's literal-valued properties;
+// the values match what menu.css used to override by hand, so the visual result
+// is unchanged while the override pile shrinks.
+$primary: #b8965a; // bronze — keeps any un-recoloured primary bronze, not blue
+$component-active-bg: #8a6d3b; // bronze-dim — checked boxes / active accents
+$font-family-base: "EB Garamond", Georgia, serif;
+$headings-font-family: "Cinzel", serif;
+$input-bg: rgba(20, 18, 15, 0.85);
+$form-range-thumb-bg: #b8965a; // bronze
+$form-range-thumb-active-bg: #8a6d3b; // bronze-dim
+$focus-ring-color: rgba(110, 86, 32, 0.35);
+$enable-shadows: false;
+
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// ── CSS output: cascade-layered and scoped ──────────────────
+// The `forge-modal-bootstrap` layer keeps Bootstrap below forge's own unlayered
+// rules (the forged shell chrome + the `--bs-*` palette overrides in menu.css),
+// so those always win regardless of load order, while Bootstrap's own internal
+// cascade (.btn-primary over .btn) is preserved within the layer.
+@layer forge-modal-bootstrap {
+    // Theme variables. root.scss emits `:root, [data-bs-theme=light]` plus a
+    // `[data-bs-theme=dark]` block — kept UNNESTED so those selectors stay valid
+    // (they target <html>/the attribute, never a modal descendant). The vars are
+    // harmless globally: only `.forge-menu-modal` descendants read `var(--bs-*)`.
+    @import "bootstrap/scss/root";
+
+    // Referenced by the map version badge in _stock-settings; keyframes can't be
+    // nested inside a style rule, so it lives here at the layer's top level.
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    // Referenced by the logs loading spinner in _stock-logs; likewise top-level.
+    @keyframes logs-spinner-rotate {
+        to { transform: rotate(360deg); }
+    }
+
+    .forge-menu-modal {
+        // Bootstrap's layout & components — element/`html`/`body`/`:root`
+        // selectors in Reboot get the `.forge-menu-modal` prefix, which
+        // neutralises the ones that would repaint forge chrome (`.forge-menu-modal
+        // body` never matches) while keeping the ones we want (`.forge-menu-modal
+        // *`, `.forge-menu-modal label`, …).
+        @import "bootstrap/scss/reboot";
+        @import "bootstrap/scss/type";
+        @import "bootstrap/scss/images";
+        @import "bootstrap/scss/containers";
+        @import "bootstrap/scss/grid";
+        @import "bootstrap/scss/tables";
+        @import "bootstrap/scss/forms";
+        @import "bootstrap/scss/buttons";
+        @import "bootstrap/scss/transitions";
+        @import "bootstrap/scss/dropdown";
+        @import "bootstrap/scss/button-group";
+        @import "bootstrap/scss/nav";
+        @import "bootstrap/scss/navbar";
+        @import "bootstrap/scss/card";
+        @import "bootstrap/scss/accordion";
+        @import "bootstrap/scss/breadcrumb";
+        @import "bootstrap/scss/pagination";
+        @import "bootstrap/scss/badge";
+        @import "bootstrap/scss/alert";
+        @import "bootstrap/scss/progress";
+        @import "bootstrap/scss/list-group";
+        @import "bootstrap/scss/close";
+        @import "bootstrap/scss/toasts";
+        @import "bootstrap/scss/modal";
+        @import "bootstrap/scss/tooltip";
+        @import "bootstrap/scss/popover";
+        @import "bootstrap/scss/spinners";
+        @import "bootstrap/scss/offcanvas";
+        @import "bootstrap/scss/placeholders";
+        @import "bootstrap/scss/helpers";
+        @import "bootstrap/scss/utilities/api";
+
+        // Stock (non-Bootstrap) settings-layout classes, scoped alongside.
+        @import "stock-settings";
+
+        // Stock (non-Bootstrap) Logi (LogBrowser) layout classes, scoped alongside.
+        @import "stock-logs";
+    }
+}

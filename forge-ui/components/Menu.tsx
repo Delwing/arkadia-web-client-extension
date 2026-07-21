@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import mudClient from '@web/MudClient';
 import { useClient } from '../client/ClientContext';
-import MenuModalHost, { type ModalKey } from './menu/MenuModalHost';
+import MenuModalHost, { prefetchAllModals, type ModalKey } from './menu/MenuModalHost';
 import MenuModal from './menu/MenuModal';
 
 /**
@@ -52,9 +52,45 @@ const ITEMS: Item[] = [
 export default function Menu() {
     const client = useClient();
     const [open, setOpen] = useState(false);
-    const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
+    // A stack (bottom-to-top) rather than a single key, so siblings can stack the
+    // way stock's independent Bootstrap modals do (Postacie over Opcje).
+    const [modalStack, setModalStack] = useState<ModalKey[]>([]);
     const [qrUrl, setQrUrl] = useState<string | null>(null);
+
+    const openModal = useCallback((key: ModalKey) => setModalStack([key]), []);
+    const closeTop = useCallback(() => setModalStack((s) => s.slice(0, -1)), []);
+    const closeKey = useCallback(
+        (key: ModalKey) => setModalStack((s) => s.filter((k) => k !== key)),
+        [],
+    );
+    const pushKey = useCallback(
+        (key: ModalKey) => setModalStack((s) => (s.includes(key) ? s : [...s, key])),
+        [],
+    );
+    const replaceKey = useCallback(
+        (key: ModalKey) => setModalStack((s) => [...s.slice(0, -1), key]),
+        [],
+    );
     const rootRef = useRef<HTMLDivElement>(null);
+
+    // Once forge has painted, warm every modal chunk in the background so the
+    // first open of any of them is instant (no "Ładowanie…" flash) — without
+    // adding their weight to the startup path. Runs on an idle callback so it
+    // never competes with initial render / client bootstrap.
+    useEffect(() => {
+        let idleId: number | undefined;
+        let timeoutId: number | undefined;
+        const warm = () => prefetchAllModals();
+        if (typeof window.requestIdleCallback === 'function') {
+            idleId = window.requestIdleCallback(warm, { timeout: 3000 });
+        } else {
+            timeoutId = window.setTimeout(warm, 2000);
+        }
+        return () => {
+            if (idleId !== undefined) window.cancelIdleCallback(idleId);
+            if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        };
+    }, []);
 
     // Close the dropdown on any outside click.
     useEffect(() => {
@@ -106,11 +142,11 @@ export default function Menu() {
     const onItem = useCallback(
         (item: Item) => {
             setOpen(false);
-            if (item.kind === 'modal') setActiveModal(item.modal);
+            if (item.kind === 'modal') openModal(item.modal);
             else if (item.kind === 'event') eventBus.emit(item.event);
             else if (item.kind === 'action') runAction(item.action);
         },
-        [runAction],
+        [runAction, openModal],
     );
 
     return (
@@ -145,10 +181,12 @@ export default function Menu() {
             )}
 
             <MenuModalHost
-                activeKey={activeModal}
+                stack={modalStack}
                 client={client}
-                onClose={() => setActiveModal(null)}
-                setActiveKey={setActiveModal}
+                closeKey={closeKey}
+                closeTop={closeTop}
+                pushKey={pushKey}
+                replaceKey={replaceKey}
             />
 
             {qrUrl && (

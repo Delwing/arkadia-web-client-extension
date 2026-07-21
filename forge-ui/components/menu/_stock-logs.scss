@@ -1,0 +1,358 @@
+// ============================================================
+//  Stock Logi (LogBrowser) layout classes — reused verbatim, scoped.
+//
+//  LogBrowser (`src/web/LogBrowser.tsx`) is authored against stock's global
+//  `src/web/style.css`: the preview box (#logs-preview), the per-line time-column
+//  grid (.output_msg_text / .log-time), the search results list, the timeline, the
+//  manage table and the loading overlay all live there. forge can't load that sheet
+//  globally, so this partial carries just those rules and is @imported INSIDE the
+//  `.forge-menu-modal { … }` block of forge-modal-bootstrap.scss — every selector
+//  compiles prefixed with `.forge-menu-modal`, so nothing leaks to forge's own
+//  game log (which reuses the same `.output_msg*` class names is NOT a concern:
+//  forge's GameLog renders plain <p> lines, and these rules are modal-scoped).
+//
+//  The one deliberate change vs stock: the monospace stack is forge's
+//  `"JetBrains Mono", ui-monospace, monospace` (matching #main_text_output_msg_wrapper
+//  in style.css), not bare `monospace`, so the log preview reads in the same face
+//  as forge's live output. Colours come through the same `--bs-*` / `--popup-*`
+//  vars stock uses, so they recolour to the forge palette for free.
+//
+//  (`@keyframes logs-spinner-rotate`, referenced by the loading spinner, lives at
+//  the top level of forge-modal-bootstrap.scss — keyframes can't be nested in a rule.)
+// ============================================================
+
+$logs-mono: "JetBrains Mono", ui-monospace, monospace;
+
+#logs-preview {
+    overflow-y: auto;
+    padding: 0 8px;
+    font-family: $logs-mono;
+    font-size: 0.775rem;
+    overflow-wrap: break-word;
+    position: relative;
+    height: 60vh;
+    background-color: var(--output-bg, #242424);
+}
+
+#logs-preview .output_msg_text {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+}
+
+#logs-preview .log-time {
+    color: darkorange;
+    padding-right: 0.5rem;
+    user-select: none;
+}
+
+#logs-preview .logs-preview-highlight {
+    background-color: rgba(255, 193, 7, 0.2);
+    outline: 1px solid rgba(255, 193, 7, 0.6);
+}
+
+#logs-preview .output_msg:hover {
+    background-color: rgba(110, 168, 254, 0.12);
+    cursor: context-menu;
+}
+
+// ── Timeline ────────────────────────────────────────────────
+.logs-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 2px 6px 0;
+    user-select: none;
+}
+
+.logs-timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: $logs-mono;
+    font-size: 0.7rem;
+    color: var(--bs-secondary-color, #aaa);
+}
+
+.logs-timeline-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--bs-body-color, #ddd);
+}
+
+.logs-timeline-reset {
+    border: none;
+    background: transparent;
+    color: var(--bs-link-color, #6ea8fe);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.logs-timeline-track {
+    position: relative;
+    height: 44px;
+    background-color: var(--popup-control-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--popup-border, rgba(255, 255, 255, 0.12));
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.logs-timeline-hist {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+}
+
+.logs-timeline-bar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background-color: var(--popup-text, #e0e0e0);
+    opacity: 0.55;
+}
+
+.logs-timeline-bar-dim {
+    opacity: 0.18;
+}
+
+.logs-timeline-selection {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.18);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.logs-timeline-handle {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 3px;
+    transform: translateX(-50%);
+    background: var(--bs-primary, #0d6efd);
+    border-radius: 2px;
+    cursor: ew-resize;
+    z-index: 2;
+    touch-action: none;
+}
+
+.logs-timeline-handle:hover {
+    background: var(--popup-accent-strong-bg, var(--bs-primary, #0d6efd));
+    width: 5px;
+}
+
+// ── Right-click "start/end here" menu on a log line ─────────
+.logs-line-menu {
+    position: fixed;
+    z-index: 2000;
+    min-width: 9rem;
+    padding: 4px 0;
+    background-color: var(--bs-body-bg, #2b2b2b);
+    border: 1px solid var(--bs-border-color, #444);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    font-family: sans-serif;
+    font-size: 0.8rem;
+}
+
+.logs-line-menu button {
+    display: block;
+    width: 100%;
+    padding: 4px 12px;
+    border: none;
+    background: transparent;
+    color: var(--bs-body-color, #ddd);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.logs-line-menu button:hover {
+    background-color: var(--bs-primary, #0d6efd);
+    color: #fff;
+}
+
+// ── Search results ──────────────────────────────────────────
+#logs-search-results {
+    max-height: 12rem;
+    overflow-y: auto;
+    font-family: $logs-mono;
+    font-size: 0.775rem;
+    background-color: var(--output-bg, #242424);
+}
+
+.logs-search-session {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.logs-search-session:last-child {
+    border-bottom: 0;
+}
+
+.logs-search-session-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+}
+
+.logs-search-session-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.logs-search-session-count {
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+}
+
+.logs-search-session-results {
+    display: flex;
+    flex-direction: column;
+}
+
+.logs-search-session-active .logs-search-session-header {
+    color: var(--popup-text);
+    background-color: var(--popup-accent-team-bg);
+}
+
+.logs-search-input-wrapper {
+    position: relative;
+}
+
+.logs-search-input-wrapper input {
+    padding-right: 2rem;
+}
+
+.logs-search-clear {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--bs-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.logs-search-clear:hover {
+    opacity: 1;
+    color: var(--bs-danger);
+}
+
+.logs-search-controls {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+#logs-search-results .logs-search-result {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--bs-border-color);
+    background: transparent;
+    text-align: left;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+#logs-search-results .logs-search-result:hover,
+#logs-search-results .logs-search-result:focus,
+#logs-search-results .logs-search-result.logs-search-result-active {
+    background-color: rgba(13, 110, 253, 0.1);
+    outline: none;
+}
+
+#logs-search-results .logs-search-result:last-child {
+    border-bottom: 0;
+}
+
+#logs-search-results .logs-search-result-time {
+    color: darkorange;
+    white-space: nowrap;
+    font-size: 0.775rem;
+    user-select: none;
+}
+
+#logs-search-results .logs-search-result-snippet {
+    color: var(--text-primary);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+#logs-search-results .logs-search-result-count {
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+}
+
+#logs-search-results .logs-search-result mark {
+    background-color: rgba(255, 193, 7, 0.35);
+    color: inherit;
+    padding: 0;
+}
+
+#logs-search-results .logs-search-empty {
+    padding: 0.5rem 0.75rem;
+    color: var(--bs-secondary-color);
+}
+
+.logs-search-progress {
+    padding: 0.5rem 0.75rem;
+    color: var(--bs-secondary-color);
+    font-style: italic;
+}
+
+// ── Manage tab table ────────────────────────────────────────
+.logs-manage-table { width: 100%; font-size: 0.85rem; }
+.logs-manage-table th, .logs-manage-table td { padding: 0.35rem 0.5rem; vertical-align: middle; }
+.logs-manage-table th { position: sticky; top: 0; background: var(--bs-body-bg); z-index: 2; }
+.logs-manage-year td { position: sticky; background: var(--bs-body-bg); z-index: 1; font-weight: bold; }
+.logs-manage-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+// ── Loading overlay ─────────────────────────────────────────
+.logs-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(var(--bs-body-bg-rgb), 0.85);
+    z-index: 10;
+    backdrop-filter: blur(2px);
+}
+
+.logs-loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.25rem solid rgba(13, 110, 253, 0.2);
+    border-top-color: rgba(13, 110, 253, 0.8);
+    border-radius: 50%;
+    animation: logs-spinner-rotate 0.8s linear infinite;
+}

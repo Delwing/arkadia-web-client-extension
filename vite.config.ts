@@ -30,6 +30,19 @@ export default defineConfig({
         },
     },
     base: "./",
+    css: {
+        preprocessorOptions: {
+            scss: {
+                // The only SCSS in the tree is forge-modal-bootstrap.scss, which
+                // compiles Bootstrap 5.3's `@import`-based source. Bootstrap and
+                // our thin wrapper still use `@import` + a few global built-ins
+                // that Dart Sass now flags for future removal; silence that noise
+                // (the API stays valid for Bootstrap 5.3's lifetime).
+                quietDeps: true,
+                silenceDeprecations: ['import', 'global-builtin', 'color-functions'],
+            },
+        },
+    },
     optimizeDeps: {
         include: ['sql.js/dist/sql-wasm.js'],
     },

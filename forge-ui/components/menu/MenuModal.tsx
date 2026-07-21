@@ -28,6 +28,9 @@ interface MenuModalProps {
     headerExtras?: ReactNode;
     /** Footer content (e.g. a Save button); omitted when absent. */
     footer?: ReactNode;
+    /** When several modals are stacked only the top one should react to Esc,
+     *  matching stock (Esc dismisses the front-most Bootstrap modal only). */
+    closeOnEsc?: boolean;
     children: ReactNode;
 }
 
@@ -38,22 +41,29 @@ export default function MenuModal({
     size = 'lg',
     headerExtras,
     footer,
+    closeOnEsc = true,
     children,
 }: MenuModalProps) {
     // Close on Esc, matching the stock modals' keyboard behaviour.
     useEffect(() => {
+        if (!closeOnEsc) return;
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
-    }, [onClose]);
+    }, [onClose, closeOnEsc]);
 
     return createPortal(
         <div className="forge-menu-backdrop" onPointerDown={onClose}>
             <div
                 id={dialogId}
                 className={`forged panel panel--modal forge-menu-modal forge-menu-modal--${size}`}
+                // The editors are Bootstrap; the scoped stylesheet
+                // (forge-modal-bootstrap.scss) carries Bootstrap's dark theme,
+                // which this attribute activates as the base the forge --bs-*
+                // overrides recolour.
+                data-bs-theme="dark"
                 // Clicks inside the dialog must not fall through to the backdrop.
                 onPointerDown={(e) => e.stopPropagation()}
             >

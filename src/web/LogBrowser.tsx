@@ -746,7 +746,13 @@ function SearchResults({
 }
 
 export function LogBrowser() {
-  const [isOpen, setIsOpen] = useState(false);
+  // Stock mounts LogBrowser once and drives isOpen off the #logs-modal Bootstrap
+  // show/hide lifecycle (see the effect below), so it starts closed. Forge has no
+  // #logs-modal — it mounts <LogBrowser /> directly inside its own modal, and only
+  // while that modal is open. With no stock modal to track, the show event never
+  // fires and isOpen would be stuck false, leaving sessions/lines unloaded. So when
+  // #logs-modal is absent, treat the component as open from mount.
+  const [isOpen, setIsOpen] = useState(() => !document.getElementById("logs-modal"));
   const [activeTab, setActiveTab] = useState<"logs" | "manage">("logs");
   const [loggingEnabled, setLoggingEnabled] = useState(true);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);

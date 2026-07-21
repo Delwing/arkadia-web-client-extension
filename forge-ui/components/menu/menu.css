@@ -1,12 +1,12 @@
-/* Bootstrap utility + stock-layout compatibility, scoped under
-   `.forge-menu-modal`. Must be @imported first (CSS requires @import before
-   other rules); the utilities carry `!important` so they win over the
-   component reskins below regardless of order. See bootstrap-compat.css. */
-@import './bootstrap-compat.css';
-
 /* ============================================================
    forge-ui · command-rail menu (button + dropdown) and the
    forged modal shell that hosts the stock settings/editors.
+
+   The editors themselves are styled by REAL Bootstrap, compiled scoped to
+   `.forge-menu-modal` (see forge-modal-bootstrap.scss + _stock-settings.scss).
+   This file provides only forge's own chrome (rail, dropdown, modal shell) and
+   a palette layer that recolours Bootstrap via its `--bs-*` variables — no
+   Bootstrap primitives are reimplemented here.
    ============================================================ */
 
 /* ── Command-rail button ─────────────────────────────────── */
@@ -120,9 +120,17 @@
         inset 0 0 0 1px rgba(0, 0, 0, .5),
         0 18px 60px rgba(0, 0, 0, .6);
 }
-.forge-menu-modal--md { max-width: 520px; }
-.forge-menu-modal--lg { max-width: 860px; }
-.forge-menu-modal--xl { max-width: 1160px; }
+/* Modal widths mirror stock's Bootstrap dialog sizes (500 / 800), and the wide
+   settings shell tracks stock's responsive settings-modal width so its 2–3
+   column masonry has room at each breakpoint (stock widens #ui-settings-modal /
+   #options-modal to min(960px,90vw) >=768 and min(1400px,90vw) >=1400). Matching
+   the width here is what lets the stock column-count breakpoints fit without a
+   horizontal scrollbar. */
+.forge-menu-modal--md { max-width: 500px; }
+.forge-menu-modal--lg { max-width: 800px; }
+.forge-menu-modal--xl { max-width: min(1140px, 96vw); }
+@media (min-width: 768px)  { .forge-menu-modal--xl { max-width: min(960px, 90vw); } }
+@media (min-width: 1400px) { .forge-menu-modal--xl { max-width: min(1400px, 90vw); } }
 
 .forge-menu-modal__body {
     flex: 1 1 auto;
@@ -204,373 +212,299 @@
 .forge-menu-modal ::-webkit-scrollbar-track { background: transparent; }
 
 /* ============================================================
-   Scoped Bootstrap-form subset.
+   Forge palette layer for the scoped Bootstrap editors.
 
-   The stock settings/editors are built with Bootstrap utility classes
-   (btn, form-control, nav-tabs, table, …). forge deliberately does NOT load
-   Bootstrap CSS globally (its Reboot would, e.g., add margins to the game
-   log's <p> lines), so this reimplements just the primitives these editors
-   use, scoped under `.forge-menu-modal` and mapped to the forge palette.
+   Real Bootstrap (forge-modal-bootstrap.scss) supplies all structure/size in the
+   `forge-modal-bootstrap` cascade layer; these UNLAYERED rules recolour it to
+   the forge palette and therefore always win. Bootstrap 5.3 is variable-driven,
+   so most of this is remapping `--bs-*` tokens. The compiled-literal properties
+   (input background, checked/active accents, range thumb, base focus ring, fonts)
+   are themed at compile time via Sass overrides in forge-modal-bootstrap.scss, so
+   they no longer need overriding here. `data-bs-theme="dark"` on the dialog
+   supplies the dark base these overrides sit on.
    ============================================================ */
 
-/* Layout/display/spacing/text utilities and the stock settings-layout classes
-   are provided by bootstrap-compat.css (@imported at the top of this file). */
-
-/* Buttons. */
-.forge-menu-modal .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 6px 12px;
+/* Base type: Bootstrap's Reboot `body{…}` rule compiles to `.forge-menu-modal
+   body`, which never matches, so set forge's serif + Bootstrap's text rhythm on
+   the shell itself, and remap the theme tokens to the forge palette. */
+.forge-menu-modal {
     font-family: "EB Garamond", Georgia, serif;
-    font-size: 14px;
-    line-height: 1.2;
+    font-size: 1rem;
+    line-height: 1.5;
     color: var(--parchment);
-    background-color: rgba(28, 26, 23, .8);
-    border: 1px solid var(--iron-lo);
-    border-radius: 5px;
-    cursor: pointer;
-    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+
+    --bs-body-color: var(--parchment);
+    --bs-body-color-rgb: 217, 202, 166;
+    --bs-emphasis-color: #f2e6cc;
+    --bs-emphasis-color-rgb: 242, 230, 204;
+    --bs-secondary-color: var(--parchment-dim);
+    --bs-tertiary-color: #94886f;
+    --bs-body-bg: transparent;
+    --bs-secondary-bg: rgba(28, 26, 23, .8);
+    --bs-tertiary-bg: rgba(20, 18, 15, .85);
+    --bs-border-color: var(--iron-lo);
+    --bs-border-color-translucent: var(--iron-lo);
+    --bs-heading-color: var(--bronze);
+    --bs-link-color: var(--bronze);
+    --bs-link-color-rgb: 184, 150, 90;
+    --bs-link-hover-color: #d8b46a;
+    --bs-link-hover-color-rgb: 216, 180, 106;
+    --bs-primary: var(--bronze);
+    --bs-primary-rgb: 184, 150, 90;
+    --bs-code-color: #d8b46a;
 }
-.forge-menu-modal .btn:hover {
-    color: var(--parchment);
+
+/* Headings + section titles read as forged (Cinzel display face). */
+.forge-menu-modal h1, .forge-menu-modal h2, .forge-menu-modal h3,
+.forge-menu-modal h4, .forge-menu-modal h5, .forge-menu-modal h6,
+.forge-menu-modal .ui-settings-section-title,
+.forge-menu-modal .character-settings-section-title,
+.forge-menu-modal .modal-title {
+    font-family: "Cinzel", serif;
+    color: var(--bronze);
+    letter-spacing: .01em;
+}
+.forge-menu-modal .form-label { color: var(--parchment-dim); }
+
+/* Text inputs / selects: the base background and the checked/range accents are
+   themed at compile time ($input-bg, $component-active-bg, $form-range-thumb-*
+   in forge-modal-bootstrap.scss); only the bronze focus states — which Bootstrap
+   compiles from $primary and we want a darker bronze for — are tuned here. */
+.forge-menu-modal .form-control::placeholder { color: var(--parchment-dim); }
+.forge-menu-modal .form-control:focus,
+.forge-menu-modal .form-select:focus {
+    background-color: rgba(20, 18, 15, .95);
     border-color: var(--bronze-dim);
-    background-color: rgba(42, 37, 28, .9);
+    box-shadow: 0 0 0 .25rem rgba(110, 86, 32, .25);
 }
-.forge-menu-modal .btn:disabled { opacity: .5; cursor: not-allowed; }
-.forge-menu-modal .btn-sm { padding: 3px 8px; font-size: 12.5px; }
-.forge-menu-modal .btn-lg { padding: 9px 16px; font-size: 15px; }
+.forge-menu-modal .form-check-input:focus {
+    border-color: var(--bronze-dim);
+    box-shadow: 0 0 0 .25rem rgba(110, 86, 32, .25);
+}
+
+/* Buttons — recolour each variant's `--bs-btn-*` tokens (compiled literals). */
 .forge-menu-modal .btn-primary {
-    color: #f2e6cc;
-    background-color: rgba(110, 86, 32, .5);
-    border-color: var(--bronze-dim);
+    --bs-btn-color: #f2e6cc;
+    --bs-btn-bg: rgba(110, 86, 32, .6);
+    --bs-btn-border-color: var(--bronze-dim);
+    --bs-btn-hover-color: #f6ecd4;
+    --bs-btn-hover-bg: rgba(110, 86, 32, .75);
+    --bs-btn-hover-border-color: var(--bronze);
+    --bs-btn-active-color: #f6ecd4;
+    --bs-btn-active-bg: rgba(110, 86, 32, .82);
+    --bs-btn-active-border-color: var(--bronze);
+    --bs-btn-disabled-color: #cbb98f;
+    --bs-btn-disabled-bg: rgba(110, 86, 32, .4);
+    --bs-btn-disabled-border-color: var(--bronze-dim);
 }
-.forge-menu-modal .btn-primary:hover {
-    background-color: rgba(110, 86, 32, .7);
-    border-color: var(--bronze);
+.forge-menu-modal .btn-secondary,
+.forge-menu-modal .btn-outline-secondary {
+    --bs-btn-color: var(--parchment);
+    --bs-btn-bg: rgba(28, 26, 23, .8);
+    --bs-btn-border-color: var(--iron-lo);
+    --bs-btn-hover-color: var(--parchment);
+    --bs-btn-hover-bg: rgba(42, 37, 28, .9);
+    --bs-btn-hover-border-color: var(--bronze-dim);
+    --bs-btn-active-color: var(--parchment);
+    --bs-btn-active-bg: rgba(52, 46, 34, 1);
+    --bs-btn-active-border-color: var(--bronze-dim);
 }
 .forge-menu-modal .btn-danger,
 .forge-menu-modal .btn-outline-danger {
-    color: #d79a86;
-    border-color: rgba(160, 72, 52, .5);
-    background-color: rgba(140, 52, 36, .22);
+    --bs-btn-color: #d79a86;
+    --bs-btn-bg: rgba(140, 52, 36, .22);
+    --bs-btn-border-color: rgba(160, 72, 52, .5);
+    --bs-btn-hover-color: #e6ad99;
+    --bs-btn-hover-bg: rgba(140, 52, 36, .38);
+    --bs-btn-hover-border-color: rgba(160, 72, 52, .7);
+    --bs-btn-active-color: #e6ad99;
+    --bs-btn-active-bg: rgba(140, 52, 36, .5);
+    --bs-btn-active-border-color: rgba(160, 72, 52, .7);
 }
-.forge-menu-modal .btn-danger:hover,
-.forge-menu-modal .btn-outline-danger:hover {
-    color: #e6ad99;
-    background-color: rgba(140, 52, 36, .38);
+.forge-menu-modal .btn-success,
+.forge-menu-modal .btn-outline-success {
+    --bs-btn-color: #c3d29c;
+    --bs-btn-bg: rgba(96, 116, 58, .26);
+    --bs-btn-border-color: rgba(120, 140, 80, .5);
+    --bs-btn-hover-color: #d0dcac;
+    --bs-btn-hover-bg: rgba(96, 116, 58, .4);
+    --bs-btn-hover-border-color: rgba(120, 140, 80, .7);
+    --bs-btn-active-color: #d0dcac;
+    --bs-btn-active-bg: rgba(96, 116, 58, .5);
 }
-.forge-menu-modal .btn-success {
-    color: #c3d29c;
-    border-color: rgba(120, 140, 80, .5);
-    background-color: rgba(96, 116, 58, .26);
+.forge-menu-modal .btn-warning,
+.forge-menu-modal .btn-outline-warning {
+    --bs-btn-color: #e6c987;
+    --bs-btn-bg: rgba(150, 112, 42, .3);
+    --bs-btn-border-color: rgba(160, 122, 52, .55);
+    --bs-btn-hover-color: #f0d79b;
+    --bs-btn-hover-bg: rgba(150, 112, 42, .45);
+    --bs-btn-hover-border-color: rgba(160, 122, 52, .75);
+    --bs-btn-active-color: #f0d79b;
+    --bs-btn-active-bg: rgba(150, 112, 42, .55);
 }
-.forge-menu-modal .btn-close {
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    color: var(--parchment-dim);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 0;
-}
-.forge-menu-modal .btn-close::before { content: "\00d7"; font-size: 18px; }
-.forge-menu-modal .btn-close:hover { color: var(--bronze); }
-
-/* Text inputs, selects, textareas. */
-.forge-menu-modal .form-control,
-.forge-menu-modal .form-select,
-.forge-menu-modal input[type="text"],
-.forge-menu-modal input[type="number"],
-.forge-menu-modal input[type="search"],
-.forge-menu-modal input[type="password"],
-.forge-menu-modal textarea,
-.forge-menu-modal select {
-    display: block;
-    width: 100%;
-    padding: 6px 9px;
-    font-family: "EB Garamond", Georgia, serif;
-    font-size: 14px;
-    color: var(--parchment);
-    background-color: rgba(20, 18, 15, .85);
-    border: 1px solid var(--iron-lo);
-    border-radius: 5px;
-    transition: border-color .15s ease, box-shadow .15s ease;
-}
-.forge-menu-modal .form-control-sm { padding: 3px 7px; font-size: 12.5px; }
-.forge-menu-modal .form-control:focus,
-.forge-menu-modal .form-select:focus,
-.forge-menu-modal textarea:focus,
-.forge-menu-modal select:focus,
-.forge-menu-modal input:focus {
-    outline: none;
-    border-color: var(--bronze-dim);
-    box-shadow: 0 0 0 2px rgba(110, 86, 32, .25);
-}
-.forge-menu-modal .form-control::placeholder { color: var(--parchment-dim); }
-.forge-menu-modal .form-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238f836c' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 14px;
-    padding-right: 28px;
-}
-.forge-menu-modal option { color: var(--parchment); background-color: #14110c; }
-.forge-menu-modal .form-label {
-    display: inline-block;
-    margin-bottom: 4px;
-    font-size: 13px;
-    color: var(--parchment-dim);
+.forge-menu-modal .btn-info,
+.forge-menu-modal .btn-outline-info {
+    --bs-btn-color: #a9cbd6;
+    --bs-btn-bg: rgba(70, 100, 112, .28);
+    --bs-btn-border-color: rgba(100, 138, 152, .5);
+    --bs-btn-hover-color: #bcd7e0;
+    --bs-btn-hover-bg: rgba(70, 100, 112, .42);
+    --bs-btn-hover-border-color: rgba(100, 138, 152, .7);
+    --bs-btn-active-color: #bcd7e0;
+    --bs-btn-active-bg: rgba(70, 100, 112, .5);
 }
 
-/* Colour inputs. The generic `.form-control` rule above stretches every control
-   to full width; a `<input type=color>` must instead be a small fixed swatch
-   (stock: `.form-control-color` / `.mobile-buttons-background-color`, 1.75rem).
-   `input[type=color]` outspecifies `.form-control`, so this wins regardless of
-   source order. */
-.forge-menu-modal input[type="color"] {
-    display: inline-block;
-    width: 1.75rem;
-    height: 1.75rem;
-    min-width: 1.75rem;
-    flex: 0 0 auto;
-    padding: 2px;
-    background-color: rgba(20, 18, 15, .85);
-    cursor: pointer;
+/* Nav tabs / pills. */
+.forge-menu-modal .nav {
+    --bs-nav-link-color: var(--parchment-dim);
+    --bs-nav-link-hover-color: var(--parchment);
 }
-.forge-menu-modal input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-.forge-menu-modal input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
-.forge-menu-modal input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
-
-/* Checkboxes / switches. */
-.forge-menu-modal .form-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: auto;
-    padding-left: 0;
-    margin-bottom: 4px;
+.forge-menu-modal .nav-tabs {
+    --bs-nav-tabs-border-color: var(--iron-lo);
+    --bs-nav-tabs-link-hover-border-color: var(--iron-lo);
+    --bs-nav-tabs-link-active-color: var(--bronze);
+    --bs-nav-tabs-link-active-bg: rgba(28, 26, 23, .7);
+    --bs-nav-tabs-link-active-border-color: var(--iron-lo) var(--iron-lo) rgba(28, 26, 23, .7);
 }
-.forge-menu-modal .form-check-input {
-    appearance: none;
-    flex: 0 0 auto;
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    background-color: rgba(20, 18, 15, .9);
-    border: 1px solid var(--iron-hi);
-    border-radius: 4px;
-    cursor: pointer;
+.forge-menu-modal .nav-pills {
+    --bs-nav-pills-link-active-color: #f2e6cc;
+    --bs-nav-pills-link-active-bg: rgba(110, 86, 32, .6);
 }
-.forge-menu-modal .form-check-input:checked {
-    background-color: var(--bronze-dim);
-    border-color: var(--bronze);
-}
-.forge-menu-modal .form-check-input:checked::after {
-    content: "\2713";
-    display: block;
-    text-align: center;
-    line-height: 14px;
-    font-size: 11px;
-    color: #14110c;
-}
-.forge-menu-modal .form-switch .form-check-input {
-    width: 32px;
-    border-radius: 10px;
-    position: relative;
-}
-.forge-menu-modal .form-switch .form-check-input::after {
-    content: "";
-    position: absolute;
-    top: 1px;
-    left: 1px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--parchment-dim);
-    transition: transform .15s ease;
-}
-.forge-menu-modal .form-switch .form-check-input:checked::after {
-    transform: translateX(15px);
-    background: #14110c;
-    line-height: normal;
-}
-.forge-menu-modal .form-check-label { cursor: pointer; }
-.forge-menu-modal .form-range { width: 100%; accent-color: var(--bronze); }
-
-/* Tabs / pills. */
-.forge-menu-modal .nav { display: flex; flex-wrap: wrap; gap: 2px; list-style: none; margin: 0; padding: 0; }
-.forge-menu-modal .nav-tabs { border-bottom: 1px solid var(--iron-lo); }
-.forge-menu-modal .nav-link {
-    padding: 6px 12px;
-    color: var(--parchment-dim);
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 5px 5px 0 0;
-    cursor: pointer;
+.forge-menu-modal .nav-tabs .nav-link,
+.forge-menu-modal .nav-pills .nav-link {
     font-family: "Cinzel", serif;
-    font-size: 12.5px;
-    letter-spacing: .04em;
-}
-.forge-menu-modal .nav-link:hover { color: var(--parchment); }
-.forge-menu-modal .nav-tabs .nav-link.active {
-    color: var(--bronze);
-    background-color: rgba(28, 26, 23, .7);
-    border-color: var(--iron-lo) var(--iron-lo) transparent;
-}
-.forge-menu-modal .nav-pills .nav-link.active {
-    color: #f2e6cc;
-    background-color: rgba(110, 86, 32, .5);
-    border-radius: 5px;
+    letter-spacing: .02em;
 }
 
 /* Tables. */
-.forge-menu-modal .table { width: 100%; border-collapse: collapse; color: var(--parchment); font-size: 13.5px; }
-.forge-menu-modal .table th,
-.forge-menu-modal .table td {
-    padding: 6px 8px;
-    border-bottom: 1px solid var(--iron-lo);
+.forge-menu-modal .table {
+    --bs-table-color: var(--parchment);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--iron-lo);
+    --bs-table-striped-color: var(--parchment);
+    --bs-table-striped-bg: rgba(255, 255, 255, .03);
+    --bs-table-hover-color: var(--parchment);
+    --bs-table-hover-bg: rgba(184, 150, 90, .07);
+}
+.forge-menu-modal .table > thead { color: var(--parchment-dim); }
+
+/* `.table-modern` / `.table-zebra` are stock's own table classes (Binds, Skróty,
+   Notatki lokacji, …), NOT Bootstrap `.table` — their rules live in stock's
+   global style.css, which forge never loads, so the tables rendered nearly bare
+   (flat cell borders, no header). Restyle them forged: a warm iron frame with a
+   bronze header underline and faint bronze row separators instead of flat black
+   lines, header text in the display face. No extra outer spacing. */
+.forge-menu-modal .table-modern {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--parchment);
+    background-color: rgba(20, 18, 15, .4);
+    border: 1px solid var(--iron-hi);
+    border-radius: .5rem;
+    overflow: hidden;
+}
+.forge-menu-modal .table-modern thead th {
+    padding: .4rem .6rem;
+    background: rgba(28, 26, 23, .9);
+    border-bottom: 1px solid var(--bronze-dim);
+    color: var(--parchment-dim);
+    font-family: "Cinzel", serif;
+    font-weight: 600;
+    font-size: .78rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
     text-align: left;
 }
-.forge-menu-modal .table th { color: var(--parchment-dim); font-family: "Cinzel", serif; font-size: 11.5px; letter-spacing: .04em; }
-.forge-menu-modal .table-hover tbody tr:hover { background: rgba(184, 150, 90, .07); }
+.forge-menu-modal .table-modern > :not(caption) > * > * {
+    padding: .4rem .6rem;
+    background-color: transparent;
+    border-bottom: 1px solid rgba(184, 150, 90, .1);
+}
+.forge-menu-modal .table-modern > tbody > tr:last-child > * { border-bottom: 0; }
+.forge-menu-modal .table-modern.table-zebra tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, .022);
+}
+.forge-menu-modal .table-modern.table-hover tbody tr:hover {
+    background-color: rgba(184, 150, 90, .08);
+}
+.forge-menu-modal .table-modern caption { color: var(--parchment-dim); }
 
-/* Cards / list groups / alerts / badges. */
-.forge-menu-modal .card,
-.forge-menu-modal .list-group-item {
-    background-color: rgba(20, 18, 15, .55);
-    border: 1px solid var(--iron-lo);
-    border-radius: 6px;
-    color: var(--parchment);
+/* Cards / list groups / nested Bootstrap dialogs. */
+.forge-menu-modal .card {
+    --bs-card-bg: rgba(20, 18, 15, .55);
+    --bs-card-border-color: var(--iron-lo);
+    --bs-card-color: var(--parchment);
+    --bs-card-cap-bg: rgba(28, 26, 23, .6);
 }
-.forge-menu-modal .card { padding: 0; }
-.forge-menu-modal .card-body { padding: 10px 12px; }
-.forge-menu-modal .list-group { display: flex; flex-direction: column; gap: 4px; padding: 0; margin: 0; list-style: none; }
-.forge-menu-modal .list-group-item { padding: 8px 10px; }
-.forge-menu-modal .alert {
-    padding: 8px 12px;
-    /* Bootstrap's default alert spacing, which the components rely on to
-       separate a leading info banner from the controls below it. */
-    margin-bottom: 1rem;
-    border: 1px solid var(--iron-lo);
-    border-radius: 6px;
-    background: rgba(28, 26, 23, .6);
-    color: var(--parchment);
+.forge-menu-modal .list-group {
+    --bs-list-group-bg: rgba(20, 18, 15, .55);
+    --bs-list-group-border-color: var(--iron-lo);
+    --bs-list-group-color: var(--parchment);
+    --bs-list-group-action-color: var(--parchment);
+    --bs-list-group-action-hover-color: var(--parchment);
+    --bs-list-group-action-hover-bg: rgba(184, 150, 90, .07);
+    --bs-list-group-active-bg: rgba(110, 86, 32, .5);
+    --bs-list-group-active-border-color: var(--bronze-dim);
 }
-.forge-menu-modal .alert-danger { border-color: rgba(160, 72, 52, .5); background: rgba(140, 52, 36, .18); }
-.forge-menu-modal .alert-warning { border-color: rgba(160, 122, 52, .5); background: rgba(150, 112, 42, .18); }
-.forge-menu-modal .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 7px;
-    font-size: 11.5px;
-    color: #f2e6cc;
-    background-color: rgba(110, 86, 32, .45);
-    border: 1px solid var(--bronze-dim);
-    border-radius: 999px;
-}
-
-/* Nested Bootstrap modals.
-
-   A few editors open a secondary dialog by rendering `.modal.show.d-block`
-   inline (AliasEditModal, TriggerEditModal, CollectOverridesModal — the "add /
-   edit" form). Stock relies on global Bootstrap to turn that into a centred
-   overlay; forge has none, so without this the whole dialog dumps into the flow
-   of the list modal (header, body and footer stacked with no chrome). Give it
-   forged overlay chrome. The element carries an inline `z-index:1060`; it lives
-   inside the menu modal's stacking context (backdrop z-index 5000), so it paints
-   above the list behind it, and the backdrop's `backdrop-filter` makes this
-   `position:fixed` child fill the already-full-viewport backdrop. */
-.forge-menu-modal .modal {
-    position: fixed;
-    inset: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-.forge-menu-modal .modal-dialog {
-    position: relative;
-    width: auto;
-    max-width: 500px;
-    margin: 1.75rem auto;
-    pointer-events: none;
-}
-.forge-menu-modal .modal-dialog-centered {
-    display: flex;
-    align-items: center;
-    min-height: calc(100% - 3.5rem);
-}
-.forge-menu-modal .modal-sm { max-width: 320px; }
-.forge-menu-modal .modal-lg,
-.forge-menu-modal .modal-xl { max-width: 800px; }
 .forge-menu-modal .modal-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    pointer-events: auto;
-    background-color: #0f0d0a;
-    background-image:
-        var(--tex-fine),
-        linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
-    background-blend-mode: soft-light, normal;
-    background-size: 130px 130px, 100% 100%;
-    border: 1px solid var(--iron-hi);
-    border-radius: 10px;
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .16),
-        0 18px 60px rgba(0, 0, 0, .7);
-}
-.forge-menu-modal .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--iron-lo);
-}
-.forge-menu-modal .modal-title {
-    margin: 0;
-    font-family: "Cinzel", serif;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: .02em;
-    color: var(--bronze);
-}
-.forge-menu-modal .modal-body { padding: 16px; }
-.forge-menu-modal .modal-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 12px 16px;
-    border-top: 1px solid var(--iron-lo);
+    --bs-modal-bg: #0f0d0a;
+    --bs-modal-color: var(--parchment);
+    --bs-modal-border-color: var(--iron-hi);
+    --bs-modal-header-border-color: var(--iron-lo);
+    --bs-modal-footer-border-color: var(--iron-lo);
 }
 
-/* Input groups. */
-.forge-menu-modal .input-group { display: flex; align-items: stretch; }
-.forge-menu-modal .input-group > * { border-radius: 0; }
-.forge-menu-modal .input-group > *:first-child { border-radius: 5px 0 0 5px; }
-.forge-menu-modal .input-group > *:last-child { border-radius: 0 5px 5px 0; }
-.forge-menu-modal .input-group-text {
-    display: flex;
-    align-items: center;
-    padding: 6px 9px;
-    color: var(--parchment-dim);
-    background: rgba(28, 26, 23, .8);
-    border: 1px solid var(--iron-lo);
-    font-size: 13px;
+/* Settings-section cards (Interfejs / Opcje masonry): _stock-settings.scss gives
+   them their layout + flat iron border. Forge them up a touch — a warmer iron
+   frame with the inset bronze top-highlight forge uses on its panels/rail, and a
+   tighter shadow so they read as carved plates, not floating cards. Chrome only:
+   no padding/margin changes, so section spacing is unchanged. */
+.forge-menu-modal .ui-settings-section,
+.forge-menu-modal .character-settings-section {
+    border-color: var(--iron-hi);
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .1),
+        0 .5rem 1.25rem rgba(0, 0, 0, .28);
+}
+
+/* Alerts — Bootstrap's `.alert-*` variants derive from theme subtle/emphasis
+   tokens that stay in cool default hues; recolour the `--bs-alert-*` outputs to
+   the forge palette so info/warning/etc. banners read as forged. */
+.forge-menu-modal .alert-info,
+.forge-menu-modal .alert-primary {
+    --bs-alert-color: #a9cbd6;
+    --bs-alert-bg: rgba(60, 90, 100, .18);
+    --bs-alert-border-color: rgba(100, 138, 152, .4);
+    --bs-alert-link-color: #c2dbe3;
+}
+.forge-menu-modal .alert-warning {
+    --bs-alert-color: #d8b46a;
+    --bs-alert-bg: rgba(150, 112, 42, .18);
+    --bs-alert-border-color: rgba(160, 122, 52, .5);
+    --bs-alert-link-color: #e6c987;
+}
+.forge-menu-modal .alert-danger {
+    --bs-alert-color: #d79a86;
+    --bs-alert-bg: rgba(140, 52, 36, .18);
+    --bs-alert-border-color: rgba(160, 72, 52, .5);
+    --bs-alert-link-color: #e6ad99;
+}
+.forge-menu-modal .alert-success {
+    --bs-alert-color: #c3d29c;
+    --bs-alert-bg: rgba(96, 116, 58, .2);
+    --bs-alert-border-color: rgba(120, 140, 80, .5);
+    --bs-alert-link-color: #d0dcac;
+}
+.forge-menu-modal .alert-secondary {
+    --bs-alert-color: var(--parchment);
+    --bs-alert-bg: rgba(28, 26, 23, .6);
+    --bs-alert-border-color: var(--iron-lo);
 }
 
 /* ============================================================
-   Stock component-specific classes used by menu-hosted editors.
-
-   These live in stock's global style.css (not Bootstrap), which forge doesn't
-   load, so they need re-declaring here, scoped to the modal and mapped to the
-   forge palette. Only the ones that actually break layout when missing.
+   Stock component-specific classes used by menu-hosted editors that are NOT
+   Bootstrap and not in stock-settings.css — kept here, recoloured to forge.
    ============================================================ */
 
 /* Mobile-buttons background row (Przyciski → Kolor tła): a swatch, an alpha
@@ -608,6 +542,13 @@
     min-width: 2rem;
     text-align: right;
 }
+.forge-menu-modal .mobile-buttons-background-color {
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    flex: 0 0 auto;
+    padding: 2px;
+}
 
 /* The button-layout preview grid (Przyciski) reuses the runtime
    `.mobile-direction-buttons` class, whose shared CSS pins it `position:fixed`
@@ -624,18 +565,61 @@
     box-shadow: none;
 }
 
-/* The docs body rendered by mountDocs. */
-.forge-docs-host .docs-content { line-height: 1.55; }
+/* The docs body rendered by mountDocs. Its heading/table sizing normally comes
+   from stock's global .docs-content rules; forge doesn't load those, so the
+   markdown fell back to Bootstrap's oversized default h1/h2 and unstyled tables.
+   Reinstate stock's compact doc scale (h1 1.4 / h2 1.2 / h3 1rem, tight margins),
+   forge-toned, and give the tables + quotes real chrome. */
+.forge-docs-host .docs-content { font-size: .9375rem; line-height: 1.55; }
 .forge-docs-host .docs-content h1,
 .forge-docs-host .docs-content h2,
 .forge-docs-host .docs-content h3 { font-family: "Cinzel", serif; color: var(--bronze); }
+.forge-docs-host .docs-content h1 { font-size: 1.4rem; margin: 1rem 0 .5rem; }
+.forge-docs-host .docs-content h2 { font-size: 1.2rem; margin: .75rem 0 .4rem; }
+.forge-docs-host .docs-content h3 { font-size: 1rem; margin: .5rem 0 .3rem; }
+.forge-docs-host .docs-content p { margin: 0 0 .6rem; }
 .forge-docs-host .docs-content a { color: var(--bronze); }
 .forge-docs-host .docs-content code {
     font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .85em;
     background: rgba(0, 0, 0, .35);
     padding: 1px 4px;
     border-radius: 3px;
 }
+.forge-docs-host .docs-content ul,
+.forge-docs-host .docs-content ol { margin: .5rem 0; padding-left: 1.5rem; }
+.forge-docs-host .docs-content li { margin: .25rem 0; }
+.forge-docs-host .docs-content blockquote {
+    margin: .75rem 0;
+    padding: .4rem .8rem;
+    border-left: 3px solid var(--bronze-dim);
+    background: rgba(184, 150, 90, .06);
+    font-style: italic;
+}
+.forge-docs-host .docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: .75rem 0;
+    font-size: .9rem;
+    border: 1px solid var(--iron-hi);
+    border-radius: .4rem;
+    overflow: hidden;
+}
+.forge-docs-host .docs-content th,
+.forge-docs-host .docs-content td {
+    padding: .4rem .6rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(184, 150, 90, .1);
+}
+.forge-docs-host .docs-content thead th {
+    background: rgba(28, 26, 23, .9);
+    border-bottom: 1px solid var(--bronze-dim);
+    color: var(--parchment-dim);
+    font-weight: 600;
+    font-size: .82rem;
+}
+.forge-docs-host .docs-content tbody tr:last-child > * { border-bottom: 0; }
+.forge-docs-host .docs-content tbody tr:nth-of-type(even) { background: rgba(255, 255, 255, .022); }
 .forge-docs-host .docs-nav .btn.active {
     color: var(--bronze);
     border-color: var(--bronze-dim);

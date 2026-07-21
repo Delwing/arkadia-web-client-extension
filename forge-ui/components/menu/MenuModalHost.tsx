@@ -3,29 +3,59 @@ import type Client from '@client/Client';
 import MenuModal from './MenuModal';
 import { getHelperConnection } from '../../client/bootstrap';
 
-// The stock settings/editors are lazy-loaded. They are heavy (Monaco, sql.js, …)
-// AND they transitively import the stock global `src/web/style.css` (via
-// options/Settings.tsx). Pulling that into forge's INITIAL bundle reorders the
-// built CSS chunks so those id-based stock rules (#content-area,
-// #main_text_output_msg_wrapper, …) win over forge's theming — adding stray
-// backgrounds to the output/footer/panels. Loading them as async chunks keeps
-// forge's initial CSS (and cascade) intact; the chunks only arrive when a modal
-// opens, after forge's stylesheet is already applied.
-const CharacterSettings = lazy(() => import('@web/options/CharacterSettings'));
-const UiSettings = lazy(() => import('@web/uiSettings/UiSettings'));
-const ExportImport = lazy(() => import('@web/options/ExportImport'));
-const CharacterManagement = lazy(() => import('@web/options/CharacterManagementModal'));
-const Binds = lazy(() => import('@web/options/Binds'));
-const Scripts = lazy(() => import('@web/options/Scripts'));
-const Aliases = lazy(() => import('@web/options/Aliases'));
-const UserTriggers = lazy(() => import('@web/options/UserTriggers'));
-const Recordings = lazy(() => import('@web/options/Recordings'));
-const Shortcuts = lazy(() => import('@web/options/Shortcuts'));
-const LocationNotes = lazy(() => import('@web/options/LocationNotes'));
-const ButtonsSettings = lazy(() => import('@web/options/ButtonsSettings'));
-const MobileRadialCommands = lazy(() => import('@web/options/MobileRadialCommands'));
-const HelperSettings = lazy(() => import('@web/options/HelperSettings'));
-const LogBrowser = lazy(() => import('@web/LogBrowser').then((m) => ({ default: m.LogBrowser })));
+// The stock settings panels are lazy-loaded to keep their weight out of forge's
+// initial bundle: together they're ~140 kB gzip of JS (Skrypty alone is ~40 kB,
+// mostly the inlined PLUGINS.md + plugin type defs its AI-prompt builder embeds).
+// Forge's own entry is only ~16 kB gzip, so eager-importing the set would several-
+// fold the startup payload for panels most sessions never open. So they stay async.
+// (Their genuinely heavy dependencies — esbuild-wasm for plugin import, sql.js for
+// data imports, the logs export — are all `?worker` chunks that load on demand
+// regardless of this, and Monaco is not here at all: it lives only in the separate
+// editor/ entry. So this is purely about the panels' own JS.)
+// (There was a second reason once — these components transitively imported stock's
+// global style.css and reordered forge's CSS cascade — but that leak was closed
+// upstream: options/Settings.tsx no longer imports it. Bundle weight is the only
+// live reason now.)
+//
+// Single source of truth for each modal's chunk loader. `lazy()` consumes these
+// below, and `prefetchAllModals()` calls them to warm every chunk in the
+// background after forge's initial render — so a modal's first open is already
+// resolved (no "Ładowanie…" flash), while the heavy `?worker` deps still never
+// touch the startup path.
+const load = {
+    options: () => import('@web/options/CharacterSettings'),
+    ui: () => import('@web/uiSettings/UiSettings'),
+    'export-import': () => import('@web/options/ExportImport'),
+    characters: () => import('@web/options/CharacterManagementModal'),
+    binds: () => import('@web/options/Binds'),
+    scripts: () => import('@web/options/Scripts'),
+    aliases: () => import('@web/options/Aliases'),
+    triggers: () => import('@web/options/UserTriggers'),
+    recordings: () => import('@web/options/Recordings'),
+    shortcuts: () => import('@web/options/Shortcuts'),
+    'location-notes': () => import('@web/options/LocationNotes'),
+    buttons: () => import('@web/options/ButtonsSettings'),
+    radial: () => import('@web/options/MobileRadialCommands'),
+    helper: () => import('@web/options/HelperSettings'),
+    logs: () => import('@web/LogBrowser'),
+    docs: () => import('@web/docs'),
+} satisfies Record<string, () => Promise<unknown>>;
+
+const CharacterSettings = lazy(load.options);
+const UiSettings = lazy(load.ui);
+const ExportImport = lazy(load['export-import']);
+const CharacterManagement = lazy(load.characters);
+const Binds = lazy(load.binds);
+const Scripts = lazy(load.scripts);
+const Aliases = lazy(load.aliases);
+const UserTriggers = lazy(load.triggers);
+const Recordings = lazy(load.recordings);
+const Shortcuts = lazy(load.shortcuts);
+const LocationNotes = lazy(load['location-notes']);
+const ButtonsSettings = lazy(load.buttons);
+const MobileRadialCommands = lazy(load.radial);
+const HelperSettings = lazy(load.helper);
+const LogBrowser = lazy(() => load.logs().then((m) => ({ default: m.LogBrowser })));
 
 /**
  * The keys the forge menu can open as a modal. Kept in sync with the menu items
@@ -49,12 +79,36 @@ export type ModalKey =
     | 'logs'
     | 'docs';
 
+/**
+ * Warms every modal's code (and the shared scoped-Bootstrap CSS) in the
+ * background, so opening any of them never flashes the Suspense "Ładowanie…"
+ * fallback. The menu calls this once, on an idle callback after forge's initial
+ * render — it downloads only the panels' own JS (~140 kB gzip); their heavy
+ * `?worker` deps (esbuild-wasm, sql.js) aren't instantiated by import, so they
+ * stay on-demand. Idempotent and safe to call repeatedly (the browser/Vite
+ * dedupe the dynamic imports).
+ */
+export function prefetchAllModals(): void {
+    // The scoped stylesheet the editors are built against loads with the first
+    // modal too; warm it once so the panel paints styled, not just un-suspended.
+    void import('./scopedModalCss');
+    for (const loader of Object.values(load)) void loader();
+}
+
 interface MenuModalHostProps {
-    activeKey: ModalKey | null;
+    /** The modal stack, bottom-to-top. Stock hosts these as independent Bootstrap
+     *  modals that can stack (e.g. Postacie opens *over* Opcje at a higher
+     *  z-index); a stack reproduces that instead of the old single-active key. */
+    stack: ModalKey[];
     client: Client;
-    onClose: () => void;
-    /** Lets a modal switch to a sibling (options → export/import or characters). */
-    setActiveKey: (key: ModalKey) => void;
+    /** Pop a specific modal off the stack (its close button / backdrop / Esc). */
+    closeKey: (key: ModalKey) => void;
+    /** Pop the front-most modal — used by the components' close-* window events. */
+    closeTop: () => void;
+    /** Open a sibling on top, keeping the opener behind (stock's Postacie ↑ Opcje). */
+    pushKey: (key: ModalKey) => void;
+    /** Swap the front-most modal for a sibling (stock's Eksport/Import hides Opcje). */
+    replaceKey: (key: ModalKey) => void;
 }
 
 const TITLES: Record<ModalKey, string> = {
@@ -78,7 +132,7 @@ const TITLES: Record<ModalKey, string> = {
 
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // The two dense settings panels flow their sections into a 2–3 column
-    // masonry (see .ui-settings-layout in bootstrap-compat.css); give them the
+    // masonry (see .ui-settings-layout in stock-settings.css); give them the
     // wide shell so all three columns fit, matching stock's wide settings modal.
     options: 'xl',
     ui: 'xl',
@@ -88,13 +142,42 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     docs: 'xl',
 };
 
+/**
+ * Fires the "modal shown/hidden" signals a couple of stock panels expect on open.
+ * Rendered *inside* the Suspense boundary (alongside the lazy body) so its effects
+ * run in the same commit the body mounts in — i.e. once the dialog is actually in
+ * the DOM. Kept out of MenuModalEntry so the boundary can wrap the whole modal
+ * (header included) without these dispatching before the shell exists.
+ */
+function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
+    // The general-settings panel selects its first tab on this.
+    useEffect(() => {
+        if (modalKey === 'options') {
+            window.dispatchEvent(new Event('show-general-settings'));
+        }
+    }, [modalKey]);
+
+    // UiSettings hooks the Bootstrap show/hidden lifecycle of `#ui-settings-modal`
+    // to refresh its draft on open and restore live-previewed values on dismiss.
+    useEffect(() => {
+        if (modalKey !== 'ui') return;
+        const el = document.getElementById('ui-settings-modal');
+        el?.dispatchEvent(new Event('show.bs.modal'));
+        return () => {
+            el?.dispatchEvent(new Event('hidden.bs.modal'));
+        };
+    }, [modalKey]);
+
+    return null;
+}
+
 /** Docs render imperatively (plain DOM) into a container; loaded on demand so
  *  the heavy markdown bundle stays out of forge's initial chunk. */
 function DocsBody() {
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
         let cancelled = false;
-        void import('@web/docs').then(({ mountDocs }) => {
+        void load.docs().then(({ mountDocs }) => {
             if (!cancelled && ref.current) mountDocs(ref.current);
         });
         return () => {
@@ -104,54 +187,25 @@ function DocsBody() {
     return <div ref={ref} className="forge-docs-host" style={{ minHeight: 0, flex: '1 1 auto', display: 'flex', flexDirection: 'column' }} />;
 }
 
-export default function MenuModalHost({ activeKey, client, onClose, setActiveKey }: MenuModalHostProps) {
-    // Several option components dispatch these on save/cancel (the same contract
-    // the stock Bootstrap modals honour). Mirror the stock host: close on either.
-    useEffect(() => {
-        if (!activeKey) return;
-        const close = () => onClose();
-        window.addEventListener('close-options', close);
-        window.addEventListener('close-ui-settings', close);
-        // Options → sibling modals, dispatched by the options header buttons.
-        const toExport = () => setActiveKey('export-import');
-        const toChars = () => setActiveKey('characters');
-        window.addEventListener('show-export-import', toExport);
-        window.addEventListener('show-character-management', toChars);
-        return () => {
-            window.removeEventListener('close-options', close);
-            window.removeEventListener('close-ui-settings', close);
-            window.removeEventListener('show-export-import', toExport);
-            window.removeEventListener('show-character-management', toChars);
-        };
-    }, [activeKey, onClose, setActiveKey]);
+interface MenuModalEntryProps {
+    modalKey: ModalKey;
+    /** True for the front-most modal; only it responds to Esc. */
+    isTop: boolean;
+    client: Client;
+    onClose: () => void;
+    pushKey: (key: ModalKey) => void;
+    replaceKey: (key: ModalKey) => void;
+}
 
-    // The general-settings panel expects this on open (selects its first tab).
-    useEffect(() => {
-        if (activeKey === 'options') {
-            window.dispatchEvent(new Event('show-general-settings'));
-        }
-    }, [activeKey]);
-
-    // UiSettings hooks the Bootstrap show/hidden lifecycle of `#ui-settings-modal`
-    // to refresh its draft on open and restore live-previewed values on dismiss.
-    // Replicate those DOM events around this modal's lifetime.
-    useEffect(() => {
-        if (activeKey !== 'ui') return;
-        const el = document.getElementById('ui-settings-modal');
-        el?.dispatchEvent(new Event('show.bs.modal'));
-        return () => {
-            el?.dispatchEvent(new Event('hidden.bs.modal'));
-        };
-    }, [activeKey]);
-
-    if (!activeKey) return null;
-
-    const title = TITLES[activeKey];
-    const size = SIZE[activeKey] ?? 'lg';
+/** Renders a single modal in the stack, with the per-key body, chrome and the
+ *  lifecycle DOM events its stock component expects. */
+function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey }: MenuModalEntryProps) {
+    const title = TITLES[modalKey];
+    const size = SIZE[modalKey] ?? 'lg';
 
     // Footer Save buttons — only the two panels that carry one in the stock UI.
     let footer: ReactNode = null;
-    if (activeKey === 'options') {
+    if (modalKey === 'options') {
         footer = (
             <button
                 type="button"
@@ -161,7 +215,7 @@ export default function MenuModalHost({ activeKey, client, onClose, setActiveKey
                 Zapisz
             </button>
         );
-    } else if (activeKey === 'ui') {
+    } else if (modalKey === 'ui') {
         footer = (
             <button
                 type="button"
@@ -174,14 +228,16 @@ export default function MenuModalHost({ activeKey, client, onClose, setActiveKey
     }
 
     // The options panel offers export/import + character shortcuts in its header.
+    // Stock hides Opcje for Eksport/Import (a replace) but stacks Postacie on top
+    // at a higher z-index (a push) — mirror both here.
     let headerExtras: ReactNode = null;
-    if (activeKey === 'options') {
+    if (modalKey === 'options') {
         headerExtras = (
             <>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveKey('export-import')}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => replaceKey('export-import')}>
                     Eksport/Import
                 </button>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveKey('characters')}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => pushKey('characters')}>
                     Postacie
                 </button>
             </>
@@ -189,7 +245,7 @@ export default function MenuModalHost({ activeKey, client, onClose, setActiveKey
     }
 
     let body: ReactNode;
-    switch (activeKey) {
+    switch (modalKey) {
         case 'options':
             body = <CharacterSettings />;
             break;
@@ -247,16 +303,79 @@ export default function MenuModalHost({ activeKey, client, onClose, setActiveKey
             break;
     }
 
+    // The boundary wraps the WHOLE modal (not just the body) so the shell doesn't
+    // paint before its content is ready — otherwise the header commits instantly
+    // and the lazy body (a big settings form, several frames to first-render even
+    // when the code is warm) pops in a beat later. With the boundary hoisted,
+    // React withholds the entire modal until the body is ready, so header + body
+    // appear together. Chunks are warm (idle prefetch), so that's ~a frame; the
+    // null fallback shows nothing in the rare cold case (the closing dropdown is
+    // the click's feedback) rather than a bare, chrome-less spinner.
     return (
-        <MenuModal
-            title={title}
-            size={size}
-            onClose={onClose}
-            dialogId={activeKey === 'ui' ? 'ui-settings-modal' : undefined}
-            headerExtras={headerExtras}
-            footer={footer}
-        >
-            <Suspense fallback={<p className="forge-menu-loading">Ładowanie…</p>}>{body}</Suspense>
-        </MenuModal>
+        <Suspense fallback={null}>
+            <MenuModal
+                title={title}
+                size={size}
+                onClose={onClose}
+                closeOnEsc={isTop}
+                dialogId={modalKey === 'ui' ? 'ui-settings-modal' : undefined}
+                headerExtras={headerExtras}
+                footer={footer}
+            >
+                <ModalOpenEffects modalKey={modalKey} />
+                {body}
+            </MenuModal>
+        </Suspense>
+    );
+}
+
+export default function MenuModalHost({ stack, client, closeKey, closeTop, pushKey, replaceKey }: MenuModalHostProps) {
+    const open = stack.length > 0;
+
+    // Several option components dispatch these on save/cancel (the same contract
+    // the stock Bootstrap modals honour) — they mean "dismiss the current modal",
+    // so close the front-most one. Others dispatch the show-* events to open a
+    // sibling (the same events stock's option headers fire).
+    useEffect(() => {
+        if (!open) return;
+        const close = () => closeTop();
+        const toExport = () => pushKey('export-import');
+        const toChars = () => pushKey('characters');
+        window.addEventListener('close-options', close);
+        window.addEventListener('close-ui-settings', close);
+        window.addEventListener('show-export-import', toExport);
+        window.addEventListener('show-character-management', toChars);
+        return () => {
+            window.removeEventListener('close-options', close);
+            window.removeEventListener('close-ui-settings', close);
+            window.removeEventListener('show-export-import', toExport);
+            window.removeEventListener('show-character-management', toChars);
+        };
+    }, [open, closeTop, pushKey]);
+
+    // Inject the scoped Bootstrap stylesheet the editors are built against, the
+    // first time any modal opens (kept out of forge's initial chunk). See
+    // scopedModalCss.ts.
+    useEffect(() => {
+        if (!open) return;
+        void import('./scopedModalCss').then((m) => m.injectScopedModalCss());
+    }, [open]);
+
+    if (!open) return null;
+
+    return (
+        <>
+            {stack.map((key, i) => (
+                <MenuModalEntry
+                    key={key}
+                    modalKey={key}
+                    isTop={i === stack.length - 1}
+                    client={client}
+                    onClose={() => closeKey(key)}
+                    pushKey={pushKey}
+                    replaceKey={replaceKey}
+                />
+            ))}
+        </>
     );
 }
