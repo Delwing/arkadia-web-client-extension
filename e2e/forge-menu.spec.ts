@@ -87,4 +87,27 @@ test.describe('forge menu', () => {
         await expect(dialog).toHaveCount(0);
         await expect(modal).toBeVisible();
     });
+
+    test('opening UI settings does not repaint the forge output', async ({ page }) => {
+        // The Interfejs (UiSettings) modal live-previews the *stock* shell: its
+        // apply() writes an inline background onto the shared output elements.
+        // forge keeps its log transparent over the panel texture, so opening the
+        // modal must not paint a flat stock background over the output (it used
+        // to, and the paint stuck after closing). forge/style.css pins these
+        // with !important.
+        const output = page.locator('#main_text_output_msg_wrapper');
+        const bgBefore = await output.evaluate((el) => getComputedStyle(el).backgroundColor);
+        expect(bgBefore).toBe('rgba(0, 0, 0, 0)');
+
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Interfejs', exact: true }).click();
+        await expect(page.locator('.forge-menu-modal')).toBeVisible();
+        // Even while the preview is live, forge's output stays transparent.
+        await expect(output).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
+        await page.keyboard.press('Escape');
+        await expect(page.locator('.forge-menu-modal')).toHaveCount(0);
+        // …and stays transparent after the modal closes.
+        await expect(output).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    });
 });

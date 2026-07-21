@@ -289,6 +289,19 @@ body::after {
   font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;
 }
 
+/* Immunise forge's shared output chrome against the stock UiSettings preview.
+   The Interfejs (UiSettings) modal live-previews the *stock* shell: its apply()
+   (uiSettingsCore.ts) writes an inline background straight onto these shared
+   elements to preview the stock "output background" setting. forge drives them
+   from its own theme (transparent log over the panel texture, --void split),
+   so opening the modal would otherwise paint a flat stock grey (#242424) over
+   the textured output — and it sticks after closing, since apply() re-runs on
+   dismiss rather than clearing. A stylesheet !important overrides the
+   non-important inline style, pinning forge's look regardless of the preview. */
+#main_text_output_msg_wrapper { background-color: transparent !important; }
+#split-bottom { background: var(--void) !important; }
+#objects-list { background-color: transparent !important; }
+
 /* split-scroll: a sticky footer that mirrors the newest lines while the user
    reads scrollback. Opaque over the void so scrollback never bleeds through. */
 #split-bottom {
