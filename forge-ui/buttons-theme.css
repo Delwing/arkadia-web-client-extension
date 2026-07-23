@@ -20,51 +20,77 @@
    These components are shared with stock — this file only overrides cosmetic
    properties, never touching stock's look.
 
-   Modeled directly on the right-click context menu (.alt-context-menu /
-   ContextMenu.tsx, see style.css): the same matte --tex-fine surface and iron
-   border. The label font is Cinzel too, but NOT uppercase/letter-spaced/bold
-   like the menu's own — these buttons are tiny (down to 20px square, per the
-   button-size slider in the settings editor) and label text is plain-case
-   from settings (macro labels like "wesprzyj", direction glyphs), so the
-   menu's full uppercase-letter-spaced-600-weight treatment reliably overflowed
-   the button at small sizes; plain-case Cinzel at a lighter weight keeps the
-   family resemblance while actually fitting. Per-button color (settings-
-   driven, chosen by the user or a shared JS default) is demoted from "the
-   fill" to "an accent": each
-   component additionally exposes it as the `--btn-accent` (or, for the whole
-   direction pad, `--pad-accent`) custom property alongside its real inline
-   `backgroundColor` — inert for stock, since stock's CSS never references it
-   — and this file uses that var only for the border, the same way
-   `.multi-bind--room`/`.multi-bind--drink` tint a neutral pill's border
-   rather than filling it.
+   Modeled on the HUD footer's own hardware: the status chips (.chip) and the
+   vital gems (.gem .stone) in style.css. Same weathered-stone recipe — the
+   isotropic --tex-stone speckle soft-lit over a dark gradient — plus the gem
+   cap's convex shading (top highlight, bottom shade, a shadow dropped into
+   its own socket), so a floating button reads as another piece struck from
+   the same rock as the plate at the bottom of the screen, not as a UI widget
+   parked on top of it.
 
-   `background-color`/`background-image` need `!important` here: they're the
-   one thing that must beat the inline style (there's no way to "read" an
-   arbitrary inline color back out in CSS to redirect it elsewhere), so every
-   button gets the same flat matte fill regardless of its accent.
-   `.mobile-button:not(.empty)` keeps mobile's invisible spacer buttons
-   actually invisible — the shared `.empty` rule further down still wins on
-   border/box-shadow via specificity, but background-color here would
-   otherwise out-rank it on !important alone. */
+   Per-button color (settings-driven, chosen by the user or a shared JS
+   default) survives as a *tint*, not a fill. Each component exposes it as the
+   `--btn-accent` custom property (`--pad-accent` for the whole direction pad)
+   alongside its real inline `backgroundColor` — inert for stock, since
+   stock's CSS never references it. Here it's mixed a fifth-or-so of the way
+   into the stone base and echoed in the border, which is exactly what the gem
+   does to its own vital hue (`filter: saturate(.58)` over --tex-stone): color
+   coding still tells buttons apart at a glance, but nothing can put a flat
+   sky-blue slab on the forge. That's a deliberate override of the user's
+   picked color — forge is a skin with a point of view, and the stock UI is
+   still there for anyone who wants their exact hex.
+
+   The label font is Cinzel like the chips' own, but NOT uppercase/
+   letter-spaced the way `.chip__lab` is: these buttons go down to 20px square
+   (button-size slider in the settings editor) and carry plain-case
+   settings text (macro labels like "wesprzyj", direction glyphs), so caps
+   plus tracking reliably overflowed them. Plain-case Cinzel with the gems'
+   heavy double text-shadow gets the family resemblance without the clipping.
+
+   `background-color`/`background-image`/`color` need `!important` here:
+   they're the properties that must beat the component's inline style (there's
+   no way to "read" an arbitrary inline color back out in CSS to redirect it
+   elsewhere), so every button gets the stone surface and parchment text
+   regardless of what was picked in settings. `.mobile-button:not(.empty)`
+   keeps mobile's invisible spacer buttons actually invisible — the shared
+   `.empty` rule further down still wins on border/box-shadow via specificity,
+   but background-color here would otherwise out-rank it on !important alone. */
 
 :is(.desktop-button, .desktop-button-list-item, .mobile-command-radial__command),
 .mobile-button:not(.empty) {
-    background-color: #0a0a09 !important;
+    /* The accent goes into the fill at full chroma — deliberately louder than
+       the vital gems it sits above, which are dark palette hues further muted
+       by `filter: saturate(.58)`. A gem is ambient (glanced at); a button is a
+       target you have to pick out of a dark screen mid-fight, so it keeps its
+       color coding. Fallback = neutral stone brown, for anything that renders
+       without an inline color (plugin buttons mid-load, the radial). */
+    --btn-tint: var(--btn-accent, #6f6252);
+    background-color: color-mix(in srgb, var(--btn-tint) 18%, #14100a) !important;
+    /* top→bottom: cap gloss, cap shade, stone speckle, tinted base. The two
+       gradients ride above the speckle so soft-light can't lift the surface
+       into a mid-tone — same trick as .chip's scrim, doing double duty as the
+       gem cap's convex shading. */
     background-image:
-        var(--tex-fine),
-        linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%) !important;
-    background-blend-mode: soft-light, normal !important;
-    background-size: 130px 130px, 100% 100% !important;
-    border: 1px solid var(--btn-accent, var(--iron-lo));
+        linear-gradient(180deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 45%),
+        linear-gradient(180deg, transparent 48%, rgba(0, 0, 0, .5)),
+        var(--tex-stone),
+        linear-gradient(180deg,
+            color-mix(in srgb, var(--btn-tint) 26%, #1a140c),
+            color-mix(in srgb, var(--btn-tint) 11%, #080603)) !important;
+    background-blend-mode: normal, normal, soft-light, normal !important;
+    background-size: 100% 100%, 100% 100%, 90px 90px, 100% 100% !important;
+    border: 1px solid color-mix(in srgb, var(--btn-tint) 32%, #33291b);
     box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .16),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 2px 6px rgba(0, 0, 0, .5);
+        inset 0 1px 0 rgba(255, 255, 255, .14),
+        inset 0 -3px 6px rgba(0, 0, 0, .55),
+        inset 0 0 0 1px rgba(0, 0, 0, .45),
+        0 1px 2px rgba(0, 0, 0, .6);
+    color: #f4ecd6 !important;
     font-family: "Cinzel", serif;
-    font-weight: 500;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
-    transition: color .12s ease, border-color .15s ease;
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .98), 0 2px 5px rgba(0, 0, 0, .8);
+    transition: border-color .15s ease, box-shadow .15s ease;
 }
 
 .desktop-button,
@@ -73,29 +99,75 @@
     border-radius: 6px;
 }
 
-:is(.desktop-button, .mobile-button, .mobile-command-radial__command):hover {
-    color: #f4ecd6;
+/* Hover lights the rim the way an interactive chip's does (.chip--act:hover),
+   and lifts the cap's own highlight rather than brightening the whole fill. */
+:is(.desktop-button, .desktop-button-list-item, .mobile-button, .mobile-command-radial__command):hover {
     border-color: var(--bronze-dim);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .2),
+        inset 0 -3px 6px rgba(0, 0, 0, .5),
+        inset 0 0 0 1px rgba(0, 0, 0, .45),
+        0 1px 3px rgba(0, 0, 0, .6);
 }
 
+/* The stock skin brightens on hover/press with a filter; that would wash the
+   stone out, so it's dropped in favour of the rim/press treatment above. */
+:is(.desktop-button, .desktop-button-list-item, .mobile-button):hover,
+:is(.desktop-button, .mobile-button):active,
+:is(.desktop-button, .mobile-button).active {
+    filter: none;
+}
+
+/* Pressed: the cap sinks into its socket — highlight off, shade deepened. */
 .desktop-button:active,
 .mobile-button:active {
     transform: translateY(1px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .04),
+        inset 0 2px 5px rgba(0, 0, 0, .7),
+        inset 0 0 0 1px rgba(0, 0, 0, .5);
 }
 
 .desktop-button.active,
 .mobile-button.active {
     border-color: var(--bronze-dim);
     box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .16),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
+        inset 0 1px 0 rgba(255, 255, 255, .16),
+        inset 0 -3px 6px rgba(0, 0, 0, .55),
+        inset 0 0 0 1px rgba(0, 0, 0, .45),
         0 0 0 2px var(--bronze-dim);
+}
+
+/* Hold-armed glow. The shared component derives `--hold-glow-color` from the
+   button's *computed* background — which forge has just turned into dark
+   stone, so that glow would be invisible. Forced to the bronze the rest of the
+   HUD signals with, and re-stated after the hover rule so an armed hold still
+   shows while the pointer is on the button. */
+:is(.desktop-button, .mobile-button).hold-glow,
+:is(.desktop-button, .mobile-button).hold-glow:hover {
+    border-color: var(--bronze);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .18),
+        inset 0 -3px 6px rgba(0, 0, 0, .5),
+        0 0 8px 2px rgba(184, 150, 90, .55),
+        0 0 18px 6px rgba(184, 150, 90, .28);
+    filter: none;
+}
+
+/* the empty-list placeholder — stock's slate grey is off-palette here */
+.desktop-button-list-empty {
+    font-family: "Cinzel", serif;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: 9.5px;
+    color: var(--parchment-dim);
 }
 
 /* ── Mobile direction pad (the plate itself, not its buttons) ───────── */
 .mobile-direction-buttons {
-    border: 1px solid var(--pad-accent, var(--iron-lo));
+    /* rim tinted the way the buttons' borders are, so the plate reads as their
+       backing rather than a separate blue-edged tray */
+    border: 1px solid color-mix(in srgb, var(--pad-accent, #6f6252) 32%, #33291b);
     border-radius: 9px;
     background-color: #0a0a09 !important;
     background-image:

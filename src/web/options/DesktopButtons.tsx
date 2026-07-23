@@ -28,6 +28,11 @@ import MacroConfigEditor from "./MacroConfigEditor";
 import HoldConfig from "./HoldConfig";
 
 const listMacros = ['zList', 'zaList', 'wList', 'przeList', 'idzList'];
+
+/** Mirrors the live button's style type (see @web-ui/buttons/DesktopButtons):
+ * `--btn-accent` carries the chosen color as a custom property so a host skin
+ * can re-purpose it as an accent instead of a flat fill. */
+type CSSVarStyle = React.CSSProperties & { '--btn-accent'?: string };
 const desktopMacroFilter = (opt: { value: string }) => opt.value !== 'toggleButtons';
 
 function isListMacro(macroType: string): boolean {
@@ -101,42 +106,43 @@ function DesktopButtons() {
 
     const selectedBtn = settings.buttons.find(b => b.id === selected) || null;
 
-    function getButtonStyle(btn: DesktopButtonSetting): React.CSSProperties {
+    /* The preview renders the real `.desktop-button` / `.desktop-button-list-item`
+     * classes rather than re-stating their look inline, so whichever host UI has
+     * this editor open skins the preview exactly like the button it will produce.
+     * That matters most in forge-ui, which re-skins those classes wholesale
+     * (forge-ui/buttons-theme.css) — with the look inlined here, "Podglad" showed
+     * a stock flat-blue button no matter what the real one would look like. Only
+     * the per-button values (size, color, font) stay inline, matching what
+     * DesktopButtons.tsx sets on the live button; `--btn-accent` rides along for
+     * the same reason it does there. `position: static` undoes the live button's
+     * `position: fixed` so the preview sits in the form's flow. */
+    function getButtonStyle(btn: DesktopButtonSetting): CSSVarStyle {
         return {
+            position: 'static',
             width: `${btn.width}px`,
             height: `${btn.height}px`,
             backgroundColor: hexToRgba(btn.color, btn.backgroundOpacity),
             color: btn.fontColor,
-            border: '1px solid rgba(160, 208, 224, 0.6)',
-            borderRadius: '4px',
             fontSize: `${btn.fontSize}px`,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            textAlign: 'center',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.25)',
-            wordBreak: 'break-word',
-            lineHeight: 1.2,
-            padding: '4px 8px',
+            '--btn-accent': btn.color,
             cursor: 'default',
             flexShrink: 0,
         };
     }
 
-    function getListItemStyle(btn: DesktopButtonSetting): React.CSSProperties {
+    function getListItemStyle(btn: DesktopButtonSetting): CSSVarStyle {
         return {
+            boxSizing: 'border-box',
             width: `${btn.width}px`,
             height: `${btn.height}px`,
             backgroundColor: hexToRgba(btn.color, btn.backgroundOpacity),
             color: btn.fontColor,
-            border: '1px solid rgba(160, 208, 224, 0.6)',
-            borderRadius: '4px',
             fontSize: `${btn.fontSize}px`,
+            '--btn-accent': btn.color,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             textAlign: 'center',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.25)',
             cursor: 'default',
             flexShrink: 0,
         };
@@ -159,10 +165,12 @@ function DesktopButtons() {
                             <button
                                 key={state.id}
                                 type="button"
+                                className="desktop-button"
                                 style={{
                                     ...getButtonStyle(btn),
                                     backgroundColor: hexToRgba(color, btn.backgroundOpacity),
-                                }}
+                                    '--btn-accent': color,
+                                } as CSSVarStyle}
                             >
                                 {displayLabel}
                             </button>
@@ -173,7 +181,7 @@ function DesktopButtons() {
         }
 
         const buttonEl = (
-            <button type="button" style={getButtonStyle(btn)}>
+            <button type="button" className="desktop-button" style={getButtonStyle(btn)}>
                 {btn.label || '(pusty)'}
             </button>
         );
@@ -194,8 +202,8 @@ function DesktopButtons() {
                 flexDirection: listFlexDirection,
                 gap: '4px',
             }}>
-                <div style={getListItemStyle(btn)}>1</div>
-                <div style={getListItemStyle(btn)}>2</div>
+                <div className="desktop-button-list-item" style={getListItemStyle(btn)}>1</div>
+                <div className="desktop-button-list-item" style={getListItemStyle(btn)}>2</div>
             </div>
         );
 
