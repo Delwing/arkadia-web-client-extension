@@ -112,5 +112,9 @@ $enable-shadows: false;
 
         // Stock (non-Bootstrap) Logi (LogBrowser) layout classes, scoped alongside.
         @import "stock-logs";
+
+        // Stock (non-Bootstrap) "Lista obiektow" documentation + object-card
+        // component classes, scoped alongside (Dokumentacja → Lista obiektow).
+        @import "stock-object-list-doc";
     }
 }

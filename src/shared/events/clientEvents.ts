@@ -332,11 +332,13 @@ export interface KnownEvents {
     "mapShowGrid": boolean;
     "mapShowAreaExitLabels": boolean;
     "mapShowTransportStops": boolean;
-    "objectListViewMode": "list" | "card" | "compact" | "compact-dots" | "raid";
+    "objectListViewMode": "list" | "card" | "compact" | "compact-dots" | "raid" | "nearby";
     "objectList.showWeaponState": boolean;
     "objectList.showCoverTimer": boolean;
     "objectList.showOrderTimer": boolean;
     "objectList.showZaskTimer": boolean;
+    "objectList.togglePip": void;
+    "objectList.pipActiveChanged": boolean;
     "objectListDemo.popup.open": void;
     "layoutManagerStateChanged": { type?: 'import' } | void;
     "walker.popup.open": void;

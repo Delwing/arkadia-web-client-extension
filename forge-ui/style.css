@@ -1022,113 +1022,12 @@ textarea.cmd-input {
 }
 .map__exits:empty { display: none; }
 
-/* --- objects (W poblizu) --- */
-.obj {
-  position: relative;
-  padding: 5px 1px;
-  border-bottom: 1px solid rgba(255,255,255,.035);
-}
-.obj:last-child { border-bottom: 0; }
-.obj__main { display: flex; align-items: center; gap: 9px; }
-/* you or an ally is being hit by an enemy — a blood edge in the body gutter */
-.obj--threatened::before {
-  content: "";
-  position: absolute; left: -7px; top: 3px; bottom: 3px; width: 2px;
-  border-radius: 1px;
-  background: linear-gradient(180deg, rgba(190,72,52,.9), rgba(120,42,30,.5));
-  box-shadow: 0 0 6px rgba(160,60,44,.5);
-}
-.obj__key {
-  flex: 0 0 auto; width: 20px; height: 20px;
-  display: grid; place-items: center; position: relative;
-  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
-}
-.obj__key i { font-style: normal; position: relative; z-index: 1; }
-.obj__key::before {                 /* bronze diamond, echoes the panel-header romb */
-  content: "";
-  position: absolute; inset: 2px;
-  transform: rotate(45deg);
-  border-radius: 2px;
-  background: rgba(0,0,0,.3);
-  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
-}
-.obj__key.you { color: var(--bronze); }
-.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
-/* object names share the location-header voice: Cinzel, uppercase, spaced */
-.obj__name {
-  flex: 1 1 auto; min-width: 0;
-  font-family: "Cinzel", serif; text-transform: uppercase;
-  font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.obj__name.target { color: #c68c84; }
-.obj__name.enemy  { color: #9a8fae; }
-.obj__name.ally   { color: #8fae7a; }
-.obj__name.item   { color: var(--parchment-dim); }
-.obj__hp {
-  --hp: 60%;
-  --hue: var(--blood);
-  margin-left: auto; flex: 0 0 auto;
-  width: 48px; height: 6px;
-  border-radius: 3px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
-  background:
-    linear-gradient(90deg,
-      var(--hue) 0%, var(--hue) var(--hp),
-      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
-      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
-  filter: saturate(.6);
-}
-/* clickable object parts — number attacks, name guards, HP bar breaks/pulls back
-   (matches the stock object list). A quiet bronze lift signals the affordance. */
-.obj__key.is-clickable,
-.obj__name.is-clickable,
-.obj__hp.is-clickable { cursor: pointer; }
-.obj__key.is-clickable:hover { color: var(--bronze); }
-.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
-.obj__name.is-clickable:hover { color: var(--bronze); }
-.obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
-/* the fray: which objects are attacking THIS one, colored by their side.
-   red chips on your/ally row = threat; green chips on an enemy row = handled. */
-.obj__fray {
-  display: flex; align-items: center; gap: 6px;
-  margin: 3px 0 1px 29px;   /* line up under the name, past the key diamond */
-}
-.obj__fray-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.atk {
-  flex: 0 0 auto;
-  min-width: 15px; height: 15px; padding: 0 3px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
-  border-radius: 3px;
-  color: var(--parchment-dim);
-  background: rgba(0,0,0,.32);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
-}
-.atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
-.atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
-.atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
-
-.obj--empty {
-  padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
-  font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
-}
-
+/* objects (W poblizu) rows — the forged re-skin moved to layout-theme.css so it
+   layers AFTER the shared .obj base in popups.css (this file is imported before
+   popups.css, which would otherwise win). See layout-theme.css. */
 /* Inline connect prompt — printed into the game log while the transport is
    down (see GameLog), removed when the socket opens. The button reads as a
    forged call-to-action rather than a plain line of output. */
-.connect-prompt { margin: 8px 0; text-align: left; }
-.connect-link {
-  font-family: "Cinzel", serif; letter-spacing: .18em; text-transform: uppercase;
-  font-size: 12px; color: var(--bronze); cursor: pointer;
-  padding: 7px 20px; border-radius: 5px;
-  border: 1px solid rgba(184,150,90,.4);
-  background: linear-gradient(180deg, #221d16, #100e0b);
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
-  transition: color .12s, border-color .12s;
-}
-.connect-link:hover { color: var(--parchment); border-color: rgba(184,150,90,.7); }
-
 /* ============================================================
    HOVER TOOLTIP + CONTEXT MENU — herb / book descriptions
    Flat forged panels, cut from the same recipe as the left-hand

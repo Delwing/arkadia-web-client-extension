@@ -106,32 +106,12 @@ export default function GameLog() {
         // and would no-op here.
         const teardownContextMenu = setupOutputContextMenu(output, { messageWrappersSupported: false });
 
-        // When the transport is down there is no persistent connect button — the
-        // action lives inline in the log: a "Polacz" prompt is printed while
-        // disconnected and removed the moment the socket opens. We keep a handle
-        // to the current prompt so a flurry of disconnects can't stack duplicates.
-        let connectPrompt: HTMLElement | null = null;
-        const removeConnectPrompt = () => {
-            connectPrompt?.remove();
-            connectPrompt = null;
-        };
-        const showConnectPrompt = () => {
-            if (connectPrompt) return;
-            const el = document.createElement('p');
-            el.className = 'connect-prompt';
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'connect-link';
-            button.textContent = 'Polacz z Arkadia';
-            button.addEventListener('click', () => mudClient.connect());
-            el.appendChild(button);
-            connectPrompt = el;
-            // Transient chrome — not mirrored into the sticky footer.
-            handler.appendNode(el);
-        };
-        const offConnect = eventBus.on('client.connect', removeConnectPrompt);
-        const offDisconnect = eventBus.on('client.disconnect', showConnectPrompt);
-        if (!mudClient.isSocketOpen()) showConnectPrompt();
+        // NOTE: connecting is not this component's business. The log used to
+        // print a "Polacz z Arkadia" button into its own output while the
+        // transport was down; that put a control inside the transcript, where it
+        // scrolled with the text and got mixed into copied output. The connection
+        // now lives entirely in <LoginGate> (over the HUD) and its footer
+        // <ReconnectChip> — see forge-ui/components/login.css.
 
         // char.info drops a heraldic plaque into the log flow. It re-fires on
         // gender/guild changes (same character) and on a fresh login as a
@@ -148,8 +128,6 @@ export default function GameLog() {
 
         return () => {
             teardownContextMenu();
-            offConnect();
-            offDisconnect();
             offPlaque();
             handler.destroy();
         };

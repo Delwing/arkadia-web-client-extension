@@ -8,6 +8,10 @@ import { test, expect } from './support/fixtures';
 test.describe('forge menu', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/forge-ui/');
+        // Disconnected, the login gate covers the HUD (LoginGate.tsx). Its close
+        // button is what makes the client reachable before you have a game to
+        // connect to; dismiss it to get at the rail.
+        await page.locator('.gate__close').click();
         // The rail (and its menu button) render without a game connection.
         await expect(page.locator('.forge-menu__button')).toBeVisible();
     });

@@ -28,6 +28,9 @@ import './components/menu/menu.css';
 // colors stay settings-driven); see its header for why they're @imported
 // there rather than JS-imported here.
 import './buttons-theme.css';
+// The login screen (over the whole HUD while disconnected) and its footer
+// reconnect chip.
+import './components/login.css';
 import { createRoot } from 'react-dom/client';
 import {
     setDockingSupported,
@@ -51,10 +54,12 @@ setDockingSupported(true);
 // first LayoutProvider mount.
 setRailSpanSupported(true);
 
-// The built-in objectList slot renders forge's "W poblizu" panel, so
-// retitle its header and drop the stock "Lista"/timers actions. Process-local —
-// does not touch the shared state, so the stock UI keeps "Kondycje".
-setObjectListChrome({ title: 'W poblizu', hideStockActions: true });
+// The built-in objectList panel is the shared "Kondycje" list now; forge just
+// retitles it and defaults it to the "W poblizu" row-flavor. The stock header
+// actions (flavor cycle + timers) stay ON so users can switch flavors. The
+// default is process-local — the stock UI keeps titling it "Kondycje" and
+// defaulting to the "Lista" flavor.
+setObjectListChrome({ title: 'W poblizu', defaultViewMode: 'nearby' });
 
 // Force layout mode on so the dock grid activates, keep the built-in
 // objectList slot enabled (forge renders the forged "W poblizu" panel into it),

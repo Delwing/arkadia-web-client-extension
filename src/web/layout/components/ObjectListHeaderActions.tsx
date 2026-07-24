@@ -1,20 +1,27 @@
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
 import eventBus from '@modules/core/eventBus';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ObjectListHeaderMenu } from './ObjectListHeaderMenu';
+import type { ObjectListViewMode } from '@web/objectList/context';
+import { getObjectListChrome } from '../builtInChrome';
+
+// Document Picture-in-Picture is progressively enhanced; only offer the button
+// where the browser supports it.
+const PIP_SUPPORTED = typeof window !== 'undefined' && !!window.documentPictureInPicture;
 
 const PANEL_ID = 'objectList';
 
-export type ObjectListViewMode = 'list' | 'card' | 'compact' | 'compact-dots' | 'raid';
+export type { ObjectListViewMode };
 
-const VIEW_MODE_CYCLE: ObjectListViewMode[] = ['list', 'card', 'compact', 'compact-dots', 'raid'];
+const VIEW_MODE_CYCLE: ObjectListViewMode[] = ['list', 'card', 'compact', 'compact-dots', 'raid', 'nearby'];
 
 const VIEW_MODE_LABELS: Record<ObjectListViewMode, string> = {
     list: 'Lista',
     card: 'Karty',
     compact: 'Kompakt',
     'compact-dots': 'Kropki',
-    raid: 'Raid'
+    raid: 'Raid',
+    nearby: 'W poblizu'
 };
 
 const VIEW_MODE_TITLES: Record<ObjectListViewMode, string> = {
@@ -22,11 +29,16 @@ const VIEW_MODE_TITLES: Record<ObjectListViewMode, string> = {
     card: 'Widok kart',
     compact: 'Widok kompaktowy',
     'compact-dots': 'Widok kompaktowy z kropkami',
-    raid: 'Widok raid (siatka z paskami HP)'
+    raid: 'Widok raid (siatka z paskami HP)',
+    nearby: 'Widok W poblizu'
 };
 
 export function ObjectListHeaderActions() {
-    const [viewMode, setViewMode] = useBuiltInPanelSetting<ObjectListViewMode>(PANEL_ID, 'viewMode', 'list');
+    const [viewMode, setViewMode] = useBuiltInPanelSetting<ObjectListViewMode>(
+        PANEL_ID,
+        'viewMode',
+        getObjectListChrome().defaultViewMode ?? 'list',
+    );
 
     // Emit event when view mode changes (including initial mount)
     useEffect(() => {
@@ -41,6 +53,16 @@ export function ObjectListHeaderActions() {
 
     const nextMode = VIEW_MODE_CYCLE[(VIEW_MODE_CYCLE.indexOf(viewMode) + 1) % VIEW_MODE_CYCLE.length];
 
+    // Picture-in-Picture toggle: the ObjectList class owns the PiP window and
+    // reports its open/closed state; this button just drives it.
+    const [pipActive, setPipActive] = useState(false);
+    useEffect(() => {
+        if (!PIP_SUPPORTED) return;
+        const onChange = (active: boolean) => setPipActive(active);
+        eventBus.on('objectList.pipActiveChanged', onChange);
+        return () => { eventBus.off('objectList.pipActiveChanged', onChange); };
+    }, []);
+
     return (
         <>
             <button
@@ -51,6 +73,16 @@ export function ObjectListHeaderActions() {
             >
                 {VIEW_MODE_LABELS[viewMode]}
             </button>
+            {PIP_SUPPORTED && (
+                <button
+                    type="button"
+                    className={`object-list__pip-toggle${pipActive ? ' object-list__pip-toggle--active' : ''}`}
+                    onClick={() => eventBus.emit('objectList.togglePip')}
+                    title={pipActive ? 'Zamknij Picture-in-Picture' : 'Picture-in-Picture'}
+                >
+                    ⤢
+                </button>
+            )}
             <ObjectListHeaderMenu />
         </>
     );

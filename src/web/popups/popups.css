@@ -6269,3 +6269,820 @@
   opacity: 0.9;
   background-color: var(--popup-control-hover-bg);
 }
+
+/* ============================================================
+   Object List — card / compact / dots / raid view components
+   (moved verbatim from src/web/style.css). Shared by both UIs:
+   the stock "Kondycje" panel and forge's plain objectList dock
+   window both render these flavors. Colours come through the
+   --popup-* vars each UI defines on its panels, so they recolour
+   per-theme (blue in stock, bronze in forge) for free.
+   ============================================================ */
+/* Object List Card View Toggle */
+.object-list__card-toggle {
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+.object-list__card-toggle:hover {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-bright);
+}
+
+.object-list__card-toggle--active {
+  background-color: var(--popup-accent-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-accent);
+}
+
+.object-list__card-toggle--active:hover {
+  background-color: var(--popup-accent-hover-bg);
+}
+
+/* PiP toggle — same pill as the flavor toggle, sized for its ⤢ glyph. */
+.object-list__pip-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-right: 0.5rem;
+}
+
+.object-list__pip-toggle:hover {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-bright);
+}
+
+.object-list__pip-toggle--active {
+  background-color: var(--popup-accent-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-accent);
+}
+
+.object-list__pip-toggle--active:hover {
+  background-color: var(--popup-accent-hover-bg);
+}
+
+/* Object List Card View */
+.objects-list-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+  font-size: inherit;
+}
+
+/* Card uses vertical flex layout with 3 rows */
+.object-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 50px;
+  background: var(--popup-subtle-bg);
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* Row 1: number, name, icons */
+.object-card__row1 {
+  display: flex;
+  align-items: center;
+  padding: 0.4em 0.6em 0.15em 0.6em;
+  gap: 0.45em;
+}
+
+/* Row 2: attackers */
+.object-card__row2 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 0.6em 0.4em 2.35em;
+  min-height: 1.2em;
+  margin-top: -0.05em;
+}
+
+/* Number badge */
+.object-card__number {
+  min-width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--popup-control-pressed-bg);
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--popup-text-strong);
+  padding: 0 0.3em;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.object-card__number:hover {
+  background: var(--popup-accent-bg);
+}
+
+.object-card__number--next-target {
+  background: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+/* Name */
+.object-card__name {
+  flex: 1;
+  font-size: 1em;
+  font-weight: 500;
+  color: var(--popup-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.object-card__name--target {
+  color: #ffaaaa;
+}
+
+.object-card__name--teammate {
+  color: var(--popup-data-spring-green);
+}
+
+.object-card__name--attacking {
+  color: #b19cd9;
+}
+
+.object-card__name--teammate-not-attacking {
+  display: inline-block;
+  transform: skewX(-10deg);
+}
+
+/* Action icons */
+.object-card__icons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.object-card__icon {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 3px;
+}
+
+.object-card__icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background-color: var(--popup-control-hover-bg);
+}
+
+/* Attack icon (sword) */
+.object-card__icon--attack {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2.5 -0.5 13 13'%3E%3Cpath fill='%23ff6b6b' d='M13.854.854a.5.5 0 0 0-.708 0L10.5 3.5 9.854 2.854a.5.5 0 0 0-.707 0l-.707.707a.5.5 0 0 0 0 .707L9.293 5.12l-5.586 5.586a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L10.707 6.535l.853.854a.5.5 0 0 0 .707 0l.707-.707a.5.5 0 0 0 0-.707L12.12 5.12l2.647-2.647a.5.5 0 0 0 0-.707L14.06.56a.5.5 0 0 0-.207-.06z'/%3E%3C/svg%3E");
+}
+
+/* Guard/Shield icon */
+.object-card__icon--guard {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2360a5fa' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3C/svg%3E");
+}
+
+/* Przelam/Break defense icon - broken shield */
+.object-card__icon--przelam {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23fbbf24' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3Cpath fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round' d='M8 2.5L6.5 5.5 9 8 6 11 8 14'/%3E%3C/svg%3E");
+}
+
+/* Mark attack target icon (crosshair) - orangered */
+.object-card__icon--mark-attack {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23ff4500' stroke-width='1.5'/%3E%3Cpath stroke='%23ff4500' stroke-width='1.5' d='M8 1v3M8 12v3M1 8h3M12 8h3'/%3E%3Ccircle cx='8' cy='8' r='2' fill='%23ff4500'/%3E%3C/svg%3E");
+}
+
+.object-card__icon--mark-attack--active {
+  opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23ff4500' stroke-width='2'/%3E%3Cpath stroke='%23ff4500' stroke-width='2' d='M8 1v3M8 12v3M1 8h3M12 8h3'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff4500'/%3E%3C/svg%3E");
+}
+
+/* Mark defense target icon (shield with star) - greenyellow */
+.object-card__icon--mark-defense {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23adff2f' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3Cpath fill='%23000' d='M8 4v4M6 6h4' stroke='%23000' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.object-card__icon--mark-defense--active {
+  opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23adff2f' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3Cpath fill='%23000' d='M8 4v4M6 6h4' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* Attackers */
+.object-card__attackers {
+  display: flex;
+  align-items: center;
+  gap: 0.15em;
+}
+
+.object-card__attacker {
+  min-width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 107, 0.3);
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  color: white;
+}
+
+/* HP bar at bottom */
+.object-card__hp-bar,
+.object-card__hp-bar--teammate {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 0 0 5px 5px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Vertical dividers for HP levels (7 levels = 6 dividers) */
+.object-card__hp-bar::after,
+.object-card__hp-bar--teammate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0%,
+    transparent calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7),
+    transparent calc(100% / 7),
+    transparent calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7),
+    transparent calc(200% / 7),
+    transparent calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7),
+    transparent calc(300% / 7),
+    transparent calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7),
+    transparent calc(400% / 7),
+    transparent calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7),
+    transparent calc(500% / 7),
+    transparent calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7),
+    transparent calc(600% / 7),
+    transparent 100%
+  );
+}
+
+.object-card__hp-bar:hover,
+.object-card__hp-bar--teammate:hover {
+  background: var(--popup-control-hover-bg);
+}
+
+.object-card__hp-fill {
+  height: 100%;
+  background-color: #22c55e;
+  transition: width 0.2s ease;
+}
+
+/* Player card styling */
+.object-card--player {
+  background: var(--popup-accent-dim-bg);
+  border-color: var(--popup-accent-subtle-bg);
+}
+
+.object-card--player .object-card__number {
+  background: var(--popup-accent-hover-bg);
+  color: var(--popup-accent);
+}
+
+/* Teammate card styling */
+.object-card--teammate {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+/* Target card styling */
+.object-card--target {
+  background: linear-gradient(135deg, rgba(255, 100, 100, 0.15) 0%, rgba(255, 170, 170, 0.05) 100%);
+  border-color: rgba(255, 170, 170, 0.4);
+  box-shadow: 0 0 8px rgba(255, 170, 170, 0.2);
+}
+
+/* Next queued target */
+.object-card--next-queued {
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+/* Attack target indicator (orangered left border) - using inset shadow to avoid layout shift */
+.object-card--attack-target {
+  box-shadow: inset 3px 0 0 orangered;
+}
+
+/* Defense target indicator (greenyellow left border) - using inset shadow to avoid layout shift */
+.object-card--defense-target {
+  box-shadow: inset 3px 0 0 greenyellow;
+}
+
+/* Compact Card View */
+.objects-list-cards--compact {
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.object-card--compact {
+  flex-direction: row;
+  min-height: 22px;
+  padding: 0;
+  gap: 0;
+}
+
+.object-card--compact .object-card__compact-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 2px 6px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.object-card--compact .object-card__number {
+  min-width: 1.4em;
+  height: 1.4em;
+  font-size: 0.8em;
+  padding: 0 0.25em;
+}
+
+.object-card--compact .object-card__attacker {
+  min-width: 1.4em;
+  height: 1.4em;
+  font-size: 0.8em;
+  padding: 0;
+}
+
+.object-card--compact .object-card__name {
+  font-size: 0.9em;
+  line-height: 1.3;
+}
+
+/* Vertical HP bar for compact mode */
+.object-card__hp-bar-vertical,
+.object-card__hp-bar-vertical--teammate {
+  width: 8px;
+  min-width: 8px;
+  display: flex;
+  flex-direction: column-reverse;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 5px 0 0 5px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Horizontal dividers for HP levels (7 levels = 6 dividers) */
+.object-card__hp-bar-vertical::after,
+.object-card__hp-bar-vertical--teammate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7),
+    transparent calc(100% / 7),
+    transparent calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7),
+    transparent calc(200% / 7),
+    transparent calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7),
+    transparent calc(300% / 7),
+    transparent calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7),
+    transparent calc(400% / 7),
+    transparent calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7),
+    transparent calc(500% / 7),
+    transparent calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7),
+    transparent calc(600% / 7),
+    transparent 100%
+  );
+}
+
+.object-card__hp-bar-vertical:hover,
+.object-card__hp-bar-vertical--teammate:hover {
+  background: var(--popup-control-hover-bg);
+}
+
+.object-card__hp-fill-vertical {
+  width: 100%;
+  background-color: #22c55e;
+  transition: height 0.2s ease;
+}
+
+/* Inline attackers for compact mode */
+.object-card__attackers-inline {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Compact mode target indicators - right border */
+.object-card--compact.object-card--attack-target {
+  box-shadow: none;
+  border-right: 2px solid orangered;
+}
+
+.object-card--compact.object-card--defense-target {
+  box-shadow: none;
+  border-right: 2px solid greenyellow;
+}
+
+/* Target dots for compact mode (leader functionality) */
+.object-card__target-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.object-card__target-dot:hover {
+  opacity: 1;
+}
+
+.object-card__target-dot--defense {
+  background-color: greenyellow;
+}
+
+.object-card__target-dot--attack {
+  background-color: orangered;
+}
+
+.object-card__target-dot--active {
+  opacity: 1;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.object-card__target-dot--defense.object-card__target-dot--active {
+  box-shadow: 0 0 4px greenyellow;
+}
+
+.object-card__target-dot--attack.object-card__target-dot--active {
+  box-shadow: 0 0 4px orangered;
+}
+
+/* HP Dots for compact-dots mode */
+.object-card__hp-dots,
+.object-card__hp-dots--teammate {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.object-card__hp-dots:hover,
+.object-card__hp-dots--teammate:hover {
+  opacity: 0.8;
+}
+
+.object-card__hp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.object-card__hp-dot--filled {
+  /* Filled dots use the full 6px space */
+}
+
+.object-card__hp-dot--empty {
+  background-color: transparent;
+}
+
+.object-card__hp-dot--empty::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #555;
+}
+
+/* Compact dots mode - no left HP bar */
+.object-card--compact-dots .object-card__hp-bar-vertical,
+.object-card--compact-dots .object-card__hp-bar-vertical--teammate {
+  display: none;
+}
+
+/* Raid view - WoW-style grid of cells with full-cell HP background */
+.objects-list-raid-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.objects-list-cards--raid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 3px;
+  padding: 0;
+}
+
+/* Subtle divider between team and enemies sections */
+.objects-list-cards--raid-team + .objects-list-cards--raid-enemies {
+  border-top: 1px dashed var(--popup-border-subtle);
+  padding-top: 8px;
+}
+
+.object-card--raid {
+  position: relative;
+  flex-direction: row;
+  min-height: 44px;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* HP bar fills the entire cell as background */
+.object-card__hp-bar--raid {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.object-card__hp-bar--raid::after {
+  display: none;
+}
+
+.object-card__hp-bar--raid .object-card__hp-fill {
+  height: 100%;
+  opacity: 0.5;
+  transition: width 0.2s ease, opacity 0.15s ease;
+}
+
+.object-card--raid:hover .object-card__hp-bar--raid .object-card__hp-fill {
+  opacity: 0.65;
+}
+
+/* Content stacks above the HP fill with two rows: main + attackers */
+.object-card__raid-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  padding: 0.25em 0.45em;
+  width: 100%;
+  min-height: 44px;
+  pointer-events: none;
+}
+
+.object-card__raid-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  pointer-events: none;
+}
+
+.object-card__raid-row > * {
+  pointer-events: auto;
+}
+
+.object-card__raid-row--attackers {
+  min-height: 1.1em;
+}
+
+.object-card--raid .object-card__number {
+  font-size: 0.8em;
+  min-width: 1.4em;
+  height: 1.4em;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.object-card--raid .object-card__name {
+  font-size: 0.95em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  flex: 1;
+}
+
+.object-card--raid .object-card__attackers-inline {
+  display: flex;
+  gap: 0.15em;
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.object-card--raid .object-card__attacker {
+  min-width: 1.3em;
+  height: 1.3em;
+  font-size: 0.75em;
+}
+
+/* Action icons: hidden by default, on hover overlay the whole cell with equal-width buttons */
+.object-card__icons--raid {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none; /* gap area falls through to HP bar for /prze, /w */
+  transition: opacity 0.15s ease;
+}
+
+.object-card--raid:hover .object-card__icons--raid {
+  opacity: 1;
+}
+
+.object-card--raid .object-card__icons--raid .object-card__icon {
+  flex: 1 1 0;
+  width: auto;
+  height: 100%;
+  min-width: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  background-size: 40% 40%;
+  border-radius: 0;
+  opacity: 0.95;
+  pointer-events: auto;
+}
+
+.object-card--raid .object-card__icons--raid .object-card__icon:hover {
+  background-color: rgba(0, 0, 0, 0.78);
+  opacity: 1;
+  transform: none;
+}
+
+/* Reinforce target/teammate emphasis with a brighter border in raid mode */
+.object-card--raid.object-card--teammate {
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+.object-card--raid.object-card--target {
+  border-color: rgba(255, 170, 170, 0.7);
+  box-shadow: 0 0 10px rgba(255, 170, 170, 0.35);
+}
+
+.object-card--raid.object-card--next-queued {
+  border-color: rgba(255, 215, 0, 0.7);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+
+.object-card--raid.object-card--player {
+  border-color: var(--popup-accent);
+}
+
+/* ============================================================
+   Object List — "W poblizu" (nearby) flavor rows. Shared base.
+   A compact key / name / HP row with an attacker "fray" line under
+   it. Coloured through --popup-* so it reads neutral in the stock
+   UI; forge re-skins the fonts, the bronze key diamond and the
+   blood palette in forge-ui/layout-theme.css (loaded after this).
+   ============================================================ */
+.objects-list-nearby {
+  display: flex;
+  flex-direction: column;
+  /* The panel content sets `white-space: pre` for the monospace list flavor; the
+     nearby rows are normal HTML, so reset it or the template's own indentation
+     newlines would inflate every row. */
+  white-space: normal;
+}
+.obj {
+  position: relative;
+  padding: 5px 1px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+}
+.obj:last-child { border-bottom: 0; }
+.obj__main { display: flex; align-items: center; gap: 9px; }
+/* leader's marked targets — a coloured edge on the left of the row:
+   red = marked attack target (/wa), green = marked defense target (/wz). */
+.obj--attack-target::before,
+.obj--defense-target::before {
+  content: "";
+  position: absolute; left: 0; top: 3px; bottom: 3px; width: 2px;
+  border-radius: 1px;
+}
+.obj--attack-target::before { background: orangered; }
+.obj--defense-target::before { background: greenyellow; }
+.obj__key {
+  flex: 0 0 auto; width: 20px; height: 20px;
+  display: grid; place-items: center; position: relative;
+  font-family: monospace; font-size: 10px; color: var(--popup-text-dim);
+}
+.obj__key i { font-style: normal; position: relative; z-index: 1; }
+.obj__key.you { color: var(--popup-accent); }
+.obj__name {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 12px; color: var(--popup-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.obj__name.target { color: #ffaaaa; }
+.obj__name.enemy  { color: #b19cd9; }
+.obj__name.ally   { color: springgreen; }
+.obj__name.item   { color: var(--popup-text-dim); }
+/* HP bar sits between the shortcut and the name (fixed width, not stretched). */
+.obj__hp {
+  --hp: 60%;
+  --hue: var(--popup-danger, #ef4444);
+  flex: 0 0 auto;
+  width: 42px; height: 6px;
+  border-radius: 3px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6);
+  background:
+    linear-gradient(90deg,
+      var(--hue) 0%, var(--hue) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+}
+/* clickable object parts — number attacks, name guards, HP bar breaks / pulls
+   back (matches the other flavors). */
+.obj__key.is-clickable,
+.obj__name.is-clickable,
+.obj__hp.is-clickable { cursor: pointer; }
+.obj__key.is-clickable:hover { color: var(--popup-accent); }
+.obj__name.is-clickable:hover { color: var(--popup-accent); }
+.obj__hp.is-clickable:hover { filter: brightness(1.2); }
+/* attackers: which objects are attacking THIS one, coloured by their side.
+   Pushed to the right end of the row (the name flexes to fill the gap). */
+.obj__atks {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: auto; flex: 0 0 auto;
+}
+.atk {
+  flex: 0 0 auto;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: monospace; font-size: 9.5px; line-height: 1;
+  border-radius: 3px;
+  color: var(--popup-text-dim);
+  background: rgba(0, 0, 0, .32);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5);
+}
+.atk--enemy { color: #d0897f; background: rgba(92, 34, 27, .34); box-shadow: inset 0 0 0 1px rgba(150, 60, 50, .55); }
+.atk--ally  { color: #97b478; background: rgba(60, 70, 38, .32); box-shadow: inset 0 0 0 1px rgba(80, 110, 60, .5); }
+.atk--you   { color: var(--popup-accent); background: var(--popup-accent-subtle-bg); box-shadow: inset 0 0 0 1px var(--popup-accent-border); }
+.obj--empty {
+  padding: 4px 2px; font-style: italic;
+  font-size: 12.5px; color: var(--popup-text-dim); opacity: .6;
+}

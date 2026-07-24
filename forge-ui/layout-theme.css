@@ -476,3 +476,109 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   margin: 5px 6px;
   background: var(--iron-lo);
 }
+
+/* ============================================================
+   Object List "W poblizu" (nearby) flavor — forged re-skin.
+   The shared structural + neutral base lives in src/web/popups/
+   popups.css (imported before this file); these rules restyle it
+   to the forge voice: Cinzel names, the bronze key diamond, the
+   blood HP hue and the side-coloured attacker chips. Same class
+   names, loaded later, so they win in forge while the stock UI
+   keeps the neutral base.
+   ============================================================ */
+/* --- objects (W poblizu) --- */
+.obj {
+  position: relative;
+  padding: 5px 1px;
+  border-bottom: 1px solid rgba(255,255,255,.035);
+}
+.obj:last-child { border-bottom: 0; }
+.obj__main { display: flex; align-items: center; gap: 9px; }
+/* leader's marked targets — a forged glow edge on the left of the row:
+   red = marked attack target (/wa), green = marked defense target (/wz). */
+.obj--attack-target::before,
+.obj--defense-target::before {
+  content: "";
+  /* sit in the body gutter, clear of the bronze key diamond */
+  position: absolute; left: -6px; top: 3px; bottom: 3px; width: 2px;
+  border-radius: 1px;
+}
+.obj--attack-target::before {
+  background: linear-gradient(180deg, rgba(215,88,50,.95), rgba(140,50,30,.55));
+  box-shadow: 0 0 6px rgba(200,80,44,.5);
+}
+.obj--defense-target::before {
+  background: linear-gradient(180deg, rgba(150,200,90,.9), rgba(90,130,50,.5));
+  box-shadow: 0 0 6px rgba(140,180,70,.45);
+}
+.obj__key {
+  flex: 0 0 auto; width: 20px; height: 20px;
+  display: grid; place-items: center; position: relative;
+  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
+}
+.obj__key i { font-style: normal; position: relative; z-index: 1; }
+.obj__key::before {                 /* bronze diamond, echoes the panel-header romb */
+  content: "";
+  position: absolute; inset: 2px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  background: rgba(0,0,0,.3);
+  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
+}
+.obj__key.you { color: var(--bronze); }
+.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+/* object names share the location-header voice: Cinzel, uppercase, spaced */
+.obj__name {
+  flex: 1 1 auto; min-width: 0;
+  font-family: "Cinzel", serif; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.obj__name.target { color: #c68c84; }
+.obj__name.enemy  { color: #9a8fae; }
+.obj__name.ally   { color: #8fae7a; }
+.obj__name.item   { color: var(--parchment-dim); }
+.obj__hp {
+  --hp: 60%;
+  --hue: var(--blood);
+  flex: 0 0 auto;
+  width: 42px; height: 6px;
+  border-radius: 3px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+  background:
+    linear-gradient(90deg,
+      var(--hue) 0%, var(--hue) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+  filter: saturate(.6);
+}
+/* clickable object parts — number attacks, name guards, HP bar breaks/pulls back
+   (matches the stock object list). A quiet bronze lift signals the affordance. */
+.obj__key.is-clickable,
+.obj__name.is-clickable,
+.obj__hp.is-clickable { cursor: pointer; }
+.obj__key.is-clickable:hover { color: var(--bronze); }
+.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+.obj__name.is-clickable:hover { color: var(--bronze); }
+.obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
+/* attackers (.obj__atks) sit inline at the right end of the row; the chip
+   colours below carry the "who's on it" read (red = threat, green = handled).
+   Layout comes from the shared base. */
+.atk {
+  flex: 0 0 auto;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
+  border-radius: 3px;
+  color: var(--parchment-dim);
+  background: rgba(0,0,0,.32);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
+.atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
+.atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+
+.obj--empty {
+  padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
+  font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
+}

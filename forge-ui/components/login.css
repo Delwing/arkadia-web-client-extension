@@ -1,0 +1,681 @@
+/* ============================================================
+   LOGIN GATE — the screen before the HUD has a game behind it
+   (LoginGate.tsx) + the footer reconnect chip (ReconnectChip.tsx)
+   ============================================================
+
+   No plate. The client emblem is the one lit object on the page and every
+   other element is a hairline, so the screen has a single focus and the void
+   does all the framing. The column is centred but its type is left-aligned: the
+   emblem is the thing you look at, the form is a list you read top-down.
+
+   Fields are RULES, not troughs. The inset trough shape is forge's signal for
+   "the game is listening" (the command line is the only one in the HUD), so
+   the login form deliberately does not borrow it. */
+
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* No background of its own: the HUD is taken off screen (below) rather than
+     covered, so the gate sits on the page's own void. A translucent scrim
+     instead would leave the panels behind it ghosting through as texture. */
+}
+
+/* While the gate is up the HUD is hidden, not overlaid. `visibility` (not
+   `display`) keeps its layout box, so the map canvas and the dock manager keep
+   their measured sizes and nothing has to re-measure on the way back in.
+   The runtime buttons portal to document.body, OUTSIDE #main-container, and
+   carry z-index 999+ — without hiding them they float over the login form.
+   They also do nothing while offline, so they go entirely.
+   `!important` is required, not sloppiness: MobileDirectionButtons sets
+   `display: grid|none` as an INLINE style (it drives its own visibility), and
+   an inline declaration beats any selector specificity. */
+body.gate-open #main-container { visibility: hidden; }
+body.gate-open .desktop-buttons-container,
+body.gate-open .mobile-direction-buttons,
+body.gate-open .mobile-command-radial { display: none !important; }
+
+/* ── the living backdrop ───────────────────────────────────────────
+   The void behind the gate is the first thing a cold user sees and it is
+   otherwise a photograph: the page's own vignette fakes four embers as static
+   gradients and its hearth glow never moves. Two layers give the screen a
+   pulse without giving it a personality — a forge left burning, not an effect.
+
+   Both layers live INSIDE .gate, so they exist exactly as long as the gate
+   does. The HUD is a working surface with a scrolling log on it; drifting
+   lights over that would be actively hostile, and an unmount is a stronger
+   guarantee of that than any selector. Being children of .gate (z-index 60)
+   also puts them above the page vignette, which matters: fire adds light, and
+   under that vignette's rgba(0,0,0,.82) edge most of it would be eaten. */
+.gate-hearth, .gate-embers {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;                 /* nothing may escape past the top edge */
+  z-index: 0;                       /* under .gate__col (1) and the close button */
+}
+.gate-hearth i {
+  position: absolute; inset: 0;
+  display: block;
+  will-change: opacity, transform;
+}
+/* Two coals, not one. A single eased loop is legible as a loop after about
+   three passes — the eye finds the beat and then the page is "a pulsing div".
+   11.3s and 7.1s share no small common multiple, so the composite brightness
+   only truly repeats after minutes, which is longer than anyone stares at a
+   login screen. Each also slides and stretches a little: real firelight moves
+   along the wall, it does not just get brighter in place. */
+.gate-hearth i:nth-child(1) {
+  background: radial-gradient(128% 78% at 50% 128%, rgba(168, 84, 36, .13), transparent 56%);
+  animation: hearthSlow 11.3s ease-in-out infinite alternate;
+}
+.gate-hearth i:nth-child(2) {
+  background: radial-gradient(86% 56% at 43% 126%, rgba(206, 116, 58, .10), transparent 58%);
+  animation: hearthFast 7.1s ease-in-out infinite alternate;
+}
+/* Neither cycle bottoms out at 0. This is a flicker laid ON TOP of the .22
+   hearth the page vignette already paints, so the trough has to look like the
+   screen we shipped rather than like the fire went out; and two layers that
+   can both be dark at once would give the composite a visible dead beat. */
+@keyframes hearthSlow {
+  from { opacity: .40; transform: translateX(-1.6%) scaleX(.96); }
+  to   { opacity: 1;   transform: translateX(1.2%)  scaleX(1.07); }
+}
+@keyframes hearthFast {
+  from { opacity: .22; transform: translateX(2.6%)  scaleX(1.06); }
+  to   { opacity: .88; transform: translateX(-2.1%) scaleX(.94); }
+}
+
+/* The per-ember numbers — and the reasoning behind them — are in the useMemo
+   in LoginGate.tsx, since what makes a field read as embers rather than as an
+   effect is that no two of them share anything. */
+.gate-ember {
+  position: absolute;
+  left: var(--x);
+  bottom: -14px;                    /* born off-screen, so nobody sees one appear */
+  /* The BOX is the glow, not the coal. --size is the ember itself (1-3px); the
+     element is five times that because what the eye actually receives from a
+     live ember is a pixel-wide core wrapped in several times as much lit air.
+     A hard 1px div is not a subtle ember, it is a dead pixel — and it also
+     disappears entirely the moment the screen is scaled or captured. */
+  width: calc(var(--size) * 5); height: calc(var(--size) * 5);
+  margin-left: calc(var(--size) * -2.5);
+  /* Rise and burn share the duration and the (negative) delay, so an ember's
+     brightness is always tied to its own height — it is the same object, not a
+     dot with a fade bolted on. */
+  animation:
+    emberRise var(--dur) linear    var(--delay) infinite,
+    emberBurn var(--dur) ease-out  var(--delay) infinite;
+  will-change: transform, opacity;
+}
+/* The wander is a second element because it needs its own clock: one transform
+   per element, and the sway period must NOT divide the rise period or every
+   ember traces the same S. */
+.gate-ember i {
+  display: block;
+  width: 100%; height: 100%;
+  /* Hot pale centre cooling to the page's own ember tint (#ce743a) at the edge
+     — one colour all the way out looks like a sticker, and the pale core is
+     what makes it read as burning rather than as a coloured dot. Ends fully
+     transparent well inside the box so there is no visible circular edge. */
+  background: radial-gradient(circle,
+    rgba(255, 214, 162, .95) 0 14%,
+    rgba(228, 136, 70, .60)  30%,
+    rgba(206, 116, 58, .20)  50%,
+    rgba(206, 116, 58, 0)    76%);
+  animation: emberWander var(--sway) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes emberRise {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, calc(var(--rise) * -1), 0); }
+}
+/* Out at 84% of the climb, and --rise never reaches the top of the viewport:
+   an ember that touches the top edge and vanishes reads as a clipping bug.
+   The dip at 58% is the ash cooling on the way up — a linear fade looks like
+   an opacity transition, this looks like something burning out. */
+@keyframes emberBurn {
+  0%        { opacity: 0; }
+  14%       { opacity: var(--peak); }
+  58%       { opacity: calc(var(--peak) * .55); }
+  84%, 100% { opacity: 0; }
+}
+@keyframes emberWander {
+  from { transform: translateX(calc(var(--drift) * -1)); }
+  to   { transform: translateX(var(--drift)); }
+}
+
+/* ── entrance ──────────────────────────────────────────────────────
+   One orchestrated ~700ms sequence rather than scattered effects: the emblem
+   strikes in, each field's rule is then DRAWN left to right like a line scored
+   into metal, and the actions rise last. It runs again when the gate returns
+   after a drop, which is correct — arriving is arriving. */
+@keyframes gateStrike { from { opacity: 0; transform: scale(.965); } to { opacity: 1; transform: none; } }
+@keyframes gateRise   { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+@keyframes gateDraw   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes gateFade   { from { opacity: 0; } to { opacity: .72; } }
+
+/* An escape hatch, kept quiet — but findable. A lone corner glyph reads as
+   "close a dialog"; the word next to it says what hiding the screen is FOR
+   (browsing the client without a game behind it), and a raised resting opacity
+   stops it hiding from the one person who needs it. */
+.gate__close {
+  position: absolute;
+  top: 18px; right: 22px;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: none; border: 0; padding: 5px 3px; cursor: pointer;
+  color: var(--parchment-dim);
+  opacity: .72;
+  transition: opacity .15s ease, color .15s ease;
+}
+.gate__close:hover { opacity: 1; color: var(--parchment); }
+.gate__close-lab {
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase;
+}
+.gate__close-x { font-size: 15px; line-height: 1; }
+
+.gate__col {
+  position: relative;          /* anchor for the out-of-flow advanced panel */
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 430px;
+  max-width: calc(100vw - 48px);
+}
+
+/* The emblem carries the client's name, so nothing else on the screen says it.
+   Centred over a column whose type is left-aligned: it is what you look at,
+   the form under it is a list you read top-down. */
+.gate__logo {
+  width: 312px; height: 312px;
+  display: block;
+  margin: 0 auto;
+  /* Seats it on the page rather than leaving it a pasted PNG: off full chroma
+     to sit in forge's palette (the HUD backdrop does the same at .73), a hard
+     shadow for weight, and a faint warm bloom. Blurs tuned at 312px. */
+  filter:
+    saturate(.88)
+    drop-shadow(0 12px 30px rgba(0, 0, 0, .85))
+    drop-shadow(0 0 46px rgba(206, 116, 58, .10));
+}
+
+/* Why we are back here — the server's own words (bad password, etc.). */
+.gate__notice {
+  margin: -12px 0 0;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 14px;
+  color: #e07a4f;                        /* the chips' danger tint */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+}
+
+.gate__fields { display: flex; flex-direction: column; gap: 26px; }
+.gate__field { display: flex; flex-direction: column; gap: 9px; }
+
+.gate__lab {
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 9px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--bronze);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .7);
+}
+
+/* The rule is a pseudo-element, not a border, so the entrance can score it in
+   from the left — a border cannot be scaled independently of its box. */
+.gate__rule {
+  position: relative;
+  display: flex; align-items: baseline; gap: 12px;
+  padding-bottom: 9px;
+}
+.gate__rule::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: rgba(184, 150, 90, .30);
+  transform-origin: left center;
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+/* Focus still lights the line warm, as if the metal under the cursor were hot —
+   but the heat ARRIVES rather than appearing. The spark lands on the `>` and
+   runs out along the rule to its far end, which is also the only moving thing
+   on the screen that says where the cursor went.
+
+   It is a second pseudo-element, not a repaint of the hairline, because
+   ::after's transform is already spoken for: the entrance scores the rule in
+   with scaleX, and a front travelling on the same element would have to fight
+   it. ::before is free. It paints UNDER ::after, which costs nothing here —
+   the resting hairline is rgba(184,150,90,.30), the same colour at low alpha,
+   so laying it back over the hot core changes it by nothing the eye can see.
+
+   The hairline itself never animates. It is drawn, at rest, at all times. */
+.gate__rule::before {
+  content: "";
+  /* Taller than the rule and hung below it, because the glow has to be painted
+     INTO this box as a vertical falloff rather than thrown by a box-shadow: a
+     shadow cannot be revealed a bit at a time — every way of cutting an element
+     down (mask, clip) cuts at its border box and takes the shadow with it — so
+     the line would sit fully lit while its colour was still travelling, which
+     is the one thing that kills the effect.
+     8px of falloff a side is what the box-shadow's 10px blur read as, and .085
+     is near the alpha that shadow ACTUALLY reached — a 1px-tall source spread
+     over a 10px blur keeps only a fraction of its .45, so copying the declared
+     number paints a halo several times heavier than the one being replaced.
+     Matching what the rule looked like is the point: arriving light, not more
+     light. */
+  position: absolute; left: 0; right: 0; bottom: -8px; height: 17px;
+  pointer-events: none;
+  transform-origin: left center;
+  background-image:
+    /* the hot metal — exactly the 1px row the hairline occupies, 8px down.
+       --bronze and nothing hotter: this is the colour focus already went to,
+       so a settled rule here looks like the rule always did. */
+    linear-gradient(180deg, transparent 8px, var(--bronze) 8px, var(--bronze) 9px, transparent 9px),
+    /* the bloom that metal throws */
+    linear-gradient(180deg, rgba(206, 116, 58, 0), rgba(206, 116, 58, .085) 8.5px, rgba(206, 116, 58, 0));
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  /* The reveal, and the reason for every number in it. The mask is four rules
+     wide: settled heat across its left quarter, then a slow lift to full over
+     the next 3%, a soft 2% front, and nothing after. Sliding it 40% -> 0% walks
+     that front from just left of the prompt to just past the right end. Both
+     ends are picked so the visible window never runs off the mask image — off
+     the image is transparent, which would blank the rule rather than light it —
+     and so that the settled state parks entirely inside the FLAT quarter.
+     That flat quarter is also what makes a leading edge legal at all: the trail
+     sits at .94 and only the front reaches 1, so the brightest point is where
+     the heat currently is — but it is a 6% difference and it is gone the moment
+     the line settles, which is the only reason it is allowed. A hot spot riding
+     the front was tried first and read as a fuse burning, not as metal. */
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.94) 0 25%, #000 28%, transparent 30%);
+          mask-image: linear-gradient(90deg, rgba(0,0,0,.94) 0 25%, #000 28%, transparent 30%);
+  -webkit-mask-repeat: no-repeat;  mask-repeat: no-repeat;
+  -webkit-mask-size: 400% 100%;    mask-size: 400% 100%;
+  -webkit-mask-position: 40% 0;    mask-position: 40% 0;
+  opacity: 0;
+  /* Cooling is uniform and slower than heating, because that is what metal
+     does: it does not un-heat from one end, it just stops glowing. 900ms out
+     against 560ms in, on a curve that drops early and then lingers, the way
+     radiated heat leaves. The front is only sent back to its parking spot AFTER
+     the fade has finished (0s, delayed by the fade) — moved any earlier it
+     would visibly snap left and read as the heat rewinding.
+     Worth keeping as a side effect: tab away and back inside those 900ms and
+     the rule is still hot, so it simply brightens again instead of re-striking.
+     Metal that never cooled does not need re-lighting. */
+  transition:
+    opacity 900ms cubic-bezier(.25, .55, .4, 1),
+    -webkit-mask-position 0s 900ms, mask-position 0s 900ms;
+}
+.gate__rule:focus-within::before {
+  /* Near-instant: the mask is what arrives, not the alpha — 100ms is short
+     enough that it only softens the strike itself (the front has barely left
+     the prompt by then), and long enough that tabbing back to a rule that is
+     still warm re-warms it instead of snapping it to full. */
+  opacity: 1;
+  -webkit-mask-position: 0% 0;  mask-position: 0% 0;
+  /* 560ms, because you have to be able to WATCH this. At 200ms the front was
+     already off the end before the eye found it and the whole thing read as a
+     switch with a smear on it. Only mildly decelerating (~65% of the way at
+     half time) — conduction slows down, but an ease-out steep enough to be
+     honest about diffusion spends the back half looking finished. */
+  transition:
+    opacity 100ms linear,
+    -webkit-mask-position 560ms cubic-bezier(.4, .3, .5, 1),
+    mask-position 560ms cubic-bezier(.4, .3, .5, 1);
+}
+
+/* The source warms first and fastest, and cools on the line's own schedule.
+   Fractional on purpose: at .6 the prompt is punctuation, and a lit `>` would
+   turn it into an object competing with the emblem. The proxy field in the
+   fold has no prompt at all — the heat starts at the rule's left edge either
+   way, so that field loses the spark and keeps the travel. */
+.gate__rule .prompt {
+  font-size: 13px; opacity: .6;
+  transition: opacity 900ms cubic-bezier(.25, .55, .4, 1);
+}
+.gate__rule:focus-within .prompt { opacity: .8; transition-duration: 160ms; }
+
+.gate__inp {
+  /* min-width:0 is load-bearing: an <input>'s intrinsic ~20ch width otherwise
+     refuses to shrink and pushes the column past the viewport on narrow screens. */
+  flex: 1 1 auto; min-width: 0; width: 100%;
+  background: transparent; border: 0; outline: 0;
+  color: var(--parchment);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13.5px; letter-spacing: .04em;
+}
+.gate__inp:disabled { opacity: .5; }
+
+/* ── the password cools into dots ──────────────────────────────────
+   A typed character arrives white-hot and cools into its bullet over 175ms:
+   the password is being forged, one character at a time.
+
+   The real <input type="password" autocomplete="current-password"> is left
+   completely intact — same element, same name, same value. All we do is take
+   its ink away and paint our own row of dots on top. Password managers,
+   autofill, paste, selection, undo and the caret stay the browser's job.
+
+   The overlay is deliberately ignorant: it is driven by value.LENGTH and
+   nothing else, and every glyph is the same character. It never sees, stores
+   or renders anything that was typed, so the hot glyph cannot be
+   shoulder-surfed and the DOM cannot leak the password. Hot is a mark, not a
+   letter. Geometry is mirrored off the live input in useForgedMask. */
+.gate__pw {
+  color: transparent;
+  /* Has to be said out loud: caret-color defaults to currentColor, which is
+     now transparent — and losing the caret is how every overlay like this
+     gets found out. */
+  caret-color: var(--parchment);
+}
+
+.gate__mask {
+  position: absolute;   /* over the input; .gate__rule is already relative */
+  pointer-events: none; /* every click, drag and double-click belongs to the input */
+  overflow: hidden;     /* a long password scrolls with the field, never past the rule */
+  white-space: pre;
+  z-index: 1;           /* above the input's own (invisible) text and its selection band */
+}
+
+.gate__glyph {
+  position: relative;   /* anchors the bloom; on an inline box this moves no metrics */
+  /* Cold is exactly what this field looked like before the idea existed — the
+     input's own masked bullets were --parchment. A resting password must be
+     indistinguishable from the old screen, or this is a recolour, not heat. */
+  color: var(--parchment);
+}
+
+/* The ramp. White-hot barely exists — two frames of it — then ember holds the
+   longest, because that is the part of cooling steel the eye actually reads.
+   It lands on the same dead bronze as every older dot. */
+@keyframes gateForge {
+  0%   { color: #fff6e8; text-shadow: 0 0 6px rgba(255,224,175,.95), 0 0 15px rgba(255,138,48,.75); }
+  14%  { color: #ffdfab; text-shadow: 0 0 5px rgba(255,205,140,.80), 0 0 12px rgba(255,124,40,.58); }
+  38%  { color: #f4a45c; text-shadow: 0 0 4px rgba(240,150,80,.52), 0 0 9px  rgba(224,105,40,.36); }
+  68%  { color: #c26c35; text-shadow: 0 0 3px rgba(200,100,45,.22); }
+  88%  { color: #c69169; text-shadow: none; }  /* the ember gives up its hue before
+                                                  it gives up the last of its light */
+  100% { color: var(--parchment); text-shadow: none; }
+}
+/* The collapse: a bloom of heat larger than the dot, shrinking into it.
+   Absolutely positioned, so it is out of flow and cannot shift the glyph
+   advance by a hair — scaling the glyph itself would, and the caret would
+   drift off the dots the moment you typed. */
+@keyframes gateBloom {
+  0%   { opacity: .95; transform: translate(-50%, -50%) scale(2.5); }
+  55%  { opacity: .45; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(.5); }
+}
+.gate__glyph.is-hot { animation: gateForge 175ms linear both; }
+.gate__glyph.is-hot::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 42%;  /* 42%, not 50% — an inline box is measured from the em
+                           box, and the bullet sits above its centre */
+  width: .58em; height: .58em;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,246,228,.95) 0%,
+    rgba(255,178,86,.62) 40%,
+    rgba(226,96,32,0) 72%);
+  mix-blend-mode: screen; /* heat adds light to the void, it does not paint over it */
+  animation: gateBloom 175ms cubic-bezier(.2,.8,.3,1) both;
+}
+
+/* Paste and autofill: the whole row warms once, together, and cools slower —
+   a finished billet dropped into the mould, not thirty hammer strikes. No
+   bloom, because thirty overlapping blooms is a smear, and no stagger, because
+   a 30-character paste staggered at 40ms is a 1.2s light show for something
+   the user did in one gesture. It peaks at ember, never white-hot: you did not
+   forge this, it arrived. */
+@keyframes gateQuench {
+  0%   { color: #f2a763; text-shadow: 0 0 5px rgba(236,140,70,.55); }
+  45%  { color: #cb7a3e; text-shadow: 0 0 3px rgba(200,100,45,.28); }
+  100% { color: var(--parchment); text-shadow: none; }
+}
+.gate__glyph.is-bulk { animation: gateQuench 270ms linear both; }
+
+/* Parity with .gate__inp:disabled — the dots dim with the field they mask. */
+.gate__rule:has(.gate__pw:disabled) .gate__mask { opacity: .5; }
+
+/* One line: POŁĄCZ on the left, "połącz bez logowania" run out to the right end
+   of the column. Baseline-aligned so the small serif secondary sits on the same
+   line the big Cinzel primary sits on, despite their different sizes and the
+   different depths of their two underlines. */
+.gate__actions { display: flex; align-items: baseline; gap: 14px; }
+
+/* The action is a word with a hot rule struck under it — the fire is the
+   affordance, not a button-shaped box. */
+.gate__go {
+  background: none; border: 0; padding: 0 2px 10px;
+  cursor: pointer;
+  font-family: "Cinzel", serif; font-weight: 700;
+  font-size: 19px; letter-spacing: .34em; text-indent: .34em;
+  color: #f4ecd6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .98), 0 0 18px rgba(206, 116, 58, .35);
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #ce743a, rgba(206, 116, 58, .15)) 1;
+  transition: color .15s ease;
+}
+.gate__go:hover:not(:disabled) { color: #fff; }
+/* Connecting: the rule breathes rather than a spinner appearing — the page has
+   no other moving part, so one pulse reads as clearly as a widget would. */
+.gate__go:disabled {
+  cursor: default;
+  color: var(--parchment-dim);
+  animation: gateBreath 1.5s ease-in-out infinite;
+}
+@keyframes gateBreath { 50% { opacity: .5; } }
+
+.gate__quiet {
+  margin-left: auto;   /* run it out to the right end of the actions row */
+  background: none; border: 0; padding: 0 0 2px; cursor: pointer;
+  font-family: "EB Garamond", Georgia, serif; font-size: 13.5px;
+  color: var(--parchment-dim);
+  border-bottom: 1px solid rgba(184, 150, 90, .28);
+  transition: color .15s ease, border-color .15s ease;
+}
+.gate__quiet:hover:not(:disabled) { color: var(--parchment); border-bottom-color: var(--bronze-dim); }
+.gate__quiet:disabled { cursor: default; opacity: .45; }
+
+/* the fold: a hairline that names itself, spanning the column */
+.gate__fold {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 8.5px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--parchment-dim);
+  transition: color .15s ease;
+}
+.gate__fold:hover { color: var(--bronze); }
+.gate__fold::before, .gate__fold::after {
+  content: ""; flex: 1 1 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 150, 90, .22), transparent);
+}
+/* Label and chevron are one flex item, so the column's 10px only opens between
+   the group and its flanking hairlines — the chevron stays tight to the word. */
+.gate__fold-name {
+  display: inline-flex; align-items: center; gap: 7px;
+}
+/* Centred against the label by align-items above (a symmetric box, unlike the
+   glyph it replaced), and the whole affordance turns over when the fold opens. */
+.gate__fold-chev {
+  width: 9px; height: auto;
+  fill: none;
+  stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round;
+  /* letter-spacing pads the right of the last letter; pull the chevron back
+     under the visual end of the word so the group reads as centred. */
+  margin-left: -.22em;
+  transition: transform .2s ease;
+}
+.gate__fold.is-open .gate__fold-chev { transform: rotate(180deg); }
+
+/* Out of flow, hanging below the fold that opens it. The column is vertically
+   centred, so an in-flow panel would grow the column and slide the logo and
+   both fields upward every time the fold is toggled — the form must not move
+   under the pointer just because someone looked at the connection settings.
+   It is the last child, so `top: 100%` lands it directly under the fold. */
+.gate__adv {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.gate__routes { display: flex; gap: 6px; }
+/* Route buttons are the footer chip's stone, at chip scale — the advanced row
+   is the one place on this screen that can afford an object, and reusing the
+   chip keeps it something the user has already seen elsewhere in forge. */
+.gate__route {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #33291b;
+  background-color: #0c0905;
+  background-image:
+    linear-gradient(rgba(8, 6, 3, .5), rgba(8, 6, 3, .5)),
+    var(--tex-stone),
+    linear-gradient(180deg, #16110a, #070502);
+  background-blend-mode: normal, soft-light, normal;
+  background-size: 100% 100%, 90px 90px, 100% 100%;
+  box-shadow: inset 0 1px 0 rgba(184, 150, 90, .09), inset 0 -2px 5px rgba(0, 0, 0, .7);
+  color: var(--parchment-dim);
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease;
+}
+.gate__route:hover { border-color: var(--bronze-dim); color: var(--parchment); }
+.gate__route.is-on { border-color: var(--bronze); color: #f4ecd6; }
+
+.gate__check {
+  display: flex; align-items: center; gap: 9px;
+  font-family: "EB Garamond", Georgia, serif; font-size: 13.5px;
+  color: var(--parchment-dim);
+  cursor: pointer;
+}
+.gate__check input { accent-color: var(--bronze-dim); cursor: pointer; }
+
+/* ── the footer reconnect chip ────────────────────────────────────
+   What you get after pushing the gate aside: the only way back, living in the
+   chip band the HUD already uses for status, so a dropped session never hides
+   the log you dropped out of. Deliberately NOT in the footer registry — that
+   is user-configurable, and a connection control must not be hideable. */
+.reconnect-chip {
+  margin-left: auto;   /* run out to the right end of the bind band */
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px solid #5a2f22;
+  background: linear-gradient(180deg, #23140f, #140b08);
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  cursor: pointer;
+  white-space: nowrap;
+  appearance: none; -webkit-appearance: none;
+  transition: border-color .15s ease, transform .1s ease;
+}
+.reconnect-chip:hover { border-color: #e07a4f; }
+.reconnect-chip:active { transform: translateY(1px); }
+.reconnect-chip__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #e8895c, #a8331a 70%);
+  box-shadow: 0 0 6px 1px rgba(224, 122, 79, .5);
+  animation: reconnectPulse 2s ease-in-out infinite;
+}
+@keyframes reconnectPulse { 50% { opacity: .45; } }
+.reconnect-chip__lab {
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: #e07a4f;
+}
+.reconnect-chip__act {
+  font-family: "Cinzel", serif; font-weight: 600;
+  font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--parchment-dim);
+}
+
+/* ── entrance timings ──────────────────────────────────────────────
+   Kept together so the sequence can be read as a sequence. */
+.gate__logo   { animation: gateStrike .55s ease-out both; }
+.gate__notice { animation: gateRise .4s .10s ease-out both; }
+.gate__field:nth-of-type(1) { animation: gateRise .45s .16s ease-out both; }
+.gate__field:nth-of-type(2) { animation: gateRise .45s .26s ease-out both; }
+/* The heat layer is scored in on the same stroke as the hairline it lives on.
+   The character field is focused the moment the gate arrives, so without this
+   its heat would run at full length over a rule that has not been drawn yet;
+   sharing gateDraw means the rule simply arrives already hot. Note this is the
+   entrance's animation, not the focus effect's — focusing later never restarts
+   it, because focus only moves the mask. */
+.gate__field:nth-of-type(1) .gate__rule::after,
+.gate__field:nth-of-type(1) .gate__rule::before { animation: gateDraw .5s .26s ease-out both; }
+.gate__field:nth-of-type(2) .gate__rule::after,
+.gate__field:nth-of-type(2) .gate__rule::before { animation: gateDraw .5s .36s ease-out both; }
+.gate__actions { animation: gateRise .45s .44s ease-out both; }
+.gate__fold    { animation: gateRise .45s .54s ease-out both; }
+.gate__close   { animation: gateFade .5s .7s ease-out both; }
+
+/* Motion is atmosphere here, never information — every bit of it can go. */
+@media (prefers-reduced-motion: reduce) {
+  .gate__logo,
+  .gate__notice,
+  .gate__field,
+  .gate__rule::after,
+  .gate__rule::before,
+  .gate__actions,
+  .gate__fold,
+  .gate__close,
+  .gate__go:disabled,
+  .reconnect-chip__dot { animation: none; }
+  /* the entrance uses fill-mode `both`, so without the animation these would
+     keep the from-state — restore the settled look explicitly */
+  .gate__close { opacity: .72; }
+
+  /* The backdrop stops but does not disappear — a still frame of the same
+     screen, not a different one. Each ember freezes at its own --settle height
+     with most of its glow, so the field still reads as a field; the hearth
+     holds a mid-cycle brightness rather than either extreme. */
+  .gate-hearth i,
+  .gate-ember,
+  .gate-ember i { animation: none; }
+  .gate-ember {
+    transform: translate3d(0, calc(var(--rise) * -1 * var(--settle)), 0);
+    opacity: calc(var(--peak) * .75);
+  }
+  .gate-hearth i:nth-child(1) { opacity: .78; }
+  .gate-hearth i:nth-child(2) { opacity: .5; }
+
+  /* Heat that travels is motion. Heat that is simply there is information about
+     where the cursor is, and that has to survive: the travelling layer goes
+     entirely and the rule gets back the instant switch it had before. */
+  .gate__rule::before { display: none; }
+  .gate__rule .prompt, .gate__rule:focus-within .prompt { transition: none; }
+  .gate__rule:focus-within::after {
+    background: var(--bronze);
+    box-shadow: 0 0 10px rgba(206, 116, 58, .45);
+  }
+
+  /* Plain, instant dots. The heat is decoration; the masking is not. */
+  .gate__glyph.is-hot,
+  .gate__glyph.is-bulk { animation: none; color: var(--parchment); text-shadow: none; }
+  .gate__glyph.is-hot::after { content: none; }
+}
+
+/* Narrow screens: the column takes what width it can get and the emblem gives
+   up the room, since the form is what has to stay usable. */
+@media (max-width: 720px) {
+  .gate__col { width: min(430px, calc(100vw - 48px)); }
+  .gate__logo { width: min(230px, 62vw); height: min(230px, 62vw); }
+}
+/* Short viewports (landscape phones, split screens): the emblem shrinks before
+   the form starts scrolling — the form is what has to stay usable. */
+@media (max-height: 820px) {
+  .gate__col { gap: 24px; }
+  .gate__logo { width: 232px; height: 232px; }
+}
+@media (max-height: 680px) {
+  .gate__col { gap: 20px; }
+  .gate__logo { width: 168px; height: 168px; }
+}
