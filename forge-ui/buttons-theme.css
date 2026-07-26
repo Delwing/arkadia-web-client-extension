@@ -20,21 +20,24 @@
    These components are shared with stock — this file only overrides cosmetic
    properties, never touching stock's look.
 
-   Modeled on the HUD footer's own hardware: the status chips (.chip) and the
-   vital gems (.gem .stone) in style.css. Same weathered-stone recipe — the
-   isotropic --tex-stone speckle soft-lit over a dark gradient — plus the gem
-   cap's convex shading (top highlight, bottom shade, a shadow dropped into
-   its own socket), so a floating button reads as another piece struck from
-   the same rock as the plate at the bottom of the screen, not as a UI widget
-   parked on top of it.
+   Modeled on the HUD footer's bind pills (`.multi-bind` in style.css): a flat,
+   deep, slightly tinted fill, one hairline of bronze light along the top edge,
+   an iron rim that warms to bronze on hover, and a 1px press travel. The
+   footer's badges are the client's most-repeated small control, so a floating
+   button that borrows their recipe reads as another piece of the same rig.
+
+   NOT the vital gems' weathered stone (--tex-stone speckle + convex cap
+   shading): that treatment is tuned for the few big glanced-at gems, and on a
+   20px macro button the speckle is just noise and the cap shading eats the
+   label's contrast.
 
    Per-button color (settings-driven, chosen by the user or a shared JS
    default) survives as a *tint*, not a fill. Each component exposes it as the
    `--btn-accent` custom property (`--pad-accent` for the whole direction pad)
    alongside its real inline `backgroundColor` — inert for stock, since
-   stock's CSS never references it. Here it's mixed a fifth-or-so of the way
-   into the stone base and echoed in the border, which is exactly what the gem
-   does to its own vital hue (`filter: saturate(.58)` over --tex-stone): color
+   stock's CSS never references it. Here it's mixed a quarter of the way into
+   the dark badge base and echoed harder in the rim, the way the location binds
+   tint their own borders (`.multi-bind--room`, `.multi-bind--drink`): color
    coding still tells buttons apart at a glance, but nothing can put a flat
    sky-blue slab on the forge. That's a deliberate override of the user's
    picked color — forge is a skin with a point of view, and the stock UI is
@@ -58,39 +61,28 @@
 
 :is(.desktop-button, .desktop-button-list-item, .mobile-command-radial__command),
 .mobile-button:not(.empty) {
-    /* The accent goes into the fill at full chroma — deliberately louder than
-       the vital gems it sits above, which are dark palette hues further muted
-       by `filter: saturate(.58)`. A gem is ambient (glanced at); a button is a
-       target you have to pick out of a dark screen mid-fight, so it keeps its
-       color coding. Fallback = neutral stone brown, for anything that renders
-       without an inline color (plugin buttons mid-load, the radial). */
+    /* The accent goes into the fill at a higher dose than the bind pills carry
+       (they're plain iron) — deliberately louder than the vital gems below,
+       which are dark palette hues further muted by `filter: saturate(.58)`. A
+       gem is ambient (glanced at); a button is a target you have to pick out of
+       a dark screen mid-fight, so it keeps its color coding. Fallback =
+       neutral iron brown, for anything that renders without an inline color
+       (plugin buttons mid-load, the radial). */
     --btn-tint: var(--btn-accent, #6f6252);
-    background-color: color-mix(in srgb, var(--btn-tint) 18%, #14100a) !important;
-    /* top→bottom: cap gloss, cap shade, stone speckle, tinted base. The two
-       gradients ride above the speckle so soft-light can't lift the surface
-       into a mid-tone — same trick as .chip's scrim, doing double duty as the
-       gem cap's convex shading. */
-    background-image:
-        linear-gradient(180deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 45%),
-        linear-gradient(180deg, transparent 48%, rgba(0, 0, 0, .5)),
-        var(--tex-stone),
-        linear-gradient(180deg,
-            color-mix(in srgb, var(--btn-tint) 26%, #1a140c),
-            color-mix(in srgb, var(--btn-tint) 11%, #080603)) !important;
-    background-blend-mode: normal, normal, soft-light, normal !important;
-    background-size: 100% 100%, 100% 100%, 90px 90px, 100% 100% !important;
-    border: 1px solid color-mix(in srgb, var(--btn-tint) 32%, #33291b);
+    background-color: color-mix(in srgb, var(--btn-tint) 24%, #191410) !important;
+    /* The pill's sheen: a touch of light off the top, a touch of shade at the
+       bottom. Translucent, so it only shapes whatever fill sits beneath it. */
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .12)) !important;
+    border: 1px solid color-mix(in srgb, var(--btn-tint) 34%, var(--iron-hi));
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .14),
-        inset 0 -3px 6px rgba(0, 0, 0, .55),
-        inset 0 0 0 1px rgba(0, 0, 0, .45),
-        0 1px 2px rgba(0, 0, 0, .6);
+        inset 0 1px 0 rgba(184, 150, 90, .12),
+        0 1px 2px rgba(0, 0, 0, .5);
     color: #f4ecd6 !important;
     font-family: "Cinzel", serif;
     font-weight: 600;
     letter-spacing: .02em;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .98), 0 2px 5px rgba(0, 0, 0, .8);
-    transition: border-color .15s ease, box-shadow .15s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
 }
 
 .desktop-button,
@@ -99,56 +91,54 @@
     border-radius: 6px;
 }
 
-/* Hover lights the rim the way an interactive chip's does (.chip--act:hover),
-   and lifts the cap's own highlight rather than brightening the whole fill. */
+/* Hover warms the rim and washes the fill a shade lighter — exactly what a bind
+   pill does (`.multi-bind:hover`). */
 :is(.desktop-button, .desktop-button-list-item, .mobile-button, .mobile-command-radial__command):hover {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .02)) !important;
     border-color: var(--bronze-dim);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .2),
-        inset 0 -3px 6px rgba(0, 0, 0, .5),
-        inset 0 0 0 1px rgba(0, 0, 0, .45),
-        0 1px 3px rgba(0, 0, 0, .6);
+        inset 0 1px 0 rgba(184, 150, 90, .18),
+        0 1px 3px rgba(0, 0, 0, .5);
 }
 
-/* The stock skin brightens on hover/press with a filter; that would wash the
-   stone out, so it's dropped in favour of the rim/press treatment above. */
+/* The stock skin brightens on hover/press with a filter; that would blow out
+   the badge's deliberately deep fill, so it's dropped in favour of the
+   rim/wash/press treatment above. */
 :is(.desktop-button, .desktop-button-list-item, .mobile-button):hover,
 :is(.desktop-button, .mobile-button):active,
 :is(.desktop-button, .mobile-button).active {
     filter: none;
 }
 
-/* Pressed: the cap sinks into its socket — highlight off, shade deepened. */
+/* Pressed: the pill sinks and travels 1px, like `.multi-bind:active`. */
 .desktop-button:active,
 .mobile-button:active {
     transform: translateY(1px);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .04),
-        inset 0 2px 5px rgba(0, 0, 0, .7),
-        inset 0 0 0 1px rgba(0, 0, 0, .5);
+    background-image: linear-gradient(180deg, rgba(0, 0, 0, .26), rgba(0, 0, 0, .06)) !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .55);
 }
 
+/* Latched: bronze rim plus a bronze wash — the location binds' "this one is
+   live" signal, not a second ring around the button. */
 .desktop-button.active,
 .mobile-button.active {
-    border-color: var(--bronze-dim);
+    background-image: linear-gradient(180deg, rgba(184, 150, 90, .22), rgba(184, 150, 90, .08)) !important;
+    border-color: var(--bronze);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .16),
-        inset 0 -3px 6px rgba(0, 0, 0, .55),
-        inset 0 0 0 1px rgba(0, 0, 0, .45),
-        0 0 0 2px var(--bronze-dim);
+        inset 0 1px 0 rgba(184, 150, 90, .22),
+        0 1px 2px rgba(0, 0, 0, .5);
 }
 
 /* Hold-armed glow. The shared component derives `--hold-glow-color` from the
-   button's *computed* background — which forge has just turned into dark
-   stone, so that glow would be invisible. Forced to the bronze the rest of the
+   button's *computed* background — which forge has just turned into a dark
+   badge, so that glow would be invisible. Forced to the bronze the rest of the
    HUD signals with, and re-stated after the hover rule so an armed hold still
    shows while the pointer is on the button. */
 :is(.desktop-button, .mobile-button).hold-glow,
 :is(.desktop-button, .mobile-button).hold-glow:hover {
     border-color: var(--bronze);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, .18),
-        inset 0 -3px 6px rgba(0, 0, 0, .5),
+        inset 0 1px 0 rgba(184, 150, 90, .2),
         0 0 8px 2px rgba(184, 150, 90, .55),
         0 0 18px 6px rgba(184, 150, 90, .28);
     filter: none;
@@ -189,13 +179,11 @@
 }
 
 .mobile-command-radial__command--highlighted {
-    border-color: var(--bronze-dim);
+    background-image: linear-gradient(180deg, rgba(184, 150, 90, .22), rgba(184, 150, 90, .08)) !important;
+    border-color: var(--bronze);
     box-shadow:
         inset 0 1px 0 rgba(184, 150, 90, .22),
-        inset 0 -2px 4px rgba(0, 0, 0, .6),
-        inset 0 0 0 1px rgba(0, 0, 0, .35),
-        0 8px 22px rgba(0, 0, 0, .65),
-        0 0 0 2px var(--bronze-dim);
+        0 8px 22px rgba(0, 0, 0, .65);
 }
 
 .mobile-command-radial__threshold {

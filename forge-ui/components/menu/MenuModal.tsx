@@ -24,6 +24,12 @@ interface MenuModalProps {
     dialogId?: string;
     /** Sizing hint mapped to a max-width in menu.css. */
     size?: 'md' | 'lg' | 'xl';
+    /** Give the shell a *definite* full height instead of shrinking to content.
+     *  Required by panels whose body scrolls internally via a percentage-height
+     *  (`h-100`) chain — that chain only resolves against a definite-height
+     *  ancestor, which `max-height` alone is not. See `.forge-menu-modal--fill`
+     *  in menu.css. */
+    fill?: boolean;
     /** Extra controls rendered in the header, left of the close button. */
     headerExtras?: ReactNode;
     /** Footer content (e.g. a Save button); omitted when absent. */
@@ -39,6 +45,7 @@ export default function MenuModal({
     onClose,
     dialogId,
     size = 'lg',
+    fill = false,
     headerExtras,
     footer,
     closeOnEsc = true,
@@ -58,7 +65,7 @@ export default function MenuModal({
         <div className="forge-menu-backdrop" onPointerDown={onClose}>
             <div
                 id={dialogId}
-                className={`forged panel panel--modal forge-menu-modal forge-menu-modal--${size}`}
+                className={`forged panel panel--modal forge-menu-modal forge-menu-modal--${size}${fill ? ' forge-menu-modal--fill' : ''}`}
                 // The editors are Bootstrap; the scoped stylesheet
                 // (forge-modal-bootstrap.scss) carries Bootstrap's dark theme,
                 // which this attribute activates as the base the forge --bs-*

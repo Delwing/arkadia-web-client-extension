@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { PersonEntry, PersonListEntry } from '@client/types/people';
 import { GUILD_CODES_BY_ID } from '@modules/data/peopleGuilds';
 
@@ -77,227 +78,219 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     const isMarkedAlly = person?.isAlly ?? false;
     const currentColor = person?.color;
 
-    return (
-        <div
-            className="modal show d-block"
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
-            onClick={onClose}
-        >
+    // Portaled to <body>: the modal must cover the viewport, not the popup body it
+    // is declared in — an alternative UI (forge) puts a `filter` on the popup body,
+    // which would otherwise trap a `position: fixed` child inside the panel.
+    // `data-popup-overlay` is the shared opt-out that keeps clicking the modal from
+    // closing the popup underneath it (see useDockablePopup's outside-click guard).
+    return createPortal(
+        <div className="people-modal" data-popup-overlay onClick={onClose}>
             <div
-                className="modal-dialog modal-dialog-centered"
+                className="people-modal__dialog"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <h5 className="modal-title">
-                            {mode === 'add' ? 'Dodaj postac' : 'Edytuj postac'}
-                        </h5>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={onClose}
-                        />
-                    </div>
-                    <div className="modal-body">
-                        {hasOriginal && person?.originalEntry && (
-                            <div className="alert alert-secondary mb-3">
-                                <div className="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <small className="text-muted d-block mb-1">
-                                            Oryginalne wartosci:
-                                        </small>
-                                        <div>
-                                            <strong>Nazwa:</strong> {person.originalEntry.name}
-                                        </div>
-                                        <div>
-                                            <strong>Opis:</strong> {person.originalEntry.description}
-                                        </div>
-                                        <div>
-                                            <strong>Gildia:</strong> {person.originalEntry.guild}
-                                        </div>
-                                    </div>
-                                    {onRestoreOriginal && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-light"
-                                            onClick={onRestoreOriginal}
-                                            title="Przywroc oryginalne wartosci"
-                                        >
-                                            Przywroc
-                                        </button>
-                                    )}
+                <div className="people-modal__header">
+                    <h5 className="people-modal__title">
+                        {mode === 'add' ? 'Dodaj postac' : 'Edytuj postac'}
+                    </h5>
+                    <button
+                        type="button"
+                        className="people-modal__close"
+                        onClick={onClose}
+                        title="Zamknij"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div className="people-modal__body">
+                    {hasOriginal && person?.originalEntry && (
+                        <div className="people-modal__original">
+                            <div>
+                                <span className="people-modal__hint">Oryginalne wartosci:</span>
+                                <div>
+                                    <strong>Nazwa:</strong> {person.originalEntry.name}
+                                </div>
+                                <div>
+                                    <strong>Opis:</strong> {person.originalEntry.description}
+                                </div>
+                                <div>
+                                    <strong>Gildia:</strong> {person.originalEntry.guild}
                                 </div>
                             </div>
-                        )}
-
-                        <div className="mb-3">
-                            <label className="form-label">Nazwa</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="np. Eamon"
-                            />
-                        </div>
-
-                        <div className="mb-3">
-                            <label className="form-label">Opis</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="np. wysoki mezczyzna"
-                            />
-                        </div>
-
-                        <div className="mb-3">
-                            <label className="form-label">Gildia</label>
-                            <select
-                                className="form-select"
-                                value={guild}
-                                onChange={(e) => setGuild(e.target.value)}
-                            >
-                                {ALL_GUILD_CODES.map((g) => (
-                                    <option key={g} value={g}>
-                                        {g}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {mode === 'edit' && !isIgnored && (
-                            <div className="mb-3">
-                                <label className="form-label">Kolor indywidualny</label>
-                                <div className="d-flex gap-2 align-items-center">
-                                    <input
-                                        type="color"
-                                        className="form-control form-control-color"
-                                        value={currentColor || '#ffff5f'}
-                                        onChange={(e) => onSetColor?.(e.target.value)}
-                                        title="Wybierz kolor"
-                                        style={{
-                                            border: '2px solid #555',
-                                            padding: '2px',
-                                            backgroundColor: currentColor || '#ffff5f'
-                                        }}
-                                    />
-                                    {currentColor && onClearColor && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-outline-light"
-                                            onClick={onClearColor}
-                                            title="Usun indywidualny kolor"
-                                        >
-                                            Wyczysc
-                                        </button>
-                                    )}
-                                    {!currentColor && (
-                                        <span className="text-muted small">Brak (uzyje koloru gildii)</span>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    <div className="modal-footer">
-                        <div className="d-flex w-100 justify-content-between flex-wrap gap-2">
-                            <div className="d-flex gap-2 flex-wrap">
-                                {mode === 'edit' && !isIgnored && !isMarkedEnemy && onMarkEnemy && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-danger"
-                                        onClick={onMarkEnemy}
-                                        title="Oznacz jako wroga"
-                                    >
-                                        Wrog
-                                    </button>
-                                )}
-                                {mode === 'edit' && !isIgnored && isMarkedEnemy && onUnmarkEnemy && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-danger"
-                                        onClick={onUnmarkEnemy}
-                                        title="Odznacz jako wroga"
-                                    >
-                                        Wrog
-                                    </button>
-                                )}
-                                {mode === 'edit' && !isIgnored && !isMarkedAlly && onMarkAlly && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-success"
-                                        onClick={onMarkAlly}
-                                        title="Oznacz jako sojusznika"
-                                    >
-                                        Sojusznik
-                                    </button>
-                                )}
-                                {mode === 'edit' && !isIgnored && isMarkedAlly && onUnmarkAlly && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-success"
-                                        onClick={onUnmarkAlly}
-                                        title="Odznacz jako sojusznika"
-                                    >
-                                        Sojusznik
-                                    </button>
-                                )}
-                                {mode === 'edit' && !isIgnored && !isLocallyAdded && onIgnore && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-warning"
-                                        onClick={onIgnore}
-                                        title="Ignoruj ta postac (nie tworz triggerow)"
-                                    >
-                                        Ignoruj
-                                    </button>
-                                )}
-                                {mode === 'edit' && isIgnored && onRestore && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-success"
-                                        onClick={onRestore}
-                                        title="Przywroc ta postac"
-                                    >
-                                        Przywroc
-                                    </button>
-                                )}
-                                {mode === 'edit' && isLocallyAdded && onDelete && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-danger"
-                                        onClick={onDelete}
-                                        title="Usun ta postac"
-                                    >
-                                        Usun
-                                    </button>
-                                )}
-                            </div>
-                            <div className="d-flex gap-2">
+                            {onRestoreOriginal && (
                                 <button
                                     type="button"
-                                    className="btn btn-secondary"
-                                    onClick={onClose}
+                                    className="popup-btn"
+                                    onClick={onRestoreOriginal}
+                                    title="Przywroc oryginalne wartosci"
                                 >
-                                    Anuluj
+                                    Przywroc
                                 </button>
-                                {!isIgnored && (
+                            )}
+                        </div>
+                    )}
+
+                    <div className="people-modal__field">
+                        <label className="people-modal__label">Nazwa</label>
+                        <input
+                            type="text"
+                            className="popup-input"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="np. Eamon"
+                        />
+                    </div>
+
+                    <div className="people-modal__field">
+                        <label className="people-modal__label">Opis</label>
+                        <input
+                            type="text"
+                            className="popup-input"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="np. wysoki mezczyzna"
+                        />
+                    </div>
+
+                    <div className="people-modal__field">
+                        <label className="people-modal__label">Gildia</label>
+                        <select
+                            className="popup-input"
+                            value={guild}
+                            onChange={(e) => setGuild(e.target.value)}
+                        >
+                            {ALL_GUILD_CODES.map((g) => (
+                                <option key={g} value={g}>
+                                    {g}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {mode === 'edit' && !isIgnored && (
+                        <div className="people-modal__field">
+                            <label className="people-modal__label">Kolor indywidualny</label>
+                            <div className="people-modal__color-row">
+                                <input
+                                    type="color"
+                                    className="people-modal__color"
+                                    value={currentColor || '#ffff5f'}
+                                    onChange={(e) => onSetColor?.(e.target.value)}
+                                    title="Wybierz kolor"
+                                />
+                                {currentColor && onClearColor && (
                                     <button
                                         type="button"
-                                        className="btn btn-primary"
-                                        onClick={handleSave}
-                                        disabled={!name.trim() || !description.trim()}
+                                        className="popup-btn"
+                                        onClick={onClearColor}
+                                        title="Usun indywidualny kolor"
                                     >
-                                        Zapisz
+                                        Wyczysc
                                     </button>
+                                )}
+                                {!currentColor && (
+                                    <span className="people-modal__hint">Brak (uzyje koloru gildii)</span>
                                 )}
                             </div>
                         </div>
+                    )}
+                </div>
+                <div className="people-modal__footer">
+                    <div className="people-modal__footer-group">
+                        {mode === 'edit' && !isIgnored && !isMarkedEnemy && onMarkEnemy && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md people-modal__btn--danger-outline"
+                                onClick={onMarkEnemy}
+                                title="Oznacz jako wroga"
+                            >
+                                Wrog
+                            </button>
+                        )}
+                        {mode === 'edit' && !isIgnored && isMarkedEnemy && onUnmarkEnemy && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md popup-btn--danger"
+                                onClick={onUnmarkEnemy}
+                                title="Odznacz jako wroga"
+                            >
+                                Wrog
+                            </button>
+                        )}
+                        {mode === 'edit' && !isIgnored && !isMarkedAlly && onMarkAlly && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md people-modal__btn--success-outline"
+                                onClick={onMarkAlly}
+                                title="Oznacz jako sojusznika"
+                            >
+                                Sojusznik
+                            </button>
+                        )}
+                        {mode === 'edit' && !isIgnored && isMarkedAlly && onUnmarkAlly && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md popup-btn--success"
+                                onClick={onUnmarkAlly}
+                                title="Odznacz jako sojusznika"
+                            >
+                                Sojusznik
+                            </button>
+                        )}
+                        {mode === 'edit' && !isIgnored && !isLocallyAdded && onIgnore && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md people-modal__btn--warning-outline"
+                                onClick={onIgnore}
+                                title="Ignoruj ta postac (nie tworz triggerow)"
+                            >
+                                Ignoruj
+                            </button>
+                        )}
+                        {mode === 'edit' && isIgnored && onRestore && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md people-modal__btn--success-outline"
+                                onClick={onRestore}
+                                title="Przywroc ta postac"
+                            >
+                                Przywroc
+                            </button>
+                        )}
+                        {mode === 'edit' && isLocallyAdded && onDelete && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md people-modal__btn--danger-outline"
+                                onClick={onDelete}
+                                title="Usun ta postac"
+                            >
+                                Usun
+                            </button>
+                        )}
+                    </div>
+                    <div className="people-modal__footer-group">
+                        <button
+                            type="button"
+                            className="popup-btn popup-btn--md"
+                            onClick={onClose}
+                        >
+                            Anuluj
+                        </button>
+                        {!isIgnored && (
+                            <button
+                                type="button"
+                                className="popup-btn popup-btn--md popup-btn--primary"
+                                onClick={handleSave}
+                                disabled={!name.trim() || !description.trim()}
+                            >
+                                Zapisz
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 };
 

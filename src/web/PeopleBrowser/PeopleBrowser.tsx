@@ -241,7 +241,7 @@ const PeopleBrowser: React.FC = () => {
             <div className="people-browser__controls">
                 <button
                     type="button"
-                    className="btn btn-sm btn-success"
+                    className="popup-btn popup-btn--success"
                     onClick={handleAddClick}
                     title="Dodaj nowa postac"
                 >
@@ -251,7 +251,7 @@ const PeopleBrowser: React.FC = () => {
                 <div className="people-browser__search">
                     <input
                         type="text"
-                        className="form-control form-control-sm"
+                        className="popup-input"
                         placeholder="Szukaj po nazwie lub opisie..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -269,7 +269,7 @@ const PeopleBrowser: React.FC = () => {
 
                 <div className="people-browser__guild-filter">
                     <select
-                        className="form-select form-select-sm"
+                        className="popup-input"
                         value={guildFilter}
                         onChange={(e) => setGuildFilter(e.target.value)}
                     >
@@ -284,7 +284,7 @@ const PeopleBrowser: React.FC = () => {
 
                 <div className="people-browser__status-filter">
                     <select
-                        className="form-select form-select-sm"
+                        className="popup-input"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                     >
@@ -295,20 +295,19 @@ const PeopleBrowser: React.FC = () => {
                 </div>
 
                 <div className="people-browser__local-only">
-                    <label className="form-check-label d-flex align-items-center gap-1">
+                    <label className="people-browser__local-only-label">
                         <input
                             type="checkbox"
-                            className="form-check-input m-0"
                             checked={localOnly}
                             onChange={(e) => setLocalOnly(e.target.checked)}
                         />
-                        <span className="small">Tylko lokalne</span>
+                        <span>Tylko lokalne</span>
                     </label>
                 </div>
 
                 <div className="people-browser__page-size">
                     <select
-                        className="form-select form-select-sm"
+                        className="popup-input"
                         value={pageSize}
                         onChange={(e) => handlePageSizeChange(Number(e.target.value) as PageSize)}
                     >
@@ -394,7 +393,7 @@ const PeopleBrowser: React.FC = () => {
                                     <span className="people-browser__item-actions">
                                         <button
                                             type="button"
-                                            className="btn btn-sm btn-link p-0"
+                                            className="people-browser__item-edit"
                                             onClick={() => handleEditClick(person)}
                                             title={isIgnored ? 'Przywroc/Edytuj' : 'Edytuj'}
                                         >
@@ -412,7 +411,7 @@ const PeopleBrowser: React.FC = () => {
                 <div className="people-browser__pagination">
                     <button
                         type="button"
-                        className="btn btn-sm btn-secondary"
+                        className="people-browser__page-btn"
                         onClick={goToFirstPage}
                         disabled={page === 0}
                         title="Pierwsza strona"
@@ -421,7 +420,7 @@ const PeopleBrowser: React.FC = () => {
                     </button>
                     <button
                         type="button"
-                        className="btn btn-sm btn-secondary"
+                        className="people-browser__page-btn"
                         onClick={goToPrevPage}
                         disabled={page === 0}
                         title="Poprzednia strona"
@@ -433,7 +432,7 @@ const PeopleBrowser: React.FC = () => {
                     </span>
                     <button
                         type="button"
-                        className="btn btn-sm btn-secondary"
+                        className="people-browser__page-btn"
                         onClick={goToNextPage}
                         disabled={page >= result.totalPages - 1}
                         title="Nastepna strona"
@@ -442,7 +441,7 @@ const PeopleBrowser: React.FC = () => {
                     </button>
                     <button
                         type="button"
-                        className="btn btn-sm btn-secondary"
+                        className="people-browser__page-btn"
                         onClick={goToLastPage}
                         disabled={page >= result.totalPages - 1}
                         title="Ostatnia strona"

@@ -92,6 +92,45 @@ test.describe('forge menu', () => {
         await expect(modal).toBeVisible();
     });
 
+    test('the scripts panel owns its add-plugin dialogs', async ({ page }) => {
+        // The "Wklej kod" / "Wygeneruj z AI" dialogs used to be markup in stock's
+        // index.html that <Scripts/> drove by element id. forge's page carries no
+        // such shells, so both buttons were silent no-ops here. The panel now
+        // renders them itself, as inline overlays (not portaled react-bootstrap
+        // dialogs, which lose their inputs to a focus fight — see Scripts.tsx).
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Skrypty' }).click();
+        const modal = page.locator('.forge-menu-modal');
+        await expect(modal).toBeVisible();
+
+        await modal.getByRole('button', { name: 'Wklej kod' }).click();
+        const dialog = modal.locator('.modal.show');
+        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
+        // Typing must land in the dialog's fields, not be swallowed by a trap.
+        const code = dialog.getByPlaceholder('export async function init(api) { ... }');
+        await code.click();
+        await page.keyboard.type('export async function init() {}');
+        await expect(code).toHaveValue('export async function init() {}');
+        await dialog.getByRole('button', { name: 'Anuluj' }).click();
+        await expect(dialog).toHaveCount(0);
+
+        await modal.getByRole('button', { name: 'Wygeneruj z AI' }).click();
+        await expect(dialog.locator('.modal-title')).toHaveText('Wygeneruj plugin z AI');
+        // "Mam kod, wklej go" hands over to the paste dialog.
+        await dialog.getByRole('button', { name: 'Mam kod, wklej go' }).click();
+        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
+        await dialog.getByRole('button', { name: 'Anuluj' }).click();
+
+        // The editor is a sibling entry at the app root; resolving its link
+        // relative to this page would aim at the non-existent /forge-ui/editor/.
+        const [editor] = await Promise.all([
+            page.waitForEvent('popup'),
+            modal.getByRole('button', { name: 'Edytor' }).click(),
+        ]);
+        expect(new URL(editor.url()).pathname).toBe('/editor/index.html');
+        await editor.close();
+    });
+
     test('opening UI settings does not repaint the forge output', async ({ page }) => {
         // The Interfejs (UiSettings) modal live-previews the *stock* shell: its
         // apply() writes an inline background onto the shared output elements.

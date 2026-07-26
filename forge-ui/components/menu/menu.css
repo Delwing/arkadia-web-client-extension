@@ -36,50 +36,101 @@
     background: rgba(42, 37, 28, .8);
 }
 
-/* ── Dropdown list (opens upward from the rail) ──────────── */
+/* ── Dropdown list (opens upward from the rail) ──────────────
+   Shares the forged frame and row voice of `.alt-context-menu` (see
+   forge-ui/style.css): matte grain over an iron gradient, an inset bronze
+   bevel ring, and flat Cinzel rows split by hairlines. Kept in sync by hand —
+   the two menus live in different stylesheets but should read as one object. */
 .forge-menu__list {
     position: absolute;
     right: 0;
     bottom: calc(100% + 8px);
     z-index: 4200;
     min-width: 190px;
-    max-height: 70vh;
+    max-width: 300px;
+    padding: 7px;
+    background-color: #0a0a09;
+    background-image:
+        var(--tex-fine),
+        linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 130px 130px, 100% 100%;
+    border: 1px solid var(--iron-lo);
+    border-radius: 9px;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 -3px 6px rgba(0, 0, 0, .72),
+        inset 0 0 0 1px rgba(0, 0, 0, .5),
+        0 3px 10px rgba(0, 0, 0, .6),
+        0 12px 30px rgba(0, 0, 0, .45);
+}
+/* inner bronze bevel ring, exactly as .alt-context-menu::before */
+.forge-menu__list::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 5px;
+    border: 1px solid rgba(184, 150, 90, .20);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35);
+}
+/* the scroller sits above the bevel-ring layer */
+.forge-menu__items {
+    position: relative;
+    z-index: 1;
+    /* Tall enough that the full item list fits on a normal window (the uppercase
+       rows are taller than the old serif ones), still capped by whatever space
+       the rail leaves above it. */
+    max-height: min(78vh, calc(100vh - 92px));
     overflow-y: auto;
     margin: 0;
-    padding: 5px;
+    padding: 0;
     list-style: none;
-    background-color: #14110c;
-    background-image: var(--tex-fine);
-    background-size: 130px 130px;
-    background-blend-mode: soft-light;
-    border: 1px solid var(--iron-lo);
-    border-radius: 8px;
-    box-shadow:
-        inset 0 1px 0 rgba(184, 150, 90, .14),
-        0 10px 30px rgba(0, 0, 0, .6);
+    scrollbar-width: thin;
+    scrollbar-color: var(--iron-hi) transparent;
 }
+.forge-menu__items::-webkit-scrollbar { width: 8px; }
+.forge-menu__items::-webkit-scrollbar-thumb { background: var(--iron-hi); border-radius: 4px; }
+.forge-menu__items::-webkit-scrollbar-track { background: transparent; }
 .forge-menu__item {
+    position: relative;
     display: block;
     width: 100%;
     text-align: left;
-    padding: 6px 10px;
+    overflow-wrap: anywhere;
+    padding: 7px 9px;
     color: var(--parchment);
-    background: none;
-    border: none;
-    border-radius: 5px;
-    font-family: "EB Garamond", Georgia, serif;
-    font-size: 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .05);
+    border-radius: 0;
+    box-shadow: none;
+    font-family: "Cinzel", serif;
+    font-weight: 600;
+    font-size: 9.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    line-height: 1.35;
     cursor: pointer;
     transition: color .12s ease, background-color .12s ease;
 }
-.forge-menu__item:hover {
-    color: var(--bronze);
-    background: rgba(184, 150, 90, .10);
+/* no hairline where a group ends — the divider below carries the break */
+.forge-menu__items li:last-child .forge-menu__item,
+.forge-menu__items li:has(+ .forge-menu__divider) .forge-menu__item {
+    border-bottom: 0;
 }
+.forge-menu__item:hover,
+.forge-menu__item:focus-visible {
+    outline: none;
+    color: #f4ecd6;
+    background: rgba(184, 150, 90, .12);
+}
+/* group break — a bronze hairline, stronger than the per-row dividers */
 .forge-menu__divider {
     height: 1px;
-    margin: 5px 6px;
-    background: linear-gradient(90deg, transparent, var(--iron-hi), transparent);
+    margin: 6px 4px;
+    background: linear-gradient(90deg, transparent, rgba(184, 150, 90, .35), transparent);
 }
 
 /* ── Forged modal shell ──────────────────────────────────── */
@@ -131,6 +182,19 @@
 .forge-menu-modal--xl { max-width: min(1140px, 96vw); }
 @media (min-width: 768px)  { .forge-menu-modal--xl { max-width: min(960px, 90vw); } }
 @media (min-width: 1400px) { .forge-menu-modal--xl { max-width: min(1400px, 90vw); } }
+
+/* Fill shell: a DEFINITE full height (100% of the backdrop's padding box, itself
+   capped at the shared `max-height: 92vh`), for panels that scroll a region
+   *inside* themselves rather than scrolling the modal body as one block (Opcje,
+   Interfejs, Eksport/import, Menu kołowe — the stock components authored against
+   an `h-100` dialog). Those bodies hang off a percentage-height (`h-100`) chain
+   that only resolves against a definite-height ancestor; the default shell is
+   content-sized (`flex: 0 0 auto` + `max-height`), which is *indefinite*, so the
+   inner scroller balloons to full content height and is clipped by its
+   `overflow: hidden` wrapper — leaving no scrollbar and content unreachable.
+   Flowing panels omit this so a short one shrinks to its content instead of
+   stretching into a tall empty box. */
+.panel--modal.forge-menu-modal--fill { height: 100%; }
 
 .forge-menu-modal__body {
     flex: 1 1 auto;
@@ -254,23 +318,106 @@
     --bs-code-color: #d8b46a;
 }
 
-/* Headings + section titles read as forged (Cinzel display face). */
+/* ── Typography ──────────────────────────────────────────────
+   The modal speaks forge's two voices, split exactly the way the HUD splits
+   them: Cinzel (display) for *chrome you scan* — titles, tabs, buttons, table
+   headers, badges, the labels on a form — and EB Garamond for *prose and values
+   you read* — help text, table cells, inputs, list items. Garamond is already
+   Bootstrap's base face here ($font-family-base, set at compile time in
+   forge-modal-bootstrap.scss), so only the Cinzel side needs stating.
+
+   Cinzel draws lowercase as small caps and sets wider than Garamond, so it is
+   used WITHOUT `text-transform: uppercase` and with minimal tracking. That's the
+   same lesson the tiny HUD buttons taught (see buttons-theme.css): the forged
+   voice is worth having, the extra width caps-plus-tracking costs is not.
+
+   It also needs an OPTICAL SIZE CORRECTION. Cinzel is a titling face: its caps
+   fill nearly the whole em and its "lowercase" is small caps, so at the same
+   `font-size` as Garamond — whose x-height is famously small — it reads a good
+   fifth larger and swells every control it lands on.
+
+   `--forge-display-scale` is that correction as a bare number, so it can be
+   multiplied into whatever size the element already had — critically, into
+   Bootstrap's own size TOKENS (`--bs-btn-font-size`, `--bs-badge-font-size`)
+   rather than replacing them, which is what keeps `.btn-sm`/`.btn-lg`/`.badge`
+   proportional instead of collapsing to one size. `--forge-display-size` is the
+   same correction pre-multiplied by `1em`, for the plain elements that just
+   inherit their size (labels, `th`, card headers).
+
+   `--forge-display` keeps the stack in one place; the chrome rules below and the
+   nav/table/card rules further down all read these. */
+.forge-menu-modal {
+    --forge-display: "Cinzel", serif;
+    --forge-display-scale: .88;
+    --forge-display-size: calc(1em * var(--forge-display-scale));
+}
 .forge-menu-modal h1, .forge-menu-modal h2, .forge-menu-modal h3,
 .forge-menu-modal h4, .forge-menu-modal h5, .forge-menu-modal h6,
 .forge-menu-modal .ui-settings-section-title,
 .forge-menu-modal .character-settings-section-title,
 .forge-menu-modal .modal-title {
-    font-family: "Cinzel", serif;
+    font-family: var(--forge-display);
     color: var(--bronze);
     letter-spacing: .01em;
 }
-.forge-menu-modal .form-label { color: var(--parchment-dim); }
+/* Field labels: the display face, optically matched to the Garamond value that
+   sits under them, so a form reads as engraved captions over plain text. */
+.forge-menu-modal .form-label,
+.forge-menu-modal .form-check-label,
+.forge-menu-modal .input-group-text {
+    font-family: var(--forge-display);
+    font-size: var(--forge-display-size);
+    color: var(--parchment-dim);
+    letter-spacing: .01em;
+}
+/* Column headers, card headers and accordion triggers are chrome too. (Not
+   `.alert-heading` — it's an `h4`, already covered by the headings rule above,
+   and a flat `em` here would shrink it to body size.) */
+.forge-menu-modal thead th,
+.forge-menu-modal .card-header,
+.forge-menu-modal .accordion-button {
+    font-family: var(--forge-display);
+    font-size: var(--forge-display-size);
+    letter-spacing: .01em;
+}
+/* Badges scale off their own token, so `.badge` keeps its .75em relationship to
+   whatever it's pinned to. */
+.forge-menu-modal .badge {
+    font-family: var(--forge-display);
+    font-size: calc(var(--bs-badge-font-size, .75em) * var(--forge-display-scale));
+    letter-spacing: .01em;
+}
+/* Keys read as keys — the footer's bind-key face (`.multi-bind-key`). */
+.forge-menu-modal kbd,
+.forge-menu-modal code,
+.forge-menu-modal .font-monospace {
+    font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+}
+/* Help text stays Garamond but drops to the dimmer parchment, so the display
+   face above it is what the eye lands on first. */
+.forge-menu-modal .form-text,
+.forge-menu-modal small,
+.forge-menu-modal .text-muted {
+    color: var(--parchment-dim);
+}
 
-/* Text inputs / selects: the base background and the checked/range accents are
-   themed at compile time ($input-bg, $component-active-bg, $form-range-thumb-*
-   in forge-modal-bootstrap.scss); only the bronze focus states — which Bootstrap
-   compiles from $primary and we want a darker bronze for — are tuned here. */
+/* Text inputs / selects: the base background, the rim (--control-rim) and the
+   checked/range accents are themed at compile time ($input-bg,
+   $input-border-color, $component-active-bg, $form-range-thumb-* in
+   forge-modal-bootstrap.scss); only the bronze hover/focus states — which
+   Bootstrap compiles from $primary and we want a darker bronze for — are tuned
+   here.
+
+   Hover warms the rim the same way the buttons' rims warm, so a field advertises
+   itself as touchable before it's focused. `:not(:focus)` keeps the focus rule
+   below authoritative: both rules are unlayered, and without the guard the
+   later-or-more-specific hover would repaint the focused rim. */
 .forge-menu-modal .form-control::placeholder { color: var(--parchment-dim); }
+.forge-menu-modal .form-control:hover:not(:focus),
+.forge-menu-modal .form-select:hover:not(:focus),
+.forge-menu-modal .form-check-input:hover:not(:focus):not(:checked):not(:indeterminate) {
+    border-color: var(--control-rim-hover);
+}
 .forge-menu-modal .form-control:focus,
 .forge-menu-modal .form-select:focus {
     background-color: rgba(20, 18, 15, .95);
@@ -282,77 +429,181 @@
     box-shadow: 0 0 0 .25rem rgba(110, 86, 32, .25);
 }
 
-/* Buttons — recolour each variant's `--bs-btn-*` tokens (compiled literals). */
-.forge-menu-modal .btn-primary {
+/* ── Buttons ─────────────────────────────────────────────────
+   Bootstrap's buttons are re-skinned as forge *badges* — the footer's bind pills
+   (`.multi-bind` in style.css): a flat, deep, slightly tinted fill, one hairline
+   of bronze light along the top edge, an iron rim that warms to bronze on hover,
+   and a 1px press travel. No stone speckle and no convex cap shading: those
+   belong to the vital gems, which are read at a glance and never in rows — a
+   grid of textured caps in a settings panel just reads as noise.
+
+   The BOX IS UNTOUCHED: no padding, border-width or border-radius here, and the
+   type swap below deliberately trades font-size against line-height so the line
+   box — and therefore the button's height — comes out exactly where Bootstrap
+   (and its .btn-sm/.btn-lg sizes) put it. The only geometric move is the 1px
+   press travel, which is transform-only.
+
+   Variant colour survives as a *tint*: each `.btn-*` sets `--forge-btn-tint`
+   (plus `--forge-btn-fill`/`--forge-btn-edge` when it wants more or less of it),
+   mixed into the fill and the rim. That replaces the old `--bs-btn-bg`/
+   `-border-color` token overrides — dead now that these rules paint background
+   and border directly — but the `--bs-btn-*-color` text tokens are still
+   Bootstrap's and stay.
+
+   The tint rides in `background-color` and every layer above it is translucent,
+   so a button carrying an inline `backgroundColor` (the colour-coded button
+   pickers in the Przyciski editor) keeps its own colour and just gets the badge
+   sheen over it, instead of being painted out.
+
+   States are the pill's, not Bootstrap's: hover washes the fill a touch lighter
+   and warms the rim, press sinks it 1px, latched takes a bronze wash. Each is a
+   `background-image` swap, so no state has to know the variant's tint. */
+
+/* The label: the display face at Bootstrap's own weight, optically corrected by
+   scaling `--bs-btn-font-size` — the token `.btn-sm`/`.btn-lg` set — so all three
+   sizes stay in proportion. No uppercase and no tracking (see the Typography
+   note), so a button is never wider than the words in it need; the correction
+   actually buys back a little room against the box Bootstrap sized for Garamond.
+   `.btn-link` is included: it's chrome too, it just doesn't get the badge. */
+.forge-menu-modal .btn {
+    font-family: var(--forge-display);
+    font-size: calc(var(--bs-btn-font-size, 1rem) * var(--forge-display-scale));
+    /* …and the line box is scaled back UP by the same factor, so the smaller type
+       sits in exactly the height Bootstrap computed (font-size × line-height is
+       unchanged). Without this, every button in the modal would lose ~3px and
+       button rows would no longer line up with the inputs beside them. */
+    line-height: calc(var(--bs-btn-line-height, 1.5) / var(--forge-display-scale));
+    letter-spacing: .01em;
+}
+.forge-menu-modal .btn:not(.btn-link) {
+    /* The neutral iron defaults live in the `var()` FALLBACKS, not in
+       declarations here: this selector carries `:not()`, so declaring them would
+       out-specify the single-class `.btn-*` rules below and every variant would
+       come out the same grey. Fallbacks lose to any variant that sets them. */
+    background-color: color-mix(in srgb,
+        var(--forge-btn-tint, #6f6252) var(--forge-btn-fill, 20%), #191410);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(0, 0, 0, .1));
+    border-color: color-mix(in srgb,
+        var(--forge-btn-tint, #6f6252) var(--forge-btn-edge, 32%), var(--iron-hi));
+    box-shadow: inset 0 1px 0 rgba(184, 150, 90, .1);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .45);
+    transition: border-color .15s ease, background-color .15s ease, transform .1s ease;
+}
+.forge-menu-modal .btn:not(.btn-link):hover {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .03));
+    border-color: var(--bronze-dim);
+}
+/* Keyboard focus: Bootstrap's own focus ring is a box-shadow, which the rim
+   highlight above replaces outright — so it's re-composed here, bronze. */
+.forge-menu-modal .btn:not(.btn-link):focus-visible,
+.forge-menu-modal .btn-check:focus-visible + .btn {
+    border-color: var(--bronze-dim);
+    box-shadow: inset 0 1px 0 rgba(184, 150, 90, .1), 0 0 0 .25rem rgba(110, 86, 32, .35);
+}
+/* Pressed: the pill sinks — highlight off, 1px of travel (`.multi-bind:active`). */
+.forge-menu-modal .btn:not(.btn-link):active {
+    transform: translateY(1px);
+    background-image: linear-gradient(180deg, rgba(0, 0, 0, .22), rgba(0, 0, 0, .06));
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, .45);
+}
+/* Latched (toggle buttons, open dropdowns): a bronze wash and a bronze rim —
+   the same "this one is live" signal the location binds use. */
+.forge-menu-modal .btn:not(.btn-link).active,
+.forge-menu-modal .btn-check:checked + .btn,
+.forge-menu-modal .show > .btn.dropdown-toggle {
+    background-image: linear-gradient(180deg, rgba(184, 150, 90, .2), rgba(184, 150, 90, .08));
+    border-color: var(--bronze-dim);
+    box-shadow: inset 0 1px 0 rgba(184, 150, 90, .16);
+}
+/* Disabled: cold metal — the bronze glint off (Bootstrap's own `opacity: .65`
+   still does the fading). */
+.forge-menu-modal .btn:not(.btn-link):disabled,
+.forge-menu-modal .btn:not(.btn-link).disabled {
+    background-image: none;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+/* Per-variant tints + the text colours Bootstrap still reads. */
+.forge-menu-modal .btn-primary,
+.forge-menu-modal .btn-outline-primary {
+    --forge-btn-tint: #c9a15a; /* bronze, and the loudest fill in the modal */
+    --forge-btn-fill: 34%;
+    --forge-btn-edge: 62%;
     --bs-btn-color: #f2e6cc;
-    --bs-btn-bg: rgba(110, 86, 32, .6);
-    --bs-btn-border-color: var(--bronze-dim);
-    --bs-btn-hover-color: #f6ecd4;
-    --bs-btn-hover-bg: rgba(110, 86, 32, .75);
-    --bs-btn-hover-border-color: var(--bronze);
-    --bs-btn-active-color: #f6ecd4;
-    --bs-btn-active-bg: rgba(110, 86, 32, .82);
-    --bs-btn-active-border-color: var(--bronze);
+    --bs-btn-hover-color: #f9f0da;
+    --bs-btn-active-color: #f9f0da;
     --bs-btn-disabled-color: #cbb98f;
-    --bs-btn-disabled-bg: rgba(110, 86, 32, .4);
-    --bs-btn-disabled-border-color: var(--bronze-dim);
 }
 .forge-menu-modal .btn-secondary,
 .forge-menu-modal .btn-outline-secondary {
+    --forge-btn-tint: #6f6252;
     --bs-btn-color: var(--parchment);
-    --bs-btn-bg: rgba(28, 26, 23, .8);
-    --bs-btn-border-color: var(--iron-lo);
-    --bs-btn-hover-color: var(--parchment);
-    --bs-btn-hover-bg: rgba(42, 37, 28, .9);
-    --bs-btn-hover-border-color: var(--bronze-dim);
-    --bs-btn-active-color: var(--parchment);
-    --bs-btn-active-bg: rgba(52, 46, 34, 1);
-    --bs-btn-active-border-color: var(--bronze-dim);
+    --bs-btn-hover-color: #e2d6bd;
+    --bs-btn-active-color: #e2d6bd;
 }
 .forge-menu-modal .btn-danger,
 .forge-menu-modal .btn-outline-danger {
+    --forge-btn-tint: #a8503a;
+    --forge-btn-fill: 24%;
+    --forge-btn-edge: 46%;
     --bs-btn-color: #d79a86;
-    --bs-btn-bg: rgba(140, 52, 36, .22);
-    --bs-btn-border-color: rgba(160, 72, 52, .5);
-    --bs-btn-hover-color: #e6ad99;
-    --bs-btn-hover-bg: rgba(140, 52, 36, .38);
-    --bs-btn-hover-border-color: rgba(160, 72, 52, .7);
-    --bs-btn-active-color: #e6ad99;
-    --bs-btn-active-bg: rgba(140, 52, 36, .5);
-    --bs-btn-active-border-color: rgba(160, 72, 52, .7);
+    --bs-btn-hover-color: #eeb39e;
+    --bs-btn-active-color: #eeb39e;
 }
 .forge-menu-modal .btn-success,
 .forge-menu-modal .btn-outline-success {
+    --forge-btn-tint: #7d9450;
+    --forge-btn-fill: 22%;
+    --forge-btn-edge: 42%;
     --bs-btn-color: #c3d29c;
-    --bs-btn-bg: rgba(96, 116, 58, .26);
-    --bs-btn-border-color: rgba(120, 140, 80, .5);
-    --bs-btn-hover-color: #d0dcac;
-    --bs-btn-hover-bg: rgba(96, 116, 58, .4);
-    --bs-btn-hover-border-color: rgba(120, 140, 80, .7);
-    --bs-btn-active-color: #d0dcac;
-    --bs-btn-active-bg: rgba(96, 116, 58, .5);
+    --bs-btn-hover-color: #d6e3b2;
+    --bs-btn-active-color: #d6e3b2;
 }
 .forge-menu-modal .btn-warning,
 .forge-menu-modal .btn-outline-warning {
+    --forge-btn-tint: #c3943f;
+    --forge-btn-fill: 23%;
+    --forge-btn-edge: 44%;
     --bs-btn-color: #e6c987;
-    --bs-btn-bg: rgba(150, 112, 42, .3);
-    --bs-btn-border-color: rgba(160, 122, 52, .55);
-    --bs-btn-hover-color: #f0d79b;
-    --bs-btn-hover-bg: rgba(150, 112, 42, .45);
-    --bs-btn-hover-border-color: rgba(160, 122, 52, .75);
-    --bs-btn-active-color: #f0d79b;
-    --bs-btn-active-bg: rgba(150, 112, 42, .55);
+    --bs-btn-hover-color: #f4dca2;
+    --bs-btn-active-color: #f4dca2;
 }
 .forge-menu-modal .btn-info,
 .forge-menu-modal .btn-outline-info {
+    --forge-btn-tint: #5f97a8;
+    --forge-btn-fill: 22%;
+    --forge-btn-edge: 40%;
     --bs-btn-color: #a9cbd6;
-    --bs-btn-bg: rgba(70, 100, 112, .28);
-    --bs-btn-border-color: rgba(100, 138, 152, .5);
-    --bs-btn-hover-color: #bcd7e0;
-    --bs-btn-hover-bg: rgba(70, 100, 112, .42);
-    --bs-btn-hover-border-color: rgba(100, 138, 152, .7);
-    --bs-btn-active-color: #bcd7e0;
-    --bs-btn-active-bg: rgba(70, 100, 112, .5);
+    --bs-btn-hover-color: #c2dde6;
+    --bs-btn-active-color: #c2dde6;
+}
+/* `light`/`dark` are Bootstrap's greys — pulled onto the same badge so they
+   don't punch a bright or flat-black hole in a row of forged pills. */
+.forge-menu-modal .btn-light,
+.forge-menu-modal .btn-outline-light {
+    --forge-btn-tint: var(--parchment);
+    --forge-btn-fill: 16%;
+    --forge-btn-edge: 28%;
+    --bs-btn-color: var(--parchment);
+    --bs-btn-hover-color: #e2d6bd;
+    --bs-btn-active-color: #e2d6bd;
+}
+.forge-menu-modal .btn-dark,
+.forge-menu-modal .btn-outline-dark {
+    --forge-btn-tint: #4a4238;
+    --forge-btn-fill: 16%;
+    --forge-btn-edge: 24%;
+    --bs-btn-color: var(--parchment-dim);
+    --bs-btn-hover-color: var(--parchment);
+    --bs-btn-active-color: var(--parchment);
+}
+/* Link buttons stay text: bronze, no cap, no plate. */
+.forge-menu-modal .btn-link {
+    --bs-btn-color: var(--bronze);
+    --bs-btn-hover-color: #d8b46a;
+    --bs-btn-active-color: #d8b46a;
+    --bs-btn-disabled-color: var(--parchment-dim);
 }
 
 /* Nav tabs / pills. */
@@ -373,7 +624,7 @@
 }
 .forge-menu-modal .nav-tabs .nav-link,
 .forge-menu-modal .nav-pills .nav-link {
-    font-family: "Cinzel", serif;
+    font-family: var(--forge-display);
     letter-spacing: .02em;
 }
 
@@ -447,12 +698,163 @@
     --bs-list-group-active-bg: rgba(110, 86, 32, .5);
     --bs-list-group-active-border-color: var(--bronze-dim);
 }
+/* ── Nested Bootstrap dialogs ────────────────────────────────
+   A few menu-hosted panels open a second dialog *inside* themselves — Opcje →
+   "Nadpisania dla wrogów", Aliasy/Triggery → the add/edit form. Those are
+   hand-rolled `.modal.show.d-block > .modal-dialog > .modal-content` markup, so
+   unlike the react-bootstrap ones (which portal to <body>, out of this scope)
+   they land inside `.forge-menu-modal` and pick up the scoped Bootstrap above.
+   That got them the palette but not the chrome: they still read as flat
+   Bootstrap cards sitting on top of a forged panel. These rules give them the
+   same shell MenuModal's `.forged.panel--modal` wears — the fine-grain-over-iron
+   ground, the inset bronze bevel, an ornamented head — so a sub-dialog reads as
+   a smaller plate of the same metal, not a foreign window.
+
+   Kept structural-only where Bootstrap already has an answer: the dialogs cap
+   their own height with `.modal-dialog-scrollable`, which is what keeps the
+   footer's Zapisz/Anuluj reachable when the body is long. */
 .forge-menu-modal .modal-content {
-    --bs-modal-bg: #0f0d0a;
+    --bs-modal-bg: transparent;
     --bs-modal-color: var(--parchment);
-    --bs-modal-border-color: var(--iron-hi);
-    --bs-modal-header-border-color: var(--iron-lo);
-    --bs-modal-footer-border-color: var(--iron-lo);
+    --bs-modal-border-color: var(--iron-lo);
+    --bs-modal-border-radius: 10px;
+    /* The head/foot rules below draw their own dividers (inset shadow / bronze
+       hairline), so Bootstrap's flat 1px borders would double them up. */
+    --bs-modal-header-border-width: 0;
+    --bs-modal-footer-border-width: 0;
+    background-color: #0a0a09;
+    background-image:
+        var(--tex-fine),
+        linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
+    background-blend-mode: soft-light, normal;
+    background-size: 130px 130px, 100% 100%;
+    box-shadow:
+        inset 0 1px 0 rgba(184, 150, 90, .16),
+        inset 0 0 0 1px rgba(0, 0, 0, .5),
+        0 18px 60px rgba(0, 0, 0, .6);
+}
+/* The bevel `.forged::after` draws on the shell — a bronze hairline inset from
+   the edge. `pointer-events: none` because it covers the whole dialog. */
+.forge-menu-modal .modal-content::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 6px;
+    border: 1px solid rgba(184, 150, 90, .2);
+    pointer-events: none;
+}
+/* Head: `.panel__head`'s spacing and its carved divider (a dark inset line lit
+   by a bronze one) instead of a flat border. */
+.forge-menu-modal .modal-header {
+    align-items: center;
+    gap: 9px;
+    padding: 11px 14px 9px;
+    box-shadow:
+        inset 0 -1px 0 rgba(0, 0, 0, .55),
+        inset 0 -2px 0 rgba(184, 150, 90, .06);
+}
+/* …and its bronze romb, as `.panel__head .orn` (same recipe as the hover
+   tooltip's header, which draws it from a pseudo-element too). */
+.forge-menu-modal .modal-header::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+    box-shadow: 0 0 6px rgba(184, 150, 90, .4);
+}
+/* Title: the shell's `.panel__title` voice — Cinzel is already set by the
+   headings rule above, so this is the tracking/size/caps half of it. */
+.forge-menu-modal .modal-title {
+    flex: 0 0 auto;
+    margin-right: auto;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+/* Close: forge's "×" glyph in place of Bootstrap's SVG cross, matching
+   `.forge-menu-modal__close`. */
+.forge-menu-modal .modal-header .btn-close {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    opacity: 1;
+    color: var(--parchment-dim);
+    font-family: "Cinzel", serif;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: color .15s ease, text-shadow .15s ease;
+}
+.forge-menu-modal .modal-header .btn-close::before {
+    content: "\00d7";
+}
+.forge-menu-modal .modal-header .btn-close:hover {
+    color: var(--bronze);
+    text-shadow: 0 0 8px rgba(184, 150, 90, .5);
+}
+/* Foot: `.forge-menu-modal__footer`'s inset rule and rhythm. */
+.forge-menu-modal .modal-footer {
+    margin: 0 8px 4px;
+    padding: 8px 6px 4px;
+    border-top: 1px solid var(--iron-lo);
+}
+/* The dim behind a sub-dialog is an inline style on `.modal` (rgba(0,0,0,.5));
+   the blur is forge's — it's what `.forge-menu-backdrop` puts behind the shell,
+   and it separates the two plates instead of stacking them flat. */
+.forge-menu-modal .modal.show {
+    backdrop-filter: blur(2px);
+}
+
+/* ── Portaled (react-bootstrap) sub-dialogs ──────────────────
+   The `<Modal>`-based sub-dialogs portal to <body>, so portaledModalScope.ts
+   tags the portal root itself with `.forge-menu-modal` — which is what carries
+   the theme down to everything inside it, chrome above included. What a tag on
+   the node can't inherit are the rules for the node itself, since every one of
+   them is written as a descendant selector; Bootstrap's own `.modal` /
+   `.modal-backdrop` layout is exactly that, so it's restated here.
+
+   z-index sits above `.forge-menu-backdrop` (5000): these open FROM a menu
+   modal, so they must land in front of the shell that spawned them, the way
+   Bootstrap's 1055 lands in front of stock's 1050. */
+.modal.forge-portaled-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 5100;
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    outline: 0;
+}
+.modal.forge-portaled-modal.show {
+    display: block;
+}
+/* Held for the single style flush in which portaledModalScope.ts themes a freshly
+   portaled dialog, so the switch from stock Bootstrap to forge lands as the
+   dialog's first painted state instead of animating into it — without this, the
+   buttons visibly fade white → forged over `.btn`'s .15s colour transition.
+   `.modal` (tagged, so not matched here) and `.modal-dialog` keep their
+   transitions: those carry Bootstrap's fade/slide-in, which should still play. */
+.forge-portaled-modal.forge-portal-priming *:not(.modal-dialog) {
+    transition: none !important;
+}
+
+/* The backdrop is forge's own — same dim and blur as `.forge-menu-backdrop`,
+   rather than Bootstrap's flat 50% black. */
+.modal-backdrop.forge-portaled-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 5090;
+    background: rgba(6, 5, 4, .62);
+    backdrop-filter: blur(2px);
 }
 
 /* Settings-section cards (Interfejs / Opcje masonry): _stock-settings.scss gives

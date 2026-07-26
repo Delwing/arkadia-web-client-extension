@@ -185,10 +185,18 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Bindowanie</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="binds-import-btn">Importuj bazę multibindów…</button>
+                        <span id="binds-import-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <div id="binds-options"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary me-auto" id="binds-add-custom">Dodaj skrót</button>
+                    <button type="button" class="btn btn-primary" id="binds-save">Zapisz</button>
                 </div>
             </div>
         </div>
@@ -413,59 +421,6 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="ui-settings-save">Zapisz</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="add-plugin-code-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Dodaj plugin z kodu</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="plugin-code-name" class="form-label">Nazwa pluginu (opcjonalnie)</label>
-                        <input type="text" class="form-control" id="plugin-code-name" placeholder="Moja wtyczka" autocomplete="off">
-                    </div>
-                    <div>
-                        <label for="plugin-code-input" class="form-label">Kod JavaScript</label>
-                        <textarea class="form-control" id="plugin-code-input" rows="15" placeholder="export async function init(api) { ... }" autocomplete="off" style="font-family: monospace; font-size: 0.9em;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="button" class="btn btn-primary" id="plugin-code-submit">Dodaj plugin</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="ai-plugin-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Wygeneruj plugin z AI</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted">Opisz czego ma dokonywać plugin, skopiuj wygenerowany prompt i wklej go do wybranego czatu AI (np. Claude, ChatGPT). AI zwróci kod w bloku kodu — użyj przycisku kopiowania przy tym bloku, a następnie wklej go w oknie "Wklej kod".</p>
-                    <div class="mb-3">
-                        <label for="ai-plugin-description" class="form-label">Co ma robić ten plugin?</label>
-                        <textarea class="form-control" id="ai-plugin-description" rows="4" placeholder="Np. podswietl na czerwono linie zawierajace moje imie" autocomplete="off"></textarea>
-                    </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-primary" id="ai-plugin-copy">Kopiuj prompt</button>
-                        <a href="https://claude.ai/new" target="_blank" rel="noopener" class="btn btn-outline-secondary">Otwórz Claude</a>
-                        <a href="https://chatgpt.com/" target="_blank" rel="noopener" class="btn btn-outline-secondary">Otwórz ChatGPT</a>
-                    </div>
-                    <div id="ai-plugin-copy-status" class="mt-2 text-success" style="display:none;">Skopiowano do schowka!</div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
-                    <button type="button" class="btn btn-success" id="ai-plugin-goto-paste">Mam kod, wklej go</button>
                 </div>
             </div>
         </div>

@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import type Client from '@client/Client';
 import MenuModal from './MenuModal';
+import { holdPortaledModalScope } from './portaledModalScope';
 import { getHelperConnection } from '../../client/bootstrap';
 
 // The stock settings panels are lazy-loaded to keep their weight out of forge's
@@ -130,6 +131,20 @@ const TITLES: Record<ModalKey, string> = {
     docs: 'Dokumentacja',
 };
 
+/**
+ * Panels whose body scrolls *internally* — they fill the shell and scroll a
+ * region inside themselves (a tabbed settings form, an export/import pane) rather
+ * than letting the modal body scroll as one block. Their layout hangs off a
+ * percentage-height (`h-100`) chain that only resolves against a *definite*-height
+ * ancestor; forge's default `max-height: 92vh` shell is content-sized (indefinite),
+ * so without this flag the inner scroller balloons to full content height and gets
+ * clipped by its `overflow: hidden` wrapper — no scrollbar, content unreachable.
+ * The `fill` flag gives these a definite full-height shell (matching the stock
+ * dialogs these components were authored against, which carry `h-100`). Flowing
+ * panels stay content-sized so short ones don't stretch into a tall empty box.
+ */
+const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'export-import', 'radial']);
+
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // The two dense settings panels flow their sections into a 2–3 column
     // masonry (see .ui-settings-layout in stock-settings.css); give them the
@@ -187,6 +202,28 @@ function DocsBody() {
     return <div ref={ref} className="forge-docs-host" style={{ minHeight: 0, flex: '1 1 auto', display: 'flex', flexDirection: 'column' }} />;
 }
 
+/** The Bindowanie modal's import trigger, hosted in the title bar. It drives the
+ *  shared <Binds/> body through a window event and reflects the parsing state the
+ *  body broadcasts back (disabled + label swap), matching the stock header button. */
+function BindsImportButton() {
+    const [parsing, setParsing] = useState(false);
+    useEffect(() => {
+        const onParsing = (ev: Event) => setParsing(!!(ev as CustomEvent<boolean>).detail);
+        window.addEventListener('binds-parsing', onParsing);
+        return () => window.removeEventListener('binds-parsing', onParsing);
+    }, []);
+    return (
+        <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={parsing}
+            onClick={() => window.dispatchEvent(new Event('binds-open-import'))}
+        >
+            {parsing ? 'Wczytywanie…' : 'Importuj bazę multibindów…'}
+        </button>
+    );
+}
+
 interface MenuModalEntryProps {
     modalKey: ModalKey;
     /** True for the front-most modal; only it responds to Esc. */
@@ -202,6 +239,7 @@ interface MenuModalEntryProps {
 function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey }: MenuModalEntryProps) {
     const title = TITLES[modalKey];
     const size = SIZE[modalKey] ?? 'lg';
+    const fill = FILL_MODALS.has(modalKey);
 
     // Footer Save buttons — only the two panels that carry one in the stock UI.
     let footer: ReactNode = null;
@@ -225,6 +263,25 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
                 Zapisz
             </button>
         );
+    } else if (modalKey === 'binds') {
+        footer = (
+            <>
+                <button
+                    type="button"
+                    className="btn btn-secondary me-auto"
+                    onClick={() => window.dispatchEvent(new Event('binds-add-custom'))}
+                >
+                    Dodaj skrót
+                </button>
+                <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => window.dispatchEvent(new Event('binds-save'))}
+                >
+                    Zapisz
+                </button>
+            </>
+        );
     }
 
     // The options panel offers export/import + character shortcuts in its header.
@@ -242,6 +299,8 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
                 </button>
             </>
         );
+    } else if (modalKey === 'binds') {
+        headerExtras = <BindsImportButton />;
     }
 
     let body: ReactNode;
@@ -316,6 +375,7 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
             <MenuModal
                 title={title}
                 size={size}
+                fill={fill}
                 onClose={onClose}
                 closeOnEsc={isTop}
                 dialogId={modalKey === 'ui' ? 'ui-settings-modal' : undefined}
@@ -359,6 +419,14 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
     useEffect(() => {
         if (!open) return;
         void import('./scopedModalCss').then((m) => m.injectScopedModalCss());
+    }, [open]);
+
+    // Several panels open a react-bootstrap <Modal> as a sub-dialog; those portal
+    // to <body>, outside every `.forge-menu-modal …` selector. Tag them so the
+    // stylesheet above reaches them. See portaledModalScope.ts.
+    useEffect(() => {
+        if (!open) return;
+        return holdPortaledModalScope();
     }, [open]);
 
     if (!open) return null;

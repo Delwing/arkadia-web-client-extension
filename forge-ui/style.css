@@ -12,6 +12,17 @@
   --parchment: #cdbfa3;
   --parchment-dim: #8f836c;
 
+  /* Rim for interactive controls — text inputs, selects, checkboxes, radios,
+     switches, neutral buttons. NOT --iron-lo: that is the *panel edge* colour,
+     read as a shadow gap against the lit backdrop, which is right for a frame
+     but leaves a control's own dark fill with no visible edge when it sits on
+     an equally dark card. This is a low-alpha warm bronze — it composites to
+     roughly --iron-hi over any forge surface (so it still reads as forged iron,
+     not a drawn outline), stays in the bronze family that focus/hover escalate
+     into, and survives translucent panel backgrounds. */
+  --control-rim: rgba(184, 150, 90, .30);
+  --control-rim-hover: rgba(184, 150, 90, .5);
+
   --blood: #5c221b;
   --moss:  #3c4626;
   --slate: #26333f;

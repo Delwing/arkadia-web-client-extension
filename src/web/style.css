@@ -166,6 +166,12 @@
   --bs-emphasis-color: var(--popup-text-strong);
   --bs-link-color: var(--popup-accent);
   --bs-link-hover-color: var(--popup-accent);
+  /* Dock chrome accents (src/web/layout/layout.css). Same values the `--bs-*`
+     aliases above carry — the layout tokens exist so shared layout CSS does not
+     have to assume Bootstrap is loaded. --layout-warning keeps Bootstrap's
+     #ffc107 via the inline fallback. */
+  --layout-accent: var(--popup-accent);
+  --layout-muted: var(--popup-text-subtle);
   color: var(--text-primary);
   background-color: var(--surface-base);
   font-synthesis: none;

@@ -899,6 +899,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // The Bindowanie modal's import trigger lives in its title bar and Save in its
+    // footer (both outside the scrollable body). They drive the shared <Binds/>
+    // body through window events; Binds broadcasts its parsing state back so the
+    // title-bar button can disable itself and show a spinner.
+    const bindsImportButton = document.getElementById('binds-import-btn') as HTMLButtonElement | null;
+    const bindsImportSpinner = document.getElementById('binds-import-spinner');
+    if (bindsImportButton) {
+        bindsImportButton.addEventListener('click', () => {
+            window.dispatchEvent(new Event('binds-open-import'));
+        });
+    }
+    window.addEventListener('binds-parsing', (ev) => {
+        const parsing = (ev as CustomEvent<boolean>).detail;
+        if (bindsImportButton) bindsImportButton.disabled = parsing;
+        bindsImportSpinner?.classList.toggle('d-none', !parsing);
+    });
+    const bindsSave = document.getElementById('binds-save') as HTMLButtonElement | null;
+    if (bindsSave) {
+        bindsSave.addEventListener('click', () => {
+            window.dispatchEvent(new Event('binds-save'));
+        });
+    }
+    const bindsAddCustom = document.getElementById('binds-add-custom') as HTMLButtonElement | null;
+    if (bindsAddCustom) {
+        bindsAddCustom.addEventListener('click', () => {
+            window.dispatchEvent(new Event('binds-add-custom'));
+        });
+    }
+
     if (npcButton) {
         npcButton.addEventListener('click', () => {
             eventBus.emit('packageReceiver.popup.open');

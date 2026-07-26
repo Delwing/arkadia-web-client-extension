@@ -165,19 +165,24 @@ export default function Menu() {
             </button>
 
             {open && (
-                <ul className="forge-menu__list">
-                    {ITEMS.map((item, i) =>
-                        item.kind === 'divider' ? (
-                            <li key={i} className="forge-menu__divider" />
-                        ) : (
-                            <li key={i}>
-                                <button type="button" className="forge-menu__item" onClick={() => onItem(item)}>
-                                    {item.label}
-                                </button>
-                            </li>
-                        ),
-                    )}
-                </ul>
+                // Shell + inner scroller mirror the context menu's structure: the
+                // shell paints the forged frame (and its bevel ring), the inner
+                // list scrolls, so the ring stays pinned instead of scrolling away.
+                <div className="forge-menu__list">
+                    <ul className="forge-menu__items">
+                        {ITEMS.map((item, i) =>
+                            item.kind === 'divider' ? (
+                                <li key={i} className="forge-menu__divider" />
+                            ) : (
+                                <li key={i}>
+                                    <button type="button" className="forge-menu__item" onClick={() => onItem(item)}>
+                                        {item.label}
+                                    </button>
+                                </li>
+                            ),
+                        )}
+                    </ul>
+                </div>
             )}
 
             <MenuModalHost

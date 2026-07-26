@@ -34,6 +34,15 @@ $component-active-bg: #8a6d3b; // bronze-dim — checked boxes / active accents
 $font-family-base: "EB Garamond", Georgia, serif;
 $headings-font-family: "Cinzel", serif;
 $input-bg: rgba(20, 18, 15, 0.85);
+// Control rims. Bootstrap points every form-control / form-select / check /
+// radio / switch / input-group rim at `var(--bs-border-color)`, which menu.css
+// maps to --iron-lo — the panel-edge colour, invisible where a control's dark
+// fill meets a dark card, so the fields dissolved into the background. Point
+// them at forge's control rim instead (style.css), leaving --bs-border-color
+// free to stay dark for the structural borders it also drives (hr, tables,
+// cards, list groups) where a shadow gap is the intended look.
+$input-border-color: var(--control-rim); // also feeds select + input-group addon
+$form-check-input-border: var(--bs-border-width) solid var(--control-rim);
 $form-range-thumb-bg: #b8965a; // bronze
 $form-range-thumb-active-bg: #8a6d3b; // bronze-dim
 $focus-ring-color: rgba(110, 86, 32, 0.35);
@@ -53,8 +62,15 @@ $enable-shadows: false;
 @layer forge-modal-bootstrap {
     // Theme variables. root.scss emits `:root, [data-bs-theme=light]` plus a
     // `[data-bs-theme=dark]` block — kept UNNESTED so those selectors stay valid
-    // (they target <html>/the attribute, never a modal descendant). The vars are
-    // harmless globally: only `.forge-menu-modal` descendants read `var(--bs-*)`.
+    // (they target <html>/the attribute, never a modal descendant).
+    //
+    // CAUTION: the `:root` block therefore DOES land globally, and it carries
+    // Bootstrap's LIGHT defaults (`--bs-body-bg: #fff`, `--bs-body-color:
+    // #212529`) into forge the moment this sheet loads. Shared CSS outside the
+    // modal must not read `var(--bs-*)` and expect the forge palette — use the
+    // `--popup-*` / forge tokens instead. (The herb text window in
+    // src/web/popups/popups.css used to read `--bs-body-bg` and rendered white
+    // ANSI text on a white body here.)
     @import "bootstrap/scss/root";
 
     // Referenced by the map version badge in _stock-settings; keyframes can't be
@@ -113,8 +129,36 @@ $enable-shadows: false;
         // Stock (non-Bootstrap) Logi (LogBrowser) layout classes, scoped alongside.
         @import "stock-logs";
 
+        // Stock (non-Bootstrap) alias/trigger list-card classes, shared by the
+        // Aliasy and Triggery lists, scoped alongside.
+        @import "stock-alias-list";
+
         // Stock (non-Bootstrap) "Lista obiektow" documentation + object-card
         // component classes, scoped alongside (Dokumentacja → Lista obiektow).
         @import "stock-object-list-doc";
+    }
+
+    // ── The portal-root gap ─────────────────────────────────
+    // react-bootstrap sub-dialogs portal to <body>, so portaledModalScope.ts
+    // puts the scope class on the `.modal` node itself. That styles everything
+    // INSIDE it, but never the node itself: a scoped sheet can only ever emit
+    // `.forge-menu-modal .modal`, which needs the scope on an ancestor.
+    // Bootstrap declares the `--bs-modal-*` tokens exactly there — so without
+    // this the dialog inherits no width, no margin and no padding, and stretches
+    // edge-to-edge across the viewport. Restated here from Bootstrap's own Sass
+    // variables so they track the theme rather than freezing today's numbers.
+    // (Its layout properties are the same gap; those live in menu.css, next to
+    // forge's other modal chrome.) Appearance tokens — bg, border, radii, the
+    // header/footer rules — are forge's anyway, set on `.modal-content` there.
+    .modal.forge-portaled-modal {
+        --bs-modal-width: #{$modal-md};
+        --bs-modal-margin: #{$modal-dialog-margin};
+        --bs-modal-padding: #{$modal-inner-padding};
+        --bs-modal-header-padding-x: #{$modal-header-padding-x};
+        --bs-modal-header-padding-y: #{$modal-header-padding-y};
+        --bs-modal-header-padding: #{$modal-header-padding};
+        --bs-modal-title-line-height: #{$modal-title-line-height};
+        --bs-modal-footer-gap: #{$modal-footer-margin-between};
+        --bs-modal-inner-border-radius: #{$modal-content-inner-border-radius};
     }
 }

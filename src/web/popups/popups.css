@@ -405,9 +405,14 @@
   font-family: monospace;
 }
 
+/* Uses the popup surface tokens rather than Bootstrap's `--bs-body-*`: in the
+   stock UI those are aliases of --popup-bg/--popup-text anyway, but forge does
+   not load Bootstrap globally, so the herb window used to fall through to
+   Bootstrap's light-theme `:root` defaults (white bg) that the scoped modal
+   stylesheet leaks — white ANSI text on a white body. */
 .herb-text-window-body {
   overflow: auto;
-  background: var(--bs-body-bg, #0f0f0f);
+  background: var(--popup-bg, #0f0f0f);
 }
 
 .herb-text-content {
@@ -416,7 +421,7 @@
   line-height: 1.4;
   white-space: pre-wrap;
   font-family: var(--output-font-family), monospace;
-  color: var(--bs-body-color, var(--popup-input-text));
+  color: var(--popup-text, var(--popup-input-text));
 }
 
 .herb-text-content [data-output-clickable] {
@@ -2678,13 +2683,18 @@
   justify-content: center;
 }
 
-.people-browser__item-actions button {
+/* Bare glyph button (edit / restore) — no plate, just the icon. */
+.people-browser__item-edit {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   color: var(--popup-text-dim);
   font-size: 0.9rem;
   line-height: 1;
 }
 
-.people-browser__item-actions button:hover {
+.people-browser__item-edit:hover {
   color: var(--popup-text-strong);
 }
 
@@ -2736,6 +2746,22 @@
   align-items: center;
 }
 
+.people-browser__local-only-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--popup-text-medium);
+  cursor: pointer;
+}
+
+.people-browser__local-only-label input {
+  margin: 0;
+  accent-color: var(--popup-accent);
+  cursor: pointer;
+}
+
 .people-browser__pagination {
   display: flex;
   justify-content: center;
@@ -2770,6 +2796,171 @@
   margin: 0 0.5rem;
   font-size: 0.7rem;
   color: var(--popup-text-dim);
+}
+
+/* ── people browser: add / edit dialog ─────────────────────────────────────
+   Portaled to <body> (see PersonEditModal), so it covers the viewport rather
+   than the popup that opened it. Token-driven like the rest of the popup — it
+   used to be raw Bootstrap markup, which left it completely unstyled in any UI
+   that doesn't load Bootstrap globally. */
+.people-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.people-modal__dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 500px;
+  max-height: 100%;
+  background-color: var(--popup-section-bg);
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5);
+  color: var(--popup-text);
+}
+
+.people-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--popup-border);
+}
+
+.people-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--popup-text-bright);
+}
+
+.people-modal__close {
+  background: none;
+  border: 0;
+  padding: 0 0.25rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--popup-text-dim);
+}
+
+.people-modal__close:hover {
+  color: var(--popup-text-bright);
+}
+
+.people-modal__body {
+  padding: 0.85rem;
+  overflow-y: auto;
+}
+
+.people-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.85rem;
+}
+
+.people-modal__field:last-child {
+  margin-bottom: 0;
+}
+
+.people-modal__label {
+  font-size: 0.8rem;
+  color: var(--popup-text-medium);
+}
+
+.people-modal__hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--popup-text-dim);
+}
+
+/* The "this entry was edited locally" recap block. */
+.people-modal__original {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 0.35rem;
+  background-color: var(--popup-subtle-bg);
+  font-size: 0.8rem;
+}
+
+.people-modal__color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.people-modal__color {
+  width: 3rem;
+  height: 1.9rem;
+  padding: 2px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 0.25rem;
+  background-color: var(--popup-control-bg);
+  cursor: pointer;
+}
+
+.people-modal__footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-top: 1px solid var(--popup-border);
+}
+
+.people-modal__footer-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Outline variants of the shared popup-btn: the "not marked yet" state of the
+   enemy / ally / ignore toggles, so the filled variant reads as "marked". */
+.people-modal__btn--danger-outline {
+  background-color: transparent;
+  border-color: var(--popup-danger-border);
+  color: var(--popup-danger);
+}
+
+.people-modal__btn--danger-outline:hover {
+  background-color: var(--popup-danger-bg);
+  color: var(--popup-danger-light);
+}
+
+.people-modal__btn--success-outline {
+  background-color: transparent;
+  border-color: var(--popup-success-border);
+  color: var(--popup-success);
+}
+
+.people-modal__btn--success-outline:hover {
+  background-color: var(--popup-success-bg);
+  color: var(--popup-success-light);
+}
+
+.people-modal__btn--warning-outline {
+  background-color: transparent;
+  border-color: var(--popup-warning-border);
+  color: var(--popup-warning);
+}
+
+.people-modal__btn--warning-outline:hover {
+  background-color: var(--popup-warning-bg);
+  color: var(--popup-warning-light);
 }
 
 /* ── walker ──────────────────────────────────────────────────────────── */

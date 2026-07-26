@@ -103,6 +103,15 @@ function label(bind: Bind) {
     return parts.join('+');
 }
 
+/** Drops incomplete custom shortcuts (missing a key or a command) so an empty
+ *  row left behind by "Dodaj skrót" is never persisted. */
+function sanitizeBinds(binds: BindSettings): BindSettings {
+    return {
+        ...binds,
+        custom: binds.custom.filter(b => b.command.trim() !== '' && b.key !== ''),
+    };
+}
+
 function Binds() {
     const [binds, setBinds] = useState<BindSettings>(defaultBinds);
     const [keymapList, setKeymapList] = useState<Keymap[]>([]);
@@ -459,6 +468,7 @@ function Binds() {
     }
 
     function addCustomBind() {
+        shouldScrollToNewCustom.current = true;
         setBinds(prev => ({ ...prev, custom: [...prev.custom, { key: '', command: '' }] }));
     }
 
@@ -470,13 +480,13 @@ function Binds() {
     }
 
     function save() {
-        saveKeymapBinds(selectedKeymapId, binds);
+        saveKeymapBinds(selectedKeymapId, sanitizeBinds(binds));
         window.dispatchEvent(new Event('close-options'));
     }
 
     function handleKeymapSwitch(keymapId: string) {
         // Save current edits to the current keymap before switching
-        saveKeymapBinds(selectedKeymapId, binds);
+        saveKeymapBinds(selectedKeymapId, sanitizeBinds(binds));
 
         setSelectedKeymapId(keymapId);
         const store = getKeymapStore();
@@ -490,7 +500,7 @@ function Binds() {
 
     function handleCreateKeymap() {
         // Save current edits first
-        saveKeymapBinds(selectedKeymapId, binds);
+        saveKeymapBinds(selectedKeymapId, sanitizeBinds(binds));
         // Create new keymap carrying over currently shown bindings
         const newKeymap = createKeymap('Nowa mapa klawiszy', binds);
         // Switch to the new keymap
@@ -540,6 +550,48 @@ function Binds() {
         setBinds(restored);
         setShowRestoreConfirm(false);
     }
+
+    // The import trigger sits in the modal's title bar and Save in its footer, so
+    // both stay visible while the bind list scrolls. Each shell (stock Bootstrap,
+    // forge MenuModal) hosts its own chrome and reaches these handlers through
+    // window events; refs keep the listeners bound to the latest closures without
+    // re-subscribing on every keystroke. Parsing state is broadcast back so the
+    // title-bar button can reflect its disabled/spinner state.
+    const handleImportClickRef = useRef(handleImportClick);
+    handleImportClickRef.current = handleImportClick;
+    const saveRef = useRef(save);
+    saveRef.current = save;
+    const addCustomBindRef = useRef(addCustomBind);
+    addCustomBindRef.current = addCustomBind;
+    useEffect(() => {
+        const onImport = () => handleImportClickRef.current();
+        const onSave = () => saveRef.current();
+        const onAddCustom = () => addCustomBindRef.current();
+        window.addEventListener('binds-open-import', onImport);
+        window.addEventListener('binds-save', onSave);
+        window.addEventListener('binds-add-custom', onAddCustom);
+        return () => {
+            window.removeEventListener('binds-open-import', onImport);
+            window.removeEventListener('binds-save', onSave);
+            window.removeEventListener('binds-add-custom', onAddCustom);
+        };
+    }, []);
+    useEffect(() => {
+        window.dispatchEvent(new CustomEvent('binds-parsing', { detail: isParsingDb }));
+    }, [isParsingDb]);
+
+    // After "Dodaj skrót" (fired from the footer) appends a row, bring it into
+    // view and focus its command input so the user can type straight away.
+    const lastCustomRowRef = useRef<HTMLTableRowElement | null>(null);
+    const shouldScrollToNewCustom = useRef(false);
+    useEffect(() => {
+        if (!shouldScrollToNewCustom.current) return;
+        shouldScrollToNewCustom.current = false;
+        const row = lastCustomRowRef.current;
+        if (!row) return;
+        row.scrollIntoView({ block: 'nearest' });
+        row.querySelector('input')?.focus();
+    }, [binds.custom.length]);
 
     return (
         <div className="m-2 d-flex flex-column gap-2">
@@ -640,10 +692,6 @@ function Binds() {
                     )}
                 </Modal.Footer>
             </Modal>
-            <div className="d-flex align-items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={handleImportClick} disabled={isParsingDb}>Importuj bazę multibindów…</Button>
-                {isParsingDb && <Spinner animation="border" size="sm" role="status" />}
-            </div>
             {importError && !showImportModal && (
                 <Alert variant="danger" className="mb-0">{importError}</Alert>
             )}
@@ -1118,7 +1166,7 @@ function Binds() {
                             </td>
                         </tr>
                         {binds.custom.map((b, idx) => (
-                            <tr key={idx}>
+                            <tr key={idx} ref={idx === binds.custom.length - 1 ? lastCustomRowRef : undefined}>
                                 <td>
                                     <Form.Control
                                         type="text"
@@ -1145,14 +1193,8 @@ function Binds() {
                                 </td>
                             </tr>
                         ))}
-                        <tr>
-                            <td colSpan={2}>
-                                <Button size="sm" onClick={addCustomBind}>Dodaj skrót</Button>
-                            </td>
-                        </tr>
                     </tbody>
                 </Table>
-                <Button className="mt-2 w-auto" onClick={save}>Zapisz</Button>
             </fieldset>
         </div>
     );
