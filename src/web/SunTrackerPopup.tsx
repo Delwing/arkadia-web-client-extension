@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import eventBus from '@modules/core/eventBus';
@@ -545,9 +546,21 @@ const SunTrackerPopup: React.FC = () => {
                         </div>
                     ))}
                 </div>
-                {editCell && (
+                {/* The three overlays below are `position: fixed` at viewport
+                    coordinates, so they must live at <body> level. An alternative
+                    UI (forge) puts a `filter` on `.dockable-popup-body`, which
+                    makes that element the containing block for fixed descendants:
+                    rendered in place they'd be offset by the popup's own origin
+                    AND — since the body scrolls (`overflow: auto`) — would inflate
+                    its scroll area, toggling scrollbars that reflow the day grid
+                    under the cursor (enter/leave/enter → visible flicker).
+                    `data-popup-overlay` keeps a click inside them from closing the
+                    popup (useDockablePopup's outside-click guard) and carries the
+                    `--popup-*` theming outside the panel. */}
+                {editCell && createPortal((
                     <div
                         ref={editRef}
+                        data-popup-overlay
                         style={{
                             position: 'fixed',
                             left: editCell.x,
@@ -612,10 +625,11 @@ const SunTrackerPopup: React.FC = () => {
                             Zakres od dnia {editCell.dayOfYear}...
                         </button>
                     </div>
-                )}
-                {rangeEdit && (
+                ), document.body)}
+                {rangeEdit && createPortal((
                     <div
                         ref={rangeRef}
+                        data-popup-overlay
                         style={{
                             position: 'fixed',
                             left: rangeEdit.x,
@@ -673,7 +687,7 @@ const SunTrackerPopup: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                )}
+                ), document.body)}
                 {hoverDay && activeClock && (() => {
                     const dayData = eventIndex[hoverDay.dayOfYear];
                     const mr = monthRanges.find(m => hoverDay.dayOfYear >= m.startDay && hoverDay.dayOfYear < m.startDay + m.length);
@@ -683,8 +697,8 @@ const SunTrackerPopup: React.FC = () => {
                     const srTime = predictRealTime(activeClock, hoverDay.dayOfYear, srHour, yearLength);
                     const ssTime = predictRealTime(activeClock, hoverDay.dayOfYear, ssHour, yearLength);
                     if (!srTime && !ssTime) return null;
-                    return (
-                        <div style={{
+                    return createPortal((
+                        <div data-popup-overlay style={{
                             position: 'fixed',
                             left: hoverDay.x,
                             top: hoverDay.y - 4,
@@ -711,7 +725,7 @@ const SunTrackerPopup: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                    );
+                    ), document.body);
                 })()}
             </div>
         </DockablePopupWrapper>
