@@ -352,6 +352,12 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   --popup-input-text: var(--parchment);
   --popup-input-focus-border: var(--bronze-dim);
   --output-font-family: "JetBrains Mono", ui-monospace, monospace;
+  /* Match forge's game-output size (#main_text_output_msg_wrapper is 12.5px).
+     forge doesn't inherit stock's :root default and never runs the stock
+     UiSettings apply that syncs this var, so without it popups that render text
+     at `var(--output-font-size, 0.875rem)` (chat, combat log, letters…) fell
+     back to 0.875rem/14px and read LARGER than the game log. */
+  --output-font-size: 12.5px;
 
   /* status + data hues, re-tinted for the forge world */
   --popup-success: #8fa15f;
