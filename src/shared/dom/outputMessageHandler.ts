@@ -85,7 +85,11 @@ function applyMessageTypeVisibility() {
     }
 }
 
-function createTimestampElement(timestamp: number): HTMLSpanElement {
+// Exported so hosts with their own message shape (forge-ui's `<p>` lines) can
+// emit the same `.output-timestamp` / `.output-message-type` spans the shared
+// toggle classes (`output-show-*`) key off — keeping one source of truth for the
+// class names, time formatting, and hover tooltips across both UIs.
+export function createTimestampElement(timestamp: number): HTMLSpanElement {
     const timestampEl = document.createElement('span');
     timestampEl.classList.add('output-timestamp');
     timestampEl.textContent = formatTimestamp(timestamp);
@@ -94,7 +98,7 @@ function createTimestampElement(timestamp: number): HTMLSpanElement {
     return timestampEl;
 }
 
-function createMessageTypeElement(type: string | undefined): HTMLSpanElement {
+export function createMessageTypeElement(type: string | undefined): HTMLSpanElement {
     const typeEl = document.createElement('span');
     typeEl.classList.add('output-message-type');
     const label = type && type.length > 0 ? type : '—';

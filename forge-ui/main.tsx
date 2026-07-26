@@ -32,6 +32,8 @@ import './buttons-theme.css';
 // reconnect chip.
 import './components/login.css';
 import { createRoot } from 'react-dom/client';
+import { getRenderSettings, onRenderSettingsChange } from '@modules/core/settings';
+import { setOutputTimestampVisibility } from '@shared/dom/outputMessageHandler';
 import {
     setDockingSupported,
     setRailSpanSupported,
@@ -73,6 +75,16 @@ saveLayoutState({
     enabled: true,
     enabledPanels: { objectList: true },
     spanningDocks: 'leftRight',
+});
+
+// The output timestamp toggle persists (shared render setting, same key as the
+// stock UI); message-type visibility is session-only. Seed the shared engine's
+// timestamp visibility before the log mounts so the persisted choice applies on
+// load, and keep it in sync if the setting changes elsewhere. The right-click
+// output menu (see GameLog.tsx) drives both toggles at runtime.
+setOutputTimestampVisibility(getRenderSettings().showTimestamps);
+onRenderSettingsChange((render) => {
+    setOutputTimestampVisibility(render.showTimestamps);
 });
 
 const client = createClient();

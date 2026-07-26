@@ -11,15 +11,15 @@ const POPUP_ID = 'popup:combatStatus';
 const COVER_MAX = 5;
 const ORDER_MAX = 15;
 
-/** On/off pill: a coloured LED, optionally followed by a short state word. */
+/** On/off pill: an optional short state word, followed by a coloured LED. */
 function StatToggle({ on, onWord, offWord }: { on: boolean | null; onWord?: string; offWord?: string }) {
     const key = on === null ? 'unknown' : on ? 'on' : 'off';
     const showWord = onWord !== undefined && offWord !== undefined;
     const word = on === null ? '—' : on ? onWord : offWord;
     return (
         <span className={`cs-toggle cs-toggle--${key}`}>
-            <span className="cs-led" />
             {showWord && <span className="cs-word">{word}</span>}
+            <span className="cs-led" />
         </span>
     );
 }
@@ -137,7 +137,7 @@ const CombatStatusPopup: React.FC = () => {
                 <span className="cs-label">Rozkaz</span>
                 {isLeader
                     ? <StatBar left={order} max={ORDER_MAX} />
-                    : <span className="cs-toggle cs-toggle--unknown"><span className="cs-led" /><span className="cs-word">{'—'}</span></span>}
+                    : <span className="cs-toggle cs-toggle--unknown"><span className="cs-word">{'—'}</span><span className="cs-led" /></span>}
             </div>
         </DockablePopupWrapper>
     );

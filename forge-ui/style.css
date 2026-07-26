@@ -284,6 +284,64 @@ body::after {
    saturation so the colors sit in the muted forge world. */
 #main_text_output_msg_wrapper p { margin: 0; filter: saturate(.5); }
 #main_text_output_msg_wrapper p.t-command { color: #c9a86a; }
+
+/* Per-line metadata gutter: a timestamp and a message-type tag leading each
+   output line, hidden until the shared engine toggles the matching
+   `output-show-*` class onto the wrapper / sticky area (driven by the output
+   right-click menu — see GameLog.tsx).
+
+   Layout mirrors stock's `.output_msg_text`: each line is a baseline-aligned
+   flex row, and the content column is `flex:1` (min-width:0 so it can shrink and
+   wrap). That keeps the timestamp/type as fixed left columns and — crucially —
+   makes wrapped body text stay under the content column rather than flowing back
+   under the gutter. Hidden gutter spans are `display:none`, so they drop out of
+   the flex flow entirely and a line without metadata reads exactly as before. */
+#main_text_output_msg_wrapper p,
+#sticky-area p {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+}
+#main_text_output_msg_wrapper p > .output_msg_content,
+#sticky-area p > .output_msg_content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Gutter spans: forged to sit quietly in the muted world — monospace, dimmed,
+   timestamps tabular so they form a clean left rule. */
+#main_text_output_msg_wrapper .output-timestamp,
+#sticky-area .output-timestamp,
+#main_text_output_msg_wrapper .output-message-type,
+#sticky-area .output-message-type {
+  display: none;
+  flex: 0 0 auto;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .82em;
+  user-select: none;
+}
+#main_text_output_msg_wrapper .output-timestamp,
+#sticky-area .output-timestamp {
+  color: var(--bronze-dim);
+  font-variant-numeric: tabular-nums;
+}
+#main_text_output_msg_wrapper .output-message-type,
+#sticky-area .output-message-type {
+  width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--parchment-dim);
+  opacity: .85;
+}
+#main_text_output_msg_wrapper.output-show-timestamps .output-timestamp,
+#sticky-area.output-show-timestamps .output-timestamp {
+  display: block;
+}
+#main_text_output_msg_wrapper.output-show-message-types .output-message-type,
+#sticky-area.output-show-message-types .output-message-type {
+  display: block;
+}
 #content-width-measure {
   visibility: hidden; position: absolute; white-space: pre;
   font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;

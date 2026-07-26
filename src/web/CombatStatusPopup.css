@@ -66,7 +66,7 @@
   white-space: nowrap;
 }
 
-/* boolean state: LED + short mono word, right-aligned */
+/* boolean state: short mono word + LED, right-aligned */
 .cs-toggle {
   display: inline-flex;
   align-items: center;
@@ -98,7 +98,7 @@
 }
 .cs-toggle--off .cs-led {
   background: #8a3b2c;
-  box-shadow: 0 0 4px rgba(138, 59, 44, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 5px rgba(138, 59, 44, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
 /* cooldown charge bar: fills toward full as the timer runs down */
