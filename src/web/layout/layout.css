@@ -1,5 +1,21 @@
 /* Layout Manager Styles */
 
+/* ── Dock chrome accent tokens ──────────────────────────────────────────────
+   Resize handles, drop previews, splitters, the active tab underline and the
+   empty-leaf placeholder paint with `--layout-accent` / `--layout-warning` /
+   `--layout-muted`. Each shell maps them to its own palette at `:root` (stock:
+   src/web/style.css; forge: forge-ui/layout-theme.css); the inline fallbacks
+   below are the last resort.
+
+   These used to read Bootstrap's `--bs-primary` / `--bs-warning` /
+   `--bs-secondary-color` directly, which only holds in a UI that loads
+   Bootstrap globally. forge does not: it had to shadow `--bs-primary` at
+   `:root` to get bronze splitters, and `--bs-secondary-color` — which it never
+   shadowed — sat on the #888 fallback until forge's scoped modal stylesheet
+   leaked Bootstrap's light `:root` defaults, turning the placeholder text
+   near-black on the forged dark plate. Shared layout CSS must not depend on
+   `--bs-*`. */
+
 /* When layout manager is enabled, use CSS Grid for content area.
    Default ("horizontal") priority: top/bottom span the full width, left/right
    are sandwiched in the central band. */
@@ -326,7 +342,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
 
 .resize-handle:hover,
 .resize-handle--active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
   opacity: 0.5;
 }
 
@@ -380,7 +396,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
 
 .slot-resize-handle:hover,
 .slot-resize-handle--active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
 }
 
 /* TOP dock: slots are side by side, so slot resize handles are vertical */
@@ -429,7 +445,7 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
 
 .panel-resize-handle:hover,
 .panel-resize-handle--active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
 }
 
 /* In TOP dock slots: panels stack vertically, so panel resize handles are horizontal */
@@ -503,7 +519,7 @@ body.layout-dragging * {
   align-items: center;
   justify-content: center;
   background: rgba(88, 154, 255, 0.25);
-  border: 2px dashed var(--bs-primary, #589aff);
+  border: 2px dashed var(--layout-accent, #589aff);
   box-sizing: border-box;
   animation: dock-inline-preview-pulse 1s ease-in-out infinite;
 }
@@ -534,7 +550,7 @@ body.layout-dragging * {
   align-items: center;
   justify-content: center;
   background: rgba(88, 154, 255, 0.25);
-  border: 2px dashed var(--bs-primary, #589aff);
+  border: 2px dashed var(--layout-accent, #589aff);
   box-sizing: border-box;
   pointer-events: none;
   animation: dock-inline-preview-pulse 1s ease-in-out infinite;
@@ -589,7 +605,7 @@ body.layout-dragging * {
 }
 
 .floating-panel__drag-hint--active {
-  color: var(--bs-warning, #ffc107);
+  color: var(--layout-warning, #ffc107);
   background: rgba(255, 193, 7, 0.15);
 }
 
@@ -788,8 +804,8 @@ body.layout-manager-enabled .compass-rose-box {
 
 /* Dock preview styling for plugin windows */
 .plugin-window--dock-preview {
-  border-color: var(--bs-primary, #589aff);
-  box-shadow: 0 0 0 2px var(--bs-primary, #589aff), 0 1.5rem 3rem #00000080;
+  border-color: var(--layout-accent, #589aff);
+  box-shadow: 0 0 0 2px var(--layout-accent, #589aff), 0 1.5rem 3rem #00000080;
 }
 
 /* ============================================
@@ -1259,7 +1275,7 @@ body.layout-manager-enabled .compass-rose-box {
 }
 .dock-panel-splitter:hover,
 .dock-panel-splitter:active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
 }
 .dock-panel-splitter-h {
   height: 1px;
@@ -1281,7 +1297,7 @@ body.layout-manager-enabled .compass-rose-box {
 }
 .dock-edge-splitter:hover,
 .dock-edge-splitter:active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
 }
 .dock-edge-splitter-left   { top: 0; right: 0; bottom: 0; width: 5px; cursor: ew-resize; }
 .dock-edge-splitter-right  { top: 0; left: 0;  bottom: 0; width: 5px; cursor: ew-resize; }
@@ -1293,9 +1309,9 @@ body.layout-manager-enabled .compass-rose-box {
   flex: 1;
   min-height: 0;
   min-width: 0;
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
   opacity: 0.18;
-  border: 2px dashed var(--bs-primary, #589aff);
+  border: 2px dashed var(--layout-accent, #589aff);
   animation: dock-drop-preview-pulse 1.2s ease-in-out infinite;
 }
 .dock-panel-slot--preview {
@@ -1415,7 +1431,7 @@ body.layout-manager-enabled .compass-rose-box {
 .tab-group-tab:hover  { background: var(--surface-ground, #1a1a1a); }
 .tab-group-tab--active {
   background: var(--surface-ground, #1a1a1a);
-  border-bottom: 2px solid var(--bs-primary, #589aff);
+  border-bottom: 2px solid var(--layout-accent, #589aff);
 }
 .tab-group-tab--locked { cursor: default; }
 
@@ -1461,7 +1477,7 @@ body.layout-manager-enabled .compass-rose-box {
 }
 .split-group-splitter:hover,
 .split-group-splitter:active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
 }
 .split-group-splitter--h { height: 1px; cursor: ns-resize; width: 100%; }
 .split-group-splitter--v { width: 1px; cursor: ew-resize; height: 100%; }
@@ -1500,7 +1516,7 @@ body.layout-manager-enabled .compass-rose-box {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--bs-primary, #589aff);
+  color: var(--layout-accent, #589aff);
   line-height: 0;
   flex: 0 0 auto;
 }
@@ -1519,7 +1535,7 @@ body.layout-manager-enabled .compass-rose-box {
 }
 .layout-splitter:hover,
 .layout-splitter:active {
-  background: var(--bs-primary, #589aff);
+  background: var(--layout-accent, #589aff);
 }
 /* Extended hit area without changing the visible 1px line. */
 .layout-splitter::before {
@@ -1544,7 +1560,7 @@ body.layout-manager-enabled .compass-rose-box {
   justify-content: center;
   min-width: 0;
   min-height: 0;
-  color: var(--bs-secondary-color, #888);
+  color: var(--layout-muted, #888);
   font-size: 0.85em;
   user-select: none;
 }

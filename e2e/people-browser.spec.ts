@@ -39,13 +39,13 @@ async function addLocalPerson(
     const popup = peopleBrowserPopup(page);
     await popup.locator('button', {hasText: '+ Dodaj'}).click();
 
-    const modal = page.locator('.modal.show');
+    const modal = page.locator('.people-modal');
     await expect(modal).toBeVisible();
 
-    await modal.locator('input.form-control').nth(0).fill(name);
-    await modal.locator('input.form-control').nth(1).fill(description);
+    await modal.locator('input.popup-input').nth(0).fill(name);
+    await modal.locator('input.popup-input').nth(1).fill(description);
     if (guild) {
-        await modal.locator('select.form-select').selectOption(guild);
+        await modal.locator('select.popup-input').selectOption(guild);
     }
 
     await modal.locator('button', {hasText: 'Zapisz'}).click();
@@ -162,7 +162,7 @@ test.describe('People browser popup', () => {
         const firstPerson = popup.locator('.people-browser__item').first();
         await firstPerson.locator('button').click();
 
-        const modal = page.locator('.modal.show');
+        const modal = page.locator('.people-modal');
         await expect(modal, 'should open edit modal').toBeVisible();
 
         // Click "Wrog" (enemy) button
@@ -194,7 +194,7 @@ test.describe('People browser popup', () => {
         const localPerson = popup.locator('.people-browser__item').filter({hasText: 'DoUsuniecia'});
         await localPerson.locator('button').click();
 
-        const modal = page.locator('.modal.show');
+        const modal = page.locator('.people-modal');
         await expect(modal, 'should open edit modal for local person').toBeVisible();
 
         // Click "Usun" (delete) button
@@ -220,7 +220,7 @@ test.describe('People browser popup – extended', () => {
         const firstPerson = popup.locator('.people-browser__item').first();
         await firstPerson.locator('button').click();
 
-        const modal = page.locator('.modal.show');
+        const modal = page.locator('.people-modal');
         await expect(modal, 'should open edit modal').toBeVisible();
 
         // Click "Sojusznik" (ally) button
@@ -249,7 +249,7 @@ test.describe('People browser popup – extended', () => {
         // Open edit modal for Aldous
         await aldousItem.locator('button').click();
 
-        const modal = page.locator('.modal.show');
+        const modal = page.locator('.people-modal');
         await expect(modal, 'should open edit modal for Aldous').toBeVisible();
 
         // Click "Ignoruj" (ignore) button
@@ -285,11 +285,11 @@ test.describe('People browser popup – extended', () => {
         const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
         await aldousItem.locator('button').click();
 
-        const modal = page.locator('.modal.show');
+        const modal = page.locator('.people-modal');
         await expect(modal, 'should open edit modal').toBeVisible();
 
         // Change description
-        const descInput = modal.locator('input.form-control').nth(1);
+        const descInput = modal.locator('input.popup-input').nth(1);
         await descInput.fill('Zmodyfikowany opis');
 
         await modal.locator('button', {hasText: 'Zapisz'}).click();
@@ -318,7 +318,7 @@ test.describe('People browser popup – extended', () => {
         // Mark first person (Aldous) as enemy
         const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
         await aldousItem.locator('button').click();
-        let modal = page.locator('.modal.show');
+        let modal = page.locator('.people-modal');
         await modal.locator('button', {hasText: 'Wrog'}).click();
         await modal.locator('button', {hasText: 'Anuluj'}).click();
         await expect(modal, 'should close modal after marking enemy').not.toBeVisible();
@@ -326,7 +326,7 @@ test.describe('People browser popup – extended', () => {
         // Mark second person (Berenika) as ally
         const berenikaItem = popup.locator('.people-browser__item').filter({hasText: 'Berenika'});
         await berenikaItem.locator('button').click();
-        modal = page.locator('.modal.show');
+        modal = page.locator('.people-modal');
         await modal.locator('button', {hasText: 'Sojusznik'}).click();
         await modal.locator('button', {hasText: 'Anuluj'}).click();
         await expect(modal, 'should close modal after marking ally').not.toBeVisible();

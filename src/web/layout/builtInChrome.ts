@@ -6,11 +6,17 @@
 // stock actions here. This is process-local module state — NOT persisted — so
 // the shared layoutManagerState (and therefore the stock UI) is untouched.
 
+import type { ObjectListViewMode } from '@web/objectList/context';
+
 export interface ObjectListChrome {
   /** Header title override (default "Kondycje" from PANEL_CONFIGS). */
   title?: string;
   /** When true, the stock ObjectListHeaderActions are not rendered. */
   hideStockActions?: boolean;
+  /** Default view flavor when the user hasn't chosen one (stored viewMode wins
+   *  once set). Lets forge-ui default to the "W poblizu" flavor while stock
+   *  keeps "list"; falls back to "list" when unset. */
+  defaultViewMode?: ObjectListViewMode;
 }
 
 let objectListChrome: ObjectListChrome = {};

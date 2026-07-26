@@ -329,20 +329,16 @@ describe('ObjectList', () => {
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
-    const container = document.getElementById('objects-list') as HTMLElement;
-    expect(container.classList.contains('objects-list-pip-supported')).toBe(true);
-    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
-    expect(button).toBeTruthy();
-
     const objects = [ { shortcut: '1', desc: 'Orc', num: 123 } ];
     client.ObjectManager.getObjectsOnLocation = () => objects;
     (objectList as any).render();
 
-    button.click();
-    await Promise.resolve();
+    // PiP is triggered from the header via the `objectList.togglePip` event;
+    // invoke the handler directly here.
+    await (objectList as any).togglePictureInPicture();
     expect(requestWindow).toHaveBeenCalled();
     expect(pipDoc.body.querySelector('#objects-list-pip')?.innerHTML).toContain('object-num');
-    expect(button.classList.contains('objects-list-button-active')).toBe(true);
+    expect((objectList as any).pipWindow).toBeTruthy();
     expect(pipDoc.title).toBe('Arkadia');
 
     document.title = 'Arkadia - Battle';
@@ -351,7 +347,7 @@ describe('ObjectList', () => {
     expect(pipDoc.title).toBe('Arkadia - Battle');
 
     handlers.pagehide?.call(pipWindow, undefined);
-    expect(button.classList.contains('objects-list-button-active')).toBe(false);
+    expect((objectList as any).pipWindow).toBeNull();
 
     delete (globalThis as any).documentPictureInPicture;
   });
@@ -370,14 +366,12 @@ describe('ObjectList', () => {
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
-    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
     client.ObjectManager.getObjectsOnLocation = () => [
       { shortcut: '1', desc: 'Goblin', num: 7 },
     ];
     (objectList as any).render();
 
-    button.click();
-    await Promise.resolve();
+    await (objectList as any).togglePictureInPicture();
 
     const pipNum = pipDoc.body.querySelector('.object-num[data-object-num="1"]') as HTMLElement;
     expect(pipNum).toBeTruthy();
@@ -443,9 +437,7 @@ describe('ObjectList', () => {
     ];
     (objectList as any).render();
 
-    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
-    button.click();
-    await Promise.resolve();
+    await (objectList as any).togglePictureInPicture();
 
     const pipRoot = pipDoc.body.querySelector('#objects-list-pip') as HTMLElement;
     expect(pipRoot).toBeTruthy();
@@ -515,9 +507,7 @@ describe('ObjectList', () => {
     (objectList as any).render();
     (objectList as any).handleOutputUpdate();
 
-    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
-    button.click();
-    await Promise.resolve();
+    await (objectList as any).togglePictureInPicture();
 
     const wrapper = document.getElementById('main_text_output_msg_wrapper')!;
     const msg = document.createElement('div');
@@ -554,10 +544,8 @@ describe('ObjectList', () => {
     (globalThis as any).documentPictureInPicture = { requestWindow };
 
     const client = new MockClient();
-    new ObjectList(client as any);
-    const button = document.getElementById('objects-list-pip-button') as HTMLButtonElement;
-    button.click();
-    await Promise.resolve();
+    const objectList = new ObjectList(client as any);
+    await (objectList as any).togglePictureInPicture();
 
     expect(pipDoc.body.style.fontSize).toBe('0.9rem');
     expect(pipDoc.body.style.fontFamily).toContain('Courier');

@@ -85,7 +85,11 @@ export function CollectOverridesModal({ show, overrides, onClose, onSave }: Coll
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="modal-dialog modal-lg" style={{zIndex: 1061}}>
+            {/* Centred + scrollable, matching the alias/trigger edit dialogs: the
+                override list grows with every enemy added, and without the height
+                cap the dialog outgrows the viewport and takes its footer — Zapisz
+                included — off-screen with it. */}
+            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style={{zIndex: 1061}}>
                 <div className="modal-content">
                     <div className="modal-header">
                         <h5 className="modal-title">Nadpisania zbierania dla wrogów</h5>

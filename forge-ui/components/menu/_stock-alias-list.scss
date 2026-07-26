@@ -1,0 +1,153 @@
+// ============================================================
+//  Stock alias/trigger list-card classes — reused, scoped.
+//
+//  The Aliasy (`Aliases.tsx`) and Triggery (`UserTriggers.tsx`) lists share one
+//  component vocabulary: `.alias-card` rows with a `.alias-entry` pattern line,
+//  an `.alias-entry-command` second line and a right-hand `.alias-card-actions`
+//  cluster (plus `.alias-overrides` for per-character alias variants). None of
+//  it is Bootstrap — it lives in stock's global `src/web/style.css`, which forge
+//  never loads, so without this partial both lists rendered bare: pattern and
+//  command ran together on one line, the cards had no frame, and the edit/delete
+//  buttons wrapped underneath instead of sitting at the right edge.
+//
+//  @imported INSIDE the `.forge-menu-modal { … }` block of
+//  forge-modal-bootstrap.scss, so every selector compiles prefixed with
+//  `.forge-menu-modal`. Colours come from the `--popup-*` vars floatingPopup.css
+//  defines on `.forge-menu-modal`, so the copy recolours to the forge palette
+//  for free.
+//
+//  Deliberate changes vs stock:
+//    * the monospace stack is forge's `"JetBrains Mono", …` (same choice as
+//      _stock-logs) instead of stock's `'Space Mono'`, which forge doesn't load;
+//    * `.alias-command`'s hard-coded slate text on a BLUE tint becomes
+//      `--popup-text-dim` on the bronze `--popup-accent-dim-bg` — stock's
+//      literals are the only colours in this block that aren't var-driven;
+//    * the card frame and the `.alias-overrides` rule are forged rather than
+//      taken from `--popup-border` (`--iron-lo`, #0c0b09): against the modal's
+//      dark plate that border is invisible, so the rows read as one undivided
+//      column. Same treatment `.table-modern` gets in menu.css — a warm iron
+//      frame over a faint fill, and a bronze-faint rule for the nested
+//      per-character overrides.
+// ============================================================
+
+$alias-mono: "JetBrains Mono", ui-monospace, monospace;
+
+.alias-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--iron-hi);
+    border-radius: 0.5rem;
+    background-color: rgba(20, 18, 15, 0.4);
+}
+
+.alias-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.alias-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.alias-card-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alias-entry {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    font-family: $alias-mono;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.alias-entry-command {
+    display: block;
+    width: 100%;
+    font-size: 0.6em;
+    line-height: 1.4;
+    margin-top: 0.125rem;
+}
+
+.alias-pattern {
+    font-weight: 600;
+    color: var(--popup-text-bright);
+}
+
+.alias-entry code,
+.alias-override-entry code {
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    padding: 0;
+    white-space: pre-wrap;
+}
+
+.alias-divider {
+    color: var(--popup-text-dim);
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: $alias-mono;
+    line-height: 1;
+    padding: 0 0.35rem;
+}
+
+.alias-command {
+    color: var(--popup-text-dim);
+    background-color: var(--popup-accent-dim-bg);
+    border-radius: 0.35rem;
+    padding: 0.125rem 0.45rem;
+}
+
+.alias-overrides {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-left: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid rgba(184, 150, 90, 0.22);
+}
+
+.alias-override-entry {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    font-family: $alias-mono;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.alias-override-entry .alias-entry-command {
+    font-size: 0.7em;
+}
+
+.alias-override-char {
+    color: var(--popup-text-dim);
+    font-weight: 500;
+}
+
+// The GMCP-scope pill on a pattern trigger is `.badge.bg-secondary` — Bootstrap's
+// slate utility, which menu.css leaves alone because `.bg-*` is used all over the
+// modals. Inside the entry line that slate reads as the one cold colour in an
+// otherwise bronze list, so it's re-tinted here only (scope stays these two lists).
+.alias-entry .badge.bg-secondary {
+    background-color: rgba(110, 86, 32, 0.42) !important;
+    color: var(--parchment);
+}

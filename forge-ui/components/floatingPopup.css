@@ -69,6 +69,7 @@
    lives outside the floating frame, so without this it wouldn't inherit the
    forge palette and would render with undefined vars (transparent). */
 .panel--floating,
+.forge-menu-modal,
 [data-popup-overlay] {
     --popup-bg: transparent;
     --popup-section-bg: rgba(10, 9, 8, .55);
@@ -80,7 +81,8 @@
     --popup-control-pressed-bg: rgba(52, 46, 34, 1);
     --popup-border: var(--iron-lo);
     --popup-border-subtle: var(--iron-lo);
-    --popup-border-control: var(--iron-lo);
+    /* Controls keep a rim you can actually see — see layout-theme.css. */
+    --popup-border-control: var(--control-rim);
     --popup-border-strong: var(--bronze-dim);
     --popup-text: var(--parchment);
     --popup-text-strong: var(--parchment);

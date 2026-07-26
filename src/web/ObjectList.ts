@@ -2,11 +2,12 @@ import Client from "@client/Client";
 import {globalStorage} from "@modules/core/storage";
 import {getBehaviorSettings, onBehaviorSettingsChange} from "@modules/core/settings";
 import {createAttackController} from "@client/utils/attackController";
-import {COLOR_OBJECT, getColorLevel} from "./colors.ts";
-import {type EntryContext, objectListFilters} from "./objectListFilters.ts";
 import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
+import {getObjectListChrome} from "./layout/builtInChrome";
+import {buildRenderContext, type ObjectListViewMode} from "./objectList/context.ts";
+import {getStrategy, renderListLines} from "./objectList/strategies.ts";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
@@ -24,7 +25,6 @@ export default class ObjectList {
     private pipWindow: DocumentPictureInPictureWindow | null = null;
     private pipDocument: Document | null = null;
     private pipContent: HTMLElement | null = null;
-    private pipButton: HTMLButtonElement | null = null;
     private pipStyleObserver: MutationObserver | null = null;
     private pipTitleObserver: MutationObserver | null = null;
     private locationObserver: MutationObserver | null = null;
@@ -34,7 +34,7 @@ export default class ObjectList {
     private pipLastOutputHtml = "";
     private attackController: ReturnType<typeof createAttackController>;
     private contextMenuCommands: string[] = DEFAULT_CONTEXT_MENU_COMMANDS;
-    private viewMode: 'list' | 'card' | 'compact' | 'compact-dots' | 'raid' = 'list';
+    private viewMode: ObjectListViewMode = 'list';
     private isLayoutManagerEnabled = false;
     private renderScheduled = false;
 
@@ -67,6 +67,10 @@ export default class ObjectList {
         this.initializePipInfoSources();
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
+        // The PiP toggle lives in the panel header now (ObjectListHeaderActions);
+        // it drives the window through this event and reflects the open/closed
+        // state via `objectList.pipActiveChanged`.
+        eventBus.on('objectList.togglePip', () => { void this.togglePictureInPicture(); });
         eventBus.on('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
         onBehaviorSettingsChange(() => {
             this.loadContextMenuCommands();
@@ -85,7 +89,7 @@ export default class ObjectList {
         this.isLayoutManagerEnabled = layoutState.enabled;
         this.syncViewModeWithLayoutState(this.isLayoutManagerEnabled);
         // Subscribe to view mode changes from the header toggle
-        eventBus.on('objectListViewMode', (mode: 'list' | 'card' | 'compact' | 'compact-dots' | 'raid') => {
+        eventBus.on('objectListViewMode', (mode: ObjectListViewMode) => {
             if (!this.isLayoutManagerEnabled) {
                 return;
             }
@@ -107,8 +111,9 @@ export default class ObjectList {
     };
 
     private syncViewModeWithLayoutState(isLayoutEnabled: boolean) {
+        const defaultViewMode = getObjectListChrome().defaultViewMode ?? 'list';
         const nextViewMode = isLayoutEnabled
-            ? getBuiltInPanelSetting<'list' | 'card' | 'compact' | 'compact-dots' | 'raid'>('objectList', 'viewMode', 'list')
+            ? getBuiltInPanelSetting<ObjectListViewMode>('objectList', 'viewMode', defaultViewMode)
             : 'list';
         if (this.viewMode !== nextViewMode) {
             this.viewMode = nextViewMode;
@@ -131,7 +136,6 @@ export default class ObjectList {
         const content = document.createElement("div");
         content.className = "objects-list-content";
         this.container.appendChild(content);
-        this.setupPictureInPictureControls(content);
         return content;
     }
 
@@ -179,7 +183,7 @@ export default class ObjectList {
 
         if (
             isMousePointer &&
-            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-hp-bar-teammate, .object-card__icon, .object-card__hp-bar, .object-card__hp-bar--teammate, .object-card__hp-bar-vertical, .object-card__hp-bar-vertical--teammate, .object-card__hp-dots, .object-card__hp-dots--teammate, .object-card__number, .object-card__name")
+            target?.closest(".object-num, .object-desc, .objects-list-controls, .target-dot, .object-hp-bar, .object-hp-bar-teammate, .object-card__icon, .object-card__hp-bar, .object-card__hp-bar--teammate, .object-card__hp-bar-vertical, .object-card__hp-bar-vertical--teammate, .object-card__hp-dots, .object-card__hp-dots--teammate, .object-card__number, .object-card__name, .obj")
         ) {
             return;
         }
@@ -426,6 +430,43 @@ export default class ObjectList {
             this.focusInput();
             return;
         }
+        // Nearby ("W poblizu") view: key attacks (enemy), name guards, HP
+        // breaks (enemy) / pulls back (teammate). Same commands as the other
+        // flavors, just carried on the .obj__* elements.
+        const nearbyKeyEl = target.closest(
+            ".obj__key.is-clickable[data-object-id]"
+        ) as HTMLElement | null;
+        if (nearbyKeyEl) {
+            const id = nearbyKeyEl.getAttribute("data-object-id");
+            if (id) {
+                this.attackController.attackById(parseInt(id, 10));
+            }
+            this.focusInput();
+            return;
+        }
+        const nearbyNameEl = target.closest(
+            ".obj__name.is-clickable[data-object-num]"
+        ) as HTMLElement | null;
+        if (nearbyNameEl) {
+            const num = nearbyNameEl.getAttribute("data-object-num");
+            if (num) {
+                this.client.sendCommand(`/za ${num}`);
+            }
+            this.focusInput();
+            return;
+        }
+        const nearbyHpEl = target.closest(
+            ".obj__hp.is-clickable[data-object-num]"
+        ) as HTMLElement | null;
+        if (nearbyHpEl) {
+            const num = nearbyHpEl.getAttribute("data-object-num");
+            const isTeammate = nearbyHpEl.getAttribute("data-teammate") === "true";
+            if (num) {
+                this.client.sendCommand(isTeammate ? `/w ${num}` : `/prze ${num}`);
+            }
+            this.focusInput();
+            return;
+        }
         const numEl = target.closest(
             ".object-num[data-object-num]"
         ) as HTMLElement | null;
@@ -534,926 +575,16 @@ export default class ObjectList {
             return;
         }
 
-        // Render card view, compact view, or list view based on mode
-        if (this.viewMode === 'card') {
-            this.renderCardView(objects);
-            return;
-        }
-        if (this.viewMode === 'compact') {
-            this.renderCompactCardView(objects);
-            return;
-        }
-        if (this.viewMode === 'compact-dots') {
-            this.renderCompactDotsView(objects);
-            return;
-        }
-        if (this.viewMode === 'raid') {
-            this.renderRaidView(objects);
-            return;
-        }
-        const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
-        const tm = this.client.TeamManager;
-        const fullQueue = tm?.getEnemyQueue?.() ?? [];
-        const nextQueuedId = fullQueue[0];
-
-        // Verify the queued enemy actually exists in the current object list
-        const queuedEnemyExists = nextQueuedId !== undefined &&
-            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
-        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
-        });
-
-        const lines = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
-            // Target indicators
-            let prefix = "  ";
-            const isLeader = tm?.isLeader?.();
-            const isTeammateForDot = tm?.isInTeam?.(obj.desc || "");
-
-            if (isLeader) {
-                // Leader sees clickable indicators
-                if (isPlayer || isTeammateForDot) {
-                    // Self or teammate - defense target (greenyellow), command /wz
-                    if (obj.defense_target) {
-                        // Active - show >> that can be clicked to remove
-                        prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Rozkazanie obrony celu">>></span>`;
-                    } else {
-                        // Not active - show dot that can be clicked to set
-                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Wyznacz cel obrony">&#8226; </span>`;
-                    }
-                } else {
-                    // Enemy - attack target (orangered), command /wa
-                    if (obj.attack_target) {
-                        // Active - show >> that can be clicked to remove
-                        prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Rozkazanie ataku celu">>></span>`;
-                    } else {
-                        // Not active - show dot that can be clicked to set
-                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Wyznacz cel ataku">&#8226; </span>`;
-                    }
-                }
-            } else {
-                // Non-leaders see >> when target is set (not clickable)
-                if (obj.attack_target) {
-                    prefix = `<span style="color:orangered">>></span>`;
-                } else if (obj.defense_target) {
-                    prefix = `<span style="color:greenyellow">>></span>`;
-                }
-            }
-            const isNextQueued =
-                !isPlayer &&
-                validNextQueuedId !== undefined &&
-                typeof obj.num !== "undefined" &&
-                validNextQueuedId === obj.num;
-            const numClasses = ["object-num"];
-            if (isNextQueued) {
-                numClasses.push("object-num-next-target");
-            }
-            const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
-            let numLabel = isPlayer
-                ? `${prefix}${num}`
-                : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle} title="Zaatakuj">${num}</span>`;
-            const rawDesc = obj.desc || "";
-            const isTeammate = tm?.isInTeam?.(rawDesc);
-            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-
-            // Apply filters before rendering
-            const filterContext: EntryContext = {
-                object: obj,
-                displayNum: parseInt(num, 10),
-                isTarget: obj.avatar_target || false,
-                isNextTarget: isNextQueued,
-                isTeammate: isTeammate || false,
-                rawDescription: rawDesc,
-                isAttacking,
-                attackCommand: this.attackController.getAttackCommand()
-            };
-            const filterResult = objectListFilters.apply(filterContext);
-
-            // Use filtered number label if provided
-            if (filterResult.content?.numberLabel !== undefined) {
-                numLabel = filterResult.content.numberLabel;
-            }
-
-            // Build description with filter overrides
-            let descriptionColor: string | undefined;
-            const descClasses = [] as string[];
-
-            // Default color logic
-            if (!isPlayer) {
-                if (obj.avatar_target) {
-                    descriptionColor = "#ffaaaa";
-                } else if (isTeammate) {
-                    descriptionColor = "springgreen";
-                    if (teamAttacking && !isAttacking) {
-                        descClasses.push("team-not-attacking");
-                    }
-                } else if (
-                    typeof obj.hp === "number" &&
-                    isAttacking
-                ) {
-                    descriptionColor = "#b19cd9";
-                }
-            }
-
-            // Apply filter color override
-            if (filterResult.style?.descriptionColor) {
-                descriptionColor = filterResult.style.descriptionColor;
-            }
-
-            // Apply filter italic override (via CSS class)
-            if (filterResult.style?.italic) {
-                descClasses.push("team-not-attacking"); // This CSS class applies italic style
-            }
-
-            // Apply filter CSS classes
-            if (filterResult.style?.cssClasses) {
-                descClasses.push(...filterResult.style.cssClasses);
-            }
-
-            // Use filtered description if provided
-            const displayDesc = filterResult.content?.description !== undefined
-                ? filterResult.content.description
-                : rawDesc;
-
-            // Build colored description
-            let coloredDesc = displayDesc;
-            if (!isPlayer && (descriptionColor || filterResult.style?.descriptionBackgroundColor)) {
-                const classAttr = descClasses.length ? ` class="${descClasses.join(" ")}"` : "";
-                let style = "";
-                if (descriptionColor) {
-                    style += `color:${descriptionColor};`;
-                }
-                if (filterResult.style?.descriptionBackgroundColor) {
-                    style += `background-color:${filterResult.style.descriptionBackgroundColor};`;
-                }
-                coloredDesc = `<span${classAttr} style="${style}">${displayDesc}</span>`;
-            }
-
-            const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
-            const isTeammateStr = isTeammate ? "true" : "false";
-            const desc = isPlayer
-                ? `${displayDesc}${padding}`
-                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zaslon">${coloredDesc}</span>${padding}`;
-
-            // Build HP bar with filter override
-            let bar = "";
-            if (filterResult.content?.hpBar !== undefined) {
-                bar = filterResult.content.hpBar;
-            } else if (typeof obj.hp === "number") {
-                const hp = Math.max(0, Math.min(6, obj.hp)) + 1;
-                const colorLevel = getColorLevel(hp, 7, false, true);
-                let color = COLOR_OBJECT[colorLevel];
-
-                // Apply filter HP bar color override
-                if (filterResult.style?.hpBarColor) {
-                    color = filterResult.style.hpBarColor;
-                }
-
-                const filled = "#".repeat(hp);
-                const empty = "-".repeat(7 - hp);
-                const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
-                // Make HP bar clickable for enemies and teammates (not player)
-                if (!isPlayer && !isTeammate) {
-                    bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
-                } else if (isTeammate) {
-                    bar = `<span class="object-hp-bar-teammate" data-object-num="${num}" data-object-id="${obj.num}" title="Wycofaj sie">${hpBarContent}</span>`;
-                } else {
-                    bar = hpBarContent;
-                }
-            }
-
-            const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => o.shortcut);
-            const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
-
-            // Apply prefix and suffix from filters (only to description)
-            const customPrefix = filterResult.style?.prefix || "";
-            const customSuffix = filterResult.style?.suffix || "";
-
-            return `${numLabel} ${bar} ${customPrefix}${desc}${customSuffix}${arrow}`.trimEnd();
-        });
-        this.content.innerHTML = lines.join("<br>");
-        this.rebuildPictureInPictureHtml();
-    }
-
-    private renderCardView(objects: any[]) {
-        if (!this.content) return;
-
-        const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
-
-        // Verify the queued enemy actually exists in the current object list
-        const queuedEnemyExists = nextQueuedId !== undefined &&
-            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
-        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        // Check if any teammate is attacking (for italic styling of non-attacking teammates)
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
-        });
-
-        const cards = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
-            const rawDesc = obj.desc || "";
-            const isTeammate = tm?.isInTeam?.(rawDesc);
-            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-            const isNextQueued =
-                !isPlayer &&
-                validNextQueuedId !== undefined &&
-                typeof obj.num !== "undefined" &&
-                validNextQueuedId === obj.num;
-            const isTarget = obj.avatar_target || false;
-
-            // Apply filters before rendering
-            const filterContext: EntryContext = {
-                object: obj,
-                displayNum: parseInt(num, 10),
-                isTarget,
-                isNextTarget: isNextQueued,
-                isTeammate: isTeammate || false,
-                rawDescription: rawDesc,
-                isAttacking,
-                attackCommand: this.attackController.getAttackCommand()
-            };
-            const filterResult = objectListFilters.apply(filterContext);
-
-            // Card classes
-            const cardClasses = ['object-card'];
-            if (isPlayer) cardClasses.push('object-card--player');
-            if (isTeammate && !isPlayer) cardClasses.push('object-card--teammate');
-            if (isTarget && !isPlayer) cardClasses.push('object-card--target');
-            if (isNextQueued) cardClasses.push('object-card--next-queued');
-            if (obj.attack_target) cardClasses.push('object-card--attack-target');
-            if (obj.defense_target) cardClasses.push('object-card--defense-target');
-
-            // Apply filter CSS classes to card
-            if (filterResult.style?.cssClasses) {
-                cardClasses.push(...filterResult.style.cssClasses);
-            }
-
-            // Number badge classes
-            const numberClasses = ['object-card__number'];
-            if (isNextQueued) numberClasses.push('object-card__number--next-target');
-
-            // Name classes
-            const nameClasses = ['object-card__name'];
-            if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
-            if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
-
-            // Apply teammate not attacking italic style
-            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            // Apply filter italic override
-            if (filterResult.style?.italic) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            // Build name style from filter overrides
-            let nameStyle = '';
-            if (filterResult.style?.descriptionColor) {
-                nameStyle += `color:${filterResult.style.descriptionColor};`;
-            }
-            if (filterResult.style?.descriptionBackgroundColor) {
-                nameStyle += `background-color:${filterResult.style.descriptionBackgroundColor};`;
-            }
-
-            // Use filtered description if provided
-            const displayDesc = filterResult.content?.description !== undefined
-                ? filterResult.content.description
-                : rawDesc;
-
-            // Apply prefix and suffix from filters
-            const customPrefix = filterResult.style?.prefix || "";
-            const customSuffix = filterResult.style?.suffix || "";
-            const finalDesc = `${customPrefix}${displayDesc}${customSuffix}`;
-
-            // Build HP bar with color based on health level (0-6 scale, 7 levels)
-            let hpBarFill = '';
-            if (filterResult.content?.hpBar !== undefined) {
-                // Use custom HP bar from filter (raw HTML)
-                hpBarFill = filterResult.content.hpBar;
-            } else if (typeof obj.hp === 'number') {
-                const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1; // 1-7 for CSS classes
-                const hpPercent = (hpLevel / 7) * 100;
-                // Color mapping: 1-2=dark red, 3=red, 4=orange, 5=yellow, 6=lime, 7=green
-                const hpColors: Record<number, string> = {
-                    1: '#dc2626',
-                    2: '#dc2626',
-                    3: '#ef4444',
-                    4: '#f97316',
-                    5: '#eab308',
-                    6: '#84cc16',
-                    7: '#22c55e'
-                };
-                let hpColor = hpColors[hpLevel] || '#22c55e';
-
-                // Apply filter HP bar color override
-                if (filterResult.style?.hpBarColor) {
-                    hpColor = filterResult.style.hpBarColor;
-                }
-
-                hpBarFill = `<div class="object-card__hp-fill" style="width: ${hpPercent}%; background-color: ${hpColor}"></div>`;
-            }
-
-            // Build action icons (only for non-player, non-teammate)
-            const isLeader = tm?.isLeader?.();
-            let iconsHtml = '';
-            if (!isPlayer && !isTeammate) {
-                const markAttackClass = obj.attack_target ? 'object-card__icon--mark-attack--active' : '';
-                const markAttackIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-attack ${markAttackClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>` : '';
-                iconsHtml = `
-                    <span class="object-card__icon object-card__icon--attack" data-action="attack" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"></span>
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
-                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam"></span>
-                    ${markAttackIcon}
-                `;
-            } else if (isTeammate && !isPlayer) {
-                const markDefenseClass = obj.defense_target ? 'object-card__icon--mark-defense--active' : '';
-                const markDefenseIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-defense ${markDefenseClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>` : '';
-                iconsHtml = `
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
-                    ${markDefenseIcon}
-                `;
-            }
-
-            // Build attackers
-            const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
-                .join('');
-
-            // Build name element with optional style
-            const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
-
-            // Simplified card structure - single container, no absolute positioning
-            return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
-                <div class="object-card__row1">
-                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
-                    <span class="object-card__icons">${iconsHtml}</span>
-                </div>
-                <div class="object-card__row2">
-                    <span class="object-card__attackers">${attackers}</span>
-                </div>
-                <div class="${isTeammate && !isPlayer ? 'object-card__hp-bar--teammate' : 'object-card__hp-bar'}" data-object-num="${num}" data-object-id="${obj.num}" title="${isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam'}">${hpBarFill}</div>
-            </div>`;
-        });
-
-        this.content.innerHTML = `<div class="objects-list-cards">${cards.join('')}</div>`;
-
-        // Attach contextmenu handler directly to the cards container (use capture phase)
-        const cardsContainer = this.content.querySelector('.objects-list-cards');
-        if (cardsContainer && !this.isMobile) {
-            cardsContainer.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
-        }
-
-        this.rebuildPictureInPictureHtml();
-    }
-
-    private renderCompactCardView(objects: any[]) {
-        if (!this.content) return;
-
-        const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
-
-        // Verify the queued enemy actually exists in the current object list
-        const queuedEnemyExists = nextQueuedId !== undefined &&
-            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
-        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        // Check if any teammate is attacking (for italic styling of non-attacking teammates)
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
-        });
-
-        const cards = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
-            const rawDesc = obj.desc || "";
-            const isTeammate = tm?.isInTeam?.(rawDesc);
-            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-            const isNextQueued =
-                !isPlayer &&
-                validNextQueuedId !== undefined &&
-                typeof obj.num !== "undefined" &&
-                validNextQueuedId === obj.num;
-            const isTarget = obj.avatar_target || false;
-
-            // Apply filters before rendering
-            const filterContext: EntryContext = {
-                object: obj,
-                displayNum: parseInt(num, 10),
-                isTarget,
-                isNextTarget: isNextQueued,
-                isTeammate: isTeammate || false,
-                rawDescription: rawDesc,
-                isAttacking,
-                attackCommand: this.attackController.getAttackCommand()
-            };
-            const filterResult = objectListFilters.apply(filterContext);
-
-            // Card classes
-            const cardClasses = ['object-card', 'object-card--compact'];
-            if (isPlayer) cardClasses.push('object-card--player');
-            if (isTeammate && !isPlayer) cardClasses.push('object-card--teammate');
-            if (isTarget && !isPlayer) cardClasses.push('object-card--target');
-            if (isNextQueued) cardClasses.push('object-card--next-queued');
-            if (obj.attack_target) cardClasses.push('object-card--attack-target');
-            if (obj.defense_target) cardClasses.push('object-card--defense-target');
-
-            // Apply filter CSS classes to card
-            if (filterResult.style?.cssClasses) {
-                cardClasses.push(...filterResult.style.cssClasses);
-            }
-
-            // Number badge classes
-            const numberClasses = ['object-card__number'];
-            if (isNextQueued) numberClasses.push('object-card__number--next-target');
-
-            // Name classes
-            const nameClasses = ['object-card__name'];
-            if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
-            if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
-
-            // Apply teammate not attacking italic style
-            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            // Apply filter italic override
-            if (filterResult.style?.italic) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            // Build name style from filter overrides
-            let nameStyle = '';
-            if (filterResult.style?.descriptionColor) {
-                nameStyle += `color:${filterResult.style.descriptionColor};`;
-            }
-            if (filterResult.style?.descriptionBackgroundColor) {
-                nameStyle += `background-color:${filterResult.style.descriptionBackgroundColor};`;
-            }
-
-            // Use filtered description if provided
-            const displayDesc = filterResult.content?.description !== undefined
-                ? filterResult.content.description
-                : rawDesc;
-
-            // Apply prefix and suffix from filters
-            const customPrefix = filterResult.style?.prefix || "";
-            const customSuffix = filterResult.style?.suffix || "";
-            const finalDesc = `${customPrefix}${displayDesc}${customSuffix}`;
-
-            // Build vertical HP bar with color based on health level (0-6 scale, 7 levels)
-            let hpBarHtml = '';
-            if (typeof obj.hp === 'number') {
-                const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1; // 1-7 for CSS classes
-                const hpPercent = (hpLevel / 7) * 100;
-                // Color mapping: 1-2=dark red, 3=red, 4=orange, 5=yellow, 6=lime, 7=green
-                const hpColors: Record<number, string> = {
-                    1: '#dc2626',
-                    2: '#dc2626',
-                    3: '#ef4444',
-                    4: '#f97316',
-                    5: '#eab308',
-                    6: '#84cc16',
-                    7: '#22c55e'
-                };
-                let hpColor = hpColors[hpLevel] || '#22c55e';
-
-                // Apply filter HP bar color override
-                if (filterResult.style?.hpBarColor) {
-                    hpColor = filterResult.style.hpBarColor;
-                }
-
-                const hpBarVerticalClass = isTeammate && !isPlayer ? 'object-card__hp-bar-vertical--teammate' : 'object-card__hp-bar-vertical';
-                const hpBarVerticalTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
-                hpBarHtml = `<div class="${hpBarVerticalClass}" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarVerticalTitle}">
-                    <div class="object-card__hp-fill-vertical" style="height: ${hpPercent}%; background-color: ${hpColor}"></div>
-                </div>`;
-            }
-
-            // Build attackers inline with name
-            const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
-                .join('');
-            const attackersHtml = attackers ? `<span class="object-card__attackers-inline">${attackers}</span>` : '';
-
-            // Build name element with optional style
-            const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
-
-            // Build target dot for leader functionality
-            const isLeader = tm?.isLeader?.();
-            let targetDotHtml = '';
-            if (isLeader) {
-                if (isPlayer || isTeammate) {
-                    // Self or teammate - defense target (greenyellow)
-                    const activeClass = obj.defense_target ? 'object-card__target-dot--active' : '';
-                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--defense ${activeClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>`;
-                } else {
-                    // Enemy - attack target (orangered)
-                    const activeClass = obj.attack_target ? 'object-card__target-dot--active' : '';
-                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--attack ${activeClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>`;
-                }
-            }
-
-            // Compact card structure - HP bar on left, target dot before number
-            return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
-                ${hpBarHtml}
-                <div class="object-card__compact-content">
-                    ${targetDotHtml}
-                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
-                    ${attackersHtml}
-                </div>
-            </div>`;
-        });
-
-        this.content.innerHTML = `<div class="objects-list-cards objects-list-cards--compact">${cards.join('')}</div>`;
-
-        // Attach contextmenu handler directly to the cards container (use capture phase)
-        const cardsContainer = this.content.querySelector('.objects-list-cards');
-        if (cardsContainer && !this.isMobile) {
-            cardsContainer.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
-        }
-
-        this.rebuildPictureInPictureHtml();
-    }
-
-    private renderCompactDotsView(objects: any[]) {
-        if (!this.content) return;
-
-        const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
-
-        // Verify the queued enemy actually exists in the current object list
-        const queuedEnemyExists = nextQueuedId !== undefined &&
-            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
-        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        // Check if any teammate is attacking (for italic styling of non-attacking teammates)
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
-        });
-
-        const cards = objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
-            const rawDesc = obj.desc || "";
-            const isTeammate = tm?.isInTeam?.(rawDesc);
-            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-            const isNextQueued =
-                !isPlayer &&
-                validNextQueuedId !== undefined &&
-                typeof obj.num !== "undefined" &&
-                validNextQueuedId === obj.num;
-            const isTarget = obj.avatar_target || false;
-
-            // Apply filters before rendering
-            const filterContext: EntryContext = {
-                object: obj,
-                displayNum: parseInt(num, 10),
-                isTarget,
-                isNextTarget: isNextQueued,
-                isTeammate: isTeammate || false,
-                rawDescription: rawDesc,
-                isAttacking,
-                attackCommand: this.attackController.getAttackCommand()
-            };
-            const filterResult = objectListFilters.apply(filterContext);
-
-            // Card classes
-            const cardClasses = ['object-card', 'object-card--compact', 'object-card--compact-dots'];
-            if (isPlayer) cardClasses.push('object-card--player');
-            if (isTeammate && !isPlayer) cardClasses.push('object-card--teammate');
-            if (isTarget && !isPlayer) cardClasses.push('object-card--target');
-            if (isNextQueued) cardClasses.push('object-card--next-queued');
-            if (obj.attack_target) cardClasses.push('object-card--attack-target');
-            if (obj.defense_target) cardClasses.push('object-card--defense-target');
-
-            // Apply filter CSS classes to card
-            if (filterResult.style?.cssClasses) {
-                cardClasses.push(...filterResult.style.cssClasses);
-            }
-
-            // Number badge classes
-            const numberClasses = ['object-card__number'];
-            if (isNextQueued) numberClasses.push('object-card__number--next-target');
-
-            // Name classes
-            const nameClasses = ['object-card__name'];
-            if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
-            if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
-
-            // Apply teammate not attacking italic style
-            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            // Apply filter italic override
-            if (filterResult.style?.italic) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            // Build name style from filter overrides
-            let nameStyle = '';
-            if (filterResult.style?.descriptionColor) {
-                nameStyle += `color:${filterResult.style.descriptionColor};`;
-            }
-            if (filterResult.style?.descriptionBackgroundColor) {
-                nameStyle += `background-color:${filterResult.style.descriptionBackgroundColor};`;
-            }
-
-            // Use filtered description if provided
-            const displayDesc = filterResult.content?.description !== undefined
-                ? filterResult.content.description
-                : rawDesc;
-
-            // Apply prefix and suffix from filters
-            const customPrefix = filterResult.style?.prefix || "";
-            const customSuffix = filterResult.style?.suffix || "";
-            const finalDesc = `${customPrefix}${displayDesc}${customSuffix}`;
-
-            // Build HP dots with color based on health level (0-6 scale, 7 levels)
-            let hpDotsHtml = '';
-            if (typeof obj.hp === 'number') {
-                const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1; // 1-7 for CSS classes
-                // Color mapping: 1-2=dark red, 3=red, 4=orange, 5=yellow, 6=lime, 7=green
-                const hpColors: Record<number, string> = {
-                    1: '#dc2626',
-                    2: '#dc2626',
-                    3: '#ef4444',
-                    4: '#f97316',
-                    5: '#eab308',
-                    6: '#84cc16',
-                    7: '#22c55e'
-                };
-                let hpColor = hpColors[hpLevel] || '#22c55e';
-
-                // Apply filter HP bar color override
-                if (filterResult.style?.hpBarColor) {
-                    hpColor = filterResult.style.hpBarColor;
-                }
-
-                // Build dots - filled dots for current HP, empty smaller gray dots for missing HP
-                const dots: string[] = [];
-                for (let i = 0; i < 7; i++) {
-                    if (i < hpLevel) {
-                        dots.push(`<span class="object-card__hp-dot object-card__hp-dot--filled" style="background-color: ${hpColor}"></span>`);
-                    } else {
-                        dots.push(`<span class="object-card__hp-dot object-card__hp-dot--empty"></span>`);
-                    }
-                }
-
-                const hpDotsClass = isTeammate && !isPlayer ? 'object-card__hp-dots--teammate' : 'object-card__hp-dots';
-                const hpDotsTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
-                hpDotsHtml = `<div class="${hpDotsClass}" data-object-num="${num}" data-object-id="${obj.num}" title="${hpDotsTitle}">${dots.join('')}</div>`;
-            }
-
-            // Build attackers inline with name
-            const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
-                .join('');
-            const attackersHtml = attackers ? `<span class="object-card__attackers-inline">${attackers}</span>` : '';
-
-            // Build name element with optional style
-            const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
-
-            // Build target dot for leader functionality
-            const isLeader = tm?.isLeader?.();
-            let targetDotHtml = '';
-            if (isLeader) {
-                if (isPlayer || isTeammate) {
-                    // Self or teammate - defense target (greenyellow)
-                    const activeClass = obj.defense_target ? 'object-card__target-dot--active' : '';
-                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--defense ${activeClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>`;
-                } else {
-                    // Enemy - attack target (orangered)
-                    const activeClass = obj.attack_target ? 'object-card__target-dot--active' : '';
-                    targetDotHtml = `<span class="object-card__target-dot object-card__target-dot--attack ${activeClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>`;
-                }
-            }
-
-            // Compact dots card structure - HP dots instead of vertical bar
-            return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
-                <div class="object-card__compact-content">
-                    ${targetDotHtml}
-                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    ${hpDotsHtml}
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
-                    ${attackersHtml}
-                </div>
-            </div>`;
-        });
-
-        this.content.innerHTML = `<div class="objects-list-cards objects-list-cards--compact">${cards.join('')}</div>`;
-
-        // Attach contextmenu handler directly to the cards container (use capture phase)
-        const cardsContainer = this.content.querySelector('.objects-list-cards');
-        if (cardsContainer && !this.isMobile) {
-            cardsContainer.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
-        }
-
-        this.rebuildPictureInPictureHtml();
-    }
-
-    private renderRaidView(objects: any[]) {
-        if (!this.content) return;
-
-        const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
-
-        const queuedEnemyExists = nextQueuedId !== undefined &&
-            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
-        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
-        });
-
-        const isLeader = tm?.isLeader?.();
-
-        const buildCard = (obj: any): string => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
-            const rawDesc = obj.desc || "";
-            const isTeammate = tm?.isInTeam?.(rawDesc);
-            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-            const isNextQueued =
-                !isPlayer &&
-                validNextQueuedId !== undefined &&
-                typeof obj.num !== "undefined" &&
-                validNextQueuedId === obj.num;
-            const isTarget = obj.avatar_target || false;
-
-            const filterContext: EntryContext = {
-                object: obj,
-                displayNum: parseInt(num, 10),
-                isTarget,
-                isNextTarget: isNextQueued,
-                isTeammate: isTeammate || false,
-                rawDescription: rawDesc,
-                isAttacking,
-                attackCommand: this.attackController.getAttackCommand()
-            };
-            const filterResult = objectListFilters.apply(filterContext);
-
-            const cardClasses = ['object-card', 'object-card--raid'];
-            if (isPlayer) cardClasses.push('object-card--player');
-            if (isTeammate && !isPlayer) cardClasses.push('object-card--teammate');
-            if (isTarget && !isPlayer) cardClasses.push('object-card--target');
-            if (isNextQueued) cardClasses.push('object-card--next-queued');
-            if (obj.attack_target) cardClasses.push('object-card--attack-target');
-            if (obj.defense_target) cardClasses.push('object-card--defense-target');
-            if (filterResult.style?.cssClasses) {
-                cardClasses.push(...filterResult.style.cssClasses);
-            }
-
-            const numberClasses = ['object-card__number'];
-            if (isNextQueued) numberClasses.push('object-card__number--next-target');
-
-            const nameClasses = ['object-card__name'];
-            if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
-            if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
-            if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
-            if (isTeammate && !isPlayer && teamAttacking && !isAttacking) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-            if (filterResult.style?.italic) {
-                nameClasses.push('object-card__name--teammate-not-attacking');
-            }
-
-            let nameStyle = '';
-            if (filterResult.style?.descriptionColor) {
-                nameStyle += `color:${filterResult.style.descriptionColor};`;
-            }
-            if (filterResult.style?.descriptionBackgroundColor) {
-                nameStyle += `background-color:${filterResult.style.descriptionBackgroundColor};`;
-            }
-
-            const displayDesc = filterResult.content?.description !== undefined
-                ? filterResult.content.description
-                : rawDesc;
-            const customPrefix = filterResult.style?.prefix || "";
-            const customSuffix = filterResult.style?.suffix || "";
-            const finalDesc = `${customPrefix}${displayDesc}${customSuffix}`;
-
-            let hpBarHtml = '';
-            const hpBarClass = isTeammate && !isPlayer ? 'object-card__hp-bar--teammate' : 'object-card__hp-bar';
-            const hpBarTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
-            if (filterResult.content?.hpBar !== undefined) {
-                hpBarHtml = `<div class="${hpBarClass} object-card__hp-bar--raid" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarTitle}">${filterResult.content.hpBar}</div>`;
-            } else if (typeof obj.hp === 'number') {
-                const hpLevel = Math.max(0, Math.min(6, obj.hp)) + 1;
-                const hpPercent = (hpLevel / 7) * 100;
-                const hpColors: Record<number, string> = {
-                    1: '#dc2626',
-                    2: '#dc2626',
-                    3: '#ef4444',
-                    4: '#f97316',
-                    5: '#eab308',
-                    6: '#84cc16',
-                    7: '#22c55e'
-                };
-                let hpColor = hpColors[hpLevel] || '#22c55e';
-                if (filterResult.style?.hpBarColor) {
-                    hpColor = filterResult.style.hpBarColor;
-                }
-                hpBarHtml = `<div class="${hpBarClass} object-card__hp-bar--raid" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarTitle}"><div class="object-card__hp-fill" style="width: ${hpPercent}%; background-color: ${hpColor}"></div></div>`;
-            } else {
-                hpBarHtml = `<div class="${hpBarClass} object-card__hp-bar--raid" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarTitle}"></div>`;
-            }
-
-            let iconsHtml = '';
-            if (!isPlayer && !isTeammate) {
-                const markAttackClass = obj.attack_target ? 'object-card__icon--mark-attack--active' : '';
-                const markAttackIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-attack ${markAttackClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>` : '';
-                iconsHtml = `
-                    <span class="object-card__icon object-card__icon--attack" data-action="attack" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"></span>
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
-                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam"></span>
-                    ${markAttackIcon}
-                `;
-            } else if (isTeammate && !isPlayer) {
-                const markDefenseClass = obj.defense_target ? 'object-card__icon--mark-defense--active' : '';
-                const markDefenseIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-defense ${markDefenseClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>` : '';
-                iconsHtml = `
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
-                    ${markDefenseIcon}
-                `;
-            }
-
-            const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
-                .join('');
-            const attackersHtml = attackers
-                ? `<span class="object-card__attackers-inline">${attackers}</span>`
-                : '';
-
-            const nameStyleAttr = nameStyle ? ` style="${nameStyle}"` : '';
-
-            return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
-                ${hpBarHtml}
-                <div class="object-card__raid-content">
-                    <div class="object-card__raid-row object-card__raid-row--main">
-                        <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                        <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
-                    </div>
-                    <div class="object-card__raid-row object-card__raid-row--attackers">
-                        ${attackersHtml}
-                    </div>
-                </div>
-                <span class="object-card__icons object-card__icons--raid">${iconsHtml}</span>
-            </div>`;
-        };
-
-        // Split team (player + teammates) from enemies; player first within team section
-        const teamObjects: any[] = [];
-        const enemyObjects: any[] = [];
-        for (const obj of objects) {
-            const isPlayer = obj.shortcut === '@';
-            const isTeammate = tm?.isInTeam?.(obj.desc || "");
-            if (isPlayer || isTeammate) {
-                teamObjects.push(obj);
-            } else {
-                enemyObjects.push(obj);
-            }
-        }
-        teamObjects.sort((a: any, b: any) => {
-            if (a.shortcut === '@') return -1;
-            if (b.shortcut === '@') return 1;
-            return 0;
-        });
-
-        const sections: string[] = [];
-        if (teamObjects.length > 0) {
-            sections.push(
-                `<div class="objects-list-cards objects-list-cards--raid objects-list-cards--raid-team">${teamObjects.map(buildCard).join('')}</div>`
-            );
-        }
-        if (enemyObjects.length > 0) {
-            sections.push(
-                `<div class="objects-list-cards objects-list-cards--raid objects-list-cards--raid-enemies">${enemyObjects.map(buildCard).join('')}</div>`
-            );
-        }
-        this.content.innerHTML = `<div class="objects-list-raid-wrapper">${sections.join('')}</div>`;
-
-        if (!this.isMobile) {
-            this.content.querySelectorAll('.objects-list-cards--raid').forEach(section => {
-                section.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
+        const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());
+        const strategy = getStrategy(this.viewMode);
+        this.content.innerHTML = strategy.render(ctx);
+
+        // Card-family flavors need the capture-phase context menu on each cards
+        // container (raid renders several); other flavors use the delegated
+        // onContextMenu via each row's data-object-id.
+        if (strategy.cardContextMenu && !this.isMobile) {
+            this.content.querySelectorAll('.objects-list-cards').forEach((el) => {
+                el.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
             });
         }
 
@@ -1484,7 +615,9 @@ export default class ObjectList {
     };
 
     private onDocumentContextMenu = (e: MouseEvent) => {
-        if (this.viewMode === 'list') return;
+        // list + nearby use the delegated onContextMenu (row data-object-id);
+        // only the card-family flavors need the capture-phase card lookup.
+        if (this.viewMode === 'list' || this.viewMode === 'nearby') return;
 
         const target = e.target as HTMLElement | null;
         if (!target) return;
@@ -1511,33 +644,9 @@ export default class ObjectList {
         showContextMenu(items, e.clientX, e.clientY);
     };
 
-    private setupPictureInPictureControls(content: HTMLElement) {
-        if (!this.container) return;
-        if (this.container.querySelector("#objects-list-pip-button")) {
-            return;
-        }
-        const pip = window.documentPictureInPicture;
-        if (!pip) {
-            return;
-        }
-        this.container.classList.add("objects-list-pip-supported");
-        const controls = document.createElement("div");
-        controls.className = "objects-list-controls";
-        const button = document.createElement("button");
-        button.type = "button";
-        button.id = "objects-list-pip-button";
-        button.className = "objects-list-button";
-        button.title = "Picture-in-Picture";
-        button.innerHTML = `<span>⤢</span>`;
-        button.addEventListener("click", this.togglePictureInPicture);
-        controls.appendChild(button);
-        this.container.insertBefore(controls, content);
-        this.pipButton = button;
-    }
-
-    private togglePictureInPicture = async (event: MouseEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
+    private togglePictureInPicture = async (event?: MouseEvent) => {
+        event?.preventDefault();
+        event?.stopPropagation();
         if (this.pipWindow) {
             this.closePictureInPicture();
             return;
@@ -1613,12 +722,8 @@ export default class ObjectList {
     }
 
     private updatePictureInPictureButton(active: boolean) {
-        if (!this.pipButton) return;
-        if (active) {
-            this.pipButton.classList.add("objects-list-button-active");
-        } else {
-            this.pipButton.classList.remove("objects-list-button-active");
-        }
+        // The button lives in the React header; tell it to reflect the state.
+        eventBus.emit('objectList.pipActiveChanged', active);
     }
 
     private observePictureInPictureStyles() {
@@ -1895,169 +1000,8 @@ html, body {
             return ['<span style="color: #888; font-style: italic;">Brak obiektow</span>'];
         }
 
-        const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
-        const tm = this.client.TeamManager;
-        const nextQueuedId = tm?.getEnemyQueue?.()?.[0];
-
-        const queuedEnemyExists = nextQueuedId !== undefined &&
-            objects.some((o: any) => typeof o.num !== "undefined" && o.num === nextQueuedId);
-        const validNextQueuedId = queuedEnemyExists ? nextQueuedId : undefined;
-
-        const teamAttacking = objects.some((o: any) => {
-            return tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined;
-        });
-
-        return objects.map((obj: any) => {
-            const num = String(obj.shortcut);
-            const isPlayer = obj.shortcut === '@';
-            let prefix = "  ";
-            const isLeader = tm?.isLeader?.();
-            const isTeammateForDot = tm?.isInTeam?.(obj.desc || "");
-
-            if (isLeader) {
-                if (isPlayer || isTeammateForDot) {
-                    if (obj.defense_target) {
-                        prefix = `<span class="target-dot target-dot-defense target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Rozkazanie obrony celu">>></span>`;
-                    } else {
-                        prefix = `<span class="target-dot target-dot-defense" data-object-num="${num}" data-object-id="${obj.num}" style="color:greenyellow" title="Wyznacz cel obrony">&#8226; </span>`;
-                    }
-                } else {
-                    if (obj.attack_target) {
-                        prefix = `<span class="target-dot target-dot-attack target-dot-active" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Rozkazanie ataku celu">>></span>`;
-                    } else {
-                        prefix = `<span class="target-dot target-dot-attack" data-object-num="${num}" data-object-id="${obj.num}" style="color:orangered" title="Wyznacz cel ataku">&#8226; </span>`;
-                    }
-                }
-            } else {
-                if (obj.attack_target) {
-                    prefix = `<span style="color:orangered">>></span>`;
-                } else if (obj.defense_target) {
-                    prefix = `<span style="color:greenyellow">>></span>`;
-                }
-            }
-
-            const isNextQueued =
-                !isPlayer &&
-                validNextQueuedId !== undefined &&
-                typeof obj.num !== "undefined" &&
-                validNextQueuedId === obj.num;
-            const numClasses = ["object-num"];
-            if (isNextQueued) {
-                numClasses.push("object-num-next-target");
-            }
-            const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
-            let numLabel = isPlayer
-                ? `${prefix}${num}`
-                : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle} title="Zaatakuj">${num}</span>`;
-
-            const rawDesc = obj.desc || "";
-            const isTeammate = tm?.isInTeam?.(rawDesc);
-            const isAttacking = obj.attack_num !== false && obj.attack_num !== undefined;
-
-            const filterContext: EntryContext = {
-                object: obj,
-                displayNum: parseInt(num, 10),
-                isTarget: obj.avatar_target || false,
-                isNextTarget: isNextQueued,
-                isTeammate: isTeammate || false,
-                rawDescription: rawDesc,
-                isAttacking,
-                attackCommand: this.attackController.getAttackCommand()
-            };
-            const filterResult = objectListFilters.apply(filterContext);
-
-            if (filterResult.content?.numberLabel !== undefined) {
-                numLabel = filterResult.content.numberLabel;
-            }
-
-            let descriptionColor: string | undefined;
-            const descClasses = [] as string[];
-
-            if (!isPlayer) {
-                if (obj.avatar_target) {
-                    descriptionColor = "#ffaaaa";
-                } else if (isTeammate) {
-                    descriptionColor = "springgreen";
-                    if (teamAttacking && !isAttacking) {
-                        descClasses.push("team-not-attacking");
-                    }
-                } else if (
-                    typeof obj.hp === "number" &&
-                    isAttacking
-                ) {
-                    descriptionColor = "#b19cd9";
-                }
-            }
-
-            if (filterResult.style?.descriptionColor) {
-                descriptionColor = filterResult.style.descriptionColor;
-            }
-
-            if (filterResult.style?.italic) {
-                descClasses.push("team-not-attacking");
-            }
-
-            if (filterResult.style?.cssClasses) {
-                descClasses.push(...filterResult.style.cssClasses);
-            }
-
-            const displayDesc = filterResult.content?.description !== undefined
-                ? filterResult.content.description
-                : rawDesc;
-
-            let coloredDesc = displayDesc;
-            if (!isPlayer && (descriptionColor || filterResult.style?.descriptionBackgroundColor)) {
-                const classAttr = descClasses.length ? ` class="${descClasses.join(" ")}"` : "";
-                let style = "";
-                if (descriptionColor) {
-                    style += `color:${descriptionColor};`;
-                }
-                if (filterResult.style?.descriptionBackgroundColor) {
-                    style += `background-color:${filterResult.style.descriptionBackgroundColor};`;
-                }
-                coloredDesc = `<span${classAttr} style="${style}">${displayDesc}</span>`;
-            }
-
-            const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
-            const isTeammateStr = isTeammate ? "true" : "false";
-            const desc = isPlayer
-                ? `${displayDesc}${padding}`
-                : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zaslon">${coloredDesc}</span>${padding}`;
-
-            let bar = "";
-            if (filterResult.content?.hpBar !== undefined) {
-                bar = filterResult.content.hpBar;
-            } else if (typeof obj.hp === "number") {
-                const hp = Math.max(0, Math.min(6, obj.hp)) + 1;
-                const colorLevel = getColorLevel(hp, 7, false, true);
-                let color = COLOR_OBJECT[colorLevel];
-
-                if (filterResult.style?.hpBarColor) {
-                    color = filterResult.style.hpBarColor;
-                }
-
-                const filled = "#".repeat(hp);
-                const empty = "-".repeat(7 - hp);
-                const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
-                if (!isPlayer && !isTeammate) {
-                    bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
-                } else if (isTeammate) {
-                    bar = `<span class="object-hp-bar-teammate" data-object-num="${num}" data-object-id="${obj.num}" title="Wycofaj sie">${hpBarContent}</span>`;
-                } else {
-                    bar = hpBarContent;
-                }
-            }
-
-            const attackers = objects
-                .filter((o: any) => o.attack_num === obj.num)
-                .map((o: any) => o.shortcut);
-            const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
-
-            const customPrefix = filterResult.style?.prefix || "";
-            const customSuffix = filterResult.style?.suffix || "";
-
-            return `${numLabel} ${bar} ${customPrefix}${desc}${customSuffix}${arrow}`.trimEnd();
-        });
+        const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());
+        return renderListLines(ctx);
     }
 
     private buildPipHeaderHtml() {

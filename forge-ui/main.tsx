@@ -9,7 +9,7 @@
 import './style.css';
 // Shared, var-driven popup body styles (see src/web/popups/popups.css).
 import '@web/popups/popups.css';
-// SPIKE: adopt the shared dock/layout manager in forge. layout.css brings the
+// Forge adopts the shared dock/layout manager. layout.css brings the
 // dock grid + panel/floating chrome; layout-theme.css re-skins it forged.
 // NOTE: layout.css is intentionally NOT JS-imported here — it is pulled in via an
 // `@import` at the TOP of layout-theme.css instead. A JS-imported layout.css is
@@ -19,7 +19,21 @@ import '@web/popups/popups.css';
 // inlines layout.css into forge's entry chunk in source order, ahead of the
 // overrides, so prod matches dev. See layout-theme.css.
 import './layout-theme.css';
+// Command-rail menu button, its dropdown, and the forged modal shell (with a
+// scoped Bootstrap-form subset) that hosts the stock settings/editors.
+import './components/menu/menu.css';
+// Desktop buttons, mobile direction pad & mobile command radial — shared
+// React components (@web-ui/buttons). buttons-theme.css @imports their base
+// stylesheets ahead of forge's re-skin (border/shadow/font only — per-button
+// colors stay settings-driven); see its header for why they're @imported
+// there rather than JS-imported here.
+import './buttons-theme.css';
+// The login screen (over the whole HUD while disconnected) and its footer
+// reconnect chip.
+import './components/login.css';
 import { createRoot } from 'react-dom/client';
+import { getRenderSettings, onRenderSettingsChange } from '@modules/core/settings';
+import { setOutputTimestampVisibility } from '@shared/dom/outputMessageHandler';
 import {
     setDockingSupported,
     setRailSpanSupported,
@@ -31,23 +45,25 @@ import { createClient } from './client/bootstrap';
 import { ClientProvider } from './client/ClientContext';
 import App from './components/App';
 
-// SPIKE: forge now renders real dock slots (via LayoutManagerWrapper), so
+// Forge renders real dock slots (via LayoutManagerWrapper), so
 // docking IS supported here. Must run before the first popup component mounts
 // (usePopup reads this synchronously).
 setDockingSupported(true);
 
-// SPIKE: forge provides #layout-left/right-dock-host, so it can render the
+// Forge provides #layout-left/right-dock-host, so it can render the
 // "left/right rails span everything" mode. Gate the shared spanningDocks flag on
 // this capability so the stock UI (no host divs) ignores it. Must run before the
 // first LayoutProvider mount.
 setRailSpanSupported(true);
 
-// SPIKE: the built-in objectList slot renders forge's "W poblizu" panel, so
-// retitle its header and drop the stock "Lista"/timers actions. Process-local —
-// does not touch the shared state, so the stock UI keeps "Kondycje".
-setObjectListChrome({ title: 'W poblizu', hideStockActions: true });
+// The built-in objectList panel is the shared "Kondycje" list now; forge just
+// retitles it and defaults it to the "W poblizu" row-flavor. The stock header
+// actions (flavor cycle + timers) stay ON so users can switch flavors. The
+// default is process-local — the stock UI keeps titling it "Kondycje" and
+// defaulting to the "Lista" flavor.
+setObjectListChrome({ title: 'W poblizu', defaultViewMode: 'nearby' });
 
-// SPIKE: force layout mode on so the dock grid activates, keep the built-in
+// Force layout mode on so the dock grid activates, keep the built-in
 // objectList slot enabled (forge renders the forged "W poblizu" panel into it),
 // and default to the vertical rail-span arrangement. NOTE: this persists to the
 // SHARED `layoutManagerState` key — enabling layout mode in the stock UI too.
@@ -59,6 +75,16 @@ saveLayoutState({
     enabled: true,
     enabledPanels: { objectList: true },
     spanningDocks: 'leftRight',
+});
+
+// The output timestamp toggle persists (shared render setting, same key as the
+// stock UI); message-type visibility is session-only. Seed the shared engine's
+// timestamp visibility before the log mounts so the persisted choice applies on
+// load, and keep it in sync if the setting changes elsewhere. The right-click
+// output menu (see GameLog.tsx) drives both toggles at runtime.
+setOutputTimestampVisibility(getRenderSettings().showTimestamps);
+onRenderSettingsChange((render) => {
+    setOutputTimestampVisibility(render.showTimestamps);
 });
 
 const client = createClient();

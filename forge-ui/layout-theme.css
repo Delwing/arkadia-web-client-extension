@@ -59,7 +59,18 @@ body.layout-manager-enabled #content-area > .world {
 :root {
   --surface-ground: transparent;   /* dock zones show the stone backdrop */
   --surface-border: transparent;   /* no hard grid lines; splitters bronze on hover */
-  --bs-primary: var(--bronze);
+  /* Splitters / resize handles / drop previews / active tab underline. Was
+     `--bs-primary`, which forge only got away with because this unlayered
+     `:root` outranks the `:root` block that the scoped modal stylesheet leaks
+     from `@layer forge-modal-bootstrap`. layout.css reads the shell-neutral
+     token now, so nothing here depends on Bootstrap being present. */
+  --layout-accent: var(--bronze);
+  /* Empty-leaf placeholder text. This one had NO forge mapping, so it sat on
+     layout.css's #888 fallback until the modal stylesheet leaked Bootstrap's
+     light `--bs-secondary-color` (near-black) at `:root` and turned it into
+     dark-on-dark for the rest of the session. */
+  --layout-muted: var(--parchment-dim);
+  /* --layout-warning (drag hint) keeps layout.css's #ffc107 fallback. */
 }
 
 /* ── The plate — every managed window becomes a forged panel ──────────────
@@ -311,7 +322,11 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   --popup-control-pressed-bg: rgba(52, 46, 34, 1);
   --popup-border: var(--iron-lo);
   --popup-border-subtle: var(--iron-lo);
-  --popup-border-control: var(--iron-lo);
+  /* Controls keep a rim you can actually see. --iron-lo suits the frame and the
+     dividers above, but stock points inputs, checkboxes, radios and the neutral
+     buttons at this token, and a near-black rim around a dark fill on a dark
+     card erased them (stock's own value here is a visible slate). */
+  --popup-border-control: var(--control-rim);
   --popup-border-strong: var(--bronze-dim);
   --popup-border-stronger: var(--bronze-dim);
   --popup-text: var(--parchment);
@@ -337,6 +352,12 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   --popup-input-text: var(--parchment);
   --popup-input-focus-border: var(--bronze-dim);
   --output-font-family: "JetBrains Mono", ui-monospace, monospace;
+  /* Match forge's game-output size (#main_text_output_msg_wrapper is 12.5px).
+     forge doesn't inherit stock's :root default and never runs the stock
+     UiSettings apply that syncs this var, so without it popups that render text
+     at `var(--output-font-size, 0.875rem)` (chat, combat log, letters…) fell
+     back to 0.875rem/14px and read LARGER than the game log. */
+  --output-font-size: 12.5px;
 
   /* status + data hues, re-tinted for the forge world */
   --popup-success: #8fa15f;
@@ -475,4 +496,229 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   height: 1px;
   margin: 5px 6px;
   background: var(--iron-lo);
+}
+
+/* ============================================================================
+   PEOPLE BROWSER — the add/edit person dialog (Baza postaci → + Dodaj / edit).
+   It portals to <body> (see PersonEditModal), so `[data-popup-overlay]` above
+   already hands it the forge `--popup-*` palette and the shared rules in
+   popups.css give it structure. What that can't supply is CHROME: left alone the
+   dialog is a flat token-coloured box, while every other forge modal is a forged
+   plate. These rules dress it exactly like the menu modals (`.forged.panel--modal`
+   + `.panel__head` in style.css / menu.css) so a popup's dialog and the menu's
+   dialogs read as the same object — same plate, bevel ring, bronze ornament,
+   Cinzel title and dimming blurred backdrop.
+   ============================================================================ */
+.people-modal {
+  background: rgba(6, 5, 4, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* The plate — `.panel--modal`'s matte fine-grain over a vertical iron gradient. */
+.people-modal__dialog {
+  position: relative;
+  border: 1px solid var(--iron-lo);
+  border-radius: 10px;
+  background-color: #0a0a09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.16),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 18px 60px rgba(0, 0, 0, 0.6);
+  color: var(--parchment);
+}
+
+/* The bevel ring, exactly as `.forged::after`. */
+.people-modal__dialog::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(184, 150, 90, 0.2);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+/* Header = `.panel__head`: no rule line, a shadowed lip instead. */
+.people-modal__header {
+  gap: 9px;
+  padding: 11px 14px 7px;
+  border-bottom: 0;
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 -2px 0 rgba(184, 150, 90, 0.06);
+}
+
+/* Title = `.panel__title`, with the bronze romb ornament (`.panel__head .orn`)
+   carried on ::before so the shared markup needs no forge-only element. */
+.people-modal__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+
+.people-modal__title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184, 150, 90, 0.4);
+}
+
+/* Close glyph = `.forge-menu-modal__close`. */
+.people-modal__close {
+  width: 22px;
+  height: 22px;
+  font-family: "Cinzel", serif;
+  color: var(--parchment-dim);
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.people-modal__close:hover {
+  color: var(--bronze);
+  text-shadow: 0 0 8px rgba(184, 150, 90, 0.5);
+}
+
+/* Field captions speak the display voice, like every label in the menu modals
+   (see menu.css `.form-label`) — engraved caption over a Garamond value. */
+.people-modal__label {
+  font-family: "Cinzel", serif;
+  font-size: 0.88em;
+  letter-spacing: 0.01em;
+  color: var(--parchment-dim);
+}
+
+.people-modal__body {
+  padding: 12px 14px;
+}
+
+.people-modal__footer {
+  padding: 8px 14px 10px;
+  border-top-color: var(--iron-lo);
+}
+
+/* ============================================================
+   Object List "W poblizu" (nearby) flavor — forged re-skin.
+   The shared structural + neutral base lives in src/web/popups/
+   popups.css (imported before this file); these rules restyle it
+   to the forge voice: Cinzel names, the bronze key diamond, the
+   blood HP hue and the side-coloured attacker chips. Same class
+   names, loaded later, so they win in forge while the stock UI
+   keeps the neutral base.
+   ============================================================ */
+/* --- objects (W poblizu) --- */
+.obj {
+  position: relative;
+  padding: 5px 1px;
+  border-bottom: 1px solid rgba(255,255,255,.035);
+}
+.obj:last-child { border-bottom: 0; }
+.obj__main { display: flex; align-items: center; gap: 9px; }
+/* leader's marked targets — a forged glow edge on the left of the row:
+   red = marked attack target (/wa), green = marked defense target (/wz). */
+.obj--attack-target::before,
+.obj--defense-target::before {
+  content: "";
+  /* sit in the body gutter, clear of the bronze key diamond */
+  position: absolute; left: -6px; top: 3px; bottom: 3px; width: 2px;
+  border-radius: 1px;
+}
+.obj--attack-target::before {
+  background: linear-gradient(180deg, rgba(215,88,50,.95), rgba(140,50,30,.55));
+  box-shadow: 0 0 6px rgba(200,80,44,.5);
+}
+.obj--defense-target::before {
+  background: linear-gradient(180deg, rgba(150,200,90,.9), rgba(90,130,50,.5));
+  box-shadow: 0 0 6px rgba(140,180,70,.45);
+}
+.obj__key {
+  flex: 0 0 auto; width: 20px; height: 20px;
+  display: grid; place-items: center; position: relative;
+  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
+}
+.obj__key i { font-style: normal; position: relative; z-index: 1; }
+.obj__key::before {                 /* bronze diamond, echoes the panel-header romb */
+  content: "";
+  position: absolute; inset: 2px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  background: rgba(0,0,0,.3);
+  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
+}
+.obj__key.you { color: var(--bronze); }
+.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+/* object names share the location-header voice: Cinzel, uppercase, spaced */
+.obj__name {
+  flex: 1 1 auto; min-width: 0;
+  font-family: "Cinzel", serif; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.obj__name.target { color: #c68c84; }
+.obj__name.enemy  { color: #9a8fae; }
+.obj__name.ally   { color: #8fae7a; }
+.obj__name.item   { color: var(--parchment-dim); }
+.obj__hp {
+  --hp: 60%;
+  --hue: var(--blood);
+  flex: 0 0 auto;
+  width: 42px; height: 6px;
+  border-radius: 3px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+  /* HP is a discrete 1..7 scale; overlay thin tick marks at every 1/7 boundary
+     so the exact level is readable, then the fill gradient underneath. Mirrors
+     the stock base in popups.css (this override otherwise replaces `background`
+     wholesale and would drop the dividers). */
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0, transparent calc(100% / 7 - 1px),
+      rgba(0, 0, 0, .5) calc(100% / 7 - 1px), rgba(0, 0, 0, .5) calc(100% / 7)),
+    linear-gradient(90deg,
+      var(--hue) 0%, var(--hue) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+  filter: saturate(.6);
+}
+/* clickable object parts — number attacks, name guards, HP bar breaks/pulls back
+   (matches the stock object list). A quiet bronze lift signals the affordance. */
+.obj__key.is-clickable,
+.obj__name.is-clickable,
+.obj__hp.is-clickable { cursor: pointer; }
+.obj__key.is-clickable:hover { color: var(--bronze); }
+.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+.obj__name.is-clickable:hover { color: var(--bronze); }
+.obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
+/* attackers (.obj__atks) sit inline at the right end of the row; the chip
+   colours below carry the "who's on it" read (red = threat, green = handled).
+   Layout comes from the shared base. */
+.atk {
+  flex: 0 0 auto;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
+  border-radius: 3px;
+  color: var(--parchment-dim);
+  background: rgba(0,0,0,.32);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
+.atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
+.atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+
+.obj--empty {
+  padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
+  font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
 }

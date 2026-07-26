@@ -5,11 +5,12 @@ import World from './World';
 import CommandRail from './CommandRail';
 import ContextMenu from './ContextMenu';
 import { useClient } from '../client/ClientContext';
+import { ConnectionProvider } from '../client/ConnectionContext';
 import { mountForgedMap } from '../map/forgedMap';
-import ObjectsPanel from './ObjectsPanel';
+import LoginGate from './LoginGate';
 
 /**
- * SPIKE — the Forged HUD shell rebuilt on the SHARED dock manager.
+ * The Forged HUD shell, built on the SHARED dock manager.
  *
  * The DOM mirrors the stock skeleton ids (`#main-container` > `#content-area`
  * grid + `#input-area` + `#layout-bottom-dock-host`) so the shared
@@ -19,15 +20,19 @@ import ObjectsPanel from './ObjectsPanel';
  * forged look comes entirely from layout-theme.css.
  *
  * The built-in map panel is fed the real forged map (`#map`, styled DarkModern
- * by mountForgedMap); the built-in objectList slot renders the forged
- * "W poblizu" panel (ObjectsPanel) instead of the stock "Kondycje" list.
+ * by mountForgedMap); the built-in objectList slot relocates the shared
+ * `#objects-list` node (painted by the shared `ObjectList`, instantiated in
+ * bootstrap). Forge defaults it to the "W poblizu" flavor via setObjectListChrome
+ * — it's just another row-strategy of the one shared panel now, not a fork.
  */
 export default function App() {
     const client = useClient();
 
-    // The static #map host lives in index.html (offscreen). Hand it to the
-    // built-in MapPanel, which relocates it into whichever dock/float owns it.
+    // The static #map / #objects-list hosts live in index.html (offscreen). Hand
+    // them to the built-in panels, which relocate them into whichever dock/float
+    // owns them.
     const mapElement = useMemo(() => document.getElementById('map'), []);
+    const objectListElement = useMemo(() => document.getElementById('objects-list'), []);
 
     // Mount the real forged map into #map. EmbeddedMap binds to #map by id, so
     // this works whether or not MapPanel has already relocated the node.
@@ -36,7 +41,7 @@ export default function App() {
     }, [client]);
 
     return (
-        <>
+        <ConnectionProvider>
             <IconDefs />
             <div className="backdrop" />
             <div className="screen" id="main-container">
@@ -49,9 +54,8 @@ export default function App() {
                     <World />
                     <LayoutManagerWrapper
                         mapElement={mapElement}
-                        objectListElement={null}
+                        objectListElement={objectListElement}
                         objectListTitle="W poblizu"
-                        renderObjectList={() => <ObjectsPanel bare />}
                     />
                 </div>
                 <div id="layout-right-dock-host" />
@@ -61,6 +65,9 @@ export default function App() {
                 <div id="layout-bottom-dock-host" />
             </div>
             <ContextMenu />
-        </>
+            {/* Last, so it layers over the whole HUD without needing a higher
+                z-index than forge's own floating chrome. */}
+            <LoginGate />
+        </ConnectionProvider>
     );
 }

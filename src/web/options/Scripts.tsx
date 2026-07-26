@@ -1,15 +1,63 @@
-import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { useEffect, useState, useRef, ChangeEvent, type ReactNode } from "react";
 import { Button, Form, Badge, Spinner } from "react-bootstrap";
 import { Trash2, Pencil, ExternalLink, Upload, Sparkles } from "lucide-react";
-import { Modal } from "bootstrap";
 import { globalStorage } from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
 import type { LoadedPlugin } from "@shared/types/Plugin";
 import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPluginIds, getAllStoredPlugins } from "@client/utils/pluginStorage";
 import { storeEditorPlugin, type EditorPluginData } from "@client/utils/pluginEditorStorage";
 import { buildAiPluginPrompt } from "../aiPluginPrompt";
+import { editorUrl } from "../appUrls";
 import type { PluginImportWorkerResponse } from "../pluginImport.shared";
 import PluginImportWorker from "../pluginImport.worker?worker";
+
+/**
+ * A sub-dialog rendered *inline*, over whichever modal hosts this panel — the
+ * same hand-rolled shell the alias/trigger editors and CollectOverridesModal use,
+ * and for the same two reasons.
+ *
+ * It replaces markup that used to live in stock's index.html and be driven by id
+ * (`#add-plugin-code-modal`, `#ai-plugin-modal`): those shells exist only in the
+ * stock page, so under forge — which hosts this very component in its own menu
+ * modal — every button that reached for them was a silent no-op.
+ *
+ * The obvious replacement, a react-bootstrap `<Modal>`, does not work here: it
+ * portals to `document.body`, and inside stock's Bootstrap `#scripts-modal` the
+ * two focus managers then fight over the portaled node — Bootstrap's FocusTrap
+ * pulls focus back into the parent dialog while react-overlays' `enforceFocus`
+ * pulls it back to the child, and the net effect is that focus sticks on the
+ * child's close button and its inputs cannot be typed into at all. Rendering
+ * inline sidesteps that (no portal, no second focus trap), and in forge it also
+ * keeps the dialog inside `.forge-menu-modal`, so the scoped Bootstrap sheet and
+ * forge's palette reach it without the portal-tagging workaround.
+ */
+function SubDialog({ title, onClose, footer, children }: {
+    title: string;
+    onClose: () => void;
+    footer: ReactNode;
+    children: ReactNode;
+}) {
+    return (
+        <div
+            className="modal show d-block"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
+            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style={{ zIndex: 1061 }}>
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h5 className="modal-title">{title}</h5>
+                        <button type="button" className="btn-close" onClick={onClose} />
+                    </div>
+                    <div className="modal-body">{children}</div>
+                    <div className="modal-footer">{footer}</div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
@@ -17,8 +65,14 @@ function Scripts() {
     const [pluginInfo, setPluginInfo] = useState<Map<string, LoadedPlugin>>(new Map());
     const [storedPluginMetadata, setStoredPluginMetadata] = useState<Map<string, any>>(new Map());
     const [input, setInput] = useState("");
-    const [codeModal, setCodeModal] = useState<Modal | null>(null);
-    const [aiModal, setAiModal] = useState<Modal | null>(null);
+    // The "Wklej kod" / "Wygeneruj z AI" dialogs are owned by this component now
+    // (see SubDialog above) instead of being host-page markup driven by id.
+    const [showCodeModal, setShowCodeModal] = useState(false);
+    const [showAiModal, setShowAiModal] = useState(false);
+    const [pluginName, setPluginName] = useState("");
+    const [pluginCode, setPluginCode] = useState("");
+    const [aiDescription, setAiDescription] = useState("");
+    const [aiCopied, setAiCopied] = useState(false);
     const [uploadStatus, setUploadStatus] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,21 +118,6 @@ function Scripts() {
         // Load stored scripts directly from IndexedDB instead of localStorage
         loadStoredScriptsFromDB();
 
-        // Initialize Bootstrap modal
-        const modalEl = document.getElementById('add-plugin-code-modal');
-        let modal: Modal | null = null;
-        if (modalEl) {
-            modal = new Modal(modalEl);
-            setCodeModal(modal);
-        }
-
-        const aiModalEl = document.getElementById('ai-plugin-modal');
-        let aiModalInstance: Modal | null = null;
-        if (aiModalEl) {
-            aiModalInstance = new Modal(aiModalEl);
-            setAiModal(aiModalInstance);
-        }
-
         // Initial plugin info refresh
         refreshPluginInfo();
 
@@ -99,12 +138,6 @@ function Scripts() {
 
         // Cleanup function
         return () => {
-            if (modal) {
-                modal.dispose();
-            }
-            if (aiModalInstance) {
-                aiModalInstance.dispose();
-            }
             if (window.client && handlePluginLoaded && handlePluginError && handlePluginDestroyed) {
                 window.client.off('plugin:loaded', handlePluginLoaded);
                 window.client.off('plugin:error', handlePluginError);
@@ -112,55 +145,6 @@ function Scripts() {
             }
         };
     }, []);
-
-    // Setup modal submit handler
-    useEffect(() => {
-        const submitBtn = document.getElementById('plugin-code-submit');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', handleModalSubmit);
-            return () => {
-                submitBtn.removeEventListener('click', handleModalSubmit);
-            };
-        }
-    }, [storedScripts]); // Re-bind when storedScripts changes to capture latest state
-
-    // Setup AI plugin modal handlers
-    useEffect(() => {
-        const copyBtn = document.getElementById('ai-plugin-copy');
-        const gotoPasteBtn = document.getElementById('ai-plugin-goto-paste');
-        const statusEl = document.getElementById('ai-plugin-copy-status');
-
-        const handleCopy = async () => {
-            const descriptionEl = document.getElementById('ai-plugin-description') as HTMLTextAreaElement;
-            const description = descriptionEl?.value.trim();
-            if (!description) {
-                alert("Proszę opisać, co ma robić plugin");
-                return;
-            }
-            try {
-                await navigator.clipboard.writeText(buildAiPluginPrompt(description));
-                if (statusEl) {
-                    statusEl.style.display = '';
-                    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
-                }
-            } catch (error) {
-                console.error("Failed to copy AI prompt:", error);
-                alert("Nie udało się skopiować promptu do schowka");
-            }
-        };
-
-        const handleGotoPaste = () => {
-            aiModal?.hide();
-            codeModal?.show();
-        };
-
-        copyBtn?.addEventListener('click', handleCopy);
-        gotoPasteBtn?.addEventListener('click', handleGotoPaste);
-        return () => {
-            copyBtn?.removeEventListener('click', handleCopy);
-            gotoPasteBtn?.removeEventListener('click', handleGotoPaste);
-        };
-    }, [aiModal, codeModal]);
 
     function save(list: string[]) {
         setScripts(list);
@@ -177,19 +161,8 @@ function Scripts() {
     }
 
     const handleModalSubmit = async () => {
-        console.log("[Scripts] handleModalSubmit called");
-        const nameInput = document.getElementById('plugin-code-name') as HTMLInputElement;
-        const codeTextarea = document.getElementById('plugin-code-input') as HTMLTextAreaElement;
-
-        if (!nameInput || !codeTextarea) {
-            console.error("[Scripts] Modal inputs not found");
-            return;
-        }
-
-        const code = codeTextarea.value.trim();
-        const name = nameInput.value.trim();
-
-        console.log("[Scripts] Code length:", code.length, "Name:", name);
+        const code = pluginCode.trim();
+        const name = pluginName.trim();
 
         if (!code) {
             alert("Proszę wkleić kod pluginu");
@@ -199,11 +172,9 @@ function Scripts() {
         try {
             // Generate a unique ID for the plugin
             const pluginId = generatePluginId(name || code);
-            console.log("[Scripts] Generated plugin ID:", pluginId);
 
             // Store the plugin in IndexedDB
             await storePluginScript(pluginId, code);
-            console.log("[Scripts] Plugin stored in IndexedDB");
 
             // Reload stored scripts list from IndexedDB
             await loadStoredScriptsFromDB();
@@ -212,22 +183,28 @@ function Scripts() {
             const ids = await getAllStoredPluginIds();
             globalStorage.set("stored_scripts", ids);
 
-            // Reset form
-            nameInput.value = "";
-            codeTextarea.value = "";
-
-            // Close modal
-            console.log("[Scripts] Closing modal, codeModal:", codeModal);
-            if (codeModal) {
-                (document.activeElement as HTMLElement)?.blur?.();
-                codeModal.hide();
-                console.log("[Scripts] Modal hide() called");
-            } else {
-                console.error("[Scripts] codeModal is null!");
-            }
+            setPluginName("");
+            setPluginCode("");
+            setShowCodeModal(false);
         } catch (error) {
             console.error("Failed to store plugin:", error);
             alert("Failed to store plugin: " + (error instanceof Error ? error.message : String(error)));
+        }
+    };
+
+    const handleAiCopy = async () => {
+        const description = aiDescription.trim();
+        if (!description) {
+            alert("Proszę opisać, co ma robić plugin");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(buildAiPluginPrompt(description));
+            setAiCopied(true);
+            setTimeout(() => setAiCopied(false), 3000);
+        } catch (error) {
+            console.error("Failed to copy AI prompt:", error);
+            alert("Nie udało się skopiować promptu do schowka");
         }
     };
 
@@ -254,12 +231,15 @@ function Scripts() {
 
     const allScripts = [...scripts, ...storedScripts];
 
+    // Resolved against the client root, not the current document: the forge UI is
+    // served from `<root>/forge-ui/`, where a relative `editor/index.html` would
+    // 404 (there is no editor nested under the sub-apps). See ../appUrls.ts.
     const openEditor = () => {
-        window.open('editor/index.html', '_blank');
+        window.open(editorUrl(), '_blank');
     };
 
     const editStoredPlugin = (pluginId: string) => {
-        window.open(`editor/index.html?plugin=${pluginId}`, '_blank');
+        window.open(editorUrl(pluginId), '_blank');
     };
 
     const handleZipUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -389,10 +369,10 @@ function Scripts() {
                     style={{width: 'auto', flex: '1 1 auto', minWidth: '200px', maxWidth: '400px'}}
                 />
                 <Button size="sm" onClick={add}>Dodaj URL</Button>
-                <Button size="sm" variant="success" onClick={() => codeModal?.show()}>
+                <Button size="sm" variant="success" onClick={() => setShowCodeModal(true)}>
                     Wklej kod
                 </Button>
-                <Button size="sm" variant="outline-primary" onClick={() => aiModal?.show()}>
+                <Button size="sm" variant="outline-primary" onClick={() => setShowAiModal(true)}>
                     <Sparkles size={14} className="me-1" />
                     Wygeneruj z AI
                 </Button>
@@ -491,6 +471,90 @@ function Scripts() {
                     );
                 })}
             </div>
+
+            {showCodeModal && (
+                <SubDialog
+                    title="Dodaj plugin z kodu"
+                    onClose={() => setShowCodeModal(false)}
+                    footer={(
+                        <>
+                            <Button variant="secondary" onClick={() => setShowCodeModal(false)}>Anuluj</Button>
+                            <Button variant="primary" onClick={handleModalSubmit}>Dodaj plugin</Button>
+                        </>
+                    )}
+                >
+                    <Form.Group className="mb-3">
+                        <Form.Label>Nazwa pluginu (opcjonalnie)</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={pluginName}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPluginName(e.target.value)}
+                            placeholder="Moja wtyczka"
+                            autoComplete="off"
+                        />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Kod JavaScript</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={15}
+                            value={pluginCode}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setPluginCode(e.target.value)}
+                            placeholder="export async function init(api) { ... }"
+                            autoComplete="off"
+                            style={{ fontFamily: 'monospace', fontSize: '0.9em' }}
+                        />
+                    </Form.Group>
+                </SubDialog>
+            )}
+
+            {showAiModal && (
+                <SubDialog
+                    title="Wygeneruj plugin z AI"
+                    onClose={() => setShowAiModal(false)}
+                    footer={(
+                        <>
+                            <Button variant="secondary" onClick={() => setShowAiModal(false)}>Zamknij</Button>
+                            <Button
+                                variant="success"
+                                onClick={() => {
+                                    setShowAiModal(false);
+                                    setShowCodeModal(true);
+                                }}
+                            >
+                                Mam kod, wklej go
+                            </Button>
+                        </>
+                    )}
+                >
+                    <p className="text-muted">
+                        Opisz czego ma dokonywać plugin, skopiuj wygenerowany prompt i wklej go do wybranego czatu AI
+                        (np. Claude, ChatGPT). AI zwróci kod w bloku kodu — użyj przycisku kopiowania przy tym bloku,
+                        a następnie wklej go w oknie "Wklej kod".
+                    </p>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Co ma robić ten plugin?</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={4}
+                            value={aiDescription}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setAiDescription(e.target.value)}
+                            placeholder="Np. podswietl na czerwono linie zawierajace moje imie"
+                            autoComplete="off"
+                        />
+                    </Form.Group>
+                    <div className="d-flex flex-wrap gap-2">
+                        <Button variant="primary" onClick={handleAiCopy}>Kopiuj prompt</Button>
+                        <Button variant="outline-secondary" href="https://claude.ai/new" target="_blank" rel="noopener">
+                            Otwórz Claude
+                        </Button>
+                        <Button variant="outline-secondary" href="https://chatgpt.com/" target="_blank" rel="noopener">
+                            Otwórz ChatGPT
+                        </Button>
+                    </div>
+                    {aiCopied && <div className="mt-2 text-success">Skopiowano do schowka!</div>}
+                </SubDialog>
+            )}
         </div>
     );
 }

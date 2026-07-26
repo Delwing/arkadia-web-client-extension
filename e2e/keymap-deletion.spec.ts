@@ -184,6 +184,12 @@ test.describe('Keymap deletion', () => {
     // -----------------------------------------------------------------------
 
     test('deleted keymap is absent after page reload', async ({page}) => {
+        // This case is legitimately heavy for the default 10s budget: it creates
+        // and deletes a keymap, does a full page reload, then re-establishes the
+        // mock game socket and reopens the binds modal. Under CI load that
+        // reconnect (ensureGameSocket) intermittently tips the test over the
+        // timeout mid-`page.evaluate`. Triple the budget for this one test.
+        test.slow();
         await openBindsModal(page);
 
         const keymapSelect = page.locator('#binds-modal .form-select').first();

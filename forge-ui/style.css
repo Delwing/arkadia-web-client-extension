@@ -12,6 +12,17 @@
   --parchment: #cdbfa3;
   --parchment-dim: #8f836c;
 
+  /* Rim for interactive controls — text inputs, selects, checkboxes, radios,
+     switches, neutral buttons. NOT --iron-lo: that is the *panel edge* colour,
+     read as a shadow gap against the lit backdrop, which is right for a frame
+     but leaves a control's own dark fill with no visible edge when it sits on
+     an equally dark card. This is a low-alpha warm bronze — it composites to
+     roughly --iron-hi over any forge surface (so it still reads as forged iron,
+     not a drawn outline), stays in the bronze family that focus/hover escalate
+     into, and survives translucent panel backgrounds. */
+  --control-rim: rgba(184, 150, 90, .30);
+  --control-rim-hover: rgba(184, 150, 90, .5);
+
   --blood: #5c221b;
   --moss:  #3c4626;
   --slate: #26333f;
@@ -284,13 +295,98 @@ body::after {
    saturation so the colors sit in the muted forge world. */
 #main_text_output_msg_wrapper p { margin: 0; filter: saturate(.5); }
 #main_text_output_msg_wrapper p.t-command { color: #c9a86a; }
+
+/* Per-line metadata gutter: a timestamp and a message-type tag leading each
+   output line, hidden until the shared engine toggles the matching
+   `output-show-*` class onto the wrapper / sticky area (driven by the output
+   right-click menu — see GameLog.tsx).
+
+   Layout mirrors stock's `.output_msg_text`: each line is a baseline-aligned
+   flex row, and the content column is `flex:1` (min-width:0 so it can shrink and
+   wrap). That keeps the timestamp/type as fixed left columns and — crucially —
+   makes wrapped body text stay under the content column rather than flowing back
+   under the gutter. Hidden gutter spans are `display:none`, so they drop out of
+   the flex flow entirely and a line without metadata reads exactly as before. */
+#main_text_output_msg_wrapper p,
+#sticky-area p {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+}
+#main_text_output_msg_wrapper p > .output_msg_content,
+#sticky-area p > .output_msg_content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Gutter spans: forged to sit quietly in the muted world — monospace, dimmed,
+   timestamps tabular so they form a clean left rule. */
+#main_text_output_msg_wrapper .output-timestamp,
+#sticky-area .output-timestamp,
+#main_text_output_msg_wrapper .output-message-type,
+#sticky-area .output-message-type {
+  display: none;
+  flex: 0 0 auto;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: .82em;
+  user-select: none;
+}
+#main_text_output_msg_wrapper .output-timestamp,
+#sticky-area .output-timestamp {
+  color: var(--bronze-dim);
+  font-variant-numeric: tabular-nums;
+}
+#main_text_output_msg_wrapper .output-message-type,
+#sticky-area .output-message-type {
+  width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--parchment-dim);
+  opacity: .85;
+}
+#main_text_output_msg_wrapper.output-show-timestamps .output-timestamp,
+#sticky-area.output-show-timestamps .output-timestamp {
+  display: block;
+}
+#main_text_output_msg_wrapper.output-show-message-types .output-message-type,
+#sticky-area.output-show-message-types .output-message-type {
+  display: block;
+}
 #content-width-measure {
   visibility: hidden; position: absolute; white-space: pre;
   font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;
 }
 
+/* Immunise forge's shared output chrome against the stock UiSettings preview.
+   The Interfejs (UiSettings) modal live-previews the *stock* shell: its apply()
+   (uiSettingsCore.ts) writes an inline background straight onto these shared
+   elements to preview the stock "output background" setting. forge drives them
+   from its own theme (transparent log over the panel texture, --void split),
+   so opening the modal would otherwise paint a flat stock grey (#242424) over
+   the textured output — and it sticks after closing, since apply() re-runs on
+   dismiss rather than clearing. A stylesheet !important overrides the
+   non-important inline style, pinning forge's look regardless of the preview.
+   (The split's opaque backdrop is the #split-scenery clone below; pinning the
+   base background-color to --void just stops a stock-grey flash behind it.) */
+#main_text_output_msg_wrapper { background-color: transparent !important; }
+#split-bottom { background-color: var(--void) !important; }
+#objects-list { background-color: transparent !important; }
+
 /* split-scroll: a sticky footer that mirrors the newest lines while the user
-   reads scrollback. Opaque over the void so scrollback never bleeds through. */
+   reads scrollback. It must read as a seamless continuation of the output, not a
+   lit shelf — but it also has to be opaque so scrollback never bleeds through.
+   The output above is transparent, so its "background" is really body's viewport-
+   fixed backdrop (rotated stone + fine-noise + vignette). We can't just paint a
+   flat colour (reads as a black shelf) and `background-attachment: fixed` is out —
+   the output scroller carries a mask-image, and a masked ancestor degrades fixed
+   attachment to `scroll`, collapsing the viewport-sized gradients into this small
+   box (i.e. black). Instead #split-scenery (below) is a viewport-fixed *clone* of
+   that backdrop, and `clip-path: inset(0)` here clips it to this box. clip-path
+   clips the fixed descendant's paint WITHOUT re-anchoring it (unlike transform /
+   filter / contain, which would establish a containing block and misalign it), so
+   the clone lines up pixel-for-pixel with the real backdrop showing through the
+   output above. The clone is opaque, so scrollback never bleeds through. */
 #split-bottom {
   position: sticky;
   bottom: 0;
@@ -305,12 +401,57 @@ body::after {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--void);
+  background-color: var(--void);
+  /* clips #split-scenery to this box. Also clips any outset box-shadow, so the
+     old upward "shelf" shadow is intentionally gone — the seamless backdrop plus
+     the hairline handle carry the separation now. */
+  clip-path: inset(0);
   border-top: 1px solid var(--iron-hi);
-  box-shadow: 0 -10px 18px -6px rgba(0,0,0,.75);
   /* undo the wrapper's top fade so the pinned lines stay fully legible */
   -webkit-mask-image: none;
           mask-image: none;
+}
+/* Viewport-fixed clone of body's backdrop, clipped to #split-bottom by its
+   clip-path. Mirrors body exactly: --void base, the rotated stone (.split-stone,
+   cf. .backdrop), the soft-light fine noise (::before, cf. body::before) and the
+   vignette (::after, cf. body::after). z-index:-1 keeps it behind the pinned
+   lines while still covering the --void base. Kept in sync with body / .backdrop. */
+#split-scenery {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--void);
+  pointer-events: none;
+}
+#split-scenery .split-stone {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  background: url("assets/bg.jpg") center center / cover no-repeat;
+  filter: brightness(.33) saturate(.73) contrast(1.05);
+  z-index: -1;
+}
+#split-scenery::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: var(--tex-fine);
+  background-size: 140px 140px;
+  mix-blend-mode: soft-light;
+  opacity: .45;
+}
+#split-scenery::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(130% 80% at 50% 128%, rgba(158,78,34,.22), transparent 55%),
+    radial-gradient(120% 125% at 50% 44%, rgba(0,0,0,.16) 8%, rgba(0,0,0,.5) 55%, rgba(0,0,0,.82) 100%),
+    radial-gradient(1.5px 1.5px at 20% 82%, rgba(206,116,58,.5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 68% 74%, rgba(206,116,58,.38), transparent 60%),
+    radial-gradient(1px 1px at 44% 90%, rgba(206,116,58,.3), transparent 60%),
+    radial-gradient(1px 1px at 82% 88%, rgba(206,116,58,.26), transparent 60%),
+    linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,.38));
 }
 #split-bottom.split-hidden { display: none; }
 #split-handle {
@@ -333,7 +474,9 @@ body::after {
   justify-content: flex-end;
   gap: 4px;
   padding-top: 4px;
-  background: var(--void);
+  /* transparent so #split-bottom's fixed backdrop shows through — the opaque
+     --void base lives on the parent, so scrollback still can't bleed through. */
+  background: transparent;
 }
 
 /* ============================================================ THE RAIL */
@@ -948,113 +1091,12 @@ textarea.cmd-input {
 }
 .map__exits:empty { display: none; }
 
-/* --- objects (W poblizu) --- */
-.obj {
-  position: relative;
-  padding: 5px 1px;
-  border-bottom: 1px solid rgba(255,255,255,.035);
-}
-.obj:last-child { border-bottom: 0; }
-.obj__main { display: flex; align-items: center; gap: 9px; }
-/* you or an ally is being hit by an enemy — a blood edge in the body gutter */
-.obj--threatened::before {
-  content: "";
-  position: absolute; left: -7px; top: 3px; bottom: 3px; width: 2px;
-  border-radius: 1px;
-  background: linear-gradient(180deg, rgba(190,72,52,.9), rgba(120,42,30,.5));
-  box-shadow: 0 0 6px rgba(160,60,44,.5);
-}
-.obj__key {
-  flex: 0 0 auto; width: 20px; height: 20px;
-  display: grid; place-items: center; position: relative;
-  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
-}
-.obj__key i { font-style: normal; position: relative; z-index: 1; }
-.obj__key::before {                 /* bronze diamond, echoes the panel-header romb */
-  content: "";
-  position: absolute; inset: 2px;
-  transform: rotate(45deg);
-  border-radius: 2px;
-  background: rgba(0,0,0,.3);
-  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
-}
-.obj__key.you { color: var(--bronze); }
-.obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
-/* object names share the location-header voice: Cinzel, uppercase, spaced */
-.obj__name {
-  flex: 1 1 auto; min-width: 0;
-  font-family: "Cinzel", serif; text-transform: uppercase;
-  font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.obj__name.target { color: #c68c84; }
-.obj__name.enemy  { color: #9a8fae; }
-.obj__name.ally   { color: #8fae7a; }
-.obj__name.item   { color: var(--parchment-dim); }
-.obj__hp {
-  --hp: 60%;
-  --hue: var(--blood);
-  margin-left: auto; flex: 0 0 auto;
-  width: 48px; height: 6px;
-  border-radius: 3px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
-  background:
-    linear-gradient(90deg,
-      var(--hue) 0%, var(--hue) var(--hp),
-      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
-      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
-  filter: saturate(.6);
-}
-/* clickable object parts — number attacks, name guards, HP bar breaks/pulls back
-   (matches the stock object list). A quiet bronze lift signals the affordance. */
-.obj__key.is-clickable,
-.obj__name.is-clickable,
-.obj__hp.is-clickable { cursor: pointer; }
-.obj__key.is-clickable:hover { color: var(--bronze); }
-.obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
-.obj__name.is-clickable:hover { color: var(--bronze); }
-.obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
-/* the fray: which objects are attacking THIS one, colored by their side.
-   red chips on your/ally row = threat; green chips on an enemy row = handled. */
-.obj__fray {
-  display: flex; align-items: center; gap: 6px;
-  margin: 3px 0 1px 29px;   /* line up under the name, past the key diamond */
-}
-.obj__fray-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.atk {
-  flex: 0 0 auto;
-  min-width: 15px; height: 15px; padding: 0 3px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
-  border-radius: 3px;
-  color: var(--parchment-dim);
-  background: rgba(0,0,0,.32);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
-}
-.atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
-.atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
-.atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
-
-.obj--empty {
-  padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
-  font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
-}
-
+/* objects (W poblizu) rows — the forged re-skin moved to layout-theme.css so it
+   layers AFTER the shared .obj base in popups.css (this file is imported before
+   popups.css, which would otherwise win). See layout-theme.css. */
 /* Inline connect prompt — printed into the game log while the transport is
    down (see GameLog), removed when the socket opens. The button reads as a
    forged call-to-action rather than a plain line of output. */
-.connect-prompt { margin: 8px 0; text-align: left; }
-.connect-link {
-  font-family: "Cinzel", serif; letter-spacing: .18em; text-transform: uppercase;
-  font-size: 12px; color: var(--bronze); cursor: pointer;
-  padding: 7px 20px; border-radius: 5px;
-  border: 1px solid rgba(184,150,90,.4);
-  background: linear-gradient(180deg, #221d16, #100e0b);
-  box-shadow: inset 0 1px 0 rgba(184,150,90,.16), inset 0 0 0 1px rgba(0,0,0,.5);
-  transition: color .12s, border-color .12s;
-}
-.connect-link:hover { color: var(--parchment); border-color: rgba(184,150,90,.7); }
-
 /* ============================================================
    HOVER TOOLTIP + CONTEXT MENU — herb / book descriptions
    Flat forged panels, cut from the same recipe as the left-hand

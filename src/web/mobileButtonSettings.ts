@@ -388,98 +388,18 @@ export function computeBoxShadow(bgColor: string): string {
     return `0 2px 5px rgba(0, 0, 0, ${shadowOpacity})`;
 }
 
+/**
+ * Notify listeners that mobile button settings changed. The actual DOM for
+ * `#mobile-direction-buttons` is now owned by the shared `MobileDirectionButtons`
+ * React component (src/ui/web/buttons), which re-renders declaratively from
+ * `globalStorage`'s `mobileButtonSettings` key — this function no longer
+ * mutates that DOM directly (it used to rebuild the buttons imperatively,
+ * which would fight React for ownership of the container's children).
+ * Kept for `MobileCommandRadial`'s reactivity (it reloads its own settings on
+ * this event) and for callers like the settings editors that still expect a
+ * post-save "apply" step.
+ */
 export function applySettings(settings: Settings, inTeam = false, isLeader = false) {
     const set = isLeader ? settings.leader : inTeam ? settings.team : settings.solo;
-    const container = document.getElementById('mobile-direction-buttons') as HTMLDivElement | null;
-    if (container) {
-        container.classList.toggle('drag-locked', settings.locked);
-        if (settings.locked) {
-            container.setAttribute('data-drag-locked', 'true');
-        } else {
-            container.removeAttribute('data-drag-locked');
-        }
-        container.style.gridTemplateColumns = `repeat(${set.cols}, auto)`;
-        const bgColor = set.background || defaultBackground;
-        container.style.backgroundColor = bgColor;
-        container.style.boxShadow = computeBoxShadow(bgColor);
-
-        // Get button size and gap from settings
-        const buttonSize = settings.buttonSize ?? defaultButtonSize;
-        const buttonGap = settings.buttonGap ?? defaultButtonGap;
-        container.style.gap = buttonGap + 'px';
-
-        const z = document.getElementById('z-buttons-list');
-        const zas = document.getElementById('zas-buttons-list');
-        const w = document.getElementById('w-buttons-list');
-        const prze = document.getElementById('prze-buttons-list');
-        const idz = document.getElementById('idz-buttons-list');
-        container.querySelectorAll('button').forEach(b => b.remove());
-        const empty: MobileButtonSetting = { ...emptyButton };
-        const insertBefore = z || zas || w || prze || idz || null;
-        set.order.forEach(id => {
-            const cfg = set.buttons[id] || defaultSettings[id] || empty;
-
-            // Handle color syncing for special exit buttons
-            let effectiveColor = cfg.color;
-            let effectiveActiveColor = cfg.activeColor;
-            if (cfg.macroType === 'specialExit' && cfg.syncWithDirections) {
-                // Find a direction button to sync colors from
-                const directionButton = Object.values(set.buttons).find(b => b.macroType === 'kierunek');
-                if (directionButton) {
-                    effectiveColor = directionButton.color;
-                    effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
-                }
-            }
-
-            const btn = document.createElement('button');
-            btn.id = id;
-            btn.className = 'mobile-button';
-            if (cfg.macroType === 'kierunek') {
-                btn.classList.add('direction-button');
-            } else if (cfg.macroType === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections)) {
-                btn.classList.add('direction-button');
-                btn.classList.add('mobile-button-text');
-            } else {
-                btn.classList.add('mobile-button-text');
-            }
-            const isEmpty = cfg.macroType === 'empty' || !cfg.label;
-            if (!isEmpty) {
-                btn.textContent = cfg.label;
-                if (cfg.macroType === 'kierunek' || (cfg.macroType === 'specialExit' && (effectiveActiveColor || cfg.syncWithDirections))) {
-                    btn.style.setProperty('--color', effectiveColor);
-                    btn.style.setProperty('--active-color', effectiveActiveColor || '#2fa7c5');
-                    btn.style.backgroundColor = effectiveColor;
-                } else {
-                    btn.style.backgroundColor = cfg.color;
-                    btn.style.removeProperty('--color');
-                    btn.style.removeProperty('--active-color');
-                }
-                btn.style.color = cfg.fontColor || defaultFontColor;
-            } else {
-                btn.classList.add('empty');
-                btn.style.removeProperty('--color');
-                btn.style.removeProperty('--active-color');
-                btn.style.color = '';
-                btn.style.backgroundColor = 'transparent';
-            }
-            container.insertBefore(btn, insertBefore);
-        });
-
-        // Apply button size with dynamic font sizing
-        const buttons = container.querySelectorAll<HTMLButtonElement>('.mobile-button');
-        buttons.forEach(btn => {
-            const isTextButton = btn.classList.contains('mobile-button-text');
-            // Font size scales with button size: direction ~35%, text ~20% to ensure fit
-            const fontSize = isTextButton ? Math.max(6, Math.round(buttonSize * 0.20)) : Math.round(buttonSize * 0.35);
-            btn.style.width = buttonSize + 'px';
-            btn.style.height = buttonSize + 'px';
-            btn.style.fontSize = fontSize + 'px';
-        });
-
-        const lists = document.querySelectorAll<HTMLDivElement>('.mobile-z-buttons, .mobile-idz-buttons');
-        lists.forEach(div => {
-            div.style.gridAutoRows = buttonSize + 'px';
-        });
-    }
     eventBus.emit('mobileButtonsSettings', set.buttons);
 }

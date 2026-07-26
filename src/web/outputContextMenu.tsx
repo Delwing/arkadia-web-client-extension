@@ -54,19 +54,24 @@ function iconLabel(Icon: LucideIcon, text: string): ReactNode {
 export interface OutputContextMenuOptions {
     /**
      * Whether the host renders the shared `.output_msg` message wrappers (the
-     * `setupOutputMessageHandler` structure with `.output-timestamp` /
-     * `.output-message-type` / `.output_msg_content` spans). The timestamp/type
-     * toggles and copy-as-image / save-as-HTML entries all operate on that
-     * structure, so a host that renders its own plain output (e.g. forge-ui)
-     * passes `false` to omit them rather than offering entries that no-op.
-     * Defaults to `true` (the stock UI).
+     * `setupOutputMessageHandler` structure with the `.output_msg_content` span
+     * and copy/serialise affordances). The copy-as-image / save-as-HTML entries
+     * walk that structure, so a host rendering its own plain output (e.g.
+     * forge-ui) passes `false` to omit them. Defaults to `true` (the stock UI).
      */
     messageWrappersSupported?: boolean;
+    /**
+     * Whether to offer the "show/hide timestamps" and "show/hide message types"
+     * toggles. These only need each line to carry `.output-timestamp` /
+     * `.output-message-type` spans (which forge-ui also emits), so they are
+     * decoupled from {@link messageWrappersSupported}. Defaults to `true`.
+     */
+    messageMetadataToggles?: boolean;
 }
 
 export function setupOutputContextMenu(
     outputWrapper: HTMLElement,
-    { messageWrappersSupported = true }: OutputContextMenuOptions = {},
+    { messageWrappersSupported = true, messageMetadataToggles = true }: OutputContextMenuOptions = {},
 ): () => void {
     const handler = (event: MouseEvent) => {
         if (event.defaultPrevented) return;
@@ -82,7 +87,7 @@ export function setupOutputContextMenu(
 
         const items: ContextMenuEntry[] = [];
 
-        if (messageWrappersSupported) {
+        if (messageMetadataToggles) {
             items.push(
                 {
                     label: timestampsVisible ? 'Ukryj znaczniki czasu' : 'Pokaż znaczniki czasu',

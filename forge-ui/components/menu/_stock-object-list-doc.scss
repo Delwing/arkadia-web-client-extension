@@ -1,0 +1,896 @@
+// ============================================================
+//  Stock "Lista obiektow" documentation styles — reused verbatim, scoped.
+//
+//  The docs modal body is built imperatively from `src/web/objectListDoc.ts`
+//  (the `.ol-doc` page) and `src/web/docs.ts`. That markup — the tab strip, the
+//  list/card/compact/dots demos, the anatomy diagrams, the action tables and the
+//  colour grids — is authored against stock's global `src/web/style.css`, where
+//  the `.ol-doc …` chrome (style.css "Object List Documentation" section) and the
+//  live `.object-card` component styles (style.css "Object List Card View"
+//  section) both live. forge can't load that sheet globally, so this partial
+//  carries just those two blocks and is @imported INSIDE the `.forge-menu-modal`
+//  block of forge-modal-bootstrap.scss — every selector compiles prefixed with
+//  `.forge-menu-modal`, so nothing leaks to forge's own HUD (whose "W poblizu"
+//  panel reuses the same `.object-card` class names but lives outside the modal).
+//
+//  Theming: stock's `.object-card`/`.ol-doc` rules read `--popup-*` for their card
+//  surfaces, borders and accents. Those vars are only defined on forge's popup
+//  bodies (`.managed-panel, [data-popup-overlay]` in layout-theme.css), never on
+//  the menu modal, so without the map below the copied rules would resolve to
+//  transparent. The `.ol-doc` block re-declares just the `--popup-*` the copied
+//  CSS consumes, mapped to forge's bronze/iron palette (values kept in sync with
+//  that layout-theme remap) — so the whole doc (all demo cards are nested inside
+//  `.ol-doc`) recolours forged for free. The doc's own tab/panel/anatomy chrome
+//  keeps stock's neutral slate literals, matching how it reads in the stock modal.
+// ============================================================
+
+// ── Forge palette for the copied stock rules ────────────────
+// Scoped to `.ol-doc` so it covers every `.object-card` the demos render (all are
+// nested inside `.ol-doc`) without touching the other modal panels' `--popup-*`.
+.ol-doc {
+    --popup-subtle-bg: rgba(255, 255, 255, 0.03);
+    --popup-border-subtle: var(--iron-lo);
+    --popup-control-hover-bg: rgba(42, 37, 28, 0.9);
+    --popup-control-pressed-bg: rgba(52, 46, 34, 1);
+    --popup-text-strong: var(--parchment);
+    --popup-accent: var(--bronze);
+    --popup-accent-bg: rgba(110, 86, 32, 0.28);
+    --popup-accent-hover-bg: rgba(110, 86, 32, 0.45);
+    --popup-accent-subtle-bg: rgba(110, 86, 32, 0.18);
+    --popup-accent-border: var(--bronze-dim);
+    --popup-accent-dim-bg: rgba(110, 86, 32, 0.14);
+    --popup-data-spring-green: #92ab7c;
+}
+
+// ============================================================
+//  Object List Card View — verbatim from src/web/style.css
+//  (used by the card / compact / dots demos and the anatomy diagrams).
+// ============================================================
+
+/* Object List Card View */
+.objects-list-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+  font-size: inherit;
+}
+
+/* Card uses vertical flex layout with 3 rows */
+.object-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 50px;
+  background: var(--popup-subtle-bg);
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* Row 1: number, name, icons */
+.object-card__row1 {
+  display: flex;
+  align-items: center;
+  padding: 0.4em 0.6em 0.15em 0.6em;
+  gap: 0.45em;
+}
+
+/* Row 2: attackers */
+.object-card__row2 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 0.6em 0.4em 2.35em;
+  min-height: 1.2em;
+  margin-top: -0.05em;
+}
+
+/* Number badge */
+.object-card__number {
+  min-width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--popup-control-pressed-bg);
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--popup-text-strong);
+  padding: 0 0.3em;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.object-card__number:hover {
+  background: var(--popup-accent-bg);
+}
+
+.object-card__number--next-target {
+  background: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+/* Name */
+.object-card__name {
+  flex: 1;
+  font-size: 1em;
+  font-weight: 500;
+  color: var(--popup-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.object-card__name--target {
+  color: #ffaaaa;
+}
+
+.object-card__name--teammate {
+  color: var(--popup-data-spring-green);
+}
+
+.object-card__name--attacking {
+  color: #b19cd9;
+}
+
+.object-card__name--teammate-not-attacking {
+  display: inline-block;
+  transform: skewX(-10deg);
+}
+
+/* Action icons */
+.object-card__icons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.object-card__icon {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 3px;
+}
+
+.object-card__icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background-color: var(--popup-control-hover-bg);
+}
+
+/* Attack icon (sword) */
+.object-card__icon--attack {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2.5 -0.5 13 13'%3E%3Cpath fill='%23ff6b6b' d='M13.854.854a.5.5 0 0 0-.708 0L10.5 3.5 9.854 2.854a.5.5 0 0 0-.707 0l-.707.707a.5.5 0 0 0 0 .707L9.293 5.12l-5.586 5.586a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L10.707 6.535l.853.854a.5.5 0 0 0 .707 0l.707-.707a.5.5 0 0 0 0-.707L12.12 5.12l2.647-2.647a.5.5 0 0 0 0-.707L14.06.56a.5.5 0 0 0-.207-.06z'/%3E%3C/svg%3E");
+}
+
+/* Guard/Shield icon */
+.object-card__icon--guard {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2360a5fa' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3C/svg%3E");
+}
+
+/* Przelam/Break defense icon - broken shield */
+.object-card__icon--przelam {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23fbbf24' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3Cpath fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round' d='M8 2.5L6.5 5.5 9 8 6 11 8 14'/%3E%3C/svg%3E");
+}
+
+/* Mark attack target icon (crosshair) - orangered */
+.object-card__icon--mark-attack {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23ff4500' stroke-width='1.5'/%3E%3Cpath stroke='%23ff4500' stroke-width='1.5' d='M8 1v3M8 12v3M1 8h3M12 8h3'/%3E%3Ccircle cx='8' cy='8' r='2' fill='%23ff4500'/%3E%3C/svg%3E");
+}
+
+.object-card__icon--mark-attack--active {
+  opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23ff4500' stroke-width='2'/%3E%3Cpath stroke='%23ff4500' stroke-width='2' d='M8 1v3M8 12v3M1 8h3M12 8h3'/%3E%3Ccircle cx='8' cy='8' r='2.5' fill='%23ff4500'/%3E%3C/svg%3E");
+}
+
+/* Mark defense target icon (shield with star) - greenyellow */
+.object-card__icon--mark-defense {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23adff2f' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3Cpath fill='%23000' d='M8 4v4M6 6h4' stroke='%23000' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.object-card__icon--mark-defense--active {
+  opacity: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23adff2f' d='M5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z'/%3E%3Cpath fill='%23000' d='M8 4v4M6 6h4' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* Attackers */
+.object-card__attackers {
+  display: flex;
+  align-items: center;
+  gap: 0.15em;
+}
+
+.object-card__attacker {
+  min-width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 107, 0.3);
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  color: white;
+}
+
+/* HP bar at bottom */
+.object-card__hp-bar,
+.object-card__hp-bar--teammate {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 0 0 5px 5px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Vertical dividers for HP levels (7 levels = 6 dividers) */
+.object-card__hp-bar::after,
+.object-card__hp-bar--teammate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0%,
+    transparent calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7),
+    transparent calc(100% / 7),
+    transparent calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7),
+    transparent calc(200% / 7),
+    transparent calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7),
+    transparent calc(300% / 7),
+    transparent calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7),
+    transparent calc(400% / 7),
+    transparent calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7),
+    transparent calc(500% / 7),
+    transparent calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7),
+    transparent calc(600% / 7),
+    transparent 100%
+  );
+}
+
+.object-card__hp-bar:hover,
+.object-card__hp-bar--teammate:hover {
+  background: var(--popup-control-hover-bg);
+}
+
+.object-card__hp-fill {
+  height: 100%;
+  background-color: #22c55e;
+  transition: width 0.2s ease;
+}
+
+/* Player card styling */
+.object-card--player {
+  background: var(--popup-accent-dim-bg);
+  border-color: var(--popup-accent-subtle-bg);
+}
+
+.object-card--player .object-card__number {
+  background: var(--popup-accent-hover-bg);
+  color: var(--popup-accent);
+}
+
+/* Teammate card styling */
+.object-card--teammate {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+/* Target card styling */
+.object-card--target {
+  background: linear-gradient(135deg, rgba(255, 100, 100, 0.15) 0%, rgba(255, 170, 170, 0.05) 100%);
+  border-color: rgba(255, 170, 170, 0.4);
+  box-shadow: 0 0 8px rgba(255, 170, 170, 0.2);
+}
+
+/* Next queued target */
+.object-card--next-queued {
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+/* Attack target indicator (orangered left border) - using inset shadow to avoid layout shift */
+.object-card--attack-target {
+  box-shadow: inset 3px 0 0 orangered;
+}
+
+/* Defense target indicator (greenyellow left border) - using inset shadow to avoid layout shift */
+.object-card--defense-target {
+  box-shadow: inset 3px 0 0 greenyellow;
+}
+
+/* Compact Card View */
+.objects-list-cards--compact {
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.object-card--compact {
+  flex-direction: row;
+  min-height: 22px;
+  padding: 0;
+  gap: 0;
+}
+
+.object-card--compact .object-card__compact-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 2px 6px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.object-card--compact .object-card__number {
+  min-width: 1.4em;
+  height: 1.4em;
+  font-size: 0.8em;
+  padding: 0 0.25em;
+}
+
+.object-card--compact .object-card__attacker {
+  min-width: 1.4em;
+  height: 1.4em;
+  font-size: 0.8em;
+  padding: 0;
+}
+
+.object-card--compact .object-card__name {
+  font-size: 0.9em;
+  line-height: 1.3;
+}
+
+/* Vertical HP bar for compact mode */
+.object-card__hp-bar-vertical,
+.object-card__hp-bar-vertical--teammate {
+  width: 8px;
+  min-width: 8px;
+  display: flex;
+  flex-direction: column-reverse;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 5px 0 0 5px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Horizontal dividers for HP levels (7 levels = 6 dividers) */
+.object-card__hp-bar-vertical::after,
+.object-card__hp-bar-vertical--teammate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(100% / 7),
+    transparent calc(100% / 7),
+    transparent calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(200% / 7),
+    transparent calc(200% / 7),
+    transparent calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(300% / 7),
+    transparent calc(300% / 7),
+    transparent calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(400% / 7),
+    transparent calc(400% / 7),
+    transparent calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(500% / 7),
+    transparent calc(500% / 7),
+    transparent calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7 - 1px),
+    rgba(0, 0, 0, 0.7) calc(600% / 7),
+    transparent calc(600% / 7),
+    transparent 100%
+  );
+}
+
+.object-card__hp-bar-vertical:hover,
+.object-card__hp-bar-vertical--teammate:hover {
+  background: var(--popup-control-hover-bg);
+}
+
+.object-card__hp-fill-vertical {
+  width: 100%;
+  background-color: #22c55e;
+  transition: height 0.2s ease;
+}
+
+/* Inline attackers for compact mode */
+.object-card__attackers-inline {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Compact mode target indicators - right border */
+.object-card--compact.object-card--attack-target {
+  box-shadow: none;
+  border-right: 2px solid orangered;
+}
+
+.object-card--compact.object-card--defense-target {
+  box-shadow: none;
+  border-right: 2px solid greenyellow;
+}
+
+/* Target dots for compact mode (leader functionality) */
+.object-card__target-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.object-card__target-dot:hover {
+  opacity: 1;
+}
+
+.object-card__target-dot--defense {
+  background-color: greenyellow;
+}
+
+.object-card__target-dot--attack {
+  background-color: orangered;
+}
+
+.object-card__target-dot--active {
+  opacity: 1;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.object-card__target-dot--defense.object-card__target-dot--active {
+  box-shadow: 0 0 4px greenyellow;
+}
+
+.object-card__target-dot--attack.object-card__target-dot--active {
+  box-shadow: 0 0 4px orangered;
+}
+
+/* HP Dots for compact-dots mode */
+.object-card__hp-dots,
+.object-card__hp-dots--teammate {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.object-card__hp-dots:hover,
+.object-card__hp-dots--teammate:hover {
+  opacity: 0.8;
+}
+
+.object-card__hp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.object-card__hp-dot--filled {
+  /* Filled dots use the full 6px space */
+}
+
+.object-card__hp-dot--empty {
+  background-color: transparent;
+}
+
+.object-card__hp-dot--empty::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #555;
+}
+
+/* Compact dots mode - no left HP bar */
+.object-card--compact-dots .object-card__hp-bar-vertical,
+.object-card--compact-dots .object-card__hp-bar-vertical--teammate {
+  display: none;
+}
+
+// ============================================================
+//  Object List Documentation chrome — verbatim from src/web/style.css.
+// ============================================================
+
+.ol-doc {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ol-doc h2 {
+  font-size: 1.05rem;
+  margin-top: 1.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.ol-doc h3 {
+  font-size: 0.92rem;
+  margin-top: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.ol-doc .subtitle {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-top: 0;
+}
+
+/* List view demo container (replaces #objects-list styling) */
+.ol-doc .demo-box-list {
+  padding: 0.5vh 1vh;
+  font-family: monospace;
+  font-size: 0.6rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 0.1vh solid silver;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ol-doc .demo-box-list .objects-list-content {
+  white-space: pre;
+}
+
+.ol-doc .demo-box-list .object-num,
+.ol-doc .demo-box-list .object-desc,
+.ol-doc .demo-box-list .object-hp-bar,
+.ol-doc .demo-box-list .object-hp-bar-teammate {
+  cursor: pointer;
+}
+
+.ol-doc .demo-box-list .target-dot {
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.ol-doc .demo-box-list .target-dot.target-dot-active {
+  opacity: 1;
+}
+
+.ol-doc .demo-box-list .team-not-attacking {
+  display: inline-block;
+  transform: skewX(-10deg);
+}
+
+/* Card view demo container */
+.ol-doc .demo-box {
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 0.1vh solid silver;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Tabs */
+.ol-doc .ol-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0;
+}
+
+.ol-doc .ol-tab {
+  padding: 0.5rem 1.2rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+
+.ol-doc .ol-tab:hover {
+  color: #94a3b8;
+  background: #253347;
+}
+
+.ol-doc .ol-tab.active {
+  color: var(--popup-accent);
+  background: #1e293b;
+  border-color: var(--popup-accent);
+  border-bottom-color: #1e293b;
+  position: relative;
+  z-index: 1;
+}
+
+.ol-doc .ol-tab-panels {
+  border: 1px solid #334155;
+  border-radius: 0 6px 6px 6px;
+  background: #1e293b;
+  margin-top: -1px;
+}
+
+.ol-doc .ol-tab-panel {
+  display: none;
+  padding: 1.5rem;
+}
+
+.ol-doc .ol-tab-panel.active {
+  display: block;
+}
+
+/* Anatomy diagram (list view segments) */
+.ol-doc .anatomy {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 1.2rem 1rem 1rem;
+  font-family: monospace;
+  font-size: 13px;
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.ol-doc .anatomy-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin-bottom: 0.5rem;
+}
+
+.ol-doc .anatomy-seg {
+  padding: 3px 6px;
+  border-radius: 4px;
+  position: relative;
+}
+
+.ol-doc .anatomy-seg::after {
+  content: attr(data-idx);
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ol-doc .seg-prefix { background: rgba(173, 255, 47, 0.15); border: 1px solid rgba(173, 255, 47, 0.4); }
+.ol-doc .seg-num { background: rgba(255, 107, 107, 0.15); border: 1px solid rgba(255, 107, 107, 0.4); }
+.ol-doc .seg-hp { background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.4); }
+.ol-doc .seg-name { background: var(--popup-accent-subtle-bg); border: 1px solid var(--popup-accent-border); }
+.ol-doc .seg-arrow { background: rgba(100, 116, 139, 0.15); border: 1px solid rgba(100, 116, 139, 0.4); }
+
+/* Anatomy legend */
+.ol-doc .anatomy-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.ol-doc .anatomy-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ol-doc .anatomy-legend b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Anatomy using real card markup */
+.ol-doc .anatomy-real {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 1.2rem 1rem 1rem;
+  margin-top: 1rem;
+}
+
+.ol-doc .anatomy-real .objects-list-cards {
+  max-width: 300px;
+}
+
+.ol-doc .anatomy-real .object-card {
+  overflow: visible;
+}
+
+.ol-doc .anatomy-real .object-card__hp-bar,
+.ol-doc .anatomy-real .object-card__hp-bar--teammate,
+.ol-doc .anatomy-real .object-card__hp-bar-vertical,
+.ol-doc .anatomy-real .object-card__hp-bar-vertical--teammate {
+  overflow: visible;
+}
+
+.ol-doc .anatomy-real .object-card__hp-fill {
+  border-radius: 0 0 0 5px;
+}
+
+.ol-doc .anatomy-real .object-card__name {
+  overflow: visible;
+}
+
+.ol-doc .anatomy-real .marker {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.55rem;
+  font-style: normal;
+  font-weight: 700;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ol-doc .action-table .mn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  color: #e2e8f0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  font-weight: 700;
+  margin-right: 0.35rem;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* Action tables */
+.ol-doc .action-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+}
+
+.ol-doc .action-table th {
+  text-align: left;
+  color: #64748b;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-bottom: 1px solid #334155;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: transparent;
+}
+
+.ol-doc .action-table td {
+  padding: 0.4rem 0.75rem;
+  color: #cbd5e1;
+  border: none;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ol-doc .action-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ol-doc .action-table tr:nth-child(even) {
+  background: transparent;
+}
+
+.ol-doc .cmd {
+  color: #fbbf24;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+/* Color reference */
+.ol-doc .color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ol-doc .color-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  padding: 0.3rem 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ol-doc .color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.ol-doc .note {
+  background: var(--popup-accent-dim-bg);
+  border-left: 3px solid var(--popup-accent);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 4px 4px 0;
+  margin: 0.75rem 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
