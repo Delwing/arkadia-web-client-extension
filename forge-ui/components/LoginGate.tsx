@@ -228,7 +228,7 @@ export default function LoginGate() {
                 ids is what lets a manager's auto-submit fire here, not just fill.
                 Forge is a separate HTML entry, so there is no id clash with stock. */}
             <form id="login-form" className="gate__col" onSubmit={submit}>
-                <img className="gate__logo" src="/logo.png" alt="Dargoth Client" />
+                <img className="gate__logo" src="../logo.png" alt="Dargoth Client" />
 
                 {notice && <p className="gate__notice">{notice}</p>}
 
