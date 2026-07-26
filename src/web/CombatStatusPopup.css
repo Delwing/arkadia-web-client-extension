@@ -26,9 +26,11 @@
 /* the Puszczaj row doubles as a toggle button — strip native chrome */
 .cs-row--btn {
   border: 0;
-  margin: 0;
+  /* negative margin cancels the padding so icon+label align with the plain
+     `.cs-row` divs, while the hover highlight still extends into the padding */
+  margin: 0 -2px;
   padding: 1px 2px;
-  width: 100%;
+  width: calc(100% + 4px);
   background: transparent;
   color: inherit;
   text-align: left;

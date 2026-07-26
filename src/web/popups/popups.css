@@ -7049,7 +7049,12 @@
   width: 42px; height: 6px;
   border-radius: 3px; overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6);
+  /* HP is a discrete 1..7 scale; overlay thin tick marks at every 1/7 boundary
+     so the exact level is readable, then the fill gradient underneath. */
   background:
+    repeating-linear-gradient(90deg,
+      transparent 0, transparent calc(100% / 7 - 1px),
+      rgba(0, 0, 0, .5) calc(100% / 7 - 1px), rgba(0, 0, 0, .5) calc(100% / 7)),
     linear-gradient(90deg,
       var(--hue) 0%, var(--hue) var(--hp),
       color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
