@@ -7,6 +7,7 @@ Ten katalog zawiera przykładowe pluginy demonstrujące system pluginów Arkadia
 1. **simple-highlighter-plugin.ts** - Prosty plugin do podświetlania słów kolorami
 2. **example-plugin.ts** - Kompleksowy przykład pokazujący różne funkcje API
 3. **combat-alert-plugin.ts** - Zaawansowany plugin śledzący statystyki walki
+4. **gmcp-inspector-plugin.ts** - Podgląd surowych zdarzeń GMCP (filtrowanie, pauza, kopiowanie); przydatny przy pisaniu własnych pluginów
 
 ## 🚀 Serwer Deweloperski
 
