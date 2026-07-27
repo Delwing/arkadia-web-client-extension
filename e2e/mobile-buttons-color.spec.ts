@@ -333,6 +333,66 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(lastCommand, 'should send configured command when button clicked').toBe('zerknij');
     });
 
+    test('base edits propagate to modes that did not override the button', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const configPanel = page.locator('.mobile-button-config');
+        const soloButton = page.getByRole('button', { name: /^Bazowy/ });
+        const teamButton = page.getByRole('button', { name: /^W druzynie/ });
+
+        // Give team an explicit override on button-2 — its label only.
+        let modal = await openMobileButtonsSettings(page);
+        await teamButton.click();
+        const teamPreview = page.locator('#mobile-buttons-preview-team:not(.d-none)');
+        await teamPreview.locator('[data-button-id="button-2"]').waitFor({ timeout: 5000 });
+        await teamPreview.locator('[data-button-id="button-2"]').click();
+        await expect(configPanel, 'config panel should open for team button-2').toBeVisible();
+        await configPanel.locator('.mobile-button-label').fill('TEAM-2');
+        await configPanel.locator('.btn-close').click();
+        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await expect(modal, 'modal should close after save').not.toBeVisible();
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Recolor two base buttons: one team overrides (button-2), one it doesn't (button-3).
+        modal = await openMobileButtonsSettings(page);
+        await soloButton.click();
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        await soloPreview.locator('[data-button-id="button-2"]').waitFor({ timeout: 5000 });
+        for (const [id, color] of [['button-2', '#ff0000'], ['button-3', '#00ff00']]) {
+            await soloPreview.locator(`[data-button-id="${id}"]`).click();
+            await expect(configPanel, `config panel should open for base ${id}`).toBeVisible();
+            await configPanel.locator('.mobile-button-color-row').first().locator('input[type="color"]').fill(color);
+            await configPanel.locator('.btn-close').click();
+            await expect(configPanel, 'config panel should close').not.toBeVisible();
+        }
+        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await expect(modal, 'modal should close after save').not.toBeVisible();
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Team should have picked up both base colors without a manual override reset,
+        // while keeping the label it actually overrode.
+        modal = await openMobileButtonsSettings(page);
+        await teamButton.click();
+        const teamButton2 = teamPreview.locator('[data-button-id="button-2"]');
+        const teamButton3 = teamPreview.locator('[data-button-id="button-3"]');
+        await teamButton2.waitFor({ timeout: 5000 });
+
+        await expect(teamButton3, 'untouched cell should still be marked inherited').toHaveClass(/inherited/);
+        await expect(teamButton3, 'untouched cell should follow the new base color')
+            .toHaveCSS('background-color', 'rgb(0, 255, 0)');
+        await expect(teamButton2, 'overridden cell should follow the new base color')
+            .toHaveCSS('background-color', 'rgb(255, 0, 0)');
+        await expect(teamButton2, 'overridden cell should keep its own label').toHaveText('TEAM-2');
+    });
+
     test('direction button sends direction command', async ({ page }) => {
         await page.goto('/');
         await waitForCommandInput(page);
