@@ -250,10 +250,13 @@ test.describe('Mobile buttons color and command configuration', () => {
         const modal = await openMobileButtonsSettings(page);
         await expect(modal).toBeVisible();
 
-        // Check that mode toggle buttons exist
-        const soloButton = page.getByRole('button', { name: 'Bez druzyny' });
-        const teamButton = page.getByRole('button', { name: 'W druzynie' });
-        const leaderButton = page.getByRole('button', { name: 'Prowadzacy' });
+        // Check that mode toggle buttons exist. Solo is labelled "Bazowy" because
+        // team/leader are stored as sparse overrides on top of it, and the mode
+        // matching the character's current team state gets a marker appended, so
+        // match on the label prefix rather than the exact accessible name.
+        const soloButton = page.getByRole('button', { name: /^Bazowy/ });
+        const teamButton = page.getByRole('button', { name: /^W druzynie/ });
+        const leaderButton = page.getByRole('button', { name: /^Prowadzacy/ });
 
         await expect(soloButton, 'solo mode button should be visible').toBeVisible();
         await expect(teamButton, 'team mode button should be visible').toBeVisible();
