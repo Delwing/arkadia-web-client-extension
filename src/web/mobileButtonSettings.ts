@@ -348,6 +348,31 @@ export function diffLayout(newLayout: LayoutSettings, base: LayoutSettings): Lay
     return hasChange ? override : null;
 }
 
+/**
+ * Re-derives team/leader after the base (solo) layout changed.
+ *
+ * At runtime `Settings` holds team/leader fully resolved, so a base-only edit would
+ * leave them carrying the *previous* base values. `saveSettings` diffs against the
+ * new base, so those stale values would be stored as genuine overrides — pinning the
+ * button in every other mode until the user resets overrides by hand.
+ *
+ * Capturing each mode's override against the *old* base and re-resolving it against
+ * the new one keeps explicit overrides intact while anything merely inherited follows
+ * the base automatically.
+ *
+ * A mode that the same update already changed on its own is left untouched — the
+ * update expressed an intent for it directly.
+ */
+export function rebaseOverrides(prev: Settings, next: Settings): Settings {
+    if (next.solo === prev.solo) return next;
+    const result: Settings = { ...next };
+    (['team', 'leader'] as const).forEach(mode => {
+        if (next[mode] !== prev[mode]) return;
+        result[mode] = resolveLayout(next.solo, diffLayout(prev[mode], prev.solo));
+    });
+    return result;
+}
+
 const emptyButton: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
 const defaultRadialSettings: RadialSettings = {

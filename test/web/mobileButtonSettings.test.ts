@@ -6,6 +6,7 @@ import {
     createDefaultLayout,
     diffLayout,
     loadSettings,
+    rebaseOverrides,
     resolveLayout,
     saveSettings,
 } from '@web/mobileButtonSettings';
@@ -382,5 +383,104 @@ describe('save/load round-trip', () => {
         // Team should have new base color (via inheritance) and its own label
         expect(reloaded.team.buttons['go-button'].color).toBe('#abcdef');
         expect(reloaded.team.buttons['go-button'].label).toBe('TEAM-GO');
+    });
+});
+
+describe('rebaseOverrides', () => {
+    function makeSettings(overrides: Partial<Settings> = {}): Settings {
+        const base = createDefaultLayout();
+        return {
+            solo: base,
+            team: resolveLayout(base, null),
+            leader: resolveLayout(base, null),
+            locked: false,
+            radial: { enabled: true, commands: [] },
+            ...overrides,
+        };
+    }
+
+    function editSolo(prev: Settings, id: string, patch: Partial<Settings['solo']['buttons'][string]>): Settings {
+        return {
+            ...prev,
+            solo: {
+                ...prev.solo,
+                buttons: { ...prev.solo.buttons, [id]: { ...prev.solo.buttons[id], ...patch } },
+            },
+        };
+    }
+
+    it('propagates a base edit to modes that do not override that button', () => {
+        const prev = makeSettings();
+        const next = rebaseOverrides(prev, editSolo(prev, 'go-button', { color: '#abcdef' }));
+        expect(next.team.buttons['go-button'].color).toBe('#abcdef');
+        expect(next.leader.buttons['go-button'].color).toBe('#abcdef');
+    });
+
+    it('keeps an explicit override while propagating untouched fields of the same button', () => {
+        const base = createDefaultLayout();
+        const prev = makeSettings({
+            solo: base,
+            team: {
+                ...resolveLayout(base, null),
+                buttons: {
+                    ...base.buttons,
+                    'go-button': { ...base.buttons['go-button'], label: 'TEAM-GO' },
+                },
+            },
+        });
+        const next = rebaseOverrides(prev, editSolo(prev, 'go-button', { color: '#abcdef' }));
+        expect(next.team.buttons['go-button'].label).toBe('TEAM-GO');
+        expect(next.team.buttons['go-button'].color).toBe('#abcdef');
+    });
+
+    it('does not turn a base edit into a stored override on save', () => {
+        const prev = makeSettings();
+        const next = rebaseOverrides(prev, editSolo(prev, 'go-button', { color: '#abcdef' }));
+        expect(diffLayout(next.team, next.solo)).toBeNull();
+
+        saveSettings(next);
+        const reloaded = loadSettings();
+        expect(reloaded.team.buttons['go-button'].color).toBe('#abcdef');
+
+        // A later base edit still propagates — the first one didn't pin the value.
+        const second = rebaseOverrides(reloaded, editSolo(reloaded, 'go-button', { color: '#123456' }));
+        expect(second.team.buttons['go-button'].color).toBe('#123456');
+    });
+
+    it('propagates structural base changes (added row) to inheriting modes', () => {
+        const prev = makeSettings();
+        const newIds = ['button-90', 'button-91', 'button-92', 'button-93'];
+        const buttons = { ...prev.solo.buttons };
+        newIds.forEach(id => {
+            buttons[id] = { macroType: 'empty', label: '', color: 'transparent' };
+        });
+        const next = rebaseOverrides(prev, {
+            ...prev,
+            solo: { ...prev.solo, buttons, order: [...newIds, ...prev.solo.order] },
+        });
+        expect(next.team.order).toEqual(next.solo.order);
+        expect(next.leader.order).toEqual(next.solo.order);
+    });
+
+    it('leaves a mode alone when the same update already changed it', () => {
+        const prev = makeSettings();
+        const edited = editSolo(prev, 'go-button', { color: '#abcdef' });
+        const withTeamEdit: Settings = {
+            ...edited,
+            team: {
+                ...edited.team,
+                buttons: { ...edited.team.buttons, 'go-button': { ...edited.team.buttons['go-button'], color: '#ff0000' } },
+            },
+        };
+        const next = rebaseOverrides(prev, withTeamEdit);
+        expect(next.team.buttons['go-button'].color).toBe('#ff0000');
+        expect(next.solo.buttons['go-button'].color).toBe('#abcdef');
+    });
+
+    it('is a no-op when the base did not change', () => {
+        const prev = makeSettings();
+        const next = rebaseOverrides(prev, { ...prev, locked: true });
+        expect(next.team).toBe(prev.team);
+        expect(next.leader).toBe(prev.leader);
     });
 });

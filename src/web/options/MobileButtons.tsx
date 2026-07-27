@@ -10,6 +10,7 @@ import {
     defaultOrder,
     defaultSettings,
     loadSettings,
+    rebaseOverrides,
     saveSettings,
     Settings,
 } from "../mobileButtonSettings";
@@ -130,6 +131,13 @@ function MobileButtons() {
     }, []);
     const notEditable: string[] = [];
 
+    // Every layout-changing update goes through here: when the base (solo) layout
+    // changes, team/leader are re-resolved so cells they don't explicitly override
+    // pick up the new base instead of freezing the old value into an override.
+    function updateSettings(updater: (prev: Settings) => Settings) {
+        setSettings(prev => rebaseOverrides(prev, updater(prev)));
+    }
+
     function nextId(ids: string[]) {
         let current = ids.reduce((m, id) => {
             const match = /^button-(\d+)$/.exec(id);
@@ -139,7 +147,7 @@ function MobileButtons() {
     }
 
     function addRow(pos: 'top' | 'bottom') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             const makeId = nextId(set.order);
             const ids = Array.from({ length: set.cols }, () => makeId());
@@ -153,7 +161,7 @@ function MobileButtons() {
     }
 
     function removeRow(pos: 'top' | 'bottom') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             const rows = Math.floor(set.order.length / set.cols);
             if (rows <= 1) return prev;
@@ -167,7 +175,7 @@ function MobileButtons() {
     }
 
     function addCol(side: 'left' | 'right') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             const makeId = nextId(set.order);
             const buttons: SettingsMap = { ...set.buttons };
@@ -192,7 +200,7 @@ function MobileButtons() {
     }
 
     function removeCol(side: 'left' | 'right') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             if (set.cols <= 1) return prev;
             const rows = Math.floor(set.order.length / set.cols);
@@ -244,7 +252,7 @@ function MobileButtons() {
     }
 
     function update(setName: Mode, id: string, field: keyof MobileButtonSetting, value: any) {
-        setSettings(prev => ({
+        updateSettings(prev => ({
             ...prev,
             [setName]: {
                 ...prev[setName],
@@ -257,7 +265,7 @@ function MobileButtons() {
     }
 
     function updateAllDirections(field: 'color' | 'activeColor' | 'fontColor', value: string) {
-        setSettings(prev => {
+        updateSettings(prev => {
             const updateSet = (set: Settings['solo']) => {
                 const buttons: SettingsMap = { ...set.buttons };
                 set.order.forEach(id => {
@@ -305,7 +313,7 @@ function MobileButtons() {
     }
 
     function makeBlank(setName: Mode, id: string) {
-        setSettings(prev => ({
+        updateSettings(prev => ({
             ...prev,
             [setName]: {
                 ...prev[setName],
@@ -315,7 +323,7 @@ function MobileButtons() {
     }
 
     function restoreDefaults(setName: Mode) {
-        setSettings(prev => ({
+        updateSettings(prev => ({
             ...prev,
             [setName]: createDefaultLayout(),
         }));
@@ -329,7 +337,7 @@ function MobileButtons() {
     function copyLayout(from: Mode) {
         const to = view;
         if (from === to) return;
-        setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
+        updateSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
     }
 
     // Reset all overrides for the current view: makes it inherit from base (solo) entirely.
@@ -502,7 +510,7 @@ function MobileButtons() {
                         value={backgroundHex}
                         onChange={e => {
                             const hex = e.target.value;
-                            setSettings(prev => {
+                            updateSettings(prev => {
                                 const bg = prev[view].background || defaultBackground;
                                 const { alpha } = parseBackgroundColor(bg);
                                 return {
@@ -523,7 +531,7 @@ function MobileButtons() {
                             value={Math.round(backgroundAlpha * 100)}
                             onChange={e => {
                                 const alphaValue = Number(e.target.value) / 100;
-                                setSettings(prev => {
+                                updateSettings(prev => {
                                     const bg = prev[view].background || defaultBackground;
                                     const { hex } = parseBackgroundColor(bg);
                                     return {
@@ -542,7 +550,7 @@ function MobileButtons() {
                         size="sm"
                         variant="outline-secondary"
                         onClick={() => {
-                            setSettings(prev => ({
+                            updateSettings(prev => ({
                                 ...prev,
                                 [view]: { ...prev[view], background: defaultBackground },
                             }));
