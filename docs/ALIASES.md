@@ -166,3 +166,25 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/woz` | Przelacz tryb wozu (wlacz/wylacz) |
 
 > **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu. Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.
+
+## Odkladanie magii
+
+| Komenda | Opis |
+|---------|------|
+| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |
+
+## Labirynty
+
+| Komenda | Opis |
+|---------|------|
+| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |
+| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |
+| `/raon_mapa` | Przelacz mapper Labiryntu Raon |
+
+## Odswiezanie danych
+
+| Komenda | Opis |
+|---------|------|
+| `/refresh_magics` | Wymus odswiezenie danych magii |
+| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |
+| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |
