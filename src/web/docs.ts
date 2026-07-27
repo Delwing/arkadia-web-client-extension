@@ -10,6 +10,7 @@ import bindsMd from "../../docs/BINDS.md?raw";
 import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
 import aliasesMd from "../../docs/ALIASES.md?raw";
 import synchronizacjaMd from "../../docs/SYNCHRONIZACJA.md?raw";
+import skryptyMd from "../../docs/SKRYPTY.md?raw";
 import { objectListDocHtml, objectListDocInit } from "./objectListDoc";
 
 function slugify(text: string): string {
@@ -50,7 +51,8 @@ const docs: DocDef[] = [
   { key: "binds", title: "Bindowanie", md: bindsMd },
   { key: "shortcuts", title: "Skroty lokacji", md: shortcutsMd },
   { key: "aliases", title: "Inne", md: aliasesMd },
-  { key: "sync", title: "Synchronizacja", md: synchronizacjaMd }
+  { key: "sync", title: "Synchronizacja", md: synchronizacjaMd },
+  { key: "skrypty", title: "Skrypty i automatyzacja", md: skryptyMd }
 ];
 
 interface SearchResult {

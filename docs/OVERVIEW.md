@@ -14,6 +14,7 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 | **Bindowanie** | Bindy |
 | **Skroty** | Zapisane lokacje na mapie |
 | **Synchronizacja** | Synchronizacja ustawien przez Firebase |
+| **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przeglad mozliwosci |
 | **Inne** | Pozostale aliasy i funkcje |
 
 ## Wlasne aliasy
