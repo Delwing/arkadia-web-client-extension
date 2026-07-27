@@ -3,6 +3,8 @@ import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {characterStorage} from "@modules/core/storage";
+import {BaseCounter} from "./BaseCounter";
+import {createPad, createHeader} from "./counterTableUtils";
 import {
     recordKillToDB,
     getLifetimeTotals,
@@ -103,40 +105,6 @@ function parseName(full: string): string {
     return words[words.length - 1];
 }
 
-function createPad(
-    width: number,
-    left: number,
-    right: number
-): (content?: AnsiAwareBuffer) => AnsiAwareBuffer {
-    const contentWidth = width - left - right;
-    return (content = new AnsiAwareBuffer()) => {
-        const buffer = new AnsiAwareBuffer();
-        buffer.append("|", {});
-        buffer.append(" ".repeat(left), {});
-        buffer.appendBuffer(content);
-        buffer.append(" ".repeat(Math.max(0, contentWidth - content.length)), {});
-        buffer.append(" ".repeat(right), {});
-        buffer.append("|", {});
-        return buffer;
-    };
-}
-
-function createHeader(
-    width: number,
-    offset: number,
-    color: ReturnType<typeof createColorFormat>
-): (title: string) => AnsiAwareBuffer {
-    return (title: string) => {
-        const dashes = width - title.length - offset;
-        const left = Math.floor(dashes / 2);
-        const right = dashes - left;
-        const buffer = new AnsiAwareBuffer();
-        buffer.append(`+${"-".repeat(left)} `, {});
-        buffer.append(title, color);
-        buffer.append(` ${"-".repeat(right)}+`, {});
-        return buffer;
-    };
-}
 
 function formatSessionTable(counts: KillCounts, teamKills: TeamMemberKills = {}): AnsiAwareBuffer {
     const WIDTH = width - 2;
@@ -566,14 +534,13 @@ export function getLifetimeKillData(): LifetimeKillData | null {
 export {type KillRecord, type DailyKillSummary, type GlobalKillStats};
 export {getAllRecords, getDistinctDates, getKillsByDate as getKillsByDateFromDB, getGlobalKillStats as getGlobalKillStatsFromDB};
 
-class KillCounter {
-    private client: Client;
+class KillCounter extends BaseCounter {
     private kills: KillCounts = {};
     private teamKills: TeamMemberKills = {};
     private migrationDone = false;
 
     constructor(client: Client) {
-        this.client = client;
+        super(client);
         killCounterInstance = this;
 
         // Load initial data from storage
@@ -591,18 +558,16 @@ class KillCounter {
             this.loadTeamKills(isTeamMemberKills(initialTeam) ? initialTeam : {});
         }
 
-        characterStorage.onChange(STORAGE_KEY, (newValue) => {
+        this.onStorageChange(STORAGE_KEY, (newValue) => {
             this.loadTotals(isNumberRecord(newValue) ? newValue : {});
             this.migrateIfNeeded();
         });
-        characterStorage.onChange(SESSION_STORAGE_KEY, (newValue) => {
+        this.onStorageChange(SESSION_STORAGE_KEY, (newValue) => {
             this.loadSession(isSessionRecord(newValue) ? newValue : {});
         });
-        characterStorage.onChange(TEAM_KILLS_STORAGE_KEY, (newValue) => {
+        this.onStorageChange(TEAM_KILLS_STORAGE_KEY, (newValue) => {
             this.loadTeamKills(isTeamMemberKills(newValue) ? newValue : {});
         });
-
-        this.client.on("reset", () => this.resetSession());
 
         window.addEventListener("beforeunload", this.persistTotals);
         window.addEventListener("beforeunload", this.persistSessions);
@@ -657,12 +622,16 @@ class KillCounter {
         this.kills = newKills;
     }
 
+    protected onReset(): void {
+        this.resetSession();
+    }
+
     private persistTotals = () => {
         const totals: Record<string, number> = {};
         Object.entries(this.kills).forEach(([name, entry]) => {
             totals[name] = entry.myTotal;
         });
-        characterStorage.set(STORAGE_KEY, totals);
+        this.setStorage(STORAGE_KEY, totals);
     };
 
     private loadSession(
@@ -688,7 +657,7 @@ class KillCounter {
                 sessions[name] = {mySession: entry.mySession, teamSession: entry.teamSession};
             }
         });
-        characterStorage.set(SESSION_STORAGE_KEY, sessions);
+        this.setStorage(SESSION_STORAGE_KEY, sessions);
     };
 
     private loadTeamKills(teamKills: TeamMemberKills = {}): void {
@@ -703,7 +672,7 @@ class KillCounter {
                 filtered[player] = mobs;
             }
         });
-        characterStorage.set(TEAM_KILLS_STORAGE_KEY, filtered);
+        this.setStorage(TEAM_KILLS_STORAGE_KEY, filtered);
     };
 
     private ensureEntry(name: string): KillEntry {
