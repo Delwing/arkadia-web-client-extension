@@ -15,6 +15,7 @@ import {
     runAllSettingsMigrations,
 } from "@modules/core/settingsMigrations";
 import { bridgeSendCommand, bridgeNpcStore } from "./clientBootstrapBridges";
+import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
 
 export interface GameClientBootstrap {
     client: Client;
@@ -52,6 +53,12 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
 
     const client = new Client(mudClient);
     registerScripts(client);
+
+    // Ogluch / przelamana obrona highlighting. It only listens to client events and
+    // writes to the UI-neutral objectListFilters registry, so it belongs here rather
+    // than in a single UI's entry point — otherwise the flavors render it in the
+    // stock UI and silently drop it everywhere else.
+    registerEnemyStatusFilter(client);
 
     // Session logging (sessionLogger first — logFileSaver imports its session name).
     initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));

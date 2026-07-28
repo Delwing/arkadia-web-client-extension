@@ -14,17 +14,25 @@ interface DemoObject {
     isAttackTarget: boolean;
     isDefenseTarget: boolean;
     isAvatarTarget: boolean;
+    /** Head of the attack queue — the gold "next target" mark. */
+    isNextTarget: boolean;
+    /** Ogluszony ("ogluch") — drives the real enemy-status filter override. */
+    isOgluch: boolean;
 }
 
 const POPUP_ID = 'popup:objectListDemo';
 
+// The real paralyze status expires after 15s; re-arm well inside that window so
+// the demo highlight stays on for as long as the checkbox is ticked.
+const OGLUCH_REARM_MS = 10000;
+
 const DEFAULT_OBJECTS: DemoObject[] = [
-    { id: 99, desc: 'Ty (gracz)', hp: 6, isTeam: false, isLeader: true, isAttacking: false, attackTarget: null, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false },
-    { id: 101, desc: 'Wojownik druzyny', hp: 5, isTeam: true, isLeader: false, isAttacking: true, attackTarget: 201, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false },
-    { id: 102, desc: 'Mag druzyny', hp: 4, isTeam: true, isLeader: false, isAttacking: false, attackTarget: null, isAttackTarget: false, isDefenseTarget: true, isAvatarTarget: false },
-    { id: 201, desc: 'Goblin wojownik', hp: 3, isTeam: false, isLeader: false, isAttacking: true, attackTarget: 99, isAttackTarget: true, isDefenseTarget: false, isAvatarTarget: true },
-    { id: 202, desc: 'Goblin lucznik', hp: 5, isTeam: false, isLeader: false, isAttacking: true, attackTarget: 101, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false },
-    { id: 203, desc: 'Goblin szaman', hp: 6, isTeam: false, isLeader: false, isAttacking: false, attackTarget: null, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false },
+    { id: 99, desc: 'Ty (gracz)', hp: 6, isTeam: false, isLeader: true, isAttacking: false, attackTarget: null, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false, isNextTarget: false, isOgluch: false },
+    { id: 101, desc: 'Wojownik druzyny', hp: 5, isTeam: true, isLeader: false, isAttacking: true, attackTarget: 201, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false, isNextTarget: false, isOgluch: false },
+    { id: 102, desc: 'Mag druzyny', hp: 4, isTeam: true, isLeader: false, isAttacking: false, attackTarget: null, isAttackTarget: false, isDefenseTarget: true, isAvatarTarget: false, isNextTarget: false, isOgluch: false },
+    { id: 201, desc: 'Goblin wojownik', hp: 3, isTeam: false, isLeader: false, isAttacking: true, attackTarget: 99, isAttackTarget: true, isDefenseTarget: false, isAvatarTarget: true, isNextTarget: false, isOgluch: false },
+    { id: 202, desc: 'Goblin lucznik', hp: 5, isTeam: false, isLeader: false, isAttacking: true, attackTarget: 101, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false, isNextTarget: true, isOgluch: false },
+    { id: 203, desc: 'Goblin szaman', hp: 6, isTeam: false, isLeader: false, isAttacking: false, attackTarget: null, isAttackTarget: false, isDefenseTarget: false, isAvatarTarget: false, isNextTarget: false, isOgluch: true },
 ];
 
 const ObjectListDemoPopup: React.FC = () => {
@@ -79,6 +87,19 @@ const ObjectListDemoPopup: React.FC = () => {
         eventBus.emit('gmcp.char.state', { hp: (playerObj?.hp ?? 6) });
         eventBus.emit('gmcp.objects.data', gmcpData as any);
         eventBus.emit('gmcp.objects.nums', objects.map(o => o.id));
+
+        // 4. attack queue — the gold "next target" mark reads TeamManager, not GMCP,
+        //    so the client-side demo hook applies it for us. Objects must be in
+        //    place first: the list only paints gold for a queued enemy it can see.
+        eventBus.emit('objectListDemo.setQueue', { ids: objects.filter(o => o.isNextTarget).map(o => o.id) });
+
+        // 5. ogluch — the genuine enemy.paralyzed event, so the real enemy-status
+        //    filter (not a demo stand-in) produces the inverted description.
+        objects.forEach(obj => {
+            if (obj.isOgluch) {
+                eventBus.emit('enemy.paralyzed', { name: obj.desc });
+            }
+        });
     }, [objects, isLeader]);
 
     // Auto-apply when objects or isLeader changes (but not on first render)
@@ -99,11 +120,42 @@ const ObjectListDemoPopup: React.FC = () => {
         }
     }, [isOpen, applyDemo]);
 
+    // Keep the paralyze status alive while its checkbox is ticked (the real one
+    // times out after 15s), and drop it again as soon as the demo closes.
+    useEffect(() => {
+        if (!isOpen) return;
+        const names = objects.filter(o => o.isOgluch).map(o => o.desc);
+        if (names.length === 0) return;
+        const timer = setInterval(() => {
+            names.forEach(name => eventBus.emit('enemy.paralyzed', { name }));
+        }, OGLUCH_REARM_MS);
+        return () => clearInterval(timer);
+    }, [isOpen, objects]);
+
+    const objectsRef = useRef(objects);
+    objectsRef.current = objects;
+
+    const clearDemoStatuses = useCallback(() => {
+        eventBus.emit('objectListDemo.setQueue', { ids: [] });
+        objectsRef.current.forEach(obj => {
+            if (obj.isOgluch) {
+                eventBus.emit('enemy.paralyzed.end', { name: obj.desc });
+            }
+        });
+    }, []);
+
+    // Closing the demo must not leave fake enemies sitting in the real attack queue.
+    useEffect(() => {
+        if (isOpen) return;
+        clearDemoStatuses();
+    }, [isOpen, clearDemoStatuses]);
+
     const resetToDefault = useCallback(() => {
+        clearDemoStatuses();
         setObjects(DEFAULT_OBJECTS);
         setIsLeader(true);
         setNextId(300);
-    }, []);
+    }, [clearDemoStatuses]);
 
     const updateObject = useCallback((id: number, updates: Partial<DemoObject>) => {
         setObjects(prev => prev.map(obj =>
@@ -130,6 +182,8 @@ const ObjectListDemoPopup: React.FC = () => {
             isAttackTarget: false,
             isDefenseTarget: false,
             isAvatarTarget: false,
+            isNextTarget: false,
+            isOgluch: false,
         }]);
     }, [nextId]);
 
@@ -147,6 +201,8 @@ const ObjectListDemoPopup: React.FC = () => {
             isAttackTarget: false,
             isDefenseTarget: false,
             isAvatarTarget: false,
+            isNextTarget: false,
+            isOgluch: false,
         }]);
     }, [nextId]);
 
@@ -169,6 +225,24 @@ const ObjectListDemoPopup: React.FC = () => {
             ...obj,
             isAvatarTarget: obj.id === id ? !obj.isAvatarTarget : false
         })));
+    }, []);
+
+    // Only one enemy can head the attack queue, so this behaves like a radio.
+    const toggleNextTarget = useCallback((id: number) => {
+        setObjects(prev => prev.map(obj => ({
+            ...obj,
+            isNextTarget: obj.id === id ? !obj.isNextTarget : false
+        })));
+    }, []);
+
+    const toggleOgluch = useCallback((id: number) => {
+        const target = objectsRef.current.find(o => o.id === id);
+        if (target?.isOgluch) {
+            eventBus.emit('enemy.paralyzed.end', { name: target.desc });
+        }
+        setObjects(prev => prev.map(obj =>
+            obj.id === id ? { ...obj, isOgluch: !obj.isOgluch } : obj
+        ));
     }, []);
 
     const setAttackingTarget = useCallback((attackerId: number, targetId: number | null) => {
@@ -360,6 +434,22 @@ const ObjectListDemoPopup: React.FC = () => {
                                         onChange={() => toggleAvatarTarget(obj.id)}
                                     />
                                     Twoj cel
+                                </label>
+                                <label className="demo-checkbox demo-checkbox--small demo-checkbox--next" title="Pierwszy w kolejce atakow - zloty znacznik">
+                                    <input
+                                        type="checkbox"
+                                        checked={obj.isNextTarget}
+                                        onChange={() => toggleNextTarget(obj.id)}
+                                    />
+                                    Nastepny cel
+                                </label>
+                                <label className="demo-checkbox demo-checkbox--small demo-checkbox--ogluch" title="Ogluszony - odwrocone kolory opisu (filtr enemy-status)">
+                                    <input
+                                        type="checkbox"
+                                        checked={obj.isOgluch}
+                                        onChange={() => toggleOgluch(obj.id)}
+                                    />
+                                    Ogluch
                                 </label>
                             </div>
                             {obj.isAttacking && (

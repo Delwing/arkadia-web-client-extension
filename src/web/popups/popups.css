@@ -7216,6 +7216,11 @@
 }
 .obj--attack-target::before { background: orangered; }
 .obj--defense-target::before { background: greenyellow; }
+/* next enemy in the attack queue — the same gold signal the other flavors use */
+.obj--next-queued {
+  background: rgba(255, 215, 0, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.22);
+}
 .obj__key {
   flex: 0 0 auto; width: 20px; height: 20px;
   display: grid; place-items: center; position: relative;
@@ -7223,6 +7228,15 @@
 }
 .obj__key i { font-style: normal; position: relative; z-index: 1; }
 .obj__key.you { color: var(--popup-accent); }
+.obj__key.next-target { color: #ffd700; }
+.obj__key.next-target::after {
+  content: "";
+  position: absolute; inset: 1px;
+  border-radius: 3px;
+  background: rgba(255, 215, 0, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.45);
+}
+.obj__key.next-target.is-clickable:hover { color: #ffd700; }
 .obj__name {
   flex: 1 1 auto; min-width: 0;
   font-size: 12px; color: var(--popup-text);
@@ -7232,6 +7246,21 @@
 .obj__name.enemy  { color: #b19cd9; }
 .obj__name.ally   { color: springgreen; }
 .obj__name.item   { color: var(--popup-text-dim); }
+/* objectListFilters italic override */
+.obj__name.is-italic { font-style: italic; }
+/* status mark from objectListFilters (ogluch, przelamana obrona, plugin flags).
+   The filter's colour rides on the row as --mark-bg and washes it the same way the
+   next-target gold does, with the name lifted toward that hue. The doubled class
+   keeps this above .obj--next-queued no matter the source order: an enemy that is
+   both stunned and next in the queue reads as stunned (the gold key still says
+   it's next). The filter's own --mark-fg is not used here — it is picked for
+   contrast against a solid fill, which a wash never paints. */
+.obj.obj--marked {
+  background: color-mix(in srgb, var(--mark-bg) 10%, transparent);
+}
+.obj--marked .obj__name {
+  color: color-mix(in srgb, var(--mark-bg) 72%, var(--popup-text));
+}
 /* HP bar sits between the shortcut and the name (fixed width, not stretched). */
 .obj__hp {
   --hp: 60%;
@@ -7250,6 +7279,14 @@
       var(--hue) 0%, var(--hue) var(--hp),
       color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
       color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+}
+/* objectListFilters replaced the HP markup: keep the clickable box, drop the
+   built-in gradient/ticks so the plugin's own bar is what renders. */
+.obj__hp--custom {
+  width: auto; height: auto;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
 }
 /* clickable object parts — number attacks, name guards, HP bar breaks / pulls
    back (matches the other flavors). */
@@ -7281,4 +7318,201 @@
 .obj--empty {
   padding: 4px 2px; font-style: italic;
   font-size: 12.5px; color: var(--popup-text-dim); opacity: .6;
+}
+
+/* ============================================================
+   Object List Demo Popup (/demo_kondycje). Shared by both UIs:
+   the popup is mounted from POPUP_CATALOG, which forge-ui renders
+   through LayoutManagerWrapper just like the stock UI. Colours come
+   through the --popup-* vars, so it recolours per-theme for free.
+   ============================================================ */.object-list-demo-popup__body {
+  padding: 0;
+  overflow-y: auto;
+}
+
+.demo-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.demo-popup-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--popup-border);
+}
+
+.demo-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--popup-border-stronger);
+  border-radius: 4px;
+  background: var(--popup-control-hover-bg);
+  color: var(--popup-text-strong);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.demo-btn:hover {
+  background: var(--popup-accent-bg);
+}
+
+.demo-btn--primary {
+  background: var(--popup-accent-hover-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-accent);
+}
+
+.demo-btn--primary:hover {
+  background: var(--popup-accent-hover-bg);
+}
+
+.demo-btn--small {
+  padding: 2px 8px;
+  font-size: 0.65rem;
+}
+
+.demo-btn--danger {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.demo-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.demo-popup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-popup-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--popup-text-bright);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--popup-border);
+}
+
+.demo-object-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--popup-success-subtle-bg);
+  border: 1px solid var(--popup-success-border);
+  border-radius: 6px;
+}
+
+.demo-object-card--enemy {
+  background: var(--popup-danger-subtle-bg);
+  border-color: var(--popup-danger-border);
+}
+
+.demo-object-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+}
+
+.demo-object-checkboxes {
+  flex-wrap: wrap;
+}
+
+.demo-object-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--popup-border-stronger);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--popup-text-strong);
+  font-size: 0.7rem;
+}
+
+.demo-input:focus {
+  outline: none;
+  border-color: var(--popup-accent-border);
+}
+
+.demo-select {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--popup-border-stronger);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--popup-text-strong);
+  font-size: 0.7rem;
+}
+
+.demo-select:focus {
+  outline: none;
+  border-color: var(--popup-accent-border);
+}
+
+.demo-hp-value {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.demo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--popup-text-bright);
+  cursor: pointer;
+}
+
+/* Native controls follow the panel accent (blue in stock, bronze in forge)
+   instead of the browser default. */
+.demo-popup-content input[type="checkbox"],
+.demo-popup-content input[type="range"] {
+  accent-color: var(--popup-accent);
+  cursor: pointer;
+}
+
+.demo-popup-content input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+}
+
+.demo-checkbox--small {
+  font-size: 0.65rem;
+}
+
+.demo-checkbox--attack {
+  color: #ff6b6b;
+}
+
+.demo-checkbox--defense {
+  color: greenyellow;
+}
+
+.demo-checkbox--target {
+  color: #ffaaaa;
+}
+
+.demo-checkbox--next {
+  color: #ffd700;
+}
+
+.demo-checkbox--ogluch {
+  color: var(--popup-text-strong);
 }

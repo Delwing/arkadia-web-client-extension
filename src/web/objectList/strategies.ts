@@ -846,6 +846,22 @@ const nearbyStrategy: ObjectListStrategy = {
             const isPlayer = allegiance === 'you';
             const isTeammate = allegiance === 'ally';
             const hasHp = typeof obj.hp === 'number';
+            const isNextQueued = isNextQueuedObj(obj, ctx, isPlayer);
+            const rawDesc = obj.desc ?? '';
+
+            // Same filter pass as every other flavor, so plugin overrides
+            // (colors, description, prefix/suffix, HP bar, css classes) apply here too.
+            const filterContext: EntryContext = {
+                object: obj,
+                displayNum: parseInt(num, 10),
+                isTarget: obj.avatar_target || false,
+                isNextTarget: isNextQueued,
+                isTeammate,
+                rawDescription: rawDesc,
+                isAttacking: isAttackingObj(obj),
+                attackCommand: ctx.attackCommand,
+            };
+            const filterResult = objectListFilters.apply(filterContext);
 
             // Match the stock affordances: number attacks enemies, name guards any
             // non-player, HP bar breaks (enemy) / pulls back (teammate).
@@ -859,32 +875,70 @@ const nearbyStrategy: ObjectListStrategy = {
             const attackerObjs = attackerObjectsOf(obj, objects);
             // Left edge marks the leader's chosen targets (same as the other
             // flavors): red = marked attack target, green = marked defense target.
-            const targetCls =
+            const markFg = filterResult.style?.descriptionColor;
+            const markBg = filterResult.style?.descriptionBackgroundColor;
+            const rowCls =
+                'obj' +
                 (obj.attack_target ? ' obj--attack-target' : '') +
-                (obj.defense_target ? ' obj--defense-target' : '');
+                (obj.defense_target ? ' obj--defense-target' : '') +
+                (isNextQueued ? ' obj--next-queued' : '') +
+                (markBg ? ' obj--marked' : '') +
+                (filterResult.style?.cssClasses?.length ? ` ${filterResult.style.cssClasses.join(' ')}` : '');
+            // A filter-supplied background is a status mark (ogluch, przelamana
+            // obrona, plugin flags). It washes the whole row the way the next-target
+            // gold does, so the colours ride on the row as vars and each UI decides
+            // how strong the wash and the name lift should be.
+            const rowStyleAttr = markBg
+                ? ` style="--mark-bg:${markBg};${markFg ? `--mark-fg:${markFg};` : ''}"`
+                : '';
 
+            // Gold key = next enemy in the attack queue (same signal the list flavor
+            // paints on the number and the card flavors on the number badge).
             const keyCls =
-                'obj__key' + (isPlayer ? ' you' : '') + (keyClickable ? ' is-clickable' : '');
+                'obj__key' + (isPlayer ? ' you' : '') +
+                (isNextQueued ? ' next-target' : '') +
+                (keyClickable ? ' is-clickable' : '');
             const keyAttrs = keyClickable
                 ? ` data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"`
                 : '';
+            const keyLabel = filterResult.content?.numberLabel !== undefined
+                ? filterResult.content.numberLabel
+                : `<i>${num}</i>`;
 
             const nameCls =
                 'obj__name' + (nameClass ? ` ${nameClass}` : '') +
+                (filterResult.style?.italic ? ' is-italic' : '') +
                 (nameClickable ? ' is-clickable' : '');
             const nameAttrs = nameClickable
                 ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="Zaslon"`
                 : '';
+            const displayDesc = filterResult.content?.description !== undefined
+                ? filterResult.content.description
+                : rawDesc;
+            const finalDesc =
+                `${filterResult.style?.prefix || ''}${displayDesc}${filterResult.style?.suffix || ''}`;
+            // Colour with no mark is plain text recolouring; with a mark the row
+            // styling owns the name colour (the filter's foreground is picked for
+            // contrast against its own background, which the wash doesn't paint).
+            const nameStyleAttr = !markBg && markFg ? ` style="color:${markFg};"` : '';
 
             let hpHtml = '';
-            if (hasHp) {
+            const hpAttrs = hpClickable
+                ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="${isTeammate ? 'Wycofaj sie' : 'Przelam'}"`
+                : '';
+            if (filterResult.content?.hpBar !== undefined) {
+                // Custom HP markup keeps the clickable wrapper; the modifier class
+                // drops the built-in gradient so the plugin's own bar is what shows.
+                const hpCls = 'obj__hp obj__hp--custom' + (hasHp && !isPlayer ? ' is-clickable' : '');
+                hpHtml = `<span class="${hpCls}"${hasHp && !isPlayer ? hpAttrs : ''}>${filterResult.content.hpBar}</span>`;
+            } else if (hasHp) {
                 const level = hpLevelOf(obj.hp); // 1..7
                 const pct = Math.round((level / 7) * 100);
                 const hpCls = 'obj__hp' + (hpClickable ? ' is-clickable' : '');
-                const hpAttrs = hpClickable
-                    ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="${isTeammate ? 'Wycofaj sie' : 'Przelam'}"`
+                const hueStyle = filterResult.style?.hpBarColor
+                    ? `--hue:${filterResult.style.hpBarColor};`
                     : '';
-                hpHtml = `<span class="${hpCls}" style="--hp:${pct}%"${hpAttrs}></span>`;
+                hpHtml = `<span class="${hpCls}" style="--hp:${pct}%;${hueStyle}"${hpAttrs}></span>`;
             }
 
             let atksHtml = '';
@@ -896,7 +950,7 @@ const nearbyStrategy: ObjectListStrategy = {
             }
 
             // One line: shortcut, HP bar, name (grows), attackers pushed right.
-            return `<div class="obj${targetCls}" data-object-id="${obj.num}" data-object-num="${num}"><div class="obj__main"><span class="${keyCls}"${keyAttrs}><i>${num}</i></span>${hpHtml}<span class="${nameCls}"${nameAttrs}>${obj.desc ?? ''}</span>${atksHtml}</div></div>`;
+            return `<div class="${rowCls}"${rowStyleAttr} data-object-id="${obj.num}" data-object-num="${num}"><div class="obj__main"><span class="${keyCls}"${keyAttrs}>${keyLabel}</span>${hpHtml}<span class="${nameCls}"${nameAttrs}${nameStyleAttr}>${finalDesc}</span>${atksHtml}</div></div>`;
         });
 
         return `<div class="objects-list-nearby">${rows.join('')}</div>`;

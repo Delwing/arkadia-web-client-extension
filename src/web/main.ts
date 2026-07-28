@@ -13,7 +13,6 @@ import {setupOutputContextMenu} from "./outputContextMenu";
 import initPipeStatus from "./pipeStatus";
 import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
-import {registerEnemyStatusFilter} from "./filters/enemyStatusFilter";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
@@ -1219,7 +1218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     mountMigratedComponents();
     const fightTitle = new FightTitle();
     new HpTitle(fightTitle);
-    registerEnemyStatusFilter(client);
     new ObjectList(client);
 
     // Mobile direction buttons, desktop buttons & mobile command radial —

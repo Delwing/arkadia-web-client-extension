@@ -340,6 +340,8 @@ export interface KnownEvents {
     "objectList.togglePip": void;
     "objectList.pipActiveChanged": boolean;
     "objectListDemo.popup.open": void;
+    /** Demo popup -> client: replace the attack queue (drives the gold next-target mark). */
+    "objectListDemo.setQueue": { ids: number[] };
     "layoutManagerStateChanged": { type?: 'import' } | void;
     "walker.popup.open": void;
     "walker.update": WalkerState;
