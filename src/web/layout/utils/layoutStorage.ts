@@ -287,9 +287,73 @@ function ensureBuiltIns(state: LayoutState): LayoutState {
   return state;
 }
 
+// ─── UI capability: shell-forced layout fields ────────────────────────────
+// Some shells (forge-ui) ARE the dock grid: their chrome only works with layout
+// mode on, the built-in objectList slot enabled and the rail-span arrangement.
+// The stock UI treats all three as user choices, and both UIs share the same
+// persisted `layoutManagerState` — so a shell must never write its own
+// requirements into storage (merely opening forge would otherwise flip the
+// stock UI's "Menedzer Okien" on). Instead it declares them as process-local
+// overrides: loadLayoutState() reports them as set, while saveLayoutState()
+// writes the persisted (user-chosen) value back for those fields.
+export type LayoutOverrides = Partial<
+  Pick<LayoutState, 'enabled' | 'spanningDocks' | 'enabledPanels'>
+>;
+
+let layoutOverrides: LayoutOverrides = {};
+
+export function setLayoutOverrides(overrides: LayoutOverrides): void {
+  layoutOverrides = { ...overrides };
+  resetLayoutCache();
+}
+
+export function getLayoutOverrides(): LayoutOverrides {
+  return { ...layoutOverrides };
+}
+
+/** True when this shell forces layout mode on (the user cannot turn it off). */
+export function isLayoutModeForced(): boolean {
+  return layoutOverrides.enabled === true;
+}
+
+function hasLayoutOverrides(): boolean {
+  return Object.keys(layoutOverrides).length > 0;
+}
+
+/** Overlay the shell's forced fields onto a persisted snapshot. */
+function applyLayoutOverrides(state: LayoutState): LayoutState {
+  if (!hasLayoutOverrides()) return state;
+  const o = layoutOverrides;
+  return {
+    ...state,
+    ...(o.enabled !== undefined ? { enabled: o.enabled } : {}),
+    ...(o.spanningDocks !== undefined ? { spanningDocks: o.spanningDocks } : {}),
+    ...(o.enabledPanels !== undefined
+      ? { enabledPanels: { ...state.enabledPanels, ...o.enabledPanels } }
+      : {}),
+  };
+}
+
+/** Restore the persisted value for every forced field, so this shell's own
+ *  requirements never leak into the shared key. */
+function stripLayoutOverrides(state: LayoutState): LayoutState {
+  if (!hasLayoutOverrides()) return state;
+  const o = layoutOverrides;
+  const persisted = loadPersistedLayoutState();
+  return {
+    ...state,
+    ...(o.enabled !== undefined ? { enabled: persisted.enabled } : {}),
+    ...(o.spanningDocks !== undefined ? { spanningDocks: persisted.spanningDocks } : {}),
+    ...(o.enabledPanels !== undefined ? { enabledPanels: persisted.enabledPanels } : {}),
+  };
+}
+
 // ─── Loading / saving ─────────────────────────────────────────────────────
 
-export function loadLayoutState(): LayoutState {
+/** The layout exactly as persisted, with no shell overrides applied. Use this
+ *  when the state is about to leave this shell (settings export / device sync);
+ *  everything else wants loadLayoutState(). */
+export function loadPersistedLayoutState(): LayoutState {
   try {
     const stored = globalStorage.get('layoutManagerState');
     if (!stored) return cloneDefault();
@@ -329,6 +393,10 @@ export function loadLayoutState(): LayoutState {
   }
 }
 
+export function loadLayoutState(): LayoutState {
+  return applyLayoutOverrides(loadPersistedLayoutState());
+}
+
 function cloneDefault(): LayoutState {
   return {
     ...DEFAULT_LAYOUT,
@@ -344,7 +412,7 @@ function cloneDefault(): LayoutState {
 
 export function saveLayoutState(state: LayoutState): void {
   try {
-    globalStorage.set('layoutManagerState', state);
+    globalStorage.set('layoutManagerState', stripLayoutOverrides(state));
   } catch (e) {
     console.error('Failed to save layout state:', e);
   }
@@ -361,7 +429,9 @@ export function saveLayoutStateDebounced(state: LayoutState, delay = 300): void 
 }
 
 export function resetLayoutState(): LayoutState {
-  const resetState: LayoutState = { ...cloneDefault(), enabled: true };
+  // Forced fields survive the reset (a shell that needs them still needs them);
+  // saveLayoutState() keeps them out of the shared key as usual.
+  const resetState = applyLayoutOverrides({ ...cloneDefault(), enabled: true });
   saveLayoutState(resetState);
   return resetState;
 }

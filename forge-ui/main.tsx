@@ -37,8 +37,7 @@ import { setOutputTimestampVisibility } from '@shared/dom/outputMessageHandler';
 import {
     setDockingSupported,
     setRailSpanSupported,
-    loadLayoutState,
-    saveLayoutState,
+    setLayoutOverrides,
 } from '@web/layout/utils/layoutStorage';
 import { setObjectListChrome } from '@web/layout/builtInChrome';
 import { createClient } from './client/bootstrap';
@@ -65,13 +64,14 @@ setObjectListChrome({ title: 'W poblizu', defaultViewMode: 'nearby' });
 
 // Force layout mode on so the dock grid activates, keep the built-in
 // objectList slot enabled (forge renders the forged "W poblizu" panel into it),
-// and default to the vertical rail-span arrangement. NOTE: this persists to the
-// SHARED `layoutManagerState` key — enabling layout mode in the stock UI too.
-// spanningDocks is honoured only where setRailSpanSupported(true) ran, so the
-// stock UI stays on its classic arrangement. Reversible from the layout UI.
-const seed = loadLayoutState();
-saveLayoutState({
-    ...seed,
+// and default to the vertical rail-span arrangement. These are process-local
+// OVERRIDES, not writes: forge and the stock UI share one `layoutManagerState`
+// key, so persisting them here would switch the stock UI's "Menedzer Okien" on
+// just because forge was opened once. loadLayoutState() reports them as set for
+// the rest of this page, and saveLayoutState() keeps writing the user's own
+// persisted values for those three fields. Must run before the first
+// LayoutProvider mount / popup registration.
+setLayoutOverrides({
     enabled: true,
     enabledPanels: { objectList: true },
     spanningDocks: 'leftRight',

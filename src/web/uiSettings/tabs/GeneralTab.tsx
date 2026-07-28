@@ -4,6 +4,7 @@ import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiS
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
+import { isLayoutModeForced } from "@web/layout/utils/layoutStorage";
 
 interface GeneralTabProps {
     draft: UiSettings;
@@ -22,6 +23,7 @@ function GeneralTab({
 }: GeneralTabProps) {
     const isCustomFont = draft.fontFamily === 'custom';
     const isCustomDark = draft.colorTheme === 'custom-dark';
+    const layoutForced = isLayoutModeForced();
 
     // Tracks whether the user has manually edited the custom font family,
     // so an automatic guess doesn't clobber a deliberate value.
@@ -147,8 +149,17 @@ function GeneralTab({
             </SettingsSection>
 
             <SettingsSection title="Menedżer Okien">
-                <CheckboxRow id="ui-layout-manager-enabled" label="Włącz menedżer okien" checked={layoutEnabled} onChange={onLayoutEnabledChange} />
-                <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje" checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ms-3" />
+                {/* Shells that force layout mode on (forge) hide the toggles: they
+                    are process-local overrides, so flipping them here would do
+                    nothing and would not persist. */}
+                {layoutForced ? (
+                    <div className="text-muted small">Ten interfejs zawsze korzysta z menedżera okien.</div>
+                ) : (
+                    <>
+                        <CheckboxRow id="ui-layout-manager-enabled" label="Włącz menedżer okien" checked={layoutEnabled} onChange={onLayoutEnabledChange} />
+                        <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje" checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ms-3" />
+                    </>
+                )}
                 <button type="button" className="btn btn-secondary btn-sm align-self-start" id="ui-layout-manager-reset" onClick={onLayoutReset}>Przywróć domyślny układ</button>
             </SettingsSection>
 

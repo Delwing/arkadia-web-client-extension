@@ -8,10 +8,15 @@ export {
 export { useMapViewingState } from './hooks/useMapViewingState';
 export {
   loadLayoutState,
+  loadPersistedLayoutState,
   saveLayoutState,
   resetLayoutState,
   invalidateLayoutCache,
+  setLayoutOverrides,
+  getLayoutOverrides,
+  isLayoutModeForced,
 } from './utils/layoutStorage';
+export type { LayoutOverrides } from './utils/layoutStorage';
 export {
   getPopupPortalContainer,
   isPopupPortalReady,

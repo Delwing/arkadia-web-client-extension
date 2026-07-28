@@ -142,6 +142,29 @@ a small desktop font and a large phone font don't fight each other. Stock-only
 chrome (buttons, footer, layout, split view, bar order, …) also lives in the
 `uiSettings` blob and is ignored by forge UIs.
 
+### Shell requirements are overrides, not writes
+
+The layout manager (`layoutManagerState`) is one persisted key that *is* shared
+between UIs. A shell whose chrome only works one way — forge is the dock grid,
+so it needs `enabled`, the `objectList` slot and `spanningDocks: 'leftRight'` —
+must not persist that: writing it would flip the stock UI's "Menedzer Okien" on
+just because forge was opened once. Declare it process-locally instead, before
+the first `LayoutProvider` mount:
+
+```ts
+import { setLayoutOverrides } from '@web/layout/utils/layoutStorage';
+setLayoutOverrides({ enabled: true, enabledPanels: { objectList: true }, spanningDocks: 'leftRight' });
+```
+
+`loadLayoutState()` then reports the forced fields as set for this page, while
+`saveLayoutState()` writes the user's own persisted values back for exactly
+those fields — everything else (dock trees, extents, popup state) persists
+normally. `loadPersistedLayoutState()` returns the unoverridden state and is
+what settings export / device sync use. `isLayoutModeForced()` lets a settings
+panel hide toggles that would be inert (see `GeneralTab.tsx`). Capability flags
+`setDockingSupported()` / `setRailSpanSupported()` work the same way: process-
+local, never persisted.
+
 ## Building a UI
 
 A UI is an HTML entry + a bootstrap module. The minimal recipe (see the React

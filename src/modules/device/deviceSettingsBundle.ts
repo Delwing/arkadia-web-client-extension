@@ -1,6 +1,6 @@
 import { globalStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';
-import { loadLayoutState, saveLayoutState } from '@web/layout/utils/layoutStorage';
+import { loadPersistedLayoutState, saveLayoutState } from '@web/layout/utils/layoutStorage';
 import { defaultUiSettings, type UiSettings } from '@web/defaultUiSettings';
 import { chromeSettingsKeys } from '@shared/settingsDefaults';
 import {
@@ -52,7 +52,9 @@ export function exportDeviceSettings(): DeviceSettings {
     const deviceInfo = getDeviceInfo();
 
     const uiSettings = loadUiSettings();
-    const layoutManagerState = loadLayoutState();
+    // Persisted, not overridden: a shell that forces layout mode on for itself
+    // (forge) must not export that choice to the user's other devices.
+    const layoutManagerState = loadPersistedLayoutState();
     const desktopButtonSettings = loadDesktopButtonSettings();
     const mobileButtonSettings = loadMobileButtonSettings();
 

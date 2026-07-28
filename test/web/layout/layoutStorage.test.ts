@@ -10,8 +10,11 @@ import {
   getPinnedPopupsByPrefix,
   setDockingSupported,
   loadLayoutState,
+  loadPersistedLayoutState,
   saveLayoutState,
   invalidateLayoutCache,
+  setLayoutOverrides,
+  isLayoutModeForced,
 } from '@web/layout/utils/layoutStorage';
 
 describe('built-in panel settings persistence', () => {
@@ -144,5 +147,79 @@ describe('docking capability gating (forge-ui vs stock UI)', () => {
 
     setDockingSupported(true);
     expect(getPinnedPopupsByPrefix('map:').sort()).toEqual(['map:a', 'map:b']);
+  });
+});
+
+describe('shell layout overrides (forge-ui forces layout mode locally)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setLayoutOverrides({});
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+  });
+
+  // Process-local flag; restore it so it doesn't bleed across tests.
+  afterEach(() => {
+    setLayoutOverrides({});
+    invalidateLayoutCache();
+  });
+
+  const forgeOverrides = {
+    enabled: true,
+    enabledPanels: { objectList: true },
+    spanningDocks: 'leftRight',
+  } as const;
+
+  it('reports the forced fields to the shell without persisting them', () => {
+    // Stock UI state: layout manager off.
+    saveLayoutState({ ...loadLayoutState(), enabled: false, spanningDocks: 'topBottom' });
+    invalidateLayoutCache();
+
+    setLayoutOverrides(forgeOverrides);
+
+    expect(isLayoutModeForced()).toBe(true);
+    expect(loadLayoutState().enabled).toBe(true);
+    expect(loadLayoutState().spanningDocks).toBe('leftRight');
+    // Nothing was written — the stock UI's own choice is untouched.
+    expect(loadPersistedLayoutState().enabled).toBe(false);
+    expect(loadPersistedLayoutState().spanningDocks).toBe('topBottom');
+  });
+
+  it('keeps the stock choice when the shell saves layout changes', () => {
+    saveLayoutState({ ...loadLayoutState(), enabled: false, enabledPanels: { objectList: false } });
+    invalidateLayoutCache();
+
+    setLayoutOverrides(forgeOverrides);
+
+    // A normal in-forge layout change (drag/resize) serializes enabled:true.
+    windowManager.loadState(loadLayoutState());
+    saveLayoutState(windowManager.serialize());
+    invalidateLayoutCache();
+
+    const persisted = loadPersistedLayoutState();
+    expect(persisted.enabled).toBe(false);
+    expect(persisted.enabledPanels.objectList).toBe(false);
+    expect(persisted.spanningDocks).toBe('topBottom');
+    // ...while forge still sees layout mode on.
+    expect(loadLayoutState().enabled).toBe(true);
+    expect(loadLayoutState().enabledPanels.objectList).toBe(true);
+  });
+
+  it('persists non-overridden fields normally', () => {
+    setLayoutOverrides(forgeOverrides);
+
+    saveLayoutState({ ...loadLayoutState(), uiLocked: true });
+    invalidateLayoutCache();
+
+    expect(loadPersistedLayoutState().uiLocked).toBe(true);
+    expect(loadPersistedLayoutState().enabled).toBe(false);
+  });
+
+  it('leaves the stock UI writing enabled through when no overrides are set', () => {
+    saveLayoutState({ ...loadLayoutState(), enabled: true });
+    invalidateLayoutCache();
+
+    expect(isLayoutModeForced()).toBe(false);
+    expect(loadPersistedLayoutState().enabled).toBe(true);
   });
 });
