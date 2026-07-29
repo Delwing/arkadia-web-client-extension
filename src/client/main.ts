@@ -105,6 +105,7 @@ import initIdleFullHp from './scripts/idleFullHp'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initTeamPanel from './scripts/teamPanel'
 import initNoExitHighlight from './scripts/noExitHighlight'
+import initMapCorrections from './scripts/mapCorrections'
 import initTideWarningHighlight from './scripts/tideWarningHighlight'
 import initLetter from './scripts/letter'
 import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
@@ -218,6 +219,7 @@ export function registerScripts(client: Client) {
     initDirectionBypass(client, aliases)
 
     initNoExitHighlight(client)
+    initMapCorrections(client)
     initTideWarningHighlight(client)
 
     client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
