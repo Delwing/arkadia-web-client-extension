@@ -6,7 +6,16 @@ import { test, expect } from './support/fixtures';
  * dockable popups.
  */
 test.describe('forge menu', () => {
+    let consoleIssues: string[] = [];
+
     test.beforeEach(async ({ page }) => {
+        consoleIssues = [];
+        // Attached before the first navigation so it also catches anything the
+        // menu's background modal prefetch logs on startup.
+        page.on('console', (msg) => {
+            const type = msg.type();
+            if (type === 'error' || type === 'warning') consoleIssues.push(msg.text());
+        });
         await page.goto('/forge-ui/');
         // Disconnected, the login gate covers the HUD (LoginGate.tsx). Its close
         // button is what makes the client reachable before you have a game to
@@ -64,6 +73,21 @@ test.describe('forge menu', () => {
         await expect(modal).toBeVisible();
         await expect(modal.locator('.panel__title')).toHaveText('Dokumentacja');
         await expect(modal.locator('.docs-content')).not.toBeEmpty();
+    });
+
+    test('opens the log browser without stock-mount errors', async ({ page }) => {
+        // `src/web/LogBrowser.tsx` used to mount itself into stock's
+        // `#logs-button` / `#logs-modal` at import time, and on failure left a
+        // MutationObserver on document.body that retried — and re-logged — on
+        // every DOM mutation. forge imports the module for its component only
+        // (and warms it via prefetchAllModals), so it spammed the console for
+        // the whole session. The bootstrap now lives in logBrowserMount.tsx.
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Logi' }).click();
+        const modal = page.locator('.forge-menu-modal');
+        await expect(modal).toBeVisible();
+        await expect(modal.locator('.panel__title')).toHaveText('Logi');
+        expect(consoleIssues.filter((line) => line.includes('[Logs]'))).toEqual([]);
     });
 
     test('nested edit sub-modal opens as a centred overlay', async ({ page }) => {
