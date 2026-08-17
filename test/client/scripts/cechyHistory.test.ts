@@ -146,6 +146,40 @@ describe("cechy history", () => {
         expect(getCechyHistory()).toHaveLength(1);
     });
 
+    // The game's spacing around the modifier varies, and a modifier can itself
+    // contain parentheses. Every one of these must still count as modified.
+    test.each([
+        "                      ( +kulczyba )",
+        " ( +kulczyba )",
+        "\t( +kulczyba )",
+        "   (+kulczyba)",
+        "   (  +kulczyba  )",
+        "   ( +2 )",
+        "   ( -kulczyba )",
+        "   ( +kulczyba +blogoslawienstwo )",
+        "   ( +eliksir (maly) )",
+    ])("treats %j as a modifier", (suffix) => {
+        readCechy([`${LINES[0].replace(/\s+\( \+kulczyba \)$/, "")}${suffix}`, ...LINES.slice(1)]);
+
+        expect(getCechyHistory()[0].stats.sila).toBeNull();
+    });
+
+    test("keeps reading a trait whose line carries no modifier", () => {
+        readCechy([LINES[0].replace(/\s+\( \+kulczyba \)$/, ""), ...LINES.slice(1)]);
+
+        expect(getCechyHistory()[0].stats.sila).toEqual({ value: 8, step: 2, sum: 37 });
+    });
+
+    test("reads the masculine nadludzki poziom line", () => {
+        readCechy([
+            ...LINES.slice(0, 3),
+            "Twoj intelekt osiagnal nadludzki poziom.",
+            LINES[4],
+        ]);
+
+        expect(getCechyHistory()[0].stats.inteligencja).toEqual({ value: 10, step: 0, sum: 45 });
+    });
+
     test("still annotates a modified line in the output", () => {
         runCechy();
         const annotated = parse(LINES[0]);

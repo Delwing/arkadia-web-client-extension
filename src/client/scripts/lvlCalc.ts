@@ -191,13 +191,25 @@ interface CechaMatch {
     modifier?: string;
 }
 
+/**
+ * The trailing `( +cos )` annotation the game appends when `state_modifiers` is
+ * on. Spacing around the parentheses varies, and a modifier may itself contain
+ * parentheses, so the contents stay permissive and the closing `)` is pinned to
+ * the end of the line.
+ */
+const MODIFIER_SUFFIX = String.raw`(?:\s+\(\s*(?<modifier>[+-].*?)\s*\))?$`;
+
 /** `Jestes mocarny i troche ci brakuje, zebys mogl wyzej ocenic swa sile.` */
-const CECHA_LINE =
-    /^Jestes (?<desc>[a-z ]+) i (?<next>[a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) (?<noun>[a-z]+)\.(?:\s+\(\s*(?<modifier>[+-][^)]*?)\s*\))?$/;
+const CECHA_LINE = new RegExp(
+    String.raw`^Jestes (?<desc>[a-z ]+) i (?<next>[a-z ]+) ci brakuje, zebys mogla? wyzej ocenic sw(?:a|oj) (?<noun>[a-z]+)\.` +
+    MODIFIER_SUFFIX,
+);
 
 /** `Twoja sila osiagnela nadludzki poziom.` */
-const CECHA_MAX_LINE =
-    /^Tw(?:oja|oj) (?<noun>[a-z]+) osiagn(?:ela|al) (?<desc>nadludzki poziom)\.(?:\s+\(\s*(?<modifier>[+-][^)]*?)\s*\))?$/;
+const CECHA_MAX_LINE = new RegExp(
+    String.raw`^Tw(?:oja|oj) (?<noun>[a-z]+) osiagn(?:ela|al) (?<desc>nadludzki poziom)\.` +
+    MODIFIER_SUFFIX,
+);
 
 /**
  * `Twoje cechy sa oslabione po ostatniej smierci.` — printed after the read-out
