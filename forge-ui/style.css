@@ -1110,6 +1110,7 @@ textarea.cmd-input {
 
 /* the shared flat surface — mirrors .panel fill + .forged chrome */
 .hover-tooltip,
+.map-note-tooltip,
 .alt-context-menu {
   border-radius: 9px;
   overflow: hidden;
@@ -1129,6 +1130,7 @@ textarea.cmd-input {
 }
 /* inner bronze bevel ring, exactly as .forged::after on the left panels */
 .hover-tooltip::before,
+.map-note-tooltip::before,
 .alt-context-menu::before {
   content: ""; position: absolute; inset: 4px; z-index: 0; pointer-events: none;
   border-radius: 5px;
@@ -1194,6 +1196,47 @@ textarea.cmd-input {
   word-break: break-word;
   filter: saturate(.5);   /* fold effect colors into the muted forge world */
   text-box: trim-both cap alphabetic;
+}
+
+/* --- map room note tooltip (left-click a room on the map) --- */
+/* Written by @web/mapNoteTooltip into #map-note-tooltip: one entry per source
+   (user note / plugin notes / the note baked into the map data). It places the
+   box with viewport coordinates, so this is `fixed`, not `absolute`. Prose, not
+   stat rows — the text keeps the Garamond body voice; only the source label
+   takes the Cinzel small-caps of .hover-tooltip__label. */
+.map-note-tooltip {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 1200;
+  display: none;
+  max-width: 320px;
+  padding: 9px 12px;
+  pointer-events: none;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--parchment);
+}
+.map-note-tooltip.show { display: block; }
+/* keep entries above the bevel-ring layer (::before, z-index 0) */
+.map-note-tooltip__entry {
+  position: relative; z-index: 1;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.map-note-tooltip__entry + .map-note-tooltip__entry {
+  margin-top: 5px; padding-top: 5px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+.map-note-tooltip__label {
+  flex: 0 0 auto;
+  font-family: "Cinzel", serif; font-weight: 600; font-size: 9.5px;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--bronze-dim); white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+.map-note-tooltip__text {
+  flex: 1 1 auto; min-width: 0;
+  word-break: break-word;
 }
 
 /* --- right-click context menu --- */

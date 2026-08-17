@@ -19,6 +19,10 @@
        @shared/dom/tooltip primitive renders into this by id; kept a sibling of
        #root so React never manages it. Styled by the .hover-tooltip rules. -->
   <div id="hover-tooltip" class="hover-tooltip"></div>
+  <!-- Left-click note tooltip for map rooms. EmbeddedMap's roomclick handler
+       renders into this by id (@web/mapNoteTooltip); like #hover-tooltip it is
+       a sibling of #root so React never manages it. -->
+  <div id="map-note-tooltip" class="map-note-tooltip"></div>
   <!-- Offscreen host for the built-in map panel. The shared MapPanel
        relocates #map into whichever dock/float shell owns it; EmbeddedMap binds
        to #map by id, so it must exist (attached) before the map is mounted. -->

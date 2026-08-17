@@ -19,9 +19,23 @@ Liczniki zabitych, postepow, stazu i zlecen.
 | Komenda | Opis |
 |---------|------|
 | `cechy` | Uruchom licznik poziomowania i wyswietl postepy |
+| `/cechyw` | Otworz okno z historia zmian cech (postep sumy podcech, zmiany kazdej cechy i koszt w postepach) |
 | `/postepy` | Wyswietl postepy |
 | `/postepyw` | Otworz okno z postepami |
 | `/postepy_reset` | Zeruj licznik postepow |
+
+> **Wskazowka:** historia cech zapisuje sie tylko przy wlaczonej opcji
+> `MODYFIKATORY stanu postaci` (`opcje modyfikatory wlacz`). Bez niej gra nie oznacza
+> wzmocnionych cech i nie da sie odroznic prawdziwego wzrostu od chwilowego bonusu
+> &mdash; okno `/cechyw` pokazuje wtedy ostrzezenie z przyciskiem, ktory wlacza ta opcje.
+> Cechy z dopiskiem `( +cos )` sa pomijane, a odczyt po smierci
+> (`Twoje cechy sa oslabione`) nie jest zapisywany wcale. Do historii trafiaja tylko
+> odczyty, ktore faktycznie sie zmienily.
+>
+> Kazdy zapisany odczyt zapamietuje tez stan globalnego licznika postepow, wiec okno
+> pokazuje, ile postepow zdobyto miedzy kolejnymi zmianami. Wymaga to prowadzonego
+> licznika `/postepy2` &mdash; bez niego przy zmianach nie ma liczby postepow. Koszt
+> podcechy rosnie z poziomem cechy, wiec sa to konkretne pomiary, a nie srednia.
 
 ## Globalny licznik postepow
 

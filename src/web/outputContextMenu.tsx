@@ -21,6 +21,7 @@ import {
     Wrench,
     Shield,
     PawPrint,
+    Dumbbell,
     type LucideIcon,
 } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
@@ -178,6 +179,11 @@ export function setupOutputContextMenu(
             {
                 label: iconLabel(BarChart3, 'Postepy 2'),
                 action: () => eventBus.emit('postepy2.popup.open'),
+                opensWindow: true,
+            },
+            {
+                label: iconLabel(Dumbbell, 'Cechy'),
+                action: () => eventBus.emit('cechy.popup.open'),
                 opensWindow: true,
             },
             {

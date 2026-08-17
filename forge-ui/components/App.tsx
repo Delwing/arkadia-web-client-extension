@@ -4,6 +4,7 @@ import IconDefs from './IconDefs';
 import World from './World';
 import CommandRail from './CommandRail';
 import ContextMenu from './ContextMenu';
+import LocationNoteHost from './LocationNoteHost';
 import { useClient } from '../client/ClientContext';
 import { ConnectionProvider } from '../client/ConnectionContext';
 import { mountForgedMap } from '../map/forgedMap';
@@ -65,6 +66,9 @@ export default function App() {
                 <div id="layout-bottom-dock-host" />
             </div>
             <ContextMenu />
+            {/* The stock note editor, opened from the map context menu / the
+                "Notatki lokacji" panel. Loads itself on the first note event. */}
+            <LocationNoteHost />
             {/* Last, so it layers over the whole HUD without needing a higher
                 z-index than forge's own floating chrome. */}
             <LoginGate />

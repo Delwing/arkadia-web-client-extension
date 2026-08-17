@@ -20,6 +20,7 @@ import type {Contract} from "@client/scripts/contracts.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 import type {CombatStatsSnapshot} from "@client/scripts/combatStats.ts";
+import type {CechySnapshot} from "@client/scripts/lvlCalc.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
 import type {FishingStatePayload, BaitType} from "@client/scripts/fishing.ts";
 import type {LootPopupPayload, GroundItem} from "@client/scripts/lootParser.ts";
@@ -309,6 +310,10 @@ export interface KnownEvents {
     "stat.popup.open": void;
     "postepy.updated": unknown;
     "postepy.popup.open": void;
+    "cechy.read": CechySnapshot;
+    "cechy.history.updated": void;
+    "cechy.popup.open": void;
+    "cechy.enableModifiers": void;
     "postepy2.updated": void;
     "postepy2.popup.open": void;
     "zlom.updated": void;

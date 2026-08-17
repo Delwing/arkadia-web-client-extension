@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import CechyPopup from '../CechyPopup';
 import ChatPopup from '../ChatPopup';
 import ClockPopup from '../ClockPopup';
 import CombatPopup from '../CombatPopup';
@@ -75,6 +76,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:combat', Component: CombatPopup },
     { id: 'popup:combatStatus', Component: CombatStatusPopup },
     { id: 'popup:postepy', Component: PostepyPopup },
+    { id: 'popup:cechy', Component: CechyPopup },
     { id: 'popup:postepy2', Component: Postepy2Popup },
     { id: 'popup:zabici', Component: ZabiciPopup },
     { id: 'popup:zabici2', Component: Zabici2Popup },

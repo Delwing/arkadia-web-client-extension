@@ -19,6 +19,7 @@ import type { ShortcutEntry } from '@client/scripts/shortcuts';
 import type { ContractsSnapshot } from '@client/scripts/contracts';
 import type { AttackMode } from '@client/utils/attackController';
 import type { CharGender } from '@shared/events/gmcpTypes';
+import type { CechyHistoryEntry } from '@client/scripts/cechyHistory';
 
 /**
  * Character-scoped storage keys.
@@ -31,6 +32,7 @@ export interface CharacterStorageSchema {
     kill_counter_team: Record<string, Record<string, number>>;
     improve_counter: any;
     improve_counter_lifetime: any;
+    cechy_history: CechyHistoryEntry[];
     deposits: any; // TODO: type when deposits structure is defined
     containers: any; // TODO: type when containers structure is defined
     herb_counts: any; // HerbBagsState
@@ -111,6 +113,7 @@ export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema,
     herb_counts: { notifyOnNull: true },
     improve_counter: { notifyOnNull: true },
     improve_counter_lifetime: { notifyOnNull: true },
+    cechy_history: { notifyOnNull: true },
     introduced_remembered: { notifyOnNull: true },
     kill_counter: { notifyOnNull: true },
     kill_counter_session: { notifyOnNull: true },
@@ -130,6 +133,7 @@ export const characterStorageKeys = [
     'kill_counter_team',
     'improve_counter',
     'improve_counter_lifetime',
+    'cechy_history',
     'deposits',
     'containers',
     'herb_counts',

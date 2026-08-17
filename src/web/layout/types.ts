@@ -62,6 +62,7 @@ export type BuiltInPopupType =
   | 'combatStatus'
   | 'postepy'
   | 'postepy2'
+  | 'cechy'
   | 'zabici'
   | 'zabici2'
   | 'skroty'

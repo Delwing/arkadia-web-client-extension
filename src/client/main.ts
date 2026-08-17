@@ -44,6 +44,7 @@ import initSmith from './scripts/smith'
 import initHerbCounter from './scripts/herbCounter'
 import initHerbDescriptions from './scripts/herbDescriptions'
 import initLvlCalc from './scripts/lvlCalc'
+import initCechyHistory from './scripts/cechyHistory'
 import initItemCondition from './scripts/itemCondition'
 import initDurability from './scripts/durability'
 import initWearUsed from './scripts/wearUsed'
@@ -276,6 +277,7 @@ export function registerScripts(client: Client) {
     initHerbCounter(client, aliases)
     initHerbDescriptions(client)
     initLvlCalc(client, aliases)
+    initCechyHistory(client, aliases)
     initCompareAll(client, aliases)
     initCompareInline(client)
     initPersonDescription(client)

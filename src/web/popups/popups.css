@@ -1988,6 +1988,334 @@
   white-space: pre;
 }
 
+/* ── cechy ───────────────────────────────────────────────────────────── */
+/* Trait history: level progress at the top, per-trait state below, and a
+   newest-first timeline of every recorded change. */
+/* Sized a step above the other data popups on purpose: this one is read at a
+   glance to spot a change, not scanned as a dense table. */
+.cechy-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  padding: 0.6rem;
+}
+
+.cechy-popup__total {
+  color: var(--popup-data-green);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Deliberately loud: with the option off nothing is ever recorded, so this is
+   the whole popup's blocker rather than a passing note. */
+.cechy-popup__warning {
+  background-color: var(--popup-warning-bg);
+  border: 1px solid var(--popup-warning-border);
+  border-left: 3px solid var(--popup-warning);
+  border-radius: 0.25rem;
+  color: var(--popup-warning);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.cechy-popup__warning-title {
+  color: var(--popup-warning);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cechy-popup__warning-text {
+  color: var(--popup-text-medium);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cechy-popup__warning code {
+  background-color: var(--popup-control-bg);
+  border-radius: 0.2rem;
+  color: var(--popup-text-bright);
+  font-size: 0.8rem;
+  padding: 0.05rem 0.25rem;
+  white-space: nowrap;
+}
+
+.cechy-popup__warning-btn {
+  align-self: stretch;
+  background-color: var(--popup-warning-bg);
+  border-color: var(--popup-warning-border);
+  color: var(--popup-warning);
+  font-weight: 600;
+}
+
+.cechy-popup__warning-btn:hover {
+  background-color: var(--popup-warning-hover-bg);
+  border-color: var(--popup-warning);
+  color: var(--popup-warning);
+}
+
+.cechy-popup__level {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background-color: var(--popup-subtle-bg);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+.cechy-popup__level-name {
+  color: var(--popup-text-bright);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.cechy-popup__bar {
+  background-color: var(--popup-control-bg);
+  border-radius: 999px;
+  height: 11px;
+  overflow: hidden;
+}
+
+.cechy-popup__bar-fill {
+  background-color: var(--popup-data-green);
+  border-radius: 999px;
+  height: 100%;
+  transition: width 0.25s ease;
+}
+
+.cechy-popup__level-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--popup-text-dim);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cechy-popup__level-missing {
+  color: var(--popup-text-subtle);
+  text-align: center;
+}
+
+/* The chart lives in its own tab, so it gets the full body width. */
+.cechy-popup__chart-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  justify-content: center;
+  flex: 1;
+}
+
+.cechy-popup__chart {
+  width: 100%;
+  height: auto;
+}
+
+.cechy-popup__chart-legend {
+  color: var(--popup-text-dim);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.cechy-popup__chart-line {
+  fill: none;
+  stroke: var(--popup-data-purple-light);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.cechy-popup__chart-dot {
+  fill: var(--popup-data-purple-light);
+}
+
+.cechy-popup__chart-grid {
+  stroke: var(--popup-border-subtle);
+  stroke-width: 0.6;
+}
+
+/* Experience-level boundaries — the lines a rise actually has to cross. */
+.cechy-popup__chart-threshold {
+  stroke: var(--popup-data-gold);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 2;
+  opacity: 0.45;
+}
+
+/* Scaled in viewBox units, so this ends up around 9px on screen. */
+.cechy-popup__chart-label {
+  fill: var(--popup-text-dim);
+  font-size: 6.5px;
+}
+
+.cechy-popup__chart-label--level {
+  fill: var(--popup-data-gold);
+}
+
+.cechy-popup__entry-postepy {
+  color: var(--popup-data-gold);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cechy-popup__traits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cechy-popup__trait {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.cechy-popup__trait-name {
+  color: var(--popup-text-medium);
+  flex: 0 0 6.5rem;
+}
+
+.cechy-popup__meter {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.cechy-popup__meter-cell {
+  background-color: var(--popup-control-bg);
+  border-radius: 1px;
+  height: 13px;
+  width: 7px;
+}
+
+.cechy-popup__meter-cell--on {
+  background-color: var(--popup-data-green);
+}
+
+.cechy-popup__meter--step .cechy-popup__meter-cell {
+  height: 8px;
+  width: 6px;
+}
+
+.cechy-popup__meter--step .cechy-popup__meter-cell--on {
+  background-color: var(--popup-data-green-light);
+}
+
+.cechy-popup__trait-sum {
+  color: var(--popup-text-bright);
+  font-variant-numeric: tabular-nums;
+  min-width: 2rem;
+  text-align: right;
+}
+
+.cechy-popup__trait-change {
+  align-items: center;
+  color: var(--popup-text-dim);
+  display: inline-flex;
+  font-size: 0.78rem;
+  gap: 0.35rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* The "when" is context; the delta is the fact — they must not read as one run
+   of text, so the delta gets an outline and the timestamp a quieter colour. */
+.cechy-popup__trait-when {
+  color: var(--popup-text-subtle);
+}
+
+.cechy-popup__badge {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 0 0.35rem;
+}
+
+.cechy-popup__badge--up {
+  color: var(--popup-success);
+}
+
+.cechy-popup__badge--down {
+  color: var(--popup-danger);
+}
+
+.cechy-popup__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cechy-popup__entry {
+  background-color: var(--popup-subtle-bg);
+  border-radius: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.cechy-popup__entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.cechy-popup__entry-date {
+  color: var(--popup-text-subtle);
+}
+
+.cechy-popup__entry-total {
+  color: var(--popup-text-bright);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+.cechy-popup__chip-delta--up {
+  color: var(--popup-success);
+}
+
+.cechy-popup__chip-delta--down {
+  color: var(--popup-danger);
+}
+
+.cechy-popup__entry-changes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.cechy-popup__entry-note {
+  color: var(--popup-text-dim);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.cechy-popup__chip {
+  background-color: var(--popup-control-bg);
+  border-radius: 0.25rem;
+  color: var(--popup-text-medium);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.15rem 0.4rem;
+}
+
+.cechy-popup__chip-delta {
+  color: var(--popup-text-subtle);
+  font-weight: 600;
+}
+
 /* ── zabici ──────────────────────────────────────────────────────────── */
 /* Zabici Popup */
 .zabici-popup-body {
