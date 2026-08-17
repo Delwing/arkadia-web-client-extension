@@ -5,7 +5,7 @@ import { globalStorage } from "@modules/core/storage";
 import { getPluginManager } from "@client/main";
 import type { LoadedPlugin } from "@shared/types/Plugin";
 import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPluginIds, getAllStoredPlugins } from "@client/utils/pluginStorage";
-import { storeEditorPlugin, type EditorPluginData } from "@client/utils/pluginEditorStorage";
+import { storeEditorPlugin, deleteEditorPlugin, createEditorPluginFromSource, type EditorPluginData } from "@client/utils/pluginEditorStorage";
 import { buildAiPluginPrompt } from "../aiPluginPrompt";
 import { editorUrl } from "../appUrls";
 import type { PluginImportWorkerResponse } from "../pluginImport.shared";
@@ -173,8 +173,22 @@ function Scripts() {
             // Generate a unique ID for the plugin
             const pluginId = generatePluginId(name || code);
 
+            const metadata = {
+                name: name || "Wklejony plugin",
+                version: '1.0.0',
+                author: 'Wklejony kod',
+                description: 'Dodany przez "Wklej kod"',
+            };
+
             // Store the plugin in IndexedDB
-            await storePluginScript(pluginId, code);
+            await storePluginScript(pluginId, code, metadata);
+
+            // Also store an editor record under the same id, so the pasted code
+            // can be opened and edited in the plugin editor (it reads a separate
+            // database and would otherwise report "Plugin not found").
+            await storeEditorPlugin(
+                createEditorPluginFromSource(pluginId, metadata.name, code, metadata)
+            );
 
             // Reload stored scripts list from IndexedDB
             await loadStoredScriptsFromDB();
@@ -214,6 +228,9 @@ function Scripts() {
             // Delete from IndexedDB
             try {
                 await deletePluginScript(identifier);
+                // Drop the editor record too, otherwise the deleted plugin keeps
+                // showing up in the editor's plugin list.
+                await deleteEditorPlugin(identifier);
                 // Reload from IndexedDB to update the list
                 await loadStoredScriptsFromDB();
                 // Trigger storage event to reload plugins

@@ -170,6 +170,40 @@ function simpleHash(str: string): string {
 }
 
 /**
+ * Build an editor record for a plugin that exists only as a single blob of
+ * ready-to-run JavaScript — pasted through "Wklej kod" or stored by an older
+ * build that never wrote an editor record. Without this the plugin runs but the
+ * editor cannot open it, since the editor reads a different database.
+ *
+ * The source doubles as the compiled output: pasted code is already what the
+ * runtime loads. Re-saving from the editor bundles it through esbuild as usual.
+ */
+export function createEditorPluginFromSource(
+  id: string,
+  name: string,
+  source: string,
+  metadata?: PluginInfo,
+  createdAt?: number
+): EditorPluginData {
+  const now = Date.now()
+  const entryPoint = 'index.js'
+
+  return {
+    id,
+    name,
+    compiled: source,
+    files: {
+      [entryPoint]: createPluginFile(entryPoint, source),
+    },
+    entryPoint,
+    metadata,
+    createdAt: createdAt ?? now,
+    updatedAt: now,
+    lastCompiledAt: now,
+  }
+}
+
+/**
  * Migrate legacy single-file plugin to multi-file format
  * This handles plugins stored before the multi-file system was implemented
  */

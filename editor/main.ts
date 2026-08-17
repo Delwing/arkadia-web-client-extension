@@ -55,7 +55,7 @@ import {
   showNewFileModal,
   showNewPluginModal,
 } from './modals'
-import {createNewPlugin, deletePlugin, downloadPlugin, refreshPluginList, savePlugin, uploadPlugin,} from './pluginManagement'
+import {adoptStoredPlugin, createNewPlugin, deletePlugin, downloadPlugin, refreshPluginList, savePlugin, uploadPlugin,} from './pluginManagement'
 import { getDevServer, type DevServerStatus } from './devServer'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
@@ -314,6 +314,15 @@ export default value;`
 // Load plugin into editor
 async function loadPlugin(pluginId: string) {
   let plugin = await getEditorPlugin(pluginId)
+  if (!plugin) {
+    // Plugins added through "Wklej kod" (older builds) live only in the runtime
+    // script store; give them an editor record on first open so they can be
+    // edited like any other plugin.
+    plugin = await adoptStoredPlugin(pluginId)
+    if (plugin) {
+      await refreshPluginList(pluginId)
+    }
+  }
   if (!plugin) {
     updateStatus('Plugin not found', 'error')
     return

@@ -14,6 +14,46 @@ async function openScriptsModal(page) {
     return modal;
 }
 
+test('Pasted plugin code can be opened and edited in the plugin editor', async ({page, context}) => {
+    const pluginCode = `export async function init() {
+  const marker = 'wklejony-marker';
+  return {name: 'Wklejony Test', version: '0.0.1', author: 'QA', description: marker};
+}`;
+
+    await page.goto('/');
+    await waitForCommandInput(page);
+
+    const scriptsModal = await openScriptsModal(page);
+    await scriptsModal.getByRole('button', {name: 'Wklej kod'}).click();
+
+    const codeDialog = page.locator('.modal', {hasText: 'Dodaj plugin z kodu'}).last();
+    await codeDialog.getByPlaceholder('Moja wtyczka').fill('Wklejony Test');
+    await codeDialog.getByPlaceholder('export async function init(api) { ... }').fill(pluginCode);
+    await codeDialog.getByRole('button', {name: 'Dodaj plugin'}).click();
+
+    const pastedItem = scriptsModal.locator('section', {hasText: 'Wklejony Test'});
+    await expect(pastedItem, 'should list the pasted plugin').toBeVisible();
+
+    const editButton = pastedItem.getByTitle('Edytuj w edytorze');
+    const [editorPage] = await Promise.all([
+        context.waitForEvent('page'),
+        editButton.click(),
+    ]);
+
+    await editorPage.waitForLoadState('domcontentloaded');
+
+    await expect(
+        editorPage.locator('#plugin-name'),
+        'editor should open the pasted plugin, not report it as missing',
+    ).toHaveValue('Wklejony Test', {timeout: 30000});
+    await expect(
+        editorPage.locator('#editor-container .view-lines'),
+        'editor should show the pasted source',
+    ).toContainText('wklejony-marker', {timeout: 30000});
+
+    await editorPage.close();
+});
+
 test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage', async ({page}) => {
     const primaryUrl = 'https://example.com/plugin.js';
     const secondaryUrl = 'https://example.com/other.js';

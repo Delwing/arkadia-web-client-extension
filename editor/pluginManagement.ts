@@ -6,17 +6,39 @@ import {
   getAllEditorPlugins,
   generateEditorPluginId,
   getLanguageFromPath,
+  createEditorPluginFromSource,
 } from '@client/utils/pluginEditorStorage.ts'
 import {
   storePluginScript,
   updatePluginScript,
   deletePluginScript,
+  getPluginScript,
+  getAllStoredPlugins,
 } from '@client/utils/pluginStorage.ts'
 import type { StatusType } from './types'
 import JSZip from 'jszip'
 
 export async function refreshPluginList(_currentPluginId: string | null): Promise<void> {
-  const plugins = await getAllEditorPlugins()
+  const editorPlugins = await getAllEditorPlugins()
+  const known = new Set(editorPlugins.map(p => p.id))
+
+  // Stored-only plugins ("Wklej kod" from older builds) have no editor record
+  // yet — list them anyway; opening one adopts it via adoptStoredPlugin().
+  const storedOnly = (await getAllStoredPlugins())
+    .filter(stored => !known.has(stored.id))
+    .map(stored => ({
+      ...createEditorPluginFromSource(
+        stored.id,
+        stored.metadata?.name || stored.id,
+        stored.code,
+        stored.metadata,
+        stored.createdAt
+      ),
+      // keep the real timestamp so the list stays sorted by actual recency
+      updatedAt: stored.updatedAt,
+    }))
+
+  const plugins = [...editorPlugins, ...storedOnly]
   const select = document.getElementById('plugin-select') as HTMLSelectElement
 
   // Save current selection
@@ -44,6 +66,30 @@ export async function refreshPluginList(_currentPluginId: string | null): Promis
   if (currentValue && plugins.some(p => p.id === currentValue)) {
     select.value = currentValue
   }
+}
+
+/**
+ * Adopt a plugin that only exists as a stored runtime script — pasted through
+ * "Wklej kod", or added before the paste dialog started writing editor records.
+ * Its code becomes the entry point of a fresh single-file editor record under
+ * the same id, so editing and saving keeps driving the same runtime plugin.
+ *
+ * Returns null when there is no stored script for the id either.
+ */
+export async function adoptStoredPlugin(pluginId: string): Promise<EditorPluginData | null> {
+  const stored = await getPluginScript(pluginId)
+  if (!stored) return null
+
+  const plugin = createEditorPluginFromSource(
+    pluginId,
+    stored.metadata?.name || pluginId,
+    stored.code,
+    stored.metadata,
+    stored.createdAt
+  )
+
+  await storeEditorPlugin(plugin)
+  return plugin
 }
 
 export function updateLocalStorageList(pluginId: string) {
