@@ -28,6 +28,7 @@ export const defaultRenderSettings: RenderSettings = {
     outputBackground: '#242424',
     outputBottomPadding: 0,
     showTimestamps: false,
+    highlightMessageBlocks: false,
     commandEcho: true,
     clearInputOnSend: false,
     autoLowercaseCommands: false,
@@ -88,7 +89,7 @@ export const shellSettingsKeys = [
 export const renderSettingsKeys = [
     'fontFamily', 'customFontUrl', 'customFontFamily',
     'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground',
-    'outputBottomPadding', 'showTimestamps', 'commandEcho',
+    'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'commandEcho',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',
 ] as const satisfies readonly (keyof RenderSettings)[];
 

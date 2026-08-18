@@ -225,6 +225,83 @@ describe('setupOutputMessageHandler', () => {
         expect(stickyArea.children.length).toBe(0);
     });
 
+    test('turns AnsiAwareBuffer.flair into the msg-flair class pair', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        const buffer = new AnsiAwareBuffer('Masz przy sobie lampe.');
+        buffer.flair = 'ekwipunek';
+        client.emit(buffer, 'text');
+
+        const wrapper = outputWrapper.querySelector('.output_msg') as HTMLElement;
+        expect(wrapper.classList.contains('msg-flair')).toBe(true);
+        expect(wrapper.classList.contains('msg-flair-ekwipunek')).toBe(true);
+    });
+
+    test('leaves unflaired messages untouched', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        client.emit(new AnsiAwareBuffer('Jestes lekko zmeczony.'), 'text');
+
+        const wrapper = outputWrapper.querySelector('.output_msg') as HTMLElement;
+        expect(wrapper.classList.contains('msg-flair')).toBe(false);
+    });
+
+    test('ignores a flair name that is not a safe class token', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        // classList.add throws on a token containing whitespace, which would
+        // take the whole message down with it.
+        const buffer = new AnsiAwareBuffer('Masz przy sobie lampe.');
+        buffer.flair = 'ekwipunek zly';
+        client.emit(buffer, 'text');
+
+        const wrapper = outputWrapper.querySelector('.output_msg') as HTMLElement;
+        expect(wrapper).not.toBeNull();
+        expect(wrapper.classList.contains('msg-flair')).toBe(false);
+    });
+
+    test('the sticky-view mirror keeps the flair class', async () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        const buffer = new AnsiAwareBuffer('Zauwazasz przy nim rubin.');
+        buffer.flair = 'lup';
+        client.emit(buffer, 'text');
+
+        // Each append suppresses split-view detection for 250ms; clear it first.
+        await new Promise(resolve => setTimeout(resolve, 260));
+
+        // Scroll up: the mirror is rebuilt by calling buildMessageNode again.
+        // This is exactly what onRender cannot survive — it is cleared after it
+        // fires once — which is why the marker rides the buffer instead.
+        defineGeometry(outputWrapper, { scrollTop: 0, clientHeight: 100, scrollHeight: 1000 });
+        defineGeometry(splitBottom, { clientHeight: 0 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+
+        const mirrored = stickyArea.querySelector('.output_msg') as HTMLElement;
+        expect(mirrored).not.toBeNull();
+        expect(mirrored.classList.contains('msg-flair-lup')).toBe(true);
+    });
+
     test('destroy detaches listeners so further messages and scroll events are inert', () => {
         const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
         const client = makeFakeClient();

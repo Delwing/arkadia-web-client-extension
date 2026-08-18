@@ -307,6 +307,10 @@ export default class Client {
                     merged.append('\n');
                 }
             }
+            // A flair marker set on any line of the packet applies to the merged
+            // block, so a multi-line reply (inventory, body loot) is decorated as
+            // one node rather than per line.
+            merged.flair = result.find(part => part.flair)?.flair;
             return [merged];
         }
 

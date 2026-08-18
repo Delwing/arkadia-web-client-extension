@@ -123,6 +123,7 @@ function GeneralTab({
                     </div>
                 </div>
                 <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
+                <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
                 <SelectField id="ui-xterm-palette" label="Paleta kolorów" value={draft.xtermPalette} onChange={(v) => update({ xtermPalette: v as UiSettings['xtermPalette'] })}>
                     <option value="arkadia">Arkadia</option>
                     <option value="proper">XTerm</option>

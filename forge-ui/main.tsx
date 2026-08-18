@@ -9,6 +9,7 @@
 import './style.css';
 // Shared, var-driven popup body styles (see src/web/popups/popups.css).
 import '@web/popups/popups.css';
+import '@web-ui/messageFlair.css';
 // Forge adopts the shared dock/layout manager. layout.css brings the
 // dock grid + panel/floating chrome; layout-theme.css re-skins it forged.
 // NOTE: layout.css is intentionally NOT JS-imported here — it is pulled in via an

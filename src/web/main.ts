@@ -2,6 +2,7 @@
 // chunk (main-theme.css) to lock the stock cascade order — see that file for why.
 import './main-theme.css'
 import './popups/popups.css'
+import '@web-ui/messageFlair.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'

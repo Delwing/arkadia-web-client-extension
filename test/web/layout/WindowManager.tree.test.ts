@@ -127,6 +127,107 @@ describe('WindowManager tree operations', () => {
   });
 });
 
+describe('flex size invariant (sizes sum to children.length)', () => {
+  /** Every split node in the tree must keep sum(sizes) === children.length, so
+   *  the rendered `flex-grow` factors always sum to >= 1 and CSS distributes the
+   *  full dock extent (a sum below 1 leaves undraggable dead space). */
+  function assertSizesSum(node: SplitNode | LeafNode | null): void {
+    if (!node || node.kind === 'leaf') return;
+    const sum = node.sizes.reduce((a, b) => a + b, 0);
+    expect(node.sizes.length).toBe(node.children.length);
+    expect(sum).toBeCloseTo(node.children.length, 10);
+    node.children.forEach(assertSizesSum);
+  }
+
+  it('keeps the sum after tab-stacking prunes the emptied slot', () => {
+    const m = new WindowManager();
+    for (const id of ['a', 'b', 'c', 'd']) openDocked(m, id);
+    m.tabIntoGroup('d', 'a');
+    const root = rightRoot(m)!;
+    expect(root.children.length).toBe(3);
+    assertSizesSum(root);
+  });
+
+  it('keeps the sum after undocking and after removing a placeholder', () => {
+    const m = new WindowManager();
+    for (const id of ['a', 'b', 'c']) openDocked(m, id);
+    m.undock('b');
+    assertSizesSum(rightRoot(m));
+    m.splitWithPlaceholder('a', 'row', false);
+    assertSizesSum(rightRoot(m));
+    const wrap = rightRoot(m)!.children[0] as SplitNode;
+    m.removeNode('right', wrap.children[1].id);
+    assertSizesSum(rightRoot(m));
+  });
+
+  it('repairs a persisted tree whose sizes sum below 1 on load', () => {
+    const m = new WindowManager();
+    m.loadState({
+      enabled: true,
+      spanningDocks: 'topBottom',
+      uiLocked: false,
+      enabledPanels: { objectList: true },
+      windows: {},
+      dockTrees: {
+        left: null,
+        top: null,
+        bottom: null,
+        right: {
+          kind: 'split',
+          id: 'root',
+          dir: 'col',
+          // The corrupt shape: four migrated 0.2 slots, two of them pruned away
+          // by earlier tab-stacks — 0.4 total, so CSS filled only 40% of the dock.
+          children: [
+            { kind: 'leaf', id: 'l1', windowIds: ['a'], activeId: 'a' },
+            { kind: 'leaf', id: 'l2', windowIds: ['b'], activeId: 'b' },
+          ],
+          sizes: [0.2, 0.2],
+        },
+      },
+      dockExtents: { left: 200, right: 360, top: 200, bottom: 200 },
+      popupPanels: {},
+      builtInPanels: {},
+    });
+    const root = rightRoot(m)!;
+    expect(root.sizes).toEqual([1, 1]);
+    assertSizesSum(root);
+  });
+
+  it('heals non-finite and non-positive sizes', () => {
+    const m = new WindowManager();
+    m.loadState({
+      enabled: true,
+      spanningDocks: 'topBottom',
+      uiLocked: false,
+      enabledPanels: { objectList: true },
+      windows: {},
+      dockTrees: {
+        left: null,
+        top: null,
+        bottom: null,
+        right: {
+          kind: 'split',
+          id: 'root',
+          dir: 'col',
+          children: [
+            { kind: 'leaf', id: 'l1', windowIds: ['a'], activeId: 'a' },
+            { kind: 'leaf', id: 'l2', windowIds: ['b'], activeId: 'b' },
+            { kind: 'leaf', id: 'l3', windowIds: ['c'], activeId: 'c' },
+          ],
+          // Infinity survives a JSON round-trip as null; 0 and negatives make
+          // `flex` collapse or go invalid.
+          sizes: [null as unknown as number, 0, -3],
+        },
+      },
+      dockExtents: { left: 200, right: 360, top: 200, bottom: 200 },
+      popupPanels: {},
+      builtInPanels: {},
+    });
+    expect(rightRoot(m)!.sizes).toEqual([1, 1, 1]);
+  });
+});
+
 describe('migrateFlatWindowsToTrees', () => {
   const base = (over: Partial<WindowRecord>): WindowRecord => ({
     id: over.id!,

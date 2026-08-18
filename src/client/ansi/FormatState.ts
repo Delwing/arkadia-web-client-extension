@@ -395,6 +395,15 @@ export class AnsiAwareBuffer {
     private _onRender?: (container: HTMLElement) => void;
     private _textCache: string | null = null;
     originalText?: string;
+    /**
+     * Category marker for a decorated message block (e.g. 'ekwipunek', 'lup').
+     * Set by a trigger, read by the host when it builds the message node, which
+     * turns it into a `msg-flair msg-flair-<name>` class pair. Rides the buffer
+     * — like `originalText` — so no signature in the output chain has to know
+     * about it, and it survives the split-view sticky rebuild (which re-renders
+     * the same buffer) unlike `onRender`, which is cleared after firing once.
+     */
+    flair?: string;
 
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {
@@ -442,7 +451,9 @@ export class AnsiAwareBuffer {
     }
 
     clone(): AnsiAwareBuffer {
-        return new AnsiAwareBuffer(this.getSegments());
+        const copy = new AnsiAwareBuffer(this.getSegments());
+        copy.flair = this.flair;
+        return copy;
     }
 
     get text(): string {

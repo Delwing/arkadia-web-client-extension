@@ -53,6 +53,8 @@ export interface RenderSettings {
     outputBackground: string;
     outputBottomPadding: number;
     showTimestamps: boolean;
+    /** Set apart whole reply blocks (inventory, loot, descriptions, …). */
+    highlightMessageBlocks: boolean;
     commandEcho: boolean;
     clearInputOnSend: boolean;
     autoLowercaseCommands: boolean;

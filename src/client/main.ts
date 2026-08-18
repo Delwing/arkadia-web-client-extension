@@ -139,6 +139,7 @@ import initBrokilon from './scripts/brokilon'
 import initTideSystem from './scripts/tideSystem'
 import initSoundAliases from './scripts/soundAliases'
 import initLootParser from './scripts/lootParser'
+import initMessageFlair from './scripts/messageFlair'
 import initOstatnio from './scripts/ostatnio'
 import initDobOp from './scripts/dobOp'
 import initLabyrinth from './scripts/labyrinth'
@@ -358,6 +359,9 @@ export function registerScripts(client: Client) {
     initLabyrinthMapper(client, aliases)
     initRaonLabyrinthMapper(client, aliases)
     initLootParser(client)
+    // After lootParser: it rewrites the body/loot lines (colours, click-to-take),
+    // and this only tags the result.
+    initMessageFlair(client)
     initOstatnio(client, aliases)
     initDobOp(client, aliases)
     initDataRefresh(client, aliases)

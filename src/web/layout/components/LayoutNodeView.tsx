@@ -73,6 +73,9 @@ function SplitView({
       const totFlex = (node.sizes[aIdx] ?? 1) + (node.sizes[aIdx + 1] ?? 1);
 
       const ratioAt = (ev: PointerEvent) => {
+        // A zero-extent pair would turn the ratio into Infinity and poison both
+        // sizes (invalid `flex` values, persisted as null) — split it evenly.
+        if (total <= 0) return 0.5;
         const delta = (horizontal ? ev.clientX : ev.clientY) - startPos;
         const newA = Math.max(40, Math.min(total - 40, startA + delta));
         return newA / total;

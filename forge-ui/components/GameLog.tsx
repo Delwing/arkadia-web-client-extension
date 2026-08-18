@@ -4,6 +4,7 @@ import eventBus from '@modules/core/eventBus';
 import mudClient from '@web/MudClient';
 import { setupOutputContextMenu } from '@web/outputContextMenu';
 import {
+    applyFlairClass,
     createMessageTypeElement,
     createTimestampElement,
     setupOutputMessageHandler,
@@ -53,6 +54,7 @@ const buildMessageLine = (
 ): HTMLElement => {
     const line = document.createElement('p');
     if (type) line.className = `t-${type.replace(/[^a-z0-9]+/gi, '-')}`;
+    applyFlairClass(line, message);
     line.appendChild(createTimestampElement(timestamp));
     line.appendChild(createMessageTypeElement(type));
     // Message text lives in its own content span (mirroring stock's

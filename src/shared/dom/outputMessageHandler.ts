@@ -134,6 +134,21 @@ export function toggleOutputMessageTypeVisibility() {
     setOutputMessageTypeVisibility(!messageTypesVisible);
 }
 
+// A decorated message block (inventory, body loot, character description) marks
+// itself with `AnsiAwareBuffer.flair`. Both hosts turn that into the same class
+// pair, so one stylesheet rule set covers stock and forge alike. Exported for
+// forge-ui's own message builder.
+const FLAIR_NAME = /^[a-z][a-z0-9-]*$/;
+
+export function applyFlairClass(element: HTMLElement, message: string | AnsiAwareBuffer | undefined): void {
+    if (!(message instanceof AnsiAwareBuffer)) return;
+    const flair = message.flair;
+    // Guard the class name: it comes from a script, and a stray space or dot
+    // would throw out of classList.add and take the whole message with it.
+    if (!flair || !FLAIR_NAME.test(flair)) return;
+    element.classList.add('msg-flair', `msg-flair-${flair}`);
+}
+
 // The stock `.output_msg` wrapper: timestamp + type spans plus the message
 // content. The default `buildMessageNode` — hosts with their own message
 // shape (forge-ui) supply their own builder instead.
@@ -147,6 +162,7 @@ function createMessageWrapper(
     if (type) {
         wrapper.classList.add(type);
     }
+    applyFlairClass(wrapper, message);
 
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('output_msg_text');

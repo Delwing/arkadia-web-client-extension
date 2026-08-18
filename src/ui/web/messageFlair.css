@@ -1,0 +1,67 @@
+/* Decorated message blocks — see src/client/scripts/messageFlair.ts.
+   A trigger marks a reply block via AnsiAwareBuffer.flair; both hosts turn that
+   into `msg-flair msg-flair-<category>` on the message node (stock .output_msg,
+   forge <p>), so these rules cover both UIs.
+
+   Icons are lucide — the set outputContextMenu.tsx already uses — inlined as SVG
+   masks. A mask carries shape only; the colour comes from background-color, so an
+   icon always follows --flair-accent and can never fight the palette. Data URIs,
+   so no network request and nothing for the CSP to block. Regenerate from
+   node_modules/lucide-react if an icon changes. */
+
+.msg-flair {
+  /* One hue across every category; only the icon tells them apart. */
+  --flair-accent: #c9a227;
+  --flair-tint: 4%;
+  --flair-rail: 14%;
+  /* How far the tint reaches above the first line and below the last. Only the
+     painted box — line-height is inherited and never touched here, so spacing
+     inside the block is unchanged. The icon offset is derived from this, so
+     retuning the padding keeps the icon on the first line. */
+  --flair-pad-y: .1rem;
+
+  position: relative;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--flair-accent) var(--flair-tint), transparent);
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--flair-accent) var(--flair-rail), transparent);
+}
+
+.msg-flair .output_msg_content {
+  padding: var(--flair-pad-y) .7rem var(--flair-pad-y) 2.3rem;
+}
+
+.msg-flair::before {
+  content: "";
+  position: absolute;
+  left: .62rem;
+  /* Sits on the first text line, not the block centre — and tracks the padding
+     so the two cannot drift apart. */
+  top: calc(var(--flair-pad-y) + .18rem);
+  width: 1em;
+  height: 1em;
+  background-color: var(--flair-accent);
+  opacity: .6;
+  -webkit-mask-image: var(--flair-icon);
+  mask-image: var(--flair-icon);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* lucide: backpack */
+.msg-flair-ekwipunek {
+  --flair-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 10h8'/%3E%3Cpath d='M8 18h8'/%3E%3Cpath d='M8 22v-6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v6'/%3E%3Cpath d='M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
+}
+
+/* lucide: coins */
+.msg-flair-lup {
+  --flair-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='M18.09 10.37A6 6 0 1 1 10.34 18'/%3E%3Cpath d='M7 6h1v4'/%3E%3Cpath d='m16.71 13.88.7.71-2.82 2.82'/%3E%3C/svg%3E");
+}
+
+/* lucide: user-round */
+.msg-flair-opis {
+  --flair-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E");
+}

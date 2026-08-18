@@ -175,12 +175,18 @@ export class WindowManager {
     this.popupDockState = new Map(Object.entries(state.popupPanels ?? {}));
     Object.assign(this.dockExtents, state.dockExtents);
 
-    // Load the structural trees (deep-cloned so the manager owns them).
+    // Load the structural trees (deep-cloned so the manager owns them), then
+    // normalize each side. Normalizing on load (not just on commit) is what
+    // heals a layout whose flex sizes already sum below 1 — see rescaleSizes:
+    // such a dock renders with dead space at its end that the splitters cannot
+    // drag away, so it must be repaired before the first render, not on the
+    // next structural change.
     this.dockTrees = emptyTrees();
     if (state.dockTrees) {
       for (const side of SIDES) {
         this.dockTrees[side] = cloneTree(state.dockTrees[side] ?? null) as SplitNode | null;
       }
+      for (const side of SIDES) this.normalize(side);
     }
 
     // Preload windows as hints; live windows are activated by open() calls.
@@ -927,6 +933,36 @@ function avg(sizes: number[]): number {
   return sizes.reduce((a, b) => a + b, 0) / sizes.length || 1;
 }
 
+/**
+ * Rescale a split node's flex sizes so they sum to exactly `children.length`
+ * (i.e. average 1), healing any non-finite / non-positive entry on the way.
+ *
+ * This is a hard invariant, not cosmetics: sizes are rendered as `flex: <n>`
+ * (= `flex-grow: n; flex-basis: 0`), and CSS only distributes `sum(flex-grow)`
+ * worth of the free space when that sum is BELOW 1 — the remainder is left
+ * undistributed as dead space at the end of the dock. Every prune drops a
+ * child's share without redistributing it (normalizeNode skips collapsed
+ * children, removeNode splices its size out), so a few tab-stacks or undocks in
+ * a dock migrated from the old percentage-based sizes (0.25 per slot) push the
+ * sum under 1 and open a gap no splitter drag can close: setNodeFlex only ever
+ * redivides one adjacent pair's share, so the total never grows back.
+ *
+ * Keeping the sum at children.length (>= 1) makes that gap unreachable while
+ * preserving the relative proportions the user dragged. Idempotent: a tree
+ * already at the invariant is multiplied by exactly 1.
+ */
+function rescaleSizes(sizes: number[], count: number): number[] {
+  const clean: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const s = sizes[i];
+    clean.push(typeof s === 'number' && Number.isFinite(s) && s > 0 ? s : 1);
+  }
+  const total = clean.reduce((a, b) => a + b, 0);
+  if (total === count) return clean;
+  const k = count / total;
+  return clean.map(s => s * k);
+}
+
 function forEachLeaf(node: LayoutNode, cb: (leaf: LeafNode) => void): void {
   if (node.kind === 'leaf') {
     cb(node);
@@ -966,7 +1002,13 @@ function normalizeNode(node: LayoutNode, isRoot: boolean): LayoutNode | null {
 
   if (children.length === 0) return null;
   if (children.length === 1 && !isRoot) return children[0];
-  return { kind: 'split', id: node.id, dir: node.dir, children, sizes };
+  return {
+    kind: 'split',
+    id: node.id,
+    dir: node.dir,
+    children,
+    sizes: rescaleSizes(sizes, children.length),
+  };
 }
 
 // positionOf is imported; small local inverse for popupHint.dockPosition.
