@@ -380,7 +380,7 @@
     "type": "2"
   },
   {
-    "pattern": "^[ >]*(\\w+\\s+){1,4}zagradza ci droge\\.$",
+    "pattern": "^[ >]*(\\w+\\s+){1,4}(?:zagradza|zastawia) ci droge\\.$",
     "type": "1"
   },
   {
