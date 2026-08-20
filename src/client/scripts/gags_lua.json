@@ -9636,7 +9636,7 @@
                 "name": "nie_wycofanie_ty",
                 "patterns": [
                   {
-                    "pattern": "[ >]*(?:Unosisz swoja|Zastawiasz sie swo(?:ja|im)) .+? i przesuwasz sie w strone .+?, bezskutecznie probujac",
+                    "pattern": "[ >]*(?:(?:Unosisz swoja|Zastawiasz sie swo(?:ja|im)) .+? i przesuwasz|Przesuwasz) sie w strone .+?, bezskutecznie probujac",
                     "type": 1
                   },
                   {
