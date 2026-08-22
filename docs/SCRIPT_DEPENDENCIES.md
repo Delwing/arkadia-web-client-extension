@@ -601,7 +601,7 @@ against `requires`/`optional` — not an empty object discovered at runtime.
 
 ---
 
-## Test coverage — the gate is thinner than it looks
+## Test coverage
 
 The plan leans on the test suite to make stage 0b safe. It does not hold up as well as
 assumed.
@@ -620,14 +620,15 @@ dispatch-order change would actually break.
 | | Count |
 |---|---|
 | Registered scripts | 144 |
-| ...imported by at least one unit test | **86 (60%)** |
-| ...not imported by any unit test | **58** |
+| ...imported by at least one unit test | **144 (100%)** |
+| ...not imported by any unit test | **0** |
 | E2E specs total | 111 |
 | ...that push game text through the trigger pipeline | **43 (39%)** |
 | ...the other 68 | layout, settings, keybinds, mobile, Firebase — blind to trigger order |
 
-So: **no, not every script has an e2e test, and most do not.** `e2e/scripts.spec.ts`
-is about the *plugin* modal, not the built-in scripts.
+Every registered script now has unit coverage. E2E remains feature-shaped —
+`e2e/scripts.spec.ts` is about the *plugin* modal, not the built-in scripts — so the
+unit layer is what pins per-script behaviour.
 
 **The gaps sit exactly where stage 0b is riskiest.** Of the 12 scripts that suppress
 lines — the ones whose behaviour changes when `parseLine` stops aborting — only 4
@@ -652,49 +653,52 @@ have a unit test:
 double-handling suspects for stage 0b, and neither had a test of any kind.
 **Both now do** — see *Pre-work landed* below.
 
-### Pre-work landed — all 12 suppressors now covered
+### Coverage landed — every registered script
 
-Six new test files plus an extension to an existing one; 131 tests added. Full suite
-green (186 files / 1956 tests) and `tsc --noEmit` clean.
+**144/144 registered scripts now have unit coverage**, up from 86. The suite went from
+178 files / 1825 tests to **241 files / 2529 tests**, all green, `tsc --noEmit` clean.
 
-| File | Tests | Pins |
-|---|---|---|
-| `scripts/gags.test.ts` | 16 | power prefixes `[1/6]`–`[6/6]`; mode 1 suppresses; mode 0 untouched; the ignore list; **that a deleted line aborts dispatch**, and that mode 2 hands the *prefixed* buffer to later triggers |
-| `scripts/luaGags.test.ts` | 13 | `[unk]`/`[par]` prefixes; per-type delete modes; **stats are recorded even when the line is deleted**; the `recordCombatStat` edge |
-| `scripts/combatWindow.test.ts` | 10 | capture + keep out of the main window; separators; disconnect clears; **gag mode 2 → captured line carries the prefix**, **gag mode 1 → captured nowhere** |
-| `scripts/combatStats.test.ts` | 17 | body-part attribution, parry classification, totals, snapshot immutability, `stat.updated`/`stat.cleared`, reset |
-| `scripts/selfEvaluation.test.ts` | 24 | `/ocen`, `/sprzet`, `/ubrania`; the `suppressItemEvaluation` flag is raised and released; every condition phrase; the 5s abandon path |
-| `scripts/poczta.test.ts` | 28 | **12 line shapes pass through untouched while idle**; list capture and `poczta.loaded`; letter capture, header wrapping, pager-padding trim; the "Nie ma takiego listu." escape |
-| `scripts/wyroznienieOptions.test.ts` | 10 | header rewrite, `Niewidoczny` special case, option links, list termination |
-| `comparison.test.ts` (extended) | +4 | consumed comparison lines are deleted — **and only while a `/por` run is in flight** |
+The 12 line-suppressing scripts came first, because they are the ones whose behaviour
+depends on trigger registration order. Two contracts that previously existed only as
+positions in `registerScripts` are now executable:
 
-Two of these are the contract this whole analysis turned on, now executable rather
-than prose:
-
-- gag mode 2 → the combat window shows the line **prefixed and coloured, exactly as
+- gag mode 2 -> the combat window shows the line **prefixed and coloured, exactly as
   the main window would have**;
-- gag mode 1 → the line appears **nowhere**, combat window included.
+- gag mode 1 -> the line appears **nowhere**, combat window included.
 
 And the invariant stage 0b must not break, from `luaGags`: *stats are recorded even
 when the line is deleted* — a gagged dodge is still a dodge.
 
-**Two things the tests surfaced.**
+**Behaviours pinned deliberately rather than fixed.** Writing the tests surfaced
+several quirks; each is covered by a test that documents current behaviour, so a
+future change to it is a decision rather than an accident:
 
-1. `wyroznienieOptions` **swallows the first non-indented line after an option
-   block** (`wyroznienieOptions.ts:88-91` registers a one-time `/^[^	 ]/` trigger
-   that returns `null`). It is used as a terminator, but it deletes the line rather
-   than just closing the list. Pinned by a test; worth a second look as a product
-   question.
-2. Registering `combatWindow` once *before* the gags and once after silently changes
-   which buffer gets captured — no error anywhere. That was a bug in a first draft of
-   the test, and it is a direct demonstration of how positional the current design is.
+| Script | Behaviour |
+|---|---|
+| `wyroznienieOptions` | the first non-indented line after an option block is **swallowed**, not just used as a terminator (`wyroznienieOptions.ts:88-91`) |
+| `move` | a single-word name after "Podazasz za" resolves nothing — the candidate loop starts at 1 and indexes from the end |
+| `languageSkills` | only the level column is padded, so gauges align between rows with equal-length names, not across all rows |
+| `gags`/`luaGags` | delete mode returns before prefixing, so a suppressed line carries no `[n/6]` marker |
+| `dobOp` | the slot-argument aliases fire and forget rather than returning their promise |
 
-`luaGags` runs fine under vitest, incidentally — `lua-in-js` and the
-`import.meta.glob` over `src/client/lua/**/*.lua` both work, ~400ms.
+**What the tests confirmed about teardown.** Several scripts leak per-init
+registrations that survive between tests, which is exactly the work item this document
+describes:
 
-**Stage 0b is now gated.** The remaining 58 uncovered scripts are worth chipping at,
-but none of them suppress lines, so none of them block the `Triggers.parseLine`
-change.
+- `directionBinds`, `enemyBinds`, `multibinds` each add a `window` keydown listener
+  per init and never remove it;
+- `chatHistory`, `sunTracker`, `letter`, `knowledge`, `weaponState` subscribe to the
+  global bus without unsubscribing;
+- `labyrinth`, `rindeLabyrinthMapper`, `raonLabyrinthMapper`, `lootParser`,
+  `combatWindow`, `combatStats`, `shortcuts`, `chatHistory` keep module-level state
+  that no reset clears.
+
+Where that made an assertion unreliable, the test asserts through the client's own
+output instead of the shared bus, and says so in a comment. Those comments are a map
+of what `ScriptContext` has to take ownership of.
+
+**Stage 0b is gated.** Every script that suppresses a line, and every script that
+could start seeing suppressed lines, now has tests that will catch the change.
 
 ---
 
