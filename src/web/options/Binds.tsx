@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {Alert, Button, Form, Modal, ProgressBar, Spinner, Table} from 'react-bootstrap';
+import {Alert, Button, Form, ProgressBar, Spinner, Table} from 'react-bootstrap';
 import {
     type MultibindImportRow,
     type MultibindImportWorkerRequest,
@@ -13,6 +13,7 @@ import {
     type StoredMultibindRecord,
 } from "../dataStores/multibindStore";
 import type { Bind, BindSettings, DirectionBinds, Keymap } from "@modules/core/keymapTypes";
+import SubDialog from "../SubDialog";
 import {
     getKeymapStore,
     getKeymapList,
@@ -602,11 +603,22 @@ function Binds() {
                 style={{ display: 'none' }}
                 onChange={handleFileSelected}
             />
-            <Modal show={showImportModal} onHide={closeImportModal} backdrop={isRunningImport ? 'static' : true} keyboard={!isRunningImport}>
-                <Modal.Header closeButton={!isRunningImport}>
-                    <Modal.Title>Importuj bazę multibindów</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+            {showImportModal && (
+                <SubDialog
+                    title="Importuj bazę multibindów"
+                    onClose={closeImportModal}
+                    // No way out while the worker is chewing through the file —
+                    // matches the old modal's static backdrop + keyboard={false}.
+                    dismissible={!isRunningImport}
+                    footer={isRunningImport ? (
+                        <Button variant="secondary" onClick={handleCancelImport}>Anuluj</Button>
+                    ) : (
+                        <>
+                            <Button variant="secondary" onClick={closeImportModal}>Zamknij</Button>
+                            <Button onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
+                        </>
+                    )}
+                >
                     {importError && (
                         <Alert variant="danger">{importError}</Alert>
                     )}
@@ -680,18 +692,8 @@ function Binds() {
                             </div>
                         </Alert>
                     )}
-                </Modal.Body>
-                <Modal.Footer>
-                    {isRunningImport ? (
-                        <Button variant="secondary" onClick={handleCancelImport}>Anuluj</Button>
-                    ) : (
-                        <>
-                            <Button variant="secondary" onClick={closeImportModal}>Zamknij</Button>
-                            <Button onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
-                        </>
-                    )}
-                </Modal.Footer>
-            </Modal>
+                </SubDialog>
+            )}
             {importError && !showImportModal && (
                 <Alert variant="danger" className="mb-0">{importError}</Alert>
             )}
@@ -748,30 +750,36 @@ function Binds() {
                     Przywróć domyślne
                 </Button>
             </div>
-            <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)} size="sm">
-                <Modal.Header closeButton>
-                    <Modal.Title>Usunąć mapę klawiszy?</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+            {showDeleteConfirm && (
+                <SubDialog
+                    size="sm"
+                    title="Usunąć mapę klawiszy?"
+                    onClose={() => setShowDeleteConfirm(false)}
+                    footer={(
+                        <>
+                            <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
+                            <Button variant="danger" size="sm" onClick={handleDeleteKeymap}>Usuń</Button>
+                        </>
+                    )}
+                >
                     Czy na pewno chcesz usunąć mapę klawiszy <strong>{keymapList.find(k => k.id === selectedKeymapId)?.name}</strong>?
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
-                    <Button variant="danger" size="sm" onClick={handleDeleteKeymap}>Usuń</Button>
-                </Modal.Footer>
-            </Modal>
-            <Modal show={showRestoreConfirm} onHide={() => setShowRestoreConfirm(false)} size="sm">
-                <Modal.Header closeButton>
-                    <Modal.Title>Przywrócić domyślne bindy?</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+                </SubDialog>
+            )}
+            {showRestoreConfirm && (
+                <SubDialog
+                    size="sm"
+                    title="Przywrócić domyślne bindy?"
+                    onClose={() => setShowRestoreConfirm(false)}
+                    footer={(
+                        <>
+                            <Button variant="secondary" size="sm" onClick={() => setShowRestoreConfirm(false)}>Anuluj</Button>
+                            <Button variant="warning" size="sm" onClick={handleRestoreDefaults}>Przywróć</Button>
+                        </>
+                    )}
+                >
                     Standardowe bindy zostaną przywrócone do wartości domyślnych. Własne skróty pozostaną bez zmian.
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" size="sm" onClick={() => setShowRestoreConfirm(false)}>Anuluj</Button>
-                    <Button variant="warning" size="sm" onClick={handleRestoreDefaults}>Przywróć</Button>
-                </Modal.Footer>
-            </Modal>
+                </SubDialog>
+            )}
             <fieldset className="p-0 border-0 m-0">
                 <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
                     <tbody className="align-middle">

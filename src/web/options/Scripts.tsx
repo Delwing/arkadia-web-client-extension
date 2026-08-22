@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, ChangeEvent, type ReactNode } from "react";
+import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Button, Form, Badge, Spinner } from "react-bootstrap";
 import { Trash2, Pencil, ExternalLink, Upload, Sparkles } from "lucide-react";
 import { globalStorage } from "@modules/core/storage";
@@ -8,57 +8,23 @@ import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPl
 import { storeEditorPlugin, deleteEditorPlugin, createEditorPluginFromSource, type EditorPluginData } from "@client/utils/pluginEditorStorage";
 import { buildAiPluginPrompt } from "../aiPluginPrompt";
 import { editorUrl } from "../appUrls";
+import SubDialog from "../SubDialog";
 import type { PluginImportWorkerResponse } from "../pluginImport.shared";
 import PluginImportWorker from "../pluginImport.worker?worker";
 
 /**
- * A sub-dialog rendered *inline*, over whichever modal hosts this panel — the
- * same hand-rolled shell the alias/trigger editors and CollectOverridesModal use,
- * and for the same two reasons.
+ * The "Wklej kod" / "Wygeneruj z AI" dialogs use the shared inline `SubDialog`
+ * (see `@web/SubDialog` for why a portaled react-bootstrap `<Modal>` cannot be
+ * used inside these panels).
  *
- * It replaces markup that used to live in stock's index.html and be driven by id
- * (`#add-plugin-code-modal`, `#ai-plugin-modal`): those shells exist only in the
- * stock page, so under forge — which hosts this very component in its own menu
- * modal — every button that reached for them was a silent no-op.
- *
- * The obvious replacement, a react-bootstrap `<Modal>`, does not work here: it
- * portals to `document.body`, and inside stock's Bootstrap `#scripts-modal` the
- * two focus managers then fight over the portaled node — Bootstrap's FocusTrap
- * pulls focus back into the parent dialog while react-overlays' `enforceFocus`
- * pulls it back to the child, and the net effect is that focus sticks on the
- * child's close button and its inputs cannot be typed into at all. Rendering
- * inline sidesteps that (no portal, no second focus trap), and in forge it also
- * keeps the dialog inside `.forge-menu-modal`, so the scoped Bootstrap sheet and
- * forge's palette reach it without the portal-tagging workaround.
+ * They replace markup that used to live in stock's index.html and be driven by
+ * id (`#add-plugin-code-modal`, `#ai-plugin-modal`): those shells exist only in
+ * the stock page, so under forge — which hosts this very component in its own
+ * menu modal — every button that reached for them was a silent no-op. Rendering
+ * inline also keeps the dialog inside `.forge-menu-modal`, so the scoped
+ * Bootstrap sheet and forge's palette reach it without the portal-tagging
+ * workaround.
  */
-function SubDialog({ title, onClose, footer, children }: {
-    title: string;
-    onClose: () => void;
-    footer: ReactNode;
-    children: ReactNode;
-}) {
-    return (
-        <div
-            className="modal show d-block"
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
-            onClick={(e) => {
-                if (e.target === e.currentTarget) onClose();
-            }}
-        >
-            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style={{ zIndex: 1061 }}>
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <h5 className="modal-title">{title}</h5>
-                        <button type="button" className="btn-close" onClick={onClose} />
-                    </div>
-                    <div className="modal-body">{children}</div>
-                    <div className="modal-footer">{footer}</div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function Scripts() {
     const [scripts, setScripts] = useState<string[]>([]);
     const [storedScripts, setStoredScripts] = useState<string[]>([]);
@@ -491,6 +457,7 @@ function Scripts() {
 
             {showCodeModal && (
                 <SubDialog
+                    size="lg"
                     title="Dodaj plugin z kodu"
                     onClose={() => setShowCodeModal(false)}
                     footer={(
@@ -527,6 +494,7 @@ function Scripts() {
 
             {showAiModal && (
                 <SubDialog
+                    size="lg"
                     title="Wygeneruj plugin z AI"
                     onClose={() => setShowAiModal(false)}
                     footer={(

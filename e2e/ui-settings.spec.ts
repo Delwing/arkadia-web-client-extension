@@ -328,4 +328,64 @@ test.describe('UI settings', () => {
             'show buttons checkbox should remain unchecked after reload',
         ).not.toBeChecked();
     });
+
+    // The sound manager is a sub-dialog opened from inside the Bootstrap-driven
+    // #ui-settings-modal. Rendering it as a portaled react-bootstrap <Modal> made
+    // Bootstrap's FocusTrap and react-overlays' enforceFocus bounce focus between
+    // the two dialogs thousands of times a second, which pegged the CPU until the
+    // page stopped responding. It also swallowed Escape into the host window and
+    // left a stray backdrop on document.body. All three are guarded here.
+    test('sound manager sub-dialog keeps the page responsive', async ({page}) => {
+        test.setTimeout(45000);
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        // Passive observer — counts focus churn without driving the UI.
+        await page.evaluate(() => {
+            (window as unknown as {__focusCount: number}).__focusCount = 0;
+            document.addEventListener('focusin', () => {
+                (window as unknown as {__focusCount: number}).__focusCount++;
+            }, true);
+        });
+
+        const modal = await openUiSettings(page);
+        await selectTab(modal, 'Dźwięk');
+        await modal.locator('#ui-manage-sounds-button').click();
+
+        const soundManager = modal.locator('.modal.show', {hasText: 'Zarządzaj dźwiękami'});
+        await expect(soundManager, 'sound manager should open').toBeVisible();
+
+        await soundManager.getByRole('button', {name: '▶'}).first().click();
+        await page.waitForTimeout(1000);
+
+        const focusChurn = await page.evaluate(
+            () => (window as unknown as {__focusCount: number}).__focusCount);
+        expect(focusChurn, 'focus must not bounce between the two dialogs').toBeLessThan(50);
+
+        // The settings window underneath stays usable
+        await soundManager.locator('.btn-close').click();
+        await expect(soundManager, 'sound manager should close').toBeHidden();
+        await selectTab(modal, 'Mapa');
+        await expect(modal.locator('#ui-map-render-scale-container, [id^="ui-map"]').first()).toBeVisible();
+
+        // Escape belongs to the sub-dialog, not to the settings window behind it.
+        await selectTab(modal, 'Dźwięk');
+        await modal.locator('#ui-manage-sounds-button').click();
+        await expect(soundManager).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(soundManager, 'Escape should close the sub-dialog').toBeHidden();
+        await expect(modal, 'and leave the settings window open').toBeVisible();
+
+        // Closing the settings window must not leave an overlay behind that
+        // swallows every click.
+        await modal.locator('#ui-settings-save').click();
+        await expect(modal, 'settings window should close').not.toBeVisible();
+        await expect(page.locator('.modal-backdrop'), 'no stray backdrop').toHaveCount(0);
+        await page.click(MENU_BUTTON);
+        await expect(
+            page.locator(UI_SETTINGS_BUTTON),
+            'the page should still be clickable afterwards',
+        ).toBeVisible();
+    });
 });
