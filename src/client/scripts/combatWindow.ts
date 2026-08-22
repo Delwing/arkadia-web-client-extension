@@ -17,7 +17,7 @@ export type CombatEntry = {
 let combatHistory: CombatEntry[] = [];
 
 // Current filter settings - which types should be redirected to combat window
-let redirectSettings: Record<CombatMessageType, boolean> = {
+const redirectSettings: Record<CombatMessageType, boolean> = {
     "combat.avatar": false,
     "combat.team": false,
     "combat.others": false,

@@ -791,7 +791,7 @@ export function LogBrowser() {
   // flatLines) back onto the visible slice.
   const { visibleLines, visibleStartIdx } = useMemo(() => {
     if (!rangeFilter) return { visibleLines: flatLines, visibleStartIdx: 0 };
-    let start = flatLines.findIndex(l => l.timestamp >= rangeFilter.from);
+    const start = flatLines.findIndex(l => l.timestamp >= rangeFilter.from);
     if (start === -1) return { visibleLines: [] as FlatLogLine[], visibleStartIdx: 0 };
     let end = flatLines.length - 1;
     while (end >= start && flatLines[end].timestamp > rangeFilter.to) end--;

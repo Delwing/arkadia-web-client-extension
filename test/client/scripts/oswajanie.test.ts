@@ -67,7 +67,7 @@ describe("oswajanie per-character storage", () => {
     const a = useFreshCharacter();
     await insertFeedingEntry("wilk", "miesem");
 
-    let active = await getActiveFeedings();
+    const active = await getActiveFeedings();
     expect(active).toHaveLength(1);
     expect(active[0].animal).toBe("wilk");
     expect(active[0].character).toBe(a);

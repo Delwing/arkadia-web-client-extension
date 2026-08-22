@@ -224,7 +224,7 @@ async function main() {
         {
             title: 'Apply lua fixes',
             enabled: () => downloadFlag,
-            task: (ctx, task) => {
+            task: () => {
                 const warnings = [];
                 for (const fix of LUA_FIXES) {
                     const filePath = path.join(rootDir, 'src', 'client', 'lua', ...fix.file.split('/'));

@@ -2,7 +2,6 @@ import { expect, test } from './support/fixtures';
 import {
     ensureGameSocket,
     getCommandLog,
-    getLastOutgoingCommand,
     resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
@@ -31,7 +30,7 @@ test.describe('Mobile buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openMobileButtonsSettings(page);
+        await openMobileButtonsSettings(page);
         const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
@@ -228,7 +227,7 @@ test.describe('Mobile buttons compound macro', () => {
         await expect(actualButton).toHaveText('Persist');
 
         // Reopen settings and verify compound config
-        const modalAfterReload = await openMobileButtonsSettings(page);
+        await openMobileButtonsSettings(page);
         const soloPreviewReload = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
         await soloPreviewReload.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
@@ -248,7 +247,7 @@ test.describe('Mobile buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openMobileButtonsSettings(page);
+        await openMobileButtonsSettings(page);
         const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
@@ -291,7 +290,7 @@ test.describe('Mobile buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openMobileButtonsSettings(page);
+        await openMobileButtonsSettings(page);
         const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
@@ -322,7 +321,7 @@ test.describe('Mobile buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openMobileButtonsSettings(page);
+        await openMobileButtonsSettings(page);
         const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 

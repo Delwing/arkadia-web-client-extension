@@ -176,7 +176,7 @@ export async function mergeZlomData(
     let counts: ZlomImportCounts = { bronie: 0, tarcze: 0, zbroje: 0 };
     await updateZlomSnapshot(current => {
         const merge = <T extends ZlomEntry>(dst: T[], src: T[]): { list: T[]; count: number } => {
-            let list = dst.slice();
+            const list = dst.slice();
             let count = 0;
             if (mode === 'unique-short') {
                 const seen = new Set(

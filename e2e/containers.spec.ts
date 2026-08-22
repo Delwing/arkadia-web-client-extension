@@ -24,7 +24,7 @@ test.describe('Container management', () => {
         await submitCommand(page, '/pojemniki');
         await waitForOutputContaining(page, 'POJEMNIKI');
 
-        let output = await getRecentOutput(page, 15);
+        const output = await getRecentOutput(page, 15);
         // Default config has all types set to "plecak"
         expect(output, 'should display container config table header').toContain('POJEMNIKI');
         expect(output, 'should show money type').toContain('money');

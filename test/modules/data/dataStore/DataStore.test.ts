@@ -507,6 +507,7 @@ describe('SnapshotEventEmitter', () => {
   it('listener removed during emit still fires in the same emit cycle', () => {
     const emitter = new SnapshotEventEmitter<number>();
     const calls: number[] = [];
+    // eslint-disable-next-line prefer-const -- assigned below, but A's handler closes over it first
     let unsubB!: () => void;
 
     emitter.subscribe((v) => {
