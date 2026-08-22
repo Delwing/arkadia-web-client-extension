@@ -1,6 +1,11 @@
 export interface AliasEntry {
     pattern: RegExp;
     callback: Function;
+    /**
+     * Registry id of the script that pushed this alias, stamped by its
+     * ScriptScope so the alias can be withdrawn when the script is turned off.
+     */
+    owner?: string;
 }
 
 function requiresSlash(pattern: RegExp): boolean {
@@ -28,6 +33,20 @@ export class AliasList extends Array<AliasEntry> {
             const bucket = requiresSlash(item.pattern) ? this._slash : this._other;
             const idx = bucket.indexOf(item);
             if (idx !== -1) bucket.splice(idx, 1);
+        }
+        return removed;
+    }
+
+    /** Withdraw every alias a given script pushed. Returns how many went. */
+    removeByOwner(owner: string): number {
+        let removed = 0;
+        // Backwards: splice() keeps the slash/other buckets in step, so removing
+        // from the tail keeps the indices ahead of us valid.
+        for (let i = this.length - 1; i >= 0; i--) {
+            if (this[i].owner === owner) {
+                this.splice(i, 1);
+                removed++;
+            }
         }
         return removed;
     }

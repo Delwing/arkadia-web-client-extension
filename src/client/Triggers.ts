@@ -43,6 +43,12 @@ export function isType(type: string): TriggerMatchFunction {
 export class Trigger {
     id = Math.random().toString(36).slice(2);
     children: Map<string, Trigger> = new Map();
+    /**
+     * Registry id of the script that registered this trigger, stamped by its
+     * ScriptScope. Distinct from `tag`, which scripts choose freely and reuse to
+     * clear parts of themselves — an owner is assigned, never picked.
+     */
+    owner?: string;
     private openInstances: number[] = [];
 
     constructor(
@@ -53,6 +59,7 @@ export class Trigger {
         public parent?: Trigger,
         private options: TriggerOptions = {}
     ) {
+        this.owner = parent?.owner;
         if (options.caseInsensitive) {
             this.pattern = this.precompileCaseInsensitive(pattern);
         }
@@ -176,14 +183,27 @@ export default class Triggers {
         this.client = client;
     }
 
-    private removeByTagRecursive(tag: string, collection: Map<string, Trigger>) {
+    private removeMatchingRecursive(matches: (trigger: Trigger) => boolean, collection: Map<string, Trigger>) {
         Array.from(collection.values()).forEach(trigger => {
-            if (trigger.tag === tag) {
+            if (matches(trigger)) {
                 this.removeTrigger(trigger);
             } else {
-                this.removeByTagRecursive(tag, trigger.children);
+                this.removeMatchingRecursive(matches, trigger.children);
             }
         });
+    }
+
+    private removeMatching(matches: (trigger: Trigger) => boolean) {
+        this.removeMatchingRecursive(matches, this.triggers);
+        this.removeMatchingRecursive(matches, this.multilineTriggers);
+        for (const [key, bucket] of Array.from(this.tokenTriggers.entries())) {
+            const filtered = bucket.filter(t => !matches(t.trigger));
+            if (filtered.length === 0) {
+                this.tokenTriggers.delete(key);
+            } else if (filtered.length !== bucket.length) {
+                this.tokenTriggers.set(key, filtered);
+            }
+        }
     }
 
     registerTrigger(pattern: TriggerPattern, callback?: TriggerCallback, tag?: string, options?: TriggerOptions) {
@@ -238,16 +258,15 @@ export default class Triggers {
     }
 
     removeByTag(tag: string) {
-        this.removeByTagRecursive(tag, this.triggers);
-        this.removeByTagRecursive(tag, this.multilineTriggers);
-        for (const [key, bucket] of Array.from(this.tokenTriggers.entries())) {
-            const filtered = bucket.filter(t => t.trigger.tag !== tag);
-            if (filtered.length === 0) {
-                this.tokenTriggers.delete(key);
-            } else if (filtered.length !== bucket.length) {
-                this.tokenTriggers.set(key, filtered);
-            }
-        }
+        this.removeMatching(trigger => trigger.tag === tag);
+    }
+
+    /**
+     * Drop every trigger a given script registered. The teardown half of making a
+     * script toggleable; see ScriptScope.
+     */
+    removeByOwner(owner: string) {
+        this.removeMatching(trigger => trigger.owner === owner);
     }
 
     removeTrigger(trigger: Trigger) {

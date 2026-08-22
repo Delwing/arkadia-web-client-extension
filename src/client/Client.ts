@@ -26,6 +26,7 @@ import SoundManager from "./SoundManager";
 import NotificationManager from "./NotificationManager";
 import KeyBindingManager from "./KeyBindingManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {createRootScope, type ScriptScope} from "./ScriptScope";
 
 type EventKey = keyof ClientEvents;
 type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
@@ -77,6 +78,14 @@ export default class Client {
     public readonly notificationManager = new NotificationManager();
     public readonly movementManager = new MovementManager(this);
     public readonly commandProcessor = new CommandProcessor(this);
+
+    /**
+     * Cleanup handle for whatever registered against this client. Scripts started
+     * through the registry get their own scope on a scoped view of the client;
+     * this root one belongs to the client itself and is never disposed, so a
+     * script handed a bare client (a unit test, say) still works unchanged.
+     */
+    readonly scope: ScriptScope = createRootScope('client');
 
     get aliases(): AliasList { return this.commandProcessor.aliases; }
     set aliases(v: AliasList) { this.commandProcessor.aliases = v; }
