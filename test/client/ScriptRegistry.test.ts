@@ -97,6 +97,15 @@ describe('ScriptRegistry', () => {
         expect(host.Triggers.triggers.size).toBe(before);
     });
 
+    test('a script that throws leaves no declaration behind either', () => {
+        expect(() => registry.start('demo', () => {
+            throw new Error('boom');
+        }, {optional: ['other']})).toThrow('boom');
+
+        expect(registry.metaFor('demo')).toBeUndefined();
+        expect(() => registry.verifyDependencies()).not.toThrow();
+    });
+
     test('stopAll unwinds newest first', () => {
         const order: string[] = [];
         registry.start('a', client => client.scope.onDispose(() => order.push('a')));
@@ -196,5 +205,67 @@ describe('scripts do not register against window behind the scope', () => {
         ['document.addEventListener', /\bdocument\.addEventListener\s*\(/],
     ])('no script calls %s directly', (_name, pattern) => {
         expect(sources.filter(([, source]) => pattern.test(source)).map(([name]) => name)).toEqual([]);
+    });
+});
+
+describe('declared dependencies', () => {
+    let host: Client;
+    let registry: ScriptRegistry;
+
+    beforeEach(() => {
+        localStorage.clear();
+        host = createClient();
+        registry = new ScriptRegistry(host);
+    });
+
+    test('an after edge whose target is not running yet is refused', () => {
+        expect(() => registry.start('combatWindow', () => {}, { after: ['gags'] }))
+            .toThrow(/declares after: "gags"/);
+    });
+
+    test('the failed start leaves nothing registered', () => {
+        expect(() => registry.start('combatWindow', () => {}, { after: ['gags'] })).toThrow();
+
+        expect(registry.isRunning('combatWindow')).toBe(false);
+        expect(registry.metaFor('combatWindow')).toBeUndefined();
+    });
+
+    test('an after edge whose target is already running is fine', () => {
+        registry.start('gags', () => {});
+
+        expect(() => registry.start('combatWindow', () => {}, { after: ['gags'] })).not.toThrow();
+    });
+
+    test('requires may name a script that starts later', () => {
+        // Four of the real edges run consumer-first — itemCollector before
+        // lootParser, idz before shortcuts — and work because the read happens in a
+        // runtime callback. requires is about enablement, not order.
+        registry.start('itemCollector', () => {}, { requires: ['lootParser'] });
+        registry.start('lootParser', () => {});
+
+        expect(() => registry.verifyDependencies()).not.toThrow();
+    });
+
+    test('a dependency on a script that does not exist is caught', () => {
+        registry.start('pipe', () => {}, { requires: ['herbCouner'] });
+
+        expect(() => registry.verifyDependencies()).toThrow(/pipe -> herbCouner/);
+    });
+
+    test('an optional dependency is checked for existence too', () => {
+        registry.start('deposits', () => {}, { optional: ['nosuchscript'] });
+
+        expect(() => registry.verifyDependencies()).toThrow(/deposits -> nosuchscript/);
+    });
+
+    test('stopping a script leaves its dependents declaring something absent', () => {
+        // Startup check only. Once the toggle UI exists this is the signal to
+        // cascade or degrade, not to throw — see stage 6.
+        registry.start('lamp', () => {}, { optional: ['bagManager'] });
+        registry.start('bagManager', () => {});
+
+        registry.stop('bagManager');
+
+        expect(() => registry.verifyDependencies()).toThrow(/lamp -> bagManager/);
     });
 });

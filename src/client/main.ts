@@ -202,7 +202,7 @@ export function registerScripts(client: Client): ScriptRegistry {
         },
     })
     registry.start('soundAliases', initSoundAliases)
-    registry.start('mapAliases', initMapAliases)
+    registry.start('mapAliases', initMapAliases, {requires: ['shortcuts']})
     registry.start('zaznaczaj', initZaznaczaj)
 
     registerRoomInfoProvider((roomId: number) => {
@@ -249,7 +249,7 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('lostTeamMates', initLostTeamMates)
     registry.start('attackQueue', initAttackQueue)
     registry.start('attackModeAlias', initAttackModeAlias)
-    registry.start('lamp', initLamp)
+    registry.start('lamp', initLamp, {optional: ['bagManager']})
     registry.start('coverTimer', initCoverTimer)
     registry.start('orderTimer', initOrderTimer)
     registry.start('combatState', initCombatState)
@@ -266,9 +266,9 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('moveMode', initMoveMode)
     registry.start('carriage', initCarriage)
     registry.start('pausers', initPausers)
-    registry.start('idz', initIdz)
+    registry.start('idz', initIdz, {requires: ['shortcuts']})
     registry.start('kill', initKillCounter)
-    registry.start('improveCounter', initImproveCounter)
+    registry.start('improveCounter', initImproveCounter, {optional: ['kill']})
     registry.start('escape', initEscape)
     registry.start('tracking', initTracking)
     registry.start('gps', initGps)
@@ -278,19 +278,19 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('mountain', initMountain)
     registry.start('drowning', initDrowning)
     registry.start('multibinds', initMultibinds)
-    registry.start('itemCollector', initItemCollector)
-    registry.start('prettyContainers', initContainers)
+    registry.start('itemCollector', initItemCollector, {optional: ['lootParser', 'bagManager']})
+    registry.start('prettyContainers', initContainers, {optional: ['zlom', 'fishing']})
     registry.start('bagManager', initBagManager)
-    registry.start('cutting', initCutting)
-    registry.start('deposits', initDeposits)
+    registry.start('cutting', initCutting, {optional: ['bagManager']})
+    registry.start('deposits', initDeposits, {optional: ['prettyContainers', 'priceEvaluation']})
     registry.start('herbShop', initHerbShop)
     registry.start('armorShop', initArmorShop)
-    registry.start('smith', initSmith)
+    registry.start('smith', initSmith, {optional: ['bagManager']})
     registry.start('commandPreserveCaseMode', initCommandPreserveCaseMode)
-    registry.start('herbCounter', initHerbCounter)
+    registry.start('herbCounter', initHerbCounter, {optional: ['wearUsed', 'prettyContainers']})
     registry.start('herbDescriptions', initHerbDescriptions)
     registry.start('lvlCalc', initLvlCalc)
-    registry.start('cechyHistory', initCechyHistory)
+    registry.start('cechyHistory', initCechyHistory, {requires: ['lvlCalc'], optional: ['improveCounter']})
     registry.start('compareAll', initCompareAll)
     registry.start('compareInline', initCompareInline)
     registry.start('personDescription', initPersonDescription)
@@ -316,7 +316,7 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('weaponColors', initWeaponColors)
     registry.start('leaderAttackWarning', initLeaderAttackWarning)
     registry.start('breakItem', initBreakItem)
-    registry.start('pipe', initPipe)
+    registry.start('pipe', initPipe, {requires: ['herbCounter']})
     registry.start('hpAlert', initHpAlert)
     registry.start('idleFullHp', initIdleFullHp)
     registry.start('fullHpTimer', initFullHpTimer)
@@ -345,8 +345,10 @@ export function registerScripts(client: Client): ScriptRegistry {
 
     registry.start('People', c => { new People(c) })
     registry.start('gags', registerGagTriggers)
-    registry.start('luaGags', registerLuaGagTriggers)
-    registry.start('combatWindow', initCombatWindow)
+    registry.start('luaGags', registerLuaGagTriggers, {optional: ['combatStats']})
+    // Tees the finished buffer into its own window, so the gags must have had
+    // their say: skipDeleted only tells the two apart once they have run.
+    registry.start('combatWindow', initCombatWindow, {after: ['gags', 'luaGags']})
     registry.start('combatStats', initCombatStats)
     registry.start('killTracker', initKillTracker)
     registry.start('PackageHelper', initPackageHelper)
@@ -368,12 +370,12 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('brokilon', initBrokilon)
     registry.start('tideSystem', initTideSystem)
     registry.start('labyrinth', initLabyrinth)
-    registry.start('rindeLabyrinthMapper', initLabyrinthMapper)
-    registry.start('raonLabyrinthMapper', initRaonLabyrinthMapper)
-    registry.start('lootParser', initLootParser)
-    // After lootParser: it rewrites the body/loot lines (colours, click-to-take),
-    // and this only tags the result.
-    registry.start('messageFlair', initMessageFlair)
+    registry.start('rindeLabyrinthMapper', initLabyrinthMapper, {requires: ['shortExits']})
+    registry.start('raonLabyrinthMapper', initRaonLabyrinthMapper, {requires: ['shortExits']})
+    registry.start('lootParser', initLootParser, {optional: ['zlom', 'prettyContainers']})
+    // lootParser returns a freshly built buffer, which drops the flair marker, so
+    // the tagging has to come after. Stage 5 (line.replaceWith) deletes this edge.
+    registry.start('messageFlair', initMessageFlair, {after: ['lootParser']})
     registry.start('ostatnio', initOstatnio)
     registry.start('dobOp', initDobOp)
     registry.start('dataRefresh', initDataRefresh)
@@ -381,6 +383,8 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('opal', initOpal)
     registry.start('lastSeen', initLastSeen)
     registry.start('bilety', initBilety)
+
+    registry.verifyDependencies()
 
     return registry
 }

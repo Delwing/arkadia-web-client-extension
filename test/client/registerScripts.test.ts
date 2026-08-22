@@ -1,0 +1,120 @@
+import { describe, test, expect, beforeEach } from 'vitest';
+import { readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import Client from '@client/Client';
+import { registerScripts } from '@client/main';
+import type { ScriptRegistry } from '@client/ScriptRegistry';
+
+/**
+ * The real thing: every script started the way the app starts them.
+ *
+ * Cheaper checks elsewhere read main.ts as text; this one runs it, so it is what
+ * actually proves the declared `after` edges hold in the written order, that every
+ * `requires` names a registered script, and that no script throws on init.
+ */
+
+const scriptsDir = resolve(process.cwd(), 'src/client/scripts');
+
+function createClient(): Client {
+    return new Client({
+        send: () => {},
+        output: () => {},
+        sendGmcp: () => {},
+        flushMessageBuffer: () => {},
+        emit: () => {},
+        shouldEchoCommand: () => true,
+    });
+}
+
+describe('registerScripts', () => {
+    let client: Client;
+    let baseline: { triggers: number; multiline: number; aliases: number };
+    let registry: ScriptRegistry;
+
+    beforeEach(() => {
+        localStorage.clear();
+        client = createClient();
+        // The client wires up a few triggers of its own before any script runs.
+        baseline = {
+            triggers: client.Triggers.triggers.size,
+            multiline: client.Triggers.multilineTriggers.size,
+            aliases: client.aliases.length,
+        };
+        registry = registerScripts(client);
+    });
+
+    test('starts every module under scripts/, and only those', () => {
+        const modules = readdirSync(scriptsDir, { withFileTypes: true })
+            .filter(entry => entry.isFile() && entry.name.endsWith('.ts'))
+            .map(entry => entry.name.replace(/\.ts$/, ''));
+
+        expect([...registry.running].sort()).toEqual([...modules].sort());
+    });
+
+    test('the declared after edges hold in the written order', () => {
+        // start() throws if they do not, so reaching here already proves it — but
+        // name them, so a failure says which edge moved rather than just "threw".
+        const order = registry.running;
+        const at = (id: string) => order.indexOf(id);
+
+        expect(at('combatWindow')).toBeGreaterThan(at('gags'));
+        expect(at('combatWindow')).toBeGreaterThan(at('luaGags'));
+        expect(at('messageFlair')).toBeGreaterThan(at('lootParser'));
+    });
+
+    test('every declared dependency names a script that exists', () => {
+        expect(() => registry.verifyDependencies()).not.toThrow();
+    });
+
+    test('a requires edge is recorded where the code actually reads across', () => {
+        // pipe reads the herb manager herbCounter registers; without it, it does
+        // nothing at all — which is the difference between requires and optional.
+        expect(registry.metaFor('pipe')?.requires).toContain('herbCounter');
+        expect(registry.metaFor('itemCollector')?.optional).toContain('lootParser');
+    });
+
+    describe('stopping everything', () => {
+        test('leaves no owned trigger behind', () => {
+            expect(client.Triggers.triggers.size).toBeGreaterThan(baseline.triggers);
+
+            registry.stopAll();
+
+            // What survives is what no script owns: the client's own triggers plus
+            // the pager ENTER auto-continue registered by registerScripts itself.
+            const owned = (map: Map<string, {owner?: string}>) =>
+                Array.from(map.values()).filter(trigger => trigger.owner !== undefined);
+
+            expect(owned(client.Triggers.triggers)).toEqual([]);
+            expect(owned(client.Triggers.multilineTriggers)).toEqual([]);
+            expect(client.Triggers.triggers.size).toBe(baseline.triggers + 1);
+            expect(client.Triggers.multilineTriggers.size).toBe(baseline.multiline);
+        });
+
+        test('leaves no owned alias behind', () => {
+            expect(client.aliases.length).toBeGreaterThan(baseline.aliases);
+
+            registry.stopAll();
+
+            // /blokada and /reload-plugins belong to the client, not to a script.
+            // Spread first: AliasList.filter builds another AliasList, whose own
+            // bucket fields would make an equality check on it read oddly.
+            expect([...client.aliases].filter(alias => alias.owner !== undefined)).toEqual([]);
+            expect(client.aliases.length).toBe(baseline.aliases + 2);
+        });
+
+        test('leaves nothing running', () => {
+            registry.stopAll();
+
+            expect(registry.running).toEqual([]);
+        });
+
+        test('the line pipeline still works afterwards', () => {
+            registry.stopAll();
+
+            const parts = client.onLine('Rozgladasz sie dookola.', 'text');
+
+            expect(parts).toHaveLength(1);
+            expect(parts[0].text).toBe('Rozgladasz sie dookola.');
+        });
+    });
+});

@@ -119,7 +119,7 @@ Where script A reads state or behaviour that script B owns. `idx` is the positio
 | `deposits` (55) | `prettyContainers` (52), `priceEvaluation` (80) | formatting | plain output |
 | `herbCounter` (60) | `wearUsed` (69), `prettyContainers` (52), `herbsLoader` | formatting | plain output |
 | `idz` (39), `mapAliases` (2) | `shortcuts` (104) | `getShortcut(id)` | `undefined` — shortcut walk fails |
-| `attackQueue` (20), `objectAliases` (73) | `allyProtection` | instantiated on `Client`, not in `registerScripts` | n/a today |
+| ~~`attackQueue` (20), `objectAliases` (73)~~ | ~~`allyProtection`~~ | **gone** — `allyProtection` is a command hook now, so nobody calls into it | n/a |
 | `enemyBinds` (34) | `enemyBindResolvers` | resolver registry singleton | fewer bind candidates |
 | `raonLabyrinthMapper` (141), `rindeLabyrinthMapper` (140) | `shortExits` (106) | exit parsing | mapper mis-parses |
 | `luaGags` (117) | `combatStats` (119) | stat recording | stats not recorded |
@@ -281,6 +281,10 @@ ordered. That removes the scariest failure class up front.
    silently shadows a later, more specific one. There is no collision detection.
 
 ### Should suppression stop dispatch?
+
+> **Landed in stage 0b.** What follows is the reasoning, kept in the tense it was
+> written in. The "proposed fix" below is what `Triggers.parseLine` now does, and
+> `TriggerOptions.skipDeleted` is the opt-out it needed.
 
 Half of this is already the case. `parseLine` computes `plain` **once from the
 original text** (`Triggers.ts:260-261`) and threads it to every trigger and every
@@ -603,62 +607,51 @@ on dispose — `getHerbManager()` returns `null`, which `pipe` and the herb UI a
 handle. What the scope still does **not** reclaim is the 9 module-level singletons;
 that is stage 4.
 
-### 2. Manifest per script
+### 2. Dependencies declared at the registration — **landed**
+
+Declared where the script is started, not exported from the module:
 
 ```ts
-export const manifest = {
-  id: 'lootParser',
-  title: 'Parser lupu',
-  requires: ['zlom'],              // hard — cannot enable without
-  optional: ['prettyContainers'],  // soft — degrades
-  provides: ['roomContents'],
-} as const
-
-export default function init(ctx: ScriptContext): void { ... }
+registry.start('pipe', initPipe, {requires: ['herbCounter']})
+registry.start('combatWindow', initCombatWindow, {after: ['gags', 'luaGags']})
 ```
 
-Three fields, all about *dependencies* — nothing about ordering. See below for why
-that is enough.
+The plan put this in each script as `export const manifest`. It lives in the central
+table instead, because stage 7 wants the metadata **without loading the module** — a
+per-module manifest makes reading a script's title as expensive as running it. That
+table already exists as `registerScripts`; this only adds columns to it.
 
-### 3. Ordering without phases
+`title` is deliberately absent. The toggle UI needs a Polish label per script, and
+inventing 148 of them belongs with that UI, where they can be reviewed.
 
-Keep the flat list in `registerScripts` as the order. No buckets, no taxonomy. Once
-suppression stops aborting dispatch, position stops carrying meaning for almost
-everything:
+### 3. Ordering without phases — **landed as a check, not a sort**
 
-- **Matching** is already on the original line, so a rewrite upstream can never
-  change what a later script matches.
-- **State and counters** no longer depend on who deleted what, because everything is
-  dispatched.
-- **Decoration** order still decides who wins on an overlapping range — but that is
-  cosmetic, not correctness.
+The plan called for a stable topological sort. The registry **verifies** instead:
+`after` means "must already be running", checked at `start`, throwing and naming the
+edge when it does not hold.
 
-What is left is a handful of genuine "must run after" edges. Declare those, and only
-those, on the manifest — reusing the dependency idea rather than inventing a second
-concept:
+A sort would silently repair a bad edit, and would make the real order a property of
+an algorithm rather than of the file. Checking keeps `registerScripts` the single
+answer to "what runs when", and fails loudly at startup when someone moves a line
+that matters. It is also less code — and there are only two edges to hold.
 
-```ts
-export const manifest = {
-  id: 'combatWindow',
-  after: ['gags', 'luaGags'],   // tee the finished line, not a half-decorated one
-}
-```
+**`requires` is not an ordering constraint.** Four of the real edges run
+consumer-first — `itemCollector`(51)→`lootParser`(142), `idz`(39)→`shortcuts`(104),
+`prettyContainers`(52)→`fishing`(127), `luaGags`(117)→`combatStats`(119) — and work
+because every read happens inside a runtime callback. So `requires` means *must be
+enabled* (cascade on toggle) and is checked once at the end of registration, never at
+start. Conflating the two would make four legitimate edges look like cycles.
 
-The registry stable-sorts so declared edges hold and everything else keeps its written
-position. Today that is **two edges in the whole codebase**:
+What is declared today:
 
-| Edge | Why | Alternative |
-|---|---|---|
-| `combatWindow` after `gags`, `luaGags` | it tees the finished buffer, and `skipDeleted` only works if the gags have already run | none — keep the edge |
-| `messageFlair` after `lootParser` | `lootParser` returns a freshly built buffer, which drops the `flair` marker | **delete the edge** — see below |
+| Kind | Edges |
+|---|---|
+| `after` | `combatWindow` after `gags`/`luaGags`; `messageFlair` after `lootParser` |
+| `requires` | `pipe`→`herbCounter`; `idz`/`mapAliases`→`shortcuts`; both labyrinth mappers→`shortExits`; `cechyHistory`→`lvlCalc` |
+| `optional` | 11 more, each taken from the break-mode column of the table above |
 
-That second row is the pattern worth generalising. An ordering constraint that exists
-because side-band metadata does not survive buffer replacement is a bug in the buffer
-API, not a scheduling problem. 44 scripts construct a fresh `AnsiAwareBuffer`, and
-`clone()` already carries `flair` (`FormatState.ts:455`) — so adding a
-`line.replaceWith(next)` that carries `flair`/`deleted` across makes the constraint
-stop existing, instead of being scheduled around. Prefer that to any ordering
-mechanism, every time.
+The `messageFlair` edge is the one that should stop existing rather than be scheduled
+around — see stage 5.
 
 ### 3b. What is enforced
 
@@ -666,10 +659,10 @@ No phases means no phase enforcement. What the registry does enforce:
 
 | Rule | How |
 |---|---|
-| Declared `after` edges hold | stable topological sort at registration; throw on a cycle |
-| Dependencies exist | `requires` checked at registration; throw on a missing id |
-| Disabling cascades | a script whose `requires` is disabled is disabled too; `optional` just degrades |
-| Teardown is total | the scope records every trigger, alias, event listener, command hook, interval and DOM handler — **partly landed**, see stage 1b |
+| Declared `after` edges hold | checked at `start`; throws naming the edge that moved — **landed** |
+| Dependencies exist | `verifyDependencies()` after registration; throws listing every unknown id — **landed** |
+| Disabling cascades | a script whose `requires` is disabled is disabled too; `optional` just degrades — declared, not yet acted on (stage 6) |
+| Teardown is total | the scope records every trigger, alias, event listener, command hook, interval and DOM handler — **landed** except the module singletons (stage 4); `registerScripts.test.ts` starts all 148, stops them, and asserts nothing owned survives |
 | A script is registered exactly once, and only scripts are | `test/client/ScriptRegistry.test.ts` compares the ids in `registerScripts` against the modules in `scripts/`, both directions |
 | `skipDeleted` triggers never see a suppressed line | `parseLine` does not dispatch them when `line.deleted` |
 
@@ -797,7 +790,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**0b**~~ | ~~Decouple suppression from dispatch~~ — **done**: `parseLine` folds through every trigger and decides at the end; `return null` is sugar for `markAsDeleted()`; `{skipDeleted: true}` opts a trigger out | **yes** | landed |
 | ~~**1**~~ | ~~Introduce `ScriptContext`~~ — **done**, as `ScriptScope` + `ScriptRegistry`. Scripts still take a plain `Client`; `registerScripts` hands each one a scoped *view* of the client that stamps an `owner` on its triggers and aliases. `Triggers.removeByOwner` / `AliasList.removeByOwner` sweep them; `client.on` and `registerCommandHook` are tracked too | none | landed |
 | ~~**1b**~~ | ~~Finish teardown~~ — **done**: the 9 `setInterval` and 11 `window.addEventListener` sites now go through `client.scope`, and the 15 direct `eventBus.on` calls through `client.on`, so they carry the scope's `AbortSignal`. A test asserts no script reaches for `window`/`document` directly | none | landed |
-| **2** | Add `manifest` + registry; keep `registerScripts`'s written order, honour the two `after` edges via a stable topo-sort; **assert the result equals today's order** and land it as a provable no-op | none | low |
+| ~~**2**~~ | ~~Add `manifest` + registry~~ — **done**, with the sort dropped: `after` / `requires` / `optional` are declared at the `registry.start` call and **checked**, not sorted. `test/client/registerScripts.test.ts` starts all 148 for real and proves the written order satisfies them | none | landed |
 | **3** | Replace the 4 shared `client` fields and formalise the 8 event edges as declared `provides`/`requires` | none | low |
 | **4** | Convert the 9 module singletons to registry-resolved services | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |
 | **5** | Add `line.replaceWith(next)` carrying `flair`/`deleted` across a buffer replacement; drop the `messageFlair` after `lootParser` edge | none | low |
