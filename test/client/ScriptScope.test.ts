@@ -401,6 +401,21 @@ describe('ScriptScope', () => {
             expect(client.attackCommand).toBe(host.attackCommand);
         });
 
+        test('a function a script installs on the client is not served stale', () => {
+            // enemyBinds assigns client.attackEnemySlot at runtime. A bound-method
+            // cache keyed on the name alone would keep handing back a wrapper around
+            // the stub it replaced.
+            const { client } = createScriptScope(host, 'demo');
+            const before = client.attackEnemySlot;
+            const installed = vi.fn();
+
+            client.attackEnemySlot = installed;
+            client.attackEnemySlot(3);
+
+            expect(client.attackEnemySlot).not.toBe(before);
+            expect(installed).toHaveBeenCalledWith(3);
+        });
+
         test('the plain client exposes a root scope', () => {
             expect(host.scope.id).toBe('client');
             expect(host.scope.disposed).toBe(false);

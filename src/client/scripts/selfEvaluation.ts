@@ -13,6 +13,13 @@ export default function initSelfEvaluation(
     let timer: ReturnType<typeof setTimeout> | undefined;
     let fallback: ReturnType<typeof setTimeout> | undefined;
 
+    // suppressItemEvaluation mutes weaponEvaluation, armorEvaluation and
+    // parryShieldEvaluation for the duration of a bulk /ocena read-out. It is a
+    // latch, so stopping mid-read would leave all three muted for good.
+    client.scope.onDispose(() => {
+        client.suppressItemEvaluation = false;
+    });
+
     const GREEN = createColorFormat("#00ff00");
     const YELLOW = createColorFormat("#ffff00");
     const RED = createColorFormat("#ff0000");

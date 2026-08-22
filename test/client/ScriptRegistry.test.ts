@@ -5,6 +5,8 @@ import Client from '@client/Client';
 import { ScriptRegistry } from '@client/ScriptRegistry';
 import initLamp from '@client/scripts/lamp';
 import initMoveMode from '@client/scripts/moveMode';
+import initEnemyBinds from '@client/scripts/enemyBinds';
+import initSelfEvaluation from '@client/scripts/selfEvaluation';
 
 function createClient(): Client {
     return new Client({
@@ -267,5 +269,42 @@ describe('declared dependencies', () => {
         registry.stop('bagManager');
 
         expect(() => registry.verifyDependencies()).toThrow(/lamp -> bagManager/);
+    });
+});
+
+describe('stopping a script puts back what it changed on the client', () => {
+    let host: Client;
+    let registry: ScriptRegistry;
+
+    beforeEach(() => {
+        localStorage.clear();
+        host = createClient();
+        registry = new ScriptRegistry(host);
+    });
+
+    test('enemyBinds restores the stubs Client declares', () => {
+        const stub = host.attackEnemySlot;
+        registry.start('enemyBinds', initEnemyBinds);
+        expect(host.attackEnemySlot).not.toBe(stub);
+
+        registry.stop('enemyBinds');
+
+        // Left installed, the mobile buttons would keep firing attacks through a
+        // script that is no longer running.
+        expect(host.attackEnemySlot).toBe(stub);
+        expect(Object.hasOwn(host, "attackEnemySlot")).toBe(false);
+    });
+
+    test('selfEvaluation unmutes the item evaluations', () => {
+        const aliases: { pattern: RegExp; callback: Function }[] = [];
+        registry.start('selfEvaluation', (client) => initSelfEvaluation(client, aliases));
+        aliases.find(alias => alias.pattern.test("/ocen"))!.callback();
+        expect(host.suppressItemEvaluation, 'the bulk read-out mutes them').toBe(true);
+
+        registry.stop('selfEvaluation');
+
+        // The mute is a latch. Stopping mid-read-out would leave weaponEvaluation,
+        // armorEvaluation and parryShieldEvaluation silent for good.
+        expect(host.suppressItemEvaluation).toBe(false);
     });
 });

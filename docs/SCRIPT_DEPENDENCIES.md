@@ -188,17 +188,47 @@ are ~60 further script→UI event edges (`W:` targets), which is the intended se
 
 Only four fields are written by one script and read by another:
 
-| Field | Written by | Read by |
-|---|---|---|
-| `client.carriageMode` | `carriage` | `moveMode` |
-| `client.moveMode` | `moveMode` | `zaskTimer` |
-| `client.suppressItemEvaluation` | `selfEvaluation` | `weaponEvaluation`, `armorEvaluation`, `parryShieldEvaluation` |
-| `client.herbManager` | `herbCounter` | (type surface only) |
+| Field | Written by | Read by | Verdict |
+|---|---|---|---|
+| `client.carriageMode` | `carriage` | `moveMode` | **leave** — `MovementManager` state |
+| `client.moveMode` | `moveMode` | `zaskTimer` | **leave** — `MovementManager` state |
+| `client.suppressItemEvaluation` | `selfEvaluation` | `weaponEvaluation`, `armorEvaluation`, `parryShieldEvaluation` | real, and it leaked |
+| `client.herbManager` | `herbCounter` | (type surface only) | redundant with the provider |
 
-Small enough to convert to events or providers in an afternoon. The remaining
-`client.*` surface used by scripts is read-only API: `Triggers`(106 users),
-`on`(52), `sendCommand`(46), `println`(42), `sendEvent`(39), `Map`(30), `print`(26),
-`FunctionalBind`(22), `TeamManager`(20), `aliases`(15).
+**Two of these are not script-to-script coupling at all.** `moveMode` and
+`carriageMode` are accessors onto `MovementManager`, which the core reads to prefix
+movement commands. The scripts are the trigger-and-bind front end for state the
+client owns; `zaskTimer` reading `client.moveMode` at `gmcp.room.info` is reading
+core state, which is the intended seam, and it already takes `moveModeChanged` for
+the transitions. Converting them to events would mean `zaskTimer` mirroring state it
+can simply read — strictly worse. They stay.
+
+**What was actually wrong was teardown, not shape.** Both remaining fields are
+latches that a stop could leave set:
+
+- `suppressItemEvaluation` mutes the three evaluation scripts for the duration of a
+  bulk `/ocen` read-out. Stop `selfEvaluation` mid-read and all three stay silent for
+  good. Now reset on dispose.
+- `enemyBinds` assigns `client.attackEnemySlot` / `blockEnemySlot`, which `Client`
+  declares as no-op stubs. Stopping it left the implementations installed, so the
+  mobile buttons kept firing attacks through a script that was no longer running. The
+  own properties are now deleted on dispose, so the stubs show through again.
+
+That second one also exposed a bug in the scope's own client facade: it cached bound
+methods by property name and never invalidated, so after a script assigned a function
+onto the client, reads returned a wrapper around the function that used to be there.
+The cache now keys on the function identity too.
+
+### Channel 3 needs nothing
+
+The 8 event edges were to be formalised as declared `provides`/`requires`. They are
+already late-bound, and a missing emitter degrades to "the event never fires" — the
+correct failure mode, and one the toggle UI wants anyway. Declaring them would add
+bookkeeping without changing a single outcome.
+
+The remaining `client.*` surface used by scripts is read-only API:
+`Triggers`(106 users), `on`(52), `sendCommand`(46), `println`(42), `sendEvent`(39),
+`Map`(30), `print`(26), `FunctionalBind`(22), `TeamManager`(20), `aliases`(15).
 
 ---
 
@@ -791,7 +821,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**1**~~ | ~~Introduce `ScriptContext`~~ — **done**, as `ScriptScope` + `ScriptRegistry`. Scripts still take a plain `Client`; `registerScripts` hands each one a scoped *view* of the client that stamps an `owner` on its triggers and aliases. `Triggers.removeByOwner` / `AliasList.removeByOwner` sweep them; `client.on` and `registerCommandHook` are tracked too | none | landed |
 | ~~**1b**~~ | ~~Finish teardown~~ — **done**: the 9 `setInterval` and 11 `window.addEventListener` sites now go through `client.scope`, and the 15 direct `eventBus.on` calls through `client.on`, so they carry the scope's `AbortSignal`. A test asserts no script reaches for `window`/`document` directly | none | landed |
 | ~~**2**~~ | ~~Add `manifest` + registry~~ — **done**, with the sort dropped: `after` / `requires` / `optional` are declared at the `registry.start` call and **checked**, not sorted. `test/client/registerScripts.test.ts` starts all 148 for real and proves the written order satisfies them | none | landed |
-| **3** | Replace the 4 shared `client` fields and formalise the 8 event edges as declared `provides`/`requires` | none | low |
+| ~~**3**~~ | ~~Replace the 4 shared `client` fields~~ — **mostly declined**, see below. Two of the four are core state, and the 8 event edges were already fine. What was real — two latches left set when their script stops — is fixed | none | landed |
 | **4** | Convert the 9 module singletons to registry-resolved services | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |
 | **5** | Add `line.replaceWith(next)` carrying `flair`/`deleted` across a buffer replacement; drop the `messageFlair` after `lootParser` edge | none | low |
 | **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade | yes | medium |

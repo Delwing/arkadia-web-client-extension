@@ -343,7 +343,16 @@ export default function initEnemyBinds(
         }
     });
 
-    // Expose methods for mobile buttons and other integrations
+    // Expose methods for mobile buttons and other integrations. Client declares
+    // these as no-op stubs; put them back when the script stops, or the mobile
+    // buttons keep firing attacks for a script that is no longer running.
+    client.scope.onDispose(() => {
+        // Drop the own property so the class's no-op stub shows through again.
+        // Assigning a captured copy back would leave a bound wrapper in its place.
+        delete (client as Partial<Client>).attackEnemySlot;
+        delete (client as Partial<Client>).blockEnemySlot;
+    });
+
     client.attackEnemySlot = (slotIndex: number) => {
         if (slotIndex < 0 || slotIndex >= NUM_SLOTS) {
             return;

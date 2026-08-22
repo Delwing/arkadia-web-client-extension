@@ -146,6 +146,23 @@ export function createRootScope(id: string): ScriptScope {
     return new Scope(id);
 }
 
+/**
+ * Bind a method to the real client, remembering the result — but re-bind when the
+ * property has been reassigned since. Scripts do install functions onto the client
+ * (enemyBinds does), so a cache keyed on the name alone would hand back a wrapper
+ * around the function that used to be there.
+ */
+function bindCache() {
+    const cache = new Map<PropertyKey, {source: Function; wrapped: Function}>();
+    return (prop: PropertyKey, value: Function, target: object, make?: (value: Function) => Function) => {
+        const cached = cache.get(prop);
+        if (cached && cached.source === value) return cached.wrapped;
+        const wrapped = make ? make(value) : value.bind(target);
+        cache.set(prop, {source: value, wrapped});
+        return wrapped;
+    };
+}
+
 const REGISTRARS = new Set([
     'registerTrigger',
     'registerMultilineTrigger',
@@ -156,45 +173,33 @@ const REGISTRARS = new Set([
 
 /** Triggers registered through this facade are stamped with `owner`. */
 function scopedTriggers(triggers: Triggers, owner: string): Triggers {
-    const bound = new Map<PropertyKey, unknown>();
+    const bind = bindCache();
     return new Proxy(triggers, {
         get(target, prop) {
             const value = Reflect.get(target, prop, target);
             if (typeof value !== 'function') return value;
-            let wrapped = bound.get(prop);
-            if (!wrapped) {
-                wrapped = REGISTRARS.has(prop as string)
-                    ? (...args: unknown[]) => {
-                        const trigger = value.apply(target, args);
-                        trigger.owner = owner;
-                        return trigger;
-                    }
-                    : value.bind(target);
-                bound.set(prop, wrapped);
-            }
-            return wrapped;
+            if (!REGISTRARS.has(prop as string)) return bind(prop, value, target);
+            return bind(prop, value, target, register => (...args: unknown[]) => {
+                const trigger = register.apply(target, args);
+                trigger.owner = owner;
+                return trigger;
+            });
         },
     });
 }
 
 /** Aliases pushed through this facade are stamped with `owner`. */
 function scopedAliases(aliases: AliasList, owner: string): AliasList {
-    const bound = new Map<PropertyKey, unknown>();
+    const bind = bindCache();
     return new Proxy(aliases, {
         get(target, prop) {
             const value = Reflect.get(target, prop, target);
             if (typeof value !== 'function') return value;
-            let wrapped = bound.get(prop);
-            if (!wrapped) {
-                wrapped = prop === 'push'
-                    ? (...items: AliasEntry[]) => target.push(...items.map(item => {
-                        item.owner = owner;
-                        return item;
-                    }))
-                    : value.bind(target);
-                bound.set(prop, wrapped);
-            }
-            return wrapped;
+            if (prop !== 'push') return bind(prop, value, target);
+            return bind(prop, value, target, () => (...items: AliasEntry[]) => target.push(...items.map(item => {
+                item.owner = owner;
+                return item;
+            })));
         },
     });
 }
@@ -211,7 +216,7 @@ export function createScriptScope(client: Client, id: string): {client: Client; 
     const triggers = scopedTriggers(client.Triggers, id);
     const aliases = scopedAliases(client.aliases, id);
     const hookIds = new Set<string>();
-    const bound = new Map<PropertyKey, unknown>();
+    const bind = bindCache();
 
     scope.onDispose(() => {
         client.Triggers.removeByOwner(id);
@@ -243,12 +248,7 @@ export function createScriptScope(client: Client, id: string): {client: Client; 
             if (prop in overrides) return overrides[prop as string];
             const value = Reflect.get(target, prop, target);
             if (typeof value !== 'function') return value;
-            let wrapped = bound.get(prop);
-            if (!wrapped) {
-                wrapped = value.bind(target);
-                bound.set(prop, wrapped);
-            }
-            return wrapped;
+            return bind(prop, value, target);
         },
         set(target, prop, value) {
             if (prop === 'aliases') {
