@@ -7,6 +7,19 @@
 > Written 2026-08-22 against `master` (10c69dc5). Counts come from a full parse of
 > `src/client/scripts/**` and `src/client/main.ts`.
 
+## Status
+
+This is the source of truth for the toggle migration, and the numbered stages below
+are what "stage N" refers to.
+
+**Stages 0, 0b, 1, 1b, 2 and 3 have landed.** Scripts run inside disposable scopes,
+everything they register is attributed and reversible, and dependencies are declared
+and checked. Stage 4 is next — see *Migration plan* for the table and *Open
+decisions* for what still needs a person.
+
+Where the stages departed from what was originally proposed, the reasoning is kept
+in place rather than edited out; each landed section says what changed and why.
+
 ## Verdict
 
 **The static import graph is not the problem.** 163 TypeScript modules in
@@ -862,7 +875,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**1b**~~ | ~~Finish teardown~~ — **done**: the 9 `setInterval` and 11 `window.addEventListener` sites now go through `client.scope`, and the 15 direct `eventBus.on` calls through `client.on`, so they carry the scope's `AbortSignal`. A test asserts no script reaches for `window`/`document` directly | none | landed |
 | ~~**2**~~ | ~~Add `manifest` + registry~~ — **done**, with the sort dropped: `after` / `requires` / `optional` are declared at the `registry.start` call and **checked**, not sorted. `test/client/registerScripts.test.ts` starts all 148 for real and proves the written order satisfies them | none | landed |
 | ~~**3**~~ | ~~Replace the 4 shared `client` fields~~ — **mostly declined**, see below. Two of the four are core state, and the 8 event edges were already fine. What was real — two latches left set when their script stops — is fixed | none | landed |
-| **4** | Convert the 9 module singletons to registry-resolved services | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |
+| **4** | The 9 module singletons — see *Stage 4: how far to go* below | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |
 | **5** | Add `line.replaceWith(next)` carrying `flair`/`deleted` across a buffer replacement; drop the `messageFlair` after `lootParser` edge | none | low |
 | **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade | yes | medium |
 | **7** | Lazy `import()` per script, keyed on the manifest | yes | low once 1–6 land |
@@ -870,6 +883,37 @@ could start seeing suppressed lines, now has tests that will catch the change.
 Only stage 0b changes behaviour before the toggle UI arrives; everything up to stage 5
 is a no-op that can land incrementally on master. 0b is the one that needs a full e2e
 run and a close look at `combatStats`.
+
+### Stage 4: how far to go
+
+The singletons are the last thing a stopped script leaves behind. Today the owner's
+data outlives it: stop `kill` and `getKillData()` still returns the totals it had
+accumulated, so `improveCounter` and the web popups keep reading numbers from a
+script that is no longer running. That is the gap stage 4 has to close.
+
+The original plan said "convert to registry-resolved services". Two ways to read
+that, and the cheaper one is recommended:
+
+**Recommended — typed absence.** Keep the module getters where they are. Make each
+return `null` once its owner has stopped, reset the module state in a
+`client.scope.onDispose`, and make the readers handle `null`. Roughly one dispose
+hook and one null-check per edge, and no structural change to the god files.
+
+**Not recommended for now — a service locator.** Register each service on the
+registry and resolve it by id. It buys compile-time dependency wiring, but the
+conversion runs through `kill` (922 lines), `zlom` (678), `lootParser` and
+`improveCounter`, and none of them is currently split along the lines a service
+boundary would need. The result would be a large diff whose only user-visible effect
+is the same `null` the cheaper version produces. If something later actually needs
+resolution by id — a plugin swapping an implementation, say — it can be layered on
+top of typed absence without redoing this.
+
+Either way the answer at the boundary is the same: **absent, not empty**. An empty
+object is indistinguishable from "the script is running and has nothing yet", which
+is exactly the failure mode this whole document opened by complaining about.
+
+Two of the nine are public plugin API and need decision 1 from *Open decisions*
+settled before they can be turned off at all.
 
 ### Where extraction will be expensive
 

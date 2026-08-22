@@ -168,6 +168,26 @@ The game client (`src/client`) is UI-agnostic: DOM-free, no runtime `@web` impor
 ### Event System
 The project uses a custom event bus in `src/modules/core/eventBus.ts` with typed events defined in `src/shared/events/`. All cross-module communication goes through events. Check existing event handlers for patterns.
 
+### Script scopes
+
+Scripts are started by `ScriptRegistry` (`src/client/ScriptRegistry.ts`), each in its
+own `ScriptScope`, so everything a script registers can be undone again. When writing
+a script:
+
+- Register timers and DOM listeners through `client.scope.interval` /
+  `client.scope.timeout` / `client.scope.listen` — never `window.setInterval` or
+  `window.addEventListener`. A test enforces this.
+- Subscribe with `client.on`, not `eventBus.on` directly, so the subscription carries
+  the scope's `AbortSignal`.
+- Anything else a script leaves on the client — an installed method, a latched flag,
+  a registered provider — needs a `client.scope.onDispose` to put it back.
+- Triggers and aliases are attributed automatically. `owner` is assigned by the scope
+  and is not the same thing as `tag`, which scripts pick themselves and reuse to
+  clear part of themselves.
+
+Dependencies between scripts (`after` / `requires` / `optional`) are declared at the
+`registry.start` call in `main.ts`. See `docs/SCRIPT_DEPENDENCIES.md`.
+
 ### Where a module belongs
 
 One rule, checkable at a glance:
