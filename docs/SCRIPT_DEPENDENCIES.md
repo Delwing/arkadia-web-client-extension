@@ -70,20 +70,37 @@ is tooling that scripts *use* (and that `Client` and `KeyBindingManager` depend 
 never something to disable, so it moved to `src/client/` along with its
 `functionalBindCategories` constants.
 
-**One exception remains.** `allyProtection` lives in `scripts/` but is instantiated by
-`Client` (`Client.AllyProtection = initAllyProtection(this)`) rather than registered,
-because core calls into it: `Client.attackAllEnemies` and ~12 sites in
-`KeyBindingManager`. Closing the gap means registering it and letting those sites
-tolerate its absence — `isAlly` → false, `checkPendingAttack` → proceed. That is the
-right semantics for a feature you can switch off, but it changes behaviour in the
-attack path, so it is a decision rather than a relocation.
+**The exception is closed too.** `allyProtection` used to be instantiated by
+`Client` rather than registered, because core called into it — `Client.attackAllEnemies`
+and ~12 sites in `KeyBindingManager`. It is now an ordinary registered script, and the
+gate moved to the seam that already existed:
 
-The invariant is worth keeping mechanically checkable; today it reads:
+    client.registerCommandHook('allyProtection', (command, _echo, options) => { ... })
 
-    registered in registerScripts(): 147
+A hook returning `null` cancels the command, so one hook covers every attack path —
+the attack bind, the enemy binds, aliases, plugins, and a command the player simply
+types. The command shape comes from the "Komenda ataku" setting (`client.attackCommand`).
+Bulk attacks pass `{suppressPrompts: true}` so an ally caught in an attack-all is
+skipped quietly instead of prompting once per target.
+
+That deleted `Client.AllyProtection`, six copies of the warn-then-confirm block
+(four in `KeyBindingManager`, one each in `attackQueue` and `objectAliases`) and two
+duplicate `initAllyProtection` calls — each of which had its own people
+subscription, its own cache and **its own pending-attack state**, so confirming an
+attack in one place did not count in another. Support is no longer gated: it sends
+`wesprzyj` at the team leader and the old gate inferred the ally from the team's
+current attack target rather than from the command.
+
+No new machinery was added. A guard registry was considered and rejected — ally
+protection is the only plausible consumer, and `registerCommandHook` already does
+the job with better coverage.
+
+The invariant now reads:
+
+    registered in registerScripts(): 148
     modules directly in scripts/   : 148
     registered but NOT under scripts/: 0
-    under scripts/ but NOT registered: 1   (allyProtection)
+    under scripts/ but NOT registered: 0
 
 ### 1b. Real feature dependencies
 

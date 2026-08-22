@@ -1,7 +1,6 @@
 import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
 import ObjectManager from "@client/ObjectManager.ts";
-import initAllyProtection from "./allyProtection";
 
 type ResolvedEnemy = {
     id: number;
@@ -62,7 +61,6 @@ export default function initAttackQueue(
     const list = aliases ?? client.aliases;
 
     const attackController = createAttackController(client);
-    const allyProtection = initAllyProtection(client);
 
     const add = (matches: RegExpMatchArray) => {
         const resolved = resolveEnemy(client, matches[1] ?? matches[0]);
@@ -86,19 +84,8 @@ export default function initAttackQueue(
             client.println("Kolejka ataku jest pusta.");
             return;
         }
-        // Check if target is an ally (cached on first encounter - just a Map lookup)
-        if (allyProtection.isAlly(next)) {
-            // Check if this is a confirmation (same command repeated within timeout)
-            if (allyProtection.checkPendingAttack(next, undefined)) {
-                attackController.attackById(next);
-                return;
-            }
-            // First attempt - warn and store pending
-            const info = allyProtection.getAllyInfo(next);
-            allyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-            allyProtection.setPendingAttack(next, undefined);
-            return;
-        }
+        // Ally protection is a command hook, so this attack is gated like any
+        // other regardless of the path that reached it.
         attackController.attackById(next);
     };
 

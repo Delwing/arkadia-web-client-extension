@@ -67,33 +67,12 @@ export default class KeyBindingManager {
                 case 'attack': {
                     const id = this.client.TeamManager.getAttackTargetId?.();
                     if (id) {
-                        if (this.client.AllyProtection.isAlly(id)) {
-                            if (this.client.AllyProtection.checkPendingAttack(id, 'attackBind')) {
-                                this.client.sendCommand(`${this.client.attackCommand} ob_${id}`);
-                            } else {
-                                const info = this.client.AllyProtection.getAllyInfo(id);
-                                this.client.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-                                this.client.AllyProtection.setPendingAttack(id, 'attackBind');
-                            }
-                        } else {
-                            this.client.sendCommand(`${this.client.attackCommand} ob_${id}`);
-                        }
+                        this.client.sendCommand(`${this.client.attackCommand} ob_${id}`);
                     }
                     break;
                 }
                 case 'support': {
-                    const targetId = this.client.TeamManager.getAttackTargetId?.();
-                    if (targetId && this.client.AllyProtection.isAlly(targetId)) {
-                        if (this.client.AllyProtection.checkPendingAttack(targetId, 'supportBind')) {
-                            this.client.support();
-                        } else {
-                            const info = this.client.AllyProtection.getAllyInfo(targetId);
-                            this.client.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-                            this.client.AllyProtection.setPendingAttack(targetId, 'supportBind');
-                        }
-                    } else {
-                        this.client.support();
-                    }
+                    this.client.support();
                     break;
                 }
                 case 'temp1':
@@ -162,35 +141,12 @@ export default class KeyBindingManager {
             if (bindMatches(ev, this.attackBind)) {
                 const id = this.client.TeamManager.getAttackTargetId?.();
                 if (id) {
-                    if (this.client.AllyProtection.isAlly(id)) {
-                        if (this.client.AllyProtection.checkPendingAttack(id, 'attackBind')) {
-                            const command = `${this.client.attackCommand} ob_${id}`;
-                            this.client.sendCommand(command);
-                        } else {
-                            const info = this.client.AllyProtection.getAllyInfo(id);
-                            this.client.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-                            this.client.AllyProtection.setPendingAttack(id, 'attackBind');
-                        }
-                    } else {
-                        const command = `${this.client.attackCommand} ob_${id}`;
-                        this.client.sendCommand(command);
-                    }
+                    this.client.sendCommand(`${this.client.attackCommand} ob_${id}`);
                 }
                 ev.preventDefault();
             }
             if (bindMatches(ev, this.supportBind)) {
-                const targetId = this.client.TeamManager.getAttackTargetId?.();
-                if (targetId && this.client.AllyProtection.isAlly(targetId)) {
-                    if (this.client.AllyProtection.checkPendingAttack(targetId, 'supportBind')) {
-                        this.client.support();
-                    } else {
-                        const info = this.client.AllyProtection.getAllyInfo(targetId);
-                        this.client.AllyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-                        this.client.AllyProtection.setPendingAttack(targetId, 'supportBind');
-                    }
-                } else {
-                    this.client.support();
-                }
+                this.client.support();
                 ev.preventDefault();
             }
             if (bindMatches(ev, this.doubleKBind)) {

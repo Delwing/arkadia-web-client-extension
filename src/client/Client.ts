@@ -22,7 +22,6 @@ export type { CommandHookCallback, CommandHook } from "./CommandProcessor";
 import {DEFAULT_ATTACK_COMMAND, normalizeAttackCommand} from "./utils/attackCommand";
 import {DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand} from "./utils/drawWeaponCommand";
 import {createAttackController} from "./utils/attackController";
-import initAllyProtection from "./scripts/allyProtection";
 import SoundManager from "./SoundManager";
 import NotificationManager from "./NotificationManager";
 import KeyBindingManager from "./KeyBindingManager";
@@ -72,7 +71,6 @@ export default class Client {
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);
     public AttackController = createAttackController(this);
-    public AllyProtection = initAllyProtection(this);
     contentWidth = 0;
     commandLineSuggestions: string[] = [];
     readonly SoundManager = new SoundManager(this);
@@ -250,7 +248,7 @@ export default class Client {
     }
 
     attackAllEnemies() {
-        this.AttackController.attackAllEnemies((id) => this.AllyProtection.isAlly(id));
+        this.AttackController.attackAllEnemies();
     }
 
     releaseGuard() {

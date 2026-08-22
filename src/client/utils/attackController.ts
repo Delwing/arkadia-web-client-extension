@@ -51,14 +51,15 @@ export function createAttackController(client: Client) {
         }
     };
 
-    const attackAllEnemies = (isAlly?: (id: number) => boolean) => {
+    const attackAllEnemies = () => {
         const objects = client.ObjectManager.getObjectsOnLocation();
         const targets = objects.filter(o =>
             o.__category === 'rest' || o.__category === 'rest-noncombat'
         );
         for (const t of targets) {
-            if (isAlly && isAlly(t.num)) continue;
-            client.sendCommand(`${attackCommand} ob_${t.num}`);
+            // suppressPrompts: an ally caught in an attack-all is skipped quietly by
+            // the ally-protection hook rather than prompting once per target.
+            client.sendCommand(`${attackCommand} ob_${t.num}`, true, {suppressPrompts: true});
         }
     };
 

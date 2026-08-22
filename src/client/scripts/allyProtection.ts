@@ -106,7 +106,7 @@ export default function initAllyProtection(client: Client) {
     });
 
     // Pending attack for confirmation
-    let pendingAttack: { id: number; command?: string; timestamp: number } | null = null;
+    let pendingAttack: { id: number; timestamp: number } | null = null;
     const CONFIRM_TIMEOUT_MS = 5000; // 5 seconds to confirm
 
     // Check on-demand if not in cache (fallback for race conditions)
@@ -159,15 +159,13 @@ export default function initAllyProtection(client: Client) {
         client.print(colorString(`[UWAGA] Probujesz zaatakowac sojusznika: ${allyName} (${allyGuild})! Powtorz komende aby potwierdzic.`, ALLY_WARNING_COLOR));
     }
 
-    function setPendingAttack(id: number, command?: string) {
-        pendingAttack = { id, command, timestamp: Date.now() };
+    function setPendingAttack(id: number) {
+        pendingAttack = { id, timestamp: Date.now() };
     }
 
-    function checkPendingAttack(id: number, command?: string): boolean {
+    function checkPendingAttack(id: number): boolean {
         if (!pendingAttack) return false;
-        // Check if same target, same command, and within timeout
         const isMatch = pendingAttack.id === id &&
-            pendingAttack.command === command &&
             (Date.now() - pendingAttack.timestamp) < CONFIRM_TIMEOUT_MS;
         if (isMatch) {
             pendingAttack = null; // Clear after confirmation
@@ -175,13 +173,70 @@ export default function initAllyProtection(client: Client) {
         return isMatch;
     }
 
-    return {
-        isAlly,
-        getAllyInfo,
-        showAllyWarning,
-        setPendingAttack,
-        checkPendingAttack,
-    };
+    // --- the gate -----------------------------------------------------------
+    //
+    // Every attack funnels through sendCommand, so one command hook covers every
+    // path: the attack bind, the enemy binds, /zabij-style aliases, plugins and a
+    // command the player simply types. The command shape comes from the "Komenda
+    // ataku" setting (client.attackCommand), read per call so a settings change
+    // takes effect immediately.
+
+    /** Cheap prefix test data, refreshed only when the setting changes. */
+    let prefix = '';
+    let prefixLen = 0;
+    let prefixHead = -1;
+
+    function refreshPrefix() {
+        prefix = `${client.attackCommand.trim().toLowerCase()} `;
+        prefixLen = prefix.length;
+        prefixHead = prefix.charCodeAt(0);
+    }
+
+    refreshPrefix();
+    characterStorage.onChange('settings', refreshPrefix);
+
+    /** `ob_5` directly, or `@shortcut` — hooks run before shortcuts are expanded. */
+    function resolveTarget(rest: string): number | null {
+        const direct = rest.match(/^ob_(\d+)$/i);
+        if (direct) return Number(direct[1]);
+
+        const short = rest.match(/^@([A-Za-z0-9@]+)$/);
+        if (!short) return null;
+        const wanted = short[1].toLowerCase();
+        const obj = client.ObjectManager.getObjectsOnLocation()
+            .find(o => o.shortcut?.toLowerCase() === wanted);
+        return obj ? obj.num : null;
+    }
+
+    /** The object this command attacks, or null if it is not an attack at all. */
+    function attackTargetId(command: string): number | null {
+        // Ordered cheapest-first: this runs on every outgoing command.
+        // The shortest possible target is a two-character shortcut like `@a`.
+        if (command.length < prefixLen + 2) return null;
+        const head = command.charCodeAt(0);
+        if (head !== prefixHead && head !== prefixHead - 32) return null;
+        if (command.slice(0, prefixLen).toLowerCase() !== prefix) return null;
+        return resolveTarget(command.slice(prefixLen).trim());
+    }
+
+    client.registerCommandHook('allyProtection', (command, _echo, options) => {
+        if (allyDescriptions.size === 0) return undefined;   // nothing to protect
+
+        const id = attackTargetId(command);
+        if (id === null || !isAlly(id)) return undefined;
+
+        // Bulk attacks skip allies quietly rather than prompting per target.
+        if (options?.suppressPrompts) return null;
+
+        if (checkPendingAttack(id)) return undefined;        // repeat within 5s confirms
+
+        const info = getAllyInfo(id);
+        showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
+        setPendingAttack(id);
+        return null;
+    });
+
+    return { isAlly, getAllyInfo };
 }
 
 export type AllyProtection = ReturnType<typeof initAllyProtection>;

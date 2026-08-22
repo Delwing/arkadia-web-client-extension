@@ -7,6 +7,7 @@ import {
     GMCP_PATHS,
     getCommandLog,
     resetCommandLog,
+    submitCommand,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
 
@@ -257,37 +258,54 @@ test.describe('Ally protection system', () => {
         expect(log, 'no attack command should be sent after timeout').toHaveLength(0);
     });
 
-    test('support bind (Ctrl+Q) on ally shows [UWAGA] on first press, sends wesprzyj on second press', async ({page}) => {
-        // Set up ally as attack target; also register a team leader so support()
-        // sends `wesprzyj` AND `wesprzyj ob_<leaderId>`
+    // Support is deliberately not gated. It is not an attack on the ally: it sends
+    // `wesprzyj` at the team leader, and the old gate inferred the ally from the
+    // team's current attack target rather than from the command. Ally protection
+    // is now a command hook on the attack command, so support goes straight out.
+    test('support bind (Ctrl+Q) is not gated, even with an ally targeted', async ({page}) => {
         await setAttackTarget(page, ALLY_OBJECT_NUM, ALLY_NAME, {leaderId: ALLY_LEADER_NUM});
 
         const output = page.locator('#main_text_output_msg_wrapper');
         await resetCommandLog(page);
 
-        // First press — warning
-        await pressSupportBind(page);
-        await expect(output).toContainText('[UWAGA]');
-        await expect(output).toContainText(ALLY_NAME);
-
-        // wait briefly to confirm no command was dispatched
-        await page.waitForTimeout(200);
-        const logAfterFirst = await getCommandLog(page);
-        expect(logAfterFirst, 'no support command sent on first press against ally').toHaveLength(0);
-
-        // Second press — confirms and executes support()
-        await resetCommandLog(page);
         await pressSupportBind(page);
 
         await expect
             .poll(
                 async () => await getCommandLog(page),
-                {
-                    message: 'wesprzyj command should be sent on second support press',
-                    timeout: 3000,
-                },
+                {message: 'wesprzyj should be sent on the first press', timeout: 3000},
             )
             .toContainEqual('wesprzyj');
+
+        await expect(output, 'no ally warning for a support command').not.toContainText('[UWAGA]');
+    });
+
+    // The gate sits on the outgoing command, so a hand-typed attack is protected
+    // too — it was not before, when only the attack bind consulted it.
+    test('a hand-typed attack command on an ally is gated', async ({page}) => {
+        await setAttackTarget(page, ALLY_OBJECT_NUM, ALLY_NAME);
+
+        const output = page.locator('#main_text_output_msg_wrapper');
+        await resetCommandLog(page);
+
+        await submitCommand(page, `zabij ob_${ALLY_OBJECT_NUM}`);
+
+        await expect(output).toContainText('[UWAGA]');
+        await page.waitForTimeout(200);
+        expect(
+            await getCommandLog(page),
+            'a typed attack on an ally should not reach the game',
+        ).toHaveLength(0);
+
+        await resetCommandLog(page);
+        await submitCommand(page, `zabij ob_${ALLY_OBJECT_NUM}`);
+
+        await expect
+            .poll(
+                async () => await getCommandLog(page),
+                {message: 'repeating it confirms', timeout: 3000},
+            )
+            .toContainEqual(expect.stringContaining(`ob_${ALLY_OBJECT_NUM}`));
     });
 
     test('room change clears pending attack — [UWAGA] shown again after room change', async ({page}) => {

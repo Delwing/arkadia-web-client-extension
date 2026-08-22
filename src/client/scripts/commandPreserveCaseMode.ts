@@ -2,6 +2,12 @@ import Client from "../Client";
 
 export interface CommandOptions {
     preserveCase?: boolean;
+    autoLowercaseCommands?: boolean;
+    /**
+     * The command was issued in bulk (e.g. attack-all), so a command hook that
+     * would normally prompt for confirmation should veto silently instead.
+     */
+    suppressPrompts?: boolean;
 }
 
 const EXIT_PATTERNS = [
@@ -28,11 +34,6 @@ const skipLowercasePrefixes = [
     'jszepnij',
     'jpszepnij',
 ];
-
-export interface CommandOptions {
-    preserveCase?: boolean;
-    autoLowercaseCommands?: boolean;
-}
 
 export function normalizeCommand(command: string, options?: CommandOptions): string {
     const trimmedCommand = command.trimStart();

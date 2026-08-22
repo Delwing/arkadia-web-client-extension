@@ -3,7 +3,6 @@ import {colorString, createColorFormat} from "@modules/core/Colors";
 import {gmcp, setGmcp} from "../gmcp";
 import { createAttackController } from "../utils/attackController";
 import eventBus from "@modules/core/eventBus";
-import initAllyProtection from "./allyProtection";
 import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
 import type { PersonListEntry } from '../types/people';
 import { characterStorage } from "@modules/core/storage";
@@ -74,7 +73,6 @@ export default function initObjectAliases(
     }
 
     const attackController = createAttackController(client);
-    const allyProtection = initAllyProtection(client);
 
     let enemyGuilds: string[] = [];
     let allyGuilds: string[] = [];
@@ -154,21 +152,9 @@ export default function initObjectAliases(
         }
     }
 
+    // Ally protection lives in a command hook, so every attack below is gated
+    // regardless of which path reached it.
     const attackById = (id: number, command?: string) => {
-        // Check if target is an ally (cached on first encounter - just a Map lookup)
-        if (allyProtection.isAlly(id)) {
-            // Check if this is a confirmation (same command repeated within timeout)
-            if (allyProtection.checkPendingAttack(id, command)) {
-                // Confirmed - allow the attack
-                attackController.attackById(id, command);
-                return;
-            }
-            // First attempt - warn and store pending
-            const info = allyProtection.getAllyInfo(id);
-            allyProtection.showAllyWarning(info?.name ?? '?', info?.guild ?? '?');
-            allyProtection.setPendingAttack(id, command);
-            return;
-        }
         attackController.attackById(id, command);
     };
 
@@ -238,7 +224,7 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /^\/z_all$/,
             callback: () => {
-                attackController.attackAllEnemies((id) => allyProtection.isAlly(id));
+                attackController.attackAllEnemies();
             }
         });
         aliases.push({

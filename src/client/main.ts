@@ -115,6 +115,7 @@ import initMove from './scripts/move'
 import initDirectionBypass from './scripts/directionBypass'
 import initZaznaczaj from './scripts/zaznaczaj'
 import initTropBind from './scripts/trop'
+import initAllyProtection from './scripts/allyProtection'
 import Client from "./Client";
 import {initSpecialLocations} from "./scripts/specialLocations";
 import {emitFakeLine} from "./scripts/fakeLine";
@@ -216,6 +217,7 @@ export function registerScripts(client: Client) {
         isLeader: !!client.TeamManager?.isLeader?.(),
     }))
 
+    initAllyProtection(client)
     initTeamBlockers(client)
     initMove(client)
     initDirectionBypass(client, aliases)
