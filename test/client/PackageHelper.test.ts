@@ -2,7 +2,7 @@ vi.mock('@modules/data/npcStore', () => ({
   addLocalNpc: jest.fn().mockResolvedValue(undefined),
 }));
 
-import initPackageHelper from '@client/PackageHelper';
+import initPackageHelper from '@client/scripts/PackageHelper';
 import Client from '@client/Client';
 import type { ClientAdapter } from '@client/Client';
 

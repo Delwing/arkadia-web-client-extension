@@ -1,6 +1,6 @@
 import { subscribeMerged, refresh as refreshPeopleStore, forceRefresh as forceRefreshPeopleStore } from '@modules/data/peopleLoader';
-import type { PersonListEntry } from './types/people';
-import Client from "./Client";
+import type { PersonListEntry } from '../types/people';
+import Client from "../Client";
 import {createColorFormat} from '@modules/core/Colors';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 import { characterStorage } from "@modules/core/storage";

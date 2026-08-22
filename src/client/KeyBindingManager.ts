@@ -1,5 +1,5 @@
 import type Client from "./Client";
-import { formatLabel } from "./scripts/functionalBind";
+import { formatLabel } from "./functionalBind";
 import { globalStorage } from "@modules/core/storage";
 import { bindMatches } from "@modules/core/keymapTypes";
 import { switchKeymap, getActiveKeymapId } from "@modules/core/keymapStorage";

@@ -1,4 +1,4 @@
-import People from '@client/People';
+import People from '@client/scripts/People';
 import Triggers from '@client/Triggers';
 import { refresh, subscribe, forceRefresh } from '@modules/data/peopleStore';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';

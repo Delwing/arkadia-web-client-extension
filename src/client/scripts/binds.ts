@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { formatLabel } from "./functionalBind";
+import { formatLabel } from "../functionalBind";
 
 export default function initBinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     function printBinds() {

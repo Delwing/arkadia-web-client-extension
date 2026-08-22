@@ -1,8 +1,8 @@
 import {addLocalNpc} from "@modules/data/npcStore";
 import {createColorFormat} from "@modules/core/Colors";
-import Client from "./Client";
-import {Trigger} from "./Triggers";
-import toTitleCase from "./utils/toTitleCase";
+import Client from "../Client";
+import {Trigger} from "../Triggers";
+import toTitleCase from "../utils/toTitleCase";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {containerAction} from "@client/scripts/bagManager";
 import { characterStorage } from "@modules/core/storage";

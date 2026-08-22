@@ -26,7 +26,8 @@ Arkadia Web Client Extension is a browser-based client for the Arkadia MUD (Mult
 ```
 src/
 ├── client/           # Client-side scripts for Arkadia interaction
-│   ├── scripts/      # Feature-specific scripts (150+ modules)
+│   ├── scripts/      # Feature scripts — everything here is registered in main.ts
+│   │   └── lib/      # Shared helpers used by scripts; never registered
 │   ├── lua/          # Lua scripts for combat coloring and magics
 │   ├── ansi/         # ANSI color/formatting handling
 │   ├── Triggers.ts   # Trigger system for game events
@@ -166,6 +167,22 @@ The game client (`src/client`) is UI-agnostic: DOM-free, no runtime `@web` impor
 
 ### Event System
 The project uses a custom event bus in `src/modules/core/eventBus.ts` with typed events defined in `src/shared/events/`. All cross-module communication goes through events. Check existing event handlers for patterns.
+
+### Where a module belongs
+
+One rule, checkable at a glance:
+
+- **`src/client/scripts/`** — feature scripts. Every module here is registered in
+  `registerScripts()` in `src/client/main.ts`, and nothing else is. This is the set a
+  per-feature toggle would operate on.
+- **`src/client/scripts/lib/`** — shared helpers used *by* scripts (parsers,
+  formatters, constants, DataStore wrappers). Never registered, never toggleable.
+- **`src/client/`** — core client machinery: `Client`, `Triggers`,
+  `CommandProcessor`, `FunctionalBind`, the managers. Used by scripts, not one of them.
+
+If you add a script, register it. If it does not want registering, it is a lib
+helper or core machinery — put it in the right place rather than leaving it loose in
+`scripts/`. See `docs/SCRIPT_DEPENDENCIES.md` for why this line matters.
 
 ### Trigger System
 `src/client/Triggers.ts` is the core game interaction mechanism:

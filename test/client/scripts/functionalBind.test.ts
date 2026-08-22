@@ -1,4 +1,4 @@
-import { FunctionalBind, FunctionalBindManager } from '@client/scripts/functionalBind';
+import { FunctionalBind, FunctionalBindManager } from '@client/functionalBind';
 
 describe('FunctionalBind clickable text', () => {
   test('set makes printed text clickable', () => {

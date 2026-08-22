@@ -5,7 +5,7 @@ import MovementManager from "./MovementManager";
 import CommandProcessor from "./CommandProcessor";
 import type { CommandHookCallback } from "./CommandProcessor";
 import type { AliasList } from "./AliasList";
-import {FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
+import {FunctionalBindManager, LINE_START_EVENT,} from "./functionalBind";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener, gmcp} from "./gmcp";

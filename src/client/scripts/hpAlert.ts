@@ -2,7 +2,7 @@ import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
-import { createBindMessage, formatLabel } from "./functionalBind";
+import { createBindMessage, formatLabel } from "../functionalBind";
 
 export default function initHpAlert(client: Client) {
     const ORANGE = createColorFormat("#ffa500");

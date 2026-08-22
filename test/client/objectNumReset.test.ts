@@ -23,8 +23,8 @@ vi.mock('@client/Triggers', () => ({
   }),
 }));
 
-vi.mock('@client/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
-vi.mock('@client/scripts/functionalBind', () => ({
+vi.mock('@client/scripts/PackageHelper', () => ({ __esModule: true, default: jest.fn() }));
+vi.mock('@client/functionalBind', () => ({
   FunctionalBindManager: jest.fn(function () {
     return {
       set: jest.fn(),

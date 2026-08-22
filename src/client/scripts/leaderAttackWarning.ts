@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorString, createColorFormat} from "@modules/core/Colors";
-import { formatLabel } from "./functionalBind";
+import { formatLabel } from "../functionalBind";
 
 export default function initLeaderAttackWarning(client: Client) {
     const RED = createColorFormat("#ff0000");

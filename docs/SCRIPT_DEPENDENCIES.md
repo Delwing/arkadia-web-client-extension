@@ -63,10 +63,27 @@ scripts in `scripts/`. The dividing line is mechanical and checkable: **anything
 `scripts/` is called from `registerScripts()`; anything in `scripts/lib/` is not.**
 That is the same line a toggle UI would draw, so it is worth keeping true.
 
-Two unregistered modules deliberately stayed put, because they are features wired
-straight into `Client` rather than shared code: `allyProtection` (`new`'d as
-`Client.AllyProtection`) and `functionalBind` (`Client.FunctionalBind`). Both are
-candidates for `src/client/` proper, not for `lib/`.
+The same pass fixed the rule in the other direction. Three modules were registered
+in `registerScripts()` but sat loose in `src/client/` — `People`, `killTracker` and
+`PackageHelper` — and moved into `scripts/`. `functionalBind` went the other way: it
+is tooling that scripts *use* (and that `Client` and `KeyBindingManager` depend on),
+never something to disable, so it moved to `src/client/` along with its
+`functionalBindCategories` constants.
+
+**One exception remains.** `allyProtection` lives in `scripts/` but is instantiated by
+`Client` (`Client.AllyProtection = initAllyProtection(this)`) rather than registered,
+because core calls into it: `Client.attackAllEnemies` and ~12 sites in
+`KeyBindingManager`. Closing the gap means registering it and letting those sites
+tolerate its absence — `isAlly` → false, `checkPendingAttack` → proceed. That is the
+right semantics for a feature you can switch off, but it changes behaviour in the
+attack path, so it is a decision rather than a relocation.
+
+The invariant is worth keeping mechanically checkable; today it reads:
+
+    registered in registerScripts(): 147
+    modules directly in scripts/   : 148
+    registered but NOT under scripts/: 0
+    under scripts/ but NOT registered: 1   (allyProtection)
 
 ### 1b. Real feature dependencies
 
