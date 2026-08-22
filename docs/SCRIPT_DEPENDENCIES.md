@@ -543,27 +543,51 @@ until a framework is unnecessary.
 
 ## Proposed target design
 
-### 1. `ScriptContext` instead of raw `client`
+### 1. A per-script scope instead of raw `client` — **landed**
 
-A per-script facade that records every registration and can undo them all. Model it
-on `PluginApi`'s cleanup tracking — the same machinery, applied to built-ins.
+A per-script facade that records every registration and can undo them all, modelled
+on `PluginApi`'s cleanup tracking. It shipped as `ScriptScope` + `ScriptRegistry`
+(`src/client/`), with two departures from the sketch below.
+
+**Scripts still take a plain `Client`.** Rather than a new first parameter on all
+148 init functions — and on the ~240 unit tests that call them — `registerScripts`
+hands each script a *scoped view* of the client: a `Proxy` whose `Triggers` and
+`aliases` stamp an owner, whose `on` carries the scope's `AbortSignal`, and which
+exposes `client.scope` for everything else. Nothing else changes, so a script
+handed a bare client in a test behaves exactly as it does in the app.
+
+The attribution deliberately rides on the object the script closed over rather than
+on a "currently loading script" global. That is what makes it cover the triggers a
+script registers *later*, from inside a callback — a follow-up one-time trigger, a
+re-registration on a settings change — which is most of the hard cases.
+
+**Owner is a separate field from `tag`, not a normalisation of it.** The original
+plan was to rewrite the 93 ad-hoc tags to the script id. That would have broken the
+34 `removeByTag` call sites where a script uses a tag to clear *part* of itself: if
+tag == id, clearing the part clears the whole script. So `owner` is assigned by the
+scope and `tag` stays the script's own; `removeByOwner` and `removeByTag` are
+independent sweeps.
 
 ```ts
-export interface ScriptContext {
-  readonly id: string
-  readonly client: Client            // escape hatch during migration
-  readonly signal: AbortSignal       // for client.on / timers
-  registerTrigger(...): Trigger      // auto-tagged with id
-  addAlias(pattern: RegExp, cb: Function): void
-  on<K>(event: K, listener): void    // auto-unsubscribed
-  require<T>(providerId: string): T  // throws if not enabled
-  optional<T>(providerId: string): T | null
+export interface ScriptScope {
+  readonly id: string                // module name under scripts/
+  readonly signal: AbortSignal
+  interval(fn, ms)                   // cleared on dispose
+  timeout(fn, ms)
+  listen(target, type, handler)      // removed on dispose
+  onDispose(fn): void
+  dispose(): void
 }
 ```
 
-This one change makes both dynamic loading and per-user toggles fall out for free.
-It is mechanical: one signature change per script, and the body keeps using
-`ctx.client` until it is worth cleaning up.
+`ScriptRegistry.start(id, init)` runs one script in a fresh scope; `stop(id)` undoes
+it. The invariant that the set of ids equals the set of modules in `scripts/` is
+asserted in `test/client/ScriptRegistry.test.ts`, which is where the 148/148 count
+now lives.
+
+What the scope does **not** yet reclaim, and 1b will: the 9 scripts calling bare
+`setInterval`, the 10 calling `window.addEventListener` directly, the 9 module-level
+singletons, and the 4 providers registered in `registerScripts`.
 
 ### 2. Manifest per script
 
@@ -631,7 +655,8 @@ No phases means no phase enforcement. What the registry does enforce:
 | Declared `after` edges hold | stable topological sort at registration; throw on a cycle |
 | Dependencies exist | `requires` checked at registration; throw on a missing id |
 | Disabling cascades | a script whose `requires` is disabled is disabled too; `optional` just degrades |
-| Teardown is total | `ctx` records every trigger, alias, listener, hook, interval and DOM handler |
+| Teardown is total | the scope records every trigger, alias, event listener, command hook, interval and DOM handler — **partly landed**, see stage 1b |
+| A script is registered exactly once, and only scripts are | `test/client/ScriptRegistry.test.ts` compares the ids in `registerScripts` against the modules in `scripts/`, both directions |
 | `skipDeleted` triggers never see a suppressed line | `parseLine` does not dispatch them when `line.deleted` |
 
 What stays convention, said plainly: nothing stops a script from mutating a buffer it
@@ -756,8 +781,8 @@ could start seeing suppressed lines, now has tests that will catch the change.
 |---|---|---|---|
 | ~~**0**~~ | ~~Move the pure utilities into `scripts/lib/`~~ — **done**: 16 modules moved, 47 files re-imported, no behaviour change | none | none |
 | ~~**0b**~~ | ~~Decouple suppression from dispatch~~ — **done**: `parseLine` folds through every trigger and decides at the end; `return null` is sugar for `markAsDeleted()`; `{skipDeleted: true}` opts a trigger out | **yes** | landed |
-| **1** | Introduce `ScriptContext`, normalise the 93 ad-hoc tags to the manifest id, tag the 12 untagged scripts, pass `ctx` instead of `client` from `registerScripts` | none | low, mechanical, 151 call sites |
-| **1b** | Give `AliasList` an owner field + `removeByOwner`; route `client.on` through `ctx.signal`; wrap `setInterval` and DOM listeners in `ctx` | none | low |
+| ~~**1**~~ | ~~Introduce `ScriptContext`~~ — **done**, as `ScriptScope` + `ScriptRegistry`. Scripts still take a plain `Client`; `registerScripts` hands each one a scoped *view* of the client that stamps an `owner` on its triggers and aliases. `Triggers.removeByOwner` / `AliasList.removeByOwner` sweep them; `client.on` and `registerCommandHook` are tracked too | none | landed |
+| **1b** | Move the 9 `setInterval` and 10 `window.addEventListener` scripts onto `client.scope.interval` / `client.scope.listen`; unregister the 9 module singletons and 4 providers on dispose | none | low |
 | **2** | Add `manifest` + registry; keep `registerScripts`'s written order, honour the two `after` edges via a stable topo-sort; **assert the result equals today's order** and land it as a provable no-op | none | low |
 | **3** | Replace the 4 shared `client` fields and formalise the 8 event edges as declared `provides`/`requires` | none | low |
 | **4** | Convert the 9 module singletons to registry-resolved services | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |
