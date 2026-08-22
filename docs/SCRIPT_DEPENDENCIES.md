@@ -598,8 +598,10 @@ scope outlives the script, so the three that existed were redirected:
 `window` or `document` directly, and checks two real scripts — `lamp` stops counting
 down and `moveMode` stops answering the keyboard once stopped.
 
-What the scope still does **not** reclaim: the 9 module-level singletons (stage 4)
-and `herbCounter`'s provider registration, which has no unregister yet.
+`herbCounter` is the one script that registers a provider, and it now withdraws it
+on dispose — `getHerbManager()` returns `null`, which `pipe` and the herb UI already
+handle. What the scope still does **not** reclaim is the 9 module-level singletons;
+that is stage 4.
 
 ### 2. Manifest per script
 

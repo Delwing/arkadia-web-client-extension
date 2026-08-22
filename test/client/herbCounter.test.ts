@@ -2,9 +2,11 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { EventEmitter } from 'events';
 import { initHerbClient, defaultHerbData } from './helpers/herbClient';
+import { FakeClientBase } from './helpers/fakeClient';
+import { getHerbManager } from '@modules/core/herbManagerProvider';
 import { characterStorage } from '@modules/core/storage';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   sendCommand = jest.fn();
@@ -44,6 +46,16 @@ describe('herb counter', () => {
 
   afterEach(() => {
     localStorage.clear();
+  });
+
+  test('the herb manager is withdrawn when the script stops', () => {
+    // pipe and the herb UI read it through the provider; both already handle its
+    // absence, so stopping herbCounter has to leave a null rather than a stale api.
+    expect(getHerbManager()).not.toBeNull();
+
+    client.scope.dispose();
+
+    expect(getHerbManager()).toBeNull();
   });
 
   test('counts herbs from bags', async () => {

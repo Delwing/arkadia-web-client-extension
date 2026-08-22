@@ -2,8 +2,9 @@ import { EventEmitter } from 'events';
 import initHerbCounter from '@client/scripts/herbCounter';
 import { normalizeHerbBagsState } from '@client/types/herbs';
 import { characterStorage } from '@modules/core/storage';
+import { FakeClientBase } from './fakeClient';
 
-export class FakeClient {
+export class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   aliases: { pattern: RegExp; callback: Function }[] = [];
   Triggers = { registerTrigger: jest.fn() } as any;

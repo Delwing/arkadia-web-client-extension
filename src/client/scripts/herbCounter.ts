@@ -670,6 +670,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     };
     client.herbManager = herbManagerApi;
     registerHerbManagerProvider(herbManagerApi);
+    client.scope.onDispose(() => {
+        client.herbManager = undefined;
+        registerHerbManagerProvider(null);
+    });
 
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
