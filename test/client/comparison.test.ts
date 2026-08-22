@@ -130,6 +130,55 @@ describe('compare all alias', () => {
     // So total should be -5 + -5 + -3 = -13
   });
 
+  // The suppression side of this script: a consumed comparison line is deleted
+  // from the output, and only while a /por run is in flight. See
+  // docs/SCRIPT_DEPENDENCIES.md — compareAll is one of the 12 suppressors.
+  describe('suppressing the lines it consumes', () => {
+    const LINE = 'Wydaje ci sie, ze jestes silniejszy, zreczniejszy i lepiej zbudowany niz Goblin.';
+
+    test('a consumed comparison line is removed from the output', () => {
+      jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+        { num: 1, shortcut: '1' } as any,
+      ]);
+      client.sendCommand('/por');
+
+      expect(client.onLine(LINE, '')).toHaveLength(0);
+
+      jest.runAllTimers();
+    });
+
+    test('the same line is left alone when no /por is pending', () => {
+      const parts = client.onLine(LINE, '');
+
+      expect(parts).toHaveLength(1);
+      expect(parts[0].text).toBe(LINE);
+    });
+
+    test('"Masz wrazenie" is accepted as well as "Wydaje ci sie"', () => {
+      jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+        { num: 1, shortcut: '1' } as any,
+      ]);
+      client.sendCommand('/por');
+
+      const line = 'Masz wrazenie, ze jestes silniejszy, zreczniejszy i lepiej zbudowany niz Goblin.';
+      expect(client.onLine(line, '')).toHaveLength(0);
+
+      jest.runAllTimers();
+    });
+
+    test('unrelated output is never touched', () => {
+      jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+        { num: 1, shortcut: '1' } as any,
+      ]);
+      client.sendCommand('/por');
+
+      const parts = client.onLine('Jestes lekko zmeczony.', '');
+
+      expect(parts).toHaveLength(1);
+      jest.runAllTimers();
+    });
+  });
+
   test('handles new single-line format with mixed levels', () => {
     jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
       { num: 2, shortcut: '1' } as any
