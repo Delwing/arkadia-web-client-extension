@@ -178,7 +178,7 @@ export default class ImproveCounter extends BaseCounter {
             }
         });
 
-        window.addEventListener("beforeunload", this.persist);
+        this.client.scope.listen(window, "beforeunload", this.persist);
 
         this.client.on("gmcp.char.state", (state) => {
             if (typeof state.form === "number") {

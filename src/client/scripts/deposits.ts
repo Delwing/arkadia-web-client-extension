@@ -357,7 +357,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         }});
     }
 
-    window.addEventListener("beforeunload", persist);
+    client.scope.listen(window, "beforeunload", persist);
 }
 
 export { deposits };

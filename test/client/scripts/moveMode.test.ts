@@ -3,8 +3,9 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 import { EventEmitter } from 'events';
+import { FakeClientBase } from '../helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   moveMode = 0;
   carriageMode = false;
@@ -22,6 +23,7 @@ class FakeClient {
   Triggers: Triggers;
 
   constructor() {
+    super();
     const self = this;
     this.Map = {
       moveBack: jest.fn(),

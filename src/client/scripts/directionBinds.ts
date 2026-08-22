@@ -96,7 +96,7 @@ export default function initDirectionBinds(client: Client): void {
         directionBindings = buildDirectionBindings(isDirectionMap(directions) ? directions : undefined);
     });
 
-    window.addEventListener('keydown', (event) => {
+    client.scope.listen(window, 'keydown', (event) => {
         if (shouldIgnoreGlobalKeybind()) return;
         const binding = directionBindings.find(b => matchesDirectionBinding(event, b));
         if (!binding) return;

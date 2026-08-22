@@ -40,7 +40,7 @@ export default function initOrderTimer(client: Client) {
             clearInterval(timer);
         }
         update();
-        timer = window.setInterval(update, 100);
+        timer = client.scope.interval(update, 100);
     }
 
     orderPatterns.forEach(pattern => {

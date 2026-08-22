@@ -585,9 +585,21 @@ it. The invariant that the set of ids equals the set of modules in `scripts/` is
 asserted in `test/client/ScriptRegistry.test.ts`, which is where the 148/148 count
 now lives.
 
-What the scope does **not** yet reclaim, and 1b will: the 9 scripts calling bare
-`setInterval`, the 10 calling `window.addEventListener` directly, the 9 module-level
-singletons, and the 4 providers registered in `registerScripts`.
+Stage 1b then closed the routes around it. Anything a script registers outside the
+scope outlives the script, so the three that existed were redirected:
+
+| Was | Now | Sites |
+|---|---|---|
+| `window.setInterval` | `client.scope.interval` | 9 |
+| `window.addEventListener` | `client.scope.listen` | 11 |
+| `eventBus.on` | `client.on` (carries the scope's signal) | 15 |
+
+`test/client/ScriptRegistry.test.ts` asserts no script under `scripts/` reaches for
+`window` or `document` directly, and checks two real scripts — `lamp` stops counting
+down and `moveMode` stops answering the keyboard once stopped.
+
+What the scope still does **not** reclaim: the 9 module-level singletons (stage 4)
+and `herbCounter`'s provider registration, which has no unregister yet.
 
 ### 2. Manifest per script
 
@@ -782,7 +794,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**0**~~ | ~~Move the pure utilities into `scripts/lib/`~~ — **done**: 16 modules moved, 47 files re-imported, no behaviour change | none | none |
 | ~~**0b**~~ | ~~Decouple suppression from dispatch~~ — **done**: `parseLine` folds through every trigger and decides at the end; `return null` is sugar for `markAsDeleted()`; `{skipDeleted: true}` opts a trigger out | **yes** | landed |
 | ~~**1**~~ | ~~Introduce `ScriptContext`~~ — **done**, as `ScriptScope` + `ScriptRegistry`. Scripts still take a plain `Client`; `registerScripts` hands each one a scoped *view* of the client that stamps an `owner` on its triggers and aliases. `Triggers.removeByOwner` / `AliasList.removeByOwner` sweep them; `client.on` and `registerCommandHook` are tracked too | none | landed |
-| **1b** | Move the 9 `setInterval` and 10 `window.addEventListener` scripts onto `client.scope.interval` / `client.scope.listen`; unregister the 9 module singletons and 4 providers on dispose | none | low |
+| ~~**1b**~~ | ~~Finish teardown~~ — **done**: the 9 `setInterval` and 11 `window.addEventListener` sites now go through `client.scope`, and the 15 direct `eventBus.on` calls through `client.on`, so they carry the scope's `AbortSignal`. A test asserts no script reaches for `window`/`document` directly | none | landed |
 | **2** | Add `manifest` + registry; keep `registerScripts`'s written order, honour the two `after` edges via a stable topo-sort; **assert the result equals today's order** and land it as a provable no-op | none | low |
 | **3** | Replace the 4 shared `client` fields and formalise the 8 event edges as declared `provides`/`requires` | none | low |
 | **4** | Convert the 9 module singletons to registry-resolved services | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |

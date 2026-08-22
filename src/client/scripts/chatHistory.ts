@@ -151,7 +151,7 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     });
 
     // Persist on page unload
-    window.addEventListener("beforeunload", persistHistory);
+    client.scope.listen(window, "beforeunload", persistHistory);
 
     function handleChatMessage(buffer: AnsiAwareBuffer) {
         if (!(buffer instanceof AnsiAwareBuffer) || !buffer.text.trim()) return;

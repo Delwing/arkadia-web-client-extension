@@ -79,7 +79,7 @@ export default function initExternalScripts(client: Client) {
     loadStoredPluginsFromDB();
 
     // Listen for storage events from other windows (like the editor)
-    window.addEventListener('storage', (e) => {
+    client.scope.listen(window, 'storage', (e) => {
         if (e.key === 'stored_scripts_updated') {
             loadStoredPluginsFromDB();
         }

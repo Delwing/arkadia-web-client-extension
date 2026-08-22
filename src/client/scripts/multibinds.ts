@@ -321,7 +321,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     subscribeMultibinds(applyStored);
 
-    window.addEventListener('keydown', (ev) => {
+    client.scope.listen(window, 'keydown', (ev) => {
         if (ev.repeat) {
             return;
         }
@@ -338,7 +338,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     });
 
     // Handle room bind and drinkable binds
-    window.addEventListener('keydown', (ev) => {
+    client.scope.listen(window, 'keydown', (ev) => {
         if (ev.repeat) {
             return;
         }

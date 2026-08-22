@@ -165,7 +165,7 @@ export default function initCechyHistory(
             eventBus.emit("cechy.history.updated");
         }),
         characterStorage.onCharacterChange(() => load()),
-        eventBus.on("cechy.read", (snapshot: CechySnapshot) => {
+        client.on("cechy.read", (snapshot: CechySnapshot) => {
             // Every trait is temporarily lowered, so nothing in this read-out is real.
             if (snapshot.weakened) return;
             // Without the option a buffed trait looks exactly like a real gain; the
@@ -173,7 +173,7 @@ export default function initCechyHistory(
             if (!modifiersEnabled()) return;
             record(snapshot);
         }),
-        eventBus.on("cechy.enableModifiers", () => {
+        client.on("cechy.enableModifiers", () => {
             client.sendGMCP("char.options", { state_modifiers: 1 });
             // sendGMCP does not update the local mirror, so keep it in sync.
             setGmcp("char.options.state_modifiers", 1);

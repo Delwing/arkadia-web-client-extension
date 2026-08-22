@@ -280,16 +280,16 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
     });
 
     // Listen for popup commands
-    eventBus.on("fishing.cast", (payload: { bait: BaitType }) => {
+    client.on("fishing.cast", (payload: { bait: BaitType }) => {
         const bait = payload?.bait || 'kulke';
         client.sendCommand(`zawies ${bait} na wedce;zarzuc wedke`);
     });
 
-    eventBus.on("fishing.pull", () => {
+    client.on("fishing.pull", () => {
         client.sendCommand("wyciagnij wedke");
     });
 
-    eventBus.on("fishing.strike", () => {
+    client.on("fishing.strike", () => {
         client.sendCommand("zatnij rybe na wedce");
     });
 

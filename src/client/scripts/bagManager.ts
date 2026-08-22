@@ -294,7 +294,7 @@ export default function initBagManager(
     characterStorage.onChange(STORAGE_KEY, (newValue) => {
         if (newValue) Object.assign(containerConfig, newValue);
     });
-    window.addEventListener("beforeunload", () => saveConfig(client));
+    client.scope.listen(window, "beforeunload", () => saveConfig(client));
 
     client.Triggers.registerTrigger(
         "Nie masz wystarczajacej ilosci pieniedzy, zeby zaplacic.",

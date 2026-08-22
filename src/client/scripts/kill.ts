@@ -569,9 +569,9 @@ class KillCounter extends BaseCounter {
             this.loadTeamKills(isTeamMemberKills(newValue) ? newValue : {});
         });
 
-        window.addEventListener("beforeunload", this.persistTotals);
-        window.addEventListener("beforeunload", this.persistSessions);
-        window.addEventListener("beforeunload", this.persistTeamKills);
+        this.client.scope.listen(window, "beforeunload", this.persistTotals);
+        this.client.scope.listen(window, "beforeunload", this.persistSessions);
+        this.client.scope.listen(window, "beforeunload", this.persistTeamKills);
 
         const myKillRegex = /^[ >]*(Zabil(?<variant>es|as) (?<name>[A-Za-z ()!,]+))\.$/;
         const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?<variant>a?) (?<name>[a-zA-Z (),!]+)\.$/;

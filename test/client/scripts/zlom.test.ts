@@ -19,6 +19,7 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 async function resetStoreModule(): Promise<void> {
     await __resetZlomStoreForTests();
@@ -34,7 +35,7 @@ class FakeMap {
   currentRoom: { id: number } | null = { id: 42 };
 }
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   Triggers = new Triggers(({} as unknown) as any);
   Map = new FakeMap();
   print = jest.fn();

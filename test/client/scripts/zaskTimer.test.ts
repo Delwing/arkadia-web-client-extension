@@ -1,8 +1,9 @@
 import initZaskTimer from "@client/scripts/zaskTimer";
 import { EventEmitter } from 'events';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 describe("zask timer", () => {
-  class FakeClient {
+  class FakeClient extends FakeClientBase {
     private emitter = new EventEmitter();
     moveMode = 0;
     sendEvent = jest.fn((type: string, detail?: any) => {

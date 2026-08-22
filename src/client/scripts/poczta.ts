@@ -269,7 +269,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         },
     });
 
-    eventBus.on("poczta.fetch", (payload: { type: MailType }) => {
+    client.on("poczta.fetch", (payload: { type: MailType }) => {
         if (payload?.type) {
             currentMailType = payload.type;
             currentMails = [];
@@ -280,7 +280,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         }
     });
 
-    eventBus.on("poczta.read", (payload: { number: number }) => {
+    client.on("poczta.read", (payload: { number: number }) => {
         if (payload?.number) {
             isReadingLetter = true;
             currentLetter = null;

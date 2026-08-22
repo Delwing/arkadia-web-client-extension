@@ -45,7 +45,7 @@ export default function initLamp(client: Client) {
     function startTimer() {
         stopTimer()
         seconds = DEFAULT_TIME
-        timer = window.setInterval(processCounter, 1000)
+        timer = client.scope.interval(processCounter, 1000)
         processCounter()
     }
 

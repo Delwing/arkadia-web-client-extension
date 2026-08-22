@@ -5,6 +5,7 @@ import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { gmcp, setGmcp } from "@client/gmcp";
+import { FakeClientBase } from '../helpers/fakeClient';
 
 /** The global postepy counter is a singleton owned by another script; only its
  *  lifetime read-out matters here. */
@@ -16,7 +17,7 @@ vi.mock("@client/scripts/improveCounter", () => ({
     getLifetimeData: () => lifetime.entries,
 }));
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
     Triggers = new Triggers({} as unknown as any);
     println = jest.fn();
     print = jest.fn();

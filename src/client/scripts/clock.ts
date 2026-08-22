@@ -209,8 +209,8 @@ class ClockDisplay {
 
     private snapshots: Partial<Record<Domain, ClockSnapshot>> = {};
 
-    constructor() {
-        eventBus.on("gmcp.room.info", (payload) => {
+    constructor(private readonly client: Client) {
+        this.client.on("gmcp.room.info", (payload) => {
             if (payload?.map?.domain) {
                 if (payload.map.domain === "Imperium") {
                     this.setActiveDomain("Empire");
@@ -332,7 +332,7 @@ export class ArkadiaTime {
         });
         this.triggers.push(guessTrigger);
 
-        eventBus.on("gmcp.room.time", (payload) => {
+        this.client.on("gmcp.room.time", (payload) => {
             if (this.display.activeDomain !== this.domain) {
                 return;
             }
@@ -409,7 +409,7 @@ export class ArkadiaTime {
         if (this.timers.length > 0) {
             return;
         }
-        this.timers.push(window.setInterval(() => this.update(), 500));
+        this.timers.push(this.client.scope.interval(() => this.update(), 500));
     }
 
     private setup(startTime: number, startHour: number, startMinutes: number, precision: number, startDay: number): void {
@@ -736,7 +736,7 @@ export class ClockManager {
     private ishtarClock: ArkadiaTime;
 
     constructor(client: Client) {
-        this.display = new ClockDisplay();
+        this.display = new ClockDisplay(client);
         this.empireClock = new ArkadiaTime("Empire", client, this.display);
         this.ishtarClock = new ArkadiaTime("Ishtar", client, this.display);
     }
@@ -818,7 +818,7 @@ export function initClock(client: Client): ClockManager {
         }
     })
 
-    eventBus.on("clock.setTime", (payload: { domain: "Empire" | "Ishtar"; hour: number; minutes?: number; dayOfYear?: number }) => {
+    client.on("clock.setTime", (payload: { domain: "Empire" | "Ishtar"; hour: number; minutes?: number; dayOfYear?: number }) => {
         manager.setTime(payload.domain, payload.hour, payload.minutes, payload.dayOfYear);
     });
 

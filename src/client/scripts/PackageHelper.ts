@@ -398,7 +398,7 @@ export default function initPackageHelper(client: Client) {
             }
         }
         update()
-        timer = window.setInterval(update, 1000)
+        timer = client.scope.interval(update, 1000)
     }
 
     function stopTimer() {

@@ -45,7 +45,7 @@ export default function initCoverTimer(client: Client) {
             clearInterval(timer);
         }
         update();
-        timer = window.setInterval(update, 100);
+        timer = client.scope.interval(update, 100);
     }
 
     [...successPatterns, ...failurePatterns].forEach(pattern => {

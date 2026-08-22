@@ -25,17 +25,20 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
 
     const boxContainer = document.getElementById('compass-rose-box') as HTMLDivElement | null;
 
-    // Click handler for directions and special exits (event delegation)
-    boxContainer?.addEventListener('click', (e) => {
-        const target = (e.target as HTMLElement).closest<HTMLElement>('.cr-clickable');
-        if (!target) return;
-        const dir = target.dataset.dir;
-        if (dir) {
-            client.sendCommand(dir);
-        } else if (target.dataset.exit) {
-            client.sendCommand(target.dataset.exit);
-        }
-    });
+    // Click handler for directions and special exits (event delegation). The box
+    // outlives the script, so the listener has to go when the script does.
+    if (boxContainer) {
+        client.scope.listen(boxContainer, 'click', (e) => {
+            const target = (e.target as HTMLElement).closest<HTMLElement>('.cr-clickable');
+            if (!target) return;
+            const dir = target.dataset.dir;
+            if (dir) {
+                client.sendCommand(dir);
+            } else if (target.dataset.exit) {
+                client.sendCommand(target.dataset.exit);
+            }
+        });
+    }
 
     // Compute which exits lead back to the previous location
     client.on("enterLocation", () => {

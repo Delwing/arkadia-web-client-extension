@@ -2,12 +2,13 @@ import initLamp from '@client/scripts/lamp';
 import Triggers from '@client/Triggers';
 import { takeFromBag } from '@client/scripts/bagManager';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 vi.mock('@client/scripts/bagManager', () => ({
   takeFromBag: jest.fn(),
 }));
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   Triggers = new Triggers(({} as unknown) as any);
   FunctionalBind = { set: jest.fn(), clear: jest.fn(), newMessage: jest.fn() };
   println = jest.fn();

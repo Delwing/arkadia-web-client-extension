@@ -4,6 +4,12 @@ import type {AliasEntry, AliasList} from "./AliasList";
 import type {CommandHookCallback} from "./CommandProcessor";
 
 /**
+ * Opaque timer handle. Declared as `number` — the browser's shape, and what the
+ * scripts already store — so a scope timer is a drop-in for `window.setInterval`.
+ */
+export type TimerHandle = number;
+
+/**
  * Everything one script registered, tracked so it can all be undone.
  *
  * A script is only toggleable if turning it off leaves nothing behind. Triggers
@@ -24,16 +30,28 @@ export interface ScriptScope {
     readonly disposed: boolean;
 
     /** setInterval, cleared on dispose. */
-    interval(handler: () => void, ms: number): ReturnType<typeof setInterval>;
+    interval(handler: () => void, ms: number): TimerHandle;
 
     /** setTimeout, cleared on dispose if it has not fired yet. */
-    timeout(handler: () => void, ms: number): ReturnType<typeof setTimeout>;
+    timeout(handler: () => void, ms: number): TimerHandle;
 
     /**
      * addEventListener, removed on dispose. The scope supplies the `signal`, so
      * one passed in `options` is ignored; `once` and `capture` work as usual.
      * Returns a remove function for callers that need to unlisten earlier.
      */
+    listen<K extends keyof WindowEventMap>(
+        target: Window,
+        type: K,
+        handler: (event: WindowEventMap[K]) => void,
+        options?: AddEventListenerOptions | boolean,
+    ): () => void;
+    listen<K extends keyof HTMLElementEventMap>(
+        target: HTMLElement,
+        type: K,
+        handler: (event: HTMLElementEventMap[K]) => void,
+        options?: AddEventListenerOptions | boolean,
+    ): () => void;
     listen(
         target: EventTarget,
         type: string,
@@ -50,8 +68,8 @@ export interface ScriptScope {
 
 class Scope implements ScriptScope {
     private readonly controller = new AbortController();
-    private readonly intervals = new Set<ReturnType<typeof setInterval>>();
-    private readonly timeouts = new Set<ReturnType<typeof setTimeout>>();
+    private readonly intervals = new Set<TimerHandle>();
+    private readonly timeouts = new Set<TimerHandle>();
     private readonly teardowns: (() => void)[] = [];
     private isDisposed = false;
 
@@ -65,8 +83,8 @@ class Scope implements ScriptScope {
         return this.isDisposed;
     }
 
-    interval(handler: () => void, ms: number) {
-        const handle = setInterval(handler, ms);
+    interval(handler: () => void, ms: number): TimerHandle {
+        const handle = setInterval(handler, ms) as unknown as TimerHandle;
         if (this.isDisposed) {
             clearInterval(handle);
         } else {
@@ -75,11 +93,11 @@ class Scope implements ScriptScope {
         return handle;
     }
 
-    timeout(handler: () => void, ms: number) {
+    timeout(handler: () => void, ms: number): TimerHandle {
         const handle = setTimeout(() => {
             this.timeouts.delete(handle);
             handler();
-        }, ms);
+        }, ms) as unknown as TimerHandle;
         if (this.isDisposed) {
             clearTimeout(handle);
         } else {

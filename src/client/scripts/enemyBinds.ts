@@ -265,7 +265,7 @@ export default function initEnemyBinds(
     });
 
     // Set up keyboard event listeners for enemy binds
-    window.addEventListener('keydown', (ev) => {
+    client.scope.listen(window, 'keydown', (ev) => {
         for (let index = 0; index < NUM_SLOTS; index++) {
             const bind = enemyBindKeys[index];
 
@@ -281,7 +281,7 @@ export default function initEnemyBinds(
     });
 
     // Enemy block binds for zablokuj
-    window.addEventListener('keydown', (ev) => {
+    client.scope.listen(window, 'keydown', (ev) => {
         for (let index = 0; index < NUM_SLOTS; index++) {
             const bind = enemyBlockBindKeys[index];
 

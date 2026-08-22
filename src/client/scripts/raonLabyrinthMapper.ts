@@ -969,7 +969,7 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
     });
 
     // Track sarcophagus cleared when all enemies killed
-    eventBus.on('allEnemiesKilled', () => {
+    client.on('allEnemiesKilled', () => {
         if (!isActive || !currentFingerprint) return;
         const room = rooms.get(currentFingerprint);
         if (room && room.roomType === 'sarcophagus') {

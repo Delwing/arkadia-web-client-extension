@@ -5,8 +5,9 @@ import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
 import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { FakeClientBase } from '../helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   TeamManager = { isInTeam: jest.fn() };

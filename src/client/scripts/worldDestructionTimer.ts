@@ -28,7 +28,7 @@ export default function initWorldDestructionTimer(client: Client) {
             clearInterval(timer);
         }
         update();
-        timer = window.setInterval(update, 100);
+        timer = client.scope.interval(update, 100);
     }
 
     // Pattern: "Pamietaj, juz tylko X minut do momentu zniszczenia swiata."

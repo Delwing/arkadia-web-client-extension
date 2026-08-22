@@ -372,7 +372,7 @@ export default function initZlom(
     ensureZlomLoaded().then(() => reinstallHighlights(client));
 
     subscribeZlom(() => reinstallHighlights(client));
-    eventBus.on('zlom.snapshotReplaced', () => reinstallHighlights(client));
+    client.on('zlom.snapshotReplaced', () => reinstallHighlights(client));
 
     let lastSilverColor = resolveSilverColor();
     characterStorage.onChange('settings', () => {

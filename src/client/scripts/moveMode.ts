@@ -72,7 +72,7 @@ export default function initMoveMode(client: Client) {
         }
     }
 
-    window.addEventListener('keydown', (ev) => {
+    client.scope.listen(window, 'keydown', (ev) => {
         if (bindMatches(ev, client.moveModeBind)) {
             toggle(true);
             ev.preventDefault();

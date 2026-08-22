@@ -47,7 +47,7 @@ export default function initZaskTimer(client: Client) {
         active = true;
         clearTimer();
         updateTimer();
-        timer = window.setInterval(updateTimer, 1000);
+        timer = client.scope.interval(updateTimer, 1000);
     }
 
     client.on('gmcp.room.info', () => {

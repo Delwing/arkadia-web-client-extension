@@ -400,7 +400,7 @@ export default function initObjectAliases(
         // The demo popup fakes GMCP straight onto the event bus, but the gold
         // "next target" mark comes from the real attack queue in TeamManager —
         // which lives client-side. Let the popup drive it through this event.
-        eventBus.on("objectListDemo.setQueue", ({ ids }) => {
+        client.on("objectListDemo.setQueue", ({ ids }) => {
             client.TeamManager.clearEnemyQueue();
             for (const id of ids) {
                 client.TeamManager.addEnemyToQueue(id);

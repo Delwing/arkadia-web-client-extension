@@ -1,5 +1,6 @@
 import Client from "../Client";
 import { isType } from "../Triggers";
+import type { TimerHandle } from "../ScriptScope";
 import type {
     TransportTimerPayload,
     TransportRoutePayload,
@@ -148,7 +149,7 @@ function segKey(def: Def, idx: number): string {
 class Tracker {
     private state: State = { kind: 'idle' };
     private exitTimeout?: ReturnType<typeof setTimeout>;
-    private legTimer?: ReturnType<typeof setInterval>;
+    private legTimer?: TimerHandle;
     private locationId: number | null = null;
     private prevLocationId: number | null = null;
     private durationOverrides = new Map<string, number>();
@@ -605,7 +606,7 @@ class Tracker {
         this.clearLegTimer();
         const stop = def.stops[stopIdx];
         if (typeof stop.time !== 'number' || Number.isNaN(stop.time)) return;
-        this.legTimer = setInterval(() => {
+        this.legTimer = this.client.scope.interval(() => {
             if (this.state.kind === 'on_board' && this.state.leg?.stopIdx === stopIdx) {
                 this.updateTimer(def, stopIdx, startedAt);
             } else {

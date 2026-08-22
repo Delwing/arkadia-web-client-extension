@@ -10,8 +10,9 @@ import { EventEmitter } from 'events';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from './helpers/testSettings';
+import { FakeClientBase } from './helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   Triggers = new Triggers(({} as unknown) as any);
   Map = { currentRoom: { id: 1, name: 'Bank', userData: { bind: '/depozyt' } } } as any;

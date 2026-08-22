@@ -1,8 +1,11 @@
 import initCombatTimer from "@client/scripts/combatTimer";
 import initCombatState from "@client/scripts/combatState";
+import { createRootScope } from '@client/ScriptScope';
 
 describe("combat timer", () => {
   class FakeClient extends EventTarget {
+    scope = createRootScope('test');
+
     sendEvent = jest.fn((type: string, detail?: any) => {
       super.dispatchEvent(new CustomEvent(type, { detail }));
     });

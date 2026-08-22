@@ -360,7 +360,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
         },
     });
 
-    eventBus.on("contracts.remove", (payload: { id: string }) => {
+    client.on("contracts.remove", (payload: { id: string }) => {
         if (payload?.id) {
             removeContract(payload.id);
         }

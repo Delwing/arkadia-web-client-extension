@@ -1,8 +1,10 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Client from '@client/Client';
 import { ScriptRegistry } from '@client/ScriptRegistry';
+import initLamp from '@client/scripts/lamp';
+import initMoveMode from '@client/scripts/moveMode';
 
 function createClient(): Client {
     return new Client({
@@ -134,5 +136,65 @@ describe('registerScripts covers exactly the scripts directory', () => {
     test('the count is what the docs claim', () => {
         expect(registered).toHaveLength(modules.length);
         expect(modules.length).toBeGreaterThan(140);
+    });
+});
+
+describe('stopping a real script takes its timers and listeners with it', () => {
+    let host: Client;
+    let registry: ScriptRegistry;
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        localStorage.clear();
+        host = createClient();
+        registry = new ScriptRegistry(host);
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    test('lamp stops counting down', () => {
+        const ticks: unknown[] = [];
+        host.on('lampTimer', seconds => ticks.push(seconds));
+        registry.start('lamp', initLamp);
+        host.onLine('Zapalasz lampe.', 'text');
+
+        vi.advanceTimersByTime(3000);
+        const counted = ticks.length;
+        expect(counted, 'the countdown is running').toBeGreaterThan(1);
+
+        registry.stop('lamp');
+        vi.advanceTimersByTime(5000);
+
+        expect(ticks).toHaveLength(counted);
+    });
+
+    test('moveMode stops answering the keyboard', () => {
+        registry.start('moveMode', initMoveMode);
+        host.moveMode = 0;
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Backquote' }));
+        expect(host.moveMode, 'the bind cycles the mode').not.toBe(0);
+
+        const settled = host.moveMode;
+        registry.stop('moveMode');
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Backquote' }));
+
+        expect(host.moveMode).toBe(settled);
+    });
+});
+
+describe('scripts do not register against window behind the scope', () => {
+    // Anything registered straight on `window` outlives the script that made it,
+    // so a toggle would leave it running. Caught here rather than at review time.
+    const sources = readdirSync(scriptsDir, { withFileTypes: true })
+        .filter(entry => entry.isFile() && entry.name.endsWith('.ts'))
+        .map(entry => [entry.name, readFileSync(resolve(scriptsDir, entry.name), 'utf8')] as const);
+
+    test.each([
+        ['window.setInterval', /\bwindow\.setInterval\s*\(/],
+        ['window.addEventListener', /\bwindow\.addEventListener\s*\(/],
+        ['document.addEventListener', /\bdocument\.addEventListener\s*\(/],
+    ])('no script calls %s directly', (_name, pattern) => {
+        expect(sources.filter(([, source]) => pattern.test(source)).map(([name]) => name)).toEqual([]);
     });
 });

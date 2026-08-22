@@ -2,6 +2,7 @@ import { ArkadiaTime } from '@client/scripts/clock';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import eventBus from '@modules/core/eventBus';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -18,7 +19,7 @@ const localStorageMock = (() => {
 })();
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
     Triggers = new Triggers(({} as unknown) as any);
     println = jest.fn();
     sendCommand = jest.fn();

@@ -47,7 +47,7 @@ export default function initCombatTimer(client: Client) {
         timerStart = Date.now();
         lastEmitted = INITIAL_SECONDS;
         emit(INITIAL_SECONDS);
-        timer = window.setInterval(updateTimer, 250);
+        timer = client.scope.interval(updateTimer, 250);
     }
 
     function setCombatState(inCombat: boolean) {
