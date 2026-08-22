@@ -3,7 +3,7 @@ import { Form, Badge, Button } from "react-bootstrap";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
-import { subscribeToMagicTypes, subscribeToMagicKeys } from "@client/scripts/magicsLoader";
+import { subscribeToMagicTypes, subscribeToMagicKeys } from "@client/scripts/lib/magicsLoader";
 
 interface MagikiSettingsProps {
     registerSave: (fn: (settings: any) => void) => void;

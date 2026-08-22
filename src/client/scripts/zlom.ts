@@ -2,7 +2,7 @@ import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
-import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
+import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./lib/evaluationConstants";
 import eventBus from "@modules/core/eventBus";
 import {
     ensureZlomLoaded,

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { containerAction } from "./bagManager";
-import { polishWordToNumber } from "./polishNumberConverter";
+import { polishWordToNumber } from "./lib/polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 

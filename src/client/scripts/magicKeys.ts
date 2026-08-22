@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorTokenInLine} from "@modules/core/Colors";
-import loadMagicKeys from "./magicKeyLoader";
+import loadMagicKeys from "./lib/magicKeyLoader";
 import { getMagicKeysColorFormat } from "./prettyContainers";
 
 export default async function initMagicKeys(client: Client) {

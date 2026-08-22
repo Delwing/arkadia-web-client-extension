@@ -4,8 +4,8 @@ import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {getKillData} from "./kill";
-import {BaseCounter} from "./BaseCounter";
-import {createPad, createHeader} from "./counterTableUtils";
+import {BaseCounter} from "./lib/BaseCounter";
+import {createPad, createHeader} from "./lib/counterTableUtils";
 
 const HEADER_COLOR = createColorFormat("#90ee90");
 const SECTION_COLOR = createColorFormat("#ffa500");

@@ -1,7 +1,7 @@
 import Client from "../Client";
-import initShop, { ShopOptions, formatItem } from "./shop";
-import loadHerbs from "./herbsLoader";
-import type { HerbsData } from "./herbsLoader";
+import initShop, { ShopOptions, formatItem } from "./lib/shop";
+import loadHerbs from "./lib/herbsLoader";
+import type { HerbsData } from "./lib/herbsLoader";
 import { createColorFormat } from "@modules/core/Colors";
 import { getUiPort } from "@client/ports";
 

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {takeFromBag} from "./bagManager";
-import {OTHER_OWNER_WORDS_ALT} from "./otherOwner";
+import {OTHER_OWNER_WORDS_ALT} from "./lib/otherOwner";
 
 // "... lampa wypala sie i gasnie." — your own lamp running out. The same
 // room-wide "wypala sie i gasnie." phrasing is used by other items (a pipe) and

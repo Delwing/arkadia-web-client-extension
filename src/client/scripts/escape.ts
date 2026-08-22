@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
-import {printArrow} from "./printArrow";
+import {printArrow} from "./lib/printArrow";
 
 const COLOR = createColorFormat('#6a5acd');
 const PANIC_COLOR = createColorFormat('#ff8c00');

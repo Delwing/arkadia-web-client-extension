@@ -4,7 +4,7 @@ import { characterStorage } from "@modules/core/storage";
 import type { HerbBagState, HerbBagsState, HerbMoveOptions } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
-import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
+import loadHerbs, { type HerbsData } from "@client/scripts/lib/herbsLoader";
 import eventBus from "@modules/core/eventBus";
 import { hideContextMenu } from "@web/contextMenu";
 import { getHerbManager } from "@modules/core/herbManagerProvider";

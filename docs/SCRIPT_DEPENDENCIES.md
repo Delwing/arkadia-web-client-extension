@@ -58,8 +58,15 @@ that happen to live in `scripts/`:
 | `transports/definitions` + `ships/*.json`, `other/*.json` | mapAliases, transportTracker |
 | `follow_special_exits_patterns.json`, `weapon_on/off_patterns.json`, `gags_lua.json` | data only |
 
-Moving these to `scripts/lib/` removes ~30 of the 68 edges from the module graph
-without touching behaviour. Do this first; it is free.
+**Done.** 16 modules now live in `src/client/scripts/lib/`, leaving 146 feature
+scripts in `scripts/`. The dividing line is mechanical and checkable: **anything in
+`scripts/` is called from `registerScripts()`; anything in `scripts/lib/` is not.**
+That is the same line a toggle UI would draw, so it is worth keeping true.
+
+Two unregistered modules deliberately stayed put, because they are features wired
+straight into `Client` rather than shared code: `allyProtection` (`new`'d as
+`Client.AllyProtection`) and `functionalBind` (`Client.FunctionalBind`). Both are
+candidates for `src/client/` proper, not for `lib/`.
 
 ### 1b. Real feature dependencies
 
@@ -706,7 +713,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 
 | Stage | Work | Behaviour change | Risk |
 |---|---|---|---|
-| **0** | Move the ~15 pure utilities into `scripts/lib/` | none | none |
+| ~~**0**~~ | ~~Move the pure utilities into `scripts/lib/`~~ — **done**: 16 modules moved, 47 files re-imported, no behaviour change | none | none |
 | **0b** | **Decouple suppression from dispatch** (see *Should suppression stop dispatch?*): `parseLine` stops early-returning, `deleted` becomes a pure render flag, 33 `return null` sites migrate to `markAsDeleted()` | **yes** — 34 scripts start seeing gagged combat lines | medium; independently landable and removes constraint (1) on its own |
 | **1** | Introduce `ScriptContext`, normalise the 93 ad-hoc tags to the manifest id, tag the 12 untagged scripts, pass `ctx` instead of `client` from `registerScripts` | none | low, mechanical, 151 call sites |
 | **1b** | Give `AliasList` an owner field + `removeByOwner`; route `client.on` through `ctx.signal`; wrap `setInterval` and DOM listeners in `ctx` | none | low |

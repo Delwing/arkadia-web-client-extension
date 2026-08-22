@@ -80,14 +80,14 @@ Places where N near-identical implementations should descend from one base. Rank
 split, `characterStorage` persistence, reset, formatted table output. A `BaseCounter`
 abstract class collapses this and standardizes the self-persist guard logic each currently
 hand-rolls differently.
-→ `src/client/scripts/BaseCounter.ts` now exists and covers `kill`, `improveCounter` and
+→ `src/client/scripts/lib/BaseCounter.ts` now exists and covers `kill`, `improveCounter` and
 `deliveryStats`. **`herbCounter`, `whoCount` and `przybywajaCount` have not been migrated.**
 
 **2. Table formatting → `TableFormatter`** — *partly done*
 `createPad()` and `createHeader()` were defined **identically in at least 3 files**
 (`kill.ts`, `improveCounter.ts`, `deliveryStats.ts`), and inlined again in `herbCounter.ts`.
 ~80+ lines of byte-for-byte duplication.
-→ Extracted to `src/client/scripts/counterTableUtils.ts` (with ANSI-segment-aware
+→ Extracted to `src/client/scripts/lib/counterTableUtils.ts` (with ANSI-segment-aware
 truncation) for those three. **`herbCounter.ts` still inlines its own.**
 
 **3. Popup content patterns → shared components**

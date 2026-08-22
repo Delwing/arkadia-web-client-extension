@@ -116,19 +116,19 @@ vi.mock('@client/scripts/bagManager', () => ({
   getContainerForms: jest.fn(),
 }));
 
-vi.mock('@client/scripts/magicsLoader', () => ({
+vi.mock('@client/scripts/lib/magicsLoader', () => ({
   __esModule: true,
   default: jest.fn(),
   loadMagicsRaw: jest.fn(),
 }));
 
-vi.mock('@client/scripts/magicKeyLoader', () => ({
+vi.mock('@client/scripts/lib/magicKeyLoader', () => ({
   __esModule: true,
   default: jest.fn(),
   loadMagicKeysRaw: jest.fn(),
 }));
 
-vi.mock('@client/scripts/herbsLoader', () => ({
+vi.mock('@client/scripts/lib/herbsLoader', () => ({
   __esModule: true,
   default: jest.fn(),
 }));

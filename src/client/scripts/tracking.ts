@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorTokenInLine, createColorFormat} from "@modules/core/Colors";
-import {printArrow} from "./printArrow";
+import {printArrow} from "./lib/printArrow";
 import {FormatStateSnapshot} from "@client/ansi/FormatState";
 
 const SURE_WITH_TRACE_COLOR = createColorFormat('#00ff00'); // green

@@ -1,5 +1,5 @@
 import Client from "../Client";
-import loadMagics from "./magicsLoader";
+import loadMagics from "./lib/magicsLoader";
 
 // Pre-commands map: item -> command to run before wloz
 const preCommands: Record<string, string> = {

@@ -55,9 +55,9 @@ import {
   getTransformDefinitions
 } from "./scripts/prettyContainers";
 import {containerAction, getContainer, getContainerForms} from "./scripts/bagManager";
-import loadMagics, { loadMagicsRaw } from "./scripts/magicsLoader";
-import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/magicKeyLoader";
-import loadHerbs from "./scripts/herbsLoader";
+import loadMagics, { loadMagicsRaw } from "./scripts/lib/magicsLoader";
+import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/lib/magicKeyLoader";
+import loadHerbs from "./scripts/lib/herbsLoader";
 import {
   type EntryContent,
   type EntryContext,
@@ -72,7 +72,7 @@ import {
   type EnemyBindLocationObject,
   type EnemyBindResolver,
   enemyBindResolvers
-} from "@client/scripts/enemyBindResolvers";
+} from "@client/scripts/lib/enemyBindResolvers";
 import {
   type ButtonMacroClickContext,
   getButtonMacroById,

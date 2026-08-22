@@ -1,5 +1,5 @@
-import { buildHerbTextBuffer, buildHerbTextSummary } from '@client/scripts/herbTextBuilder';
-import type { HerbsData } from '@client/scripts/herbsLoader';
+import { buildHerbTextBuffer, buildHerbTextSummary } from '@client/scripts/lib/herbTextBuilder';
+import type { HerbsData } from '@client/scripts/lib/herbsLoader';
 import type { HerbBagsState } from '@client/types/herbs';
 
 const GLYPH_SELECTOR = '.herb-smoke-glyph';

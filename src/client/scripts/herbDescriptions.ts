@@ -1,5 +1,5 @@
 import Client from "../Client";
-import loadHerbs from "./herbsLoader";
+import loadHerbs from "./lib/herbsLoader";
 import {createColorFormat} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import { characterStorage } from "@modules/core/storage";

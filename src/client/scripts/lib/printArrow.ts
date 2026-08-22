@@ -1,4 +1,4 @@
-import Client from "../Client";
+import Client from "../../Client";
 import {colorString} from "@modules/core/Colors";
 import {FormatStateSnapshot} from "@client/ansi/FormatState";
 

@@ -19,7 +19,7 @@ vi.mock('@web/options/locationNotesStorage', () => ({
     importNotes: jest.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@client/scripts/killLifetimeStorage.ts', () => ({
+vi.mock('@client/scripts/lib/killLifetimeStorage.ts', () => ({
     exportAllKillRecords: jest.fn().mockResolvedValue([]),
     importAllKillRecords: jest.fn().mockResolvedValue(undefined),
 }));

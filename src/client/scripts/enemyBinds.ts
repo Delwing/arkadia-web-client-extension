@@ -7,7 +7,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage, characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
-import { enemyBindResolvers } from './enemyBindResolvers';
+import { enemyBindResolvers } from './lib/enemyBindResolvers';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';

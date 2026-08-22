@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
-import {polishWordToNumber} from "./polishNumberConverter";
+import {polishWordToNumber} from "./lib/polishNumberConverter";
 
 export default function initPrzybywajaCount(client: Client) {
     const HIGHLIGHT = createColorFormat('#ccb3ff');

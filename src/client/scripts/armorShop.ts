@@ -1,5 +1,5 @@
 import Client from "../Client";
-import initShop, {formatItem, ShopOptions} from "./shop";
+import initShop, {formatItem, ShopOptions} from "./lib/shop";
 
 export default function initArmorShop(client: Client) {
     const options: ShopOptions = {

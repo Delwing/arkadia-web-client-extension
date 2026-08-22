@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
-import {EFFECTIVENESS} from "./evaluationConstants";
+import {EFFECTIVENESS} from "./lib/evaluationConstants";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 
 const LABEL_COLOR = createColorFormat("#446fb1");

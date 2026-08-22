@@ -1,5 +1,5 @@
-vi.mock('@client/scripts/magicKeyLoader', () => ({ default: jest.fn().mockResolvedValue([]) }));
-vi.mock('@client/scripts/magicsLoader', () => ({ default: jest.fn().mockResolvedValue([]) }));
+vi.mock('@client/scripts/lib/magicKeyLoader', () => ({ default: jest.fn().mockResolvedValue([]) }));
+vi.mock('@client/scripts/lib/magicsLoader', () => ({ default: jest.fn().mockResolvedValue([]) }));
 
 import initZaznaczaj from '@client/scripts/zaznaczaj';
 import Client from '@client/Client';

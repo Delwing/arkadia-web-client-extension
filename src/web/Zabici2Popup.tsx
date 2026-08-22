@@ -11,7 +11,7 @@ import {
 import {
     getAllRecords,
     getDistinctDates,
-} from '../client/scripts/killLifetimeStorage';
+} from '../client/scripts/lib/killLifetimeStorage';
 import {characterStorage} from '@modules/core/storage';
 
 const POPUP_ID = 'popup:zabici2';

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {colorTokenInLine} from "@modules/core/Colors";
-import loadMagics from "./magicsLoader";
+import loadMagics from "./lib/magicsLoader";
 import { getMagicsColorFormat } from "./prettyContainers";
 
 export default async function initMagics(client: Client) {

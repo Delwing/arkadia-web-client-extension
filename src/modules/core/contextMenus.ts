@@ -1,5 +1,5 @@
 import {mudletColorLine} from "./Colors";
-import type {HerbUse} from "@client/scripts/herbsLoader";
+import type {HerbUse} from "@client/scripts/lib/herbsLoader";
 import {getBindableUses, isHerbSmokable} from "@modules/data/dataStores/herbsStore";
 import {showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";

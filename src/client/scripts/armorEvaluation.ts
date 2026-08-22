@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { createColorFormat } from "@modules/core/Colors";
-import { ARMOR_QUALITY, EFFECTIVENESS } from "./evaluationConstants";
+import { ARMOR_QUALITY, EFFECTIVENESS } from "./lib/evaluationConstants";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 
 const LABEL_COLOR = createColorFormat("#446fb1");

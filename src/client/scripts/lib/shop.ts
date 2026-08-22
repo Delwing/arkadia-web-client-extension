@@ -1,12 +1,12 @@
-import Client from "../Client";
+import Client from "../../Client";
 import { colorString } from "@modules/core/Colors";
-import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
+import {AnsiAwareBuffer, FormatStateSnapshot} from "../../ansi/FormatState";
 import {
     MITHRIL_COLOR,
     GOLD_COLOR,
     SILVER_COLOR,
     COPPER_COLOR
-} from "../constants/colors";
+} from "../../constants/colors";
 
 export interface ShopOptions {
     normalWidth: number;

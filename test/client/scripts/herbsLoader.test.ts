@@ -1,4 +1,4 @@
-import loadHerbs from '@client/scripts/herbsLoader';
+import loadHerbs from '@client/scripts/lib/herbsLoader';
 
 describe('herbs loader', () => {
     beforeEach(() => {

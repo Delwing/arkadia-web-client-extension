@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {parseItems} from "./prettyContainers";
-import loadHerbs, {HerbsData, isHerbSmokable} from "./herbsLoader";
+import loadHerbs, {HerbsData, isHerbSmokable} from "./lib/herbsLoader";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
 import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
@@ -8,7 +8,7 @@ import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {registerHerbManagerProvider} from "@modules/core/herbManagerProvider";
 import {getWearValue} from "./wearUsed";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
-import { polishWordToNumber } from "./polishNumberConverter";
+import { polishWordToNumber } from "./lib/polishNumberConverter";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { getUiPort } from "@client/ports";

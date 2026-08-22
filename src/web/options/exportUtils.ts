@@ -1,7 +1,7 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "./recordingStorage";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
-import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
+import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/lib/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";
 import { getKnowledgeStore, type KnowledgeProgressByCharacter, type KnowledgeBookProgressByCharacter } from "@modules/data/dataStores/knowledgeStore";
 import { getKnowledgeDetailsStore, type KnowledgeProgressByCharacter as KnowledgeDetailsProgressByCharacter, type KnowledgeCharacterMetadataMap } from "@modules/data/dataStores/knowledgeDetailsStore";

@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { polishWordToNumber, polishNumberPattern } from "./polishNumberConverter";
+import { polishWordToNumber, polishNumberPattern } from "./lib/polishNumberConverter";
 import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { getMergedSnapshot } from "@modules/data/peopleLoader";

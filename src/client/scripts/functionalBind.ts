@@ -2,8 +2,8 @@ import Client from "../Client";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import {bindMatches} from "@modules/core/keymapTypes";
 import {shouldIgnoreGlobalKeybind} from "../keybindGuard";
-import type {FunctionalBindCategory} from "./functionalBindCategories";
-import {CATEGORY_LABELS, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCategories";
+import type {FunctionalBindCategory} from "./lib/functionalBindCategories";
+import {CATEGORY_LABELS, FUNCTIONAL_BIND_CATEGORIES} from "./lib/functionalBindCategories";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';

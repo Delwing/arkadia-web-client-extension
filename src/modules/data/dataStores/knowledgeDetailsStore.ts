@@ -12,7 +12,7 @@ import {
   KNOWLEDGE_CATEGORY_ORDER,
   KnowledgeCategoryBaseName,
 } from '@client/knowledgeCategories';
-import loadWiedza from '@client/scripts/wiedzaLoader';
+import loadWiedza from '@client/scripts/lib/wiedzaLoader';
 import {
   KnowledgeDetailsType,
   KNOWLEDGE_DETAILS_TYPES,

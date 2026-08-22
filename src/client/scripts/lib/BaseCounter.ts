@@ -1,4 +1,4 @@
-import Client from "../Client";
+import Client from "../../Client";
 import {characterStorage} from "@modules/core/storage";
 import type {CharacterStorageSchema} from "@modules/core/storageSchema";
 

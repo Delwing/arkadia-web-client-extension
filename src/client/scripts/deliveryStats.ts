@@ -4,7 +4,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {characterStorage} from "@modules/core/storage";
 import {getFromIndexedDB, storeInIndexedDB, IndexedDBConfig} from "@client/utils/dataCache.ts";
 import {GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
-import {createPad, createHeader} from "./counterTableUtils";
+import {createPad, createHeader} from "./lib/counterTableUtils";
 
 export interface DeliveryRecord {
     timestamp: number;

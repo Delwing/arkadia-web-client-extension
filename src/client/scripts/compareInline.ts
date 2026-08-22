@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {level} from "./comparisonUtils";
+import {level} from "./lib/comparisonUtils";
 import {createColorFormat} from "@modules/core/Colors";
 
 const positiveColor = createColorFormat("#ff0000"); // Red for positive values (you're weaker)

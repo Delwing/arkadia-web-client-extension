@@ -10,7 +10,7 @@ import {
     importRecords,
     importAllKillRecords,
     makeId,
-} from '@client/scripts/killLifetimeStorage';
+} from '@client/scripts/lib/killLifetimeStorage';
 
 // Use unique character names per test to avoid cross-test interference
 // since deleteDatabase can block on open connections

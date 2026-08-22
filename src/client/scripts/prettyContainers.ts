@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
-import loadMagicKeys from "./magicKeyLoader";
-import loadMagics from "./magicsLoader";
+import loadMagicKeys from "./lib/magicKeyLoader";
+import loadMagics from "./lib/magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
 import {getKnowledgeStore, KnowledgeBookEntry, KnowledgeBookCategoryProgress, DEFAULT_KNOWLEDGE_CHARACTER_KEY} from "@modules/data/dataStores/knowledgeStore";
 import { getUiPort } from "@client/ports";
@@ -13,7 +13,7 @@ import {
     SILVER_COLOR,
     COPPER_COLOR,
 } from "../constants/colors";
-import { polishNumberWords, polishNumberPattern } from "./polishNumberConverter";
+import { polishNumberWords, polishNumberPattern } from "./lib/polishNumberConverter";
 import { matchFishHint } from "./fishing";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";

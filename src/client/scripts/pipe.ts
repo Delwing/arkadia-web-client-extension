@@ -1,8 +1,8 @@
 import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
 import { getHerbManager } from "@modules/core/herbManagerProvider";
-import loadHerbs, { isHerbSmokable } from "./herbsLoader";
-import { OTHER_OWNER_WORDS_ALT } from "./otherOwner";
+import loadHerbs, { isHerbSmokable } from "./lib/herbsLoader";
+import { OTHER_OWNER_WORDS_ALT } from "./lib/otherOwner";
 
 type AliasEntry = { pattern: RegExp; callback: Function };
 

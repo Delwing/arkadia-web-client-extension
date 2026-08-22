@@ -3,8 +3,8 @@ import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {characterStorage} from "@modules/core/storage";
-import {BaseCounter} from "./BaseCounter";
-import {createPad, createHeader} from "./counterTableUtils";
+import {BaseCounter} from "./lib/BaseCounter";
+import {createPad, createHeader} from "./lib/counterTableUtils";
 import {
     recordKillToDB,
     getLifetimeTotals,
@@ -20,7 +20,7 @@ import {
     type GlobalKillStats,
     type DateGroupedKills,
     type KillRecord,
-} from './killLifetimeStorage';
+} from './lib/killLifetimeStorage';
 
 export type KillEntry = {
     mySession: number;

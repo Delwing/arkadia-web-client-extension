@@ -1,7 +1,7 @@
-import type { HerbBagsState } from "../types/herbs";
+import type { HerbBagsState } from "../../types/herbs";
 import type { HerbsData, HerbUse } from "./herbsLoader";
 import { getBindableUses, isHerbSmokable } from "./herbsLoader";
-import { AnsiAwareBuffer } from "../ansi/FormatState";
+import { AnsiAwareBuffer } from "../../ansi/FormatState";
 import { createColorFormat, mudletColorLine } from "@modules/core/Colors";
 import { getUiPort } from "@client/ports";
 

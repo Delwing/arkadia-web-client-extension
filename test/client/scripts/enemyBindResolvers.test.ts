@@ -1,4 +1,4 @@
-import { enemyBindResolvers } from '@client/scripts/enemyBindResolvers';
+import { enemyBindResolvers } from '@client/scripts/lib/enemyBindResolvers';
 
 describe('enemyBindResolvers registry', () => {
   beforeEach(() => {
