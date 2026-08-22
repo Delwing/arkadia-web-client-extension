@@ -33,7 +33,17 @@ e2e/
 - Use `page.locator()`, `page.click()`, `page.fill()`, `page.getByRole()`, etc.
 - The only exceptions are game server simulation helpers (`pushGmcp`, `pushText`) which mock the server side, not the client
 
-If a feature can't be tested through user-visible UI interactions, that's a sign the test needs rethinking, not that you should reach into internals.
+**Settings must be changed through the settings modal**, never by writing to
+`localStorage`. Writing storage directly skips the options UI, the save handler and
+the change listeners — so the test passes even when the path a user actually takes is
+broken, which is the opposite of what an e2e test is for. Reuse the helpers in
+`support/options.ts` (`openWalkaTab`, `setGagMode`, `saveOptions`, …).
+
+Reading `localStorage` in an assertion is fine — that verifies what the UI persisted.
+It is only *writing* it as setup that defeats the point.
+
+If a feature can't be tested through user-visible UI interactions, that's a sign the
+test needs rethinking, not that you should reach into internals.
 
 ## Conventions
 

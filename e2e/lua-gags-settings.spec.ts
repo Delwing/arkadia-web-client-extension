@@ -10,72 +10,20 @@ import {
     waitForOutputContaining,
     getRecentOutput,
 } from './support/mocks';
+import {
+    getGagColorInput,
+    getGagResetButton,
+    getGagSelect,
+    getStoredLuaGagsDeleteLines,
+    openWalkaTab,
+    saveOptions,
+} from './support/options';
 
-const MENU_BUTTON = '#menu-button';
-const OPTIONS_BUTTON = '#options-button';
-const OPTIONS_MODAL = '#options-modal';
-const OPTIONS_SAVE_BUTTON = '#options-save';
-const WALKA_TAB_BUTTON = 'button:has-text("Walka")';
-
-const LUA_GAGS_STORAGE_KEY = 'lua_gags_delete_lines';
 const LUA_GAGS_COLORS_STORAGE_KEY = 'lua_gags_colors';
 const LUA_GAGS_WALKA_CONFIG_STORAGE_KEY = 'lua_gags_walka_config';
 
-async function openOptions(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(OPTIONS_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should open options modal').toBeVisible();
-    return modal;
-}
-
-async function openLuaGagsTab(page: Page) {
-    const modal = await openOptions(page);
-    // Click on "Walka" tab button
-    await modal.locator(WALKA_TAB_BUTTON).click();
-    // Wait for the lua gags section to be visible
-    await modal.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
-    return modal;
-}
-
-function getLuaGagsSection(modal: Locator) {
-    // Get the section that contains "Ustawienia walki" header
-    return modal.locator('section').filter({has: modal.page().locator('h5:has-text("Ustawienia walki")')});
-}
-
-function getGagSelect(modal: Locator, gagType: string) {
-    // Use the ID directly since it's unique for the select
-    return modal.locator(`select#luaGag-${gagType}`);
-}
-
-function getGagColorInput(modal: Locator, gagType: string) {
-    // Color input shares the same ID, but it's an input[type="color"]
-    return modal.locator(`input[type="color"]#luaGag-${gagType}`);
-}
-
-function getGagResetButton(modal: Locator, gagType: string) {
-    // Find the row containing both the select and the reset button
-    const section = getLuaGagsSection(modal);
-    const select = section.locator(`select#luaGag-${gagType}`);
-    // The reset button is in the same parent container as the select
-    return select.locator('..').locator('button');
-}
-
-async function saveOptions(page: Page) {
-    await page.click(OPTIONS_SAVE_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should close options modal after saving').not.toBeVisible();
-}
-
-async function getStoredLuaGagsDeleteLines(page: Page) {
-    return await page.evaluate(([key]) => {
-        // Settings are character-scoped, so we need to find the right key
-        const currentChar = localStorage.getItem('currentCharacter');
-        const realKey = currentChar ? `${currentChar}:${key}` : key;
-        const raw = localStorage.getItem(realKey);
-        return raw ? JSON.parse(raw) : null;
-    }, [LUA_GAGS_STORAGE_KEY]);
-}
+/** Local alias: this spec calls the Walka tab opener by its old name. */
+const openLuaGagsTab = openWalkaTab;
 
 async function getStoredLuaGagsColors(page: Page) {
     return await page.evaluate(([key]) => {
