@@ -35,6 +35,46 @@ Everything below is organised by those channels, then by what to do about them.
 
 ---
 
+## Open decisions
+
+Three things the remaining stages need that cannot be settled from the code. None
+blocks stage 4; all three block stage 6 (the toggle UI).
+
+### 1. What happens when a plugin depends on a disabled script
+
+Two of the module singletons are **public plugin API**, not just internal state:
+
+| Surface | Owner | Reached by |
+|---|---|---|
+| `addGroupDefinition` / `addTransformDefinition` | `prettyContainers` | plugins write into it via `PluginApi` |
+| `getHerbManager()` | `herbCounter` | `PluginApi.herbs.*`, web `HerbManager` |
+
+Turning off the owner silently degrades a third-party plugin that has already
+registered against it. Options: refuse the toggle while a plugin holds a
+registration; allow it with a warning naming the plugins; or allow it silently and
+let the plugin's own null-handling cope. This is a product call about how much the
+client owes third-party plugins, not a technical one.
+
+### 2. What a popup shows when its script is off
+
+Several web popups read a script's data directly — `LootPopup` (`lootParser`), the
+kill and improve popups (`kill`, `improveCounter`). With the owner stopped the data
+is absent rather than empty. Hide the popup and its button, or show it with an empty
+state explaining why? The second is friendlier and needs a message per popup.
+
+### 3. The 148 labels
+
+The toggle UI needs a Polish name, and probably a one-line description, for every
+script. These have to be reviewed by someone who knows the game's vocabulary — a
+plausible-but-wrong label in a settings list is worse than no list. Drafting them
+from each script's aliases and trigger patterns is a reasonable starting point, but
+the result is a review task, not a generated artefact.
+
+This is why `ScriptMeta` has no `title` field yet: adding one would invite filling it
+in with guesses.
+
+---
+
 ## Channel 1 — Static imports (68 edges, acyclic)
 
 ### 1a. Pure utilities — always load, never toggle

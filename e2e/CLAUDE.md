@@ -4,6 +4,29 @@ E2E tests use **Playwright** with **Chromium**. Configuration is in `playwright.
 
 Tests run against a live Vite dev server on `http://127.0.0.1:4173`. The server starts automatically when running tests.
 
+## Running the whole suite locally
+
+The full suite is ~740 tests and takes roughly **20 minutes**. Two things in the
+config are tuned for CI and get in the way locally:
+
+**`globalTimeout` is 10 minutes** — a cap on the entire run, not per test. Past it,
+Playwright kills the run and reports the remainder as "did not run", plus messages
+like `Timed out waiting 600s for the plugin setup to run`. Those read like failures
+but mean "the clock ran out". Pass `--global-timeout=0` for a local full run:
+
+```bash
+npx playwright test --global-timeout=0
+```
+
+**Port 4173 is hardcoded with `--strictPort`.** Repeated full runs leave thousands of
+sockets in `TIME_WAIT` against it — Windows only has 16384 ephemeral ports, so
+after a few runs new connections fail with `net::ERR_ADDRESS_IN_USE` and the
+webServer times out. They take a while to drain. Either wait, or point the run at
+another port.
+
+Prefer running the specs that cover what changed over the whole suite; CI shards it
+8 ways on clean runners, which is where a full green is actually established.
+
 ## Structure
 
 ```
