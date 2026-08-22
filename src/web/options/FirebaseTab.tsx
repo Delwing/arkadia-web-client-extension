@@ -194,6 +194,27 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             setShowConflictModal(true);
         }
 
+        // Seed from the listener's last snapshot: `firebase.sync.metadata` is
+        // emitted only when a snapshot arrives, and the first one lands when
+        // the listener starts — long before this tab is usually mounted.
+        // Without this, the cloud markers and the "delete cloud data" section
+        // stay hidden until the next sync, and vanish again on every remount
+        // (tab switch, reopening the dialog).
+        let cancelled = false;
+        const cached = syncEngine.getLastMetadata();
+        if (cached) {
+            setCloudMetadata(cached);
+        } else {
+            // Listener has not produced a snapshot yet (or is not running) —
+            // read the metadata once directly.
+            getAllCategoriesMetadata()
+                .then(result => {
+                    if (cancelled || result.error) return;
+                    setCloudMetadata(prev => (Object.keys(prev).length > 0 ? prev : result.categories));
+                })
+                .catch(err => console.error('Failed to read cloud metadata', err));
+        }
+
         const unsubMeta = eventBus.on('firebase.sync.metadata', (metadata) => {
             setCloudMetadata(metadata);
         });
@@ -237,6 +258,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         });
 
         return () => {
+            cancelled = true;
             syncEngine.setConflictUiActive(false);
             unsubMeta();
             unsubApplied();

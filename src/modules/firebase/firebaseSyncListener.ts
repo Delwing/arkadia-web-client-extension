@@ -35,6 +35,13 @@ class FirebaseSyncListener {
      * `undefined` = none pending (null is a valid snapshot value).
      */
     private pendingSnapshot: UnifiedSyncData | null | undefined = undefined;
+    /**
+     * Metadata from the most recent snapshot. `firebase.sync.metadata` is only
+     * emitted when a snapshot arrives, so a UI mounting later (the options
+     * dialog is opened long after the listener started) would otherwise see
+     * nothing until the next cloud write. Kept here so it can be replayed.
+     */
+    private lastMetadata: FirebaseSyncMetadataPayload | null = null;
 
     async start(userId: string): Promise<void> {
         if ((window as { __DISABLE_FIREBASE__?: boolean }).__DISABLE_FIREBASE__) {
@@ -93,7 +100,13 @@ class FirebaseSyncListener {
         this.pendingEncryptedPayloads = {};
         this.processing = false;
         this.pendingSnapshot = undefined;
+        this.lastMetadata = null;
         eventBus.emit('firebase.listener.status', { active: false });
+    }
+
+    /** Metadata from the last snapshot, for UI mounting after the listener started. */
+    getLastMetadata(): FirebaseSyncMetadataPayload | null {
+        return this.lastMetadata;
     }
 
     setPassphrase(passphrase: string | null): void {
@@ -182,6 +195,7 @@ class FirebaseSyncListener {
 
             // Always emit metadata
             const metadata = this.buildMetadata(data);
+            this.lastMetadata = metadata;
             eventBus.emit('firebase.sync.metadata', metadata);
 
             const deviceId = getDeviceId();

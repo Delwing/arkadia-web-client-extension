@@ -38,6 +38,7 @@
 import eventBus from '@modules/core/eventBus';
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import type { CategoryConflictInfo, CategorySyncTimes, ConflictResolution, SyncCategory } from './firebaseTypes';
+import type { FirebaseSyncMetadataPayload } from '@shared/events/clientEvents';
 import {
     FIREBASE_CONFIG_KEY,
     FIREBASE_ERRORS,
@@ -214,6 +215,16 @@ class FirebaseSyncEngine {
 
     getPassphrase(): string | null {
         return this.passphrase;
+    }
+
+    /**
+     * Cloud metadata from the listener's last snapshot, or null when no
+     * snapshot has been seen yet. The options UI seeds itself from this on
+     * mount — `firebase.sync.metadata` fires only on snapshots, and the
+     * listener's first one usually lands long before the dialog is opened.
+     */
+    getLastMetadata(): FirebaseSyncMetadataPayload | null {
+        return syncListener.getLastMetadata();
     }
 
     // ── Pending conflicts ────────────────────────────────────────────────────
