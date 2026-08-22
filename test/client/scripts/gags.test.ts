@@ -70,17 +70,27 @@ describe('gags — own regular hits', () => {
             expect(parts).toHaveLength(0);
         });
 
-        test('deleting aborts dispatch — triggers registered later never run', () => {
-            // Current semantics: `markAsDeleted` makes `parseLine` return
-            // immediately, so a trigger registered after the gags is not called at
-            // all. This is what keeps gagged lines out of the combat window, and
-            // it is the behaviour stage 0b would change. See
-            // docs/SCRIPT_DEPENDENCIES.md — "Should suppression stop dispatch?".
+        test('deleting does not stop dispatch — later triggers still see the line', () => {
+            // Suppression is a rendering decision. A gagged hit is still a hit, so
+            // counters and state machines downstream must be told about it.
             let seen: string | null = null;
             client.Triggers.registerTrigger(/Ranisz/, (line) => {
                 seen = line.text;
                 return line;
             });
+
+            const parts = client.onLine('Ranisz wielkiego szczura.', 'combat.avatar');
+
+            expect(seen).toBe('Ranisz wielkiego szczura.');
+            expect(parts, 'but it is still not rendered').toHaveLength(0);
+        });
+
+        test('a trigger that opts out of suppressed lines is skipped', () => {
+            let seen: string | null = null;
+            client.Triggers.registerTrigger(/Ranisz/, (line) => {
+                seen = line.text;
+                return line;
+            }, 'optedOut', {skipDeleted: true});
 
             client.onLine('Ranisz wielkiego szczura.', 'combat.avatar');
 

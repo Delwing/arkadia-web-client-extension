@@ -74,7 +74,11 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
             // Mark as deleted to prevent showing in main window
             return line.markAsDeleted();
         },
-        "combatWindow"
+        "combatWindow",
+        // This routes a line to another window rather than hiding it, so it must
+        // not fire for a line the gags already suppressed: "delete this" has to
+        // keep meaning gone everywhere, the combat window included.
+        {skipDeleted: true}
     );
 
     client.on("client.disconnect", () => {

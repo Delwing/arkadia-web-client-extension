@@ -20,6 +20,16 @@ export type TriggerPattern = TriggerSubPattern | TriggerSubPattern[];
 export interface TriggerOptions {
     stayOpenLines?: number;
     caseInsensitive?: boolean;
+    /**
+     * Skip this trigger for lines that have already been suppressed.
+     *
+     * Suppression is a rendering decision, not a dispatch one: a gagged combat
+     * line is still a hit, so counters and state machines must still see it. The
+     * exception is a trigger that *routes* a line somewhere else — the combat
+     * window — because "hide this everywhere" and "show it in the other window"
+     * have to stay distinguishable. See docs/SCRIPT_DEPENDENCIES.md.
+     */
+    skipDeleted?: boolean;
 }
 
 export function isType(type: string): TriggerMatchFunction {
@@ -90,7 +100,11 @@ export class Trigger {
         return child;
     }
 
-    execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer | null {
+    execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer {
+        // Opted out of suppressed lines — see TriggerOptions.skipDeleted.
+        if (this.options.skipDeleted && line.deleted) {
+            return line;
+        }
         // Use pre-trimmed plainLine if provided, otherwise compute from originalText/line.text
         if (plainLine === undefined) {
             plainLine = (originalText ?? line.text).replace(/\s$/g, "");
@@ -133,18 +147,16 @@ export class Trigger {
             if (matches && this.callback) {
                 const result = this.callback(line, matches, type, originalText ?? line.text);
                 if (result === null) {
-                    return null;
-                }
-                if (result instanceof AnsiAwareBuffer) {
+                    // Returning null means "do not render this line". It is sugar
+                    // for markAsDeleted(): the line keeps travelling, so everything
+                    // downstream still gets to see it.
+                    line.markAsDeleted();
+                } else if (result instanceof AnsiAwareBuffer) {
                     line = result;
                 }
             }
             for (const child of this.children.values()) {
-                const childResult = child.execute(line, type, originalText, plainLine);
-                if (childResult === null) {
-                    return null;
-                }
-                line = childResult;
+                line = child.execute(line, type, originalText, plainLine);
             }
         }
         return line;
@@ -270,16 +282,11 @@ export default class Triggers {
             return tokens!;
         };
 
-        for (const trigger of this.triggers.values()) {
-            const result = trigger.execute(line, type, originalText, plain);
-            if (result === null) {
-                return null;
-            }
-            line = result;
-            // If line was marked as deleted, return null to omit from output
-            if (line.deleted) {
-                return null;
-            }
+        // Snapshot: a trigger registered *while* this line is being dispatched —
+        // a one-time follow-up trigger, say — must not also fire on the line that
+        // registered it. Map iteration would otherwise visit it in this same pass.
+        for (const trigger of Array.from(this.triggers.values())) {
+            line = trigger.execute(line, type, originalText, plain);
         }
 
         if (this.tokenTriggers.size > 0) {
@@ -289,15 +296,7 @@ export default class Triggers {
                 for (const {trigger} of zeroBucket) {
                     if (!seen.has(trigger.id)) {
                         seen.add(trigger.id);
-                        const result = trigger.execute(line, type, originalText, plain);
-                        if (result === null) {
-                            return null;
-                        }
-                        line = result;
-                        // If line was marked as deleted, return null to omit from output
-                        if (line.deleted) {
-                            return null;
-                        }
+                        line = trigger.execute(line, type, originalText, plain);
                     }
                 }
             }
@@ -326,21 +325,14 @@ export default class Triggers {
                         }
                         if (matches) {
                             seen.add(trigger.id);
-                            const result = trigger.execute(line, type, originalText, plain);
-                            if (result === null) {
-                                return null;
-                            }
-                            line = result;
-                            // If line was marked as deleted, return null to omit from output
-                            if (line.deleted) {
-                                return null;
-                            }
+                            line = trigger.execute(line, type, originalText, plain);
                         }
                     }
                 }
             }
         }
-        return line
+        // Suppression is decided once, here, after every trigger has had its say.
+        return line.deleted ? null : line;
     }
 
     parseMultiline(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
@@ -348,17 +340,9 @@ export default class Triggers {
         const originalText = line.text;
         const plain = originalText.replace(/\s$/g, "");
         for (const trigger of this.multilineTriggers.values()) {
-            const result = trigger.execute(line, type, originalText, plain);
-            if (result === null) {
-                return null;
-            }
-            line = result;
-            // If line was marked as deleted, return null to omit from output
-            if (line.deleted) {
-                return null;
-            }
+            line = trigger.execute(line, type, originalText, plain);
         }
-        return line
+        return line.deleted ? null : line;
     }
 
 }

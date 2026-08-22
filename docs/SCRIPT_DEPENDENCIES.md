@@ -357,24 +357,31 @@ must still run **after** the gags, or the line is teed before anything deletes i
 mode 1 leaks into the combat window. But that is now *one named edge* rather than a
 property of the whole list: see *Ordering without phases* below.
 
-**What it would cost — check these before doing it:**
+**What it actually cost.** Two regressions surfaced, both from the same root: with
+the early return gone, a line now reaches triggers that never used to see it.
 
-1. **Double-handling.** The 34 scripts after `gags`(116) would start seeing combat
-   lines they have never seen. `combatStats`(119) is the first suspect.
-2. **Children.** `Trigger.execute:135` skips a matched trigger's own children on
-   `null`. Some parents deliberately gate their children this way; each parent/child
-   group needs a look.
-3. **Multiline.** `parseMultiline` → `null` drops the whole packet in
-   `Client.onLine:291-295`. Same fix, bigger blast radius.
-4. **Performance.** Combat output is the highest-volume stream, and today a
-   `markAsDeleted` at idx 116 skips 34 scripts' worth of matching. Removing the
-   short-circuit pays full matching cost on every gagged line. Probably fine — a
-   non-gagged line already runs all 335 — but worth measuring on a busy fight.
+1. **A trigger registered mid-dispatch fired on the line that registered it.**
+   `ostatnio` asks each team member in turn, registering the next one-time trigger
+   from inside the previous one's callback. `this.triggers` is a `Map`, and JS Map
+   iteration visits entries added during iteration — so the new trigger consumed the
+   same reply and the whole queue collapsed into one answer. Fixed by snapshotting
+   the trigger list at the top of `parseLine`: a trigger registered while a line is
+   being dispatched must not also fire on that line. The early return had been hiding
+   this for every script, not just `ostatnio`.
 
-This is the single highest-value change in this document: it is small (33 call
-sites + ~10 lines in `Triggers.ts`), it is independently landable, and it removes
-the ordering constraint that everything else in `registerScripts` is arranged
-around.
+2. **A catch-all re-consumed a line a specific trigger had already claimed.**
+   `poczta` ends with a `/^/` trigger that sweeps the rest of a letter into its body.
+   Once `Data: …` stopped aborting dispatch, the header line landed in the body text.
+   Fixed with `{skipDeleted: true}` — which turns out to be the general shape for
+   catch-all fallbacks, not a one-off for `combatWindow`.
+
+So `skipDeleted` has two distinct uses, and they are the same idea: **a trigger that
+claims or routes a line, rather than reacting to it, should not see a line that has
+already been claimed.**
+
+Everything else came through untouched: the four unchanged ally-protection e2e tests,
+the gag-rendering suite (including "a gagged hit reaches neither window"), and 55
+counter/combat-adjacent e2e tests.
 
 ### Mutating a line that someone else already changed
 
@@ -748,7 +755,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | Stage | Work | Behaviour change | Risk |
 |---|---|---|---|
 | ~~**0**~~ | ~~Move the pure utilities into `scripts/lib/`~~ — **done**: 16 modules moved, 47 files re-imported, no behaviour change | none | none |
-| **0b** | **Decouple suppression from dispatch** (see *Should suppression stop dispatch?*): `parseLine` stops early-returning, `deleted` becomes a pure render flag, 33 `return null` sites migrate to `markAsDeleted()` | **yes** — 34 scripts start seeing gagged combat lines | medium; independently landable and removes constraint (1) on its own |
+| ~~**0b**~~ | ~~Decouple suppression from dispatch~~ — **done**: `parseLine` folds through every trigger and decides at the end; `return null` is sugar for `markAsDeleted()`; `{skipDeleted: true}` opts a trigger out | **yes** | landed |
 | **1** | Introduce `ScriptContext`, normalise the 93 ad-hoc tags to the manifest id, tag the 12 untagged scripts, pass `ctx` instead of `client` from `registerScripts` | none | low, mechanical, 151 call sites |
 | **1b** | Give `AliasList` an owner field + `removeByOwner`; route `client.on` through `ctx.signal`; wrap `setInterval` and DOM listeners in `ctx` | none | low |
 | **2** | Add `manifest` + registry; keep `registerScripts`'s written order, honour the two `after` edges via a stable topo-sort; **assert the result equals today's order** and land it as a provable no-op | none | low |

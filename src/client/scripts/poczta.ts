@@ -254,7 +254,13 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
 
         letterBodyLines.push(line.text);
         return null;
-    }, tag);
+    },
+        tag,
+        // A catch-all that consumes whatever is left of the letter. Lines an
+        // earlier, more specific trigger already claimed (the headers) are
+        // suppressed by then, and must not be swept into the body as well.
+        {skipDeleted: true},
+    );
 
     aliases.push({
         pattern: /^\/poczta$/,

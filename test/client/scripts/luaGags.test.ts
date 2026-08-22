@@ -79,8 +79,7 @@ describe('luaGags', () => {
             expect(client.onLine(PARRY, 'combat.avatar')).toHaveLength(1);
         });
 
-        test('deletion aborts dispatch — later triggers never run', () => {
-            // The behaviour stage 0b would change. See docs/SCRIPT_DEPENDENCIES.md.
+        test('deletion does not stop dispatch — later triggers still run', () => {
             setModes({ moje_uniki: 1 });
             let ran = false;
             client.Triggers.registerTrigger(/szczur/, (line) => {
@@ -88,9 +87,10 @@ describe('luaGags', () => {
                 return line;
             });
 
-            client.onLine(DODGE, 'combat.avatar');
+            const parts = client.onLine(DODGE, 'combat.avatar');
 
-            expect(ran).toBe(false);
+            expect(ran, 'a gagged dodge is still a dodge').toBe(true);
+            expect(parts, 'but it is not rendered').toHaveLength(0);
         });
     });
 
