@@ -41,6 +41,9 @@ test.beforeEach(async ({context}) => {
 
 test.describe('Multibind import', () => {
     test('imports database rows and updates multi-bind list', async ({page}) => {
+        // Import, alias creation, a reload and the post-reload checks do not fit
+        // the 10s default; the test then times out at whichever step it is on.
+        test.slow();
         await openBindsModal(page);
         await queueMultibindResponse(page, {
             type: 'success',
@@ -79,9 +82,11 @@ test.describe('Multibind import', () => {
         await expect(importModal, 'should report resolved conflicts').toContainText('Usunięte konflikty: 1');
 
         await importModal.getByRole('button', { name: 'Importuj' }).click();
-        await expect(importModal.getByText('Importowanie…'), 'should show import in progress').toBeVisible();
-        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible({ timeout: 5000 });
-        await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible();
+        // Four rows are written inside a single frame, so the "Importowanie…" state
+        // is never reliably observable here — the bulk-import test below covers the
+        // progress UI. Wait on the terminal state instead.
+        await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible({ timeout: 5000 });
+        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible();
         await expect(importModal, 'should reiterate new entries count after import').toContainText('Nowe wpisy: 3');
         await expect(importModal, 'should reiterate updated entries count after import').toContainText('Zaktualizowane: 0');
         await expect(importModal, 'should reiterate skipped entries count after import').toContainText('Pominięte: 2');
@@ -183,6 +188,46 @@ test.describe('Multibind import', () => {
         await expect(reloadedEntries.nth(0), 'should keep original multibind after reload').toContainText('skradanie');
         await expect(reloadedEntries.nth(1), 'should keep alias-created multibind after reload').toContainText('przyczaj sie');
         await expect(reloadedEntries.nth(2), 'should keep alias multi-bind after reload').toContainText(aliasPattern);
+    });
+
+    test('reports progress while importing a large database', async ({page}) => {
+        // runImport yields to the event loop every 200 rows, so an import this size
+        // keeps the progress state up across many frames.
+        test.slow();
+        await openBindsModal(page);
+
+        const rows = Array.from({ length: 4000 }, (_, i) => ({
+            uniqness: `${i + 1}:1`,
+            roomId: i + 1,
+            index: 1,
+            action: `akcja ${i + 1}`,
+        }));
+        await queueMultibindResponse(page, {
+            type: 'success',
+            payload: { rows, totalRows: rows.length, invalidRows: 0 },
+        });
+
+        await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
+        await page.setInputFiles('#binds-modal input[type="file"]', {
+            name: 'bulk.db',
+            mimeType: 'application/x-sqlite3',
+            buffer: Buffer.alloc(0),
+        });
+
+        const importModal = page.locator('.modal.show').filter({
+            has: page.locator('.modal-title:has-text("Importuj bazę multibindów")'),
+        }).last();
+        await expect(importModal, 'should queue every row for import').toContainText(`Wiersze do importu: ${rows.length}`);
+
+        await importModal.getByRole('button', { name: 'Importuj' }).click();
+        await expect(importModal.getByText('Importowanie…'), 'should show import in progress').toBeVisible();
+        await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible({ timeout: 30000 });
+        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible();
+        await expect(importModal, 'should report every row as a new entry').toContainText(`Nowe wpisy: ${rows.length}`);
+
+        await importModal.getByRole('button', { name: 'Zamknij' }).click();
+        await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
+        await closeBindsModal(page);
     });
 
     test('surfaced worker errors render an inline alert', async ({page}) => {
