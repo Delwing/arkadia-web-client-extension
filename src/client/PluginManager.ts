@@ -1,4 +1,5 @@
 import type Client from '@client/Client'
+import { forgetPluginScriptUsage } from '@modules/core/pluginScriptUsage'
 import type {LoadedPlugin, Plugin} from '@shared/types/Plugin'
 import {PluginApiImpl} from '@client/PluginApi'
 import eventBus from '@modules/core/eventBus'
@@ -141,6 +142,10 @@ export class PluginManager {
         console.error(`[PluginManager] Error destroying plugin ${url}:`, error)
       }
     }
+
+    // An unloaded plugin can no longer be broken by turning a script off, so it
+    // must stop being named in that warning.
+    forgetPluginScriptUsage(url)
 
     // Cleanup the API instance (removes aliases, etc.)
     if (plugin.apiInstance && typeof plugin.apiInstance.cleanup === 'function') {

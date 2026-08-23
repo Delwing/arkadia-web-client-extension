@@ -25,6 +25,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
+import { ownedByRunning } from './scriptState';
 import { getContextMenuEntries as getPluginContextMenuEntries } from '@modules/core/pluginUiRegistry';
 import { setRenderSettings } from '@modules/core/settings';
 import {
@@ -120,118 +121,146 @@ export function setupOutputContextMenu(
             });
         }
 
-        items.push(
+        // Every entry here is a door onto a feature script. `owner` names the
+        // script it opens, so an entry disappears when its script is turned off
+        // rather than opening onto data nobody is maintaining. The aliases these
+        // send (`/wiedza`, `/ziola`) already stop working when their owner does —
+        // this keeps the menu honest about it. See Decisions §2 in
+        // docs/SCRIPT_DEPENDENCIES.md.
+        items.push(...ownedByRunning([
             {
+                owner: 'knowledge',
                 label: iconLabel(BookOpen, 'Wiedza'),
                 action: () => eventBus.emit('sendCommand', { command: '/wiedza' }),
                 opensWindow: true,
             },
             {
+                owner: 'knowledge',
                 label: iconLabel(Library, 'Biblioteki'),
                 action: () => eventBus.emit('sendCommand', { command: '/biblioteki' }),
                 opensWindow: true,
             },
             {
+                owner: 'herbCounter',
                 label: iconLabel(Leaf, 'Zioła'),
                 action: () => eventBus.emit('sendCommand', { command: '/ziola' }),
                 opensWindow: true,
             },
             {
+                owner: 'herbCounter',
                 label: iconLabel(FileText, 'Zioła (tekst)'),
                 action: () => eventBus.emit('sendCommand', { command: '/ziola2' }),
                 opensWindow: true,
             },
             {
+                owner: 'contracts',
                 label: iconLabel(ScrollText, 'Zlecenia'),
                 action: () => eventBus.emit('sendCommand', { command: '/zlecenia' }),
                 opensWindow: true,
             },
             {
+                owner: 'shortcuts',
                 label: iconLabel(Zap, 'Skróty'),
                 action: () => eventBus.emit('skroty.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'clock',
                 label: iconLabel(Clock, 'Zegar'),
                 action: () => eventBus.emit('sendCommand', { command: '/czas' }),
                 opensWindow: true,
             },
             {
+                owner: 'chatHistory',
                 label: iconLabel(MessageCircle, 'Chat'),
                 action: () => eventBus.emit('sendCommand', { command: '/chatw' }),
                 opensWindow: true,
             },
             {
+                owner: 'combatWindow',
                 label: iconLabel(Swords, 'Walka'),
                 action: () => eventBus.emit('sendCommand', { command: '/walkaw' }),
                 opensWindow: true,
             },
             {
+                owner: 'combatStats',
                 label: iconLabel(PieChart, 'Statystyki'),
                 action: () => eventBus.emit('stat.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'improveCounter',
                 label: iconLabel(TrendingUp, 'Postepy'),
                 action: () => eventBus.emit('postepy.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'improveCounter',
                 label: iconLabel(BarChart3, 'Postepy 2'),
                 action: () => eventBus.emit('postepy2.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'cechyHistory',
                 label: iconLabel(Dumbbell, 'Cechy'),
                 action: () => eventBus.emit('cechy.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'kill',
                 label: iconLabel(Skull, 'Zabici'),
                 action: () => eventBus.emit('zabici.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'kill',
                 label: iconLabel(ClipboardList, 'Zabici 2'),
                 action: () => eventBus.emit('zabici2.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'poczta',
                 label: iconLabel(Mail, 'Poczta'),
                 action: () => eventBus.emit('poczta.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'deposits',
                 label: iconLabel(Coins, 'Depozyty'),
                 action: () => eventBus.emit('deposits.popup.open', {}),
                 opensWindow: true,
             },
             {
+                owner: 'fishing',
                 label: iconLabel(Fish, 'Wedka'),
                 action: () => eventBus.emit('sendCommand', { command: '/wedka' }),
                 opensWindow: true,
             },
             {
+                owner: 'sunTracker',
                 label: iconLabel(Calendar, 'Kalendarz'),
                 action: () => eventBus.emit('sunTracker.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'profession',
                 label: iconLabel(Wrench, 'Zawod'),
                 action: () => eventBus.emit('profession.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'zlom',
                 label: iconLabel(Shield, 'Zlom'),
                 action: () => eventBus.emit('zlom.popup.open'),
                 opensWindow: true,
             },
             {
+                owner: 'oswajanie',
                 label: iconLabel(PawPrint, 'Oswajanie'),
                 action: () => eventBus.emit('oswajanie.popup.open', {}),
                 opensWindow: true,
             },
-        );
+        ]));
 
         for (const entry of getPluginContextMenuEntries()) {
             items.push(entry);

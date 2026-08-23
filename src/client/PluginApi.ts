@@ -55,6 +55,7 @@ import {
   getTransformDefinitions
 } from "./scripts/prettyContainers";
 import {containerAction, getContainer, getContainerForms} from "./scripts/bagManager";
+import {recordPluginScriptUsage} from '@modules/core/pluginScriptUsage';
 import loadMagics, { loadMagicsRaw } from "./scripts/lib/magicsLoader";
 import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/lib/magicKeyLoader";
 import loadHerbs from "./scripts/lib/herbsLoader";
@@ -2920,17 +2921,24 @@ export class PluginApiImpl implements PluginApi {
   // ============================================================================
 
   private createPrettyContainersApi(): PrettyContainersApi {
+    // Everything here is state prettyContainers owns, so note the caller: turning
+    // that script off has to be able to say whose plugin it affects.
+    const used = () => recordPluginScriptUsage("prettyContainers", this.pluginId);
     return {
       getFilters: () => {
+        used();
         return getGroupDefinitions();
       },
       getTransforms: () => {
+        used();
         return getTransformDefinitions();
       },
       addFilter: (definition: GroupDefinition) => {
+        used();
         addGroupDefinition(definition);
       },
       addTransform: (definition: TransformDefinition) => {
+        used();
         addTransformDefinition(definition);
       }
     };
@@ -2941,17 +2949,22 @@ export class PluginApiImpl implements PluginApi {
   // ============================================================================
 
   private createContainersApi(): ContainersApi {
+    const used = () => recordPluginScriptUsage("bagManager", this.pluginId);
     return {
       getContainer: (type: ContainerType) => {
+        used();
         return getContainer(type);
       },
       getContainerForms: (type: ContainerType) => {
+        used();
         return getContainerForms(type);
       },
       put: (type: ContainerType, item: string) => {
+        used();
         containerAction(this.client, type, "put", item);
       },
       take: (type: ContainerType, item: string) => {
+        used();
         containerAction(this.client, type, "take", item);
       }
     };
@@ -2992,12 +3005,17 @@ export class PluginApiImpl implements PluginApi {
   // ============================================================================
 
   private createHerbsApi(): HerbsApi {
+    // client.herbManager belongs to herbCounter. getData below reads a DataStore
+    // that nothing owns, so it is deliberately not attributed.
+    const used = () => recordPluginScriptUsage("herbCounter", this.pluginId);
     return {
       getBags: () => {
+        used();
         return this.client.herbManager?.getBags() ?? {};
       },
 
       take: async (herbId: string, amount: number, fromBag?: number) => {
+        used();
         if (!this.client.herbManager) {
           console.warn('Herb manager not initialized');
           return 0;
@@ -3006,6 +3024,7 @@ export class PluginApiImpl implements PluginApi {
       },
 
       put: async (herbId: string, amount: number, bag: number) => {
+        used();
         if (!this.client.herbManager) {
           console.warn('Herb manager not initialized');
           return 0;
@@ -3014,6 +3033,7 @@ export class PluginApiImpl implements PluginApi {
       },
 
       move: async (options: HerbMoveOptions) => {
+        used();
         if (!this.client.herbManager) {
           console.warn('Herb manager not initialized');
           return;

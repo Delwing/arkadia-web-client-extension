@@ -170,9 +170,11 @@ The project uses a custom event bus in `src/modules/core/eventBus.ts` with typed
 
 ### Script scopes
 
-Scripts are started by `ScriptRegistry` (`src/client/ScriptRegistry.ts`), each in its
-own `ScriptScope`, so everything a script registers can be undone again. When writing
-a script:
+Scripts are declared to `ScriptRegistry` (`src/client/ScriptRegistry.ts`) in
+`registerScripts`, then started by one `registry.launch()`, each in its own
+`ScriptScope`. Any of them can be off — a character turns features off in the
+"Funkcje" settings modal — so teardown is not hypothetical: everything a script
+registers has to be undoable. When writing a script:
 
 - Register timers and DOM listeners through `client.scope.interval` /
   `client.scope.timeout` / `client.scope.listen` — never `window.setInterval` or
@@ -190,9 +192,14 @@ a script:
 - Triggers and aliases are attributed automatically. `owner` is assigned by the scope
   and is not the same thing as `tag`, which scripts pick themselves and reuse to
   clear part of themselves.
+- Give it an entry in `src/client/scriptCatalog.ts` — a Polish name and a one-line
+  description for the settings list. A test fails without one.
+- UI that exists only to reach a script (a context-menu entry, a button) should
+  hide itself when the script is off: `ownedByRunning` in `src/web/scriptState.ts`.
 
 Dependencies between scripts (`after` / `requires` / `optional`) are declared at the
-`registry.start` call in `main.ts`. See `docs/SCRIPT_DEPENDENCIES.md`.
+`registry.declare` call in `main.ts`. `requires` means "disabling that disables this
+too"; `after` is only about registration order. See `docs/SCRIPT_DEPENDENCIES.md`.
 
 ### Where a module belongs
 

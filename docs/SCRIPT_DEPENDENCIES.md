@@ -12,11 +12,11 @@
 This is the source of truth for the toggle migration, and the numbered stages below
 are what "stage N" refers to.
 
-**Stages 0 through 5 have landed.** Scripts run inside disposable scopes, everything
+**Stages 0 through 6 have landed.** Scripts run inside disposable scopes, everything
 they register is attributed and reversible, dependencies are declared and checked, a
-stopped script no longer answers for its data, and rebuilding a buffer no longer
-discards what earlier triggers decided about the line. Stage 6, the toggle UI, is
-next; the four decisions it was waiting on are settled — see *Decisions*.
+stopped script no longer answers for its data, rebuilding a buffer no longer discards
+what earlier triggers decided about the line, and a character can turn any of the 148
+off from the settings. Stage 7, lazy loading, is what remains.
 
 Where the stages departed from what was originally proposed, the reasoning is kept
 in place rather than edited out; each landed section says what changed and why.
@@ -945,12 +945,12 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**3**~~ | ~~Replace the 4 shared `client` fields~~ — **mostly declined**, see below. Two of the four are core state, and the 8 event edges were already fine. What was real — two latches left set when their script stops — is fixed | none | landed |
 | ~~**4**~~ | ~~The 9 module singletons~~ — **done** as *typed absence*, not a service locator: each getter answers absent once its owner stops, reset in a `client.scope.onDispose`. Three keep answering on purpose (two are plugin API, one has no owner). Dragged in **4a**: the 43 dropped `storage.onChange` unsubscribes, without which the resets do not hold | none | landed |
 | ~~**5**~~ | ~~Add `line.replaceWith(next)`~~ — **done**, and it turned out to be a bug fix rather than a tidy-up: a rebuilt buffer dropped the deleted mark, so a gagged line came back on screen and `skipDeleted` stopped working. `messageFlair` lost its `after` edge; one `after` edge remains and is legitimate | **yes** — a gagged line stays gagged | landed |
-| **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade. Per-character flags; the running set published to `@web` so a disabled script takes its menu entries with it; a warning naming the plugins that use a surface being turned off. See *Decisions* | yes | medium |
-| **7** | Lazy `import()` per script, keyed on the manifest | yes | low once 1–6 land |
+| ~~**6**~~ | ~~Dynamic enable/disable UI~~ — **done**: per-character flags, `declare`/`launch` so the requires cascade can be resolved, a Funkcje modal off `scriptCatalog`, menu entries filtered by owner, and a dialog naming the plugins a toggle would affect. See *Stage 6* below | **yes** | landed |
+| **7** | Lazy `import()` per script, keyed on the manifest. The plan now holds a `run` thunk per id, which is the seam it needs | yes | low — 1–6 have landed |
 
-Only stage 0b changes behaviour before the toggle UI arrives; everything up to stage 5
-is a no-op that can land incrementally on master. 0b is the one that needs a full e2e
-run and a close look at `combatStats`.
+Three stages changed behaviour: 0b (suppression became a fold), 5 (a gagged line stays
+gagged through a rebuild) and 6 (features can be off). The rest were no-ops that landed
+incrementally.
 
 ### Stage 4: the singletons — landed as typed absence
 
@@ -1066,6 +1066,69 @@ with `{skipDeleted: true}`, which is evaluated at dispatch, so it genuinely has 
 run after whoever sets the mark. `replaceWith` cannot dissolve that and should not:
 `after` now means one thing only, "this trigger's dispatch depends on a decision
 another script takes on the same line", and exactly one script needs it.
+
+### Stage 6: the toggle UI
+
+A character can turn any of the 148 scripts off, from a "Funkcje" modal that
+lists them by the name `scriptCatalog` gives them.
+
+**Declaring had to become separate from starting.** The `requires` cascade cannot
+be resolved one script at a time: `requires` names a *dependency*, not a
+predecessor, and four of the real edges legitimately name a script declared later.
+Only once the whole plan is known can "is anything this needs turned off?" be
+answered. So `registry.start(id, run, meta)` became `registry.declare(...)` plus a
+single `registry.launch()`, and `start`/`stop` now mean "one script, right now".
+
+| Concern | Where it landed |
+|---|---|
+| The choices | `characterStorage.disabled_scripts`, through a `DisabledScriptStore` port |
+| Which scripts run | `ScriptRegistry.launch()`, skipping disabled and blocked |
+| Cascade | `blockedBy` walks `requires` transitively, cycle-safe |
+| Telling the UI | `scripts.stateChanged` on the event bus |
+| The list | `src/web/options/Features.tsx`, reading the live registry |
+| Menu entries | `ownedByRunning` in `src/web/scriptState.ts` |
+| Plugin warning | `@modules/core/pluginScriptUsage`, recorded in `PluginApi` |
+
+**Only the user's own choices are stored.** The cascade is derived on every read,
+so re-enabling a dependency brings its dependants back with no second round of
+bookkeeping — and a stored cascade could never be told apart from a deliberate
+choice, which would leave a dependant off for good. A dependant the user turned
+off by hand stays off when its dependency returns.
+
+**`off` and `blocked` are different states.** `stateOf` distinguishes them and the
+switch renders them differently: blocked is shown off *and locked*, with a
+`wymaga: <name>` badge. Locking it is the point — the switch that needs turning
+back on is the dependency's, and an enabled-looking switch that cannot start
+anything would be a lie.
+
+**`after` is no longer violated by a target being turned off.** `after` is about
+sequence, and a script that is not running has no sequence to be in. Throwing
+there would make disabling `gags` take `combatWindow` with it, which is what
+`requires` is for. `verifyDependencies` likewise now checks against the plan
+rather than against what is running: turned off is legitimate, never declared is a
+typo.
+
+**Decision 2 needed a second half.** The aliases go with the scope on their own,
+but the output context menu builds its entries in `@web` and emits the popup event
+directly, so those entries outlived their scripts. Each is now tagged with the
+script it opens and filtered through `ownedByRunning`.
+
+**Decision 1 needed attribution first.** `pluginScriptUsage` records which plugin
+touched which script-owned surface, written at the three `PluginApi` sites
+(`prettyContainers` definitions, `containers`, `herbs`). Disabling one of those
+three raises a dialog naming the affected plugins; the user can go ahead. Unloading
+a plugin forgets its usage, since it can no longer be broken. Usage is remembered
+rather than sampled: a plugin that registered a filter at load time and never
+called again is exactly the one that would break quietly.
+
+**`registerScripts` also gathered the client's own registrations** — the `/blokada`
+and `/reload-plugins` aliases, the four providers, the pager ENTER trigger — into
+one block ahead of the plan. They had been scattered among the declarations, so
+their position in the alias list and the trigger fold depended on which script they
+happened to sit next to. They are not scripts and are never toggleable.
+
+What stage 6 does *not* do: the popups themselves still open if something else
+emits their event. Only the doors this client owns are closed.
 
 ### Where extraction will be expensive
 

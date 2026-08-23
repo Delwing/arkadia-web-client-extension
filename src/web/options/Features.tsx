@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Form, Alert, Badge } from "react-bootstrap";
-import { getScriptRegistry } from "@client/main";
+import { Form, Alert, Badge, Button } from "react-bootstrap";
+import { getScriptRegistry, getPluginManager } from "@client/main";
 import { scriptCatalog } from "@client/scriptCatalog";
+import { getPluginsUsingScript } from "@modules/core/pluginScriptUsage";
 import eventBus from "@modules/core/eventBus";
+import SubDialog from "../SubDialog";
 import type { ScriptState } from "@client/ScriptRegistry";
 
 /**
@@ -39,9 +41,20 @@ function readRows(): Row[] {
     });
 }
 
+/**
+ * What a loaded plugin calls itself, falling back to the id it was loaded from.
+ * A URL is a poor thing to show someone deciding whether to break it.
+ */
+function pluginLabel(pluginId: string): string {
+    const loaded = getPluginManager()?.getPlugin?.(pluginId);
+    return loaded?.info?.name ?? pluginId;
+}
+
 function Features() {
     const [rows, setRows] = useState<Row[]>(readRows);
     const [filter, setFilter] = useState('');
+    // Set while a disable waits for the user to accept it may break a plugin.
+    const [warning, setWarning] = useState<{ id: string; title: string; plugins: string[] } | null>(null);
 
     const refresh = useCallback(() => setRows(readRows()), []);
 
@@ -52,7 +65,7 @@ function Features() {
         return eventBus.on('scripts.stateChanged', refresh);
     }, [refresh]);
 
-    const toggle = useCallback((id: string, on: boolean) => {
+    const apply = useCallback((id: string, on: boolean) => {
         const registry = getScriptRegistry();
         if (!registry) return;
         if (on) registry.enable(id);
@@ -61,6 +74,25 @@ function Features() {
         // never lags behind the click if the event is ever made async.
         refresh();
     }, [refresh]);
+
+    const toggle = useCallback((id: string, title: string, on: boolean) => {
+        // Three scripts own surfaces plugins can register against. Turning one of
+        // them off is allowed — it is the user's own client, and a plugin does not
+        // get a veto — but not silently, and not without naming what it affects.
+        // See Decisions §1.
+        const plugins = on ? [] : getPluginsUsingScript(id);
+        if (plugins.length) {
+            setWarning({ id, title, plugins: plugins.map(pluginLabel) });
+            return;
+        }
+        apply(id, on);
+    }, [apply]);
+
+    const confirmWarning = useCallback(() => {
+        if (!warning) return;
+        apply(warning.id, false);
+        setWarning(null);
+    }, [warning, apply]);
 
     const visible = useMemo(() => {
         const needle = filter.trim().toLowerCase();
@@ -111,7 +143,7 @@ function Features() {
                                 // it is waiting on the one it requires, which is the switch
                                 // that needs turning back on.
                                 disabled={blocked}
-                                onChange={event => toggle(row.id, event.target.checked)}
+                                onChange={event => toggle(row.id, row.title, event.target.checked)}
                                 label=""
                             />
                             <div className="flex-grow-1">
@@ -132,6 +164,27 @@ function Features() {
                     <p className="text-body-secondary small py-2">Nic nie pasuje do „{filter}”.</p>
                 )}
             </div>
+
+            {warning && (
+                <SubDialog
+                    title="Ta funkcja jest używana przez wtyczki"
+                    onClose={() => setWarning(null)}
+                    footer={
+                        <>
+                            <Button variant="secondary" onClick={() => setWarning(null)}>Anuluj</Button>
+                            <Button variant="danger" onClick={confirmWarning}>Wyłącz mimo to</Button>
+                        </>
+                    }
+                >
+                    <p>
+                        Funkcja <strong>{warning.title}</strong> udostępnia dane wtyczkom.
+                        Po wyłączeniu przestaną je otrzymywać:
+                    </p>
+                    <ul className="mb-0">
+                        {warning.plugins.map(name => <li key={name}>{name}</li>)}
+                    </ul>
+                </SubDialog>
+            )}
         </div>
     );
 }

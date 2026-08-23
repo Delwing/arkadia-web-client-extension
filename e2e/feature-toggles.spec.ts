@@ -128,4 +128,30 @@ test.describe('Feature toggles', () => {
         await expect(modal.locator('.features-row'), 'found by its Polish label, not its module name')
             .toContainText('Licznik zabitych');
     });
+
+    test('a disabled feature loses its context-menu entry too', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const output = page.locator('#main_text_output_msg_wrapper');
+        await output.click({button: 'right'});
+        await expect(page.locator('#context-menu'), 'the entry is there while the script runs')
+            .toContainText('Zabici');
+        await page.keyboard.press('Escape');
+
+        const modal = await openFeatures(page);
+        await switchFor(modal, 'kill').uncheck();
+        await page.locator(`${FEATURES_MODAL} .btn-close`).click();
+        await expect(page.locator(FEATURES_MODAL)).not.toBeVisible();
+
+        await output.click({button: 'right'});
+
+        // The aliases went with the scope; the menu entry has to go too, or it is
+        // a door onto a popup nobody is filling.
+        const menu = page.locator('#context-menu');
+        await expect(menu).toHaveClass(/show/);
+        await expect(menu).not.toContainText('Zabici');
+        await expect(menu, 'unrelated entries stay').toContainText('Wiedza');
+    });
 });
