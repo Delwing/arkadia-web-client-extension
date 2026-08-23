@@ -1,18 +1,18 @@
 /**
  * What each script is called in the settings UI, and what it does in one line.
  *
- * Kept here rather than as arguments at the 148 `registry.start` calls, which
+ * Kept here rather than as arguments at the 148 `registry.declare` calls, which
  * would bury `main.ts`: one file to review, one file to diff. The order matches
  * registration order in `registerScripts`, so this reads alongside it.
  *
- * **These are drafted from each script's aliases, trigger patterns and settings
- * keys, and need a pass from someone who plays the game.** A plausible-but-wrong
- * label in a settings list is worse than no label. Entries marked `REVIEW:` are
- * the ones the code was least clear about — start there. See
- * docs/SCRIPT_DEPENDENCIES.md, *Decisions* §3.
+ * Drafted from each script's aliases, trigger patterns and settings keys, then
+ * reviewed. A plausible-but-wrong label in a settings list is worse than no
+ * label — it sends someone to type a command that does not exist — so two tests
+ * hold this honest: one that every script has an entry and nothing extra does,
+ * and one that every `/command` a description names is a command the script
+ * really registers, checked against the running client.
  *
- * A test asserts this covers exactly the registered scripts, both directions, so
- * a new script cannot ship without a label.
+ * See docs/SCRIPT_DEPENDENCIES.md, *Decisions* §3.
  */
 
 export interface ScriptCatalogEntry {
@@ -34,7 +34,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     mapAliases: {
         title: 'Polecenia mapy',
-        description: 'Aliasy /idz, /prowadz, /zlok, /note i pokrewne — chodzenie i notatki na mapie.',
+        description:
+            'Aliasy /prowadz, /zlok, /note, /przeszukaj i pokrewne — chodzenie i notatki na mapie.',
     },
     zaznaczaj: {
         title: 'Zaznaczanie lokacji',
@@ -87,8 +88,9 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
         description: 'Odtwarza dźwięk, gdy ktoś zaczyna cię atakować.',
     },
     warningTriggers: {
-        title: 'Triggery ostrzegawcze',
-        description: 'Dźwięk i wyróżnienie dla linii uznanych za ostrzeżenia. REVIEW: nazwa zgadnięta z tagu, sprawdź zakres.',
+        title: 'Ostrzeżenie o sprzęcie',
+        description:
+            'Wyróżnia na czerwono komunikat o rozpadającym się sprzęcie i odtwarza dźwięk.',
     },
     lostTeamMates: {
         title: 'Zgubieni z drużyny',
@@ -124,7 +126,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     weaponState: {
         title: 'Stan broni',
-        description: 'Śledzi wytrącenie i odłożenie broni. REVIEW: sprawdź, czy nazwa obejmuje całość.',
+        description:
+            'Śledzi z komunikatów gry, czy trzymasz broń; zasila wskaźnik w stopce.',
     },
     zaskTimer: {
         title: 'Licznik zaskoczenia',
@@ -142,7 +145,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     tempBinds: {
         title: 'Bindy tymczasowe',
-        description: 'Krótkotrwałe przypisania klawiszy zakładane przez inne skrypty.',
+        description:
+            'Aliasy /tbind1 i /tbind2 — krótkotrwałe przypisania klawiszy zakładane przez inne skrypty.',
     },
     walkCommands: {
         title: 'Polecenia wokół ruchu',
@@ -268,7 +272,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     lvlCalc: {
         title: 'Kalkulator poziomu',
-        description: 'Przelicza sumę podcech na poziom doświadczenia.',
+        description:
+            'Przechwytuje „cechy” i dolicza do wyniku poziom doświadczenia z sumy podcech.',
     },
     cechyHistory: {
         title: 'Historia cech',
@@ -352,11 +357,13 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     skills: {
         title: 'Umiejętności',
-        description: 'Koloruje poziomy umiejętności według stopnia opanowania.',
+        description:
+            'Przechwytuje „um” i koloruje poziomy umiejętności według stopnia opanowania.',
     },
     languageSkills: {
         title: 'Znajomość języków',
-        description: 'Śledzi poziom znajomości języków i maksima możliwe do osiągnięcia.',
+        description:
+            'Przechwytuje „jezyki” — poziom znajomości języków i maksima możliwe do osiągnięcia.',
     },
     coinColors: {
         title: 'Kolory monet',
@@ -432,7 +439,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     language: {
         title: 'Język mówienia',
-        description: 'Przełącza język, w którym mówisz, i dokłada odpowiednie aliasy.',
+        description:
+            'Przechwytuje „justaw” — przełącza język, w którym mówisz, i dokłada odpowiednie aliasy.',
     },
     shortcuts: {
         title: 'Skróty lokacji',
@@ -492,7 +500,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     combatWindow: {
         title: 'Okno walki',
-        description: 'Przenosi komunikaty walki do osobnego okna; aliasy /walka i /postawa.',
+        description:
+            'Przenosi komunikaty walki do osobnego okna; aliasy /walkaw i /postawaw.',
     },
     combatStats: {
         title: 'Statystyki walki',
@@ -551,8 +560,9 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
         description: 'Alias /przedstawieni — kto się tobie przedstawił i pod jakim imieniem.',
     },
     aligatorEmoji: {
-        title: 'Emoji aligatora',
-        description: 'Drobny żart — podmienia wzmianki o aligatorze na emoji. REVIEW: potwierdź, że to cały zakres.',
+        title: 'Ostrzeżenie o aligatorze',
+        description:
+            'Wyróżnia komunikat o czymś zbliżającym się przez szuwary i dokłada emoji aligatora.',
     },
     staticMapWindow: {
         title: 'Okno mapy',
@@ -564,7 +574,8 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     afterDeathProgress: {
         title: 'Postępy po śmierci',
-        description: 'Pilnuje, jak odrabiasz straty po śmierci. REVIEW: sprawdź, czy chodzi o postępy czy o doświadczenie.',
+        description:
+            'Dopisuje [n/15] do komunikatu o cechach osłabionych po śmierci, pokazując ile brakuje.',
     },
     brokilon: {
         title: 'Brokilon',
@@ -611,8 +622,9 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
         description: 'Alias /tcolor — podświetla podaną frazę do końca sesji.',
     },
     opal: {
-        title: 'Opal',
-        description: 'Obsługa przejścia w jaskini z opalem. REVIEW: skrypt zawiera notatkę „for better future implementation”.',
+        title: 'Przejście w jaskini',
+        description:
+            'Dopisuje do mapy wyjście w górę z jaskini, gdy zejdziesz nim w dół.',
     },
     lastSeen: {
         title: 'Ostatnio widziane HP',
@@ -620,6 +632,7 @@ export const scriptCatalog: Record<string, ScriptCatalogEntry> = {
     },
     bilety: {
         title: 'Bilety',
-        description: 'Kupuje bilety dla całej drużyny obecnej na lokacji.',
+        description:
+            'Alias /bilety kupuje bilety dla całej drużyny obecnej na lokacji.',
     },
 };

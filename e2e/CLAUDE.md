@@ -24,6 +24,15 @@ after a few runs new connections fail with `net::ERR_ADDRESS_IN_USE` and the
 webServer times out. They take a while to drain. Either wait, or point the run at
 another port.
 
+**Wall time is the tell for spurious failures.** A healthy local full run is about
+19 minutes. When it stretches past ~22 — another build running, a busy machine —
+expect a scattering of 10-16 failures across specs that have nothing to do with each
+other or with what you changed, all of which pass when re-run in isolation. Observed
+three times; every time the code was fine. Before investigating such a list, re-run
+the failures with `--workers=1`: if they pass, it was contention.
+
+Do not run anything else while a full suite is going, `npx tsc --noEmit` included.
+
 Prefer running the specs that cover what changed over the whole suite; CI shards it
 8 ways on clean runners, which is where a full green is actually established.
 

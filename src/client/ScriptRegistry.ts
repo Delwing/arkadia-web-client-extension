@@ -363,6 +363,14 @@ export class ScriptRegistry {
             const teardown = entry.run(client, client.aliases);
             if (typeof teardown === "function") {
                 scope.onDispose(teardown as () => void);
+            } else if (teardown && typeof (teardown as Promise<unknown>).catch === "function") {
+                // Five scripts have an async init and register only after awaiting
+                // a data load. This catch is the only thing between that load
+                // failing and the script silently never existing: the try/catch
+                // here sees a synchronous throw, never a rejected promise.
+                void (teardown as Promise<unknown>).catch(error => {
+                    console.error(`[ScriptRegistry] Script "${id}" failed while starting:`, error);
+                });
             }
         } catch (error) {
             // Don't leave half a script wired up: whatever it managed to register

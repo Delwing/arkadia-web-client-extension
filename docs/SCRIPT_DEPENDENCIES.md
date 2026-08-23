@@ -122,13 +122,27 @@ The draft lands as a catalog module rather than as arguments at the 148
 `registry.start` calls, which would bury `main.ts`. One file to review, one file to
 diff.
 
-**Drafted: `src/client/scriptCatalog.ts`, all 148, awaiting review.** Titles come
+**Drafted and reviewed: `src/client/scriptCatalog.ts`, all 148.** Titles come
 from the script's own aliases where it has them (`/zabici` → *Licznik zabitych*),
 from its trigger patterns where it does not, and from settings keys for the handful
-with neither. Entries the code was least clear about are marked `REVIEW:` in the
-description — those are the ones worth reading first. Four tests hold the file
-honest: it covers exactly the registered set in both directions, every entry has
-both fields, and no two scripts share a title.
+with neither. Six entries the code was least clear about carried a `REVIEW:` marker for the
+reviewer. Those markers turned out to render straight into the settings list once
+stage 6 shipped, which is how a drafting note became a user-visible artefact; all
+are gone and a test now fails on any that come back.
+
+Reviewing them against the running client — not against the source a second time —
+found four labels that were simply wrong: `mapAliases` claimed `/idz`, which
+belongs to `idz`; `combatWindow` claimed `/walka` and `/postawa`, when the real
+commands are `/walka okno` and `/postawa okno`; `language` claimed `/justaw`, which
+has no slash; and `aligatorEmoji` was described as a joke when it is a warning that
+something is coming through the reeds. Six more scripts turned out to intercept
+plain game commands — `cechy`, `um`, `jezyki`, `justaw` — which no description had
+mentioned.
+
+Six tests hold the file honest: it covers exactly the registered set in both
+directions, every entry has both fields, no two scripts share a title, no
+description carries a draft marker, and every `/command` a description names is one
+the script really registers.
 
 Curating a smaller toggleable subset was considered and rejected: it makes the
 labelling job smaller but moves the judgement call ("is this one worth exposing?")

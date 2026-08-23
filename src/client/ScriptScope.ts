@@ -171,8 +171,18 @@ const REGISTRARS = new Set([
     'registerTokenTrigger',
 ]);
 
-/** Triggers registered through this facade are stamped with `owner`. */
-function scopedTriggers(triggers: Triggers, owner: string): Triggers {
+/**
+ * Triggers registered through this facade are stamped with `owner`, and refused
+ * once the scope is gone.
+ *
+ * The refusal is not belt-and-braces. Five scripts have an `async` init and
+ * register only after awaiting a data load — turn one off while that load is in
+ * flight and the registration lands after `removeByOwner` has already swept, so
+ * the trigger would stay for the rest of the session with no owner left to
+ * remove it. Dropping it is the right answer: the script is gone, and work it
+ * started before it stopped has nothing left to serve.
+ */
+function scopedTriggers(triggers: Triggers, owner: string, scope: ScriptScope): Triggers {
     const bind = bindCache();
     return new Proxy(triggers, {
         get(target, prop) {
@@ -182,24 +192,31 @@ function scopedTriggers(triggers: Triggers, owner: string): Triggers {
             return bind(prop, value, target, register => (...args: unknown[]) => {
                 const trigger = register.apply(target, args);
                 trigger.owner = owner;
+                if (scope.disposed) {
+                    target.removeTrigger(trigger);
+                }
                 return trigger;
             });
         },
     });
 }
 
-/** Aliases pushed through this facade are stamped with `owner`. */
-function scopedAliases(aliases: AliasList, owner: string): AliasList {
+/** Aliases pushed through this facade are stamped with `owner`, and dropped once
+ * the scope is gone. See scopedTriggers for why a late registration happens. */
+function scopedAliases(aliases: AliasList, owner: string, scope: ScriptScope): AliasList {
     const bind = bindCache();
     return new Proxy(aliases, {
         get(target, prop) {
             const value = Reflect.get(target, prop, target);
             if (typeof value !== 'function') return value;
             if (prop !== 'push') return bind(prop, value, target);
-            return bind(prop, value, target, () => (...items: AliasEntry[]) => target.push(...items.map(item => {
-                item.owner = owner;
-                return item;
-            })));
+            return bind(prop, value, target, () => (...items: AliasEntry[]) => {
+                if (scope.disposed) return target.length;
+                return target.push(...items.map(item => {
+                    item.owner = owner;
+                    return item;
+                }));
+            });
         },
     });
 }
@@ -213,8 +230,8 @@ function scopedAliases(aliases: AliasList, owner: string): AliasList {
  */
 export function createScriptScope(client: Client, id: string): {client: Client; scope: ScriptScope} {
     const scope = new Scope(id);
-    const triggers = scopedTriggers(client.Triggers, id);
-    const aliases = scopedAliases(client.aliases, id);
+    const triggers = scopedTriggers(client.Triggers, id, scope);
+    const aliases = scopedAliases(client.aliases, id, scope);
     const hookIds = new Set<string>();
     const bind = bindCache();
 
