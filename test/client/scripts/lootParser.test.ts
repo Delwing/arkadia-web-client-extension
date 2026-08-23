@@ -4,7 +4,6 @@ import { characterStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';
 import initLootParser, {
     getRoomContents,
-    getBodyExtras,
     getBodyStertyMap,
     clearBodyExtras,
     setLootPopupMode,

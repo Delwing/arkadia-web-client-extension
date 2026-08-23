@@ -165,6 +165,20 @@ export function getPluginManager() {
     return pluginManager;
 }
 
+// The live registry, so the settings UI can list and toggle what is running.
+let scriptRegistry: ScriptRegistry | null = null;
+
+/**
+ * The registry for the running client, or null before bootstrap.
+ *
+ * The toggle list needs to read state and turn scripts on and off, and the
+ * registry belongs to the client. Reached the same way `getPluginManager` is,
+ * rather than by handing the UI a second source of truth to keep in sync.
+ */
+export function getScriptRegistry(): ScriptRegistry | null {
+    return scriptRegistry;
+}
+
 /**
  * Start every script, each inside its own scope so it can be stopped again.
  *
@@ -179,6 +193,7 @@ export function getPluginManager() {
  */
 export function registerScripts(client: Client): ScriptRegistry {
     const registry = new ScriptRegistry(client, characterDisabledScripts)
+    scriptRegistry = registry
     const aliases = client.aliases
 
     // --- The client's own registrations --------------------------------------

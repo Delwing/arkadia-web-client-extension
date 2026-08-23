@@ -41,6 +41,7 @@ import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import Binds from "./options/Binds.tsx"
 import Scripts from "./options/Scripts.tsx"
+import Features from "./options/Features.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
 import CharacterSettings from "./options/CharacterSettings.tsx"
@@ -603,6 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
     const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
     const scriptsButton = document.getElementById('scripts-button') as HTMLButtonElement | null;
+    const featuresButton = document.getElementById('features-button') as HTMLButtonElement | null;
     const aliasesButton = document.getElementById('aliases-button') as HTMLButtonElement | null;
     const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
@@ -630,6 +632,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const bindsModal = bindsModalElement ? new Modal(bindsModalElement) : null;
     const scriptsModalElement = document.getElementById('scripts-modal');
     const scriptsModal = scriptsModalElement ? new Modal(scriptsModalElement) : null;
+    const featuresModalElement = document.getElementById('features-modal');
+    const featuresModal = featuresModalElement ? new Modal(featuresModalElement) : null;
     const aliasesModalElement = document.getElementById('aliases-modal');
     const aliasesModal = aliasesModalElement ? new Modal(aliasesModalElement) : null;
     const triggersModalElement = document.getElementById('triggers-modal');
@@ -802,6 +806,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scriptsModal) {
             scriptsModal.hide();
         }
+        if (featuresModal) {
+            featuresModal.hide();
+        }
         if (aliasesModal) {
             aliasesModal.hide();
         }
@@ -937,6 +944,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scriptsButton && scriptsModal) {
         scriptsButton.addEventListener('click', () => {
             scriptsModal.show();
+        });
+    }
+
+    if (featuresButton && featuresModal) {
+        featuresButton.addEventListener('click', () => {
+            featuresModal.show();
         });
     }
 
@@ -1271,6 +1284,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const scriptsRoot = document.getElementById('scripts-options');
     if (scriptsRoot) {
         createRoot(scriptsRoot).render(createElement(Scripts));
+    }
+
+    const featuresRoot = document.getElementById('features-options');
+    if (featuresRoot) {
+        createRoot(featuresRoot).render(createElement(Features));
     }
 
     const aliasesRoot = document.getElementById('aliases-options');
