@@ -12,6 +12,7 @@ import { getItemCssColor } from '@client/scripts/prettyContainers';
 import { getContainer } from '@client/scripts/bagManager';
 import { getZlomFormatting } from '@client/scripts/zlom';
 import { getHerbManager } from '@modules/core/herbManagerProvider';
+import { characterStorage } from '@modules/core/storage';
 
 /**
  * The real thing: every script started the way the app starts them.
@@ -147,5 +148,73 @@ test('leaves no module singleton answering', () => {
             expect(parts).toHaveLength(1);
             expect(parts[0].text).toBe('Rozgladasz sie dookola.');
         });
+    });
+});
+
+describe('registerScripts honours what the character turned off', () => {
+    // The real path, not a stub of it: registerScripts reads the same
+    // characterStorage key the settings UI writes.
+    let client: Client;
+
+    beforeEach(() => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        client = createClient();
+    });
+
+    test('a disabled script is declared but never started', () => {
+        characterStorage.set('disabled_scripts', ['kill'] as never);
+
+        const registry = registerScripts(client);
+
+        expect(registry.declared).toContain('kill');
+        expect(registry.isRunning('kill')).toBe(false);
+        expect(registry.stateOf('kill')).toEqual({status: 'off'});
+        // And it left nothing behind to find, exactly as if it had been stopped.
+        expect(getKillData()).toBeNull();
+        expect([...client.aliases].some(alias => alias.pattern.toString().includes('zabici'))).toBe(false);
+    });
+
+    test('everything else still starts', () => {
+        characterStorage.set('disabled_scripts', ['kill'] as never);
+
+        const registry = registerScripts(client);
+
+        expect(registry.running).toHaveLength(registry.declared.length - 1);
+        expect(registry.isRunning('improveCounter')).toBe(true);
+    });
+
+    test('turning off shortcuts takes idz and mapAliases with it', () => {
+        // The real cascade, with the real declarations from main.ts.
+        characterStorage.set('disabled_scripts', ['shortcuts'] as never);
+
+        const registry = registerScripts(client);
+
+        expect(registry.stateOf('idz')).toEqual({status: 'blocked', by: 'shortcuts'});
+        expect(registry.stateOf('mapAliases')).toEqual({status: 'blocked', by: 'shortcuts'});
+        expect(registry.isRunning('idz')).toBe(false);
+        expect(getShortcut('bank')).toBeUndefined();
+    });
+
+    test('an id that no longer exists is ignored rather than fatal', () => {
+        // A script can be renamed or removed while a character still has it in
+        // their disabled list. That must not stop the client from starting.
+        characterStorage.set('disabled_scripts', ['scriptThatWasDeleted'] as never);
+
+        expect(() => registerScripts(client)).not.toThrow();
+    });
+
+    test('a script turned off at runtime can be turned back on', () => {
+        const registry = registerScripts(client);
+        expect(registry.isRunning('lastSeen')).toBe(true);
+
+        registry.disable('lastSeen');
+        expect(registry.isRunning('lastSeen')).toBe(false);
+        expect(characterStorage.get('disabled_scripts')).toEqual(['lastSeen']);
+
+        registry.enable('lastSeen');
+
+        expect(registry.isRunning('lastSeen')).toBe(true);
+        expect(characterStorage.get('disabled_scripts')).toEqual([]);
     });
 });

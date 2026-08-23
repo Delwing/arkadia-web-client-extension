@@ -273,6 +273,14 @@ export interface KnownEvents {
     "clock.update": ClockUpdatePayload;
     "clock.domain.active": ClockDomainActivePayload;
     "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+    /**
+     * Which feature scripts are running, emitted whenever that changes.
+     * The registry lives in the client; the settings list, the context menus and
+     * the popups live in the UI, so anything that hides itself when its owner is
+     * off listens for this. `disabled` is what the user turned off by hand;
+     * anything running:false but not in `disabled` is blocked behind a requires.
+     */
+    "scripts.stateChanged": { running: string[]; disabled: string[] };
     "worldTime.popup.open": void;
     "clock.mismatch": ClockMismatchPayload;
     "clock.sunrise": ClockSunEventPayload;

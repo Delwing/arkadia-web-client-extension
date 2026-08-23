@@ -2,7 +2,8 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Client from '@client/Client';
-import { ScriptRegistry } from '@client/ScriptRegistry';
+import eventBus from '@modules/core/eventBus';
+import { ScriptRegistry, type ScriptStart, type ScriptMeta } from '@client/ScriptRegistry';
 import initLamp from '@client/scripts/lamp';
 import initMoveMode from '@client/scripts/moveMode';
 import initEnemyBinds from '@client/scripts/enemyBinds';
@@ -29,6 +30,12 @@ function createClient(): Client {
     });
 }
 
+/** An in-memory DisabledScriptStore, so a test can start from a given set. */
+function memoryStore(initial: string[] = []) {
+    let ids = [...initial];
+    return {read: () => ids, write: (next: string[]) => { ids = next; }};
+}
+
 const scriptsDir = resolve(process.cwd(), 'src/client/scripts');
 const mainPath = resolve(process.cwd(), 'src/client/main.ts');
 
@@ -42,10 +49,16 @@ describe('ScriptRegistry', () => {
         registry = new ScriptRegistry(host);
     });
 
-    test('a started script gets a client and the alias list', () => {
+    /** Declare a plan and run it, for the tests that are about one script's mechanics. */
+    function launch(...scripts: Array<[string, ScriptStart] | [string, ScriptStart, ScriptMeta]>) {
+        for (const [id, run, meta] of scripts) registry.declare(id, run, meta);
+        registry.launch();
+    }
+
+    test('a launched script gets a client and the alias list', () => {
         const start = vi.fn();
 
-        registry.start('demo', start);
+        launch(['demo', start]);
 
         expect(start).toHaveBeenCalledTimes(1);
         const [client, aliases] = start.mock.calls[0];
@@ -53,21 +66,30 @@ describe('ScriptRegistry', () => {
         expect(aliases).toBe(client.aliases);
     });
 
-    test('it tracks what is running, in start order', () => {
-        registry.start('a', () => {});
-        registry.start('b', () => {});
+    test('it tracks what is running, in declared order', () => {
+        launch(['a', () => {}], ['b', () => {}]);
 
         expect(registry.running).toEqual(['a', 'b']);
         expect(registry.isRunning('a')).toBe(true);
         expect(registry.isRunning('c')).toBe(false);
     });
 
+    test('declaring does not start anything on its own', () => {
+        const start = vi.fn();
+        registry.declare('demo', start);
+
+        expect(start).not.toHaveBeenCalled();
+        expect(registry.running).toEqual([]);
+        // Declared but not running is exactly the state a disabled script is in.
+        expect(registry.declared).toEqual(['demo']);
+    });
+
     test('stopping undoes what the script registered', () => {
         const before = host.Triggers.triggers.size;
-        registry.start('demo', (client, aliases) => {
+        launch(['demo', (client, aliases) => {
             client.Triggers.registerTrigger(/hello/, line => line);
             aliases.push({ pattern: /^\/demo$/, callback: () => {} });
-        });
+        }]);
 
         expect(registry.stop('demo')).toBe(true);
 
@@ -80,48 +102,46 @@ describe('ScriptRegistry', () => {
         expect(registry.stop('nope')).toBe(false);
     });
 
-    test('a script can be restarted after being stopped', () => {
-        const start = vi.fn();
-        registry.start('demo', start);
+    test('a stopped script keeps its place in the plan', () => {
+        // This is what makes a toggle possible: the registry still knows how to
+        // start it again, and what it declared.
+        launch(['demo', () => {}, {optional: ['demo']}]);
         registry.stop('demo');
 
-        registry.start('demo', start);
-
-        expect(start).toHaveBeenCalledTimes(2);
-        expect(registry.isRunning('demo')).toBe(true);
+        expect(registry.declared).toEqual(['demo']);
+        expect(registry.metaFor('demo')).toEqual({optional: ['demo']});
     });
 
-    test('starting the same id twice is a mistake, not a no-op', () => {
-        registry.start('demo', () => {});
+    test('declaring the same id twice is a mistake, not a no-op', () => {
+        registry.declare('demo', () => {});
 
-        expect(() => registry.start('demo', () => {})).toThrow(/already running/);
+        expect(() => registry.declare('demo', () => {})).toThrow(/already declared/);
+    });
+
+    test('launching twice is refused', () => {
+        launch(['demo', () => {}]);
+
+        expect(() => registry.launch()).toThrow(/already been launched/);
     });
 
     test('a script that throws leaves nothing behind', () => {
         const before = host.Triggers.triggers.size;
 
-        expect(() => registry.start('demo', (client) => {
+        expect(() => launch(['demo', (client) => {
             client.Triggers.registerTrigger(/hello/, line => line);
             throw new Error('boom');
-        })).toThrow('boom');
+        }])).toThrow('boom');
 
         expect(registry.isRunning('demo')).toBe(false);
         expect(host.Triggers.triggers.size).toBe(before);
     });
 
-    test('a script that throws leaves no declaration behind either', () => {
-        expect(() => registry.start('demo', () => {
-            throw new Error('boom');
-        }, {optional: ['other']})).toThrow('boom');
-
-        expect(registry.metaFor('demo')).toBeUndefined();
-        expect(() => registry.verifyDependencies()).not.toThrow();
-    });
-
     test('stopAll unwinds newest first', () => {
         const order: string[] = [];
-        registry.start('a', client => client.scope.onDispose(() => order.push('a')));
-        registry.start('b', client => client.scope.onDispose(() => order.push('b')));
+        launch(
+            ['a', client => client.scope.onDispose(() => order.push('a'))],
+            ['b', client => client.scope.onDispose(() => order.push('b'))],
+        );
 
         registry.stopAll();
 
@@ -135,7 +155,7 @@ describe('registerScripts covers exactly the scripts directory', () => {
     // everything directly under scripts/ is registered, and nothing else is.
     // Read statically — starting all 148 for real would be a slow way to count.
     const source = readFileSync(mainPath, 'utf8');
-    const registered = Array.from(source.matchAll(/^\s*registry\.start\('([^']+)'/gm), m => m[1]);
+    const registered = Array.from(source.matchAll(/^\s*registry\.declare\('([^']+)'/gm), m => m[1]);
     const modules = readdirSync(scriptsDir, { withFileTypes: true })
         .filter(entry => entry.isFile() && entry.name.endsWith('.ts'))
         .map(entry => entry.name.replace(/\.ts$/, ''));
@@ -176,7 +196,8 @@ describe('stopping a real script takes its timers and listeners with it', () => 
     test('lamp stops counting down', () => {
         const ticks: unknown[] = [];
         host.on('lampTimer', seconds => ticks.push(seconds));
-        registry.start('lamp', initLamp);
+        registry.declare('lamp', initLamp);
+        registry.launch();
         host.onLine('Zapalasz lampe.', 'text');
 
         vi.advanceTimersByTime(3000);
@@ -190,7 +211,8 @@ describe('stopping a real script takes its timers and listeners with it', () => 
     });
 
     test('moveMode stops answering the keyboard', () => {
-        registry.start('moveMode', initMoveMode);
+        registry.declare('moveMode', initMoveMode);
+        registry.launch();
         host.moveMode = 0;
 
         window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Backquote' }));
@@ -230,55 +252,257 @@ describe('declared dependencies', () => {
         registry = new ScriptRegistry(host);
     });
 
-    test('an after edge whose target is not running yet is refused', () => {
-        expect(() => registry.start('combatWindow', () => {}, { after: ['gags'] }))
-            .toThrow(/declares after: "gags"/);
+    test('an after edge whose target is declared later is refused', () => {
+        registry.declare('combatWindow', () => {}, { after: ['gags'] });
+        registry.declare('gags', () => {});
+
+        expect(() => registry.launch()).toThrow(/declares after: "gags"/);
     });
 
-    test('the failed start leaves nothing registered', () => {
-        expect(() => registry.start('combatWindow', () => {}, { after: ['gags'] })).toThrow();
+    test('an after edge whose target is declared earlier is fine', () => {
+        registry.declare('gags', () => {});
+        registry.declare('combatWindow', () => {}, { after: ['gags'] });
 
-        expect(registry.isRunning('combatWindow')).toBe(false);
-        expect(registry.metaFor('combatWindow')).toBeUndefined();
+        expect(() => registry.launch()).not.toThrow();
+        expect(registry.running).toEqual(['gags', 'combatWindow']);
     });
 
-    test('an after edge whose target is already running is fine', () => {
-        registry.start('gags', () => {});
+    test('an after edge on a script the user turned off is not a violation', () => {
+        // `after` is about sequence, and a script that is not running has no
+        // sequence to be in. Refusing here would make turning off `gags` take
+        // `combatWindow` with it, which is what `requires` is for.
+        const registry = new ScriptRegistry(host, memoryStore(['gags']));
+        registry.declare('gags', () => {});
+        registry.declare('combatWindow', () => {}, { after: ['gags'] });
 
-        expect(() => registry.start('combatWindow', () => {}, { after: ['gags'] })).not.toThrow();
+        expect(() => registry.launch()).not.toThrow();
+        expect(registry.running).toEqual(['combatWindow']);
     });
 
-    test('requires may name a script that starts later', () => {
+    test('requires may name a script declared later', () => {
         // Four of the real edges run consumer-first — itemCollector before
         // lootParser, idz before shortcuts — and work because the read happens in a
         // runtime callback. requires is about enablement, not order.
-        registry.start('itemCollector', () => {}, { requires: ['lootParser'] });
-        registry.start('lootParser', () => {});
+        registry.declare('itemCollector', () => {}, { requires: ['lootParser'] });
+        registry.declare('lootParser', () => {});
 
-        expect(() => registry.verifyDependencies()).not.toThrow();
+        expect(() => registry.launch()).not.toThrow();
     });
 
     test('a dependency on a script that does not exist is caught', () => {
-        registry.start('pipe', () => {}, { requires: ['herbCouner'] });
+        registry.declare('pipe', () => {}, { requires: ['herbCouner'] });
 
-        expect(() => registry.verifyDependencies()).toThrow(/pipe -> herbCouner/);
+        expect(() => registry.launch()).toThrow(/pipe -> herbCouner/);
     });
 
     test('an optional dependency is checked for existence too', () => {
-        registry.start('deposits', () => {}, { optional: ['nosuchscript'] });
+        registry.declare('deposits', () => {}, { optional: ['nosuchscript'] });
 
-        expect(() => registry.verifyDependencies()).toThrow(/deposits -> nosuchscript/);
+        expect(() => registry.launch()).toThrow(/deposits -> nosuchscript/);
     });
 
-    test('stopping a script leaves its dependents declaring something absent', () => {
-        // Startup check only. Once the toggle UI exists this is the signal to
-        // cascade or degrade, not to throw — see stage 6.
-        registry.start('lamp', () => {}, { optional: ['bagManager'] });
-        registry.start('bagManager', () => {});
+    test('a dependency that is merely turned off is not an error', () => {
+        // Checked against the plan, not against what is running: turned off is a
+        // legitimate state, never-declared is a typo.
+        const registry = new ScriptRegistry(host, memoryStore(['bagManager']));
+        registry.declare('lamp', () => {}, { optional: ['bagManager'] });
+        registry.declare('bagManager', () => {});
 
-        registry.stop('bagManager');
+        expect(() => registry.launch()).not.toThrow();
+    });
+});
 
-        expect(() => registry.verifyDependencies()).toThrow(/lamp -> bagManager/);
+describe('turning scripts off and on', () => {
+    let host: Client;
+    let registry: ScriptRegistry;
+    let store: ReturnType<typeof memoryStore>;
+
+    beforeEach(() => {
+        localStorage.clear();
+        host = createClient();
+        store = memoryStore();
+        registry = new ScriptRegistry(host, store);
+    });
+
+    test('a script the user turned off never starts', () => {
+        const start = vi.fn();
+        const registry = new ScriptRegistry(host, memoryStore(['demo']));
+        registry.declare('demo', start);
+
+        registry.launch();
+
+        expect(start).not.toHaveBeenCalled();
+        expect(registry.running).toEqual([]);
+        expect(registry.stateOf('demo')).toEqual({status: 'off'});
+    });
+
+    test('disabling stops it and undoes what it registered', () => {
+        const before = host.Triggers.triggers.size;
+        registry.declare('demo', client => client.Triggers.registerTrigger(/hi/, line => line));
+        registry.launch();
+
+        expect(registry.disable('demo')).toEqual(['demo']);
+
+        expect(registry.isRunning('demo')).toBe(false);
+        expect(host.Triggers.triggers.size).toBe(before);
+    });
+
+    test('enabling starts it again', () => {
+        const start = vi.fn();
+        registry.declare('demo', start);
+        registry.launch();
+        registry.disable('demo');
+
+        expect(registry.enable('demo')).toEqual(['demo']);
+
+        expect(start).toHaveBeenCalledTimes(2);
+        expect(registry.stateOf('demo')).toEqual({status: 'running'});
+    });
+
+    test('the choice is persisted, and honoured on the next launch', () => {
+        registry.declare('demo', () => {});
+        registry.launch();
+        registry.disable('demo');
+
+        expect(store.read()).toEqual(['demo']);
+
+        const next = new ScriptRegistry(host, store);
+        const start = vi.fn();
+        next.declare('demo', start);
+        next.launch();
+
+        expect(start).not.toHaveBeenCalled();
+    });
+
+    test('disabling twice changes nothing the second time', () => {
+        registry.declare('demo', () => {});
+        registry.launch();
+        registry.disable('demo');
+
+        expect(registry.disable('demo')).toEqual([]);
+    });
+
+    test('toggling something that was never declared is a mistake', () => {
+        expect(() => registry.disable('nope')).toThrow(/not declared/);
+        expect(() => registry.enable('nope')).toThrow(/not declared/);
+    });
+});
+
+describe('the requires cascade', () => {
+    let host: Client;
+    let registry: ScriptRegistry;
+
+    beforeEach(() => {
+        localStorage.clear();
+        host = createClient();
+        registry = new ScriptRegistry(host);
+        // The real shape: idz and mapAliases cannot work without shortcuts.
+        registry.declare('shortcuts', () => {});
+        registry.declare('idz', () => {}, { requires: ['shortcuts'] });
+        registry.declare('mapAliases', () => {}, { requires: ['shortcuts'] });
+        registry.declare('deep', () => {}, { requires: ['idz'] });
+        registry.launch();
+    });
+
+    test('turning off a dependency takes its dependants with it', () => {
+        const stopped = registry.disable('shortcuts');
+
+        expect(stopped.sort()).toEqual(['deep', 'idz', 'mapAliases', 'shortcuts']);
+        expect(registry.running).toEqual([]);
+    });
+
+    test('the cascade is reported as blocked, not as a choice the user made', () => {
+        registry.disable('shortcuts');
+
+        expect(registry.stateOf('shortcuts')).toEqual({status: 'off'});
+        expect(registry.stateOf('idz')).toEqual({status: 'blocked', by: 'shortcuts'});
+        // Two hops from the script that was actually turned off.
+        expect(registry.stateOf('deep')).toEqual({status: 'blocked', by: 'shortcuts'});
+    });
+
+    test('only the user’s own choice is stored, never the cascade', () => {
+        const store = memoryStore();
+        const registry = new ScriptRegistry(host, store);
+        registry.declare('shortcuts', () => {});
+        registry.declare('idz', () => {}, { requires: ['shortcuts'] });
+        registry.launch();
+
+        registry.disable('shortcuts');
+
+        // Storing `idz` too would make it indistinguishable from a deliberate
+        // choice, and re-enabling shortcuts would leave it off for good.
+        expect(store.read()).toEqual(['shortcuts']);
+    });
+
+    test('re-enabling the dependency brings the dependants back', () => {
+        registry.disable('shortcuts');
+
+        const started = registry.enable('shortcuts');
+
+        expect(started).toEqual(['shortcuts', 'idz', 'mapAliases', 'deep']);
+        expect(registry.running).toEqual(['shortcuts', 'idz', 'mapAliases', 'deep']);
+    });
+
+    test('a dependant turned off by hand stays off when the dependency returns', () => {
+        registry.disable('idz');
+        registry.disable('shortcuts');
+
+        registry.enable('shortcuts');
+
+        expect(registry.isRunning('shortcuts')).toBe(true);
+        expect(registry.isRunning('mapAliases')).toBe(true);
+        expect(registry.stateOf('idz')).toEqual({status: 'off'});
+        // deep requires idz, which the user turned off, so it stays blocked.
+        expect(registry.stateOf('deep')).toEqual({status: 'blocked', by: 'idz'});
+    });
+
+    test('a cycle in requires does not hang the check', () => {
+        // Nothing stops someone writing one; `requires` is a declaration.
+        const registry = new ScriptRegistry(host, memoryStore());
+        registry.declare('a', () => {}, { requires: ['b'] });
+        registry.declare('b', () => {}, { requires: ['a'] });
+
+        expect(() => registry.launch()).not.toThrow();
+        expect(registry.running).toEqual(['a', 'b']);
+    });
+});
+
+describe('the running set is published to the UI', () => {
+    let host: Client;
+    let registry: ScriptRegistry;
+    let seen: Array<{ running: string[]; disabled: string[] }>;
+
+    beforeEach(() => {
+        localStorage.clear();
+        host = createClient();
+        registry = new ScriptRegistry(host);
+        seen = [];
+        eventBus.on('scripts.stateChanged', payload => seen.push(payload));
+    });
+
+    afterEach(() => {
+        eventBus.removeAllListeners?.('scripts.stateChanged');
+    });
+
+    test('launching announces what is running', () => {
+        registry.declare('a', () => {});
+        registry.declare('b', () => {});
+
+        registry.launch();
+
+        expect(seen.at(-1)).toEqual({ running: ['a', 'b'], disabled: [] });
+    });
+
+    test('a toggle announces the new state', () => {
+        registry.declare('a', () => {});
+        registry.declare('b', () => {}, { requires: ['a'] });
+        registry.launch();
+
+        registry.disable('a');
+
+        // The UI needs both halves: `running` to hide what is gone, `disabled` to
+        // show a switch as off rather than as blocked.
+        expect(seen.at(-1)).toEqual({ running: [], disabled: ['a'] });
     });
 });
 
@@ -294,7 +518,8 @@ describe('stopping a script puts back what it changed on the client', () => {
 
     test('enemyBinds restores the stubs Client declares', () => {
         const stub = host.attackEnemySlot;
-        registry.start('enemyBinds', initEnemyBinds);
+        registry.declare('enemyBinds', initEnemyBinds);
+        registry.launch();
         expect(host.attackEnemySlot).not.toBe(stub);
 
         registry.stop('enemyBinds');
@@ -307,7 +532,8 @@ describe('stopping a script puts back what it changed on the client', () => {
 
     test('selfEvaluation unmutes the item evaluations', () => {
         const aliases: { pattern: RegExp; callback: Function }[] = [];
-        registry.start('selfEvaluation', (client) => initSelfEvaluation(client, aliases));
+        registry.declare('selfEvaluation', (client) => initSelfEvaluation(client, aliases));
+        registry.launch();
         aliases.find(alias => alias.pattern.test("/ocen"))!.callback();
         expect(host.suppressItemEvaluation, 'the bulk read-out mutes them').toBe(true);
 
@@ -385,7 +611,8 @@ describe('a stopped script stops answering for its data', () => {
     });
 
     test('kill stops reporting a session', () => {
-        registry.start('kill', (client, aliases) => initKillCounter(client, aliases));
+        registry.declare('kill', (client, aliases) => initKillCounter(client, aliases));
+        registry.launch();
         expect(getKillData()).not.toBeNull();
 
         registry.stop('kill');
@@ -395,7 +622,8 @@ describe('a stopped script stops answering for its data', () => {
     });
 
     test('improveCounter stops reporting progress', () => {
-        registry.start('improveCounter', (client, aliases) => initImproveCounter(client, aliases));
+        registry.declare('improveCounter', (client, aliases) => initImproveCounter(client, aliases));
+        registry.launch();
         expect(getImproveData()).not.toBeNull();
 
         registry.stop('improveCounter');
@@ -406,7 +634,8 @@ describe('a stopped script stops answering for its data', () => {
     });
 
     test('lootParser stops reporting what is on the ground', () => {
-        registry.start('lootParser', initLootParser);
+        registry.declare('lootParser', initLootParser);
+        registry.launch();
         expect(getRoomContents()).not.toBeNull();
 
         registry.stop('lootParser');
@@ -418,7 +647,8 @@ describe('a stopped script stops answering for its data', () => {
 
     test('shortcuts stops resolving names', () => {
         globalStorage.set('shortcuts', [{ key: 'bank', id: 123, label: 'Bank' }] as never);
-        registry.start('shortcuts', (client, aliases) => initShortcuts(client, aliases));
+        registry.declare('shortcuts', (client, aliases) => initShortcuts(client, aliases));
+        registry.launch();
         expect(getShortcut('bank')).toBe(123);
 
         registry.stop('shortcuts');
@@ -427,7 +657,8 @@ describe('a stopped script stops answering for its data', () => {
     });
 
     test('a stopped shortcuts is not refilled by an edit in the options', () => {
-        registry.start('shortcuts', (client, aliases) => initShortcuts(client, aliases));
+        registry.declare('shortcuts', (client, aliases) => initShortcuts(client, aliases));
+        registry.launch();
         registry.stop('shortcuts');
 
         globalStorage.set('shortcuts', [{ key: 'bank', id: 123, label: 'Bank' }] as never);
@@ -436,7 +667,8 @@ describe('a stopped script stops answering for its data', () => {
     });
 
     test('prettyContainers stops colouring items', () => {
-        registry.start('prettyContainers', initContainers);
+        registry.declare('prettyContainers', initContainers);
+        registry.launch();
         expect(getItemCssColor('zlota moneta')).toBe('#ffd700');
 
         registry.stop('prettyContainers');
@@ -446,7 +678,8 @@ describe('a stopped script stops answering for its data', () => {
 
     test('bagManager falls back to the default bag', () => {
         characterStorage.set('containers', { money: 'sakiewka', gems: 'sakiewka', food: 'sakiewka', other: 'sakiewka' } as never);
-        registry.start('bagManager', (client, aliases) => initBagManager(client, aliases));
+        registry.declare('bagManager', (client, aliases) => initBagManager(client, aliases));
+        registry.launch();
         expect(getContainer('money')).toBe('sakiewka');
 
         registry.stop('bagManager');
@@ -468,7 +701,8 @@ describe('a stopped script stops answering for its data', () => {
             zbroje: [],
         }, 'replace');
 
-        registry.start('zlom', (client, aliases) => initZlom(client, aliases));
+        registry.declare('zlom', (client, aliases) => initZlom(client, aliases));
+        registry.launch();
         expect(getZlomFormatting('zardzewialy nozyk')).toBeDefined();
 
         registry.stop('zlom');
@@ -483,7 +717,7 @@ describe('the script catalog covers exactly the registered scripts', () => {
     // The toggle list is only as good as its labels, and a script with no label
     // would either vanish from the list or show up as a bare module name. Both
     // directions are checked so neither side can drift.
-    const registered = [...readFileSync(mainPath, 'utf8').matchAll(/^\s*registry\.start\('([^']+)'/gm)]
+    const registered = [...readFileSync(mainPath, 'utf8').matchAll(/^\s*registry\.declare\('([^']+)'/gm)]
         .map(match => match[1]);
 
     test('every registered script has a label', () => {

@@ -43,6 +43,7 @@ export interface CharacterStorageSchema {
     clock_active_domain: string;
     language_max_levels: Record<string, number>;
     profession: string;
+    disabled_scripts: string[];
     introduced_remembered: string[];
     introduced_presented: string[];
     peopleLocalEvents: any; // TODO: type when people local events structure is defined
@@ -109,6 +110,7 @@ export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema,
     attack_mode: { notifyOnNull: true },
     chat_history: { notifyOnNull: true },
     containers: { notifyOnNull: true },
+    disabled_scripts: { notifyOnNull: true },
     deposits: { notifyOnNull: true },
     herb_counts: { notifyOnNull: true },
     improve_counter: { notifyOnNull: true },
