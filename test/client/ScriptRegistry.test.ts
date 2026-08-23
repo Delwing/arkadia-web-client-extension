@@ -16,6 +16,7 @@ import initContainers, { getItemCssColor } from '@client/scripts/prettyContainer
 import initBagManager, { getContainer } from '@client/scripts/bagManager';
 import initZlom, { mergeZlomData, getZlomFormatting } from '@client/scripts/zlom';
 import { __resetZlomStoreForTests } from '@modules/data/zlomStore';
+import { scriptCatalog } from '@client/scriptCatalog';
 
 function createClient(): Client {
     return new Client({
@@ -475,5 +476,42 @@ describe('a stopped script stops answering for its data', () => {
         // The entries live in IndexedDB and outlive the script, so "is there
         // anything to say" is the wrong question — "is anyone saying it" is.
         expect(getZlomFormatting('zardzewialy nozyk')).toBeUndefined();
+    });
+});
+
+describe('the script catalog covers exactly the registered scripts', () => {
+    // The toggle list is only as good as its labels, and a script with no label
+    // would either vanish from the list or show up as a bare module name. Both
+    // directions are checked so neither side can drift.
+    const registered = [...readFileSync(mainPath, 'utf8').matchAll(/^\s*registry\.start\('([^']+)'/gm)]
+        .map(match => match[1]);
+
+    test('every registered script has a label', () => {
+        expect(registered.filter(id => !scriptCatalog[id])).toEqual([]);
+    });
+
+    test('the catalog names nothing that is not registered', () => {
+        expect(Object.keys(scriptCatalog).filter(id => !registered.includes(id))).toEqual([]);
+    });
+
+    test('every entry has a title and a description', () => {
+        const incomplete = Object.entries(scriptCatalog)
+            .filter(([, entry]) => !entry.title?.trim() || !entry.description?.trim())
+            .map(([id]) => id);
+
+        expect(incomplete).toEqual([]);
+    });
+
+    test('no two scripts share a title', () => {
+        // A settings list with two rows reading the same thing is unusable.
+        const seen = new Map<string, string>();
+        const clashes: string[] = [];
+        for (const [id, entry] of Object.entries(scriptCatalog)) {
+            const first = seen.get(entry.title);
+            if (first) clashes.push(`${first} / ${id}: ${entry.title}`);
+            else seen.set(entry.title, id);
+        }
+
+        expect(clashes).toEqual([]);
     });
 });

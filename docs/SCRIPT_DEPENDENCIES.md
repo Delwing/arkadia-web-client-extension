@@ -16,7 +16,7 @@ are what "stage N" refers to.
 they register is attributed and reversible, dependencies are declared and checked, a
 stopped script no longer answers for its data, and rebuilding a buffer no longer
 discards what earlier triggers decided about the line. Stage 6, the toggle UI, is
-next and is the one that needs *Open decisions* settled first.
+next; the four decisions it was waiting on are settled — see *Decisions*.
 
 Where the stages departed from what was originally proposed, the reasoning is kept
 in place rather than edited out; each landed section says what changed and why.
@@ -49,12 +49,12 @@ Everything below is organised by those channels, then by what to do about them.
 
 ---
 
-## Open decisions
+## Decisions
 
-Three things the remaining stages need that cannot be settled from the code. None
-blocks stage 4; all three block stage 6 (the toggle UI).
+What the toggle UI needed from a person, and what was chosen. These were open
+through stages 4 and 5; all four are settled and stage 6 builds to them.
 
-### 1. What happens when a plugin depends on a disabled script
+### 1. A plugin that depends on a disabled script — **warn, naming the plugins**
 
 Three of the module singletons are **public plugin API**, not just internal state
 (the third turned up in stage 4, which is why the Channel 2 table lists two):
@@ -65,41 +65,82 @@ Three of the module singletons are **public plugin API**, not just internal stat
 | `getHerbManager()` | `herbCounter` | `PluginApi.herbs.*`, web `HerbManager` |
 | `getContainer` / `getContainerForms` | `bagManager` | `PluginApi.containers.*` |
 
-Turning off the owner silently degrades a third-party plugin that has already
-registered against it. Options: refuse the toggle while a plugin holds a
-registration; allow it with a warning naming the plugins; or allow it silently and
-let the plugin's own null-handling cope. This is a product call about how much the
-client owes third-party plugins, not a technical one.
+**The toggle goes through, but not silently.** Turning off one of these three first
+raises a dialog listing the loaded plugins that have registered against it. The user
+decides; a plugin does not get to veto a built-in feature in the user's own client,
+and equally the client does not break one behind the user's back.
 
-Stage 4 did not pre-empt it. `getHerbManager()` was already declared
-`HerbManagerApi | null`, so a plugin was always meant to handle its absence and 1b
-made it honest. The other two were left answering: `getContainer` resets to the
-default bag rather than to `null`, and the definition registries are untouched, so
-nothing a plugin can already observe has changed shape.
+This needs per-plugin attribution on the three surfaces, which is cheap: `PluginApi`
+is already constructed per plugin and carries a `pluginId` (`PluginApi.ts:2534`),
+so the registration only has to record who made it. Without attribution the
+fallback is a generic warning, which is strictly worse — a warning the user cannot
+act on.
 
-### 2. What a popup shows when its script is off
+Stage 4 deliberately left all three answering rather than pre-empt this.
+`getHerbManager()` was already declared `HerbManagerApi | null`, so a plugin was
+always meant to handle its absence and 1b made it honest; `getContainer` resets to
+the default bag rather than to `null`, and the definition registries are untouched.
+
+### 2. A popup whose script is off — **hide the entry and the popup**
 
 Several web popups read a script's data directly — `LootPopup` (`lootParser`), the
-kill and improve popups (`kill`, `improveCounter`). With the owner stopped the data
-is absent rather than empty. Hide the popup and its button, or show it with an empty
-state explaining why? The second is friendlier and needs a message per popup.
+kill and improve popups (`kill`, `improveCounter`). They are not reached through the
+script: `outputContextMenu.tsx` emits `zabici.popup.open` itself, so the entry
+survives its owner and opens onto the `null` stage 4 introduced.
 
-Stage 4 made the data absent without answering this: `Postepy2Popup` coalesces the
-new `null` to `[]` so it renders exactly as it did before. That is a placeholder for
-whichever answer this decision picks, not the answer.
+**The entry goes when the script does.** The deciding argument is that half the doors
+already close: the aliases `/zabici` and `/zabiciw` belong to the script's scope and
+disappear with it. Leaving a context-menu entry open onto an empty room is the
+inconsistent state, not the tidy one. A feature that is off should be gone, not
+present-but-hollow.
 
-### 3. The 148 labels
+The rejected alternative — keep the entry, explain inside the popup — is friendlier
+to a user who forgot they disabled something, but it needs a written message per
+popup and leaves dead UI in place. The settings list is where a user goes to find out
+what they turned off.
 
-The toggle UI needs a Polish name, and probably a one-line description, for every
-script. These have to be reviewed by someone who knows the game's vocabulary — a
-plausible-but-wrong label in a settings list is worse than no list. Drafting them
-from each script's aliases and trigger patterns is a reasonable starting point, but
-the result is a review task, not a generated artefact.
+Both answers need the same new thing: **the running set has to be readable from
+`@web`**. The registry lives in the client, so stage 6 has to publish it — an event
+on change plus a snapshot getter, in the shape `@modules/core` already uses.
 
-This is why `ScriptMeta` has no `title` field yet: adding one would invite filling it
-in with guesses.
+### 3. The 148 labels — **drafted from the code, reviewed by a person**
 
----
+The toggle UI needs a Polish name and a one-line description per script. A
+plausible-but-wrong label in a settings list is worse than no list, so these cannot
+simply be generated and shipped.
+
+**Draft all 148 from each script's aliases, trigger patterns and settings keys, then
+review the lot.** Reviewing a wrong label is much cheaper than authoring a right one
+from a blank page, and the aliases are strong evidence — a script owning `/zabici`
+and `/zabici2` is not ambiguous about what it does.
+
+The draft lands as a catalog module rather than as arguments at the 148
+`registry.start` calls, which would bury `main.ts`. One file to review, one file to
+diff.
+
+**Drafted: `src/client/scriptCatalog.ts`, all 148, awaiting review.** Titles come
+from the script's own aliases where it has them (`/zabici` → *Licznik zabitych*),
+from its trigger patterns where it does not, and from settings keys for the handful
+with neither. Entries the code was least clear about are marked `REVIEW:` in the
+description — those are the ones worth reading first. Four tests hold the file
+honest: it covers exactly the registered set in both directions, every entry has
+both fields, and no two scripts share a title.
+
+Curating a smaller toggleable subset was considered and rejected: it makes the
+labelling job smaller but moves the judgement call ("is this one worth exposing?")
+to the same place, and a script left permanently on because nobody labelled it is a
+decision made by omission.
+
+### 4. Where the flags live — **per character**
+
+Not originally on this list; stage 6 cannot be built without it.
+
+`characterStorage`, matching how most script settings are already stored. Which
+features are wanted genuinely differs between characters — a fighter and a herbalist
+do not want the same set — and the per-character sync path already exists. A global
+list would force one feature set on every character; a global default with
+per-character overrides buys flexibility that is not worth the extra surface or the
+extra ways to be confused about why something is off.
 
 ## Channel 1 — Static imports (68 edges, acyclic)
 
@@ -904,7 +945,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**3**~~ | ~~Replace the 4 shared `client` fields~~ — **mostly declined**, see below. Two of the four are core state, and the 8 event edges were already fine. What was real — two latches left set when their script stops — is fixed | none | landed |
 | ~~**4**~~ | ~~The 9 module singletons~~ — **done** as *typed absence*, not a service locator: each getter answers absent once its owner stops, reset in a `client.scope.onDispose`. Three keep answering on purpose (two are plugin API, one has no owner). Dragged in **4a**: the 43 dropped `storage.onChange` unsubscribes, without which the resets do not hold | none | landed |
 | ~~**5**~~ | ~~Add `line.replaceWith(next)`~~ — **done**, and it turned out to be a bug fix rather than a tidy-up: a rebuilt buffer dropped the deleted mark, so a gagged line came back on screen and `skipDeleted` stopped working. `messageFlair` lost its `after` edge; one `after` edge remains and is legitimate | **yes** — a gagged line stays gagged | landed |
-| **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade | yes | medium |
+| **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade. Per-character flags; the running set published to `@web` so a disabled script takes its menu entries with it; a warning naming the plugins that use a surface being turned off. See *Decisions* | yes | medium |
 | **7** | Lazy `import()` per script, keyed on the manifest | yes | low once 1–6 land |
 
 Only stage 0b changes behaviour before the toggle UI arrives; everything up to stage 5
