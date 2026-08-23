@@ -159,7 +159,10 @@ export class Trigger {
                     // downstream still gets to see it.
                     line.markAsDeleted();
                 } else if (result instanceof AnsiAwareBuffer) {
-                    line = result;
+                    // Not a bare assignment: a rebuilt buffer starts empty of
+                    // what earlier triggers decided about this line, the gag
+                    // included. See AnsiAwareBuffer.replaceWith.
+                    line = line.replaceWith(result);
                 }
             }
             for (const child of this.children.values()) {

@@ -75,6 +75,7 @@ For raw GMCP, the `Client` re-emits everything as events: `client.on('gmcp.objec
 
 - `pattern` can be a string, `RegExp`, function, or **array** for multi-line sequence matching
 - `callback` returns the (possibly modified) `AnsiAwareBuffer`, or `null` to gag the line
+- Returning a **new** buffer is fine: the flair marker, the deleted mark and `originalText` carry across for you, so a rebuild does not undo an earlier script's gag
 - Always pass a `tag` so the trigger can be cleaned up via `Triggers.removeByTag(tag)`
 - `options.stayOpenLines: N` keeps a parent trigger active for N lines after matching (useful for sub-triggers)
 - `registerOneTimeTrigger(...)` self-removes after first match — handy for chained command/response flows (see `ostatnio.ts` for the queryNext pattern)

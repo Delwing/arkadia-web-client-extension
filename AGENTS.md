@@ -217,6 +217,10 @@ helper or core machinery — put it in the right place rather than leaving it lo
 - Support `stayOpenLines` (parent stays active for N lines after matching)
 - Triggers can be tagged and removed by tag (used for plugin cleanup)
 - Pattern can be a single pattern or an array (multi-line sequence matching)
+- A callback may return a **new** `AnsiAwareBuffer` instead of the one it was given.
+  What rides the buffer rather than the text — the flair marker, the deleted mark,
+  `originalText` — carries across automatically (`AnsiAwareBuffer.replaceWith`), so
+  rebuilding a line does not undo a gag an earlier script applied
 
 Most scripts in `src/client/scripts/` register triggers in their setup functions.
 

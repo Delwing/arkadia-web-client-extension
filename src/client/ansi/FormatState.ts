@@ -456,6 +456,42 @@ export class AnsiAwareBuffer {
         return copy;
     }
 
+    /**
+     * Hand this buffer's side-band metadata to the buffer replacing it.
+     *
+     * A trigger that rebuilds a line returns a brand new buffer, which starts
+     * with none of what earlier triggers attached to the old one. `flair`, the
+     * deleted mark and `originalText` are not text — they are decisions already
+     * taken about this line — so they travel across the replacement. Without
+     * this, a gag is undone by any later script that rebuilds the buffer, and
+     * the line it suppressed comes back.
+     *
+     * Anything the replacement has already set for itself wins; a decision it
+     * took knowing its own content beats one inherited from the old buffer. The
+     * exception is the deleted mark, which is one-way by design — there is no
+     * un-delete, so an earlier suppression is not something a rebuild may drop.
+     *
+     * `onRender` deliberately does not travel: it is a hook bound to the content
+     * that registered it, and after a rebuild that content is gone.
+     *
+     * Returns `next`, so callers can write `line = line.replaceWith(result)`.
+     */
+    replaceWith(next: AnsiAwareBuffer): AnsiAwareBuffer {
+        if (next === this) {
+            return next;
+        }
+        if (this._deleted) {
+            next.markAsDeleted();
+        }
+        if (next.flair === undefined) {
+            next.flair = this.flair;
+        }
+        if (next.originalText === undefined) {
+            next.originalText = this.originalText;
+        }
+        return next;
+    }
+
     get text(): string {
         if (this._textCache === null) {
             this._textCache = this.segments.map(segment => segment.text).join("");

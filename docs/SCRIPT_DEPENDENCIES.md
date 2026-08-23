@@ -12,11 +12,11 @@
 This is the source of truth for the toggle migration, and the numbered stages below
 are what "stage N" refers to.
 
-**Stages 0, 0b, 1, 1b, 2, 3 and 4 have landed.** Scripts run inside disposable
-scopes, everything they register is attributed and reversible, dependencies are
-declared and checked, and a stopped script no longer answers for its data. Stage 5
-is next — see *Migration plan* for the table and *Open decisions* for what still
-needs a person.
+**Stages 0 through 5 have landed.** Scripts run inside disposable scopes, everything
+they register is attributed and reversible, dependencies are declared and checked, a
+stopped script no longer answers for its data, and rebuilding a buffer no longer
+discards what earlier triggers decided about the line. Stage 6, the toggle UI, is
+next and is the one that needs *Open decisions* settled first.
 
 Where the stages departed from what was originally proposed, the reasoning is kept
 in place rather than edited out; each landed section says what changed and why.
@@ -362,10 +362,11 @@ ordered. That removes the scariest failure class up front.
    dispatch?* below.
 
 2. **Buffer replacement discards side-band metadata.** 44 scripts construct a new
-   `AnsiAwareBuffer`. `flair` only survives an explicit clone
-   (`FormatState.ts:455`). This is precisely why `main.ts` carries the comment that
-   `initLootParser` must precede `initMessageFlair`. It is the only such constraint
-   written down; the others are folklore.
+   `AnsiAwareBuffer`, and `flair` only survived an explicit clone. This is why
+   `main.ts` carried the comment that `initLootParser` must precede
+   `initMessageFlair` — the only such constraint written down; the others were
+   folklore. **Closed in stage 5** by `AnsiAwareBuffer.replaceWith`, which also
+   turned out to be dropping the deleted mark.
 
 3. **Layered decoration.** `coinColors`(85), `weaponColors`(86), `zlom`(110),
    `wyroznienieOptions`(125), `messageFlair`(143) all decorate the same buffers.
@@ -753,12 +754,14 @@ What is declared today:
 
 | Kind | Edges |
 |---|---|
-| `after` | `combatWindow` after `gags`/`luaGags`; `messageFlair` after `lootParser` |
+| `after` | `combatWindow` after `gags`/`luaGags` — the only one left; `messageFlair`'s went in stage 5 |
 | `requires` | `pipe`→`herbCounter`; `idz`/`mapAliases`→`shortcuts`; both labyrinth mappers→`shortExits`; `cechyHistory`→`lvlCalc` |
 | `optional` | 11 more, each taken from the break-mode column of the table above |
 
-The `messageFlair` edge is the one that should stop existing rather than be scheduled
-around — see stage 5.
+The `messageFlair` edge stopped existing in stage 5 rather than being scheduled
+around. The one that remains is real: `combatWindow` registers with
+`{skipDeleted: true}`, which is evaluated at dispatch, so it has to run after
+whoever sets the mark.
 
 ### 3b. What is enforced
 
@@ -769,7 +772,7 @@ No phases means no phase enforcement. What the registry does enforce:
 | Declared `after` edges hold | checked at `start`; throws naming the edge that moved — **landed** |
 | Dependencies exist | `verifyDependencies()` after registration; throws listing every unknown id — **landed** |
 | Disabling cascades | a script whose `requires` is disabled is disabled too; `optional` just degrades — declared, not yet acted on (stage 6) |
-| Teardown is total | the scope records every trigger, alias, event listener, command hook, interval and DOM handler — **landed** except the module singletons (stage 4); `registerScripts.test.ts` starts all 148, stops them, and asserts nothing owned survives |
+| Teardown is total | the scope records every trigger, alias, event listener, command hook, interval, DOM handler and storage listener — **landed**; `registerScripts.test.ts` starts all 148, stops them, and asserts nothing owned survives and no getter still answers |
 | A script is registered exactly once, and only scripts are | `test/client/ScriptRegistry.test.ts` compares the ids in `registerScripts` against the modules in `scripts/`, both directions |
 | `skipDeleted` triggers never see a suppressed line | `parseLine` does not dispatch them when `line.deleted` |
 
@@ -900,7 +903,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**2**~~ | ~~Add `manifest` + registry~~ — **done**, with the sort dropped: `after` / `requires` / `optional` are declared at the `registry.start` call and **checked**, not sorted. `test/client/registerScripts.test.ts` starts all 148 for real and proves the written order satisfies them | none | landed |
 | ~~**3**~~ | ~~Replace the 4 shared `client` fields~~ — **mostly declined**, see below. Two of the four are core state, and the 8 event edges were already fine. What was real — two latches left set when their script stops — is fixed | none | landed |
 | ~~**4**~~ | ~~The 9 module singletons~~ — **done** as *typed absence*, not a service locator: each getter answers absent once its owner stops, reset in a `client.scope.onDispose`. Three keep answering on purpose (two are plugin API, one has no owner). Dragged in **4a**: the 43 dropped `storage.onChange` unsubscribes, without which the resets do not hold | none | landed |
-| **5** | Add `line.replaceWith(next)` carrying `flair`/`deleted` across a buffer replacement; drop the `messageFlair` after `lootParser` edge | none | low |
+| ~~**5**~~ | ~~Add `line.replaceWith(next)`~~ — **done**, and it turned out to be a bug fix rather than a tidy-up: a rebuilt buffer dropped the deleted mark, so a gagged line came back on screen and `skipDeleted` stopped working. `messageFlair` lost its `after` edge; one `after` edge remains and is legitimate | **yes** — a gagged line stays gagged | landed |
 | **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade | yes | medium |
 | **7** | Lazy `import()` per script, keyed on the manifest | yes | low once 1–6 land |
 
@@ -985,6 +988,43 @@ too.
 That shape is now supported directly: **a script may return a teardown function from
 its init**, and `ScriptRegistry.start` registers it on the scope. `cechyHistory` had
 been returning one all along into a `ScriptStart` signature that ignored it.
+
+### Stage 5: buffer replacement stopped discarding decisions
+
+44 scripts build a fresh `AnsiAwareBuffer` instead of mutating the one they were
+handed, and `Trigger.execute` took the result with a bare `line = result`. Everything
+an earlier trigger had decided about that line lived on the old buffer, so the
+replacement threw it away — silently, and depending only on registration order.
+
+`AnsiAwareBuffer.replaceWith(next)` now carries the side-band metadata across, and
+`Trigger.execute` goes through it. `flair`, the deleted mark and `originalText`
+travel; anything the replacement set for itself wins, except the deleted mark, which
+is one-way by design. `onRender` deliberately does not travel — it is bound to
+content the rebuild has already thrown away.
+
+**This fixed a real bug, not just an ordering wart.** Since stage 0b, suppression is
+a fold: a gag calls `markAsDeleted()` and the line keeps travelling so later scripts
+still see it. But `gags`(116) and `luaGags`(117) sit late with 34 scripts after them,
+and any one of those rebuilding the buffer dropped the deleted mark — putting the
+gagged line back on screen. It also defeated `skipDeleted`, which stage 0b added
+precisely so `combatWindow` could opt out of suppressed lines: a rebuild in between
+made the line look live again. Both are covered in `test/client/Triggers.test.ts`.
+
+So stage 5 does change behaviour, where the migration plan predicted it would not.
+The change is that a gagged line stays gagged.
+
+**`messageFlair` lost its `after: ['lootParser']` edge** — the point of the stage. A
+test asserts the two now give the same answer in either order. The edge was also
+over-stated: `lootParser` uses `clone()`, which already copied `flair`, so the
+concrete case it named had been fixed at some point without the comment being
+updated. The hole it described was real, just wider than one pair of scripts.
+
+**One `after` edge remains, and it is the honest kind.** `combatWindow` after
+`gags`/`luaGags` is not about metadata surviving a rebuild — `combatWindow` registers
+with `{skipDeleted: true}`, which is evaluated at dispatch, so it genuinely has to
+run after whoever sets the mark. `replaceWith` cannot dissolve that and should not:
+`after` now means one thing only, "this trigger's dispatch depends on a decision
+another script takes on the same line", and exactly one script needs it.
 
 ### Where extraction will be expensive
 

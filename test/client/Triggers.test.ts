@@ -276,3 +276,64 @@ describe('Triggers', () => {
     expect(observedIndex).toBe(0);
   });
 });
+
+describe('a trigger that rebuilds the buffer', () => {
+  // Stage 5. 44 scripts construct a fresh AnsiAwareBuffer rather than mutating
+  // the one they were handed. Everything an earlier trigger decided about the
+  // line lives on the buffer, so a bare `line = result` threw those decisions
+  // away — silently, and depending only on registration order.
+
+  test('does not resurrect a line an earlier trigger gagged', () => {
+    const triggers = new Triggers({} as any);
+    triggers.registerTrigger(/spam/, () => null, 'gag');
+    triggers.registerTrigger(/spam/, (line) => new AnsiAwareBuffer(line.text), 'rebuild');
+
+    // gags sit at index 116 of 148, so 34 scripts run after them and any one of
+    // them rebuilding the buffer would have put the line back on screen.
+    expect(triggers.parseLine(new AnsiAwareBuffer('combat spam'), 'text')).toBeNull();
+  });
+
+  test('does not drop a flair an earlier trigger set', () => {
+    const triggers = new Triggers({} as any);
+    triggers.registerTrigger(/body/, (line) => { line.flair = 'lup'; return line; }, 'flair');
+    triggers.registerTrigger(/body/, (line) => new AnsiAwareBuffer(line.text), 'rebuild');
+
+    expect(triggers.parseLine(new AnsiAwareBuffer('a body'), 'text')?.flair).toBe('lup');
+  });
+
+  test('gives the same answer whichever order the two run in', () => {
+    // This is what lets messageFlair drop its `after: ['lootParser']` edge.
+    const rebuildFirst = new Triggers({} as any);
+    rebuildFirst.registerTrigger(/body/, (line) => new AnsiAwareBuffer(line.text), 'rebuild');
+    rebuildFirst.registerTrigger(/body/, (line) => { line.flair = 'lup'; return line; }, 'flair');
+
+    const flairFirst = new Triggers({} as any);
+    flairFirst.registerTrigger(/body/, (line) => { line.flair = 'lup'; return line; }, 'flair');
+    flairFirst.registerTrigger(/body/, (line) => new AnsiAwareBuffer(line.text), 'rebuild');
+
+    expect(rebuildFirst.parseLine(new AnsiAwareBuffer('a body'), 'text')?.flair)
+      .toBe(flairFirst.parseLine(new AnsiAwareBuffer('a body'), 'text')?.flair);
+  });
+
+  test('still hides itself from a skipDeleted trigger registered after it', () => {
+    const triggers = new Triggers({} as any);
+    const seen = jest.fn((line: AnsiAwareBuffer) => line);
+    triggers.registerTrigger(/spam/, () => null, 'gag');
+    triggers.registerTrigger(/spam/, (line) => new AnsiAwareBuffer(line.text), 'rebuild');
+    triggers.registerTrigger(/spam/, seen, 'combat-window', {skipDeleted: true});
+
+    triggers.parseLine(new AnsiAwareBuffer('combat spam'), 'text');
+
+    // combatWindow opts out of suppressed lines; the rebuild in between must not
+    // make the line look live again.
+    expect(seen).not.toHaveBeenCalled();
+  });
+
+  test('carries the same metadata through parseMultiline', () => {
+    const triggers = new Triggers({} as any);
+    triggers.registerMultilineTrigger(/block/, () => null, 'gag');
+    triggers.registerMultilineTrigger(/block/, (line) => new AnsiAwareBuffer(line.text), 'rebuild');
+
+    expect(triggers.parseMultiline(new AnsiAwareBuffer('a block'), 'text')).toBeNull();
+  });
+});

@@ -373,9 +373,7 @@ export function registerScripts(client: Client): ScriptRegistry {
     registry.start('rindeLabyrinthMapper', initLabyrinthMapper, {requires: ['shortExits']})
     registry.start('raonLabyrinthMapper', initRaonLabyrinthMapper, {requires: ['shortExits']})
     registry.start('lootParser', initLootParser, {optional: ['zlom', 'prettyContainers']})
-    // lootParser returns a freshly built buffer, which drops the flair marker, so
-    // the tagging has to come after. Stage 5 (line.replaceWith) deletes this edge.
-    registry.start('messageFlair', initMessageFlair, {after: ['lootParser']})
+    registry.start('messageFlair', initMessageFlair)
     registry.start('ostatnio', initOstatnio)
     registry.start('dobOp', initDobOp)
     registry.start('dataRefresh', initDataRefresh)

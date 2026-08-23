@@ -141,3 +141,66 @@ describe("AnsiAwareBuffer", () => {
         expect(segments[1].state?.slowBlink).toBeUndefined();
     });
 });
+
+describe("replaceWith", () => {
+    it("carries the deleted mark onto the replacement", () => {
+        const old = new AnsiAwareBuffer("gagged").markAsDeleted();
+
+        const next = old.replaceWith(new AnsiAwareBuffer("rebuilt"));
+
+        // Without this a gag is undone by the next script that rebuilds the
+        // buffer, and the line it suppressed is rendered after all.
+        expect(next.deleted).toBe(true);
+        expect(next.text).toBe("rebuilt");
+    });
+
+    it("does not un-delete a replacement that was already deleted", () => {
+        const old = new AnsiAwareBuffer("kept");
+
+        const next = old.replaceWith(new AnsiAwareBuffer("rebuilt").markAsDeleted());
+
+        expect(next.deleted).toBe(true);
+    });
+
+    it("carries the flair onto the replacement", () => {
+        const old = new AnsiAwareBuffer("body");
+        old.flair = "lup";
+
+        const next = old.replaceWith(new AnsiAwareBuffer("rebuilt"));
+
+        expect(next.flair).toBe("lup");
+    });
+
+    it("lets the replacement keep a flair it set for itself", () => {
+        const old = new AnsiAwareBuffer("body");
+        old.flair = "lup";
+        const rebuilt = new AnsiAwareBuffer("rebuilt");
+        rebuilt.flair = "ekwipunek";
+
+        expect(old.replaceWith(rebuilt).flair).toBe("ekwipunek");
+    });
+
+    it("carries originalText, which tideSystem reads back", () => {
+        const old = new AnsiAwareBuffer("shortened");
+        old.originalText = "the full exits line";
+
+        expect(old.replaceWith(new AnsiAwareBuffer("rebuilt")).originalText).toBe("the full exits line");
+    });
+
+    it("does not carry onRender, which is bound to content that is now gone", () => {
+        const old = new AnsiAwareBuffer("clickable").onRender(() => {
+            throw new Error("the old buffer's hook must not fire for new content");
+        });
+
+        const next = old.replaceWith(new AnsiAwareBuffer("rebuilt"));
+
+        expect(() => next.notifyRender(document.createElement("div"))).not.toThrow();
+    });
+
+    it("is a no-op when a trigger returns the buffer it was given", () => {
+        const same = new AnsiAwareBuffer("unchanged").markAsDeleted();
+
+        expect(same.replaceWith(same)).toBe(same);
+        expect(same.deleted).toBe(true);
+    });
+});
