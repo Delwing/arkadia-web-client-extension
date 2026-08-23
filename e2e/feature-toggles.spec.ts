@@ -154,4 +154,51 @@ test.describe('Feature toggles', () => {
         await expect(menu).not.toContainText('Zabici');
         await expect(menu, 'unrelated entries stay').toContainText('Wiedza');
     });
+
+    test('the preview shows what a script registers and its source', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+
+        const modal = await openFeatures(page);
+        await modal.locator('#preview-kill').click();
+
+        const dialog = page.locator('.script-preview');
+        await expect(dialog).toBeVisible();
+        // The commands come from the live registry, not from a written list,
+        // so this is what the script really registered.
+        await expect(dialog).toContainText('/zabici');
+        await expect(dialog).toContainText('src/client/scripts/kill.ts');
+        await expect(dialog.locator('.script-preview-pre')).toContainText('KillCounter');
+    });
+
+    test('a preview is only fetched when it is opened', async ({page}) => {
+        const fetched: string[] = [];
+        page.on('request', request => fetched.push(request.url()));
+        await page.goto('/');
+        await waitForCommandInput(page);
+        const modal = await openFeatures(page);
+
+        // Opening the list must not drag 1 MB of source along with it.
+        expect(fetched.some(url => url.includes('/knowledge-')), 'nothing fetched yet').toBe(false);
+
+        await modal.locator('#preview-knowledge').click();
+        await expect(page.locator('.script-preview-pre')).toBeVisible();
+
+        expect(fetched.some(url => url.includes('/knowledge-')), 'fetched on demand').toBe(true);
+    });
+
+    test('a disabled script still shows its code', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+
+        const modal = await openFeatures(page);
+        await switchFor(modal, 'kill').uncheck();
+        await modal.locator('#preview-kill').click();
+
+        const dialog = page.locator('.script-preview');
+        // Nothing is registered any more - that is teardown working - but
+        // the source is what you read to decide whether to switch it back on.
+        await expect(dialog.locator('.script-preview-off')).toBeVisible();
+        await expect(dialog.locator('.script-preview-pre')).toContainText('KillCounter');
+    });
 });

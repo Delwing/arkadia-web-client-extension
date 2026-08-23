@@ -272,6 +272,36 @@ export default class Triggers {
         this.removeMatching(trigger => trigger.owner === owner);
     }
 
+    /**
+     * How many triggers a given script has registered, children included.
+     *
+     * Read-only counterpart to removeByOwner, for showing what a feature is
+     * currently doing to the output without exposing the trigger tree itself.
+     */
+    countByOwner(owner: string): number {
+        let count = 0;
+        const walk = (triggers: Iterable<Trigger>) => {
+            for (const trigger of triggers) {
+                if (trigger.owner === owner) count++;
+                walk(trigger.children.values());
+            }
+        };
+        walk(this.triggers.values());
+        walk(this.multilineTriggers.values());
+        // Token triggers live in per-word buckets and one trigger can sit in
+        // several, so count identities rather than entries.
+        const seen = new Set<string>();
+        for (const bucket of this.tokenTriggers.values()) {
+            for (const {trigger} of bucket) {
+                if (trigger.owner === owner && !seen.has(trigger.id)) {
+                    seen.add(trigger.id);
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     removeTrigger(trigger: Trigger) {
         if (trigger.parent) {
             trigger.parent.children.delete(trigger.id);

@@ -64,6 +64,57 @@ const memoryStore = (): DisabledScriptStore => {
     return {read: () => ids, write: next => { ids = next; }};
 };
 
+/** What a running script currently has registered on the client. */
+export interface ScriptSurface {
+    /** The commands it answers, as a user would type them. */
+    commands: string[];
+    /** How many triggers it has on the output, children included. */
+    triggers: number;
+}
+
+/**
+ * The readable head of an alias pattern.
+ *
+ * Alias patterns are regexes — `/^\/zabici2 (\d{4})$/` — and the part worth
+ * showing a reader is the literal text before the pattern starts matching
+ * arguments. So drop the anchors and stop at the first metacharacter. Anything
+ * that had more after it gets an ellipsis, so a command that takes arguments
+ * does not read as the whole thing.
+ */
+export function describeAliasPattern(pattern: RegExp): string | null {
+    const anchored = pattern.source;
+    let source = anchored;
+    if (source.startsWith('^')) source = source.slice(1);
+    if (source.endsWith('$')) source = source.slice(0, -1);
+
+    let literal = '';
+    let consumed = 0;
+    for (let i = 0; i < source.length; i++) {
+        const c = source[i];
+        if (c === '\\') {
+            const next = source[i + 1];
+            // An escaped literal (\/, \., \+) contributes the character itself;
+            // a character class (\d, \w, \s) means the arguments have started.
+            if (next && !/[dDwWsSbBnrtfvux0-9kpP]/.test(next)) {
+                literal += next;
+                i++;
+                consumed = i + 1;
+                continue;
+            }
+            break;
+        }
+        if ('([{|?*+.'.includes(c)) break;
+        literal += c;
+        consumed = i + 1;
+    }
+
+    // Drop a dangling opening quote or bracket: /usun_skrot "([^"]+)" leaves a
+    // trailing " that is part of the pattern, not part of what anyone types.
+    const trimmed = literal.trim().replace(/["'([{<]+$/, "").trim();
+    if (!trimmed) return null;
+    return consumed < source.length ? `${trimmed} …` : trimmed;
+}
+
 interface PlanEntry {
     run: ScriptStart;
     meta: ScriptMeta;
@@ -102,6 +153,39 @@ export class ScriptRegistry {
 
     metaFor(id: string): ScriptMeta | undefined {
         return this.plan.get(id)?.meta;
+    }
+
+
+    /**
+     * What the script currently has registered, for showing a user what a
+     * feature actually gives them.
+     *
+     * Read from the live client rather than from a description someone wrote:
+     * the aliases and triggers carry the owner stamped on them by the scope, so
+     * this cannot drift from what the script really did. A script that is not
+     * running has registered nothing, and says so — that is teardown working,
+     * not missing data.
+     */
+    surfaceOf(id: string): ScriptSurface {
+        if (!this.scopes.has(id)) {
+            return {commands: [], triggers: 0};
+        }
+        const commands: string[] = [];
+        for (const alias of this.client.aliases) {
+            if (alias.owner !== id) continue;
+            const described = describeAliasPattern(alias.pattern);
+            if (described && !commands.includes(described)) {
+                commands.push(described);
+            }
+        }
+        // A command that exists both bare and with arguments — /zabici2 and
+        // /zabici2 <data> — is one command. Listing both reads as two.
+        const bare = new Set(commands.filter(command => !command.endsWith(" …")));
+        return {
+            commands: commands.filter(command =>
+                !command.endsWith(" …") || !bare.has(command.slice(0, -2))),
+            triggers: this.client.Triggers.countByOwner(id),
+        };
     }
 
     /** Every script known to the registry, running or not, in declared order. */

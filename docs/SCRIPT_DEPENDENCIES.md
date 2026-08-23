@@ -1134,6 +1134,31 @@ happened to sit next to. They are not scripts and are never toggleable.
 What stage 6 does *not* do: the popups themselves still open if something else
 emits their event. Only the doors this client owns are closed.
 
+### The feature preview
+
+Each row in the Funkcje list opens a dialog showing what that script is: the
+commands it currently answers, how many triggers it has on the output, and its
+source.
+
+The commands are read from the live client — `registry.surfaceOf(id)` filters
+`client.aliases` and `Triggers.countByOwner` by the owner the scope stamped — not
+from a description someone maintains by hand, so it cannot drift from what the
+script really did. Alias patterns are regexes, so `describeAliasPattern` takes the
+literal head and marks the rest with an ellipsis: `/^\/zabici2 (\d{4})$/` reads as
+`/zabici2 …`. A script that is turned off has registered nothing and says so —
+that is the teardown working, not missing data — while its source is still there
+to read, which is the state you are usually in when deciding to switch it on.
+
+The source is fetched on demand through `import.meta.glob(..., { query: "?raw" })`,
+so each script is also a chunk of plain text that is only requested when a preview
+is opened. That is the same mechanism stage 7 was rejected for, used the other way
+round: there every user paid for laziness they had not asked for, here nobody pays
+unless they open a preview. The entry chunk is unchanged at 1047 KB.
+
+It is a dialog rather than an expanding row because the settings list already
+scrolls, and a scrollable code block inside a scrollable list leaves two nested
+scrollbars competing for the same wheel.
+
 ### Stage 7: lazy loading — built, measured, and dropped
 
 The plan's last stage was to put each script behind a dynamic `import()` so a

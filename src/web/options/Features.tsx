@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Form, Alert, Badge, Button } from "react-bootstrap";
+import { Code2 } from "lucide-react";
+import ScriptPreview from "./ScriptPreview";
 import { getScriptRegistry, getPluginManager } from "@client/main";
 import { scriptCatalog } from "@client/scriptCatalog";
 import { getPluginsUsingScript } from "@modules/core/pluginScriptUsage";
@@ -55,6 +57,8 @@ function Features() {
     const [filter, setFilter] = useState('');
     // Set while a disable waits for the user to accept it may break a plugin.
     const [warning, setWarning] = useState<{ id: string; title: string; plugins: string[] } | null>(null);
+    // The script whose source is open, if any.
+    const [preview, setPreview] = useState<Row | null>(null);
 
     const refresh = useCallback(() => setRows(readRows()), []);
 
@@ -157,6 +161,16 @@ function Features() {
                                 </label>
                                 <span className="text-body-secondary small">{row.description}</span>
                             </div>
+                            <Button
+                                variant="link"
+                                size="sm"
+                                id={`preview-${row.id}`}
+                                className="p-0 text-body-secondary flex-shrink-0"
+                                title="Pokaż kod"
+                                onClick={() => setPreview(row)}
+                            >
+                                <Code2 size={18} />
+                            </Button>
                         </div>
                     );
                 })}
@@ -164,6 +178,15 @@ function Features() {
                     <p className="text-body-secondary small py-2">Nic nie pasuje do „{filter}”.</p>
                 )}
             </div>
+
+            {preview && (
+                <ScriptPreview
+                    id={preview.id}
+                    title={preview.title}
+                    running={preview.state.status === 'running'}
+                    onClose={() => setPreview(null)}
+                />
+            )}
 
             {warning && (
                 <SubDialog

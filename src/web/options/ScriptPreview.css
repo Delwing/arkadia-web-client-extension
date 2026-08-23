@@ -1,0 +1,29 @@
+/*
+ * The code block inside a feature's preview dialog.
+ *
+ * No vertical scroll of its own: `SubDialog` is scrollable, so its body already
+ * owns the wheel. Giving the <pre> a max-height too would nest a second
+ * scrollbar inside the first, which is what this replaced. Long lines still
+ * scroll sideways inside the block so the dialog itself never does.
+ */
+.script-preview-pre {
+    overflow-x: auto;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--bs-border-color, rgba(128, 128, 128, 0.35));
+    border-radius: 0.375rem;
+    background: var(--bs-tertiary-bg, rgba(128, 128, 128, 0.12));
+    font-size: 0.75rem;
+    line-height: 1.45;
+    tab-size: 4;
+}
+
+.script-preview-pre code {
+    white-space: pre;
+    color: inherit;
+}
+
+/* The preview button sits on the row, not in the text flow. */
+.features-row .btn-link:focus {
+    box-shadow: none;
+}
