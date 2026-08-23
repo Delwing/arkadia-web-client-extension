@@ -16,7 +16,11 @@ are what "stage N" refers to.
 they register is attributed and reversible, dependencies are declared and checked, a
 stopped script no longer answers for its data, rebuilding a buffer no longer discards
 what earlier triggers decided about the line, and a character can turn any of the 148
-off from the settings. Stage 7, lazy loading, is what remains.
+off from the settings.
+
+**The migration is finished.** Stage 7 (lazy loading) was built and then dropped on
+its own measurement — see *Stage 7* for the numbers and the two conditions that
+would justify reopening it.
 
 Where the stages departed from what was originally proposed, the reasoning is kept
 in place rather than edited out; each landed section says what changed and why.
@@ -946,7 +950,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**4**~~ | ~~The 9 module singletons~~ — **done** as *typed absence*, not a service locator: each getter answers absent once its owner stops, reset in a `client.scope.onDispose`. Three keep answering on purpose (two are plugin API, one has no owner). Dragged in **4a**: the 43 dropped `storage.onChange` unsubscribes, without which the resets do not hold | none | landed |
 | ~~**5**~~ | ~~Add `line.replaceWith(next)`~~ — **done**, and it turned out to be a bug fix rather than a tidy-up: a rebuilt buffer dropped the deleted mark, so a gagged line came back on screen and `skipDeleted` stopped working. `messageFlair` lost its `after` edge; one `after` edge remains and is legitimate | **yes** — a gagged line stays gagged | landed |
 | ~~**6**~~ | ~~Dynamic enable/disable UI~~ — **done**: per-character flags, `declare`/`launch` so the requires cascade can be resolved, a Funkcje modal off `scriptCatalog`, menu entries filtered by owner, and a dialog naming the plugins a toggle would affect. See *Stage 6* below | **yes** | landed |
-| **7** | Lazy `import()` per script, keyed on the manifest. The plan now holds a `run` thunk per id, which is the seam it needs | yes | low — 1–6 have landed |
+| ~~**7**~~ | ~~Lazy `import()` per script~~ — **built and dropped**: one chunk per script shrank the entry chunk 1046 KB → 33 KB but pushed time-to-interactive 1308 ms → 2112 ms, charged to every user including those with nothing disabled. See *Stage 7* | — | not shipped |
 
 Three stages changed behaviour: 0b (suppression became a fold), 5 (a gagged line stays
 gagged through a rebuild) and 6 (features can be off). The rest were no-ops that landed
@@ -1129,6 +1133,50 @@ happened to sit next to. They are not scripts and are never toggleable.
 
 What stage 6 does *not* do: the popups themselves still open if something else
 emits their event. Only the doors this client owns are closed.
+
+### Stage 7: lazy loading — built, measured, and dropped
+
+The plan's last stage was to put each script behind a dynamic `import()` so a
+turned-off one is never downloaded. It was built in full — loader thunks in the
+registry, all 148 declarations converted, an async `launch`, a startup gate on the
+transport so the socket cannot open before triggers are registered — and then
+reverted, because the measurement does not support it.
+
+| | entry chunk | chunks | time to interactive |
+|---|---|---|---|
+| Static imports (what ships) | 1046 KB | 514 | **1308 ms** |
+| One chunk per script | 33 KB | 702 | **2112 ms** |
+
+Five runs each, single worker, `vite preview` — the same server the e2e suite uses.
+Total bytes were unchanged (26.6 MB either way), so nothing was duplicated; the
+entry chunk really did shrink by 30×. It did not matter. Fetching ~150 small files
+costs more than the 1 MB bundle it replaces, and **the default user pays that in
+full**: they have nothing disabled, so they download exactly the same code in 150
+requests instead of one. The saving only exists for someone who has turned scripts
+off, and it is charged to everyone who has not.
+
+It also showed up as two `feature-toggles` tests timing out once the file's eight
+tests ran in parallel — not flakes, the real cost under contention.
+
+**The caveat, stated because it could change the answer.** `vite preview` is
+HTTP/1.1, which caps concurrency at about six connections per origin, so 150 files
+serialise into ~25 rounds. Production is GitHub Pages over HTTP/2, where that
+penalty is much smaller and the result could invert. Measuring that needs an
+HTTP/2 origin, which is why this is recorded as *not proven worthwhile* rather than
+*proven harmful*.
+
+**What stage 7 was actually for is already done.** Stage 6 gives the user-visible
+behaviour: a disabled script does not run, registers nothing, and leaves nothing
+behind. Stage 7 only ever saved bytes and parse time on top of that. Reopen it if
+either of these changes:
+
+- the client moves to an HTTP/2 or HTTP/3 origin *and* someone re-measures there;
+- a large script grows enough to be worth splitting on its own. Ten scripts hold
+  ~400 KB of the 1086 KB (`knowledge` alone is 101 KB), and splitting only those
+  is ten extra requests rather than 148 — a far better ratio than all-or-nothing.
+
+The seam is ready either way: the registry's plan already holds one entry per id,
+so swapping a value for a thunk is a local change.
 
 ### Where extraction will be expensive
 
