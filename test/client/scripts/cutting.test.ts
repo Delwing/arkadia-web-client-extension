@@ -3,6 +3,7 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 vi.mock('@client/scripts/bagManager', () => ({
     containerAction: jest.fn(),
@@ -10,7 +11,7 @@ vi.mock('@client/scripts/bagManager', () => ({
 
 import { containerAction } from '@client/scripts/bagManager';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
     aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     Triggers = new Triggers((({} as unknown) as any));
     sendCommand = jest.fn().mockResolvedValue(undefined);
@@ -18,6 +19,7 @@ class FakeClient {
     commandsSent: string[] = [];
 
     constructor() {
+        super();
         this.sendCommand = jest.fn((cmd: string) => {
             this.commandsSent.push(cmd);
             return Promise.resolve();

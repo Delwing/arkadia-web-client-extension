@@ -73,9 +73,9 @@ export default function initPackageHelper(client: Client) {
         }
     }
     applySettings(characterStorage.get('settings'))
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         applySettings(settings)
-    })
+    }))
 
     function init() {
         enabled = true;

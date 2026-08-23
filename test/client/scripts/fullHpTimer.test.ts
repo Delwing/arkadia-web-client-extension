@@ -3,9 +3,10 @@ import { EventEmitter } from 'events';
 import { colorString, createColorFormat } from '@modules/core/Colors';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 describe('full hp timer', () => {
-  class FakeClient {
+  class FakeClient extends FakeClientBase {
     private emitter = new EventEmitter();
     println = jest.fn();
     on(event: string, cb: any) {

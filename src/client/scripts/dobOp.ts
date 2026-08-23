@@ -21,9 +21,9 @@ export default function initDobOp(
         commands.op[2] = typeof st.opCommand3 === 'string' ? st.opCommand3 : '';
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         applySettings(settings);
-    });
+    }));
 
     async function runSlot(cmds: string) {
         const parts = cmds.split(';').map(c => c.trim()).filter(Boolean);

@@ -35,16 +35,22 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         globalStorage.set(STORAGE_KEY, Object.values(shortcuts) as any);
     }
 
+    // The shortcuts live in globalStorage and outlive the script; the lookup table
+    // must not, or a stopped script keeps answering getShortcut.
+    client.scope.onDispose(() => {
+        Object.keys(shortcuts).forEach(k => delete shortcuts[k]);
+    });
+
     const initialShortcuts = globalStorage.get(STORAGE_KEY);
     if (initialShortcuts) {
         const arr = Array.isArray(initialShortcuts) ? initialShortcuts : Object.values(initialShortcuts);
         apply(arr);
     }
 
-    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(globalStorage.onChange(STORAGE_KEY, (newValue) => {
         const arr = newValue ? (Array.isArray(newValue) ? newValue : Object.values(newValue)) : [];
         apply(arr);
-    });
+    }));
 
     function printShortcuts() {
         const entries = Object.values(shortcuts);

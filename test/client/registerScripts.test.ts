@@ -4,6 +4,14 @@ import { resolve } from 'node:path';
 import Client from '@client/Client';
 import { registerScripts } from '@client/main';
 import type { ScriptRegistry } from '@client/ScriptRegistry';
+import { getKillData, getLifetimeKillData } from '@client/scripts/kill';
+import { getImproveData, getLifetimeData } from '@client/scripts/improveCounter';
+import { getRoomContents, getBodyExtras, getBodyStertyMap } from '@client/scripts/lootParser';
+import { getShortcut } from '@client/scripts/shortcuts';
+import { getItemCssColor } from '@client/scripts/prettyContainers';
+import { getContainer } from '@client/scripts/bagManager';
+import { getZlomFormatting } from '@client/scripts/zlom';
+import { getHerbManager } from '@modules/core/herbManagerProvider';
 
 /**
  * The real thing: every script started the way the app starts them.
@@ -106,6 +114,29 @@ describe('registerScripts', () => {
             registry.stopAll();
 
             expect(registry.running).toEqual([]);
+        });
+
+test('leaves no module singleton answering', () => {
+            // Every getter that reads state one script owns. Started for real, so
+            // this is the whole set as the app has it, not a stub of it.
+            expect(getKillData()).not.toBeNull();
+            expect(getRoomContents()).not.toBeNull();
+
+            registry.stopAll();
+
+            expect(getKillData()).toBeNull();
+            expect(getLifetimeKillData()).toBeNull();
+            expect(getImproveData()).toBeNull();
+            expect(getLifetimeData()).toBeNull();
+            expect(getRoomContents()).toBeNull();
+            expect(getBodyExtras()).toBeNull();
+            expect(getBodyStertyMap()).toBeNull();
+            expect(getShortcut('bank')).toBeUndefined();
+            expect(getItemCssColor('zlota moneta')).toBeUndefined();
+            expect(getZlomFormatting('cokolwiek')).toBeUndefined();
+            expect(getHerbManager()).toBeNull();
+            // getContainer stays plugin API and keeps its default. Decision 1.
+            expect(getContainer('money')).toBe('plecak');
         });
 
         test('the line pipeline still works afterwards', () => {

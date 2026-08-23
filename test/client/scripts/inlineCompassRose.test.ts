@@ -1,8 +1,9 @@
 import initInlineCompassRose from '@client/scripts/inlineCompassRose';
 import { EventEmitter } from 'events';
 import { getShortDir, longToShort } from '@shared/map';
+import { FakeClientBase } from '../helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   on(event: string, cb: (...args: any[]) => void) {
     this.emitter.on(event, cb);

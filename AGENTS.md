@@ -179,8 +179,14 @@ a script:
   `window.addEventListener`. A test enforces this.
 - Subscribe with `client.on`, not `eventBus.on` directly, so the subscription carries
   the scope's `AbortSignal`.
+- Hand every `characterStorage.onChange` / `globalStorage.onChange` unsubscribe to
+  `client.scope.onDispose`. A listener that outlives its script refills the state the
+  script just cleared. A test enforces this too.
 - Anything else a script leaves on the client — an installed method, a latched flag,
-  a registered provider — needs a `client.scope.onDispose` to put it back.
+  a registered provider, module-level state behind an exported getter — needs a
+  `client.scope.onDispose` to put it back. A getter whose owner has stopped should
+  answer *absent*, not empty: `null` and `[]` are different facts. Alternatively an
+  init may return a teardown function, which the registry runs on stop.
 - Triggers and aliases are attributed automatically. `owner` is assigned by the scope
   and is not the same thing as `tag`, which scripts pick themselves and reuse to
   clear part of themselves.

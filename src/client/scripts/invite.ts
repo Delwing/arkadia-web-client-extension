@@ -59,7 +59,7 @@ export default function initInvite(client: Client) {
         ensurePeopleLoaded().catch(() => undefined);
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     // Register trigger for invite pattern
     // Pattern: ^\[?([A-Z][a-z ]+?)\]? zaprasza cie do swojej druzyny\.$

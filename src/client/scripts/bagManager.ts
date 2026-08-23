@@ -50,12 +50,14 @@ const bagPronouns: Record<string, { biernik: string; dopelniacz: string }> = {
 export type ContainerType = (typeof availableTypes)[number];
 type ContainerConfig = Record<ContainerType, string>;
 
-const containerConfig: ContainerConfig = {
+const DEFAULT_CONTAINERS: ContainerConfig = {
     money: "plecak",
     gems: "plecak",
     food: "plecak",
     other: "plecak",
 };
+
+const containerConfig: ContainerConfig = { ...DEFAULT_CONTAINERS };
 
 export interface ContainerForms {
     mianownik: string;
@@ -288,12 +290,18 @@ export default function initBagManager(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[]
 ) {
+    // getContainer is public plugin API and keeps returning the default bag rather
+    // than null, so the reset here is back to the defaults, not to absence. What a
+    // plugin should see once the owning script is off is decision 1 in
+    // docs/SCRIPT_DEPENDENCIES.md.
+    client.scope.onDispose(() => Object.assign(containerConfig, DEFAULT_CONTAINERS));
+
     const initialContainers = characterStorage.get(STORAGE_KEY);
     if (initialContainers) Object.assign(containerConfig, initialContainers);
 
-    characterStorage.onChange(STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(characterStorage.onChange(STORAGE_KEY, (newValue) => {
         if (newValue) Object.assign(containerConfig, newValue);
-    });
+    }));
     client.scope.listen(window, "beforeunload", () => saveConfig(client));
 
     client.Triggers.registerTrigger(

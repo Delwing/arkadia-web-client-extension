@@ -442,7 +442,11 @@ let magicFilter: ((name: string) => boolean) | null = null;
  * Returns a CSS color string for an item name, using all loaded filters
  * (coins, magic keys, magics, item categories).
  */
+let running = false;
+
 export function getItemCssColor(name: string): string | undefined {
+    if (!running) return undefined;
+
     // User-assigned zlom color wins
     const zlomColor = getZlomFormatting(name)?.color;
     if (zlomColor) return zlomColor;
@@ -756,6 +760,13 @@ async function loadMagicAndKeysFilter(client: Client) {
 
 
 export default function initContainers(client: Client) {
+    running = true;
+    // The group and transform definitions are deliberately left alone: plugins
+    // register into them through PluginApi and PluginManager owns unwinding that.
+    // What a plugin registration should do to this script being turned off at all
+    // is decision 1 in docs/SCRIPT_DEPENDENCIES.md.
+    client.scope.onDispose(() => { running = false; });
+
     loadMagicAndKeysFilter(client);
     const tag = 'prettyContainers';
     let enabled = false;
@@ -803,7 +814,7 @@ export default function initContainers(client: Client) {
         }
     };
     applyContainerSettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applyContainerSettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applyContainerSettings));
 
     client.aliases.push({
         pattern: /^\/przejrzyj(?: (.+))?$/,

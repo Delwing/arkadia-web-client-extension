@@ -64,14 +64,14 @@ export default function initExternalScripts(client: Client) {
         apply(known, knownStored);
     }
 
-    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(globalStorage.onChange(STORAGE_KEY, (newValue) => {
         known = Array.isArray(newValue) ? newValue : [];
         apply(known, knownStored);
-    });
+    }));
 
-    globalStorage.onChange(STORED_SCRIPTS_KEY, () => {
+    client.scope.onDispose(globalStorage.onChange(STORED_SCRIPTS_KEY, () => {
         loadStoredPluginsFromDB();
-    });
+    }));
 
     checkParam();
 

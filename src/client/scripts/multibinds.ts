@@ -58,7 +58,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     }
 
     applyMultibindKeys(globalStorage.get('binds'));
-    globalStorage.onChange('binds', applyMultibindKeys);
+    client.scope.onDispose(globalStorage.onChange('binds', applyMultibindKeys));
 
     function runWhenReady(action: () => void) {
         if (isInitialized) {

@@ -906,6 +906,14 @@ export function initKillCounter(
     aliases?: { pattern: RegExp; callback: Function }[]
 ): KillCounter {
     const counter = new KillCounter(client);
+    client.scope.onDispose(() => {
+        // Absent, not stale: with the script stopped there is no session to report.
+        // Guarded in case a restart has already installed a newer counter.
+        if (killCounterInstance === counter) {
+            killCounterInstance = null;
+            lifetimeKillDataCache = null;
+        }
+    });
     if (aliases) {
         aliases.push({pattern: /\/zabici$/, callback: () => counter.showSession()});
         aliases.push({pattern: /\/zabiciw$/, callback: () => eventBus.emit("zabici.popup.open")});

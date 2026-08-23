@@ -3,8 +3,9 @@ import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
+import { FakeClientBase } from '../helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   private emitter = new EventEmitter();
   println = jest.fn();
   notify = jest.fn();

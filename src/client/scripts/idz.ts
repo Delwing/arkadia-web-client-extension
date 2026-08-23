@@ -42,7 +42,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     const clearTimer = () => {
         if (timer !== null) {

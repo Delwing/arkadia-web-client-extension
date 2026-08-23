@@ -7,6 +7,15 @@ import initLamp from '@client/scripts/lamp';
 import initMoveMode from '@client/scripts/moveMode';
 import initEnemyBinds from '@client/scripts/enemyBinds';
 import initSelfEvaluation from '@client/scripts/selfEvaluation';
+import { characterStorage, globalStorage } from '@modules/core/storage';
+import { initKillCounter, getKillData, getLifetimeKillData } from '@client/scripts/kill';
+import { initImproveCounter, getImproveData, getLifetimeData } from '@client/scripts/improveCounter';
+import initLootParser, { getRoomContents, getBodyExtras, getBodyStertyMap } from '@client/scripts/lootParser';
+import initShortcuts, { getShortcut } from '@client/scripts/shortcuts';
+import initContainers, { getItemCssColor } from '@client/scripts/prettyContainers';
+import initBagManager, { getContainer } from '@client/scripts/bagManager';
+import initZlom, { mergeZlomData, getZlomFormatting } from '@client/scripts/zlom';
+import { __resetZlomStoreForTests } from '@modules/data/zlomStore';
 
 function createClient(): Client {
     return new Client({
@@ -306,5 +315,165 @@ describe('stopping a script puts back what it changed on the client', () => {
         // The mute is a latch. Stopping mid-read-out would leave weaponEvaluation,
         // armorEvaluation and parryShieldEvaluation silent for good.
         expect(host.suppressItemEvaluation).toBe(false);
+    });
+});
+
+describe('scripts do not subscribe to storage behind the scope', () => {
+    // A storage listener that outlives its script is worse than a leak: the next
+    // settings change refills the very state `stop` just cleared, so a stopped
+    // script starts answering again. The unsubscribe onChange hands back has to go
+    // somewhere — a `scope.onDispose(...)` wrap, or a list the script returns.
+    const dirs = [scriptsDir, resolve(scriptsDir, 'lib')];
+    const sources = dirs.flatMap(dir =>
+        readdirSync(dir, { withFileTypes: true })
+            .filter(entry => entry.isFile() && entry.name.endsWith('.ts'))
+            .map(entry => [entry.name, readFileSync(resolve(dir, entry.name), 'utf8')] as const),
+    );
+
+    const CALL = /(?:characterStorage\.onChange|globalStorage\.onChange|\.onAnyChange)\s*\(/g;
+
+    /** A call whose value nobody takes is a statement of its own. */
+    function droppedSubscriptions(source: string): number[] {
+        const dropped: number[] = [];
+        CALL.lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = CALL.exec(source)) !== null) {
+            let i = match.index - 1;
+            while (i >= 0 && /\s/.test(source[i])) i--;
+            // `(` from a wrap, `[` or `,` from a collected list, `=` from a binding.
+            if (i < 0 || ';{}'.includes(source[i])) {
+                dropped.push(source.slice(0, match.index).split('\n').length);
+            }
+        }
+        return dropped;
+    }
+
+    test('every storage subscription is kept somewhere it can be undone', () => {
+        const offenders = sources
+            .filter(([, source]) => droppedSubscriptions(source).length > 0)
+            .map(([name, source]) => `${name}:${droppedSubscriptions(source).join(',')}`);
+
+        expect(offenders).toEqual([]);
+    });
+
+    test('the check can tell a dropped subscription from a kept one', () => {
+        expect(droppedSubscriptions('characterStorage.onChange("settings", fn);')).toEqual([1]);
+        expect(droppedSubscriptions('client.scope.onDispose(characterStorage.onChange("s", fn));')).toEqual([]);
+        expect(droppedSubscriptions('const off = globalStorage.onChange("binds", fn);')).toEqual([]);
+        expect(droppedSubscriptions('const all = [\n  characterStorage.onChange("s", fn),\n];')).toEqual([]);
+    });
+});
+
+describe('a stopped script stops answering for its data', () => {
+    // Stage 4. Each of these reads from module state that outlives the script, so
+    // without a reset the owner keeps serving numbers nobody is maintaining. The
+    // answer has to be *absent*, not empty: an empty history and a stopped counter
+    // are different facts, and only one of them is worth showing a user.
+    //
+    // These are runtime assertions on purpose. The repo compiles with
+    // `strict: false`, so a `| null` return type does not make callers handle it —
+    // the guarantee lives here, not in tsc.
+    let host: Client;
+    let registry: ScriptRegistry;
+
+    beforeEach(() => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        host = createClient();
+        registry = new ScriptRegistry(host);
+    });
+
+    test('kill stops reporting a session', () => {
+        registry.start('kill', (client, aliases) => initKillCounter(client, aliases));
+        expect(getKillData()).not.toBeNull();
+
+        registry.stop('kill');
+
+        expect(getKillData()).toBeNull();
+        expect(getLifetimeKillData()).toBeNull();
+    });
+
+    test('improveCounter stops reporting progress', () => {
+        registry.start('improveCounter', (client, aliases) => initImproveCounter(client, aliases));
+        expect(getImproveData()).not.toBeNull();
+
+        registry.stop('improveCounter');
+
+        expect(getImproveData()).toBeNull();
+        // Not `[]` — a fresh character has an empty history and is still counting.
+        expect(getLifetimeData()).toBeNull();
+    });
+
+    test('lootParser stops reporting what is on the ground', () => {
+        registry.start('lootParser', initLootParser);
+        expect(getRoomContents()).not.toBeNull();
+
+        registry.stop('lootParser');
+
+        expect(getRoomContents()).toBeNull();
+        expect(getBodyExtras()).toBeNull();
+        expect(getBodyStertyMap()).toBeNull();
+    });
+
+    test('shortcuts stops resolving names', () => {
+        globalStorage.set('shortcuts', [{ key: 'bank', id: 123, label: 'Bank' }] as never);
+        registry.start('shortcuts', (client, aliases) => initShortcuts(client, aliases));
+        expect(getShortcut('bank')).toBe(123);
+
+        registry.stop('shortcuts');
+
+        expect(getShortcut('bank')).toBeUndefined();
+    });
+
+    test('a stopped shortcuts is not refilled by an edit in the options', () => {
+        registry.start('shortcuts', (client, aliases) => initShortcuts(client, aliases));
+        registry.stop('shortcuts');
+
+        globalStorage.set('shortcuts', [{ key: 'bank', id: 123, label: 'Bank' }] as never);
+
+        expect(getShortcut('bank')).toBeUndefined();
+    });
+
+    test('prettyContainers stops colouring items', () => {
+        registry.start('prettyContainers', initContainers);
+        expect(getItemCssColor('zlota moneta')).toBe('#ffd700');
+
+        registry.stop('prettyContainers');
+
+        expect(getItemCssColor('zlota moneta')).toBeUndefined();
+    });
+
+    test('bagManager falls back to the default bag', () => {
+        characterStorage.set('containers', { money: 'sakiewka', gems: 'sakiewka', food: 'sakiewka', other: 'sakiewka' } as never);
+        registry.start('bagManager', (client, aliases) => initBagManager(client, aliases));
+        expect(getContainer('money')).toBe('sakiewka');
+
+        registry.stop('bagManager');
+
+        // Not null: getContainer is public plugin API and its shape is decision 1
+        // in docs/SCRIPT_DEPENDENCIES.md. The character's choice still goes.
+        expect(getContainer('money')).toBe('plecak');
+    });
+
+    test('zlom stops formatting items', async () => {
+        await __resetZlomStoreForTests();
+        await mergeZlomData({
+            bronie: [{
+                short: 'zardzewialy nozyk', typ: 'noz', rodzaj: '', klute: 0, obuch: 0, ciete: 0,
+                chwyt: '', magik: 0, srebro: 1, opis: 'Nozyk.', waga: 0, obj: 0, cena: 10,
+                wywazenie: 0, parowanie: 0, roomId: null,
+            }],
+            tarcze: [],
+            zbroje: [],
+        }, 'replace');
+
+        registry.start('zlom', (client, aliases) => initZlom(client, aliases));
+        expect(getZlomFormatting('zardzewialy nozyk')).toBeDefined();
+
+        registry.stop('zlom');
+
+        // The entries live in IndexedDB and outlive the script, so "is there
+        // anything to say" is the wrong question — "is anyone saying it" is.
+        expect(getZlomFormatting('zardzewialy nozyk')).toBeUndefined();
     });
 });

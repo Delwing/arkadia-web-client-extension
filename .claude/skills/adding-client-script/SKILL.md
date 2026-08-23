@@ -64,7 +64,7 @@ Reach for these instead of re-deriving state from raw GMCP:
 | Team membership | `client.TeamManager` | `getTeamMembers()`, `getTeamMembersOnLocation()`, `isInAnyTeam()`, `isLeader()`, `getLeader()` |
 | Objects on the current room (player + team + enemies) | `client.ObjectManager` | `getObjectsOnLocation()` (returns desc/hp/attack_num/category/shortcut), `hasEnemiesOnLocation()` |
 | Current map / room id | `client.Map` | `currentRoom`, `tryGetMapReader()`, `getAreaName(...)` |
-| Persistent settings | `@modules/core/storage` | `globalStorage` (shared) and `characterStorage` (per-char). Use `onChange(key, cb)` to react |
+| Persistent settings | `@modules/core/storage` | `globalStorage` (shared) and `characterStorage` (per-char). Use `onChange(key, cb)` to react — pass the unsubscribe it returns to `client.scope.onDispose` |
 | Default settings shape | `@modules/core/defaultSettings` | `defaultSettings` |
 
 For raw GMCP, the `Client` re-emits everything as events: `client.on('gmcp.objects.data', cb)`, `'gmcp.objects.nums'`, `'gmcp.char.state'`, `'gmcp.room.info'`, etc. Note that `gmcp.objects.data` ships **partial** updates per object id — if you need a stable {desc, hp} pair, accumulate per-id locally (see `lastSeen.ts:48-65` for the pattern).

@@ -85,9 +85,9 @@ export default function initAttackBeep(client: Client) {
         ensurePeopleLoaded().catch(() => undefined);
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         applySettings(settings);
-    });
+    }));
 
     [
         /(?<name>.*) atakuje cie!/,

@@ -12,10 +12,11 @@
 This is the source of truth for the toggle migration, and the numbered stages below
 are what "stage N" refers to.
 
-**Stages 0, 0b, 1, 1b, 2 and 3 have landed.** Scripts run inside disposable scopes,
-everything they register is attributed and reversible, and dependencies are declared
-and checked. Stage 4 is next — see *Migration plan* for the table and *Open
-decisions* for what still needs a person.
+**Stages 0, 0b, 1, 1b, 2, 3 and 4 have landed.** Scripts run inside disposable
+scopes, everything they register is attributed and reversible, dependencies are
+declared and checked, and a stopped script no longer answers for its data. Stage 5
+is next — see *Migration plan* for the table and *Open decisions* for what still
+needs a person.
 
 Where the stages departed from what was originally proposed, the reasoning is kept
 in place rather than edited out; each landed section says what changed and why.
@@ -55,12 +56,14 @@ blocks stage 4; all three block stage 6 (the toggle UI).
 
 ### 1. What happens when a plugin depends on a disabled script
 
-Two of the module singletons are **public plugin API**, not just internal state:
+Three of the module singletons are **public plugin API**, not just internal state
+(the third turned up in stage 4, which is why the Channel 2 table lists two):
 
 | Surface | Owner | Reached by |
 |---|---|---|
 | `addGroupDefinition` / `addTransformDefinition` | `prettyContainers` | plugins write into it via `PluginApi` |
 | `getHerbManager()` | `herbCounter` | `PluginApi.herbs.*`, web `HerbManager` |
+| `getContainer` / `getContainerForms` | `bagManager` | `PluginApi.containers.*` |
 
 Turning off the owner silently degrades a third-party plugin that has already
 registered against it. Options: refuse the toggle while a plugin holds a
@@ -68,12 +71,22 @@ registration; allow it with a warning naming the plugins; or allow it silently a
 let the plugin's own null-handling cope. This is a product call about how much the
 client owes third-party plugins, not a technical one.
 
+Stage 4 did not pre-empt it. `getHerbManager()` was already declared
+`HerbManagerApi | null`, so a plugin was always meant to handle its absence and 1b
+made it honest. The other two were left answering: `getContainer` resets to the
+default bag rather than to `null`, and the definition registries are untouched, so
+nothing a plugin can already observe has changed shape.
+
 ### 2. What a popup shows when its script is off
 
 Several web popups read a script's data directly — `LootPopup` (`lootParser`), the
 kill and improve popups (`kill`, `improveCounter`). With the owner stopped the data
 is absent rather than empty. Hide the popup and its button, or show it with an empty
 state explaining why? The second is friendlier and needs a message per popup.
+
+Stage 4 made the data absent without answering this: `Postepy2Popup` coalesces the
+new `null` to `[]` so it renders exactly as it did before. That is a placeholder for
+whichever answer this decision picks, not the answer.
 
 ### 3. The 148 labels
 
@@ -206,7 +219,11 @@ one script and read through a bare exported getter:
 
 Two of these (`prettyContainers` definitions, `herbManagerProvider`) are also part of
 the **public plugin surface** — turning off the owning script would silently degrade
-third-party plugins. That has to be part of the toggle contract.
+third-party plugins. That has to be part of the toggle contract. `bagManager`'s
+`getContainer` turned out to be a third: it is reached through `PluginApi.containers`.
+
+Stage 4 closed this channel; see *Stage 4: the singletons* for what each getter now
+answers when its owner is stopped, and which three deliberately still answer.
 
 The `*Loader` modules are the counter-example and the pattern to copy: they wrap a
 `DataStore` and expose `subscribeToX(listener)`, so consumers get a push when data
@@ -554,6 +571,13 @@ today for 93 of the ~145 registered scripts. The remaining gaps:
 | Module singletons | ✘ no reset | 9 owners (see Channel 2) |
 | `setInterval` | ✘ | `clock`, `combatTimer`, `coverTimer`, `lamp`, `orderTimer`, `transportTracker`, `worldDestructionTimer`, `zaskTimer` |
 | `window`/`document` listeners | ✘ | `bagManager`, `chatHistory`, `deposits`, `directionBinds`, `enemyBinds`, `externalScripts`, `functionalBind`, `improveCounter`, `kill`, `moveMode`, `multibinds` |
+| Storage listeners | `storage.onChange` returns an unsubscribe fn ✔ | 43 sites across 36 scripts; none keep the handle. **Missed by this survey the first time round** — found in stage 4, where it turned out to be what made the singleton resets not hold |
+
+Every row above is closed as of stage 4: triggers and aliases by `owner`, subscriptions
+and timers and DOM listeners by the scope, singletons by typed absence, storage
+listeners by `scope.onDispose`. The two that deliberately remain open — the
+`prettyContainers` registry and the providers reached through `PluginApi` — are
+decision 1.
 
 `PluginApi` already tracks and unwinds all of this for external plugins. Built-in
 scripts simply bypass that seam and talk to `client` directly. The work is to route
@@ -875,7 +899,7 @@ could start seeing suppressed lines, now has tests that will catch the change.
 | ~~**1b**~~ | ~~Finish teardown~~ — **done**: the 9 `setInterval` and 11 `window.addEventListener` sites now go through `client.scope`, and the 15 direct `eventBus.on` calls through `client.on`, so they carry the scope's `AbortSignal`. A test asserts no script reaches for `window`/`document` directly | none | landed |
 | ~~**2**~~ | ~~Add `manifest` + registry~~ — **done**, with the sort dropped: `after` / `requires` / `optional` are declared at the `registry.start` call and **checked**, not sorted. `test/client/registerScripts.test.ts` starts all 148 for real and proves the written order satisfies them | none | landed |
 | ~~**3**~~ | ~~Replace the 4 shared `client` fields~~ — **mostly declined**, see below. Two of the four are core state, and the 8 event edges were already fine. What was real — two latches left set when their script stops — is fixed | none | landed |
-| **4** | The 9 module singletons — see *Stage 4: how far to go* below | none | medium — touches `kill`, `improveCounter`, `lootParser`, `zlom` |
+| ~~**4**~~ | ~~The 9 module singletons~~ — **done** as *typed absence*, not a service locator: each getter answers absent once its owner stops, reset in a `client.scope.onDispose`. Three keep answering on purpose (two are plugin API, one has no owner). Dragged in **4a**: the 43 dropped `storage.onChange` unsubscribes, without which the resets do not hold | none | landed |
 | **5** | Add `line.replaceWith(next)` carrying `flair`/`deleted` across a buffer replacement; drop the `messageFlair` after `lootParser` edge | none | low |
 | **6** | Dynamic enable/disable UI; hard-required deps disable together, optional deps degrade | yes | medium |
 | **7** | Lazy `import()` per script, keyed on the manifest | yes | low once 1–6 land |
@@ -884,36 +908,83 @@ Only stage 0b changes behaviour before the toggle UI arrives; everything up to s
 is a no-op that can land incrementally on master. 0b is the one that needs a full e2e
 run and a close look at `combatStats`.
 
-### Stage 4: how far to go
+### Stage 4: the singletons — landed as typed absence
 
-The singletons are the last thing a stopped script leaves behind. Today the owner's
-data outlives it: stop `kill` and `getKillData()` still returns the totals it had
-accumulated, so `improveCounter` and the web popups keep reading numbers from a
-script that is no longer running. That is the gap stage 4 has to close.
+The singletons were the last thing a stopped script left behind. The owner's data
+outlived it: stop `kill` and `getKillData()` still returned the totals it had
+accumulated, so `improveCounter` and the web popups kept reading numbers from a
+script that was no longer running.
 
-The original plan said "convert to registry-resolved services". Two ways to read
-that, and the cheaper one is recommended:
+Of the two readings of "convert to registry-resolved services", the cheaper one is
+what landed. **Typed absence:** the module getters stay where they are, each answers
+absent once its owner has stopped, and the state is reset in a
+`client.scope.onDispose`. A **service locator** — register each service on the
+registry, resolve it by id — was considered and dropped: it buys compile-time
+dependency wiring, but the conversion runs through `kill` (922 lines), `zlom` (678),
+`lootParser` and `improveCounter`, none of which is split along the lines a service
+boundary would need, and its only user-visible effect is the same `null` the cheap
+version produces. If something later needs resolution by id — a plugin swapping an
+implementation — it layers on top of this without redoing it.
 
-**Recommended — typed absence.** Keep the module getters where they are. Make each
-return `null` once its owner has stopped, reset the module state in a
-`client.scope.onDispose`, and make the readers handle `null`. Roughly one dispose
-hook and one null-check per edge, and no structural change to the god files.
+The answer at the boundary is **absent, not empty**. `getLifetimeData()` used to
+return `[]` for a stopped counter, which is the same thing it returns for a
+character who has never improved; it now returns `null` for the first and `[]` for
+the second.
 
-**Not recommended for now — a service locator.** Register each service on the
-registry and resolve it by id. It buys compile-time dependency wiring, but the
-conversion runs through `kill` (922 lines), `zlom` (678), `lootParser` and
-`improveCounter`, and none of them is currently split along the lines a service
-boundary would need. The result would be a large diff whose only user-visible effect
-is the same `null` the cheaper version produces. If something later actually needs
-resolution by id — a plugin swapping an implementation, say — it can be layered on
-top of typed absence without redoing this.
+| Owner | Getter | Stopped |
+|---|---|---|
+| `kill` | `getKillData()`, `getLifetimeKillData()` | `null` |
+| `improveCounter` | `getImproveData()`, `getLifetimeData()` | `null` |
+| `lootParser` | `getRoomContents()`, `getBodyExtras()`, `getBodyStertyMap()` | `null` |
+| `zlom` | `getZlomFormatting(name)` | `undefined` |
+| `prettyContainers` | `getItemCssColor(name)` | `undefined` |
+| `shortcuts` | `getShortcut(id)` | `undefined` |
+| `herbCounter` | `getHerbManager()` | `null` — landed in 1b |
+| `bagManager` | `getContainer(type)` | **default bag** — see below |
+| `prettyContainers` | `addGroupDefinition`, `addTransformDefinition` | **unchanged** — see below |
+| `enemyBindResolvers` | resolver registry | nothing to do — plugins own the entries and `PluginManager` unwinds them |
 
-Either way the answer at the boundary is the same: **absent, not empty**. An empty
-object is indistinguishable from "the script is running and has nothing yet", which
-is exactly the failure mode this whole document opened by complaining about.
+Three of the nine keep answering, on purpose:
 
-Two of the nine are public plugin API and need decision 1 from *Open decisions*
-settled before they can be turned off at all.
+- **`getContainer`** and **the definition registries** are public plugin API. A
+  plugin that has already registered against them would be the one to break, and
+  what it should see is decision 1 in *Open decisions* — a product call, not this
+  stage's to make. `bagManager` resets to the default bag rather than to the
+  character's choice, and the definition registries are left entirely alone.
+- **`enemyBindResolvers`** is a `lib/` registry with no owning script.
+
+Two things the readers had to learn. `killTracker`'s `/loot` now falls back to the
+bodies it counted itself and offers nothing from the ground, which is the honest
+answer when nobody parsed it — it gained `optional: ['lootParser']` to say so.
+`itemCollector` null-guards the two body maps.
+
+**These are runtime guarantees, not compile-time ones.** The repo builds with
+`strict: false`, so a `| null` return type does not make a caller handle it — tsc
+will not flag `getRoomContents().bodies`. The contract is held by
+`test/client/registerScripts.test.ts`, which starts all 148 scripts for real and
+asserts every getter above answers absent after `stopAll()`. Turning on
+`strictNullChecks` would upgrade the whole set from tested to proven; that is a
+bigger job than this stage and is not on the plan.
+
+### Stage 4a: storage listeners — the channel 1b missed
+
+Stage 4 could not hold without this. `TypedStorage.onChange` returns an unsubscribe
+and 43 call sites in `scripts/` dropped it, so a stopped script kept its listener:
+the next settings change refilled the very state `stop` had just cleared. `shortcuts`
+was the clearest case — clear the lookup table, edit a shortcut in the options, and a
+script nobody is running starts resolving names again. Worse, `zlom`'s listener
+re-registers triggers, which on a disposed scope would leak them permanently.
+
+Every site now hands the unsubscribe to `client.scope.onDispose`, including
+`BaseCounter.onStorageChange`, which covers `kill` and `improveCounter`. A test
+sweeps `scripts/` and `scripts/lib/` and fails on any subscription whose return value
+is dropped — it looks at what precedes the call rather than matching a fixed wrapper,
+so the `cechyHistory` shape (collect the unsubscribes, return one disposer) passes
+too.
+
+That shape is now supported directly: **a script may return a teardown function from
+its init**, and `ScriptRegistry.start` registers it on the scope. `cechyHistory` had
+been returning one all along into a `ScriptStart` signature that ignored it.
 
 ### Where extraction will be expensive
 

@@ -17,9 +17,9 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
 
     lastLang = characterStorage.get(STORAGE_KEY) || '';
 
-    characterStorage.onChange(STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(characterStorage.onChange(STORAGE_KEY, (newValue) => {
         lastLang = newValue || '';
-    });
+    }));
 
     function gagLanguageConfirmation() {
         client.Triggers.registerOneTimeTrigger(
@@ -99,7 +99,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         applyAliases(detail.languageAliases || []);
     }
 
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         const detail = (settings ?? defaultSettings) as {
             language?: string;
             languageAdjective?: string;
@@ -108,7 +108,7 @@ export default function initLanguage(client: Client, aliases?: { pattern: RegExp
         currentLang = detail.language || 'potoczna';
         adjective = detail.languageAdjective || '';
         applyAliases(detail.languageAliases || []);
-    });
+    }));
 
     aliases.push({
         pattern: /^'(?!')(.*)$/,

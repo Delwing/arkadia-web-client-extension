@@ -103,8 +103,9 @@ export type LifetimeEntry = {
     noFormCount?: number;
 };
 
-export function getLifetimeData(): LifetimeEntry[] {
-    return improveCounterInstance?.getLifetimeData() ?? [];
+/** Null when the counter is not running — which is not the same as an empty history. */
+export function getLifetimeData(): LifetimeEntry[] | null {
+    return improveCounterInstance?.getLifetimeData() ?? null;
 }
 
 export type MergeMode = 'max' | 'add';
@@ -732,6 +733,12 @@ export function initImproveCounter(
     aliases?: { pattern: RegExp; callback: Function }[]
 ): ImproveCounter {
     const counter = new ImproveCounter(client);
+    client.scope.onDispose(() => {
+        // Guarded in case a restart has already installed a newer counter.
+        if (improveCounterInstance === counter) {
+            improveCounterInstance = null;
+        }
+    });
     if (aliases) {
         aliases.push({pattern: /\/postepy$/, callback: () => counter.show()});
         aliases.push({pattern: /\/postepyw$/, callback: () => eventBus.emit("postepy.popup.open")});

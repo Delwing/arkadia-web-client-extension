@@ -72,7 +72,7 @@ export default function initWhoCount(client: Client) {
         guildColors = detail.guildColors || {};
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     // Reset state on character switch
     client.on("reset", () => {

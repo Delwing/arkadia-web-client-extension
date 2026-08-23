@@ -72,9 +72,12 @@ export default function initKillTracker(client: Client) {
     client.aliases.push({
         pattern: /^\/loot$/,
         callback: () => {
+            // Null when lootParser is off: fall back to the bodies we counted
+            // ourselves, and offer nothing from the ground since nobody parsed it.
             const rc = getRoomContents();
-            const totalBodies = Math.max(bodyCount, rc.bodies + rc.sterta);
-            if (totalBodies === 0 && rc.groundItems.length === 0) {
+            const groundItems = rc?.groundItems ?? [];
+            const totalBodies = Math.max(bodyCount, (rc?.bodies ?? 0) + (rc?.sterta ?? 0));
+            if (totalBodies === 0 && groundItems.length === 0) {
                 client.print('Brak cial do przeszukania.');
                 return;
             }
@@ -82,8 +85,8 @@ export default function initKillTracker(client: Client) {
             for (let i = 1; i <= totalBodies; i++) {
                 client.sendCommand(`ob ${i}. cialo`);
             }
-            if (rc.groundItems.length > 0) {
-                client.sendEvent('loot.ground.open', { items: rc.groundItems });
+            if (groundItems.length > 0) {
+                client.sendEvent('loot.ground.open', { items: groundItems });
             }
         },
     });

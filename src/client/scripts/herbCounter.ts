@@ -95,11 +95,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         storedBags = normalizeHerbBagsState(initialHerbs);
     }
 
-    characterStorage.onChange(STORAGE_KEY, async (newValue) => {
+    client.scope.onDispose(characterStorage.onChange(STORAGE_KEY, async (newValue) => {
         storedBags = newValue ? normalizeHerbBagsState(newValue) : {};
         await ensureData();
         broadcastBags();
-    });
+    }));
     client.on('requestHerbCounts', () => requestBagsIfNeeded());
 
     let preUseCommands: string[] = [];
@@ -116,7 +116,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         wieleCount = typeof st.herbWieleCount === 'number' && st.herbWieleCount > 0 ? st.herbWieleCount : 25;
     };
     applyHerbSettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applyHerbSettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applyHerbSettings));
 
     async function ensureData() {
         if (!herbs) {

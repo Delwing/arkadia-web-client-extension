@@ -58,9 +58,9 @@ export default class ItemCollector {
         this.client = client;
 
         this.applySettings(characterStorage.get('settings') ?? defaultSettings);
-        characterStorage.onChange('settings', (payload) => {
+        client.scope.onDispose(characterStorage.onChange('settings', (payload) => {
             this.applySettings(payload ?? defaultSettings);
-        });
+        }));
 
         this.client.on("enemyKilled", (event) => {
             this.recordKill(event.killer, this.resolveHasBody(event), event.enemyDesc);
@@ -239,7 +239,7 @@ export default class ItemCollector {
             });
         }
         // Collect magics/keys discovered during body inspection
-        const lootExtras = getBodyExtras().get(bodyIndex ?? null);
+        const lootExtras = getBodyExtras()?.get(bodyIndex ?? null);
         if (lootExtras && lootExtras.length > 0) {
             for (const item of lootExtras) {
                 this.client.sendCommand(`wez ${item} z ${target}`);
@@ -400,7 +400,7 @@ export default class ItemCollector {
                 continue;
             }
 
-            const stertyIndex = stertyMap.get(currentBodyIndex);
+            const stertyIndex = stertyMap?.get(currentBodyIndex);
             const target = this.formatBodyTarget(currentBodyIndex, stertyIndex);
             const result = this.collectBody(target, record.enemyDesc, currentBodyIndex);
             aggregated.money = aggregated.money || result.money;

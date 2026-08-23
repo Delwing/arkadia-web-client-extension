@@ -22,7 +22,7 @@ export default async function initHerbDescriptions(client: Client) {
             : [];
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
     try {
         const herbs = await loadHerbs();
         if (!herbs) return;

@@ -1,4 +1,5 @@
 import Client from '@client/Client';
+import { createRootScope } from '@client/ScriptScope';
 import initInvite from '@client/scripts/invite';
 import { gmcp } from '@client/gmcp';
 import { characterStorage } from '@modules/core/storage';
@@ -71,6 +72,7 @@ describe('Invite functionality', () => {
         characterStorage.setCharacter('TestChar');
 
         client = {
+            scope: createRootScope('test'),
             Triggers: mockTriggers,
             FunctionalBind: mockFunctionalBind,
             println: mockPrintln,

@@ -86,7 +86,7 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
     const initial = globalStorage.get(STORAGE_KEY);
     if (initial) apply(Array.isArray(initial) ? initial : []);
 
-    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(globalStorage.onChange(STORAGE_KEY, (newValue) => {
         apply(Array.isArray(newValue) ? newValue : []);
-    });
+    }));
 }

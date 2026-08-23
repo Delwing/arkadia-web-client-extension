@@ -268,13 +268,13 @@ const Postepy2Popup: React.FC = () => {
     // Load initial data when popup opens
     useEffect(() => {
         if (isOpen) {
-            setData(getLifetimeData());
+            setData(getLifetimeData() ?? []);
         }
     }, [isOpen]);
 
     // Listen for updates
     useEffect(() => {
-        const handleUpdate = () => setData(getLifetimeData());
+        const handleUpdate = () => setData(getLifetimeData() ?? []);
 
         const unsub = eventBus.on('postepy2.updated', handleUpdate);
 

@@ -27,7 +27,7 @@ export default function initGuildPostfix(client: Client) {
         });
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     function register(pattern: RegExp | string, guild: string) {
         client.Triggers.registerTrigger(pattern, (line, _matches, type) => {

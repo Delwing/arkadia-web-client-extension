@@ -3,9 +3,10 @@ import Triggers from "@client/Triggers";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 import { setTestSettings } from "./helpers/testSettings";
+import { FakeClientBase } from './helpers/fakeClient';
 
 describe("guildPostfix", () => {
-  class FakeClient {
+  class FakeClient extends FakeClientBase {
     Triggers = new Triggers(({} as unknown) as any);
     on = jest.fn();
     postfix = jest.fn((raw: string, postfix: string) => raw + postfix);

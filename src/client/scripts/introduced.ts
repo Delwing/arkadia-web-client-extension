@@ -31,12 +31,12 @@ export default function initIntroduced(
     }
     loaded.introduced = true;
 
-    characterStorage.onChange(STORAGE_KEY_REMEMBERED, (newValue) => {
+    client.scope.onDispose(characterStorage.onChange(STORAGE_KEY_REMEMBERED, (newValue) => {
         const stored = Array.isArray(newValue) ? newValue : [];
         previousRemembered = stored;
         remembered = [...stored];
         loaded.remembered = true;
-    });
+    }));
 
     const persistRemembered = () => {
         characterStorage.set(STORAGE_KEY_REMEMBERED, remembered);

@@ -80,7 +80,7 @@ export default function initEnemyBinds(
     }
 
     applyEnemyBindKeys(globalStorage.get('binds'));
-    globalStorage.onChange('binds', applyEnemyBindKeys);
+    client.scope.onDispose(globalStorage.onChange('binds', applyEnemyBindKeys));
 
     const applySettings = (settings: any) => {
         const detail = (settings ?? defaultSettings) as {
@@ -99,7 +99,7 @@ export default function initEnemyBinds(
         }
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     function isEnemy(desc: string): boolean {
         const lowerDesc = desc.toLowerCase();

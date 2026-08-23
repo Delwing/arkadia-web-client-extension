@@ -80,7 +80,7 @@ export default function initShortExits(client: Client) {
         applySettings(initialSettings);
     }
 
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray) => {
         if (!enabled) return line;

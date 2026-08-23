@@ -37,7 +37,7 @@ export default function initLastSeen(
         enemyGuilds = (settings?.enemyGuilds as string[] | undefined) ?? [];
     };
     applyEnemyGuilds(characterStorage.get("settings"));
-    characterStorage.onChange("settings", applyEnemyGuilds);
+    client.scope.onDispose(characterStorage.onChange("settings", applyEnemyGuilds));
 
     subscribeMerged(snapshot => {
         people = snapshot ?? [];

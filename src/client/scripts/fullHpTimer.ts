@@ -37,7 +37,7 @@ export default function initFullHpTimer(client: Client) {
         }
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     client.on("gmcp.char.state", (state) => {
         const hp = state?.hp;

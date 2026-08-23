@@ -1,4 +1,5 @@
 import initIdz from '@client/scripts/idz';
+import { createRootScope } from '@client/ScriptScope';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
@@ -14,6 +15,7 @@ describe('idz walking', () => {
   function setup() {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     const client: any = {
+      scope: createRootScope('test'),
       Map: {
         currentRoom: { id: 1, exits: { north: 2 }, specialExits: {} },
         findPath: jest.fn(() => ['1', '2']),

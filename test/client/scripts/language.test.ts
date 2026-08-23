@@ -3,12 +3,15 @@ import { setTestSettings } from '../helpers/testSettings';
 
 type ListenerMap = Record<string, Array<(event: any) => void>>;
 
+import { createRootScope } from '@client/ScriptScope';
+
 type AliasEntry = {
   pattern: RegExp;
   callback: (matches: RegExpMatchArray) => void;
 };
 
 type MockedClient = {
+  scope: ReturnType<typeof createRootScope>;
   send: jest.Mock;
   sendCommand: jest.Mock;
   aliases: AliasEntry[];
@@ -47,6 +50,7 @@ function createMockClient(): ClientTestContext {
   const postMessageMock = jest.fn();
 
   const client: MockedClient = {
+    scope: createRootScope('test'),
     send: sendMock,
     sendCommand: sendCommandMock,
     aliases: [],

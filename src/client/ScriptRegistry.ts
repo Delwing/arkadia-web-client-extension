@@ -5,7 +5,10 @@ import {createScriptScope, type ScriptScope} from "./ScriptScope";
 /**
  * How a script gets going. Most are `initX(client)` or `initX(client, aliases)`,
  * which match this directly; the few that need more get a lambda in main.ts.
- * A return value is ignored — the registry hands the script nothing back.
+ * A returned function is taken as a teardown and runs when the script stops, for
+ * the cases a `client.scope.onDispose` at the registration site cannot express —
+ * a script that already collects its own unsubscribes, say. Any other return
+ * value is ignored.
  */
 export type ScriptStart = (client: Client, aliases: AliasList) => unknown;
 
@@ -79,7 +82,10 @@ export class ScriptRegistry {
         const {client, scope} = createScriptScope(this.client, id);
         this.scopes.set(id, scope);
         try {
-            run(client, client.aliases);
+            const teardown = run(client, client.aliases);
+            if (typeof teardown === "function") {
+                scope.onDispose(teardown as () => void);
+            }
         } catch (error) {
             // Don't leave half a script wired up: whatever it managed to register
             // before it threw goes with the scope, and so does its declaration.

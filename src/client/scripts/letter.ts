@@ -409,10 +409,10 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         const detail = (initialSettings ?? defaultSettings) as { letterLineWidth?: number };
         updateLineWidth(detail?.letterLineWidth);
     }
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         const detail = (settings ?? defaultSettings) as { letterLineWidth?: number };
         updateLineWidth(detail?.letterLineWidth);
-    });
+    }));
 
     client.on("letterComposer.submit", (payload) => {
         const {to, cc, udw, subject, content, template: rawTemplate} = payload ?? {};

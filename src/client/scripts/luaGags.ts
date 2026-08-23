@@ -123,16 +123,16 @@ export default function registerLuaGagTriggers(client: Client) {
 
     let gagsTable: Table | null = null;
 
-    characterStorage.onChange(LUA_GAGS_STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(characterStorage.onChange(LUA_GAGS_STORAGE_KEY, (newValue) => {
         applyDeleteLinesConfig(newValue);
-    });
+    }));
 
-    characterStorage.onChange(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(characterStorage.onChange(LUA_GAGS_WALKA_CONFIG_STORAGE_KEY, (newValue) => {
         applyWalkaConfig(newValue);
         if (gagsTable) {
             gagsTable.set('fin_prefix', walkaConfig.finPrefix);
         }
-    });
+    }));
 
     function toPattern(p: PatternObj) {
         if (p.type === 1) {

@@ -95,9 +95,9 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         applySettings(initial);
     }
 
-    characterStorage.onChange('settings', (payload) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (payload) => {
         applySettings(payload ?? defaultSettings);
-    });
+    }));
 
     function setMode(newMode: number) {
         if (newMode === mode) return;

@@ -58,7 +58,7 @@ function modifiersEnabled(): boolean {
  */
 function currentPostepy(): number | undefined {
     const lifetime = getLifetimeData();
-    if (!lifetime.length) return undefined;
+    if (!lifetime?.length) return undefined;
     return lifetime.reduce((sum, entry) => sum + entry.count, 0);
 }
 

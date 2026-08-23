@@ -58,9 +58,9 @@ export default function initCutting(
             : [];
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         applySettings(settings);
-    });
+    }));
 
     /**
      * Execute pre-cutting actions (e.g., sheathe weapons, draw dagger)

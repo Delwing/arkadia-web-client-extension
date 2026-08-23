@@ -67,9 +67,9 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         eventBus.emit("deposits.updated");
     };
     loadDeposits(characterStorage.get(STORAGE_KEY) as Record<number, DepositInfo> | undefined);
-    characterStorage.onChange(STORAGE_KEY, (value) => {
+    client.scope.onDispose(characterStorage.onChange(STORAGE_KEY, (value) => {
         loadDeposits(value as Record<number, DepositInfo> | undefined);
-    });
+    }));
 
     const persist = () => {
         const snapshot = cloneDeposits(deposits);
@@ -90,9 +90,9 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         columns = detail.containerColumns ?? columns;
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         applySettings(settings);
-    });
+    }));
     client.on('contentWidth', (value) => {
         width = value;
     });

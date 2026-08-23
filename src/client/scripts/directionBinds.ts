@@ -91,10 +91,10 @@ export default function initDirectionBinds(client: Client): void {
     );
 
     // Rebuild whenever the active keymap's binds change (keymap switch / edit).
-    globalStorage.onChange('binds', (binds) => {
+    client.scope.onDispose(globalStorage.onChange('binds', (binds) => {
         const directions = (binds as { directions?: unknown } | undefined)?.directions;
         directionBindings = buildDirectionBindings(isDirectionMap(directions) ? directions : undefined);
-    });
+    }));
 
     client.scope.listen(window, 'keydown', (event) => {
         if (shouldIgnoreGlobalKeybind()) return;

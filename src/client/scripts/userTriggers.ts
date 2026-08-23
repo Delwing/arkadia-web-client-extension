@@ -291,7 +291,7 @@ export default function initUserTriggers(client: Client) {
     const initialTriggers = globalStorage.get(STORAGE_KEY);
     if (initialTriggers) apply(Array.isArray(initialTriggers) ? initialTriggers : []);
 
-    globalStorage.onChange(STORAGE_KEY, (newValue) => {
+    client.scope.onDispose(globalStorage.onChange(STORAGE_KEY, (newValue) => {
         apply(Array.isArray(newValue) ? newValue : []);
-    });
+    }));
 }

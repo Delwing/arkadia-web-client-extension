@@ -1,5 +1,6 @@
 import initObjectAliases from '@client/scripts/objectAliases';
 import { gmcp } from '@client/gmcp';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 vi.mock('@modules/core/storage', () => {
   const typedStorage = {
@@ -24,7 +25,7 @@ vi.mock('@modules/data/peopleLoader', () => ({
 }));
 import { characterStorage } from '@modules/core/storage';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   ObjectManager = {
     getObjectsOnLocation: jest.fn(() => []),
   };

@@ -312,7 +312,16 @@ function findEntryByShort(name: string): ZlomEntry | undefined {
         ?? scan(snap.zbroje as ZlomEntry[]);
 }
 
+let running = false;
+
+/**
+ * How the given item should be coloured and titled, or undefined when zlom is off.
+ *
+ * The config outlives the script in storage, so this has to ask whether the script
+ * is running rather than whether there is anything to say.
+ */
 export function getZlomFormatting(name: string): ZlomFormatting | undefined {
+    if (!running) return undefined;
     const entry = findEntryByShort(name);
     if (!entry) return undefined;
     return computeFormatting(entry, resolveSilverColor());
@@ -368,20 +377,23 @@ export default function initZlom(
     client: Client,
     aliases?: { pattern: RegExp; callback: Function }[],
 ): void {
+    running = true;
+    client.scope.onDispose(() => { running = false; });
+
     // Load the snapshot from IndexedDB, then install highlight triggers.
     ensureZlomLoaded().then(() => reinstallHighlights(client));
 
-    subscribeZlom(() => reinstallHighlights(client));
+    client.scope.onDispose(subscribeZlom(() => reinstallHighlights(client)));
     client.on('zlom.snapshotReplaced', () => reinstallHighlights(client));
 
     let lastSilverColor = resolveSilverColor();
-    characterStorage.onChange('settings', () => {
+    client.scope.onDispose(characterStorage.onChange('settings', () => {
         const next = resolveSilverColor();
         if (next !== lastSilverColor) {
             lastSilverColor = next;
             reinstallHighlights(client);
         }
-    });
+    }));
 
     let ctx: PendingEval | null = null;
 

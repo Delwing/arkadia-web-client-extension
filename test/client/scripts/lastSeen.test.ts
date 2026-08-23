@@ -4,6 +4,7 @@ import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
 import { clearLocalEvents } from '@modules/data/peopleLoader';
 import { EventEmitter } from 'events';
+import { FakeClientBase } from '../helpers/fakeClient';
 
 vi.mock('@modules/data/peopleStore', () => ({
     subscribe: jest.fn(),
@@ -20,7 +21,7 @@ const MOCK_PEOPLE = [
     { name: 'Sojusz', description: 'maly elf', guild: 'PRZYJACIELE' },
 ];
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
     private emitter = new EventEmitter();
     println = jest.fn();
     Triggers = { registerTrigger: jest.fn() };

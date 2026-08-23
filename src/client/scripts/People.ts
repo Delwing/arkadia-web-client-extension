@@ -43,9 +43,9 @@ export default class People {
             this.ensurePeopleTriggers()
         }
         applySettings(characterStorage.get('settings'))
-        characterStorage.onChange('settings', (settings) => {
+        this.client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
             applySettings(settings)
-        })
+        }))
         this.ensurePeopleTriggers()
     }
 

@@ -47,7 +47,7 @@ export default function initHpAlert(client: Client) {
         }
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     client.on('gmcp.char.state', (state) => {
         let hp = state?.hp;

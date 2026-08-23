@@ -3,8 +3,9 @@ import initShortExits from '@client/scripts/shortExits';
 import Triggers from '@client/Triggers';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { FakeClientBase } from '../client/helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   Triggers = new Triggers(({} as unknown) as any);
   println = jest.fn();
   private handlers: Record<string, Array<(ev: any) => void>> = {};

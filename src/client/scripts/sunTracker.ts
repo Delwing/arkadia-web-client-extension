@@ -249,10 +249,10 @@ export default function initSunTracker(client: Client) {
         const settings = (initialSettings ?? defaultSettings) as { sunTracker?: boolean };
         enabled = !!settings.sunTracker;
     }
-    characterStorage.onChange('settings', (payload) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (payload) => {
         const settings = (payload ?? defaultSettings) as { sunTracker?: boolean };
         enabled = !!settings.sunTracker;
-    });
+    }));
 
     client.on("reset", () => {
         clearPending();

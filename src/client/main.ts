@@ -350,7 +350,7 @@ export function registerScripts(client: Client): ScriptRegistry {
     // their say: skipDeleted only tells the two apart once they have run.
     registry.start('combatWindow', initCombatWindow, {after: ['gags', 'luaGags']})
     registry.start('combatStats', initCombatStats)
-    registry.start('killTracker', initKillTracker)
+    registry.start('killTracker', initKillTracker, {optional: ['lootParser']})
     registry.start('PackageHelper', initPackageHelper)
     registry.start('inlineCompassRose', initInlineCompassRose)
     registry.start('clock', initClock)

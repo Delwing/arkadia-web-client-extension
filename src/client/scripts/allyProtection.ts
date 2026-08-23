@@ -70,9 +70,9 @@ export default function initAllyProtection(client: Client) {
         ensurePeopleLoaded().catch(() => undefined);
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', (settings) => {
+    client.scope.onDispose(characterStorage.onChange('settings', (settings) => {
         applySettings(settings);
-    });
+    }));
 
     // Listen to object data and cache ally status on first encounter
     client.on('gmcp.objects.data', (data) => {
@@ -193,7 +193,7 @@ export default function initAllyProtection(client: Client) {
     }
 
     refreshPrefix();
-    characterStorage.onChange('settings', refreshPrefix);
+    client.scope.onDispose(characterStorage.onChange('settings', refreshPrefix));
 
     /** `ob_5` directly, or `@shortcut` — hooks run before shortcuts are expanded. */
     function resolveTarget(rest: string): number | null {

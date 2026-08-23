@@ -36,10 +36,18 @@ export interface RoomContentsState {
     groundItems: GroundItem[];
 }
 
+let running = false;
 let roomContents: RoomContentsState = { bodies: 0, sterta: 0, groundItems: [] };
 
-export function getRoomContents(): Readonly<RoomContentsState> {
-    return roomContents;
+/**
+ * What the parser last saw on the ground, or null when it is not running.
+ *
+ * Absent is not the same as empty: an empty room and a stopped parser would
+ * otherwise be indistinguishable, and a caller would happily report "nothing here"
+ * for a room it never looked at.
+ */
+export function getRoomContents(): Readonly<RoomContentsState> | null {
+    return running ? roomContents : null;
 }
 
 function parseRoomContentsObject(text: string) {
@@ -69,12 +77,14 @@ const bodyExtras = new Map<number | null, string[]>();
 // Tracks which body numbers are "smetne pozostalosci" (sterty) and their sterty index
 const bodyStertyMap = new Map<number | null, number>();
 
-export function getBodyExtras(): ReadonlyMap<number | null, string[]> {
-    return bodyExtras;
+/** Null when the parser is not running. See getRoomContents. */
+export function getBodyExtras(): ReadonlyMap<number | null, string[]> | null {
+    return running ? bodyExtras : null;
 }
 
-export function getBodyStertyMap(): ReadonlyMap<number | null, number> {
-    return bodyStertyMap;
+/** Null when the parser is not running. See getRoomContents. */
+export function getBodyStertyMap(): ReadonlyMap<number | null, number> | null {
+    return running ? bodyStertyMap : null;
 }
 
 export function clearBodyExtras() {
@@ -104,6 +114,13 @@ function enrichItems(rawText: string): LootItem[] {
 
 export default function initLootParser(client: Client) {
     const tag = 'lootParser';
+
+    running = true;
+    client.scope.onDispose(() => {
+        running = false;
+        roomContents = { bodies: 0, sterta: 0, groundItems: [] };
+        clearBodyExtras();
+    });
 
     const bodyPattern = /^Jest to martwe cialo (?<description>.+)\.$/;
     const remainsPattern = /^Sa to smetne pozostalosci po jaki(?:ms|ejs) (?<description>.+)\.$/;

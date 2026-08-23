@@ -22,9 +22,9 @@ export abstract class BaseCounter {
     }
 
     protected onStorageChange<K extends StorageKey>(key: K, handler: (value: CharacterStorageSchema[K] | undefined) => void): void {
-        characterStorage.onChange(key, (value) => {
+        this.client.scope.onDispose(characterStorage.onChange(key, (value) => {
             if (this.selfPersisting) return;
             handler(value);
-        });
+        }));
     }
 }

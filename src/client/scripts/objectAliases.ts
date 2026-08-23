@@ -93,7 +93,7 @@ export default function initObjectAliases(
         }
     };
     applySettings(characterStorage.get('settings'));
-    characterStorage.onChange('settings', applySettings);
+    client.scope.onDispose(characterStorage.onChange('settings', applySettings));
 
     function isEnemyByName(name: string): boolean {
         const person = peopleCache.find(p => p.name === name);

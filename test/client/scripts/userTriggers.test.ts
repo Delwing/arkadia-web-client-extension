@@ -2,8 +2,9 @@ import initUserTriggers, { UserTrigger } from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage } from '@modules/core/storage';
+import { FakeClientBase } from '../helpers/fakeClient';
 
-class FakeClient {
+class FakeClient extends FakeClientBase {
   Triggers = new Triggers(({} as unknown) as any);
   sendEvent = jest.fn();
   sendCommand = jest.fn();
