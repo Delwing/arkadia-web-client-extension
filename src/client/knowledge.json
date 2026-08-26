@@ -3498,10 +3498,18 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales kogos chronionego bariera magicznych pnaczy",
-    "id": null,
-    "Domena": "?",
-    "lokalizacja": "?",
-    "note": "?"
+    "id": 12964,
+    "Domena": "Ishtar",
+    "lokalizacja": "Skarbiec: Druidka",
+    "note": "Podczas finalnej walki mozna zdobyc ta wiedze w sumie nic nie trzeba robic. Podejrzewam ze wiecej druidek w ishtar moze ta wiedze posiadac."
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Widziales kogos ze skora przemieniona w kamien",
+    "id": 21009,
+    "Domena": "Imperium",
+    "lokalizacja": "Averland - Kopalnia na Przeleczy,Trakt Poludniowy na Pustkowia",
+    "note": "Prorok w trakcie walki czaruje i moze sie wylosowac ten czar"
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4660,8 +4668,24 @@
     "Wiedza": "Spotkales licza przywolujacego nieumarlych swiatlem koscianej lampy",
     "id": 4653,
     "Domena": "Imperium",
-    "lokalizacja": "Event - Hexenacht - Quenelles (inne miasta?)",
+    "lokalizacja": "Event - Hexenacht - Quenelles, Salignac ( miasta bretonni?)",
     "note": "Podczas Hexe, Spawnuje sie licz z obstawa nieumarlych, trafilismy go w quenelles w miescie. Ciezka walka +7 osob. \"ob licza\". Mozesz wejsc obejrzec go i wyjsc.Makabryczny zdeformowany ozywieniec, zakrwawiony grozny ozywieniec, potezny siwowlosy licz i zoltawy potezny szkielet."
+  },
+  {
+    "Rodzaj": "Wiedza o nieumarlych",
+    "Wiedza": "Spotkales wskrzeszonego rycerza Czarnej Gwardii Morra",
+    "id": 5046,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Hexenacht - Kreutzhofen (okolice cmentarza)",
+    "note": "Wskrzeszony milczacy mezczyzna \"ob mezczyzne\" . Podczas trwania swieta mozna go trafic tego ozywienca."
+  },
+  {
+    "Rodzaj": "Wiedza o nieumarlych",
+    "Wiedza": "Widziales ozywione cialo",
+    "id": 6448,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Hexenacht - Miasta",
+    "note": "Podczas trwania swieta grasuja nieumarli po miastach najczesciej gwardie/straznicy zabici w miastach zmieniaja sie we wskrzeszone trupy \"ob nieumarlych\""
   },
   {
     "Rodzaj": "Wiedza o pajakach i pajakowatych",
@@ -7406,5 +7430,13 @@
     "Domena": "Ishtar",
     "lokalizacja": "Saovine",
     "note": "Wyskakuje fleder na krotka chwile, musisz zdazyc go obejrzec, przy wywolywaniu, ale tez go mozna trafic na cmentarzach podczas Sao."
+  },
+  {
+    "Rodzaj": "Wiedza o wampirach",
+    "Wiedza": "Widziales zdegenerowanego wampira strzygonia",
+    "id": 6329,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Hexenacht - Trakty,Miasta,bagna,cmentarze Imperium",
+    "note": "Maja randomowe opisy (mezczyzna/kobieta) ale widac po opisie np. Wyglodzony skrzywiony mezczyzna \"ob wampira\" czy tez nerwowy wychudly mezczyzna."
   }
 ]
