@@ -10,6 +10,22 @@ TypeScript type definitions for developing Arkadia Web Client plugins.
 npm install http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types.tgz
 ```
 
+This URL always serves the current types. Its contents change whenever the API
+changes — which also changes the integrity hash your lockfile records, so an
+install pinned to it will fail after the next API change.
+
+**If your CI installs with `--frozen-lockfile`, pin the immutable copy instead.**
+Every build also publishes the same tarball under a content-hashed name that can
+never change:
+
+```bash
+npm install http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types-1.0.0-<hash>.tgz
+```
+
+The hash is the package version — see it in `package.json` after installing, or
+in the deploy log. Moving to newer types is then a deliberate re-pin rather than
+something an unrelated release does to you.
+
 ### Option 2: Download the tarball
 
 Download the latest `arkadia-plugin-types.tgz`:

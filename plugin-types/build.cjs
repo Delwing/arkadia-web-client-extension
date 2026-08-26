@@ -7,6 +7,7 @@
  */
 
 const { execSync } = require('child_process');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -29,15 +30,34 @@ try {
   process.exit(1);
 }
 
-// Step 1.5: Set unique version to avoid Yarn cache integrity issues
+// Step 1.5: Version the package by the *content* of what it ships.
+//
+// This needs to satisfy two opposing requirements. The version must change
+// whenever the types change, or Yarn serves a stale package from its cache
+// (keyed by name@version) and consumers silently compile against old types.
+// But it must NOT change otherwise: the tarball is published to a fixed URL,
+// and consumers pin its integrity hash in their lockfile, so a version that
+// moves on every build breaks `yarn install --frozen-lockfile` for them after
+// any unrelated release.
+//
+// A hash of the shipped files gives both — a new version exactly when, and
+// only when, the content differs. (This replaced a build timestamp, which
+// changed on every deploy and broke pinned consumers.)
 const pkgPath = path.join(TYPES_DIR, 'package.json');
 const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
 const originalVersion = pkgJson.version;
-const now = new Date();
-const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14);
-pkgJson.version = `1.0.0-${timestamp}`;
+
+// package.json itself is excluded: it carries the version we are computing.
+const contentHash = crypto.createHash('sha256');
+for (const file of ['index.d.ts', 'README.md'].sort()) {
+  const filePath = path.join(TYPES_DIR, file);
+  if (!fs.existsSync(filePath)) continue;
+  contentHash.update(file);
+  contentHash.update(fs.readFileSync(filePath));
+}
+pkgJson.version = `1.0.0-${contentHash.digest('hex').slice(0, 12)}`;
 fs.writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + '\n');
-console.log(`✓ Set version to ${pkgJson.version}`);
+console.log(`✓ Set version to ${pkgJson.version} (from content)`);
 
 console.log('');
 console.log('Step 2: Creating tarball...');
@@ -66,8 +86,16 @@ try {
   const sourcePath = path.join(TYPES_DIR, tarball);
   fs.renameSync(sourcePath, OUTPUT_FILE);
 
+  // Also publish under the content-hashed name. That URL is immutable: its
+  // bytes can never change, so a consumer pinning it in a lockfile is safe
+  // across every future release. The fixed name above stays as "latest" for
+  // anyone who would rather track the current types.
+  const versionedFile = path.join(OUTPUT_DIR, `arkadia-plugin-types-${pkgJson.version}.tgz`);
+  fs.copyFileSync(OUTPUT_FILE, versionedFile);
+
   console.log('✓ Tarball created successfully!');
-  console.log(`✓ Output: ${OUTPUT_FILE}`);
+  console.log(`✓ Output:    ${OUTPUT_FILE}`);
+  console.log(`✓ Immutable: ${versionedFile}`);
 
   // Show tarball size
   const stats = fs.statSync(OUTPUT_FILE);
