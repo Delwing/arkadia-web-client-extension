@@ -29,6 +29,7 @@ import type {Settings} from "@modules/core/defaultSettings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import { characterStorage, globalStorage } from "@modules/core/storage";
 import type {UiSettings, PluginPopupConfig} from "@client/ports";
+import type {ApplyChangesOptions, MapAreaData, RoomChange} from "@shared/map/MapHelper.ts";
 import {getPluginHostPort} from "@client/ports";
 import {getShellSettings, getRenderSettings, getMapSettings, getBehaviorSettings} from "@modules/core/settings";
 import {
@@ -145,6 +146,9 @@ export type {
   EnemyBindLocationObject,
   EnemyBindResolver
 };
+
+// Re-export live map-edit types for plugin developers
+export type {RoomChange, ApplyChangesOptions, MapAreaData};
 
 // Re-export macro types for plugin developers
 export type {
@@ -566,6 +570,91 @@ export interface MapApi {
    * questHighlighter.destroy();
    */
   createHighlighter(options?: LocationHighlighterOptions): LocationHighlighter;
+
+  /**
+   * Apply live edits to the loaded map for the current session.
+   *
+   * Rooms returned by {@link getRoom} / {@link getRoomById} are live references,
+   * so a plugin can already mutate their fields — but the renderer caches area
+   * geometry and the pathfinder caches exits, so a raw mutation either does not
+   * show up or leaves pathfinding stale. This applies the change *and* performs
+   * the rebuild/redraw the internal map scripts do (see `labyrinth.ts`,
+   * `tideSystem.ts`), which is the part a plugin cannot reach on its own.
+   *
+   * Changes live in memory only: they are lost when the map data reloads.
+   *
+   * @param changes - Room patches to apply. Each entry names a room and the
+   *   fields to overwrite; `userData` is merged key-by-key, with `null` values
+   *   deleting a key. Unknown room IDs are skipped.
+   * @param options - Control how much gets rebuilt. Defaults are safe but do
+   *   more work than a cosmetic change needs.
+   * @returns Number of rooms actually changed.
+   *
+   * @example
+   * // Rename a room and redraw
+   * api.map.applyChanges([{ roomId: 3554, name: "Kowal, Daevon" }]);
+   *
+   * @example
+   * // Cosmetic-only change: skip the pathfinder rebuild
+   * api.map.applyChanges(
+   *   [{ roomId: 3554, roomChar: "K" }],
+   *   { rebuildPaths: false }
+   * );
+   *
+   * @example
+   * // Structural change — exits need both rebuilds (the default)
+   * api.map.applyChanges([{ roomId: 100, exits: { north: 101 } }]);
+   *
+   * @example
+   * // Moving a room; coordinates need the area geometry rebuild
+   * api.map.applyChanges([{ roomId: 100, x: 12, y: -3, z: 0 }]);
+   */
+  applyChanges(changes: RoomChange[], options?: ApplyChangesOptions): number;
+
+  /**
+   * Replace whole areas of the loaded map for the current session.
+   *
+   * The complete counterpart to {@link applyChanges}: an area carries its rooms
+   * *and* its labels, and the renderer caches geometry per area, so swapping one
+   * covers every kind of edit — moved rooms, added or deleted rooms, custom
+   * lines, labels — without the caller having to describe what changed.
+   *
+   * Pass areas in the same shape as the published map export
+   * (`{ areaId, areaName, rooms, labels }`) with coordinates in source
+   * orientation; y is flipped for you, exactly as when the map first loads.
+   * Areas the map does not already contain are skipped, since adding one needs a
+   * full reload.
+   *
+   * Changes live in memory only: they are lost when the map data reloads.
+   *
+   * @returns Number of areas replaced.
+   *
+   * @example
+   * const replaced = api.map.syncAreas([{ areaId: 12, areaName: "Rinde", rooms, labels }]);
+   */
+  syncAreas(areas: MapAreaData[]): number;
+
+  /**
+   * Replace the whole loaded map for the current session.
+   *
+   * The heaviest of the three live-edit entry points, and the only one that can
+   * change the *set* of areas — {@link syncAreas} can replace an area's contents
+   * but not add one, because the renderer builds its area wrappers at load time.
+   * Everything is rebuilt: reader, pathfinder, hashes, area index.
+   *
+   * Takes the same shape the map is published in (an array of areas, as in
+   * `mapExport.json`) with coordinates in source orientation. The player's
+   * position is kept when the new map still contains that room, and the current
+   * colour palette is reused unless you pass a new one.
+   *
+   * In-memory only: the next map data refresh replaces this again.
+   *
+   * @returns false when the payload contained no areas; nothing changed.
+   *
+   * @example
+   * api.map.replaceMap(mapData, colors);
+   */
+  replaceMap(mapData: MapData.Map, colors?: MapData.Env[]): boolean;
 }
 
 /**
@@ -2722,6 +2811,18 @@ export class PluginApiImpl implements PluginApi {
           getRoomIds: handle.getRoomIds,
           destroy: handle.destroy
         };
+      },
+
+      applyChanges: (changes: RoomChange[], options?: ApplyChangesOptions): number => {
+        return this.client.Map.applyRoomChanges(changes, options);
+      },
+
+      syncAreas: (areas: MapAreaData[]): number => {
+        return this.client.Map.syncAreas(areas);
+      },
+
+      replaceMap: (mapData: MapData.Map, colors?: MapData.Env[]): boolean => {
+        return this.client.Map.replaceMap(mapData, colors);
       }
     };
   }

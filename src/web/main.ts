@@ -338,19 +338,36 @@ Promise.all([mapDataPromise, colorsPromise])
         embedded.pathFinder = pathFinder;
         setEmbeddedMap(embedded);
 
+        // Single place the view is reconciled with map data, however it changed:
+        // a data refresh, a whole map pushed from the editor, or individual areas
+        // synced from it. The view holds its own reader reference and the renderer
+        // caches per-area geometry, so neither a swapped reader nor an in-place
+        // edit shows up on its own.
+        client.Map.onAreasChanged((areaIds) => {
+            const currentEmbedded = getEmbeddedMap();
+            const currentReader = client.Map.tryGetMapReader();
+            if (!currentEmbedded || !currentReader) return;
+
+            if (currentEmbedded.reader !== currentReader) {
+                // The map was rebuilt — the old reader (and its renderer) are stale.
+                currentEmbedded.reload(currentReader);
+                currentEmbedded.pathFinder = client.Map.getPathFinder();
+                const algorithm = getMapSettings().pathFindingAlgorithm;
+                if (algorithm && currentEmbedded.pathFinder?.setAlgorithm) {
+                    currentEmbedded.pathFinder.setAlgorithm(algorithm);
+                }
+            } else {
+                currentEmbedded.refreshAreas(areaIds);
+            }
+        });
+
         subscribeToMapData((newMapData) => {
             if (!newMapData) return;
-            const currentEmbedded = getEmbeddedMap();
-            if (!currentEmbedded) return;
+            if (!getEmbeddedMap()) return;
 
-            const result = client.Map.initialize(newMapData, colors);
-            const newSavedAlgorithm = getMapSettings().pathFindingAlgorithm;
-            if (newSavedAlgorithm && result.pathFinder.setAlgorithm) {
-                result.pathFinder.setAlgorithm(newSavedAlgorithm);
-            }
-            currentEmbedded.reload(result.reader);
-            currentEmbedded.pathFinder = result.pathFinder;
-            eventBus.emit('mapDataChanged');
+            // initialize() announces the new areas, and the handler above swaps
+            // the reader into the view.
+            client.Map.initialize(newMapData, colors);
         }, { emitInitial: false });
     })
     .catch(error => {

@@ -742,6 +742,84 @@ export type ObjectListEntryFilter = (
 ) => void | { stopPropagation: true };
 
 // ============================================================================
+// Live Map Edit Types
+// ============================================================================
+
+/**
+ * A single room's worth of live map edits, as accepted by \`api.map.applyChanges\`.
+ * Only the fields present are touched; everything else on the room is left alone.
+ */
+export interface RoomChange {
+  /** Room to patch. Ignored if the map has no such room. */
+  roomId: number;
+  /**
+   * What to do with the room:
+   * - \`patch\` (default) — update an existing room, skip if it is missing.
+   * - \`upsert\` — update, or create it when missing. Needs \`area\`.
+   * - \`delete\` — remove the room from the map entirely.
+   */
+  op?: 'patch' | 'upsert' | 'delete';
+  /** Area to place a newly created room in. Only read when upserting. */
+  area?: number;
+  /** Room name. */
+  name?: string;
+  /** Symbol drawn in the room square (Mudlet's roomChar). */
+  roomChar?: string;
+  /** Environment/colour id. */
+  env?: number;
+  /** Pathfinding weight. */
+  weight?: number;
+  /** Map coordinates. Moving a room needs the area geometry rebuild. */
+  x?: number;
+  y?: number;
+  z?: number;
+  /** Replaces the room's exits wholesale. */
+  exits?: Partial<Record<MapDirection, number>>;
+  /** Replaces the room's special exits wholesale. */
+  specialExits?: Record<string, number>;
+  /** Merged into existing userData; a \`null\` value removes that key. */
+  userData?: Record<string, string | null>;
+}
+
+/**
+ * The whole map, as published in \`mapExport.json\`: an array of areas with
+ * coordinates in source orientation. Accepted by \`api.map.replaceMap\`.
+ */
+export type MapExportData = MapAreaData[];
+
+/**
+ * One area in the shape the renderer consumes — the same objects found in the
+ * published \`mapExport.json\`. Coordinates are in source orientation (y-up, as
+ * Mudlet stores them); \`api.map.syncAreas\` flips y on the way in, exactly as the
+ * map does when it first loads.
+ */
+export interface MapAreaData {
+  areaId: string | number;
+  areaName?: string;
+  rooms: MapData.Room[];
+  labels?: unknown[];
+}
+
+/**
+ * Tuning for \`api.map.applyChanges\`. Every rebuild defaults to \`true\`, which is
+ * always correct but heavier than a cosmetic edit needs.
+ */
+export interface ApplyChangesOptions {
+  /**
+   * Rebuild renderer geometry for affected areas. Required for anything that
+   * changes what is drawn (symbols, colours, exits). Default \`true\`.
+   */
+  rebuildAreas?: boolean;
+  /**
+   * Rebuild the pathfinder. Only exits and weights affect routing, so a pure
+   * name/symbol change can skip it. Default \`true\`.
+   */
+  rebuildPaths?: boolean;
+  /** Redraw the current view when done. Default \`true\`. */
+  rerender?: boolean;
+}
+
+// ============================================================================
 // Enemy Bind Resolver Types
 // ============================================================================
 
