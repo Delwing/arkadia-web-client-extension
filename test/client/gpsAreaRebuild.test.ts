@@ -6,6 +6,7 @@ import initGps from '@client/scripts/gps';
  * a rebuild safe to run repeatedly.
  */
 function createClient(rooms: Record<number, MapData.Room[]>) {
+    let live = rooms;
     let areasListener: ((areaIds: number[]) => void) | null = null;
 
     const client: any = {
@@ -19,7 +20,7 @@ function createClient(rooms: Record<number, MapData.Room[]>) {
             setMapRoomById: vi.fn(),
             tryGetMapReader: () => ({
                 getArea: (areaId: number) =>
-                    rooms[areaId] ? {getRooms: () => rooms[areaId]} : undefined,
+                    live[areaId] ? {getRooms: () => live[areaId]} : undefined,
             }),
             onAreasChanged: (cb: (areaIds: number[]) => void) => {
                 areasListener = cb;
@@ -29,7 +30,12 @@ function createClient(rooms: Record<number, MapData.Room[]>) {
         sendEvent: vi.fn(),
     };
 
-    return {client, fireAreasChanged: (ids: number[]) => areasListener?.(ids)};
+    return {
+        client,
+        fireAreasChanged: (ids: number[]) => areasListener?.(ids),
+        /** Swap the whole map, as replaceMap does. */
+        setMap: (next: Record<number, MapData.Room[]>) => { live = next; },
+    };
 }
 
 const gpsRoom = (id: number, lines: string[]): MapData.Room =>
@@ -92,5 +98,40 @@ describe('GPS area rebuild', () => {
         fireAreasChanged([2]);
 
         expect(client.Triggers.registerTrigger).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('GPS after a whole-map replacement', () => {
+    it('should drop triggers for areas the new map no longer has', () => {
+        const {client, fireAreasChanged, setMap} = createClient({
+            2: [gpsRoom(1, ['Kuznia.'])],
+            3: [gpsRoom(9, ['Trakt.'])],
+        });
+        initGps(client);
+        fireAreasChanged([2, 3]);
+        client.Triggers.removeByTag.mockClear();
+
+        // replaceMap swaps to a map without area 3, and announces only what it has.
+        setMap({2: [gpsRoom(1, ['Kuznia.'])]});
+        fireAreasChanged([2]);
+
+        // Tags are exact, so nothing else would ever clear area 3 — leaving it
+        // syncing the player to room ids that no longer exist.
+        expect(client.Triggers.removeByTag).toHaveBeenCalledWith('gps:3');
+    });
+
+    it('should not clear areas that are still present', () => {
+        const {client, fireAreasChanged, setMap} = createClient({
+            2: [gpsRoom(1, ['Kuznia.'])],
+            3: [gpsRoom(9, ['Trakt.'])],
+        });
+        initGps(client);
+        fireAreasChanged([2, 3]);
+        client.Triggers.removeByTag.mockClear();
+
+        setMap({2: [gpsRoom(1, ['Kuznia.'])], 3: [gpsRoom(9, ['Trakt.'])]});
+        fireAreasChanged([2]);
+
+        expect(client.Triggers.removeByTag).not.toHaveBeenCalledWith('gps:3');
     });
 });

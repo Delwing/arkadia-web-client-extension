@@ -107,6 +107,41 @@ describe('MapHelper.applyRoomChanges', () => {
         expect(rooms[1].userData).toEqual({keep: 'yes', added: 'new'});
     });
 
+    it('should retire the previous internal_id when it changes', () => {
+        const rooms = sampleRooms();
+        const {helper} = createHelper(rooms);
+
+        helper.applyRoomChanges([{roomId: 1, userData: {internal_id: 'stary'}}]);
+        helper.applyRoomChanges([{roomId: 1, userData: {internal_id: 'nowy'}}]);
+
+        // The old id must stop resolving, or leadToByInternalId walks to a room
+        // that no longer advertises it.
+        expect(helper.getRoomIdByInternalId('stary')).toBeNull();
+        expect(helper.getRoomIdByInternalId('nowy')).toBe(1);
+    });
+
+    it('should drop the internal_id index entry when the key is removed', () => {
+        const rooms = sampleRooms();
+        const {helper} = createHelper(rooms);
+
+        helper.applyRoomChanges([{roomId: 1, userData: {internal_id: 'stary'}}]);
+        helper.applyRoomChanges([{roomId: 1, userData: {internal_id: null}}]);
+
+        expect(helper.getRoomIdByInternalId('stary')).toBeNull();
+    });
+
+    it('should not steal an internal_id that belongs to another room', () => {
+        const rooms = sampleRooms();
+        const {helper} = createHelper(rooms);
+
+        helper.applyRoomChanges([{roomId: 2, userData: {internal_id: 'wspolny'}}]);
+        // Room 1 never owned 'wspolny', so removing its own key must leave it alone.
+        rooms[1].userData.internal_id = 'wspolny';
+        helper.applyRoomChanges([{roomId: 1, userData: {internal_id: null}}]);
+
+        expect(helper.getRoomIdByInternalId('wspolny')).toBe(2);
+    });
+
     it('should keep the internal_id index in step with userData edits', () => {
         const rooms = sampleRooms();
         const {helper} = createHelper(rooms);

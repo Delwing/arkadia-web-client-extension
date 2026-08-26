@@ -669,17 +669,22 @@ export default class MapHelper {
             if (change.userData) {
                 room.userData ||= {};
                 for (const [key, value] of Object.entries(change.userData)) {
+                    const previous = room.userData[key];
                     if (value === null) {
                         delete room.userData[key];
                     } else {
                         room.userData[key] = value;
                     }
                     // internal_id feeds a lookup index built at load time, so it
-                    // has to be kept in step or getRoomIdByInternalId goes stale.
+                    // has to be kept in step or getRoomIdByInternalId resolves an
+                    // id the room no longer advertises. Retire the old entry
+                    // before adding the new one, and read the previous value
+                    // *before* the mutation above overwrites it.
                     if (key === "internal_id") {
-                        if (value === null) {
-                            delete this.internalIds[room.userData[key]];
-                        } else {
+                        if (previous && this.internalIds[previous] === change.roomId) {
+                            delete this.internalIds[previous];
+                        }
+                        if (value !== null) {
                             this.internalIds[value] = change.roomId;
                         }
                     }

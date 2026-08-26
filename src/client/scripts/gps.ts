@@ -95,6 +95,9 @@ export default function initGps(client: Client) {
         });
     }
 
+    /** Areas we currently hold triggers for, so they can be retired by tag. */
+    const registered = new Set<number>();
+
     /**
      * Rebuild one area's GPS triggers from scratch.
      *
@@ -104,6 +107,7 @@ export default function initGps(client: Client) {
      */
     function rebuildArea(areaId: number) {
         client.Triggers.removeByTag(tagFor(areaId));
+        registered.delete(areaId);
 
         const area = client.Map.tryGetMapReader()?.getArea(areaId);
         if (!area) {
@@ -111,6 +115,25 @@ export default function initGps(client: Client) {
         }
         const tag = tagFor(areaId);
         area.getRooms().forEach(room => registerRoom(room, tag));
+        registered.add(areaId);
+    }
+
+    /**
+     * Drop triggers for areas the map no longer has.
+     *
+     * Replacing the whole map announces only the *new* area ids, so an area
+     * that disappeared would otherwise keep its triggers — and keep syncing the
+     * player to room ids that no longer exist. Tags are exact, so nothing else
+     * would ever clear them.
+     */
+    function pruneMissingAreas() {
+        const reader = client.Map.tryGetMapReader();
+        for (const areaId of [...registered]) {
+            if (!reader?.getArea(areaId)) {
+                client.Triggers.removeByTag(tagFor(areaId));
+                registered.delete(areaId);
+            }
+        }
     }
 
     // One entry point for every way map data arrives: the initial load, a whole
@@ -119,5 +142,6 @@ export default function initGps(client: Client) {
     // no separate "first build" path to keep in step.
     client.Map.onAreasChanged(areaIds => {
         areaIds.forEach(rebuildArea);
+        pruneMissingAreas();
     });
 }

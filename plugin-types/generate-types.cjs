@@ -752,6 +752,15 @@ export type ObjectListEntryFilter = (
 export interface RoomChange {
   /** Room to patch. Ignored if the map has no such room. */
   roomId: number;
+  /**
+   * What to do with the room:
+   * - \`patch\` (default) — update an existing room, skip if it is missing.
+   * - \`upsert\` — update, or create it when missing. Needs \`area\`.
+   * - \`delete\` — remove the room from the map entirely.
+   */
+  op?: 'patch' | 'upsert' | 'delete';
+  /** Area to place a newly created room in. Only read when upserting. */
+  area?: number;
   /** Room name. */
   name?: string;
   /** Symbol drawn in the room square (Mudlet's roomChar). */
