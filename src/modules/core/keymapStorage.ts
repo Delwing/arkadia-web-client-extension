@@ -15,6 +15,7 @@ const defaultBinds: BindSettings = {
     moveMode: { key: 'Backquote' },
     roomBind: { key: 'KeyP', alt: true },
     drinkable: { key: 'KeyN', alt: true },
+    gateBind: { key: 'KeyB', alt: true },
     doubleK: { key: 'Equal', ctrl: true, alt: true },
     temp: [
         { key: 'F4' },
@@ -314,6 +315,7 @@ function mergeBindSettings(raw: any): BindSettings {
         moveMode: raw.moveMode || defaultBinds.moveMode,
         roomBind: raw.roomBind || defaultBinds.roomBind,
         drinkable: raw.drinkable || defaultBinds.drinkable,
+        gateBind: raw.gateBind || defaultBinds.gateBind,
         doubleK: raw.doubleK || defaultBinds.doubleK,
         temp: Array.isArray(raw.temp) && raw.temp.length >= 2
             ? [

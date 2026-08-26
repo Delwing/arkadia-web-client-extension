@@ -76,6 +76,7 @@ export const defaultBehaviorSettings: BehaviorSettings = {
     explorationMode: false,
     instantMove: true,
     drinkableAsFunctionalBind: true,
+    gateAsFunctionalBind: false,
     teamNumberingMode: 'letters',
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
 };
@@ -104,7 +105,7 @@ export const mapSettingsKeys = [
 ] as const satisfies readonly (keyof MapSettings)[];
 
 export const behaviorSettingsKeys = [
-    'explorationMode', 'instantMove', 'drinkableAsFunctionalBind',
+    'explorationMode', 'instantMove', 'drinkableAsFunctionalBind', 'gateAsFunctionalBind',
     'teamNumberingMode', 'objectContextMenuCommands',
 ] as const satisfies readonly (keyof BehaviorSettings)[];
 

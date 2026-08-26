@@ -600,11 +600,14 @@ body::after {
 .multi-bind-key { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; font-size: 10.5px; color: var(--bronze); }
 .multi-bind-action { color: var(--parchment-dim); }
 /* location binds read apart from the plain numbered multibinds: the room bind in
-   warm amber, the drinkable bind in a cool blue — key tinted, border echoes it */
+   warm amber, the drinkable bind in a cool blue, the gate bind in rust — key
+   tinted, border echoes it */
 .multi-bind--room { border-color: #5a4423; }
 .multi-bind--room .multi-bind-key { color: #e0a94a; }
 .multi-bind--drink { border-color: #2f4a5a; }
 .multi-bind--drink .multi-bind-key { color: #79b3d6; }
+.multi-bind--gate { border-color: #5a3323; }
+.multi-bind--gate .multi-bind-key { color: #d9855a; }
 
 /* ---- footer status-chip band -------------------------------------------- */
 .footer-strip {

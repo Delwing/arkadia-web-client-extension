@@ -922,6 +922,18 @@ function Binds() {
                             </td>
                         </tr>
                         <tr>
+                            <td className="w-32">Wrota</td>
+                            <td>
+                                <Form.Control
+                                    type="text"
+                                    readOnly
+                                    size="sm"
+                                    value={label(binds.gateBind)}
+                                    onKeyDown={ev => handleCapture('gateBind', ev)}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
                             <td className="w-32">Dwukrotne +k</td>
                             <td>
                                 <Form.Control

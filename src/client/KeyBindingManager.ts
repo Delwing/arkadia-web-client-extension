@@ -117,6 +117,7 @@ export default class KeyBindingManager {
         registerHelperBind({ id: 'functionalLoot', label: 'Funkcyjny (zbieranie)', category: 'Ogólne' });
         registerHelperBind({ id: 'roomBind', label: 'Bind w lokacji', category: 'Ruch' });
         registerHelperBind({ id: 'drinkable', label: 'Napij się wody', category: 'Ogólne' });
+        registerHelperBind({ id: 'gateBind', label: 'Wrota', category: 'Ruch' });
         registerHelperBind({ id: 'temp1', label: 'Tymczasowe 1', category: 'Ogólne' });
         registerHelperBind({ id: 'temp2', label: 'Tymczasowe 2', category: 'Ogólne' });
         registerHelperBind({ id: 'enemy1', label: 'Atakuj wroga 1', category: 'Walka' });

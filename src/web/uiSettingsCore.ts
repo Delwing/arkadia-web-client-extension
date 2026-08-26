@@ -524,6 +524,9 @@ export function load(): UiSettings {
             const drinkableAsFunctionalBind = typeof parsed.drinkableAsFunctionalBind === 'boolean'
                 ? parsed.drinkableAsFunctionalBind
                 : defaultUiSettings.drinkableAsFunctionalBind;
+            const gateAsFunctionalBind = typeof parsed.gateAsFunctionalBind === 'boolean'
+                ? parsed.gateAsFunctionalBind
+                : defaultUiSettings.gateAsFunctionalBind;
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
@@ -592,6 +595,7 @@ export function load(): UiSettings {
                 footerComponents,
                 keepMultibindsVisible,
                 drinkableAsFunctionalBind,
+                gateAsFunctionalBind,
                 wakeLock,
                 commandEcho,
                 showTimestamps,

@@ -193,12 +193,13 @@ const RoomInfoPopup: React.FC = () => {
     const dirBind = roomData.userData.dir_bind;
     const bind = roomData.userData.bind;
     const drinkable = roomData.userData.drinkable;
+    const gate = roomData.userData.gate;
     const gpsRaw = roomData.userData.gps;
     const teamFollowLink = roomData.userData.team_follow_link;
     const walkPreCmd = roomData.userData.walk_pre_cmd;
     const walkPostCmd = roomData.userData.walk_post_cmd;
 
-    const KNOWN_USERDATA_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link', 'walk_pre_cmd', 'walk_post_cmd']);
+    const KNOWN_USERDATA_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gate', 'gps', 'team_follow_link', 'walk_pre_cmd', 'walk_post_cmd']);
     const otherUserDataEntries = Object.entries(roomData.userData).filter(([key]) => !KNOWN_USERDATA_KEYS.has(key));
 
     // Parse dir_bind: "north=n&south=s" -> [["north", "n"], ["south", "s"]]
@@ -391,7 +392,7 @@ const RoomInfoPopup: React.FC = () => {
                 )}
 
                 {/* Room Bind */}
-                {(bind != null || drinkable != null) && (
+                {(bind != null || drinkable != null || gate != null) && (
                     <div className="room-info-popup__section">
                         <div className="room-info-popup__section-title">Bindy lokacji</div>
                         {bind != null && (
@@ -404,6 +405,12 @@ const RoomInfoPopup: React.FC = () => {
                             <div className="room-info-popup__row">
                                 <span className="room-info-popup__label">drinkable:</span>
                                 <span className="room-info-popup__value">tak</span>
+                            </div>
+                        )}
+                        {gate != null && (
+                            <div className="room-info-popup__row">
+                                <span className="room-info-popup__label">gate:</span>
+                                <span className="room-info-popup__value">{gate}</span>
                             </div>
                         )}
                     </div>

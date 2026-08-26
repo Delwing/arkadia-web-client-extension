@@ -8,6 +8,7 @@ import {
 import { globalStorage } from "@modules/core/storage";
 import { type Bind, bindMatches } from "@modules/core/keymapTypes";
 import MapHelper from "@shared/map/MapHelper";
+import { getGateBindString, isGateRoom } from "./gateBind";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -47,6 +48,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     // Load configured binds and listen for changes
     let roomBind: Bind = { key: 'KeyP', alt: true };
     let drinkableBind: Bind = { key: 'KeyN', alt: true };
+    let gateBind: Bind = { key: 'KeyB', alt: true };
 
     function applyMultibindKeys(b: any) {
         if (b?.roomBind) {
@@ -54,6 +56,9 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         }
         if (b?.drinkable) {
             drinkableBind = b.drinkable;
+        }
+        if (b?.gateBind) {
+            gateBind = b.gateBind;
         }
     }
 
@@ -153,31 +158,42 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     function sendUpdate(roomId: number | null) {
         let payload = roomId === null ? [] : toDisplay(roomId);
 
-        // Add userData.bind and/or drinkable if present in the room being displayed
+        const currentRoom = client.Map.currentRoom as any;
+        const room = roomId !== null && currentRoom?.id === roomId ? currentRoom : null;
+        // The chip shows in every gate location, crossing included - the
+        // just-crossed rule applies to the functional bind only (see gates.ts).
+        const showGateBind = isGateRoom(room);
+
+        // Add userData.bind, drinkable and/or the gate bind if present in the room being displayed
         // Skip while player is physically on a transport — map room is the stop destination, not the player's location
-        if (roomId !== null && !onTransport) {
-            const room = client.Map.currentRoom as any;
-            if (room?.id === roomId) {
-                const additionalBinds: DisplayMultibind[] = [];
+        if (room && !onTransport) {
+            const additionalBinds: DisplayMultibind[] = [];
 
-                if (room?.userData?.bind) {
-                    additionalBinds.push({
-                        index: MAX_BINDS + 1,
-                        action: MapHelper.getBindPrintable(room.userData.bind),
-                        label: bindLabel(roomBind)
-                    });
-                }
-
-                if (room?.userData?.drinkable) {
-                    additionalBinds.push({
-                        index: MAX_BINDS + 2,
-                        action: "napij sie do syta wody",
-                        label: bindLabel(drinkableBind)
-                    });
-                }
-
-                payload = [...payload, ...additionalBinds];
+            if (room?.userData?.bind) {
+                additionalBinds.push({
+                    index: MAX_BINDS + 1,
+                    action: MapHelper.getBindPrintable(room.userData.bind),
+                    label: bindLabel(roomBind)
+                });
             }
+
+            if (room?.userData?.drinkable) {
+                additionalBinds.push({
+                    index: MAX_BINDS + 2,
+                    action: "napij sie do syta wody",
+                    label: bindLabel(drinkableBind)
+                });
+            }
+
+            if (showGateBind) {
+                additionalBinds.push({
+                    index: MAX_BINDS + 3,
+                    action: MapHelper.getBindPrintable(getGateBindString(room)),
+                    label: bindLabel(gateBind)
+                });
+            }
+
+            payload = [...payload, ...additionalBinds];
         }
 
         client.sendEvent('multibinds', { list: payload });
@@ -343,6 +359,14 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             return;
         }
         const room = client.Map.currentRoom as any;
+
+        // gate bind - always active, uses userData.brama when the location defines it
+        if (bindMatches(ev, gateBind)) {
+            client.Map.executeBind(getGateBindString(room));
+            ev.preventDefault();
+            return;
+        }
+
         if (!room) {
             return;
         }
@@ -374,6 +398,9 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         }
         if (bindName === 'drinkable') {
             client.sendCommand("napij sie do syta wody");
+        }
+        if (bindName === 'gateBind') {
+            client.Map.executeBind(getGateBindString(client.Map.currentRoom));
         }
     });
 

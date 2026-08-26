@@ -100,6 +100,7 @@
       "## behaviorSettings.* (ui)",
       "drinkableAsFunctionalBind | Bind picia na bind funkcyjny | P14 | boolean | true",
       "explorationMode | Tryb eksploracji mapy | P15 | boolean | false",
+      "gateAsFunctionalBind | Bind bramy na bind funkcyjny | P14 | boolean | false",
       "instantMove | Natychmiastowe przechodzenie po mapie | P15 | boolean | true",
       "objectContextMenuCommands | Komendy menu kontekstowego obiektów | P16 | string[] | [\"ob\",\"ocen\",\"zapros\",\"wskaz\"]",
       "teamNumberingMode | Numerowanie druzyny na liscie obiektow | P16 | enum: letters|numbers | letters",
@@ -876,7 +877,7 @@
     "bind": {
       "name": "Bind",
       "description": "Bindy klawiszy. `binds` w localStorage trzyma aktywny zestaw (BindSettings); pelna kolekcja zestawow siedzi w `keymaps` (KeymapStore), a wybrany zestaw per urzadzenie w `arkadia.activeKeymap`. Do proponowania zmian uzywaj pojedynczego Bind albo CustomBind.",
-      "typescript": "export interface Bind {\r\n    key: string;\r\n    ctrl?: boolean;\r\n    alt?: boolean;\r\n    shift?: boolean;\r\n}\n\nexport interface CustomBind extends Bind {\r\n    command: string;\r\n}\n\nexport interface DirectionBinds {\r\n    n: Bind;\r\n    s: Bind;\r\n    w: Bind;\r\n    e: Bind;\r\n    nw: Bind;\r\n    ne: Bind;\r\n    sw: Bind;\r\n    se: Bind;\r\n    u: Bind;\r\n    d: Bind;\r\n    zerknij: Bind;\r\n    special: Bind;\r\n}\n\nexport interface BindSettings {\r\n    main: Bind;\r\n    /** Optional separate key for gates functional bind. When undefined, inherits from `main`. */\r\n    mainGates?: Bind;\r\n    /** Optional separate key for transport functional bind. When undefined, inherits from `main`. */\r\n    mainTransport?: Bind;\r\n    /** Optional separate key for loot functional bind. When undefined, inherits from `main`. */\r\n    mainLoot?: Bind;\r\n    lamp: Bind;\r\n    attack: Bind;\r\n    support: Bind;\r\n    moveMode: Bind;\r\n    roomBind: Bind;\r\n    drinkable: Bind;\r\n    /** Double-press bind that sends the `+k` game command. */\r\n    doubleK: Bind;\r\n    directions: DirectionBinds;\r\n    custom: CustomBind[];\r\n    temp: Bind[];\r\n    enemy: Bind[];\r\n    enemyBlock: Bind[];\r\n}\n\nexport interface Keymap {\r\n    /** Unique keymap identifier (UUID). */\r\n    id: string;\r\n    /** User-facing name (e.g. \"Laptop\", \"Numpad\"). */\r\n    name: string;\r\n    /** The actual bindings for this keymap. */\r\n    binds: BindSettings;\r\n    /** ISO timestamp of creation. */\r\n    createdAt: string;\r\n}\n\nexport interface KeymapStore {\r\n    /** Format version for future-proofing migration. */\r\n    version: 1;\r\n    /** All keymaps keyed by their ID. */\r\n    keymaps: Record<string, Keymap>;\r\n}",
+      "typescript": "export interface Bind {\r\n    key: string;\r\n    ctrl?: boolean;\r\n    alt?: boolean;\r\n    shift?: boolean;\r\n}\n\nexport interface CustomBind extends Bind {\r\n    command: string;\r\n}\n\nexport interface DirectionBinds {\r\n    n: Bind;\r\n    s: Bind;\r\n    w: Bind;\r\n    e: Bind;\r\n    nw: Bind;\r\n    ne: Bind;\r\n    sw: Bind;\r\n    se: Bind;\r\n    u: Bind;\r\n    d: Bind;\r\n    zerknij: Bind;\r\n    special: Bind;\r\n}\n\nexport interface BindSettings {\r\n    main: Bind;\r\n    /** Optional separate key for gates functional bind. When undefined, inherits from `main`. */\r\n    mainGates?: Bind;\r\n    /** Optional separate key for transport functional bind. When undefined, inherits from `main`. */\r\n    mainTransport?: Bind;\r\n    /** Optional separate key for loot functional bind. When undefined, inherits from `main`. */\r\n    mainLoot?: Bind;\r\n    lamp: Bind;\r\n    attack: Bind;\r\n    support: Bind;\r\n    moveMode: Bind;\r\n    roomBind: Bind;\r\n    drinkable: Bind;\r\n    /** Gate bind - knocks on the gate of the current location. */\r\n    gateBind: Bind;\r\n    /** Double-press bind that sends the `+k` game command. */\r\n    doubleK: Bind;\r\n    directions: DirectionBinds;\r\n    custom: CustomBind[];\r\n    temp: Bind[];\r\n    enemy: Bind[];\r\n    enemyBlock: Bind[];\r\n}\n\nexport interface Keymap {\r\n    /** Unique keymap identifier (UUID). */\r\n    id: string;\r\n    /** User-facing name (e.g. \"Laptop\", \"Numpad\"). */\r\n    name: string;\r\n    /** The actual bindings for this keymap. */\r\n    binds: BindSettings;\r\n    /** ISO timestamp of creation. */\r\n    createdAt: string;\r\n}\n\nexport interface KeymapStore {\r\n    /** Format version for future-proofing migration. */\r\n    version: 1;\r\n    /** All keymaps keyed by their ID. */\r\n    keymaps: Record<string, Keymap>;\r\n}",
       "fields": [
         {
           "name": "key",
@@ -939,7 +940,7 @@
         "`key` to KeyboardEvent.code (np. \"KeyA\", \"Numpad5\", \"F1\", \"ArrowUp\") — nie znak.",
         "Propozycja bindu ZAWSZE zawiera `command` — to CustomBind dopisywany do tablicy `binds.custom`. Bez `command` klient ja odrzuci.",
         "Modyfikator pominiety oznacza \"nie moze byc wcisniety\" — podawaj tylko te, ktore maja byc trzymane.",
-        "Sloty wbudowane w BindSettings: main, mainGates, mainTransport, mainLoot, lamp, attack, support, moveMode, roomBind, drinkable, doubleK, directions, custom, temp, enemy, enemyBlock; kierunki w `directions`: n, s, w, e, nw, ne, sw, se, u, d, zerknij, special.",
+        "Sloty wbudowane w BindSettings: main, mainGates, mainTransport, mainLoot, lamp, attack, support, moveMode, roomBind, drinkable, gateBind, doubleK, directions, custom, temp, enemy, enemyBlock; kierunki w `directions`: n, s, w, e, nw, ne, sw, se, u, d, zerknij, special.",
         "Bindy edytuje sie w: Menu (⋮) → Bindowanie."
       ]
     },
@@ -2275,6 +2276,24 @@
       ],
       "label": "Tryb eksploracji mapy",
       "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Mapa"
+    },
+    {
+      "path": "ui.behaviorSettings.gateAsFunctionalBind",
+      "scope": "ui",
+      "storageKey": "behaviorSettings",
+      "key": "gateAsFunctionalBind",
+      "type": "boolean",
+      "optional": false,
+      "default": false,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/tabs/BehaviourTab.tsx"
+      ],
+      "label": "Bind bramy na bind funkcyjny",
+      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Komendy"
     },
     {
       "path": "ui.behaviorSettings.instantMove",
@@ -5783,18 +5802,18 @@
     }
   ],
   "gaps": [],
-  "version": "542af937e50feafa",
-  "generatedAt": "2026-08-26T19:16:59.651Z",
+  "version": "9735340e94199499",
+  "generatedAt": "2026-08-26T20:58:46.756Z",
   "stats": {
-    "settings": 118,
-    "settingsWithLabels": 118,
+    "settings": 119,
+    "settingsWithLabels": 119,
     "commands": 220,
     "commandsWithDescriptions": 220,
     "events": 13,
     "docs": 12,
-    "leanChars": 40714,
-    "leanTokens": 10179,
-    "fatChars": 205480,
-    "fatTokens": 51370
+    "leanChars": 40802,
+    "leanTokens": 10201,
+    "fatChars": 206107,
+    "fatTokens": 51527
   }
 }

@@ -43,6 +43,7 @@ const SLOT_LABELS: Record<string, string> = {
     moveMode: 'Tryb ruchu',
     roomBind: 'Bind lokacji',
     drinkable: 'Napoje',
+    gateBind: 'Wrota',
     doubleK: 'Podwojne +k',
 };
 

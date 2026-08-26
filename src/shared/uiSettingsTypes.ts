@@ -94,6 +94,7 @@ export interface BehaviorSettings {
     explorationMode: boolean;
     instantMove: boolean;
     drinkableAsFunctionalBind: boolean;
+    gateAsFunctionalBind: boolean;
     teamNumberingMode: 'letters' | 'numbers';
     objectContextMenuCommands: string[];
 }

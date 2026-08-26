@@ -71,10 +71,17 @@ export default function MultiBindStrip({
         .sort((a, b) => a.index - b.index)
         .map((bind) => {
           const action = bind.action.trim();
-          // The multibinds event tags the location's room bind and drinkable bind
-          // with reserved indexes (5 and 6 — see client/scripts/multibinds.ts), so
-          // each UI can colour them apart from the plain numbered multibinds.
-          const kind = bind.index === 5 ? " multi-bind--room" : bind.index === 6 ? " multi-bind--drink" : "";
+          // The multibinds event tags the location's room bind, drinkable bind and
+          // gate bind with reserved indexes (5, 6 and 7 — see
+          // client/scripts/multibinds.ts), so each UI can colour them apart from the
+          // plain numbered multibinds.
+          const kind = bind.index === 5
+            ? " multi-bind--room"
+            : bind.index === 6
+              ? " multi-bind--drink"
+              : bind.index === 7
+                ? " multi-bind--gate"
+                : "";
           return (
             <button
               key={bind.index}

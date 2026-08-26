@@ -286,10 +286,11 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     }
                 }
 
-                if ((userData.bind != null && userData.bind !== '') || (userData.drinkable != null && userData.drinkable !== '')) {
+                if ((userData.bind != null && userData.bind !== '') || (userData.drinkable != null && userData.drinkable !== '') || (userData.gate != null && userData.gate !== '')) {
                     output.append('Bindy lokacji\n', gray);
                     if (userData.bind != null && userData.bind !== '') row('  bind', userData.bind);
                     if (userData.drinkable != null && userData.drinkable !== '') row('  drinkable', 'tak');
+                    if (userData.gate != null && userData.gate !== '') row('  gate', userData.gate);
                 }
 
                 const allMultibinds = await getMultibindSnapshot().catch(() => []);
@@ -339,7 +340,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     if (userData.walk_post_cmd != null && userData.walk_post_cmd !== '') row('  post', userData.walk_post_cmd);
                 }
 
-                const KNOWN_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gps', 'team_follow_link', 'walk_pre_cmd', 'walk_post_cmd']);
+                const KNOWN_KEYS = new Set(['note', 'description', 'dir_bind', 'bind', 'drinkable', 'gate', 'gps', 'team_follow_link', 'walk_pre_cmd', 'walk_post_cmd']);
                 const otherEntries = Object.entries(userData).filter(([key]) => !KNOWN_KEYS.has(key));
                 if (otherEntries.length > 0) {
                     output.append('Dane uzytkownika\n', gray);
