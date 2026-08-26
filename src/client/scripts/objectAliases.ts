@@ -242,6 +242,12 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
+            pattern: /^\/z_all!$/,
+            callback: () => {
+                attackController.attackAllNonTeam((id) => allyProtection.isAlly(id));
+            }
+        });
+        aliases.push({
             pattern: /^\/zas$/,
             callback: () => {
                 const id = client.TeamManager.getDefenseTargetId();

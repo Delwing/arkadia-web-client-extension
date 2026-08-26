@@ -313,7 +313,8 @@
       "/x (/x id) — Zaskocz obiekt o podanym id",
       "/z (/z id) — Zabij obiekt o podanym id",
       "/z_ (/z_<akcja> <ziolo> [ilosc]) — To samo co /zi, akcja wpisana wprost w nazwe aliasu",
-      "/z_all — Atakuj wszystkich nie-druzunowych na lokacji (pomija sojusznikow)",
+      "/z_all — Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych)",
+      "/z_all! — Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow)",
       "/z_id (/z_id id) — Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`)",
       "/za (/za id) — Alias do `/zas`",
       "/zabici — Pokaz tabele z liczba zabitych istot w biezacej sesji",
@@ -412,7 +413,7 @@
           "Loot",
           "Okno walki"
         ],
-        "tokens": 795
+        "tokens": 844
       },
       {
         "id": "INVENTORY.md",
@@ -5084,7 +5085,15 @@
       "pattern": "/^\\/z_all$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/z_all",
-      "description": "Atakuj wszystkich nie-druzunowych na lokacji (pomija sojusznikow)",
+      "description": "Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych)",
+      "documentedIn": "COMBAT.md"
+    },
+    {
+      "name": "/z_all!",
+      "pattern": "/^\\/z_all!$/",
+      "source": "src/client/scripts/objectAliases.ts",
+      "usage": "/z_all!",
+      "description": "Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow)",
       "documentedIn": "COMBAT.md"
     },
     {
@@ -5583,8 +5592,8 @@
         "Loot",
         "Okno walki"
       ],
-      "tokens": 795,
-      "content": "# Walka\n\nKomendy do walki, zaslaniania i zarzadzania celami ataku.\n\n## Tryb ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |\n\n> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik \"Atk:\" w stopce.\n\n## Atakowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/z id` | Zabij obiekt o podanym id |\n| `/z` | Atakuj cel oznaczony jako cel ataku |\n| `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |\n| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |\n| `/x id` | Zaskocz obiekt o podanym id |\n| `/x` | Zaskocz cel oznaczony jako cel ataku |\n| `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |\n| `/z_all` | Atakuj wszystkich nie-druzunowych na lokacji (pomija sojusznikow) |\n\n## Kolejka ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |\n| `/cq` | Wyczysc kolejke ataku |\n| `/nn` | Atakuj nastepny cel z kolejki |\n\n## Zaslanianie\n\n| Komenda | Opis |\n|---------|------|\n| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |\n| `/za id` | Alias do `/zas` |\n| `/zas` | Zaslon cel oznaczony jako cel obrony |\n| `/za` | Alias do `/zas` |\n| `/w id` | Wycofaj postac za wskazany obiekt |\n| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |\n\n## Zaslona grupowa\n\n| Komenda | Opis |\n|---------|------|\n| `/za2 id` | Zaslon z poziomem krycia 2 |\n| `/za3 id` | Zaslon z poziomem krycia 3 |\n| `/za4 id` | Zaslon z poziomem krycia 4 |\n\n## Oznaczanie celow\n\n| Komenda | Opis |\n|---------|------|\n| `/wa id` | Oznacz obiekt jako cel ataku |\n| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |\n\n## Rozkazy druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |\n| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |\n| `/rz id` | Rozkaz druzynie zaslonic obiekt |\n| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |\n| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |\n| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |\n| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |\n| `/pro id` | Przekaz prowadzenie obiektowi |\n\n## Wrogowie na bindach\n\n| Komenda | Opis |\n|---------|------|\n| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |\n| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |\n\n## Reset skrotow druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |\n\n## Loot\n\n| Komenda | Opis |\n|---------|------|\n| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |\n\n> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.\n\n## Okno walki\n\n| Komenda | Opis |\n|---------|------|\n| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |"
+      "tokens": 844,
+      "content": "# Walka\n\nKomendy do walki, zaslaniania i zarzadzania celami ataku.\n\n## Tryb ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |\n\n> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik \"Atk:\" w stopce.\n\n## Atakowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/z id` | Zabij obiekt o podanym id |\n| `/z` | Atakuj cel oznaczony jako cel ataku |\n| `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |\n| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |\n| `/x id` | Zaskocz obiekt o podanym id |\n| `/x` | Zaskocz cel oznaczony jako cel ataku |\n| `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |\n| `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |\n| `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |\n\n## Kolejka ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |\n| `/cq` | Wyczysc kolejke ataku |\n| `/nn` | Atakuj nastepny cel z kolejki |\n\n## Zaslanianie\n\n| Komenda | Opis |\n|---------|------|\n| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |\n| `/za id` | Alias do `/zas` |\n| `/zas` | Zaslon cel oznaczony jako cel obrony |\n| `/za` | Alias do `/zas` |\n| `/w id` | Wycofaj postac za wskazany obiekt |\n| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |\n\n## Zaslona grupowa\n\n| Komenda | Opis |\n|---------|------|\n| `/za2 id` | Zaslon z poziomem krycia 2 |\n| `/za3 id` | Zaslon z poziomem krycia 3 |\n| `/za4 id` | Zaslon z poziomem krycia 4 |\n\n## Oznaczanie celow\n\n| Komenda | Opis |\n|---------|------|\n| `/wa id` | Oznacz obiekt jako cel ataku |\n| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |\n\n## Rozkazy druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |\n| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |\n| `/rz id` | Rozkaz druzynie zaslonic obiekt |\n| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |\n| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |\n| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |\n| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |\n| `/pro id` | Przekaz prowadzenie obiektowi |\n\n## Wrogowie na bindach\n\n| Komenda | Opis |\n|---------|------|\n| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |\n| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |\n\n## Reset skrotow druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |\n\n## Loot\n\n| Komenda | Opis |\n|---------|------|\n| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |\n\n> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.\n\n## Okno walki\n\n| Komenda | Opis |\n|---------|------|\n| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |"
     },
     {
       "id": "INVENTORY.md",
@@ -5774,18 +5783,18 @@
     }
   ],
   "gaps": [],
-  "version": "2f7f8185bb76c443",
-  "generatedAt": "2026-08-25T21:54:50.469Z",
+  "version": "542af937e50feafa",
+  "generatedAt": "2026-08-26T19:16:59.651Z",
   "stats": {
     "settings": 118,
     "settingsWithLabels": 118,
-    "commands": 219,
-    "commandsWithDescriptions": 219,
+    "commands": 220,
+    "commandsWithDescriptions": 220,
     "events": 13,
     "docs": 12,
-    "leanChars": 40524,
-    "leanTokens": 10131,
-    "fatChars": 204764,
-    "fatTokens": 51191
+    "leanChars": 40714,
+    "leanTokens": 10179,
+    "fatChars": 205480,
+    "fatTokens": 51370
   }
 }
