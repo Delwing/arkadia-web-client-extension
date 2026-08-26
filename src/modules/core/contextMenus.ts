@@ -18,17 +18,17 @@ interface HerbMenuOptions {
     x: number;
     y: number;
     commandPrefix: string;
-    preUseCommands?: string[];
-    postUseCommands?: string[];
     amounts?: number[];
 }
 
+// The configured pre/post-use commands are emitted by the `/zi` alias itself
+// (see herbCounter), so the menu must not wrap the command again: that both
+// duplicated the pre-command and fired the post-command before the alias'
+// asynchronous take-from-bag sequence had a chance to run.
 export function buildHerbContextMenuItems(
     herbId: string,
     actions: HerbUse[] | undefined,
     commandPrefix: string,
-    preUseCommands: string[],
-    postUseCommands: string[],
     amounts: number[]
 ): ContextMenuItem[] {
     const bindableActions = getBindableUses(actions);
@@ -41,9 +41,7 @@ export function buildHerbContextMenuItems(
             return {
                 label: `${action.action} ${amount}${effectLabel}`,
                 action: () => {
-                    preUseCommands.forEach(cmd => eventBus.emit('sendCommand', { command: cmd }));
                     eventBus.emit('sendCommand', { command: `${commandPrefix} ${action.action} ${herbId} ${amount}` });
-                    postUseCommands.forEach(cmd => eventBus.emit('sendCommand', { command: cmd }));
                 }
             };
         })
@@ -69,8 +67,6 @@ export function openHerbContextMenu(options: HerbMenuOptions) {
         x,
         y,
         commandPrefix,
-        preUseCommands = [],
-        postUseCommands = [],
         amounts = DEFAULT_AMOUNTS,
     } = options;
 
@@ -78,8 +74,6 @@ export function openHerbContextMenu(options: HerbMenuOptions) {
         herbId,
         actions,
         commandPrefix,
-        preUseCommands,
-        postUseCommands,
         amounts,
     );
 

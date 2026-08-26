@@ -154,16 +154,6 @@ const getInitialCounts = (): HerbCounts => {
     return normalizeHerbBagsState(stored);
 };
 
-const parseCommandList = (value: unknown): string[] => {
-    if (typeof value !== "string") {
-        return [];
-    }
-    return value
-        .split(";")
-        .map(entry => entry.trim())
-        .filter(Boolean);
-};
-
 const clamp = (value: number, min: number, max: number) => {
     if (max < min) {
         return min;
@@ -231,9 +221,6 @@ const HerbManager = () => {
     const [error, setError] = useState<string | null>(null);
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
-    const initialSettings = characterStorage.get("settings") as unknown as Record<string, unknown> | undefined;
-    const preUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPreUseCommand));
-    const postUseCommandsRef = useRef<string[]>(parseCommandList(initialSettings?.herbPostUseCommand));
 
     const closeContextMenu = useCallback(() => {
         hideContextMenu();
@@ -280,22 +267,6 @@ const HerbManager = () => {
     // Check if popup is managed by layout to determine overlay visibility
     const layoutContext = useLayoutManagerOptional();
     const isLayoutManaged = layoutContext?.isLayoutMode === true;
-
-    useEffect(() => {
-        const handleSettings = (settings: unknown) => {
-            const detail = settings as Record<string, unknown> | null | undefined;
-            const pre = parseCommandList(detail?.herbPreUseCommand);
-            const post = parseCommandList(detail?.herbPostUseCommand);
-            preUseCommandsRef.current = pre;
-            postUseCommandsRef.current = post;
-        };
-        const initial = characterStorage.get('settings');
-        if (initial) handleSettings(initial);
-        const unsubscribe = characterStorage.onChange("settings", handleSettings as any);
-        return () => {
-            unsubscribe();
-        };
-    }, []);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -478,8 +449,6 @@ const HerbManager = () => {
             x: pageX,
             y: pageY,
             commandPrefix: "/zi",
-            preUseCommands: preUseCommandsRef.current,
-            postUseCommands: postUseCommandsRef.current,
         });
     };
 

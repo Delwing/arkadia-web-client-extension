@@ -214,8 +214,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             x: ev.pageX,
             y: ev.pageY,
             commandPrefix: '/zi',
-            preUseCommands,
-            postUseCommands,
         });
     };
 

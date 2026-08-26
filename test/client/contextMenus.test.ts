@@ -12,8 +12,6 @@ describe("buildHerbContextMenuItems", () => {
             "rumianek",
             [{ action: "zjedz", effect: "<yellow>+15 ZDR<reset>" }],
             "/z",
-            [],
-            [],
             [1],
         );
 
@@ -26,12 +24,26 @@ describe("buildHerbContextMenuItems", () => {
             "rumianek",
             [{ action: "zjedz", effect: "" }],
             "/z",
-            [],
-            [],
             [1],
         );
 
         expect(items[0].label).toBe("zjedz 1");
+    });
+
+    it("emits only the alias command, leaving pre/post-use commands to the alias", () => {
+        const emitSpy = jest.spyOn(eventBus, "emit");
+        const items = buildHerbContextMenuItems(
+            "rumianek",
+            [{ action: "zjedz", effect: "" }],
+            "/zi",
+            [1],
+        );
+
+        items[0].action();
+
+        expect(emitSpy).toHaveBeenCalledTimes(1);
+        expect(emitSpy).toHaveBeenCalledWith("sendCommand", { command: "/zi zjedz rumianek 1" });
+        emitSpy.mockRestore();
     });
 
     it("skips actions marked with dont_bind", () => {
@@ -42,8 +54,6 @@ describe("buildHerbContextMenuItems", () => {
                 { action: "napoj", effect: "+5 HP", dont_bind: true },
             ],
             "/z",
-            [],
-            [],
             [1],
         );
 
@@ -60,8 +70,6 @@ describe("buildHerbContextMenuItems", () => {
                 { action: ".", effect: "--", dont_bind: true, smokable: true },
             ],
             "/zi",
-            [],
-            [],
             [1],
         );
 
@@ -79,8 +87,6 @@ describe("buildHerbContextMenuItems", () => {
             "gwiazda_poludnia",
             [{ action: ".", effect: "--", dont_bind: true, smokable: true }],
             "/zi",
-            [],
-            [],
             [1],
         );
 
@@ -97,8 +103,6 @@ describe("buildHerbContextMenuItems", () => {
             x: 10,
             y: 20,
             commandPrefix: "/zi",
-            preUseCommands: [],
-            postUseCommands: [],
             amounts: [1],
         });
 
