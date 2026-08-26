@@ -40,8 +40,8 @@ test.describe('Attack all enemies button macro', () => {
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Hero', object_num: 100 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '100': { desc: 'Hero', team: true, team_leader: true },
-            '101': { desc: 'Goblin', attack_num: 1 },
-            '102': { desc: 'Orc', attack_num: 2 },
+            '101': { desc: 'Goblin', attack_num: 100 },
+            '102': { desc: 'Orc', attack_num: 100 },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [100, 101, 102]);
 
@@ -99,8 +99,8 @@ test.describe('Attack all enemies button macro', () => {
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Hero', object_num: 200 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '200': { desc: 'Hero', team: true, team_leader: true },
-            '201': { desc: 'Wolf', attack_num: 1 },
-            '202': { desc: 'Bear', attack_num: 2 },
+            '201': { desc: 'Wolf', attack_num: 200 },
+            '202': { desc: 'Bear', attack_num: 200 },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [200, 201, 202]);
 
@@ -147,7 +147,7 @@ test.describe('Attack all enemies button macro', () => {
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Hero', object_num: 300 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '300': { desc: 'Hero', team: true, team_leader: true },
-            '301': { desc: 'Goblin', attack_num: 1 },
+            '301': { desc: 'Goblin', attack_num: 300 },
             '302': { desc: 'Ally', team: true },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [300, 301, 302]);
@@ -205,7 +205,7 @@ test.describe('Attack all enemies button macro', () => {
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Hero', object_num: 400 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '400': { desc: 'Hero', team: true, team_leader: true },
-            '401': { desc: 'Spider', attack_num: 1 },
+            '401': { desc: 'Spider', attack_num: 400 },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [400, 401]);
 
@@ -271,7 +271,7 @@ test.describe('Attack all enemies button macro', () => {
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Warrior', object_num: 500 });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '500': { desc: 'Warrior', team: true, team_leader: true },
-            '501': { desc: 'Troll', attack_num: 1 },
+            '501': { desc: 'Troll', attack_num: 500 },
         });
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [500, 501]);
 
@@ -289,5 +289,60 @@ test.describe('Attack all enemies button macro', () => {
         ).toEqual(expect.arrayContaining([
             expect.stringMatching(/masakruj.*ob_501/),
         ]));
+    });
+
+    test('attackAllEnemies skips bystanders and mops up team targets', async ({ page }) => {
+        await page.addInitScript(() => {
+            const settings = {
+                solo: {
+                    buttons: {
+                        'button-1': {
+                            macro: 'attackAllEnemies',
+                            label: 'Atakuj!',
+                            color: '#DC3545',
+                            fontColor: '#f1f5f9',
+                        },
+                    },
+                },
+                locked: false,
+            };
+            localStorage.setItem('mobileButtonSettings', JSON.stringify(settings));
+        });
+
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, { name: 'Hero', object_num: 600 });
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
+            // Hero is already attacking the bandit
+            '600': { desc: 'Hero', team: true, team_leader: true, attack_num: 602 },
+            // Guard is just standing around - must not be attacked
+            '601': { desc: 'Guard' },
+            '602': { desc: 'Bandit', attack_num: 600 },
+            // Fighting somebody else entirely - not our business
+            '603': { desc: 'Stray', attack_num: 601 },
+        });
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [600, 601, 602, 603]);
+
+        await page.waitForTimeout(200);
+
+        await resetCommandLog(page);
+
+        const mobileButtons = page.locator('#mobile-direction-buttons');
+        const attackButton = mobileButtons.locator('#button-1');
+        await expect(attackButton).toBeVisible();
+        await attackButton.click();
+
+        await expect.poll(
+            async () => await getCommandLog(page),
+            { message: 'should attack the team enemy', timeout: 5000 }
+        ).toEqual(expect.arrayContaining([
+            expect.stringContaining('ob_602'),
+        ]));
+
+        const commands = await getCommandLog(page);
+        expect(commands.some(cmd => cmd.includes('ob_601')), 'should not attack bystander').toBe(false);
+        expect(commands.some(cmd => cmd.includes('ob_603')), 'should not attack unrelated fighter').toBe(false);
     });
 });
