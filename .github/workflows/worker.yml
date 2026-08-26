@@ -1,0 +1,117 @@
+# Cloudflare Worker (AI assistant) — test on PRs, deploy from master.
+#
+# The Worker inlines `public/assistant-kb.json` at bundle time (see
+# worker/src/kb/index.ts), so a knowledge-base regeneration only reaches users
+# after a deploy. That is why this workflow watches the bundle as well as
+# `worker/` itself.
+#
+# Required repository secrets:
+#   CLOUDFLARE_API_TOKEN   — "Edit Cloudflare Workers" template token
+#   CLOUDFLARE_ACCOUNT_ID  — the account the Worker lives in
+#
+# Provider API keys (GEMINI_KEY_1, GROQ_KEY_1, ...) are NOT needed here:
+# Worker secrets are stored on the Worker and survive redeploys.
+name: Worker
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'worker/**'
+      - 'public/assistant-kb.json'
+      - 'src/shared/assistant/**'
+      - '.github/workflows/worker.yml'
+  pull_request:
+    paths:
+      - 'worker/**'
+      - 'public/assistant-kb.json'
+      - 'src/shared/assistant/**'
+      - '.github/workflows/worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never let two deploys race; queue them instead of cancelling, so the last
+  # commit on master is always what ends up live.
+  group: worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: worker/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Typecheck
+        run: yarn typecheck
+      - name: Run worker tests
+        run: yarn test
+      - name: Build bundle (dry run)
+        # Resolves the imports of `public/assistant-kb.json` and
+        # `src/shared/assistant/` from outside `worker/`, so a bundling failure
+        # surfaces on the PR rather than at deploy time. Needs no credentials.
+        run: yarn build
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-worker
+      url: https://arkadia-ai-worker.delwing.workers.dev
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: worker/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Read expected KB version
+        id: kb
+        working-directory: ${{ github.workspace }}
+        run: |
+          node -e "const b = require('./public/assistant-kb.json'); console.log('version=' + b.formatVersion + '.' + b.version)" >> "$GITHUB_OUTPUT"
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # `--env=""` targets the top-level environment explicitly. Without it
+        # Wrangler warns, because wrangler.jsonc also defines the keyless `mock`
+        # environment used for local smoke tests.
+        run: npx wrangler deploy --env=""
+      - name: Verify the deployed knowledge bundle
+        # The Worker reports its compiled-in KB_VERSION on /health. Rollout is
+        # usually instant but not guaranteed to be, so poll rather than assume.
+        run: |
+          expected='${{ steps.kb.outputs.version }}'
+          echo "expecting kbVersion $expected"
+          for attempt in $(seq 1 10); do
+            # Tolerated on purpose: the runner shell is `bash -eo pipefail`, so an
+            # unguarded curl blip would abort the step instead of retrying.
+            live=$(curl -fsS "https://arkadia-ai-worker.delwing.workers.dev/health?cb=$attempt" \
+              | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).kbVersion" 2>/dev/null || true)
+            if [ "$live" = "$expected" ]; then
+              echo "live kbVersion $live — match"
+              exit 0
+            fi
+            echo "attempt $attempt: live kbVersion $live, retrying"
+            sleep 6
+          done
+          echo "::error::Deployed worker still reports $live, expected $expected"
+          exit 1
