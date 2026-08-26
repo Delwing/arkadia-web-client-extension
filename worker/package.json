@@ -1,0 +1,22 @@
+{
+  "name": "arkadia-ai-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker fronting the Arkadia web client's AI assistant key pool.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:mock": "wrangler dev --env mock",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run --outdir dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.4",
+    "wrangler": "^4.42.0"
+  }
+}

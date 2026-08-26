@@ -1,0 +1,264 @@
+{
+    "$comment": "Hand-maintained gap-fillers for scripts/build-assistant-kb.ts. Only add entries here for things the generator genuinely cannot recover from source (settings written straight from a save() callback instead of a bound control, non-literal defaults, aliases missing from the docs tables). Everything else must stay generated.",
+    "settings": {
+        "character.settings.guilds": {
+            "label": "Moje gildie",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie",
+            "note": "Lista gildii, do ktorych nalezy postac. Zapisywana z zakladki Gildie."
+        },
+        "character.settings.enemyGuilds": {
+            "label": "Gildie wrogie",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie",
+            "note": "Czlonkowie tych gildii sa traktowani jako wrogowie (kolorowanie, bindy wrogow)."
+        },
+        "character.settings.allyGuilds": {
+            "label": "Gildie sojusznicze",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie"
+        },
+        "character.settings.guildColors": {
+            "label": "Kolory gildii",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie",
+            "note": "Mapa nazwaGildii -> kolor hex uzywany przy kolorowaniu postaci."
+        },
+        "character.settings.enemyBindsKeepUnchanged": {
+            "label": "Nie zmieniaj przypisanych wrogow",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+            "control": "checkbox"
+        },
+        "character.settings.enemyBindsShowMode": {
+            "label": "Wyświetlanie bindów wrogów",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+            "control": "select"
+        },
+        "character.settings.enemyBindsEnabledSlots": {
+            "label": "Włączone sloty bindów wrogów (F1-F3)",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+            "control": "list",
+            "note": "Trzy wartosci logiczne, po jednej na slot F1-F3, np. [true, false, true]. Dlugosc musi wynosic dokladnie 3."
+        },
+        "character.settings.favoriteMagicTypes": {
+            "label": "Ulubione magiki",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki"
+        },
+        "character.settings.favoriteMagicKeys": {
+            "label": "Ulubione klucze magiczne",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki"
+        },
+        "character.settings.magicsColor": {
+            "label": "Kolor magików",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki → Kolory",
+            "control": "color"
+        },
+        "character.settings.magicKeysColor": {
+            "label": "Kolor kluczy magicznych",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki → Kolory",
+            "control": "color"
+        },
+        "character.settings.shortExitsPrefix": {
+            "label": "Przedrostek skróconych wyjść",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+            "control": "text",
+            "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
+        },
+        "character.settings.shortExitsColor": {
+            "label": "Kolor skróconych wyjść",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+            "control": "color",
+            "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
+        },
+        "character.settings.shortExitsSeparator": {
+            "label": "Separator skróconych wyjść",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+            "control": "text",
+            "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
+        },
+        "character.settings.shortExitsBackgroundColor": {
+            "label": "Kolor tła skróconych wyjść",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+            "control": "color",
+            "note": "Widoczne dopiero po wlaczeniu `shortenExits`. Wartosc 'transparent' wylacza tlo."
+        },
+        "character.settings.collectOverrides": {
+            "label": "Wyjątki zbierania dla wrogów",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów",
+            "control": "complex",
+            "note": "Edytowane w podoknie 'Wyjatki'. Kazdy wpis nadpisuje ustawienia zbierania dla jednego typu przeciwnika."
+        },
+        "character.settings.languageAliases": {
+            "label": "Aliasy języków",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Język",
+            "control": "complex"
+        },
+        "character.settings.collectExtra": {
+            "label": "Dodatkowe przedmioty do zbierania",
+            "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów",
+            "control": "list"
+        },
+        "character.settings.zlomSilver": {
+            "label": "Kolorowanie złomu (srebro)",
+            "control": "complex",
+            "note": "Ustawiane przez okno Zlom (`/zlom`), nie przez panel ustawien."
+        },
+        "ui.renderSettings.showTimestamps": {
+            "label": "Znaczniki czasu w oknie wyjścia",
+            "uiLocation": "Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
+            "control": "checkbox",
+            "note": "Przelaczane z menu kontekstowego okna wyjscia, nie z panelu ustawien."
+        },
+        "ui.uiSettings.mapHeight": {
+            "default": 30,
+            "note": "Domyslnie 30 (vh) na desktopie i 25 na ekranach wezszych niz 768 px."
+        },
+        "ui.uiSettings.buttonSize": {
+            "label": "Rozmiar przycisków (przestarzałe)",
+            "note": "Przestarzale — zmigrowane do mobileButtonSettings.buttonSize. Nie proponuj zmian tego klucza."
+        },
+        "ui.uiSettings.splitViewHeight": {
+            "label": "Wysokość podzielonego widoku",
+            "note": "Ustawiane przez przeciaganie belki w interfejsie, nie w panelu ustawien."
+        },
+        "ui.uiSettings.showCombatTimer": {
+            "label": "Pokazuj licznik walki",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki"
+        },
+        "ui.uiSettings.showTransportLabel": {
+            "label": "Pokazuj etykietę transportu",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki"
+        },
+        "ui.uiSettings.footerComponents": {
+            "label": "Elementy stopki",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki",
+            "control": "complex",
+            "note": "Kolejnosc i widocznosc kafelkow stopki; przeciaganie na liscie."
+        },
+        "ui.uiSettings.barOrder": {
+            "label": "Kolejność pasków stanu",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Stan postaci",
+            "control": "complex"
+        },
+        "ui.uiSettings.alwaysVisibleBars": {
+            "label": "Zawsze widoczne paski stanu",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Stan postaci",
+            "control": "complex"
+        },
+        "ui.uiSettings.showButtons": {
+            "label": "Pokazuj przyciski",
+            "uiLocation": "Menu (⋮) → Przyciski"
+        },
+        "ui.renderSettings.soundCategories": {
+            "label": "Dźwięki kategorii",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Dźwięk",
+            "control": "complex",
+            "note": "Mapa kategoria -> klucz dzwieku. null = kategoria wyciszona, brak klucza = domyslny beep."
+        },
+        "ui.renderSettings.customBeepSoundKey": {
+            "label": "Własny dźwięk beep",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Dźwięk",
+            "control": "select"
+        },
+        "ui.renderSettings.customThemeColor": {
+            "label": "Kolor własnego motywu",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Wygląd",
+            "control": "color",
+            "note": "Uzywane tylko gdy colorTheme = 'custom-dark'."
+        },
+        "ui.behaviorSettings.objectContextMenuCommands": {
+            "label": "Komendy menu kontekstowego obiektów",
+            "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Okno wyjścia i lista obiektów",
+            "control": "list"
+        },
+        "ui.shellSettings.hapticFeedback": {
+            "label": "Wibracje (haptyka) na urządzeniach mobilnych",
+            "control": "checkbox"
+        }
+    },
+    "commands": {
+        "'": {
+            "usage": "'<tekst>",
+            "description": "Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem)"
+        },
+        "/wem": {
+            "usage": "/wem",
+            "description": "Wyjmij monety z pojemnika ustawionego dla monet (dziala tez `wem`)"
+        },
+        "/wlm": {
+            "usage": "/wlm",
+            "description": "Wloz monety do pojemnika ustawionego dla monet (dziala tez `wlm`)"
+        },
+        "/naprawa": {
+            "usage": "/naprawa",
+            "description": "Wyjmij monety, naostrz wszystkie bronie i napraw zbroje (alias: /napraw)"
+        },
+        "/napraw": {
+            "usage": "/napraw",
+            "description": "Wyjmij monety, naostrz wszystkie bronie i napraw zbroje (alias: /naprawa)"
+        },
+        "/blokada": {
+            "usage": "/blokada",
+            "description": "Przelacz blokade ukladu okien - zamraza dokowanie i zmiane rozmiaru"
+        },
+        "/czasw": {
+            "usage": "/czasw",
+            "description": "Otworz kompaktowe okienko czasu: pora roku, data, pora dnia"
+        },
+        "/postawa": {
+            "usage": "/postawa okno",
+            "description": "Otworz okno postawy bojowej: bron, oslona, garda, rozkazy"
+        },
+        "/postawaw": {
+            "usage": "/postawaw",
+            "description": "Otworz okno postawy bojowej (skrot dla /postawa okno)"
+        },
+        "/stat": {
+            "usage": "/stat",
+            "description": "Wypisz w oknie gry panel ze statystykami walki"
+        },
+        "/statw": {
+            "usage": "/statw",
+            "description": "Otworz statystyki walki w osobnym okienku"
+        },
+        "/zapal": {
+            "usage": "/zapal",
+            "description": "Nabij fajke pierwszym ziolem do palenia (jesli pusta) i zapal ja"
+        },
+        "/zawod": {
+            "usage": "/zawod",
+            "description": "Otworz okno zawodu: postepy, staz i wydarzenia zawodowe"
+        },
+        "/ziola_fajka": {
+            "usage": "/ziola_fajka <ziolo>",
+            "description": "Nabij fajke wskazanym ziolem, pobierajac je z woreczka"
+        },
+        "/zi": {
+            "usage": "/zi <akcja> <ziolo> [ilosc]",
+            "description": "Wyjmij ziolo z woreczka i wykonaj na nim podana akcje"
+        },
+        "/z_": {
+            "usage": "/z_<akcja> <ziolo> [ilosc]",
+            "description": "To samo co /zi, akcja wpisana wprost w nazwe aliasu"
+        },
+        "/reload-plugins": {
+            "usage": "/reload-plugins",
+            "description": "Przeladuj wszystkie pluginy klienta bez odswiezania strony"
+        },
+        "/walka_restart": {
+            "usage": "/walka_restart",
+            "description": "Zresetuj skroty druzyny uzywane w walce"
+        },
+        "/demo_kondycje": {
+            "description": "[deweloperskie] Demo listy obiektow na sztucznych danych GMCP"
+        },
+        "/postepy2_demo": {
+            "description": "[deweloperskie] Wstrzykuje dane demo do licznika postepow"
+        },
+        "/testbox": {
+            "description": "[deweloperskie] Testowe ramki wschodu/zachodu slonca"
+        },
+        "/tdebug": {
+            "description": "[deweloperskie] Przelacz debugowanie transportu"
+        },
+        "/ttimes": {
+            "description": "[deweloperskie] Przelacz okno debugowe czasow transportu"
+        }
+    }
+}

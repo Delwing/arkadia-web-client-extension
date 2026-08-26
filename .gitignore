@@ -17,3 +17,11 @@ coverage/
 /.claude/*
 !/.claude/skills/
 /data
+# Cloudflare Worker (worker/) local state and build output
+.wrangler
+# Local secrets - never commit
+.dev.vars
+.dev.vars.*
+.env
+.env.local
+!.env.example

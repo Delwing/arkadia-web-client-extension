@@ -1,0 +1,102 @@
+{
+  // Cloudflare recommends wrangler.jsonc for new projects; some newer Wrangler
+  // features are JSON-config only.
+  // https://developers.cloudflare.com/workers/wrangler/configuration/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arkadia-ai-worker",
+  "main": "src/index.ts",
+  // Docs: "Set this to today's date" when starting a project.
+  "compatibility_date": "2026-08-25",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": {
+    "enabled": true
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "AI_KV",
+      // Replace with the id printed by:
+      //   npx wrangler kv namespace create AI_KV
+      "id": "9a604103e0894d3a8ae01a715170868a"
+    }
+  ],
+
+  "vars": {
+    // Ordered pool. Quality order, lowest `priority` first.
+    // `keySecret` names the Worker secret holding that entry's API key; an entry
+    // whose secret is unset is dropped from the pool automatically, which is how
+    // you disable a provider without editing this file.
+    //
+    // maxPromptTokens / supportsToolLoop are per-entry on purpose — see the
+    // "Groq TPM caveat" section of README.md before trusting the Groq numbers.
+    "AI_POOL": "[{\"id\":\"gemini-1\",\"provider\":\"gemini\",\"model\":\"gemini-3.5-flash-lite\",\"keySecret\":\"GEMINI_KEY_1\",\"priority\":10,\"maxPromptTokens\":60000,\"maxOutputTokens\":1500,\"supportsToolLoop\":true},{\"id\":\"gemini-2\",\"provider\":\"gemini\",\"model\":\"gemini-3.5-flash-lite\",\"keySecret\":\"GEMINI_KEY_2\",\"priority\":11,\"maxPromptTokens\":60000,\"maxOutputTokens\":1500,\"supportsToolLoop\":true},{\"id\":\"groq-1\",\"provider\":\"groq\",\"model\":\"groq/compound-mini\",\"keySecret\":\"GROQ_KEY_1\",\"priority\":20,\"maxPromptTokens\":4000,\"maxOutputTokens\":800,\"supportsToolLoop\":true},{\"id\":\"openrouter-1\",\"provider\":\"openrouter\",\"model\":\"deepseek/deepseek-chat-v3.1:free\",\"keySecret\":\"OPENROUTER_KEY_1\",\"priority\":30,\"maxPromptTokens\":12000,\"maxOutputTokens\":1200,\"supportsToolLoop\":false}]",
+
+    "ALLOWED_ORIGINS": "https://delwing.github.io",
+    "DAILY_QUOTA": "20",
+    "MAX_CONTEXT_BYTES": "8000",
+    "MAX_QUESTION_CHARS": "2000",
+    "CACHE_TTL_SECONDS": "2592000",
+    // Set to "false" if the 1,000/day KV write allowance gets tight; the edge
+    // cache tier keeps working either way. See README "Write budget".
+    "KV_CACHE_WRITES": "true",
+    // Off for the first release: the panel has no Turnstile widget yet, and
+    // leaving this on makes every deployed request answer challenge_required —
+    // the assistant would look completely dead to every user. Turn it back on in
+    // the same change that adds the widget.
+    "TURNSTILE_ENABLED": "false"
+  },
+
+  // Secret *names* only — values never live in this file.
+  // Set with: npx wrangler secret put <NAME>
+  //
+  // EVERY secret the Worker may read must be listed here, including optional
+  // ones. Per the Wrangler config schema, defining this property "replaces
+  // .dev.vars/.env/process.env inference" — so an undeclared name is silently
+  // ignored even when it is present in .dev.vars. That cost an afternoon: with
+  // only the first three listed, GROQ_KEY_1 and OPENROUTER_KEY_1 sat correctly
+  // in .dev.vars and never reached the Worker, so those providers vanished from
+  // the pool with no warning and no error — indistinguishable from "you forgot
+  // to paste the key".
+  //
+  // A listed secret must EXIST at deploy time — `wrangler deploy` fails with
+  // "required secrets have not been set", which is stricter than the local-dev
+  // warning the schema describes. Set the ones you are not using to an empty
+  // string (`printf '' | wrangler secret put NAME`): that satisfies the check,
+  // and the pool still drops entries whose key is blank, so disabling a provider
+  // by leaving its key empty keeps working.
+  "secrets": {
+    "required": [
+      "HASH_SALT",
+      "TURNSTILE_SECRET",
+      "GEMINI_KEY_1",
+      "GEMINI_KEY_2",
+      "GROQ_KEY_1",
+      "GROQ_KEY_2",
+      "OPENROUTER_KEY_1",
+      "OPENROUTER_KEY_2"
+    ]
+  },
+
+  "env": {
+    // Keyless local smoke test:  npx wrangler dev --env mock
+    // Exercises the whole request path with no real API keys and no network.
+    "mock": {
+      "kv_namespaces": [
+        {
+          "binding": "AI_KV",
+          "id": "9a604103e0894d3a8ae01a715170868a"
+        }
+      ],
+      "vars": {
+        "AI_POOL": "[{\"id\":\"mock-primary\",\"provider\":\"mock\",\"model\":\"mock-1\",\"priority\":1,\"supportsToolLoop\":true},{\"id\":\"mock-secondary\",\"provider\":\"mock\",\"model\":\"mock-2\",\"priority\":2,\"supportsToolLoop\":true}]",
+        // Kept non-empty so the origin guard is actually exercised locally;
+        // an empty list would disable the check and hide regressions.
+        "ALLOWED_ORIGINS": "http://localhost:5173,http://127.0.0.1:5173",
+        "DAILY_QUOTA": "5",
+        "TURNSTILE_ENABLED": "false",
+        "KV_CACHE_WRITES": "true"
+      }
+    }
+  }
+}

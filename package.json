@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:types": "node plugin-types/build.cjs",
+    "build:assistant-kb": "node scripts/build-assistant-kb.ts",
     "build:examples": "node examples/build.cjs",
     "generate:plugin-types": "node scripts/generate-plugin-types.js",
     "lint": "eslint .",

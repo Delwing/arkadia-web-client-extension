@@ -85,7 +85,8 @@ export type BuiltInPopupType =
   | 'zlom'
   | 'stat'
   | 'oswajanie'
-  | 'dataSources';
+  | 'dataSources'
+  | 'assistant';
 
 // Plugin popup type pattern: plugin:{pluginId}:{instanceId}
 export type PluginPopupType = `plugin:${string}`;

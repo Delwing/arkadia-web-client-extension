@@ -357,6 +357,8 @@ export interface KnownEvents {
     "poczta.letter.loaded": LetterContent;
     "roomInfo.popup.open": { roomId: number };
     "staticmap.popup.open": { roomId?: number; areaId?: number; instanceId?: string };
+    /** Opens the AI assistant panel; `question` (from `/pomoc <pytanie>`) is asked immediately. */
+    "assistant.popup.open": { question?: string; seedTriggerText?: string } | void;
     "mapDataChanged": void;
     "walker.stop": void;
     "walker.resume": void;

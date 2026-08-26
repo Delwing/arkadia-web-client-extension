@@ -17,6 +17,7 @@
   },
   "include": [
     "src/**/*",
+    "scripts/**/*.ts",
     "editor/**/*",
     "viewer/**/*",
     "forge-ui/**/*",

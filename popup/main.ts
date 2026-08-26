@@ -22,3 +22,6 @@ import '@web/themes/dark-neutral.css';
 import '@web/themes/light-parchment.css';
 import '@web/themes/light-silver.css';
 import '@web/layout/layout.css';
+// Popup body styles (chat, assistant, ...). Without this a detached panel keeps
+// its chrome but loses every popup-specific rule.
+import '@web/popups/popups.css';

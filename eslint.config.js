@@ -5,7 +5,10 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default [
-  { ignores: ['dist', 'examples/**/*'] },
+  // '**/dist' rather than 'dist' so build output from nested standalone
+  // projects (worker/dist from `wrangler deploy --dry-run`) is ignored too.
+  // '**/.wrangler' is wrangler's local dev scratch space, not source.
+  { ignores: ['**/dist', '**/.wrangler', 'examples/**/*'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

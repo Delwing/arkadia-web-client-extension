@@ -132,6 +132,7 @@ import initProfession from './scripts/profession'
 import initIntroduced from './scripts/introduced'
 import initAligatorEmoji from './scripts/aligatorEmoji'
 import initStaticMapWindow from './scripts/staticMapWindow'
+import initAssistant from './scripts/assistant'
 import initAttackModeAlias from './scripts/attackModeAlias'
 import initDeliveryStats from './scripts/deliveryStats'
 import initAfterDeathProgress from './scripts/afterDeathProgress'
@@ -351,6 +352,7 @@ export function registerScripts(client: Client) {
     initIntroduced(client, aliases)
     initAligatorEmoji(client)
     initStaticMapWindow(client, aliases)
+    initAssistant(client, aliases)
     initDeliveryStats(client, aliases)
     initAfterDeathProgress(client)
     initBrokilon(client)

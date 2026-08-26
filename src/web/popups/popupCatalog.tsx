@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import AssistantPopup from '../AssistantPopup';
 import CechyPopup from '../CechyPopup';
 import ChatPopup from '../ChatPopup';
 import ClockPopup from '../ClockPopup';
@@ -98,4 +99,5 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:stat', Component: StatPopup },
     { id: 'popup:oswajanie', Component: OswajaniePopup },
     { id: 'popup:dataSources', Component: DataSourcesPopup },
+    { id: 'popup:assistant', Component: AssistantPopup },
 ];

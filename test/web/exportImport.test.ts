@@ -62,6 +62,7 @@ import {
     type ExportOptions,
 } from '@web/options/exportUtils';
 import { characterStorage, globalStorage } from '@modules/core/storage';
+import { SYNC_CATEGORIES } from '@modules/firebase/categoryRegistry';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1162,5 +1163,59 @@ describe('uiSettings category with tripRoutes and activeKeymap', () => {
         expect(result.success).toBe(true);
         expect(localStorage.getItem('tripRoutes')).toBeNull();
         expect(globalStorage.get('active_keymap_id')).toBeUndefined();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Assistant BYOK key must never leave the device
+// ---------------------------------------------------------------------------
+
+describe('assistant BYOK key', () => {
+    const SENTINEL = 'sk-do-not-upload-me-0123456789';
+
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    afterEach(() => {
+        localStorage.clear();
+    });
+
+    it('is absent from the file export payload', () => {
+        localStorage.setItem('arkadia.assistantApiKey', SENTINEL);
+        localStorage.setItem('triggers', JSON.stringify([{ pattern: 'x' }]));
+
+        const result = exportLocalStorage(['Alice'], DEFAULT_EXPORT_OPTIONS);
+
+        expect(JSON.stringify(result)).not.toContain(SENTINEL);
+        expect(result.global).not.toHaveProperty('arkadia.assistantApiKey');
+    });
+
+    it('is absent from every cloud sync category', async () => {
+        localStorage.setItem('arkadia.assistantApiKey', SENTINEL);
+        // Seed something in each backing store so the exporters have work to do.
+        localStorage.setItem('triggers', JSON.stringify([{ pattern: 'x' }]));
+        localStorage.setItem('aliases', JSON.stringify([{ pattern: 'y', command: 'z' }]));
+        localStorage.setItem('uiSettings', JSON.stringify({ theme: 'dark' }));
+        localStorage.setItem('Alice:settings', JSON.stringify({ shortenExits: true }));
+
+        const exported = await Promise.all(
+            SYNC_CATEGORIES.map(category => exportCategory(category, ['Alice'])),
+        );
+
+        expect(JSON.stringify(exported)).not.toContain(SENTINEL);
+    });
+
+    it('is not a character-scoped key, so characterSettings cannot pick it up', async () => {
+        // The character path is a DENYLIST: exportCategory('characterSettings')
+        // uploads every `<Char>:<baseKey>` whose base key is in
+        // characterStorageKeys and not excluded. Storing the key per character
+        // would silently enrol it.
+        localStorage.setItem('Alice:arkadia.assistantApiKey', SENTINEL);
+        localStorage.setItem('Alice:settings', JSON.stringify({ shortenExits: true }));
+
+        const exported = await exportCategory('characterSettings', ['Alice']);
+
+        expect(exported ?? '').not.toContain(SENTINEL);
     });
 });

@@ -7,6 +7,7 @@ import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
+import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
@@ -891,6 +892,30 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('close-ui-settings', () => {
         (document.activeElement as HTMLElement)?.blur?.();
         uiSettingsModal?.hide();
+    });
+
+    /**
+     * The assistant asking for the panel that holds a setting it may not change
+     * itself (drag-and-drop editors, nested config). The modal instances live in
+     * this scope and are not importable, so the panel reaches them by event —
+     * the same seam `show-general-settings` already uses.
+     *
+     * Only the dialog is opened, never the setting itself: these are exactly the
+     * settings a human is supposed to edit by hand.
+     */
+    window.addEventListener(OPEN_SETTINGS_EVENT, event => {
+        const detail = (event as CustomEvent<OpenSettingsDetail>).detail;
+        if (detail?.surface === 'ui') {
+            uiSettingsModal?.show();
+            return;
+        }
+        // Reset to General only when no tab was named. CharacterSettings handles
+        // the same event and switches to the named tab; dispatching this as well
+        // would race it, with the winner decided by listener registration order.
+        if (!detail?.tabLabel) {
+            window.dispatchEvent(new Event('show-general-settings'));
+        }
+        optionsModal?.show();
     });
 
     if (bindsButton && bindsModal) {

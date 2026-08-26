@@ -22,6 +22,15 @@ Uzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako 
 
 Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 
+## Asystent AI
+
+| Komenda | Opis |
+|---------|------|
+| `/pomoc` | Otworz panel asystenta AI |
+| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |
+
+> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz "Zastosuj". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem "Ustawienia" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.
+
 ## Komunikacja
 
 | Komenda | Opis |

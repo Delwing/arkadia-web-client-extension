@@ -6,8 +6,24 @@ import GuildsSettings from "./GuildsSettings";
 import LuaGagsSettings from "./LuaGagsSettings";
 import EnemyBindsSettings from "./EnemyBindsSettings";
 import MagikiSettings from "./MagikiSettings";
+import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
 
 type Tab = "general" | "guild" | "luaGags" | "enemyBinds" | "magiki";
+
+/**
+ * Button label -> tab id, for the assistant's "open that panel" action.
+ *
+ * Keyed by the exact label rendered on the buttons below; keep the two in step.
+ * A label with no entry leaves the dialog on whatever tab it had, and the card
+ * still shows the full path.
+ */
+const TAB_LABELS: Record<string, Tab> = {
+    "Ogólne": "general",
+    "Gildie": "guild",
+    "Walka": "luaGags",
+    "Bindy wrogów": "enemyBinds",
+    "Magiki": "magiki",
+};
 
 function CharacterSettings() {
     const [tab, setTab] = useState<Tab>("general");
@@ -37,9 +53,33 @@ function CharacterSettings() {
         const showGuild = () => changeTab("guild");
         window.addEventListener("show-general-settings", showGeneral);
         window.addEventListener("show-guild-settings", showGuild);
+
+        /**
+         * The assistant sending the user here for a setting it may not change
+         * itself. It knows the tab only by the label rendered on its button,
+         * because the ids are private to this component — so the mapping lives
+         * beside the buttons, and renaming one is a single edit.
+         *
+         * Note "Walka" is both a tab here and a *section inside* Ogolne. The
+         * event carries the tab segment of the navigation path, so
+         * `Ogolne -> Walka` arrives as "Ogolne" and lands on the right one.
+         *
+         * The host opens the dialog on the same event but deliberately does not
+         * also dispatch `show-general-settings` when a tab was named, so these
+         * two do not race.
+         */
+        const onAssistantOpen = (event: Event) => {
+            const detail = (event as CustomEvent<OpenSettingsDetail>).detail;
+            if (detail?.surface !== "character" || !detail.tabLabel) return;
+            const wanted = TAB_LABELS[detail.tabLabel];
+            if (wanted) changeTab(wanted);
+        };
+        window.addEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
+
         return () => {
             window.removeEventListener("show-general-settings", showGeneral);
             window.removeEventListener("show-guild-settings", showGuild);
+            window.removeEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
         };
     }, [changeTab]);
 

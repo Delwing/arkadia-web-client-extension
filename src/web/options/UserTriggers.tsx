@@ -9,6 +9,7 @@ import {
 } from "@modules/core/pluginTriggerMacroRegistry";
 import eventBus from "@modules/core/eventBus";
 import TriggerEditModal from "./TriggerEditModal";
+import { normalizeTriggerList } from "./userTriggerNormalize";
 
 export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';
 
@@ -108,21 +109,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'transportTimer', label: 'Timer transportu', category: 'Timery' },
 ];
 
-function normalizeMacro(macro: UserMacro): UserMacro {
-    if (macro.type === 'beep' && (!macro.soundKey || typeof macro.soundKey !== 'string')) {
-        return { ...macro, soundKey: 'beep' };
-    }
-    return macro;
-}
-
-function normalizeTrigger(trigger: UserTrigger): UserTrigger {
-    const macros = Array.isArray(trigger.macros) ? trigger.macros.map(normalizeMacro) : [];
-    return { ...trigger, macros };
-}
-
-function normalizeTriggerList(list: UserTrigger[] = []): UserTrigger[] {
-    return list.map(normalizeTrigger);
-}
+// Shared with the AI assistant's apply path — see userTriggerNormalize.ts for
+// why these no longer live here.
 
 function UserTriggers() {
     const [triggers, setTriggers] = useState<UserTrigger[]>([]);

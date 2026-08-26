@@ -12,6 +12,7 @@ import MapTab from "./tabs/MapTab";
 import SoundTab from "./tabs/SoundTab";
 import BehaviourTab from "./tabs/BehaviourTab";
 import ManageSoundsModal from "./ManageSoundsModal";
+import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
 
 type Tab = "general" | "footer" | "map" | "sound";
 
@@ -143,6 +144,23 @@ function UiSettings({ soundManager, onEnableNotifications }: UiSettingsProps) {
         };
         window.addEventListener("save-ui-settings", onSave);
 
+        /**
+         * The assistant sending the user here for a setting it may not change
+         * itself. It knows the tab only by its label ("Stopka"), because the ids
+         * below are private to this component — so the mapping lives here, where
+         * renaming a tab and updating the mapping are the same edit.
+         *
+         * An unrecognised label leaves the dialog on whatever tab it had; the
+         * card still shows the full path, so the user can finish by hand.
+         */
+        const onAssistantOpen = (event: Event) => {
+            const detail = (event as CustomEvent<OpenSettingsDetail>).detail;
+            if (detail?.surface !== "ui" || !detail.tabLabel) return;
+            const wanted = TABS.find(entry => entry.label === detail.tabLabel);
+            if (wanted) setTab(wanted.key);
+        };
+        window.addEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
+
         const modalEl = document.getElementById("ui-settings-modal");
         const onShow = () => {
             const fresh = load();
@@ -182,6 +200,7 @@ function UiSettings({ soundManager, onEnableNotifications }: UiSettingsProps) {
 
         return () => {
             window.removeEventListener("save-ui-settings", onSave);
+            window.removeEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
             modalEl?.removeEventListener("show.bs.modal", onShow);
             modalEl?.removeEventListener("hidden.bs.modal", onHidden);
             offUiSettings?.();
