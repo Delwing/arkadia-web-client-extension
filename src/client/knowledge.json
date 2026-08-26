@@ -3489,6 +3489,14 @@
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Doswiadczyles magicznego spowolnienia ruchow",
+    "id": null,
+    "Domena": "?",
+    "lokalizacja": "?",
+    "note": "?"
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales jak ktos uwolnil moc aury energii, zalewajac wszystko fala wyladowan",
     "id": null,
     "Domena": "?",
@@ -3510,6 +3518,14 @@
     "Domena": "Imperium",
     "lokalizacja": "Averland - Kopalnia na Przeleczy,Trakt Poludniowy na Pustkowia",
     "note": "Prorok w trakcie walki czaruje i moze sie wylosowac ten czar"
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Doswiadczyles efektow czaru ochrony przed magia",
+    "id": null,
+    "Domena": "?",
+    "lokalizacja": "?",
+    "note": ""
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4441,7 +4457,7 @@
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
-    "Wiedza": "Byles swiadkiem jak ktos dopiero co zywy przeistaczal sie w zjawe",
+    "Wiedza": "Byles swiadkiem jak ktos dopiero co zywy przeistaczal sie w nieumarlego",
     "id": 11355,
     "Domena": "Imperium",
     "lokalizacja": "Polnocna Tilea - Poludniowy Kurhan",
@@ -7425,7 +7441,7 @@
   },
   {
     "Rodzaj": "Wiedza o wampirach",
-    "Wiedza": "Widziales fledera,wampira nizszego",
+    "Wiedza": "Widziales fledera, wampira nizszego",
     "id": null,
     "Domena": "Ishtar",
     "lokalizacja": "Saovine",
