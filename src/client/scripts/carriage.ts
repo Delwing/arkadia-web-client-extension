@@ -12,6 +12,7 @@ export default function initCarriage(
         if (client.moveModeButton) {
             client.moveModeButton.disabled = enabled;
         }
+        client.sendEvent('carriageModeChanged', enabled);
     };
     const enable = (line: AnsiAwareBuffer) => {
         setCarriageMode(true);

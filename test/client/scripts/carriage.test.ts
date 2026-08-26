@@ -8,6 +8,7 @@ class FakeClient {
   carriageMode = false;
   moveModeButton = document.createElement('input');
   println = jest.fn();
+  sendEvent = jest.fn();
 }
 
 describe('carriage mode triggers', () => {
@@ -41,6 +42,13 @@ describe('carriage mode triggers', () => {
     parse('Zwracasz elegancka odkryta bryczke w terminie odzyskujac calosc kaucji rowna jednej mithrylowej monecie.');
     expect(client.carriageMode).toBe(false);
     expect(client.moveModeButton.disabled).toBe(false);
+  });
+
+  test('announces carriage mode changes', () => {
+    parse('Siadasz w malej bryczce.');
+    expect(client.sendEvent).toHaveBeenCalledWith('carriageModeChanged', true);
+    parse('Zsiadasz z malej bryczki.');
+    expect(client.sendEvent).toHaveBeenCalledWith('carriageModeChanged', false);
   });
 
   test('/woz alias toggles carriage mode', () => {

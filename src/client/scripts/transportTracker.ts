@@ -40,6 +40,8 @@ interface Def extends RawTransportDefinition {
     startPattern?: RegExp;
     stops: CompiledStop[];
     exitCommand?: string;
+    /** Ship noun in the genitive, used to identify the ship on a generic drive-aboard line. */
+    vesselNoun?: string;
     locationLabels: Map<number, string>;
     stopGroups: Map<string, number[]>;
     setGroups: Map<string, number[]>;
@@ -60,10 +62,45 @@ type State =
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
-const BOARD_COMMANDS = new Set([
+/**
+ * While driving a wagon (carriage mode) you do not walk onto a ship, you drive onto it,
+ * so the boarding/leaving verb changes: "wsiadz/wejdz na statek" → "wjedz na statek",
+ * "zejdz ze statku" → "zjedz ze statku". Land transports are boarded with "... do ..."
+ * and are left alone — you cannot drive a wagon into a dylizans.
+ */
+const CARRIAGE_COMMAND_SWAPS: ReadonlyArray<{ from: RegExp; to: string }> = [
+    { from: /^(?:wsiadz|wejdz) (na .+)$/, to: "wjedz $1" },
+    { from: /^zejdz (ze? .+)$/, to: "zjedz $1" },
+];
+/** Swap a boarding/leaving command for its carriage-mode form, if there is one. */
+function carriageCommand(cmd: string): string {
+    const swap = CARRIAGE_COMMAND_SWAPS.find(s => s.from.test(cmd));
+    return swap ? cmd.replace(swap.from, swap.to) : cmd;
+}
+
+const ON_FOOT_BOARD_COMMANDS = [
     "wsiadz na statek", "wejdz na statek", "wejdz na prom", "wsiadz na prom",
-    "wsiadz do dylizansu", "wsiadz do wozu", "wsiadz do powozu", "wjedz na statek",
+    "wsiadz do dylizansu", "wsiadz do wozu", "wsiadz do powozu",
+];
+const BOARD_COMMANDS = new Set([
+    ...ON_FOOT_BOARD_COMMANDS,
+    ...ON_FOOT_BOARD_COMMANDS.map(carriageCommand),
 ]);
+/**
+ * Driving aboard is not announced with the ship's own enter line but with a generic one that
+ * names the ship in the genitive after "na poklad", e.g.
+ *   "Wraz z Vesper wjezdzasz wygodnym szybkim dylizansem na poklad smuklego brygu."
+ *   "Wjezdzasz wozem na poklad tratwy."
+ * The captured tail is only used to pick between candidate ships docked at the same node.
+ */
+const CARRIAGE_BOARD_RE = /\b[wW]jezdzasz (?:.* )?na poklad (.+)\.$/;
+/**
+ * Driving off again never names the ship — "Wraz z Vesper zjezdzasz wygodnym szybkim
+ * dylizansem na brzeg." — so it just ends whatever journey is in progress.
+ */
+const CARRIAGE_DISEMBARK_RE = /\b[zZ]jezdzasz (?:.* )?na brzeg\.$/;
+/** Bare vessel noun as it appears in a ship's exit line ("Schodzisz z brygu." → "brygu"). */
+const VESSEL_NOUN_RE = /^Schodzisz ze? (\S+)\.$/;
 const EXIT_FAILURE_RE = /^Wolisz nie probowac wysiasc z jadacego .*\.$/;
 const ABORT_RE = /^Jednym susem przesadzasz burte .* i wskakujesz do wody\. Po chwili udaje ci sie doplynac z powrotem do brzegu\.$/;
 const FOLLOW_EXIT_RE = /[pP]odazasz za .* na zewnatrz\.$/;
@@ -119,6 +156,7 @@ function compile(fileKey: string, raw: RawTransportDefinition): Def {
         exitPattern: raw.exit ? new RegExp(raw.exit) : undefined,
         startPattern: raw.start ? new RegExp(raw.start) : undefined,
         exitCommand: raw.exit_command?.toLowerCase(),
+        vesselNoun: raw.exit?.match(VESSEL_NOUN_RE)?.[1],
     };
 }
 
@@ -156,10 +194,12 @@ class Tracker {
     private stagedSet = new Map<Def, number>();
     private readonly defs: Def[];
     private readonly exitCmds: Set<string>;
+    /** Last transport bind we set, so it can be re-rendered when carriage mode toggles. */
+    private lastBind?: { kind: 'board'; def: Def; uncertain: boolean } | { kind: 'exit'; def: Def; stopIdx: number };
 
     constructor(private readonly client: Client) {
         this.defs = RAW.map(([name, raw]) => compile(name, raw));
-        this.exitCmds = new Set(this.defs.map(d => d.exitCommand).filter((c): c is string => !!c));
+        this.exitCmds = new Set(this.defs.flatMap(d => d.exitCommand ? [d.exitCommand, carriageCommand(d.exitCommand)] : []));
         this.registerTriggers();
         void this.loadOverrides().then(() => this.emitTimesDebug());
         this.emit();
@@ -216,6 +256,7 @@ class Tracker {
 
     private goIdle(): void {
         this.stagedSet.clear();
+        this.lastBind = undefined;
         this.go({ kind: 'idle' });
     }
 
@@ -273,6 +314,24 @@ class Tracker {
             this.go({ kind: 'on_board', def, next: this.state.next });
             console.log(`${LOG} Re-entered ${def.name}`);
         }
+    }
+
+    /**
+     * Driving a wagon aboard produces a generic line instead of the ship's own enter line, so the
+     * ship has to come from the candidates the board command left pending at this dock. The vessel
+     * named on the line only breaks ties when several ships dock at the same node.
+     */
+    private onCarriageBoard(vessel: string): void {
+        if (this.state.kind === 'exiting') {
+            this.onEnter(this.state.def);
+            return;
+        }
+        if (this.state.kind !== 'pending') return;
+        const candidates = [...this.state.defs.keys()];
+        if (candidates.length === 0) return;
+        const def = candidates.find(d => d.vesselNoun && vessel.endsWith(d.vesselNoun)) ?? candidates[0];
+        console.log(`${LOG} Drove aboard "${vessel}" — resolved to ${def.name}`);
+        this.onEnter(def);
     }
 
     private onStart(def: Def): void {
@@ -571,9 +630,11 @@ class Tracker {
     // ── binds ─────────────────────────────────────────────────────────────────
 
     private setBoardBind(def: Def, sound = false, uncertain = false): void {
-        const cmds = def.board_commands;
-        if (!cmds?.length) return;
+        const raw = def.board_commands;
+        if (!raw?.length) return;
         if (sound) this.client.sendEvent('sound:category', 'transport');
+        this.lastBind = { kind: 'board', def, uncertain };
+        const cmds = this.client.carriageMode ? raw.map(carriageCommand) : raw;
         const name = uncertain ? `${def.name} (?)` : def.name;
         const label = `${cmds.join(';')} [${name}]`;
         this.client.FunctionalBind.setCategory('transport', label, () => {
@@ -589,14 +650,23 @@ class Tracker {
         return this.defs.some(d => this.locationMatchesDef(locId, d));
     }
 
-    private setExitBind(def: Def, stopIdx: number): void {
-        const cmd = def.exitCommand;
-        if (!cmd) return;
-        this.client.sendEvent('sound:category', 'transport');
+    private setExitBind(def: Def, stopIdx: number, sound = true): void {
+        if (!def.exitCommand) return;
+        if (sound) this.client.sendEvent('sound:category', 'transport');
+        this.lastBind = { kind: 'exit', def, stopIdx };
+        const cmd = this.client.carriageMode ? carriageCommand(def.exitCommand) : def.exitCommand;
         const label = `${cmd} [${destLabel(def, stopIdx)}]`;
         this.client.FunctionalBind.setCategory('transport', label, () => {
             this.client.sendCommand(cmd);
         }, false);
+    }
+
+    /** Re-render the current transport bind with the wording matching the new carriage mode. */
+    private onCarriageMode(): void {
+        const last = this.lastBind;
+        if (!last) return;
+        if (last.kind === 'board') this.setBoardBind(last.def, false, last.uncertain);
+        else this.setExitBind(last.def, last.stopIdx, false);
     }
 
     // ── leg timer ─────────────────────────────────────────────────────────────
@@ -742,6 +812,9 @@ class Tracker {
             this.onGmcpMap(hasMap);
         });
 
+        // Carriage mode — boarding wording changes when driving a wagon
+        this.client.on('carriageModeChanged', () => this.onCarriageMode());
+
         // Reset
         this.client.on('reset', () => this.onReset());
 
@@ -834,6 +907,17 @@ class Tracker {
                 return triggerLine;
             }, 'transport', isRegex ? undefined : { caseInsensitive: true });
         }
+
+        // Driving a wagon on/off a ship — one generic line for every ship
+        this.client.Triggers.registerTrigger(CARRIAGE_BOARD_RE, (line, matches) => {
+            if (matches?.[1]) this.onCarriageBoard(matches[1]);
+            return line;
+        }, 'transport');
+
+        this.client.Triggers.registerTrigger(CARRIAGE_DISEMBARK_RE, line => {
+            if (this.state.kind === 'on_board' || this.state.kind === 'exiting') this.goIdle();
+            return line;
+        }, 'transport');
 
         // Exit failure
         this.client.Triggers.registerTrigger(EXIT_FAILURE_RE, line => {

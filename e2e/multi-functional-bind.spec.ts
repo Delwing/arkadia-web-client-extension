@@ -150,6 +150,28 @@ test.describe('Multi-functional Bind Categories', () => {
         expect(text).not.toContain('Novigrad - Baccala');
     });
 
+    test('transport bind switches to the driving wording while on a wagon', async ({page}) => {
+        const output = page.locator('#main_text_output_msg_wrapper');
+        await waitForMapReady(page);
+
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: { x: 0, y: 0, name: 'Transport Docks' },
+        });
+
+        await pushText(page, 'Siadasz na drewnianym wozie.');
+        await pushText(page, 'Wielka galera', { type: 'room.contents.object' });
+        await expect(output).toContainText('wjedz na statek');
+
+        await resetCommandLog(page);
+        await page.keyboard.press('BracketRight');
+        await expect.poll(() => getCommandLog(page), {timeout: 3000}).toContain('wjedz na statek');
+        expect(await getCommandLog(page)).not.toContain('wsiadz na statek');
+    });
+
     test('transport stop_pattern callout bind does not fire for a ship whose destination does not match the current location', async ({page}) => {
         const output = page.locator('#main_text_output_msg_wrapper');
         await waitForMapReady(page);

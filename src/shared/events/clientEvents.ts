@@ -177,6 +177,7 @@ export interface KnownEvents {
     "npc": unknown;
     "zaskTimer": { seconds: number; ok: boolean } | null;
     "moveModeChanged": number;
+    "carriageModeChanged": boolean;
     "ping": number | null;
     "transportTimer": TransportTimerPayload | null;
     "transportRoute": TransportRoutePayload | null;

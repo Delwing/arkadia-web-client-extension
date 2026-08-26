@@ -84,6 +84,42 @@ test.describe('Transport timer', () => {
         await expect(transportTimer, 'should show Nuln as destination').toContainText('Nuln');
     });
 
+    test('tracks the journey when boarding while driving a wagon', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        const transportTimer = page.locator('#transport-timer');
+
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: {
+                x: 0,
+                y: 0,
+                name: 'Transport Docks',
+            },
+        });
+
+        // Sitting on a wagon — the ship is never named by its own enter line, only by the
+        // generic "na poklad <ship in genitive>" one
+        await pushText(page, 'Siadasz na drewnianym wozie.');
+        await submitCommand(page, 'wjedz na statek');
+        await pushText(page, 'Wraz z Vesper wjezdzasz wygodnym szybkim dylizansem na poklad wielkiej galery.');
+
+        await expect(transportTimer, 'should show destination after driving aboard').toContainText('Kraina Zgromadzenia');
+
+        await pushText(page, 'Galera odbija od brzegu.');
+        await expect(transportTimer, 'should count down while sailing').toContainText('Tr:');
+
+        // Driving off the ship clears the timer
+        await pushText(page, 'Wraz z Vesper zjezdzasz wygodnym szybkim dylizansem na brzeg.');
+        await expect(transportTimer, 'should clear timer after driving off').toBeEmpty();
+    });
+
     test('clears timer after exiting transport', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
