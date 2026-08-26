@@ -466,6 +466,34 @@ export class EmbeddedMap {
         this.renderRoom(this.currentRoom);
     }
 
+    /**
+     * Redraw after map data changed underneath us — a live edit pushed from the
+     * map editor, say.
+     *
+     * `renderRoom` only moves the position marker; the renderer caches each
+     * area's geometry, so changed rooms, symbols, exits or labels stay invisible
+     * until that area is drawn again. Only the area actually on screen needs it,
+     * which is why this takes the list of areas that changed.
+     */
+    refreshAreas(areaIds: number[]) {
+        const viewedAreaId = this._isViewingPlayerPosition
+            ? this.reader.getRoom(this.currentRoom)?.area
+            : this._viewedAreaId;
+
+        if (viewedAreaId === undefined || viewedAreaId === null) {
+            return;
+        }
+        if (!areaIds.includes(viewedAreaId)) {
+            return;
+        }
+
+        if (this._isViewingPlayerPosition) {
+            this.refreshLabels();
+        } else if (this._viewedZ !== null) {
+            this.viewAreaLevel(viewedAreaId, this._viewedZ);
+        }
+    }
+
     refreshRender() {
         this.renderer.refresh()
     }

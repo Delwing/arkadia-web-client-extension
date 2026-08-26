@@ -4,7 +4,22 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
 class FakeClient {
   Triggers = new Triggers({} as unknown as any);
-  Map = { setMapRoomById: jest.fn(), currentRoom: { id: 10, areaId: 'Area' }, onMapReady: (_cb: any) => {} } as any;
+  Map = {
+    setMapRoomById: jest.fn(),
+    currentRoom: { id: 10, areaId: 'Area' },
+    getAreaName: (_id: any) => 'Area',
+    tryGetMapReader: () => null,
+    onAreasChanged: (_cb: any) => () => {},
+  } as any;
+
+  /** Wire a map in and announce its areas, as MapHelper does on load. */
+  useMap(mapData: any[]) {
+    this.Map.tryGetMapReader = () => ({
+      getArea: (areaId: number) =>
+        mapData[areaId] ? { getRooms: () => mapData[areaId].rooms } : undefined,
+    });
+    this.Map.onAreasChanged = (cb: any) => { cb(mapData.map((_, i) => i)); return () => {}; };
+  }
   sendEvent = jest.fn();
 }
 
@@ -40,7 +55,7 @@ describe('gps triggers', () => {
         labels: []
       }
     ];
-    client.Map.onMapReady = (cb: any) => cb(mapData);
+    client.useMap(mapData);
     initGps(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     client.Map.currentRoom.id = 1;
@@ -95,7 +110,7 @@ describe('gps triggers', () => {
     ];
 
     client = new FakeClient();
-    client.Map.onMapReady = (cb: any) => cb(mapData);
+    client.useMap(mapData);
     initGps(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     client.Map.currentRoom.id = 24733;  // numeric ID
@@ -138,7 +153,7 @@ describe('gps triggers', () => {
     ];
 
     client = new FakeClient();
-    client.Map.onMapReady = (cb: any) => cb(mapData);
+    client.useMap(mapData);
     initGps(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     client.Map.currentRoom.id = 99999;  // not in within_room_ids
@@ -177,7 +192,7 @@ describe('gps triggers', () => {
     ];
 
     client = new FakeClient();
-    client.Map.onMapReady = (cb: any) => cb(mapData);
+    client.useMap(mapData);
     initGps(client as unknown as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
     client.Map.currentRoom.id = 1;

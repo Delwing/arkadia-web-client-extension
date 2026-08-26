@@ -27,6 +27,55 @@ export interface MapFunctionalBind {
     set(key: string, fn: () => void): void;
 }
 
+/**
+ * A single room's worth of live map edits. Only the fields present are touched.
+ * See {@link MapHelper.applyRoomChanges}.
+ */
+export interface RoomChange {
+    roomId: number;
+    /**
+     * What to do with the room:
+     * - `patch` (default) — update an existing room, skip if it is missing.
+     * - `upsert` — update, or create it when missing. Needs `area`.
+     * - `delete` — remove the room from the map entirely.
+     */
+    op?: 'patch' | 'upsert' | 'delete';
+    /** Area to place a newly created room in. Only read when upserting. */
+    area?: number;
+    name?: string;
+    roomChar?: string;
+    env?: number;
+    weight?: number;
+    x?: number;
+    y?: number;
+    z?: number;
+    exits?: Partial<Record<MapData.direction, number>>;
+    /** Replaces the room's special exits wholesale. */
+    specialExits?: Record<string, number>;
+    /** Merged into existing userData; a `null` value removes that key. */
+    userData?: Record<string, string | null>;
+}
+
+/**
+ * One area in the shape the renderer consumes — the same objects found in the
+ * published `mapExport.json`. Coordinates are in **source orientation** (y-up,
+ * as Mudlet stores them); {@link MapHelper.syncAreas} flips y on the way in,
+ * exactly as `MapReader` does when it first builds the map.
+ */
+export interface MapAreaData {
+    areaId: string | number;
+    areaName?: string;
+    rooms: MapData.Room[];
+    labels?: unknown[];
+}
+
+/** Tuning for {@link MapHelper.applyRoomChanges}; every rebuild defaults to on. */
+export interface ApplyChangesOptions {
+    rebuildAreas?: boolean;
+    rebuildPaths?: boolean;
+    rerender?: boolean;
+}
+
 export interface MapHelperClient {
     on(event: string, listener: (detail?: any) => void, options?: any): (() => void) | void;
 
@@ -91,6 +140,7 @@ export default class MapHelper {
     private readonly client: MapHelperClient;
     private readonly storage: MapStorage;
     private mapReader!: MapReader;
+    private areaChangeListeners = new Set<(areaIds: number[]) => void>();
     private pathFinder!: PathFinder;
     public refreshPosition = true;
     // True when the most recent gmcp.room.info applied a position change that has
@@ -253,7 +303,51 @@ export default class MapHelper {
         this.mapReadyCallbacks.forEach(cb => cb(mapData, colors));
         this.mapReadyCallbacks = [];
         this.client.sendEvent("mapReady");
+        // Announce through the same channel as every later change, so consumers
+        // have a single code path — and so a rebuilt map tells views holding
+        // their own reader reference that theirs is now stale.
+        this.emitAreasChanged(this.getAreaIds());
         return {startId, reader: this.mapReader, pathFinder: this.pathFinder};
+    }
+
+    /** Every area id currently loaded. */
+    getAreaIds(): number[] {
+        if (!this.mapReader) {
+            return [];
+        }
+        return this.mapReader.getAreas().map(area => area.getAreaId());
+    }
+
+    /**
+     * Subscribe to area-scoped map changes — the single entry point for anything
+     * derived from map data, such as the GPS triggers.
+     *
+     * Fires immediately with every loaded area when the map is already up, then
+     * again whenever areas change, so one callback covers all four ways map data
+     * arrives: the initial load, a whole map pushed from the editor, an area
+     * synced from the editor, and a live room patch. Consumers can therefore
+     * treat "these areas changed, rebuild them" as their only case, instead of
+     * distinguishing first build from rebuild.
+     *
+     * @returns an unsubscribe function.
+     */
+    onAreasChanged(callback: (areaIds: number[]) => void): () => void {
+        this.areaChangeListeners.add(callback);
+        if (this.mapReady) {
+            callback(this.getAreaIds());
+        }
+        return () => {
+            this.areaChangeListeners.delete(callback);
+        };
+    }
+
+    /** Tell area-scoped consumers which areas they need to rebuild. */
+    private emitAreasChanged(areaIds: number[]) {
+        if (areaIds.length === 0) {
+            return;
+        }
+        this.areaChangeListeners.forEach(listener => listener(areaIds));
+        this.client.sendEvent("mapDataChanged");
     }
 
     onMapReady(callback: (mapData: MapData.Map, colors: any) => void) {
@@ -271,12 +365,360 @@ export default class MapHelper {
         return this.mapReader;
     }
 
+    /**
+     * The pathfinder built alongside the current reader. Replaced whenever the
+     * map is rebuilt, so views holding their own reference must re-read it.
+     */
+    getPathFinder(): PathFinder {
+        return this.pathFinder;
+    }
+
     tryGetMapReader(): MapReader | null {
         return this.mapReader ?? null;
     }
 
     getRoomIdByInternalId(internalId: string): number | null {
         return this.internalIds[internalId] ?? null;
+    }
+
+    /**
+     * Swap in an entirely different map for the rest of the session.
+     *
+     * Rebuilds the reader, pathfinder and every index from scratch, which is why
+     * it is the right tool when the shape of the map itself changed — areas
+     * added or removed, or simply a different map than the one that was loaded.
+     * {@link syncAreas} cannot express those, since the renderer builds its area
+     * wrappers once at load.
+     *
+     * The player's position is preserved when the new map still has that room.
+     * Colours are optional; the current palette is kept when none is supplied.
+     *
+     * In-memory only: the next map data refresh replaces this again.
+     *
+     * @returns false when the payload held no areas, in which case nothing changed.
+     */
+    replaceMap(mapData: MapData.Map, colors?: any): boolean {
+        if (!Array.isArray(mapData) || mapData.length === 0) {
+            return false;
+        }
+        // Keep the player where they are: initialize() restores savedRoomId,
+        // which renderRoomById has been maintaining all along.
+        this.savedRoomId = this.currentRoom?.id ?? this.savedRoomId;
+        // initialize() announces every area, so no separate notification here.
+        this.initialize(mapData, colors ?? this.colors);
+        return true;
+    }
+
+    /**
+     * Replace whole areas of the loaded map in place.
+     *
+     * The area is the renderer's natural unit — geometry and exits are cached
+     * per area and rebuilt by `createPlanes()`/`createExits()` — so swapping one
+     * wholesale covers every kind of edit at once: rooms, labels, custom lines,
+     * added or removed rooms. That makes it the blunt-but-complete counterpart
+     * to {@link applyRoomChanges}, which is cheaper but only speaks room fields.
+     *
+     * Areas the map does not already have are skipped: creating one needs a full
+     * reload, since the renderer builds its area wrappers up front.
+     *
+     * Edits are memory-only and vanish when map data reloads.
+     *
+     * @returns how many areas were replaced.
+     */
+    syncAreas(areas: MapAreaData[]): number {
+        if (!this.mapReader || areas.length === 0) {
+            return 0;
+        }
+        const reader: any = this.mapReader as any;
+        const rooms: Record<number, MapData.Room> = reader.rooms;
+        const syncedAreaIds: number[] = [];
+        let synced = 0;
+
+        for (const incoming of areas) {
+            const areaId = typeof incoming.areaId === "number" ? incoming.areaId : parseInt(incoming.areaId, 10);
+            const wrapped = reader.areas?.[areaId];
+            if (!wrapped?.area) {
+                continue;
+            }
+
+            // Retire the outgoing rooms from every index that points at them.
+            for (const room of wrapped.area.rooms ?? []) {
+                delete rooms[room.id];
+                if (room.hash) {
+                    delete this.hashes[room.hash];
+                }
+                const internalId = room.userData?.internal_id;
+                if (internalId) {
+                    delete this.internalIds[internalId];
+                }
+            }
+
+            // MapReader negates y when it first builds the map, so incoming data
+            // in source orientation has to be flipped the same way here.
+            const nextRooms = (incoming.rooms ?? []).map(room => ({...room, y: -room.y}));
+
+            wrapped.area.rooms = nextRooms;
+            wrapped.area.labels = incoming.labels ?? [];
+            if (incoming.areaName) {
+                wrapped.area.areaName = incoming.areaName;
+                this.areas[areaId] = incoming.areaName;
+            }
+
+            for (const room of nextRooms) {
+                rooms[room.id] = room;
+                if (room.hash) {
+                    this.hashes[room.hash] = room.id;
+                }
+                const internalId = room.userData?.internal_id;
+                if (internalId) {
+                    this.internalIds[internalId] = room.id;
+                }
+            }
+
+            wrapped.planes = wrapped.createPlanes();
+            wrapped.exits = new Map();
+            wrapped.createExits();
+            wrapped.markDirty();
+            syncedAreaIds.push(areaId);
+            synced++;
+        }
+
+        if (synced === 0) {
+            return 0;
+        }
+
+        this.pathFinder = new PathFinder(this.mapReader as any);
+        if (this.currentRoom) {
+            // currentRoom may point at an object we just replaced; re-resolve it
+            // so later reads do not see a detached room.
+            const refreshed = rooms[this.currentRoom.id];
+            if (refreshed) {
+                this.currentRoom = refreshed;
+            }
+            this.renderRoomById(this.currentRoom.id);
+        }
+        this.emitAreasChanged(syncedAreaIds);
+
+        return synced;
+    }
+
+    /**
+     * Drop a room from the live map.
+     *
+     * The reader keeps each room in two places that must stay in step: its
+     * `rooms` lookup and the owning area's `rooms` array — the same object in
+     * both, which is what the area's `createPlanes()` rebuilds from.
+     */
+    private removeRoomLive(
+        rooms: Record<number, MapData.Room>,
+        roomId: number,
+        affectedAreas: Set<number>,
+    ): boolean {
+        const room = rooms[roomId];
+        if (!room) {
+            return false;
+        }
+        const area: any = (this.mapReader as any).areas?.[room.area];
+        const areaRooms: MapData.Room[] | undefined = area?.area?.rooms;
+        if (areaRooms) {
+            const index = areaRooms.findIndex(candidate => candidate.id === roomId);
+            if (index !== -1) {
+                areaRooms.splice(index, 1);
+            }
+        }
+        delete rooms[roomId];
+        if (room.hash) {
+            delete this.hashes[room.hash];
+        }
+        const internalId = room.userData?.internal_id;
+        if (internalId) {
+            delete this.internalIds[internalId];
+        }
+        affectedAreas.add(room.area);
+        return true;
+    }
+
+    /**
+     * Add a room to the live map, registering it in both places the reader
+     * tracks rooms. Returns undefined when the target area is unknown, since a
+     * room outside any area would never be drawn.
+     */
+    private createRoomLive(
+        rooms: Record<number, MapData.Room>,
+        change: RoomChange,
+    ): MapData.Room | undefined {
+        const areaId = change.area;
+        if (areaId === undefined) {
+            return undefined;
+        }
+        const area: any = (this.mapReader as any).areas?.[areaId];
+        const areaRooms: MapData.Room[] | undefined = area?.area?.rooms;
+        if (!areaRooms) {
+            return undefined;
+        }
+
+        // Field values arrive via the normal patch pass below; this is only a
+        // well-formed shell so the renderer never sees a half-built room.
+        const room = {
+            id: change.roomId,
+            area: areaId,
+            x: 0,
+            y: 0,
+            z: 0,
+            weight: 1,
+            roomChar: "",
+            name: "",
+            env: 0,
+            hash: "",
+            userData: {},
+            customLines: {},
+            stubs: [],
+            exits: {},
+            doors: {},
+            specialExits: {},
+        } as unknown as MapData.Room;
+
+        rooms[change.roomId] = room;
+        areaRooms.push(room);
+        return room;
+    }
+
+    /**
+     * Apply in-memory edits to the loaded map and refresh whatever they invalidate.
+     *
+     * Rooms handed out by the reader are live objects, so mutating a field is the
+     * easy part; the work is that the renderer caches per-area geometry and the
+     * pathfinder caches exits, so a bare mutation either does not show up or
+     * leaves routing stale. This is the same sequence the labyrinth and tide
+     * scripts perform by hand, exposed so callers outside this module (notably
+     * plugins, via `api.map.applyChanges`) can do it correctly.
+     *
+     * Edits are memory-only and vanish when map data reloads.
+     *
+     * @returns how many rooms actually changed.
+     */
+    applyRoomChanges(changes: RoomChange[], options?: ApplyChangesOptions): number {
+        if (!this.mapReader || changes.length === 0) {
+            return 0;
+        }
+        const rooms: Record<number, MapData.Room> = (this.mapReader as any).rooms;
+        const affectedAreas = new Set<number>();
+        let changed = 0;
+
+        for (const change of changes) {
+            const op = change.op ?? "patch";
+
+            if (op === "delete") {
+                if (this.removeRoomLive(rooms, change.roomId, affectedAreas)) {
+                    changed++;
+                }
+                continue;
+            }
+
+            let room = rooms[change.roomId];
+            if (!room && op === "upsert") {
+                room = this.createRoomLive(rooms, change) as MapData.Room;
+                if (room) {
+                    changed++;
+                    affectedAreas.add(room.area);
+                }
+            }
+            if (!room) {
+                continue;
+            }
+            let touched = false;
+
+            if (change.name !== undefined && change.name !== room.name) {
+                room.name = change.name;
+                touched = true;
+            }
+            if (change.roomChar !== undefined && change.roomChar !== room.roomChar) {
+                room.roomChar = change.roomChar;
+                touched = true;
+            }
+            if (change.env !== undefined && change.env !== room.env) {
+                room.env = change.env;
+                touched = true;
+            }
+            if (change.weight !== undefined && change.weight !== room.weight) {
+                room.weight = change.weight;
+                touched = true;
+            }
+            // Coordinates feed the per-area geometry, so a move needs the area
+            // rebuild below to actually shift on screen.
+            if (change.x !== undefined && change.x !== room.x) {
+                room.x = change.x;
+                touched = true;
+            }
+            if (change.y !== undefined && change.y !== room.y) {
+                room.y = change.y;
+                touched = true;
+            }
+            if (change.z !== undefined && change.z !== room.z) {
+                room.z = change.z;
+                touched = true;
+            }
+            if (change.exits) {
+                room.exits = {...change.exits} as Record<MapData.direction, number>;
+                touched = true;
+            }
+            if (change.specialExits) {
+                room.specialExits = {...change.specialExits};
+                touched = true;
+            }
+            if (change.userData) {
+                room.userData ||= {};
+                for (const [key, value] of Object.entries(change.userData)) {
+                    if (value === null) {
+                        delete room.userData[key];
+                    } else {
+                        room.userData[key] = value;
+                    }
+                    // internal_id feeds a lookup index built at load time, so it
+                    // has to be kept in step or getRoomIdByInternalId goes stale.
+                    if (key === "internal_id") {
+                        if (value === null) {
+                            delete this.internalIds[room.userData[key]];
+                        } else {
+                            this.internalIds[value] = change.roomId;
+                        }
+                    }
+                }
+                touched = true;
+            }
+
+            if (touched) {
+                changed++;
+                affectedAreas.add(room.area);
+            }
+        }
+
+        if (changed === 0) {
+            return 0;
+        }
+
+        if (options?.rebuildAreas !== false) {
+            const areas: Record<number, any> = (this.mapReader as any).areas;
+            for (const areaId of affectedAreas) {
+                const area = areas[areaId];
+                if (!area) {
+                    continue;
+                }
+                area.planes = area.createPlanes();
+                area.exits = new Map();
+                area.createExits();
+                area.markDirty();
+            }
+        }
+        if (options?.rebuildPaths !== false) {
+            this.pathFinder = new PathFinder(this.mapReader as any);
+        }
+        if (options?.rerender !== false && this.currentRoom) {
+            this.renderRoomById(this.currentRoom.id);
+        }
+        this.emitAreasChanged([...affectedAreas]);
+
+        return changed;
     }
 
     getRoomById(id: number): MapData.Room | null {
