@@ -391,6 +391,20 @@ Two deliberate exclusions:
 cached answer at once with no KV sweep — which matters, since a sweep would burn
 the delete allowance.
 
+### What a cache entry holds
+
+The key is a truncated SHA-256, so it says nothing about what was asked. Each
+entry therefore stores its **normalized** question alongside the answer, which
+is what makes a `wrangler kv key list` / `kv get` sweep worth running: you can
+see which questions are actually being asked (the ones worth hand-writing into
+the knowledge bundle) and spot-check whether the cached answer is any good.
+
+It is the normalized form only — never the raw text a user typed. Diacritics,
+punctuation, phrasing and filler are already gone by then, which is most of what
+makes free text identifying. Entries written before this field existed are still
+served; they just have nothing to show. Nothing else records the question:
+the `[ask]` log line deliberately omits it.
+
 **There is nothing to bump.** `KB_VERSION` is derived:
 
 ```

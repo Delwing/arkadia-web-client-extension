@@ -37,6 +37,21 @@ export interface CachedAnswer {
     /** Epoch ms when it was generated. */
     createdAt: number;
     kbVersion: string;
+    /**
+     * The normalized question this answer was generated for — the same canonical
+     * form the cache key hashes, never the raw text the user typed.
+     *
+     * Without it the cache is opaque: the key is a truncated SHA-256 and the
+     * stored value carries no hint of what was asked, so there is no way to check
+     * whether a cached answer is any good, or to see which questions are worth
+     * hand-writing into the knowledge bundle. Storing the normalized form makes a
+     * KV listing readable while keeping out the diacritics, punctuation, phrasing
+     * and filler that make raw text identifying.
+     *
+     * Optional on read only: entries written before this field existed are still
+     * served, they just have nothing to show.
+     */
+    normalizedQuestion?: string;
 }
 
 export type CacheTier = 'edge' | 'kv' | null;

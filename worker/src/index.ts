@@ -13,7 +13,7 @@
 
 import { loadConfig, isOriginAllowed } from './config';
 import { AnswerCache, type CachedAnswer } from './cache';
-import { cacheKey, isCacheable } from './normalize';
+import { cacheKey, isCacheable, normalizeQuestion } from './normalize';
 import { PoolHealth } from './poolHealth';
 import { buildUserMessage, PROMPT_VERSION } from './prompt';
 import { route } from './router';
@@ -165,6 +165,7 @@ async function handleAsk(
     const kbVersion =
         typeof body.kbVersion === 'string' && body.kbVersion ? body.kbVersion : KB_VERSION;
     const cacheable = isCacheable(question);
+    const normalizedQuestion = normalizeQuestion(question);
     // Keyed on the prompt fingerprint too, not just the bundle: a persona or
     // section-order change alters every answer, and without this the cache keeps
     // serving the ones produced by the previous prompt.
@@ -277,6 +278,9 @@ async function handleAsk(
                                 source: event.source,
                                 createdAt: Date.now(),
                                 kbVersion: KB_VERSION,
+                                // Normalized, not raw: enough to tell what a cached
+                                // answer is for, without storing what a user typed.
+                                normalizedQuestion,
                             };
                             ctx.waitUntil(cache.put(key, value));
                         }

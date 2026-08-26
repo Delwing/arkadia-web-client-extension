@@ -24,6 +24,7 @@ const ANSWER: CachedAnswer = {
     source: 'gemini-1',
     createdAt: 1_700_000_000_000,
     kbVersion: 'v1',
+    normalizedQuestion: 'ustawic trigger zabicie',
 };
 
 function make(kv?: FakeKV, edge?: FakeEdgeCache, kvWrites = true) {
@@ -106,6 +107,33 @@ describe('AnswerCache', () => {
         const cache = make(kv, new FakeEdgeCache());
         await expect(cache.get('key')).resolves.toMatchObject({ value: null });
         await expect(cache.put('key', ANSWER)).resolves.toBeUndefined();
+    });
+
+    it('preserves the normalized question through both tiers', async () => {
+        // The whole point of the field: a KV listing has to be readable, and a
+        // cross-colo (KV) hit has to carry it just as an edge hit does.
+        const kv = new FakeKV();
+        const edge = new FakeEdgeCache();
+        await make(kv, edge).put('key', ANSWER);
+
+        const edgeHit = await make(new FakeKV(), edge).get('key');
+        expect(edgeHit.value?.normalizedQuestion).toBe('ustawic trigger zabicie');
+
+        const kvHit = await make(kv, new FakeEdgeCache()).get('key');
+        expect(kvHit.value?.normalizedQuestion).toBe('ustawic trigger zabicie');
+    });
+
+    it('still serves entries written before the field existed', async () => {
+        // Nothing invalidates the cache on deploy — kbVersion does — so legacy
+        // entries keep being read and must not be treated as poisoned.
+        const kv = new FakeKV();
+        const legacy = { ...ANSWER } as Partial<CachedAnswer>;
+        delete legacy.normalizedQuestion;
+        await kv.put('key', JSON.stringify(legacy));
+
+        const result = await make(kv, new FakeEdgeCache()).get('key');
+        expect(result.value?.answer).toBe(ANSWER.answer);
+        expect(result.value?.normalizedQuestion).toBeUndefined();
     });
 
     it('preserves proposals across the round trip', async () => {
