@@ -28,17 +28,8 @@ const STORAGE_KEY = 'proxySessionId';
 export const DEFAULT_SESSION_PROXY_URL: string =
     import.meta.env.VITE_SESSION_PROXY_URL ?? 'wss://dargoth-client.wilczyn.ski/attach';
 
-/**
- * BRANCH ONLY — every connection goes through the session proxy, ignoring any stored
- * choice, so testers get resumable sessions without configuring anything and without
- * stale localStorage from an earlier visit deciding otherwise.
- *
- * This must not reach master as-is. Everyone behind the proxy shares one IP, which
- * anti-multiplaying rules and per-player moderation assume is distinct — that is a
- * conversation with Arkadia's admins, not a default anyone inherits from a deploy.
- * Merging means turning this into a real setting first.
- */
-export const FORCE_SESSION_PROXY = true;
+// Nothing forces the proxy on. Choosing proxy mode gets you this one; choosing direct,
+// or leaving the default alone, is untouched by any of this.
 
 /** The proxy requires 20-200 characters; 32 hex is 128 bits of entropy. */
 function generateId(): string {
