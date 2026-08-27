@@ -20,13 +20,16 @@ proxy.example.com {
 		respond "not found" 404
 	}
 
-	# Session ids appear in the query string and are credentials — they attach to a
-	# logged-in character. Keep them out of the access log.
+	# Session ids ride in the query string and are credentials — they attach to a
+	# logged-in character. Drop the URI from the access log entirely rather than
+	# writing every player's session id to disk.
 	log {
 		output file /var/log/caddy/session-proxy.log
-		format json
-		request_body {
-			max_size 0
+		format filter {
+			wrap json
+			fields {
+				request>uri delete
+			}
 		}
 	}
 }
