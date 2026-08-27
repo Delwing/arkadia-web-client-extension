@@ -527,6 +527,12 @@ export function load(): UiSettings {
             const gateAsFunctionalBind = typeof parsed.gateAsFunctionalBind === 'boolean'
                 ? parsed.gateAsFunctionalBind
                 : defaultUiSettings.gateAsFunctionalBind;
+            const dismountOnRefusedRide = typeof parsed.dismountOnRefusedRide === 'boolean'
+                ? parsed.dismountOnRefusedRide
+                : defaultUiSettings.dismountOnRefusedRide;
+            const carriageRouteBinds = typeof parsed.carriageRouteBinds === 'boolean'
+                ? parsed.carriageRouteBinds
+                : defaultUiSettings.carriageRouteBinds;
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
@@ -596,6 +602,8 @@ export function load(): UiSettings {
                 keepMultibindsVisible,
                 drinkableAsFunctionalBind,
                 gateAsFunctionalBind,
+                dismountOnRefusedRide,
+                carriageRouteBinds,
                 wakeLock,
                 commandEcho,
                 showTimestamps,

@@ -12,6 +12,8 @@ export type UiSettingsEventPayload = {
     keepMultibindsVisible?: boolean;
     drinkableAsFunctionalBind?: boolean;
     gateAsFunctionalBind?: boolean;
+    dismountOnRefusedRide?: boolean;
+    carriageRouteBinds?: boolean;
     wakeLock?: boolean;
     commandEcho?: boolean;
 } & Record<string, unknown>;

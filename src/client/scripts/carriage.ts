@@ -4,11 +4,14 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {characterStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus.ts";
 import {createColorFormat} from "@modules/core/Colors";
+import {getBehaviorSettings} from "@modules/core/settings";
+import {getLongDir} from "@shared/map/directions";
 
 const STORAGE_KEY = 'carriages';
 
 /** The ride is over and it is your move — worth picking out of the travel prose. */
 const RIDE_HALTED_COLOR = createColorFormat('#ffff00');
+const PLAIN = createColorFormat('#dddddd');
 
 /** How long the full deposit stays refundable after leasing. Past it the stable keeps a part of it. */
 const DEPOSIT_VALID_MS = 6 * 60 * 60 * 1000;
@@ -172,10 +175,40 @@ export default function initCarriage(
         client.carriageStopCommand = noun ? `zatrzymaj ${noun}` : null;
     };
 
+    /** Latest step along the route we are leading by carriage, if any. */
+    let routeStep: { nextCommand: string | null; atTransfer: boolean } = {nextCommand: null, atTransfer: false};
+
+    /**
+     * Offer what to do next while the wagon is standing still on a led route.
+     *
+     * Only while stopped: those are the moments the decision is yours - a junction, a dead end -
+     * and setting the bind on every room passed would print a line each time. At the transfer point
+     * the offer is the way out instead, which is the whole reason the route has a leg on foot.
+     */
+    const offerRouteBind = () => {
+        if (!client.carriageMode || moving || getBehaviorSettings().carriageRouteBinds === false) {
+            clearOwnBind();
+            return;
+        }
+        if (routeStep.atTransfer) {
+            const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
+            if (noun) setBind(`zsiadz z ${noun}`);
+            return;
+        }
+        if (routeStep.nextCommand) setBind(routeStep.nextCommand);
+        else clearOwnBind();
+    };
+
+    client.on('carriageRouteStep', step => {
+        routeStep = step ?? {nextCommand: null, atTransfer: false};
+        offerRouteBind();
+    });
+
     const setMoving = (value: boolean) => {
         if (moving === value) return;
         moving = value;
         publishStopCommand();
+        offerRouteBind();
         eventBus.emit('carriages.updated', {carriages: entries()});
     };
 
@@ -246,7 +279,9 @@ export default function initCarriage(
         if (currentKey === key) currentKey = null;
         stopMoving();
         const all = load();
-        if (!all[key]) return;
+        // Already on the ground: a second dismount line must not move the spot we recorded when we
+        // actually got off, which by then is a room or more behind us.
+        if (!all[key]?.driving) return;
         all[key].driving = false;
         all[key].parkedIn = currentRoomId();
         save(all);
@@ -260,6 +295,48 @@ export default function initCarriage(
         if (!currentKey) return;
         park();
         setCarriageMode(false);
+    };
+
+    /**
+     * Stay down long enough - past about half an hour - and there is no reconnect at all: the next
+     * login is a fresh session, announced only by the object number changing. The wagon was parked
+     * by the game long ago, so record it where we last were rather than leaving it marked as ridden
+     * for ever.
+     *
+     * The map persists the last room it rendered, and nothing has moved us yet at this point, so
+     * that value is still the room we were in when the link dropped.
+     */
+    const newSession = () => {
+        if (!currentKey) return;
+        const lastKnown = characterStorage.get('mapperRoomId');
+        const key = currentKey;
+        currentKey = null;
+        stopMoving();
+        setCarriageMode(false);
+
+        const all = load();
+        if (!all[key]) return;
+        all[key].driving = false;
+        if (typeof lastKnown === 'number') all[key].parkedIn = lastKnown;
+        save(all);
+
+        // Where it went is a guess from the last room we saw, so it is worth spotting in the login
+        // wall of text - and worth being one click from checking.
+        const parked = VEHICLE_GENDER[nounOf(key)] === 'f' ? 'zostala zaparkowana' : 'zostal zaparkowany';
+        const note = new AnsiAwareBuffer();
+        note.append(`${all[key].name} ${parked}`, RIDE_HALTED_COLOR);
+        if (typeof lastKnown === 'number') {
+            note.append(' w ', RIDE_HALTED_COLOR);
+            const label = roomLabel(lastKnown) ?? String(lastKnown);
+            const start = note.length;
+            note.append(label, PLAIN);
+            note.createLink([start, start + label.length], {
+                onClick: () => client.sendEvent('leadTo', lastKnown),
+                title: `Kliknij aby prowadzic do: ${label}`,
+            });
+        }
+        note.append('.', RIDE_HALTED_COLOR);
+        client.println(note);
     };
 
     const forget = (key: string) => {
@@ -359,8 +436,10 @@ export default function initCarriage(
         if (key) forget(key);
         return disable(line);
     }, "carriageMode");
-    // Substring, not an anchored pattern: the reconnect notice carries other text around it.
-    client.Triggers.registerTrigger('przywracam polaczenie', line => {
+    // Two wordings depending on how long the link was down - "... przywracam polaczenie ..." for a
+    // short drop, "polaczenie zostalo przywrocone" for a longer one - and both carry other text
+    // around them, so this is unanchored.
+    client.Triggers.registerTrigger(/przywracam polaczenie|polaczenie zostalo przywrocone/, line => {
         reconnected();
         return line;
     }, "carriageMode");
@@ -441,6 +520,55 @@ export default function initCarriage(
     }, "carriageMode");
 
     // The map asks on load, and again after a map reload drops its overlays.
+    // A fresh session after a long drop arrives with no reconnect line, only a new object number.
+    /**
+     * The way the game just refused to take us, and where we stood when it did.
+     *
+     * Kept so repeating the command can mean "fine, I will walk it". Cleared as soon as we move,
+     * since the refusal only ever applied to that one exit from that one room.
+     */
+    let refused: { exit: string; roomId: number | null } | null = null;
+
+    client.Triggers.registerTrigger(/^Nie mozna jechac na (.+)\.$/, (line, matches) => {
+        refused = {exit: matches[1].toLowerCase(), roomId: currentRoomId()};
+        return line;
+    }, "carriageMode");
+
+    client.on('enterLocation', () => { refused = null; });
+
+    /**
+     * Turn a repeat of a refused ride into "get off, then walk it".
+     *
+     * Two commands, so the dismount lands first. Carriage mode is dropped here rather than waiting
+     * for the game's "Zsiadasz" line, because the walking command is composed immediately after and
+     * would otherwise be dressed up as "jedz na ..." all over again.
+     */
+    client.registerCommandHook('carriage-dismount-on-refusal', (command) => {
+        if (!refused || !client.carriageMode) return undefined;
+        if (getBehaviorSettings().dismountOnRefusedRide !== true) return undefined;
+        // The refusal names the direction in full ("Nie mozna jechac na poludnie.") while the
+        // command that provoked it is usually the short form, so both go through the same
+        // normalisation. A special exit has no long form and compares as itself.
+        if (getLongDir(command.trim().toLowerCase()) !== getLongDir(refused.exit)) return undefined;
+        if (refused.roomId !== null && refused.roomId !== currentRoomId()) return undefined;
+
+        const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
+        if (!noun) return undefined;
+
+        // Walk with the command as given, not the long form the refusal used, so the second half is
+        // exactly what would have been sent on foot in the first place.
+        const walk = command.trim();
+        refused = null;
+        // Park before the pair goes out. The walk advances the mapper as soon as it is sent, well
+        // before the game's "Zsiadasz" line comes back, so leaving it to that trigger would record
+        // the room we are heading to rather than the one we are leaving the wagon in.
+        park();
+        setCarriageMode(false);
+        return `zsiadz z ${noun};${walk}`;
+    });
+
+    client.on('reset', () => newSession());
+
     client.on('requestMapParkedCarriages', () => publishMarkers());
     publishMarkers();
     // Covers the other side of the race with the popup: whichever of the two comes up second, one

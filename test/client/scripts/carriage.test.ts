@@ -4,6 +4,7 @@ import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { EventEmitter } from 'events';
 import eventBus from '@modules/core/eventBus';
+import { setBehaviorSettings } from '@modules/core/settings';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -11,6 +12,8 @@ class FakeClient {
   aliases: { pattern: RegExp; callback: Function }[] = [];
   carriageMode = false;
   carriageStopCommand: string | null = null;
+  commandHooks: Array<(cmd: string, echo?: boolean, opts?: any) => any> = [];
+  registerCommandHook(_id: string, cb: any) { this.commandHooks.push(cb); }
   moveModeButton = document.createElement('input');
   println = jest.fn();
   sendCommand = jest.fn();
@@ -512,6 +515,63 @@ describe('carriage bookkeeping', () => {
     expect(client.lastEvent('mapParkedCarriages')).toEqual([{ roomId: 1234, label: 'woz' }]);
   });
 
+  test('parks on the longer reconnect wording too', () => {
+    client.Map.currentRoom = { id: 8555 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    client.Map.currentRoom = { id: 1234 };
+    // A drop of more than a few minutes is announced differently, and does not contain the phrase
+    // the short form uses.
+    parse('Twoje polaczenie zostalo przywrocone. Straciles polaczenie na 24 minuty 35 sekund.');
+
+    expect(client.carriageMode).toBe(false);
+    expect(records()[carriageKey('nieduzy jednokonny woz')!].parkedIn).toBe(1234);
+  });
+
+  test('a fresh session after a long drop parks the carriage where we last were', () => {
+    client.Map.currentRoom = { id: 8555 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    // The map persists the last room it rendered; nothing has moved us in the new session yet.
+    characterStorage.set('mapperRoomId', 4242);
+
+    // No reconnect line arrives at all — only the object number changing.
+    client.sendEvent('reset');
+
+    const record = records()[carriageKey('nieduzy jednokonny woz')!];
+    expect(record.driving).toBe(false);
+    expect(record.parkedIn).toBe(4242);
+    expect(client.carriageMode).toBe(false);
+    expect(client.lastEvent('mapParkedCarriages')).toEqual([{ roomId: 4242, label: 'woz' }]);
+
+    // Where it went is only a guess, so the notice has to stand out and lead somewhere.
+    const note = client.println.mock.calls.at(-1)![0];
+    expect(note.text).toContain('zostal zaparkowany');
+    expect(note.getSegments().some((s: any) => s.state?.foreground?.color === '#ffff00')).toBe(true);
+    const link = note
+      .getSegments()
+      .map((s: any) => s.state?.hyperlink)
+      .find((h: any) => h?.onClick);
+    expect(link).toBeDefined();
+    link.onClick();
+    expect(client.sendEvent).toHaveBeenCalledWith('leadTo', 4242);
+  });
+
+  test('agrees the parked notice with the vehicle it is about', () => {
+    parse('Siadasz w malej bryczce.');
+    characterStorage.set('mapperRoomId', 11);
+    client.sendEvent('reset');
+    expect(client.println.mock.calls.at(-1)![0].text).toContain('zostala zaparkowana');
+  });
+
+  test('a fresh session on foot leaves the records alone', () => {
+    client.Map.currentRoom = { id: 1234 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    parse('Zsiadasz z nieduzego jednokonnego wozu.');
+    characterStorage.set('mapperRoomId', 9999);
+
+    client.sendEvent('reset');
+    expect(records()[carriageKey('nieduzy jednokonny woz')!].parkedIn).toBe(1234);
+  });
+
   test('a reconnect on foot changes nothing', () => {
     client.Map.currentRoom = { id: 1234 };
     parse('Siadasz na nieduzym jednokonnym wozie.');
@@ -553,6 +613,118 @@ describe('carriage bookkeeping', () => {
     expect(genderOf('Siadasz na lekkim wozie.')).toBe('m');
     parse('Zsiadasz z lekkiego wozu.');
     expect(genderOf('Siadasz w wygodnym dylizansie.')).toBe('m');
+  });
+
+  describe('route binds while leading by carriage', () => {
+    beforeEach(() => {
+      setBehaviorSettings({ carriageRouteBinds: true });
+      parse('Siadasz na nieduzym jednokonnym wozie.');
+    });
+
+    test('offers the next step while the wagon stands still', () => {
+      client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
+      expect(client.bindSlot.printable).toBe('w');
+    });
+
+    test('offers the way out once we are at the transfer point', () => {
+      client.sendEvent('carriageRouteStep', { nextCommand: null, atTransfer: true });
+      expect(client.bindSlot.printable).toBe('zsiadz z wozu');
+    });
+
+    test('takes the offer away while rolling and brings it back on stopping', () => {
+      client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
+      parse('Nieduzy jednokonny woz rusza na zachod.');
+      expect(client.bindSlot.printable).toBeNull();
+
+      parse('Nieduzy jednokonny woz zatrzymuje sie.');
+      expect(client.bindSlot.printable).toBe('w');
+    });
+
+    test('re-offers when the route changes under us', () => {
+      client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
+      // A blockade learned here sends us a different way.
+      client.sendEvent('carriageRouteStep', { nextCommand: 'nw', atTransfer: false });
+      expect(client.bindSlot.printable).toBe('nw');
+    });
+
+    test('drops the offer when leading ends', () => {
+      client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
+      client.sendEvent('carriageRouteStep', { nextCommand: null, atTransfer: false });
+      expect(client.bindSlot.printable).toBeNull();
+    });
+
+    test('stays quiet while the option is off', () => {
+      setBehaviorSettings({ carriageRouteBinds: false });
+      client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
+      expect(client.bindSlot.printable).toBeNull();
+    });
+
+    test('stays quiet on foot', () => {
+      parse('Zsiadasz z nieduzego jednokonnego wozu.');
+      client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
+      expect(client.bindSlot.printable).toBeNull();
+    });
+  });
+
+  describe('repeating a refused ride', () => {
+    const hookFor = (command: string) => {
+      const hook = client.commandHooks.at(-1)!;
+      return hook(command, true, undefined);
+    };
+
+    beforeEach(() => {
+      setBehaviorSettings({ dismountOnRefusedRide: true });
+      client.Map.currentRoom = { id: 100 };
+      parse('Siadasz na nieduzym jednokonnym wozie.');
+      parse('Nie mozna jechac na poludnie.');
+    });
+
+    test('matches the short form of the direction the refusal spelled out', () => {
+      // The game refuses with "poludnie"; the key you press sends "s". Comparing the two verbatim
+      // meant the repeat never matched and nothing happened at all.
+      expect(hookFor('s')).toBe('zsiadz z wozu;s');
+      // Dropped here rather than waiting for "Zsiadasz", or the walk would be dressed up again.
+      expect(client.carriageMode).toBe(false);
+    });
+
+    test('matches the long form too', () => {
+      expect(hookFor('poludnie')).toBe('zsiadz z wozu;poludnie');
+    });
+
+    test('parks where we got off, not where we are heading', () => {
+      const key = carriageKey('nieduzy jednokonny woz')!;
+      hookFor('s');
+      const parked = (characterStorage.get('carriages') ?? {})[key];
+      expect(parked.parkedIn).toBe(100);
+      expect(parked.driving).toBe(false);
+
+      // The walk advances the mapper immediately, so the game's dismount line arrives a room late.
+      client.Map.currentRoom = { id: 200 };
+      parse('Zsiadasz z nieduzego jednokonnego wozu.');
+      expect((characterStorage.get('carriages') ?? {})[key].parkedIn).toBe(100);
+    });
+
+    test('only for the way that was actually refused', () => {
+      expect(hookFor('n')).toBeUndefined();
+      expect(hookFor('polnoc')).toBeUndefined();
+      expect(client.carriageMode).toBe(true);
+    });
+
+    test('only once - a later attempt is an ordinary command again', () => {
+      hookFor('s');
+      expect(hookFor('s')).toBeUndefined();
+    });
+
+    test('not after moving somewhere else', () => {
+      client.sendEvent('enterLocation', { id: 200 });
+      expect(hookFor('s')).toBeUndefined();
+    });
+
+    test('does nothing while the option is off', () => {
+      setBehaviorSettings({ dismountOnRefusedRide: false });
+      expect(hookFor('s')).toBeUndefined();
+      expect(client.carriageMode).toBe(true);
+    });
   });
 
   test('publishes the halt command only while rolling', () => {

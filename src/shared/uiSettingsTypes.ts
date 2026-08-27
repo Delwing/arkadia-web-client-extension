@@ -95,6 +95,10 @@ export interface BehaviorSettings {
     instantMove: boolean;
     drinkableAsFunctionalBind: boolean;
     gateAsFunctionalBind: boolean;
+    /** Repeat a refused ride to get off and walk it instead, as two commands. */
+    dismountOnRefusedRide: boolean;
+    /** Offer the next step, or the way out, on the functional bind while leading by carriage. */
+    carriageRouteBinds: boolean;
     teamNumberingMode: 'letters' | 'numbers';
     objectContextMenuCommands: string[];
 }
