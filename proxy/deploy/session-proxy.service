@@ -5,7 +5,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/opt/session-proxy/session-proxy -addr 127.0.0.1:8080 -ttl 10m
+ExecStart=/opt/session-proxy/session-proxy -addr 127.0.0.1:8080 -ttl 25m
 # A restart drops every live session, so this exists for crashes, not for deploys.
 # Deploy when nobody is playing.
 Restart=always
