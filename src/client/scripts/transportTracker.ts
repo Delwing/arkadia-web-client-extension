@@ -255,9 +255,26 @@ class Tracker {
     }
 
     private goIdle(): void {
-        this.stagedSet.clear();
+        this.stageCurrentDirection();
         this.clearBind();
         this.go({ kind: 'idle' });
+    }
+
+    /**
+     * Getting off does not make the vehicle forget where it is headed. Carry a known next leg over
+     * as a staged direction so re-boarding at the same dock does not fall back to guessing from the
+     * location alone — at a hub both directions pass through (Rozrog on the Novigrad - Baccala run)
+     * that guess is ambiguous, and the journey then shows no destination until the next arrival.
+     * Anything else — mid-leg, or a direction we never resolved — is not worth keeping.
+     */
+    private stageCurrentDirection(): void {
+        const s = this.state;
+        const atStop = s.kind === 'exiting' || (s.kind === 'on_board' && !s.leg);
+        this.stagedSet.clear();
+        if ((s.kind !== 'on_board' && s.kind !== 'exiting') || !atStop || s.next.size !== 1) return;
+        const stopIdx = [...s.next][0];
+        this.stagedSet.set(s.def, stopIdx);
+        console.log(`${LOG} Kept departure direction across disembark: ${s.def.name} stop ${stopIdx}`);
     }
 
     /**
@@ -528,7 +545,10 @@ class Tracker {
         this.goIdle();
     }
 
-    private onReset(): void { this.goIdle(); }
+    private onReset(): void {
+        this.goIdle();
+        this.stagedSet.clear();
+    }
 
     private onLocationChange(id: number | null): void {
         const moved = id !== this.locationId;

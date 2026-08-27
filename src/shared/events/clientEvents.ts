@@ -18,6 +18,7 @@ import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
 import type {CarriageEntry} from "@client/scripts/carriage.ts";
+import type {RouteSegment} from "@shared/map/transportPathFinder.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 import type {CombatStatsSnapshot} from "@client/scripts/combatStats.ts";
@@ -147,6 +148,10 @@ export interface KnownEvents {
     "renderMapLocation": { locationId: number };
     "stepBack": void;
     "leadTo": number;
+    /** Lead somewhere, boarding ships and coaches on the way (/prowadzt). */
+    "leadToWithTransport": { roomId: number; aggressive?: boolean };
+    /** A route worth explaining has been drawn: which ship to board, where to get off. */
+    "routePlanned": { segments: RouteSegment[]; viaFallback: boolean; aggressive: boolean; driving: boolean };
     "clearLeadTo": void;
     "tripPlanner.leadTo": [number[]];
     "tripPlanner.addStop": { roomId: number };
@@ -294,7 +299,7 @@ export interface KnownEvents {
     "carriages.remove": { key: string };
     "carriages.request": void;
     "carriageBlocks.changed": void;
-    "carriageRoute": { transfer: number; driveRooms: number; walkRooms: number; destinationBlocked: boolean };
+    "carriageRoute": { transfer: number; driveRooms: number; walkRooms: number; destinationBlocked: boolean; boarding: string | null };
     "carriageRouteStep": { nextCommand: string | null; atTransfer: boolean };
     "fishing.popup.open": FishingStatePayload;
     "fishing.state": FishingStatePayload;

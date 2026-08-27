@@ -90,6 +90,7 @@ import initShortExits from './scripts/shortExits'
 import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
 import initMapAliases from './scripts/mapAliases'
+import initRouteInstructions from './scripts/transportLead'
 import { registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
 import { registerCurrentRoomProvider } from '@modules/core/currentRoomProvider'
 import { registerMapDestinationsProvider } from '@modules/core/mapDestinationsProvider'
@@ -194,6 +195,7 @@ export function registerScripts(client: Client) {
     })
     initSoundAliases(client, aliases)
     initMapAliases(client, aliases)
+    initRouteInstructions(client)
     initZaznaczaj(client, aliases)
 
     registerRoomInfoProvider((roomId: number) => {

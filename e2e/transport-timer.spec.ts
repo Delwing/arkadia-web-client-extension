@@ -372,4 +372,45 @@ test.describe('Transport timer', () => {
         }
     });
 
+    test('keeps the known destination when re-boarding at a two-way stop', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        const transportTimer = page.locator('#transport-timer');
+
+        // Novigrad, the southern quay — start of the Charonda run
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 7910,
+            id: 7910,
+            name: 'Poludniowe nabrzeze',
+            zone: 'Novigrad',
+            map: {x: 0, y: 0, name: 'Transport Docks'},
+        });
+        await submitCommand(page, '/ustaw 7910');
+
+        await submitCommand(page, 'wejdz na statek');
+        await pushText(page, 'Wchodzisz na dwumasztowy nilfgaardzki statek.');
+        await pushText(page, 'Statek odbija od brzegu.');
+        await expect(transportTimer, 'should sail towards Rozrog').toContainText('Rozrog');
+
+        // Rozrog is a stop both directions pass through, so the location alone cannot say
+        // which way the ship leaves next
+        await pushText(page, 'Otyly czerwononosy mezczyzna krzyczy: Doplynelismy do przystani w twierdzy Rozrog! Mozna wysiadac!');
+        await expect(transportTimer, 'should announce Baccala as the next leg').toContainText('Baccala');
+
+        // Step off and straight back on without the ship ever leaving
+        await pushText(page, 'Schodzisz ze statku.');
+        await expect(transportTimer, 'should clear timer after stepping off').toBeEmpty();
+
+        await submitCommand(page, 'wejdz na statek');
+        await pushText(page, 'Wchodzisz na dwumasztowy nilfgaardzki statek.');
+        await expect(transportTimer, 'should still know it is heading for Baccala').toContainText('Baccala');
+
+        await pushText(page, 'Statek odbija od brzegu.');
+        await expect(transportTimer, 'should count down the Baccala leg').toContainText('Tr:');
+        await expect(transportTimer, 'should keep Baccala as destination after departure').toContainText('Baccala');
+    });
+
 });

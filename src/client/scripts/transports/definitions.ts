@@ -116,7 +116,16 @@ export interface TransportDef {
     stops: TransportStop[];
 }
 
+// The definitions never change once loaded, and the route planner keys its cached graph on the
+// array it is handed, so the same one has to come back every time.
+let cachedDefs: TransportDef[] | null = null;
+
 export function getTransportDefs(): TransportDef[] {
+    if (!cachedDefs) cachedDefs = buildTransportDefs();
+    return cachedDefs;
+}
+
+function buildTransportDefs(): TransportDef[] {
     return RAW_TRANSPORT_DEFINITIONS.map(([fileKey, raw]) => ({
         name: raw.label ?? fileKey,
         boardCommands: raw.board_commands ?? [],

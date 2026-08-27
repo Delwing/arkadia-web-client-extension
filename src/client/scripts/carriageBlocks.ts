@@ -233,8 +233,14 @@ export default function initCarriageBlocks(
         } else {
             output.append(' — czyli nigdzie, woz sie tu nie przyda', GRAY);
         }
-        output.append('\nDalej pieszo: ', YELLOW);
-        output.append(`${payload.walkRooms} lok.`, WHITE);
+        if (payload.boarding) {
+            output.append('\nDalej statkiem: ', YELLOW);
+            output.append(payload.boarding, WHITE);
+            output.append(` i ${payload.walkRooms} lok. pieszo`, GRAY);
+        } else {
+            output.append('\nDalej pieszo: ', YELLOW);
+            output.append(`${payload.walkRooms} lok.`, WHITE);
+        }
         client.println(output);
     });
 }

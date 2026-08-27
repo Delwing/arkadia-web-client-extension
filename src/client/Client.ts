@@ -1,6 +1,7 @@
 import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
 import {getBlockedRooms} from "@modules/data/carriageBlocks";
+import {getTransportDefs} from "./scripts/transports/definitions";
 import {Colors, setXtermPalette} from "@modules/core/Colors";
 import MovementManager from "./MovementManager";
 import CommandProcessor from "./CommandProcessor";
@@ -72,6 +73,7 @@ export default class Client {
     }, {
         // Only constrains routing while a carriage is actually being driven.
         carriageBlocks: () => (this.carriageMode ? getBlockedRooms() : null),
+        transportDefs: getTransportDefs,
     });
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);

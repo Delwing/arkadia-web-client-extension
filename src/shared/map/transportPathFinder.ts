@@ -1,11 +1,18 @@
-// Transport-augmented Dijkstra. Walks the room-exit graph plus virtual edges
-// for each transport stop (start -> destination, weight = travel time +
-// boarding penalty), returning the result as a list of walk + transport
-// segments so callers can render and execute them.
+// One route planner for every way of getting somewhere: on foot, on a wagon, or aboard a ship or
+// coach. It is a single Dijkstra over a graph with two layers - driving and walking - joined by a
+// one-way "leave the wagon here" edge, so a journey that drives to a dock, leaves the wagon, sails
+// and then walks the last few rooms falls out of one search rather than being stitched together
+// from several.
+//
+// The layers exist because a wagon cannot go everywhere a person can: the driving layer omits the
+// rooms marked as barred and the exits nobody can take while sitting down, and it charges less per
+// room, since driving covers ground faster. Rides belong to both layers - a wagon can be taken
+// aboard a ship - so the wagon is only ever left where it genuinely cannot follow.
 
 import type { MapReader } from "mudlet-map-renderer";
 import type { TransportDef } from "@client/scripts/transports/definitions";
 import { longToShort } from "./directions";
+import { isDrivableExit } from "./exitCommands";
 
 // Boarding penalty represents the expected wait at a dock (transports run on
 // schedule, so on average you wait half a cycle). Set high enough that a
@@ -14,6 +21,24 @@ import { longToShort } from "./directions";
 const BOARDING_PENALTY = 30;
 const TIME_TO_HOP_RATIO = 0.5;
 const DEFAULT_TRANSPORT_TIME = 60;
+
+/**
+ * What leaving the wagon costs.
+ *
+ * Nothing, in practice - but a hair more than nothing, so that a route which can be driven and an
+ * equally good one on foot are not decided by whatever order the heap happens to be in. You are
+ * sitting on a wagon; on a tie, ride.
+ */
+const DISMOUNT_COST = 1e-9;
+
+/**
+ * What one driven room costs relative to one walked room.
+ *
+ * Driving covers ground faster, so the search prefers to travel by wagon wherever that helps. The
+ * value also bounds how far it will detour: at 0.5 the wagon will add two rooms of driving to save
+ * one room of walking, but no more, which rules out riding around a mountain to save a few steps.
+ */
+export const DRIVE_WEIGHT = 0.5;
 
 // Mudlet exitLocks store direction indices (1..12) that resolve to long-form
 // direction names. Mirrors the table in mudlet-map-renderer's MapGraph.
@@ -55,9 +80,21 @@ export interface TransportHop {
     viaStops?: Array<{ roomId: number; label?: string }>;
 }
 
-export type TransportPathSegment =
+export type RouteSegment =
     | { kind: "walk"; rooms: number[] }
-    | ({ kind: "transport" } & TransportHop);
+    | { kind: "drive"; rooms: number[] }
+    | ({ kind: "transport"; /** True when the wagon is taken aboard rather than left behind. */ withWagon: boolean } & TransportHop);
+
+export interface RoutePlanOptions {
+    /** Transports that may be boarded on the way; none by default, for a journey on foot. */
+    defs?: TransportDef[];
+    /** Rooms a wagon may not enter, when the journey starts on one; null or absent when it does not. */
+    carriageBlocked?: ReadonlySet<number> | null;
+    /** Override the per-hop boarding penalty (default: schedule-wait estimate). */
+    boardingPenalty?: number;
+    /** Override the seconds-to-walking-weight conversion (default: 1 s ~ 1 room). */
+    timeToHopRatio?: number;
+}
 
 interface Edge {
     to: number;
@@ -112,16 +149,40 @@ class MinHeap {
     }
 }
 
-export interface TransportPathOptions {
-    /** Override the per-hop boarding penalty (default: schedule-wait estimate). */
-    boardingPenalty?: number;
-    /** Override the seconds-to-walking-weight conversion (default: 1 s ≈ 1 room). */
-    timeToHopRatio?: number;
+/**
+ * Exits a wagon cannot take, worked out from the map itself.
+ *
+ * A multi-word special exit is an action rather than a place - "wejdz na skaly" - and you cannot
+ * perform one while sitting on a wagon; the game refuses with "Nie mozesz tego zrobic, gdyz
+ * siedzisz." So those edges are barred to a carriage without anyone having to mark them.
+ *
+ * An edge is only barred when the same room offers no drivable way to that same target, since a
+ * room may record both "north" and "wejdz na gore" leading to one place.
+ */
+function collectUndrivableEdges(reader: MapReader): Set<string> {
+    const undrivable = new Set<string>();
+    for (const room of reader.getRooms()) {
+        const specialExits = (room as { specialExits?: Record<string, number> }).specialExits;
+        if (!specialExits) continue;
+
+        const drivableTargets = new Set<number>(Object.values(room.exits ?? {}) as number[]);
+        for (const [exit, target] of Object.entries(specialExits)) {
+            if (isDrivableExit(exit)) drivableTargets.add(target);
+        }
+        for (const [exit, target] of Object.entries(specialExits)) {
+            if (!isDrivableExit(exit) && !drivableTargets.has(target)) {
+                undrivable.add(`${room.id}->${target}`);
+            }
+        }
+    }
+    return undrivable;
 }
 
-function buildGraph(reader: MapReader, defs: TransportDef[], opts?: TransportPathOptions): Map<number, Edge[]> {
-    const boardingPenalty = opts?.boardingPenalty ?? BOARDING_PENALTY;
-    const timeToHopRatio = opts?.timeToHopRatio ?? TIME_TO_HOP_RATIO;
+/**
+ * Rooms and the exits between them, as walked. Built once per map: which rooms are barred to a
+ * wagon and which transports run only affect the search, never this graph.
+ */
+function buildWalkGraph(reader: MapReader): Map<number, Edge[]> {
     const graph = new Map<number, Edge[]>();
     const add = (from: number, edge: Edge) => {
         const list = graph.get(from);
@@ -156,10 +217,26 @@ function buildGraph(reader: MapReader, defs: TransportDef[], opts?: TransportPat
         }
     }
 
-    // For each transport, emit edges for every contiguous sub-route on the same
-    // vehicle (a "ride through" several stops without disembarking). The
-    // boarding penalty is paid once per ride, so Dijkstra naturally prefers
-    // staying onboard over exit-and-reboard.
+    return graph;
+}
+
+/**
+ * Virtual edges for the rides themselves: one per contiguous sub-route on the same vehicle (a
+ * "ride through" several stops without disembarking). The boarding penalty is paid once per ride,
+ * so Dijkstra naturally prefers staying onboard over exit-and-reboard.
+ */
+function buildTransportGraph(
+    defs: TransportDef[],
+    boardingPenalty: number,
+    timeToHopRatio: number,
+): Map<number, Edge[]> {
+    const graph = new Map<number, Edge[]>();
+    const add = (from: number, edge: Edge) => {
+        const list = graph.get(from);
+        if (list) list.push(edge);
+        else graph.set(from, [edge]);
+    };
+
     for (const def of defs) {
         const stops = def.stops;
         const n = stops.length;
@@ -205,90 +282,176 @@ function buildGraph(reader: MapReader, defs: TransportDef[], opts?: TransportPat
     return graph;
 }
 
+// Both graphs are pure functions of their inputs and expensive to build on a full map, so they are
+// kept rather than rebuilt - a route is replanned on every step of a journey by wagon.
+const walkGraphs = new WeakMap<MapReader, Map<number, Edge[]>>();
+const undrivableEdges = new WeakMap<MapReader, ReadonlySet<string>>();
+const transportGraphs = new WeakMap<TransportDef[], Map<string, Map<number, Edge[]>>>();
+
+function walkGraphFor(reader: MapReader): Map<number, Edge[]> {
+    let graph = walkGraphs.get(reader);
+    if (!graph) {
+        graph = buildWalkGraph(reader);
+        walkGraphs.set(reader, graph);
+    }
+    return graph;
+}
+
+function undrivableFor(reader: MapReader): ReadonlySet<string> {
+    let edges = undrivableEdges.get(reader);
+    if (!edges) {
+        edges = collectUndrivableEdges(reader);
+        undrivableEdges.set(reader, edges);
+    }
+    return edges;
+}
+
+function transportGraphFor(
+    defs: TransportDef[],
+    boardingPenalty: number,
+    timeToHopRatio: number,
+): Map<number, Edge[]> {
+    let byOptions = transportGraphs.get(defs);
+    if (!byOptions) {
+        byOptions = new Map();
+        transportGraphs.set(defs, byOptions);
+    }
+    const key = `${boardingPenalty}:${timeToHopRatio}`;
+    let graph = byOptions.get(key);
+    if (!graph) {
+        graph = buildTransportGraph(defs, boardingPenalty, timeToHopRatio);
+        byOptions.set(key, graph);
+    }
+    return graph;
+}
+
+/** Rooms are keyed by their id while walking, and by the negative of it while driving. */
+const drivingKey = (roomId: number) => -(roomId + 1);
+const roomOf = (key: number) => (key < 0 ? -key - 1 : key);
+const isDriving = (key: number) => key < 0;
+
 interface PathStep {
-    prev: number;
+    from: number;
     hop?: TransportHop;
 }
 
-export function findTransportPath(
+/**
+ * The way from one room to another, as the legs it is made of: rooms driven, rooms walked, and
+ * rides taken.
+ *
+ * Returns null when there is no way there at all, and an empty list when there is nowhere to go.
+ */
+export function planRoute(
     reader: MapReader,
-    defs: TransportDef[],
     fromId: number,
     toId: number,
-    options?: TransportPathOptions,
-): TransportPathSegment[] | null {
+    options: RoutePlanOptions = {},
+): RouteSegment[] | null {
     if (fromId === toId) return [];
 
-    const graph = buildGraph(reader, defs, options);
-    if (!graph.has(fromId)) return null;
+    const walkGraph = walkGraphFor(reader);
+    if (!walkGraph.has(fromId)) return null;
+    const defs = options.defs ?? [];
+    const transportGraph = defs.length > 0
+        ? transportGraphFor(
+            defs,
+            options.boardingPenalty ?? BOARDING_PENALTY,
+            options.timeToHopRatio ?? TIME_TO_HOP_RATIO,
+        )
+        : null;
+    const blocked = options.carriageBlocked ?? null;
+    const undrivable = blocked ? undrivableFor(reader) : null;
 
-    const dist = new Map<number, number>();
+    // Where we already are counts even when a wagon is not allowed to be there.
+    const start = blocked ? drivingKey(fromId) : fromId;
+    const dist = new Map<number, number>([[start, 0]]);
     const prev = new Map<number, PathStep>();
-    dist.set(fromId, 0);
-
     const heap = new MinHeap();
-    heap.push(fromId, 0);
+    heap.push(start, 0);
 
+    let end: number | null = null;
     while (heap.size > 0) {
-        const { id, dist: d } = heap.pop()!;
-        if (id === toId) break;
-        if (d > (dist.get(id) ?? Infinity)) continue;
+        const { id: key, dist: d } = heap.pop()!;
+        if (d > (dist.get(key) ?? Infinity)) continue;
+        const room = roomOf(key);
+        if (room === toId) {
+            end = key;
+            break;
+        }
 
-        const edges = graph.get(id);
-        if (!edges) continue;
-        for (const edge of edges) {
-            const next = d + edge.cost;
-            if (next < (dist.get(edge.to) ?? Infinity)) {
-                dist.set(edge.to, next);
-                prev.set(edge.to, { prev: id, hop: edge.hop });
-                heap.push(edge.to, next);
+        const relax = (nextKey: number, cost: number, hop?: TransportHop) => {
+            const next = d + cost;
+            if (next < (dist.get(nextKey) ?? Infinity)) {
+                dist.set(nextKey, next);
+                prev.set(nextKey, { from: key, hop });
+                heap.push(nextKey, next);
+            }
+        };
+
+        if (isDriving(key)) {
+            for (const edge of walkGraph.get(room) ?? []) {
+                if (blocked!.has(edge.to)) continue;
+                if (undrivable!.has(`${room}->${edge.to}`)) continue;
+                relax(drivingKey(edge.to), edge.cost * DRIVE_WEIGHT);
+            }
+            // The wagon comes aboard, so we are still driving when the ship ties up.
+            for (const edge of transportGraph?.get(room) ?? []) {
+                relax(drivingKey(edge.to), edge.cost, edge.hop);
+            }
+            // Leaving the wagon behind - the only way between the layers, and one-way: whatever is
+            // left of the journey from here on is made on foot.
+            relax(room, DISMOUNT_COST);
+        } else {
+            for (const edge of walkGraph.get(room) ?? []) {
+                relax(edge.to, edge.cost);
+            }
+            for (const edge of transportGraph?.get(room) ?? []) {
+                relax(edge.to, edge.cost, edge.hop);
             }
         }
     }
 
-    if (!prev.has(toId)) return null;
+    if (end === null) return null;
 
-    interface Step {
-        from: number;
-        to: number;
-        hop?: TransportHop;
+    const steps: Array<{ from: number; to: number; driving: boolean; hop?: TransportHop }> = [];
+    let cursor = end;
+    while (cursor !== start) {
+        const step = prev.get(cursor);
+        if (!step) return null;
+        steps.unshift({
+            from: roomOf(step.from),
+            to: roomOf(cursor),
+            // A step belongs to the layer it stays in; dismounting leaves the driving one.
+            driving: isDriving(step.from) && isDriving(cursor),
+            hop: step.hop,
+        });
+        cursor = step.from;
     }
-    const steps: Step[] = [];
-    let cursor = toId;
-    while (cursor !== fromId) {
-        const p = prev.get(cursor);
-        if (!p) return null;
-        steps.unshift({ from: p.prev, to: cursor, hop: p.hop });
-        cursor = p.prev;
-    }
 
-    const segments: TransportPathSegment[] = [];
-    let walkBuffer: number[] = [];
-
-    const flushWalk = () => {
-        if (walkBuffer.length >= 2) {
-            segments.push({ kind: "walk", rooms: walkBuffer });
-        }
-        walkBuffer = [];
+    const segments: RouteSegment[] = [];
+    let buffer: number[] = [];
+    let bufferKind: "walk" | "drive" = "walk";
+    const flush = () => {
+        if (buffer.length >= 2) segments.push({ kind: bufferKind, rooms: buffer });
+        buffer = [];
     };
 
-    for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
+    for (const step of steps) {
+        if (step.from === step.to) continue; // leaving the wagon: a change of layer, not of place
         if (step.hop) {
-            if (walkBuffer.length > 0) {
-                walkBuffer.push(step.from);
-                flushWalk();
-            }
-            segments.push({ kind: "transport", ...step.hop });
-            walkBuffer = [];
-        } else {
-            if (walkBuffer.length === 0) {
-                walkBuffer.push(step.from);
-            }
-            walkBuffer.push(step.to);
+            flush();
+            segments.push({ kind: "transport", withWagon: step.driving, ...step.hop });
+            continue;
         }
+        const kind = step.driving ? "drive" : "walk";
+        if (kind !== bufferKind) {
+            flush();
+            bufferKind = kind;
+        }
+        if (buffer.length === 0) buffer.push(step.from);
+        buffer.push(step.to);
     }
-    flushWalk();
+    flush();
 
     return segments;
 }

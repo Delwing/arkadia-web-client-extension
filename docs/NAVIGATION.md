@@ -38,13 +38,15 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 
 | Komenda | Opis |
 |---------|------|
-| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju |
+| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |
 | `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |
 | `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |
 | `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |
 | `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |
 
 > **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.
+
+> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.
 
 ## Wyszukiwanie na mapie
 
