@@ -12,6 +12,30 @@ affected players already have set to `jednostronne`. Since Arkadia has no sessio
 restore, a drop costs a full re-login. Moving the socket off the device is the only
 approach that removes the problem rather than reducing it, and it covers iOS too.
 
+## Why not Cloudflare
+
+This was first built as a Durable Object, on the reasoning that the deploy story already
+existed in the client's "host your own proxy" wizard. The measurements killed it, and
+they are worth recording so nobody re-treads the ground — the spike itself is on the
+`spike/session-proxy` branch.
+
+The free plan allows 13,000 GB-s of Durable Object duration and 100,000 requests a day.
+Holding a connection open bills residency for the whole session, and hibernation — the
+usual way to stay cheap — evicts the object from memory, which kills the socket. At 450
+GB-s per player-hour that is **29 player-hours a day**, and WebSocket messages count as
+requests, so the client's own 3-second ping alone spends 2,400 an hour. Both meters land
+in the same place: single-digit concurrent players. Paid works out around $14/month for
+thirty players, which is more than a VPS that also has none of the eviction semantics.
+
+Two implementation traps cost a day each and would cost the same again: a server-side
+WebSocket in a Durable Object delivers binary frames as a `Blob` unless `binaryType` is
+set, and `new Uint8Array(blob)` is silently empty — every write "succeeds" having sent
+nothing. And queued writes must copy their bytes, since `event.data`'s buffer only lives
+for the listener.
+
+Long-lived idle connections are what serverless is priced worst for. A plain process is
+the right tool.
+
 ## Protocol
 
 **Client → proxy** is raw, unframed bytes, exactly as today. Input needs no timestamp,
