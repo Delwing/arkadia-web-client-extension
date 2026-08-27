@@ -117,6 +117,9 @@ export default class Client {
     get carriageMode() { return this.movementManager.carriageMode; }
     set carriageMode(v: boolean) { this.movementManager.carriageMode = v; }
 
+    get carriageStopCommand() { return this.movementManager.carriageStopCommand; }
+    set carriageStopCommand(v: string | null) { this.movementManager.carriageStopCommand = v; }
+
     get preWalkCommands() { return this.movementManager.preWalkCommands; }
     set preWalkCommands(v: string[]) { this.movementManager.preWalkCommands = v; }
 
@@ -286,17 +289,27 @@ export default class Client {
         if (buffer.text.length === 0) {
             return []
         }
+        let result: AnsiAwareBuffer[]
         this.inLineProcess = true
-        this.sendEvent(LINE_START_EVENT)
-        const multilineResult = this.Triggers.parseMultiline(buffer, type)
-        if (multilineResult === null) {
-            this.inLineProcess = false
-            return []
-        }
+        try {
+            this.sendEvent(LINE_START_EVENT)
+            const multilineResult = this.Triggers.parseMultiline(buffer, type)
+            if (multilineResult === null) {
+                return []
+            }
 
-        const split = multilineResult.splitLines()
-        const result = split.map(part => this.Triggers.parseLine(part, type)).filter(part => part !== null)
-        this.inLineProcess = false
+            const split = multilineResult.splitLines()
+            result = split.map(part => this.Triggers.parseLine(part, type)).filter(part => part !== null)
+        } catch (err) {
+            // A throwing trigger must cost us one line, not the whole session: leaving
+            // inLineProcess set would stop print() from ever emitting 'output-sent' again and
+            // freeze all output until reload. The bus swallows what escapes here, so this is also
+            // the only place such a fault becomes visible — log it and show the text unprocessed.
+            console.error('[Client] trigger failed while processing a line', err)
+            return [buffer]
+        } finally {
+            this.inLineProcess = false
+        }
 
         // Merge multiple lines back into a single buffer to keep multiline outputs grouped
         if (result.length > 1) {

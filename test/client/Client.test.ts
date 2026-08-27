@@ -71,6 +71,7 @@ vi.mock('@client/scripts/functionalBind', () => ({
     };
   }),
   formatLabel: jest.fn((opts: any) => opts.key || ''),
+  LINE_START_EVENT: 'line-start',
 }));
 
 
@@ -362,6 +363,33 @@ test('sendCommand expands object shortcuts', async () => {
 
   await client.sendCommand('help @@');
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', false, undefined);
+});
+
+/**
+ * A trigger that throws used to escape onLine() with inLineProcess still true, which permanently
+ * stopped print() from ever emitting 'output-sent' again — one bad line killed the whole output
+ * pipeline until reload. See MapHelper.followMove and the ride prose that provoked it.
+ */
+test('a throwing trigger does not wedge the output pipeline', () => {
+  const client = new Client((global as any).clientAdapterMock as any);
+  (client.Triggers.parseLine as any).mockImplementationOnce(() => {
+    throw new Error('trigger blew up');
+  });
+
+  const err = jest.spyOn(console, 'error').mockImplementation(() => {});
+  let lines: any[] = [];
+  expect(() => { lines = client.onLine('boom', 'mud'); }).not.toThrow();
+  // The text still reaches the screen, just unprocessed, and the fault is logged.
+  expect(lines.map((l: any) => l.text)).toEqual(['boom']);
+  expect(err).toHaveBeenCalled();
+  err.mockRestore();
+  expect(client.inLineProcess).toBe(false);
+
+  const sent: unknown[] = [];
+  const off = eventBus.on('output-sent', () => sent.push(1));
+  client.print('nastepna linia');
+  off?.();
+  expect(sent.length).toBe(1);
 });
 
 }); // describe('Client')
