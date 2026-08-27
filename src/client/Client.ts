@@ -15,6 +15,7 @@ import {characterStorage} from "@modules/core/storage";
 import {getBehaviorSettings, getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import eventBus from "@modules/core/eventBus";
+import {eventNow, runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
 
 import type {HerbManagerApi} from "./types/herbs";
@@ -111,8 +112,6 @@ export default class Client {
     get tempBinds() { return this.keyBindingManager.tempBinds; }
     set tempBinds(v) { this.keyBindingManager.tempBinds = v; }
     inLineProcess = false; //TODO figure out something else
-    /** When the line being processed happened; undefined for live output. See now(). */
-    private eventTime: number | undefined;
     defaultColor = 255;
     buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
     suppressMapMoveEvent = false;
@@ -306,7 +305,7 @@ export default class Client {
      * which is exactly right.
      */
     now(): number {
-        return this.eventTime ?? Date.now()
+        return eventNow()
     }
 
     onLine(line: string, type: string, timestamp?: number): AnsiAwareBuffer[] {
@@ -314,9 +313,12 @@ export default class Client {
         if (buffer.text.length === 0) {
             return []
         }
+        return runWithEventTime(timestamp, () => this.processLine(buffer, type))
+    }
+
+    private processLine(buffer: AnsiAwareBuffer, type: string): AnsiAwareBuffer[] {
         let result: AnsiAwareBuffer[]
         this.inLineProcess = true
-        this.eventTime = timestamp
         try {
             this.sendEvent(LINE_START_EVENT)
             const multilineResult = this.Triggers.parseMultiline(buffer, type)
@@ -335,7 +337,7 @@ export default class Client {
             return [buffer]
         } finally {
             this.inLineProcess = false
-            this.eventTime = undefined
+
         }
 
         // Merge multiple lines back into a single buffer to keep multiline outputs grouped

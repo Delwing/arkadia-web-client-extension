@@ -8,6 +8,7 @@ import {
     resetProxySessionId,
 } from "./proxySession";
 import eventBus from "@modules/core/eventBus";
+import {runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
 import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
@@ -109,8 +110,13 @@ class MudClient implements ClientAdapter {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
-                this.emit(`gmcp.${path}`, value);
-                this.emit('gmcp', {path, value});
+                // GMCP carries most of what the client reacts to — vitals, room, comms —
+                // and it is replayed and recorded like any other output, so its listeners
+                // need the same event clock the text pipeline gets.
+                runWithEventTime(this.currentEventTime, () => {
+                    this.emit(`gmcp.${path}`, value);
+                    this.emit('gmcp', {path, value});
+                });
             },
             onMessage: (text, type) => {
                 this.messageBuffer.push({text, type});
