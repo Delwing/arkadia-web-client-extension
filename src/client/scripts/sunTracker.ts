@@ -207,7 +207,10 @@ export default function initSunTracker(client: Client) {
             type: pendingEvent.type,
             dayOfYear: pendingEvent.dayOfYear,
             observedHour: pendingEvent.observedHour,
-            confirmedAt: Date.now(),
+            // When the event was observed. The two Date.now() calls above are a
+            // correlation window between the sun line and the `czas` reply - both
+            // endpoints shift together under replay, so the wall clock is right there.
+            confirmedAt: client.now(),
         });
         const confirmedDomain = pendingEvent.domain;
         clearPending();
