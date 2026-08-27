@@ -481,6 +481,24 @@ mudClient.on('close', (event) => {
     lastCloseEvent = event;
 });
 
+// Arkadia's "utrzymywanie polaczenia" as the server reports it. Now the single most
+// interesting number in a disconnect report: server->client keepalive data is the only
+// thing that can hold a connection open while the page is frozen, since receiving it
+// needs no JavaScript. `obustronne` would be worse than nothing here — the mud drops a
+// client that fails to answer, and a frozen tab cannot answer.
+let serverKeepalive: number | null = null;
+let serverKeepaliveAllowed: number[] | null = null;
+eventBus.on('gmcp.char.options', (options) => {
+    const value = (options as {keepalive?: unknown})?.keepalive;
+    if (typeof value === 'number') serverKeepalive = value;
+});
+eventBus.on('gmcp.char.options.info', (info) => {
+    const allowed = (info as {keepalive?: unknown})?.keepalive;
+    if (Array.isArray(allowed) && allowed.every(v => typeof v === 'number')) {
+        serverKeepaliveAllowed = allowed as number[];
+    }
+});
+
 // Chrome's Page Lifecycle events. First-hand evidence that the browser suspended
 // us, rather than us inferring it from a timer that came back late — though the
 // absence of a freeze proves nothing, since Android can suspend the whole browser
@@ -569,6 +587,16 @@ const disconnectDiagnostics = (): string[] => {
     }
     lines.push(`  audio-keepalive: ${audioParts.join(', ')}`);
 
+    // Names inferred from the order in `utrzymywanie <wylacz/jednostronne/obustronne>`
+    // and its -/+/++ shorthand; the raw number is printed alongside so a report can
+    // correct the guess rather than hide it.
+    const keepaliveNames: Record<number, string> = {0: 'wylaczone', 1: 'jednostronne', 2: 'obustronne'};
+    const keepalive = serverKeepalive === null
+        ? 'nieznane (serwer nie przyslal char.options)'
+        : `${serverKeepalive}${keepaliveNames[serverKeepalive] ? ` (${keepaliveNames[serverKeepalive]})` : ''}`;
+    const allowed = serverKeepaliveAllowed ? `, dozwolone: ${serverKeepaliveAllowed.join('/')}` : '';
+    lines.push(`  utrzymywanie polaczenia: ${keepalive}${allowed}`);
+
     lines.push(`  tryb polaczenia: ${mudClient.getProxyMode()}`);
 
     return lines;
@@ -590,22 +618,18 @@ mudClient.on('client.disconnect', () => {
     console.log(`Client disconnected from Arkadia server: ${reason}`, diagnostics);
 });
 
-// `core.keepalive` toggling is only useful on Safari (where the original user
-// reported background-tab disconnects). On Chromium/Firefox it causes the
-// opposite problem: telling the server to stop sending data lets the idle TCP
-// connection get killed by browser/server/proxy timeouts.
-const isSafari = /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.userAgent);
-
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         hiddenSince = Date.now();
-        // Deliberately no connection check on the way out. Mobile suspends a
-        // backgrounded tab within moments of this event, so a check armed here can
-        // only ever expire unattended and report a silence nobody was listening for.
-        if (isConnected && isSafari) {
-            mudClient.sendGmcp('core.keepalive', {disabled: true});
-        }
+        // Deliberately nothing else on the way out. Mobile suspends a backgrounded
+        // tab within moments of this event, so a connection check armed here can only
+        // expire unattended and report a silence nobody was listening for — and the
+        // `core.keepalive {disabled: true}` this used to send on Safari turned off the
+        // one mechanism that survives a suspension. Arkadia's "utrzymywanie" sends
+        // data *towards* the player, which needs no JavaScript to receive: the kernel
+        // takes the packets and the carrier's NAT mapping stays open while the page is
+        // frozen. Silencing it was asking for exactly the idle death we then saw.
         return;
     }
 
@@ -632,8 +656,6 @@ document.addEventListener('visibilitychange', () => {
         isConnecting = false;
         isDisconnecting = false;
         updateConnectButtons();
-    } else if (socketOpen && isConnected && isSafari) {
-        mudClient.sendGmcp('core.keepalive', {disabled: false});
     }
 });
 
