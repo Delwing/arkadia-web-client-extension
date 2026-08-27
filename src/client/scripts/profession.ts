@@ -109,7 +109,7 @@ function addPlusPoint(client: Client): void {
         printLog(client, "Zliczanie stazu w zawodzie nie zostalo zainicjalizowane");
         return;
     }
-    state.plus_events.push(Math.floor(Date.now() / 1000));
+    state.plus_events.push(Math.floor(client.now() / 1000));
     setState(state);
     eventBus.emit("profession.updated");
     showPercentage(client);

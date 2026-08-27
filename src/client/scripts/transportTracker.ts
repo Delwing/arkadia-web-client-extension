@@ -429,7 +429,7 @@ class Tracker {
 
         // Record timing
         if (s.kind === 'on_board' && s.leg) {
-            this.recordSegment(def, stopIdx, s.leg.startedAt, Date.now());
+            this.recordSegment(def, stopIdx, s.leg.startedAt, this.client.now());
         }
 
         const next = new Set([(stopIdx + 1) % n]);
@@ -521,7 +521,7 @@ class Tracker {
 
     private startLegIfDeparted(s: { departed?: boolean }, stopIdx: number): Leg | undefined {
         if (!s.departed) return undefined;
-        return { stopIdx, startedAt: Date.now() };
+        return { stopIdx, startedAt: this.client.now() };
     }
 
     private onExit(def: Def): void {

@@ -148,7 +148,7 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
     const castRodPattern = /^Bierzesz .+ zamach i zarzucasz ja daleko w wode\.$/;
 
     client.Triggers.registerTrigger(castRodPattern, (line) => {
-        castTimestamp = Date.now();
+        castTimestamp = client.now();
         setState('fishing');
         line.color([0, line.length], COLOR_CAST);
         return line;

@@ -188,7 +188,7 @@ export default function initDeliveryStats(
 
     function record(late: boolean, gold: number, silver: number, copper: number) {
         records.push({
-            timestamp: Date.now(),
+            timestamp: client.now(),
             late,
             gold,
             silver,

@@ -198,7 +198,7 @@ export default class ImproveCounter extends BaseCounter {
         this.client.on("combatState", (inCombat: boolean) => {
             if (inCombat && this.waitingForFirstCombat) {
                 this.waitingForFirstCombat = false;
-                this.lastTime = Date.now();
+                this.lastTime = this.client.now();
                 this.lastKills = this.getKills();
                 this.persist();
                 this.emitUpdate();
