@@ -487,6 +487,9 @@ mudClient.on('client.disconnect', () => {
 // otherwise indistinguishable from a fresh login that happened to work.
 mudClient.on('proxy.session', (info) => {
     if (!info?.resumed) return;
+    // Already in the world: the login screen has nothing left to ask for.
+    authClosed = true;
+    updateConnectButtons();
     const away = typeof info.sessionAgeMs === 'number'
         ? ` (sesja trwa ${Math.round(info.sessionAgeMs / 1000)} s)`
         : '';
@@ -1152,6 +1155,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         mudClient.on('client.disconnect', clearPendingLogin);
+
+        // A resumed session is already logged in, so nothing armed by the login form
+        // should ever fire. The character-name handler waits for the next line of game
+        // text — which after a resume is ordinary output — and would type the name into
+        // the world as a command; the password handler waits for an echo-off prompt that
+        // is never coming and stays armed until something else triggers it.
+        mudClient.on('proxy.session', (info) => {
+            if (info?.resumed) {
+                clearPendingLogin();
+            }
+        });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
