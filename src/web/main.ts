@@ -792,6 +792,8 @@ document.addEventListener('DOMContentLoaded', () => {
     mudClient.on('client.connect', focusCommandInputOnConnect);
 
     if (contentArea) {
+        const interactiveSelector = 'a, button, input, textarea, select, [contenteditable], .plugin-window, .modal, .managed-panel';
+
         const focusMessageInput = (target: EventTarget | null) => {
             // Check if there's a text selection
             const selection = window.getSelection();
@@ -804,7 +806,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (target.closest('a, button, input, textarea, select, [contenteditable], [data-output-clickable], .plugin-window, .modal, .managed-panel')) {
+            if (target.closest(interactiveSelector)) {
+                return;
+            }
+
+            if (target.closest('[data-output-clickable]')) {
+                // Output links are plain spans, so clicking one drops focus without
+                // moving it anywhere useful. Restore it once the link handler has run,
+                // unless that handler focused something on purpose (modal, editor...).
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    if (active && active !== document.body && active.closest?.(interactiveSelector)) {
+                        return;
+                    }
+                    messageInput.focus();
+                }, 0);
                 return;
             }
 
