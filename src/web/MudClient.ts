@@ -8,7 +8,7 @@ import {
     resetProxySessionId,
 } from "./proxySession";
 import eventBus from "@modules/core/eventBus";
-import {runWithEventTime} from "@shared/eventClock";
+import {eventNow, runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
 import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
@@ -358,16 +358,19 @@ class MudClient implements ClientAdapter {
                         this.negotiateGmcpSupports();
                     }
                     this.echoHandler.processData(data);
-                    this.emit('socket.incoming', data);
-                    try {
-                        // Replayed output describes things that happened while the tab
-                        // was frozen, so pass the server's clock rather than letting
-                        // everything downstream assume "now".
-                        this.processIncomingData(data, frame.at ? {timestamp: frame.at} : undefined);
-                    } catch (processingError) {
-                        console.error('Error during trigger processing:', processingError);
-                        console.error('Line was recorded but not processed:', data.substring(0, 100));
-                    }
+                    // Everything downstream of here runs on the server's clock, not the
+                    // moment we happened to read the frame: `socket.incoming` feeds the
+                    // recorder, which would otherwise record a resumed session with its
+                    // gaps flattened, and processIncomingData carries it on to triggers.
+                    runWithEventTime(frame.at, () => {
+                        this.emit('socket.incoming', data);
+                        try {
+                            this.processIncomingData(data, frame.at ? {timestamp: frame.at} : undefined);
+                        } catch (processingError) {
+                            console.error('Error during trigger processing:', processingError);
+                            console.error('Line was recorded but not processed:', data.substring(0, 100));
+                        }
+                    });
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
@@ -519,7 +522,9 @@ class MudClient implements ClientAdapter {
     }
 
     output(text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) {
-        const ts = typeof timestamp === 'number' ? timestamp : Date.now();
+        // eventNow(), not Date.now(): with per-line timestamps turned on, replayed
+        // output would otherwise all be labelled with the moment the player returned.
+        const ts = typeof timestamp === 'number' ? timestamp : eventNow();
         this.emit('message', text, type, ts)
     }
 

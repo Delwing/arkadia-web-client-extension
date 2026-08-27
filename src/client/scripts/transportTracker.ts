@@ -367,7 +367,10 @@ class Tracker {
         if (this.state.kind !== 'on_board' || this.state.def !== def || this.state.leg) return;
 
         const s = this.state;
-        const now = Date.now();
+        // The departure line is a game event: if it arrives replayed, the leg must be
+        // dated to when the transport actually left, or the timer below starts its
+        // countdown afresh for a journey already underway.
+        const now = this.client.now();
 
         if (s.next.size === 1) {
             const stopIdx = [...s.next][0];

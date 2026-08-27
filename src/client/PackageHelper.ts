@@ -102,7 +102,9 @@ export default function initPackageHelper(client: Client) {
 
     function onPackageList() {
         packages = []
-        listTime = Date.now()
+        // The countdown below runs off this, so a replayed package list must not
+        // appear to have arrived just now and grant extra time.
+        listTime = client.now()
         if (timer) {
             clearInterval(timer)
             timer = undefined
