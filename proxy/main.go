@@ -30,7 +30,7 @@ var (
 	upstreamHost = flag.String("upstream-host", "arkadia.rpg.pl", "the only host the bridge will dial")
 	upstreamPort = flag.Int("upstream-port", 23, "upstream telnet port")
 	maxBuffer   = flag.Int("buffer", 512*1024, "bytes of output held for a detached client")
-	ttl         = flag.Duration("ttl", 10*time.Minute, "how long an unattended session is kept before the game connection is dropped")
+	ttl         = flag.Duration("ttl", 25*time.Minute, "how long an unattended session is kept before the game connection is dropped")
 	dialTimeout = flag.Duration("dial-timeout", 10*time.Second, "upstream connect timeout")
 )
 
