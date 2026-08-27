@@ -52,8 +52,19 @@ type Session struct {
 
 // clientConn is the little a Session needs from a WebSocket, kept as an interface so
 // the buffering and replay logic can be tested without a network.
+//
+// The wire format lives behind it rather than in the Session, because a client may ask
+// for either: the framed protocol that carries arrival times, or raw bytes for the
+// stock client that predates it.
 type clientConn interface {
-	send(frame []byte) error
+	// sendData delivers game output that arrived at the given time.
+	sendData(at time.Time, payload []byte) error
+	// sendControl delivers session metadata, and does nothing for a raw client that
+	// would render it as game text.
+	sendControl(payload []byte) error
+	// notice delivers a human-readable line into the game stream. Only a raw client
+	// uses it — a framed one gets the same facts in the control payload.
+	notice(text string) error
 	close(reason string)
 }
 
@@ -97,7 +108,7 @@ func (s *Session) deliver(c chunk) {
 	defer s.mu.Unlock()
 
 	if s.client != nil {
-		if err := s.client.send(encodeFrame(FrameData, c.at, c.bytes)); err == nil {
+		if err := s.client.sendData(c.at, c.bytes); err == nil {
 			return
 		}
 		// The send failed but no close has reached us yet. Treat the client as gone
@@ -145,12 +156,23 @@ func (s *Session) attach(c clientConn, resumed bool) {
 		DroppedBytes:  dropped,
 		Resumed:       resumed,
 	})
-	_ = c.send(encodeFrame(FrameControl, time.Now(), control))
+	_ = c.sendControl(control)
+
+	// A raw client cannot read the control payload, so tell it in the only language it
+	// has. Worth the intrusion: without it there is no way to tell a resumed session
+	// from a fresh one, which is the entire thing being tested.
+	if resumed {
+		text := "[proxy] wznowiono sesje"
+		if dropped > 0 {
+			text = fmt.Sprintf("%s (utracono %d bajtow starszych danych)", text, dropped)
+		}
+		_ = c.notice(text)
+	}
 
 	// Each chunk keeps the time it actually arrived, which is the whole reason the
 	// stream is framed.
 	for _, ch := range pending {
-		if err := c.send(encodeFrame(FrameData, ch.at, ch.bytes)); err != nil {
+		if err := c.sendData(ch.at, ch.bytes); err != nil {
 			return
 		}
 	}

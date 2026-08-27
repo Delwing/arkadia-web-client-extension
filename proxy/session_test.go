@@ -8,23 +8,44 @@ import (
 	"time"
 )
 
-// fakeClient records what a session sends it and can pretend to fail.
-type fakeClient struct {
-	mu      sync.Mutex
-	frames  [][]byte
-	failing bool
-	closed  string
+type sentChunk struct {
+	at      time.Time
+	payload string
 }
 
-func (f *fakeClient) send(frame []byte) error {
+// fakeClient records what a session sends it and can pretend to fail.
+type fakeClient struct {
+	mu       sync.Mutex
+	chunks   []sentChunk
+	controls [][]byte
+	notices  []string
+	failing  bool
+	closed   string
+}
+
+func (f *fakeClient) sendData(at time.Time, payload []byte) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.failing {
 		return net.ErrClosed
 	}
-	cp := make([]byte, len(frame))
-	copy(cp, frame)
-	f.frames = append(f.frames, cp)
+	f.chunks = append(f.chunks, sentChunk{at: at, payload: string(payload)})
+	return nil
+}
+
+func (f *fakeClient) sendControl(payload []byte) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	cp := make([]byte, len(payload))
+	copy(cp, payload)
+	f.controls = append(f.controls, cp)
+	return nil
+}
+
+func (f *fakeClient) notice(text string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.notices = append(f.notices, text)
 	return nil
 }
 
@@ -34,21 +55,13 @@ func (f *fakeClient) close(reason string) {
 	f.closed = reason
 }
 
-// data returns the payloads of data frames only, dropping the control frame an attach
-// always sends first.
 func (f *fakeClient) data(t *testing.T) []string {
 	t.Helper()
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out []string
-	for _, frame := range f.frames {
-		kind, _, payload, err := decodeFrame(frame)
-		if err != nil {
-			t.Fatalf("undecodable frame: %v", err)
-		}
-		if kind == FrameData {
-			out = append(out, string(payload))
-		}
+	for _, c := range f.chunks {
+		out = append(out, c.payload)
 	}
 	return out
 }
@@ -57,19 +70,14 @@ func (f *fakeClient) control(t *testing.T) controlPayload {
 	t.Helper()
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	for _, frame := range f.frames {
-		kind, _, payload, err := decodeFrame(frame)
-		if err != nil || kind != FrameControl {
-			continue
-		}
-		var c controlPayload
-		if err := json.Unmarshal(payload, &c); err != nil {
-			t.Fatalf("bad control payload: %v", err)
-		}
-		return c
+	if len(f.controls) == 0 {
+		t.Fatal("no control payload was sent")
 	}
-	t.Fatal("no control frame was sent")
-	return controlPayload{}
+	var c controlPayload
+	if err := json.Unmarshal(f.controls[0], &c); err != nil {
+		t.Fatalf("bad control payload: %v", err)
+	}
+	return c
 }
 
 // newTestSession builds a session over an in-memory pipe standing in for the game.
@@ -169,19 +177,33 @@ func TestReplayKeepsTheTimeEachChunkArrived(t *testing.T) {
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for _, frame := range c.frames {
-		kind, at, _, _ := decodeFrame(frame)
-		if kind != FrameData {
-			continue
-		}
-		// The whole point of framing: the chunk carries when the *game* said it, not
-		// when the player came back to read it.
-		if at.After(before.Add(35 * time.Millisecond)) {
-			t.Errorf("replayed chunk stamped %v, which is attach time rather than arrival time", at)
-		}
-		return
+	if len(c.chunks) == 0 {
+		t.Fatal("nothing was replayed")
 	}
-	t.Fatal("no data frame was replayed")
+	// The whole point of framing: the chunk carries when the *game* said it, not when
+	// the player came back to read it.
+	if c.chunks[0].at.After(before.Add(35 * time.Millisecond)) {
+		t.Errorf("replayed chunk stamped %v, which is attach time rather than arrival time", c.chunks[0].at)
+	}
+}
+
+func TestResumeTellsARawClientInItsOwnLanguage(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+
+	fresh := &fakeClient{}
+	s.attach(fresh, false)
+	if len(fresh.notices) != 0 {
+		t.Errorf("a fresh session should announce nothing, got %q", fresh.notices)
+	}
+	s.detach(fresh)
+
+	// A client with no control channel gets told in the only language it has, or it
+	// cannot tell a resumed session from a new one.
+	resumed := &fakeClient{}
+	s.attach(resumed, true)
+	if len(resumed.notices) != 1 {
+		t.Fatalf("notices = %q, want one resume line", resumed.notices)
+	}
 }
 
 func TestBufferDropsOldestPastTheCap(t *testing.T) {
