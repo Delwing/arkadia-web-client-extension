@@ -555,19 +555,7 @@ const disconnectDiagnostics = (): string[] => {
 
     // A page playing audio is exempt from Chrome's tab freezing, so this loop is the
     // only thing keeping the ping alive while the user is in another app.
-    const audio = client.SoundManager.keepaliveDetail;
-    const audioParts = [audio.running ? 'gra' : 'nie gra'];
-    if (audio.skippedOnIOS) {
-        audioParts.push('pominiety na iOS');
-    } else if (audio.startedAt === 0) {
-        audioParts.push(audio.error ? `nigdy nie wystartowal: ${audio.error}` : 'nigdy nie wystartowal');
-    } else {
-        audioParts.push(`start ${formatDuration(now - audio.startedAt)} temu`);
-        if (!audio.running && audio.pausedAt > 0) {
-            audioParts.push(`pauza ${formatDuration(now - audio.pausedAt)} temu`);
-        }
-    }
-    lines.push(`  audio-keepalive: ${audioParts.join(', ')}`);
+    lines.push(`  audio-keepalive: ${client.SoundManager.keepaliveRunning ? 'gra' : 'nie gra'}`);
 
     lines.push(`  tryb polaczenia: ${mudClient.getProxyMode()}`);
 
