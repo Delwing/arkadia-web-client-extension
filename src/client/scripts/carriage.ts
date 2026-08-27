@@ -546,12 +546,25 @@ export default function initCarriage(
      */
     let refused: { exit: string; roomId: number | null } | null = null;
 
-    client.Triggers.registerTrigger(/^Nie mozna jechac na (.+)\.$/, (line, matches) => {
+    // The refusal is the driver acting on our order rather than a reply to it, so it can land on
+    // the prompt line - the same reason the on-foot "Nie widzisz zadnego wyjscia" trigger tolerates
+    // a leading prompt.
+    client.Triggers.registerTrigger(/^[ >]*Nie mozna jechac na (.+)\.$/, (line, matches) => {
         refused = {exit: matches[1].toLowerCase(), roomId: currentRoomId()};
         return line;
     }, "carriageMode");
 
-    client.on('enterLocation', () => { refused = null; });
+    /**
+     * Only actually leaving the room ends the refusal.
+     *
+     * The event fires for re-renders of the room we are already in as well as for moves - a GMCP
+     * re-sync while the mapper is waiting to catch up renders the same room again - and a wagon
+     * that has not gone anywhere must not forget it was just refused.
+     */
+    client.on('enterLocation', payload => {
+        const id = (payload as { id?: number })?.id;
+        if (refused && id !== refused.roomId) refused = null;
+    });
 
     /**
      * Turn a repeat of a refused ride into "get off, then walk it".
@@ -567,7 +580,6 @@ export default function initCarriage(
         // command that provoked it is usually the short form, so both go through the same
         // normalisation. A special exit has no long form and compares as itself.
         if (getLongDir(command.trim().toLowerCase()) !== getLongDir(refused.exit)) return undefined;
-        if (refused.roomId !== null && refused.roomId !== currentRoomId()) return undefined;
 
         const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
         if (!noun) return undefined;

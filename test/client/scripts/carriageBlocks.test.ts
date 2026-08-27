@@ -142,6 +142,11 @@ describe('carriage blockades', () => {
       expect(client.lastPrint()).toContain('Zapamietane');
     });
 
+    test('learns it just as well off the prompt line', () => {
+      parse('> Nie mozna jechac na zachod.');
+      expect([...getBlockedRooms()]).toEqual([55]);
+    });
+
     test('blocks the room behind a refused special exit', () => {
       parse('Nie mozna jechac na latarnia.');
       expect([...getBlockedRooms()]).toEqual([77]);

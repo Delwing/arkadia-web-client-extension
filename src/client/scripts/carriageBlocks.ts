@@ -166,7 +166,7 @@ export default function initCarriageBlocks(
      * refused, and the room barred to the wagon is what lies that way - not the one we are standing
      * in. The refusal is a reply to our own "jedz na ..." so it always refers to the current room.
      */
-    client.Triggers.registerTrigger(/^Nie mozna jechac na (.+)\.$/, (line, matches) => {
+    client.Triggers.registerTrigger(/^[ >]*Nie mozna jechac na (.+)\.$/, (line, matches) => {
         const roomId = exitTarget(matches[1]);
         if (roomId !== null) learnBlock(roomId);
         return line;

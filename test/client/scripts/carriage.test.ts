@@ -720,6 +720,31 @@ describe('carriage bookkeeping', () => {
       expect(hookFor('s')).toBeUndefined();
     });
 
+    test('survives the room being rendered again where we stand', () => {
+      // A GMCP re-sync renders the room we are already in, which used to look like a move and made
+      // the repeat do nothing at all - the wagon never went anywhere.
+      client.sendEvent('enterLocation', { id: 100 });
+      expect(hookFor('s')).toBe('zsiadz z wozu;s');
+    });
+
+    test('takes the refusal off the prompt line', () => {
+      client.sendEvent('enterLocation', { id: 200 });
+      client.Map.currentRoom = { id: 200 };
+      parse('> Nie mozna jechac na zachod.');
+      expect(hookFor('w')).toBe('zsiadz z wozu;w');
+    });
+
+    test('matches up and down, which the refusal spells out as gora and dol', () => {
+      for (const [refusal, short] of [
+        ['Nie mozna jechac na dol.', 'd'],
+        ['Nie mozna jechac na gore.', 'u'],
+      ]) {
+        parse('Siadasz na nieduzym jednokonnym wozie.');
+        parse(refusal);
+        expect(hookFor(short)).toBe(`zsiadz z wozu;${short}`);
+      }
+    });
+
     test('does nothing while the option is off', () => {
       setBehaviorSettings({ dismountOnRefusedRide: false });
       expect(hookFor('s')).toBeUndefined();
