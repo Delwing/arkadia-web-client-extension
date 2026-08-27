@@ -89,6 +89,12 @@ class MudClient implements ClientAdapter {
     /** Unanswered probes in the current check. Late firings don't count. */
     private connectionCheckProbes = 0;
     private closeCause: CloseCause = 'remote';
+    // Liveness timestamps, kept for the disconnect diagnostics. The gap between the
+    // two at the moment we notice a drop is what separates "the page was frozen, so
+    // our own ping loop stopped" from "we were awake and the far end went away" —
+    // and those need completely different fixes.
+    private lastInboundAt = 0;
+    private lastPingSentAt = 0;
     private gmcpInitialized: boolean = false;
     // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
     // partial multi-byte char across WebSocket frames.
@@ -120,7 +126,7 @@ class MudClient implements ClientAdapter {
     private codec: TransportCodec = base64Codec;
 
     constructor() {
-        this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
+        this.pingTracker = new PingTracker(() => this.sendPing());
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
                 this.emit(`gmcp.${path}`, value);
@@ -286,6 +292,7 @@ class MudClient implements ClientAdapter {
                 try {
                     const decodedData = this.codec.decode(event.data);
                     if (decodedData.length === 0) return;
+                    this.lastInboundAt = Date.now();
                     this.clearConnectionCheck();
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
@@ -368,6 +375,27 @@ class MudClient implements ClientAdapter {
         return this.closeCause;
     }
 
+    /** When the server was last heard from, as epoch ms. 0 if never. */
+    get lastInboundTime(): number {
+        return this.lastInboundAt;
+    }
+
+    /**
+     * When we last put a ping on the wire, as epoch ms. 0 if never.
+     *
+     * Read together with {@link lastInboundTime} this says whether our timers were
+     * running: the ping loop fires every 3s, so a gap of minutes means the page was
+     * frozen rather than the connection being idle.
+     */
+    get lastPingTime(): number {
+        return this.lastPingSentAt;
+    }
+
+    private sendPing(): void {
+        this.lastPingSentAt = Date.now();
+        this.sendGmcp('core.ping');
+    }
+
     /**
      * Ask the server to prove the socket is still alive, and hang up if it can't.
      *
@@ -381,7 +409,7 @@ class MudClient implements ClientAdapter {
     }
 
     private armConnectionCheck(): void {
-        this.sendGmcp('core.ping');
+        this.sendPing();
         this.connectionCheckDeadline = Date.now() + CONNECTION_CHECK_TIMEOUT_MS;
         this.connectionCheckTimeout = window.setTimeout(
             () => this.onConnectionCheckExpired(),

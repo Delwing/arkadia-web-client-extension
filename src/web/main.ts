@@ -513,6 +513,18 @@ const describeDisconnect = (): string => {
         );
     }
 
+    // The pair that says whether our timers were running. The ping loop fires every
+    // 3s, so "ostatni ping" measured in minutes means the page was frozen and no
+    // client-side keepalive could have run; seconds means we were awake and it was
+    // the connection that went.
+    const now = Date.now();
+    if (mudClient.lastInboundTime > 0) {
+        details.push(`ostatnie dane ${formatDuration(now - mudClient.lastInboundTime)} temu`);
+    }
+    if (mudClient.lastPingTime > 0) {
+        details.push(`ostatni ping ${formatDuration(now - mudClient.lastPingTime)} temu`);
+    }
+
     return details.join('; ');
 };
 
