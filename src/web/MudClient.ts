@@ -48,6 +48,15 @@ const PROXY_MODE_STORAGE_KEY = 'proxyMode';
 // A user-deployed proxy URL (from the "host your own" wizard) used in 'proxy'
 // mode in place of the default. Stored as a plain wss:// origin.
 const USER_PROXY_URL_STORAGE_KEY = 'userProxyUrl';
+// How long checkConnection() waits for the server to say anything at all before
+// it gives up on the socket.
+const CONNECTION_CHECK_TIMEOUT_MS = 5000;
+// How far past its deadline that timer may land before we stop believing it.
+// A backgrounded mobile tab is suspended outright: the callback then runs on
+// resume, minutes late, while the server's reply is still queued behind it —
+// so a late firing says nothing about the socket and must not close it.
+// Sub-second lateness is ordinary scheduling jitter under load.
+const CONNECTION_CHECK_LATE_MS = 1500;
 
 export type ProxyMode = 'direct' | 'helper' | 'proxy';
 
@@ -62,6 +71,8 @@ class MudClient implements ClientAdapter {
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
     private connectionCheckTimeout: number | null = null;
+    /** Wall-clock time the pending connection check was due to fire. */
+    private connectionCheckDeadline = 0;
     private gmcpInitialized: boolean = false;
     // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
     // partial multi-byte char across WebSocket frames.
@@ -232,6 +243,10 @@ class MudClient implements ClientAdapter {
             this.socket.onerror = null;
             this.socket.onopen = null;
         }
+        // Detaching the handlers above also means the old socket's onclose will never
+        // run, so a check still pending from it would outlive it and fire against the
+        // socket we are about to open.
+        this.clearConnectionCheck();
         this.mccpHandler.reset();
         this.echoHandler.reset();
         this.gmcpInitialized = false;
@@ -254,10 +269,7 @@ class MudClient implements ClientAdapter {
                 try {
                     const decodedData = this.codec.decode(event.data);
                     if (decodedData.length === 0) return;
-                    if (this.connectionCheckTimeout !== null) {
-                        clearTimeout(this.connectionCheckTimeout);
-                        this.connectionCheckTimeout = null;
-                    }
+                    this.clearConnectionCheck();
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
                     if (data.includes(GMCP_WILL)) {
@@ -282,10 +294,13 @@ class MudClient implements ClientAdapter {
             };
 
             this.socket.onclose = (event: CloseEvent) => {
-                if (this.connectionCheckTimeout !== null) {
-                    clearTimeout(this.connectionCheckTimeout);
-                    this.connectionCheckTimeout = null;
-                }
+                // Logged because the code is the only thing that separates "the server
+                // (or the network) dropped us" from "we hung up on ourselves" when a
+                // disconnect report comes in from a phone.
+                console.log(
+                    `[MudClient] socket closed: code=${event.code} clean=${event.wasClean} reason=${event.reason || '(none)'}`,
+                );
+                this.clearConnectionCheck();
                 this.flushPendingLineTail();
                 this.flushMessageBuffer(true);
                 this.emit('close', event);
@@ -330,15 +345,52 @@ class MudClient implements ClientAdapter {
         return this.isSocketOpen() && this.echoHandler.serverEchoing;
     }
 
+    /**
+     * Ask the server to prove the socket is still alive, and hang up if it can't.
+     *
+     * Any inbound frame counts as proof and cancels the check (see onmessage) —
+     * we are testing the connection, not the ping handler.
+     */
     checkConnection(): void {
         if (!this.isSocketOpen() || this.connectionCheckTimeout !== null) return;
+        this.armConnectionCheck();
+    }
+
+    private armConnectionCheck(): void {
         this.sendGmcp('core.ping');
-        this.connectionCheckTimeout = window.setTimeout(() => {
+        this.connectionCheckDeadline = Date.now() + CONNECTION_CHECK_TIMEOUT_MS;
+        this.connectionCheckTimeout = window.setTimeout(
+            () => this.onConnectionCheckExpired(),
+            CONNECTION_CHECK_TIMEOUT_MS,
+        );
+    }
+
+    private onConnectionCheckExpired(): void {
+        this.connectionCheckTimeout = null;
+        if (!this.isSocketOpen()) return;
+
+        // Silence only means something if we were awake to hear it. A callback that
+        // lands well past its deadline means the page was frozen or throttled — the
+        // reply may be sitting in the receive queue right behind this task — so start
+        // the check over rather than kill a connection we never actually listened to.
+        const lateBy = Date.now() - this.connectionCheckDeadline;
+        if (lateBy > CONNECTION_CHECK_LATE_MS) {
+            console.warn(
+                `[MudClient] connection check fired ${Math.round(lateBy)}ms late (page suspended?); re-checking instead of closing`,
+            );
+            this.armConnectionCheck();
+            return;
+        }
+
+        console.warn('[MudClient] no reply to the connection check; closing the socket');
+        this.socket.close();
+    }
+
+    private clearConnectionCheck(): void {
+        if (this.connectionCheckTimeout !== null) {
+            clearTimeout(this.connectionCheckTimeout);
             this.connectionCheckTimeout = null;
-            if (this.isSocketOpen()) {
-                this.socket.close();
-            }
-        }, 5000);
+        }
     }
 
     send(message: string, _echo?: boolean, options?: CommandOptions): void {
