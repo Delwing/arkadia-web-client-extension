@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arkadia-session-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-27",
+
+  "observability": {
+    "enabled": true
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SESSION",
+        "class_name": "Session"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      // MUST be new_sqlite_classes, not new_classes: SQLite-backed Durable Objects are
+      // the only kind the Workers free plan allows. Using new_classes here fails the
+      // deploy on a free account with a billing error rather than a config one.
+      "new_sqlite_classes": ["Session"]
+    }
+  ]
+}
