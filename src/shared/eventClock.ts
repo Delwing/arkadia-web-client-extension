@@ -13,6 +13,12 @@
  *   - stamping *when something happened* → `eventNow()`
  *   - measuring *how long ago* it happened → `Date.now()`
  *
+ * And the case that decides most of the rest: **only output can be replayed.** Anything
+ * driven by the player's own command — an alias firing, a command being sent, the timing
+ * between a command and its reply — happens live by definition and stays on the wall
+ * clock. `/staz` and `/postepy_reset` are aliases, not game events, which is why they
+ * keep `Date.now()`.
+ *
  * A timer stamped with an old event time and ticked against the wall clock reads as
  * already expired, which is what you want, and it keeps the change to one line per
  * script rather than a rewrite.

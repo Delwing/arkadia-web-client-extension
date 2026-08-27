@@ -211,15 +211,26 @@ func (s *Session) idleFor(now time.Time) time.Duration {
 }
 
 /*
-leaving ends the session because its client is going away deliberately — a closed tab, a
-navigation, or a reload — rather than the backgrounding this proxy exists to survive.
+leaving ends the session because its client is going away deliberately — a closed tab or
+a navigation — rather than the backgrounding this proxy exists to survive.
 
-Closing at once, with no grace period: a reload starting a fresh login is expected
-behaviour, so there is nothing to preserve. The alternative leaves someone's character
-standing in the world for the whole TTL after they shut the tab.
+Ignored while a client is attached, which is what makes a reload safe. The beacon is
+sent as the old page unloads but delivered by the browser afterwards, so the replacement
+page can attach first; acting on it then would kill the session that page is already
+using. Somebody being attached means the notice is stale, whoever sent it.
+
+No grace period otherwise: with nobody attached there is nothing to protect, and the
+alternative leaves a character standing in the world for the whole TTL.
 */
-func (s *Session) leaving() {
+func (s *Session) leaving() bool {
+	s.mu.Lock()
+	attached := s.client != nil
+	s.mu.Unlock()
+	if attached {
+		return false
+	}
 	s.finish("client left")
+	return true
 }
 
 // finish tears the session down: the game is gone, so the client should know.

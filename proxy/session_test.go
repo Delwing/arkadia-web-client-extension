@@ -314,18 +314,37 @@ func TestLeavingClosesTheSessionAtOnce(t *testing.T) {
 	s, _ := newTestSession(t, 4096)
 	c := &fakeClient{}
 	s.attach(c, false)
+	s.detach(c)
 	m.put("leaving", s)
 
 	// A closed tab. Without this the character stands in the world for the whole TTL.
-	s.leaving()
-
+	if !s.leaving() {
+		t.Fatal("leaving should act when nobody is attached")
+	}
 	if !s.isClosed() {
 		t.Error("session should be closed immediately, not parked")
 	}
-	if c.closed == "" {
-		t.Error("the attached client should have been told why")
-	}
 	if m.get("leaving") != nil {
 		t.Error("a closed session must not be handed out for resume")
+	}
+}
+
+func TestLeavingIsIgnoredWhileAClientIsAttached(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+
+	// A reload: the beacon is sent as the old page unloads but delivered afterwards,
+	// so the replacement page can already be attached by the time it lands. Acting on
+	// it would kill the session that page is using.
+	replacement := &fakeClient{}
+	s.attach(replacement, true)
+
+	if s.leaving() {
+		t.Error("leaving must not act while a client is attached")
+	}
+	if s.isClosed() {
+		t.Fatal("a stale beacon closed a session someone is using")
+	}
+	if replacement.closed != "" {
+		t.Error("the attached client should not have been disconnected")
 	}
 }

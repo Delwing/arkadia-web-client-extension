@@ -64,9 +64,13 @@ func main() {
 		// within a second or two. The grace period is long enough to cover that and
 		// short enough that a genuinely closed tab does not leave a character standing
 		// in the world for the full TTL.
-		session.leaving()
-		manager.remove(id)
-		log.Printf("session %s… client left; closed", short(id))
+		if session.leaving() {
+			manager.remove(id)
+			log.Printf("session %s… client left; closed", short(id))
+		} else {
+			// A reload: the replacement page beat the beacon here.
+			log.Printf("session %s… leaving ignored, a client is attached", short(id))
+		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
