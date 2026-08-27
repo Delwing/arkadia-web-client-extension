@@ -482,6 +482,20 @@ mudClient.on('client.disconnect', () => {
     console.log('Client disconnected from Arkadia server.');
 });
 
+// What the session proxy reports on attach. A resume is worth saying out loud: the
+// player pressed nothing and their character is still where they left it, which is
+// otherwise indistinguishable from a fresh login that happened to work.
+mudClient.on('proxy.session', (info) => {
+    if (!info?.resumed) return;
+    const away = typeof info.sessionAgeMs === 'number'
+        ? ` (sesja trwa ${Math.round(info.sessionAgeMs / 1000)} s)`
+        : '';
+    client.println(`Wznowiono polaczenie z gra${away}.`);
+    if (info.droppedBytes) {
+        client.println(`Czesc tekstu z czasu nieobecnosci przepadla (${info.droppedBytes} bajtow).`);
+    }
+});
+
 // `core.keepalive` toggling is only useful on Safari (where the original user
 // reported background-tab disconnects). On Chromium/Firefox it causes the
 // opposite problem: telling the server to stop sending data lets the idle TCP
@@ -507,6 +521,15 @@ document.addEventListener('visibilitychange', () => {
             isConnecting = false;
             isDisconnecting = false;
             updateConnectButtons();
+            // The socket died while we were away — the ordinary outcome of a phone
+            // freezing a backgrounded tab. Behind a session proxy the game connection
+            // outlived it, so reconnecting costs the player nothing and puts them back
+            // in their character; without one it would land them at a login prompt they
+            // did not ask for, so it stays manual.
+            if (mudClient.usesSessionProxy() && !isDisconnecting) {
+                client.println('Wznawianie polaczenia...');
+                mudClient.connect();
+            }
         } else if (socketOpen && isConnected && isSafari) {
             mudClient.sendGmcp('core.keepalive', {disabled: false});
         }

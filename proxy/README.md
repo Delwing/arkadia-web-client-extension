@@ -107,12 +107,25 @@ problem:
 - **Passwords traverse the proxy.** Already true for opt-in proxy mode, but different in
   kind once this is the default path.
 
-## Client-side work still needed
+## Client support
 
-1. Generate, store and send a per-character session id.
-2. Decode the frames — a new codec alongside `base64Codec` and `binaryCodec`.
-3. Thread the frame timestamp through `processIncomingData()` to triggers, and give
-   scripts an injected "now" instead of `Date.now()`.
-4. Surface `droppedBytes` and `resumed` from the control frame in the UI.
-5. Stop the 3-second `core.ping` when attached to this proxy — the proxy knows whether
-   the socket is alive, and the ping is pure overhead here.
+Done (`src/web/proxySession.ts`, `src/shared/socket/transport.ts`, `MudClient`, `main.ts`):
+
+- A per-tab session id in `sessionStorage`, generated with the CSPRNG and dropped on a
+  deliberate disconnect.
+- `framedCodec` decodes the protocol; the proxy is recognised by its `/attach` path, so
+  the existing proxy setting configures it with no new UI.
+- A resume is announced in the output, along with any dropped byte count.
+- Returning to a tab whose socket died reconnects automatically — but only behind a
+  session proxy, where it costs the player nothing.
+
+Still open:
+
+- **The timestamp is decoded but not yet used.** `processIncomingData()` receives it and
+  ignores it, so the 60 `Date.now()` calls across 21 scripts still stamp replayed output
+  with the time the browser woke up. This is the cross-cutting half of the work.
+- No UI for choosing a session proxy; it is inferred from the URL.
+
+Not needed after all: suppressing the client's 3-second `core.ping`. That was worth doing
+when the proxy billed per WebSocket message; on a VPS it costs nothing and still measures
+the real round trip to the game.

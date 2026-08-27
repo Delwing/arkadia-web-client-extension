@@ -420,6 +420,8 @@ export interface KnownEvents {
     "firebase.listener.status": { active: boolean };
     "flushLines": [{ text: string; type: string }[]];
     "socket.incoming": string;
+    /** Session metadata from the resumable proxy: whether we resumed, what was lost. */
+    "proxy.session": import("@shared/socket").SessionControl;
     "socket.outgoing": string;
     "telnet.echo": boolean;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];

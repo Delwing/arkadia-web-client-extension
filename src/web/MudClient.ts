@@ -1,4 +1,5 @@
 import {ClientAdapter} from "@client/Client";
+import {buildSessionProxyUrl, isSessionProxyUrl, resetProxySessionId} from "./proxySession";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
 import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
@@ -19,6 +20,7 @@ import {
     TELNET_GA,
     TELNET_EOR,
     type TransportCodec,
+    type DecodedFrame,
 } from "@shared/socket";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
@@ -212,11 +214,28 @@ class MudClient implements ClientAdapter {
         }
         if (this.proxyMode === 'proxy') {
             if (this.userProxyUrl) {
+                // The resumable proxy takes a session id instead of a host/port: it
+                // knows where the game is, and the id is what lets a returning client
+                // reclaim a connection the browser lost.
+                if (isSessionProxyUrl(this.userProxyUrl)) {
+                    return buildSessionProxyUrl(this.userProxyUrl);
+                }
                 return this.userProxyUrl.includes('?') ? this.userProxyUrl : this.userProxyUrl + PROXY_QUERY;
             }
             return PROXY_WEBSOCKET_URL;
         }
         return WEBSOCKET_URL;
+    }
+
+    /**
+     * Whether the current connection can survive the browser's socket dying.
+     *
+     * The UI needs this to decide whether a drop is worth reconnecting through
+     * automatically: with a session proxy that costs the player nothing, and without one
+     * it would silently drop them at a login prompt.
+     */
+    usesSessionProxy(): boolean {
+        return this.proxyMode === 'proxy' && isSessionProxyUrl(this.userProxyUrl);
     }
 
     /**
@@ -241,7 +260,7 @@ class MudClient implements ClientAdapter {
         this.pendingMsgTails.clear();
         this.gaDriver = false;
         // Proxy/helper speak raw binary frames; native /wss speaks base64 text.
-        this.codec = selectCodec(this.proxyMode !== 'direct');
+        this.codec = selectCodec(this.proxyMode !== 'direct', this.usesSessionProxy());
         this.clearTailTimer();
         try {
             const url = this.resolveConnectUrl();
@@ -252,12 +271,26 @@ class MudClient implements ClientAdapter {
 
             this.socket.onmessage = (event: MessageEvent<string | ArrayBuffer>) => {
                 try {
-                    const decodedData = this.codec.decode(event.data);
-                    if (decodedData.length === 0) return;
+                    // The session proxy's frames carry when the server produced the
+                    // bytes; the plain codecs have no such notion and fall back.
+                    const frame = this.codec.decodeFrame
+                        ? this.codec.decodeFrame(event.data)
+                        : {bytes: this.codec.decode(event.data)} as DecodedFrame;
+
                     if (this.connectionCheckTimeout !== null) {
                         clearTimeout(this.connectionCheckTimeout);
                         this.connectionCheckTimeout = null;
                     }
+
+                    if (frame.control) {
+                        // Session metadata, not game output: never goes near the
+                        // trigger pipeline.
+                        this.emit('proxy.session', frame.control);
+                        return;
+                    }
+
+                    const decodedData = frame.bytes;
+                    if (decodedData.length === 0) return;
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
                     if (data.includes(GMCP_WILL)) {
@@ -267,7 +300,10 @@ class MudClient implements ClientAdapter {
                     this.echoHandler.processData(data);
                     this.emit('socket.incoming', data);
                     try {
-                        this.processIncomingData(data);
+                        // Replayed output describes things that happened while the tab
+                        // was frozen, so pass the server's clock rather than letting
+                        // everything downstream assume "now".
+                        this.processIncomingData(data, frame.at ? {timestamp: frame.at} : undefined);
                     } catch (processingError) {
                         console.error('Error during trigger processing:', processingError);
                         console.error('Line was recorded but not processed:', data.substring(0, 100));
@@ -313,6 +349,10 @@ class MudClient implements ClientAdapter {
      * Disconnect from the WebSocket server
      */
     disconnect(): void {
+        // Leaving on purpose ends the session rather than parking it: resuming into a
+        // character the player meant to leave would be a surprise, and the proxy would
+        // otherwise hold that connection open until its TTL.
+        resetProxySessionId();
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.close();
         }
