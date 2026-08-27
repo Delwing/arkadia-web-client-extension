@@ -508,37 +508,45 @@ const isSafari = /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.us
 
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // Deliberately no connection check on the way out. Mobile suspends a
+        // backgrounded tab within moments of this event, so a check armed here can
+        // only ever expire unattended and report a silence nobody was listening for.
+        if (isConnected && isSafari) {
+            mudClient.sendGmcp('core.keepalive', {disabled: true});
+        }
+        return;
+    }
+
+    // Coming back is when the answer matters: the socket may well have died while we
+    // were away, and the buttons have to reflect that.
     if (isConnected) {
         mudClient.checkConnection();
     }
 
-    if (!document.hidden) {
-        // Suppress split view checks during tab reactivation reflow
-        outputMessageHandler.suppressSplitView(500);
+    // Suppress split view checks during tab reactivation reflow
+    outputMessageHandler.suppressSplitView(500);
 
-        const socketOpen = mudClient.isSocketOpen();
-        if (socketOpen && !isConnected) {
-            isConnected = true;
-            updateConnectButtons();
-        } else if (!socketOpen && isConnected) {
-            isConnected = false;
-            isConnecting = false;
-            isDisconnecting = false;
-            updateConnectButtons();
-            // The socket died while we were away — the ordinary outcome of a phone
-            // freezing a backgrounded tab. Behind a session proxy the game connection
-            // outlived it, so reconnecting costs the player nothing and puts them back
-            // in their character; without one it would land them at a login prompt they
-            // did not ask for, so it stays manual.
-            if (mudClient.usesSessionProxy() && !isDisconnecting) {
-                client.println('Wznawianie polaczenia...');
-                mudClient.connect();
-            }
-        } else if (socketOpen && isConnected && isSafari) {
-            mudClient.sendGmcp('core.keepalive', {disabled: false});
+    const socketOpen = mudClient.isSocketOpen();
+    if (socketOpen && !isConnected) {
+        isConnected = true;
+        updateConnectButtons();
+    } else if (!socketOpen && isConnected) {
+        isConnected = false;
+        isConnecting = false;
+        isDisconnecting = false;
+        updateConnectButtons();
+        // The socket died while we were away — the ordinary outcome of a phone
+        // freezing a backgrounded tab. Behind a session proxy the game connection
+        // outlived it, so reconnecting costs the player nothing and puts them back
+        // in their character; without one it would land them at a login prompt they
+        // did not ask for, so it stays manual.
+        if (mudClient.usesSessionProxy() && !isDisconnecting) {
+            client.println('Wznawianie polaczenia...');
+            mudClient.connect();
         }
-    } else if (isConnected && isSafari) {
-        mudClient.sendGmcp('core.keepalive', {disabled: true});
+    } else if (socketOpen && isConnected && isSafari) {
+        mudClient.sendGmcp('core.keepalive', {disabled: false});
     }
 });
 
