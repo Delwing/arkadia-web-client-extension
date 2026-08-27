@@ -204,9 +204,9 @@ export default function initCarriage(
             routeBindActive = true;
             return;
         }
-        // Only take away a bind this put there. The wagon stopping runs through here, and a dead
-        // end has just offered the way out on the line before - clearing unconditionally left that
-        // one printed but dead.
+        // Only take away a bind this put there. Every stop of the wagon runs through here, and
+        // whatever else is on offer at that moment - a transport at the quay, the way back into a
+        // carriage standing in the room - is not ours to clear.
         if (routeBindActive) {
             clearOwnBind();
             routeBindActive = false;
@@ -421,19 +421,22 @@ export default function initCarriage(
     // The vehicle stops on its own at junctions and dead ends; you are still aboard, so these only
     // re-arm the mode in case it was lost (reconnect, gagged boarding line, manual /woz).
     client.Triggers.registerTrigger(/^Przeciez (?:woz|bryczka|dylizans) juz jedzie\.$/, enable, "carriageMode");
-    // Both of these mean the ride ended somewhere you have to decide what to do next, so they are
-    // worth spotting in a wall of travel prose.
-    client.Triggers.registerTrigger(/^Dojechaliscie do rozdrozy\.$/, line => {
-        setCarriageMode(true);
-        return line.color([0, line.length], RIDE_HALTED_COLOR);
-    }, "carriageMode");
-    // A dead end is where the drive ends, so offer the way out of the vehicle.
-    client.Triggers.registerTrigger(/^Nie ma tu zadnej drogi, ktora mozna by dalej jechac\.$/, line => {
-        setCarriageMode(true);
-        const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
-        if (noun) setBind(`zsiadz z ${noun}`);
-        return line.color([0, line.length], RIDE_HALTED_COLOR);
-    }, "carriageMode");
+    /**
+     * Both of these mean the ride ended somewhere you have to decide what to do next, so they are
+     * worth spotting in a wall of travel prose.
+     *
+     * Neither offers a bind of its own. Getting off is only one of the things you might do at the
+     * end of a road - turning around is the other - and the bind it took over was usually a better
+     * offer than the guess: the next step of a led route, or the transport waiting at the quay.
+     */
+    client.Triggers.registerTrigger(
+        /^(?:Dojechaliscie do rozdrozy|Nie ma tu zadnej drogi, ktora mozna by dalej jechac)\.$/,
+        line => {
+            setCarriageMode(true);
+            return line.color([0, line.length], RIDE_HALTED_COLOR);
+        },
+        "carriageMode",
+    );
 
     client.Triggers.registerTrigger(/^Zsiadasz z (.*) (dylizansu|wozu|bryczki)\.$/, (line, matches) => {
         park(`${matches[1]} ${matches[2]}`);

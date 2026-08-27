@@ -347,25 +347,12 @@ describe('carriage bookkeeping', () => {
     expect(client.lastEvent('mapParkedCarriages')).toEqual([]);
   });
 
-  test('binds the way out of the vehicle at a dead end', () => {
+  test('leaves the bind alone at a dead end', () => {
+    // Getting off is only one of the things to do there - turning around is the other - and the
+    // bind this used to take over was usually the better offer.
     parse('Siadasz na solidnym krytym wozie.');
     parse('Nie ma tu zadnej drogi, ktora mozna by dalej jechac.');
-    expect(client.bindSlot.printable).toBe('zsiadz z wozu');
-
-    client.lastBindCallback!();
-    expect(client.sendCommand).toHaveBeenCalledWith('zsiadz z wozu');
-  });
-
-  test('uses the right case per vehicle at a dead end', () => {
-    for (const [board, command] of [
-      ['Siadasz w malej bryczce.', 'zsiadz z bryczki'],
-      ['Siadasz w wygodnym dylizansie.', 'zsiadz z dylizansu'],
-    ]) {
-      parse(board);
-      parse('Nie ma tu zadnej drogi, ktora mozna by dalej jechac.');
-      expect(client.bindSlot.printable).toBe(command);
-      parse(board.replace('Siadasz w ', 'Zsiadasz z ').replace('bryczce', 'bryczki').replace('dylizansie', 'dylizansu'));
-    }
+    expect(client.bindSlot.printable).toBeNull();
   });
 
   test('binds the way back in when the carriage shows up in the room description', () => {
@@ -491,7 +478,7 @@ describe('carriage bookkeeping', () => {
     // A dead end arrives before the stop line, so the ride is still "on" at that moment.
     parse('Nieduzy jednokonny woz rusza na wschod.');
     parse('Nie ma tu zadnej drogi, ktora mozna by dalej jechac.');
-    expect(client.bindSlot.printable).toBe('zsiadz z wozu');
+    expect(moving()).toBe(true);
     parse('Nieduzy jednokonny woz zatrzymuje sie.');
     expect(moving()).toBe(false);
 
@@ -640,17 +627,17 @@ describe('carriage bookkeeping', () => {
       expect(client.bindSlot.printable).toBe('w');
     });
 
-    test('does not wipe the dead-end bind when the wagon reports stopping', () => {
-      // The two lines arrive together: the dead end offers the way out, then the wagon says it has
-      // stopped. That second line runs the route offer, which used to clear anything it found.
+    test('keeps the route step when the road ends where the route turns off it', () => {
+      // The dead end and the wagon's stop line arrive together, and neither may take the offer
+      // away: the route knows where to go from here, and that is what the bind should still say.
+      client.sendEvent('carriageRouteStep', { nextCommand: 'wem;kup bilet', atTransfer: false });
       parse('Nieduzy jednokonny woz rusza na zachod.');
       parse('Nie ma tu zadnej drogi, ktora mozna by dalej jechac.');
-      expect(client.bindSlot.printable).toBe('zsiadz z wozu');
-
       parse('Nieduzy jednokonny woz zatrzymuje sie.');
-      expect(client.bindSlot.printable).toBe('zsiadz z wozu');
+
+      expect(client.bindSlot.printable).toBe('wem;kup bilet');
       client.lastBindCallback!();
-      expect(client.sendCommand).toHaveBeenCalledWith('zsiadz z wozu');
+      expect(client.sendCommand).toHaveBeenCalledWith('wem;kup bilet');
     });
 
     test('re-offers when the route changes under us', () => {
