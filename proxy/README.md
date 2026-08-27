@@ -66,10 +66,13 @@ Replayed output describes things that happened minutes ago. Anything stamping
 `Date.now()` calls across 21 scripts today, covering counters, timers and `postepy`
 tracking, all of which would skew by the length of the detach.
 
-The client already has the seam: `playback.incomingData` carries `{ timestamp }` for the
-recorder and `MudClient.output()` accepts one. But `processIncomingData()` takes
-`_options` and ignores it, so the time never reaches trigger handlers. Wiring that
-through is the client-side half of this work.
+That is wired through now, in `@shared/eventClock`: the frame's timestamp reaches trigger
+handlers and GMCP listeners alike, `client.now()` returns it while a line is being
+processed, and `scheduleFromEvent()` puts a delay's deadline on the event rather than on
+the moment of arrival. The rule for callers is that stamping *when something happened*
+uses the event clock while measuring *how long ago* stays on `Date.now()` — and that only
+output can be replayed, so anything driven by a player's own command is live by
+definition.
 
 ## Sessions
 
@@ -82,19 +85,23 @@ Attaching with an unknown id opens a fresh game connection; a known one resumes.
 A second attach to a live session displaces the first, because two clients on one
 character interleave input unpredictably.
 
-Abandoned sessions are reaped after `-ttl` (default 10 minutes) — long enough to survive
-a frozen tab, short enough not to leave characters idling in the world indefinitely.
+Abandoned sessions are reaped after `-ttl`, which defaults to **35 minutes** — past
+Arkadia's own inactivity limit of 30, on purpose. Holding slightly longer lets the game
+be the one to end an abandoned session, and since a dead upstream lingers with its
+buffer, the player who comes back at 33 minutes reads the game's own
+"zostajesz rozlaczony z powodu bezczynnosci" instead of guessing at a bare login screen.
+Undercutting it would throw that explanation away.
 
 ## Running it
 
 ```bash
 go test ./...
 go build -o session-proxy .
-./session-proxy -addr 127.0.0.1:8080 -ttl 10m
+./session-proxy -addr 127.0.0.1:8080 -ttl 35m
 ```
 
 Flags: `-addr`, `-upstream-host`, `-upstream-port`, `-buffer` (bytes held for a detached
-client, default 512 KiB), `-ttl`, `-dial-timeout`. `GET /health` reports the live session
+client, default 2 MiB — see the sizing note in main.go), `-ttl`, `-dial-timeout`. `GET /health` reports the live session
 count.
 
 ### Deployment
@@ -142,13 +149,16 @@ Done (`src/web/proxySession.ts`, `src/shared/socket/transport.ts`, `MudClient`, 
 - A resume is announced in the output, along with any dropped byte count.
 - Returning to a tab whose socket died reconnects automatically — but only behind a
   session proxy, where it costs the player nothing.
+- Compression is declined on a session proxy: MCCP is one zlib stream for the life of a
+  connection, so a client attaching midway inflates garbage.
+- Event time reaches triggers, GMCP listeners, timers, recordings and stored logs.
+- Choosing proxy mode gets this proxy rather than the stateless worker. Nothing is
+  forced; direct connections are untouched.
 
 Still open:
 
-- **The timestamp is decoded but not yet used.** `processIncomingData()` receives it and
-  ignores it, so the 60 `Date.now()` calls across 21 scripts still stamp replayed output
-  with the time the browser woke up. This is the cross-cutting half of the work.
-- No UI for choosing a session proxy; it is inferred from the URL.
+- No UI for choosing a session proxy specifically; it is inferred from the URL, and
+  proxy mode is still a single choice rather than a list of proxies.
 
 Not needed after all: suppressing the client's 3-second `core.ping`. That was worth doing
 when the proxy billed per WebSocket message; on a VPS it costs nothing and still measures

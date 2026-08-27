@@ -31,12 +31,17 @@ var (
 	upstreamPort = flag.Int("upstream-port", 23, "upstream telnet port")
 	// Sized from a real session log rather than picked: a busy hour measured ~27 KB/min
 	// of raw wire traffic — game text base64'd inside gmcp_msgs envelopes, plus the
-	// char.vitals stream that never reaches a log — so a full 25-minute TTL costs about
-	// 675 KB. 2 MB leaves room for a session busier than that measurement, because
+	// char.state stream that never reaches a log — so a full 35-minute TTL costs about
+	// 950 KB. 2 MB leaves room for a session busier than that measurement, because
 	// overflowing drops the *oldest* output, which is the part a player who died while
 	// away most wants to read. See test/web/replayVolume.test.ts.
 	maxBuffer   = flag.Int("buffer", 2*1024*1024, "bytes of output held for a detached client")
-	ttl         = flag.Duration("ttl", 25*time.Minute, "how long an unattended session is kept before the game connection is dropped")
+	// Past Arkadia's own limit on purpose. Its inactivity timeout tops out at 30
+	// minutes, so a session held slightly longer lets the game be the one to end it —
+	// and the dead upstream lingers with its buffer, so a player returning at 33
+	// minutes reads "zostajesz rozlaczony z powodu bezczynnosci" instead of guessing at
+	// a bare login screen. Undercutting it would throw that explanation away.
+	ttl         = flag.Duration("ttl", 35*time.Minute, "how long an unattended session is kept before the game connection is dropped")
 	dialTimeout = flag.Duration("dial-timeout", 10*time.Second, "upstream connect timeout")
 )
 
