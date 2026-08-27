@@ -1,0 +1,288 @@
+package main
+
+import (
+	"encoding/json"
+	"net"
+	"sync"
+	"testing"
+	"time"
+)
+
+// fakeClient records what a session sends it and can pretend to fail.
+type fakeClient struct {
+	mu      sync.Mutex
+	frames  [][]byte
+	failing bool
+	closed  string
+}
+
+func (f *fakeClient) send(frame []byte) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.failing {
+		return net.ErrClosed
+	}
+	cp := make([]byte, len(frame))
+	copy(cp, frame)
+	f.frames = append(f.frames, cp)
+	return nil
+}
+
+func (f *fakeClient) close(reason string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.closed = reason
+}
+
+// data returns the payloads of data frames only, dropping the control frame an attach
+// always sends first.
+func (f *fakeClient) data(t *testing.T) []string {
+	t.Helper()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []string
+	for _, frame := range f.frames {
+		kind, _, payload, err := decodeFrame(frame)
+		if err != nil {
+			t.Fatalf("undecodable frame: %v", err)
+		}
+		if kind == FrameData {
+			out = append(out, string(payload))
+		}
+	}
+	return out
+}
+
+func (f *fakeClient) control(t *testing.T) controlPayload {
+	t.Helper()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, frame := range f.frames {
+		kind, _, payload, err := decodeFrame(frame)
+		if err != nil || kind != FrameControl {
+			continue
+		}
+		var c controlPayload
+		if err := json.Unmarshal(payload, &c); err != nil {
+			t.Fatalf("bad control payload: %v", err)
+		}
+		return c
+	}
+	t.Fatal("no control frame was sent")
+	return controlPayload{}
+}
+
+// newTestSession builds a session over an in-memory pipe standing in for the game.
+func newTestSession(t *testing.T, maxBuffer int) (*Session, net.Conn) {
+	t.Helper()
+	ours, theirs := net.Pipe()
+	s := newSession("test-session-id-000000", theirs, maxBuffer)
+	t.Cleanup(func() { s.finish("test over"); _ = ours.Close() })
+	return s, ours
+}
+
+// waitFor polls until cond holds, so tests do not race the session's read goroutine.
+func waitFor(t *testing.T, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("condition not met in time")
+}
+
+func TestFrameRoundTrip(t *testing.T) {
+	at := time.UnixMilli(1724770000123)
+	frame := encodeFrame(FrameData, at, []byte("Jestes w lesie."))
+
+	kind, decoded, payload, err := decodeFrame(frame)
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if kind != FrameData {
+		t.Errorf("kind = %#x, want %#x", kind, FrameData)
+	}
+	if !decoded.Equal(at) {
+		t.Errorf("time = %v, want %v", decoded, at)
+	}
+	if string(payload) != "Jestes w lesie." {
+		t.Errorf("payload = %q", payload)
+	}
+}
+
+func TestFrameRejectsShortInput(t *testing.T) {
+	if _, _, _, err := decodeFrame([]byte{0x01, 0x02}); err == nil {
+		t.Fatal("expected an error for a truncated frame")
+	}
+}
+
+func TestOutputGoesStraightToAnAttachedClient(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+	c := &fakeClient{}
+	s.attach(c, false)
+
+	_, _ = game.Write([]byte("witaj"))
+
+	waitFor(t, func() bool { return len(c.data(t)) == 1 })
+	if got := c.data(t)[0]; got != "witaj" {
+		t.Errorf("got %q, want %q", got, "witaj")
+	}
+}
+
+func TestOutputIsBufferedAndReplayedInOrder(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+	first := &fakeClient{}
+	s.attach(first, false)
+	s.detach(first)
+
+	// The frozen-tab case: the game keeps talking with nobody listening.
+	_, _ = game.Write([]byte("jeden"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 5 })
+	_, _ = game.Write([]byte("dwa"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 8 })
+
+	second := &fakeClient{}
+	s.attach(second, true)
+
+	got := second.data(t)
+	if len(got) != 2 || got[0] != "jeden" || got[1] != "dwa" {
+		t.Fatalf("replay = %q, want [jeden dwa]", got)
+	}
+	if c := second.control(t); !c.Resumed || c.ReplayedBytes != 8 {
+		t.Errorf("control = %+v, want resumed with 8 replayed bytes", c)
+	}
+}
+
+func TestReplayKeepsTheTimeEachChunkArrived(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+	before := time.Now()
+
+	_, _ = game.Write([]byte("dawno temu"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes > 0 })
+	time.Sleep(40 * time.Millisecond)
+
+	c := &fakeClient{}
+	s.attach(c, true)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, frame := range c.frames {
+		kind, at, _, _ := decodeFrame(frame)
+		if kind != FrameData {
+			continue
+		}
+		// The whole point of framing: the chunk carries when the *game* said it, not
+		// when the player came back to read it.
+		if at.After(before.Add(35 * time.Millisecond)) {
+			t.Errorf("replayed chunk stamped %v, which is attach time rather than arrival time", at)
+		}
+		return
+	}
+	t.Fatal("no data frame was replayed")
+}
+
+func TestBufferDropsOldestPastTheCap(t *testing.T) {
+	s, game := newTestSession(t, 8)
+
+	_, _ = game.Write([]byte("aaaa"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 4 })
+	_, _ = game.Write([]byte("bbbb"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 8 })
+	_, _ = game.Write([]byte("cccc"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.droppedBytes == 4 })
+
+	c := &fakeClient{}
+	s.attach(c, true)
+
+	got := c.data(t)
+	if len(got) != 2 || got[0] != "bbbb" || got[1] != "cccc" {
+		t.Fatalf("replay = %q, want the newest two chunks", got)
+	}
+	if ctrl := c.control(t); ctrl.DroppedBytes != 4 {
+		t.Errorf("dropped = %d, want 4 so the client can warn the player", ctrl.DroppedBytes)
+	}
+}
+
+func TestAFailingSendParksBytesRatherThanLosingThem(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+	c := &fakeClient{failing: true}
+	s.attach(c, false)
+
+	_, _ = game.Write([]byte("nie zginie"))
+
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 10 })
+	next := &fakeClient{}
+	s.attach(next, true)
+	if got := next.data(t); len(got) != 1 || got[0] != "nie zginie" {
+		t.Fatalf("replay = %q, want the chunk the dying client never got", got)
+	}
+}
+
+func TestASecondAttachReplacesTheFirst(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+	first := &fakeClient{}
+	s.attach(first, false)
+	second := &fakeClient{}
+	s.attach(second, true)
+
+	first.mu.Lock()
+	defer first.mu.Unlock()
+	if first.closed == "" {
+		t.Error("the displaced client should have been closed")
+	}
+}
+
+func TestPlayerInputReachesTheGame(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+
+	go func() { _ = s.write([]byte("polnoc\r\n")) }()
+
+	buf := make([]byte, 32)
+	_ = game.SetReadDeadline(time.Now().Add(time.Second))
+	n, err := game.Read(buf)
+	if err != nil {
+		t.Fatalf("game never received input: %v", err)
+	}
+	if got := string(buf[:n]); got != "polnoc\r\n" {
+		t.Errorf("game got %q", got)
+	}
+}
+
+func TestReapClosesOnlyAbandonedSessions(t *testing.T) {
+	m := newManager(4096, 50*time.Millisecond)
+
+	idle, _ := newTestSession(t, 4096)
+	m.put("idle", idle)
+
+	busy, _ := newTestSession(t, 4096)
+	busy.attach(&fakeClient{}, false)
+	m.put("busy", busy)
+
+	time.Sleep(80 * time.Millisecond)
+	if n := m.reap(time.Now()); n != 1 {
+		t.Fatalf("reaped %d, want 1", n)
+	}
+	if !idle.isClosed() {
+		t.Error("the abandoned session should have been closed")
+	}
+	if busy.isClosed() {
+		t.Error("a session with an attached client must survive the reaper")
+	}
+	if m.get("idle") != nil {
+		t.Error("the reaped session should be gone from the manager")
+	}
+}
+
+func TestGetForgetsClosedSessions(t *testing.T) {
+	m := newManager(4096, time.Minute)
+	s, _ := newTestSession(t, 4096)
+	m.put("gone", s)
+	s.finish("upstream vanished")
+
+	if m.get("gone") != nil {
+		t.Error("a closed session must not be handed out for resume")
+	}
+}
