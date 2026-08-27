@@ -8128,3 +8128,154 @@
   gap: 0.4rem;
   align-items: center;
 }
+
+/* ── carriages ───────────────────────────────────────────────────────── */
+
+.carriages-window {
+  --fw-width: 420px;
+  --fw-min-width: 320px;
+}
+
+.carriages-window-body {
+  padding: 1rem 1.25rem 1.35rem;
+  gap: 0.75rem;
+}
+
+/* = .popup-list + wider gap */
+.carriages-list {
+  gap: 0.75rem;
+}
+
+.carriage-item {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.carriage-item--urgent {
+  border-color: var(--popup-warning);
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.carriage-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.carriage-name {
+  font-weight: 600;
+  color: var(--popup-accent);
+  font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.carriage-badge {
+  flex: none;
+  padding: 0.125rem 0.375rem;
+  background-color: var(--popup-control-hover-bg);
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--popup-text-dim);
+}
+
+.carriage-remove-btn {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: var(--popup-text-dimmer);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.carriage-remove-btn:hover {
+  background-color: var(--popup-danger-bg);
+  color: var(--popup-danger);
+}
+
+.carriage-details {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.carriage-detail-label {
+  color: var(--popup-text-dim);
+  min-width: 6.5rem;
+}
+
+.carriage-detail-value {
+  color: var(--popup-text-strong);
+}
+
+.carriage-room {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.carriage-room-label {
+  color: var(--popup-text-dim);
+  min-width: 6.5rem;
+}
+
+.carriage-room-unknown {
+  color: var(--popup-text-dimmer);
+  font-style: italic;
+}
+
+.carriage-deadline {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--popup-text-dim);
+}
+
+.carriage-deadline--urgent {
+  color: var(--popup-warning);
+  font-weight: 600;
+}
+
+.carriage-room-distance {
+  color: var(--popup-text-dimmer);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.carriage-badge--moving {
+  background-color: var(--popup-accent);
+  color: var(--popup-bg);
+  font-weight: 600;
+}
+
+.carriage-deposit-bar {
+  background-color: var(--popup-control-bg);
+  border-radius: 999px;
+  height: 4px;
+  overflow: hidden;
+  margin-top: 0.3rem;
+}
+
+/* The theme green pulled most of the way towards the dim text colour: a full-width bar at this
+   size is loud at full saturation, but the row still wants to read as green rather than neutral.
+   Mixing off the token keeps it following the theme. */
+.carriage-deposit-bar-fill {
+  background-color: color-mix(in srgb, var(--popup-data-green) 45%, var(--popup-text-dim));
+  border-radius: 999px;
+  height: 100%;
+  transition: width 0.25s ease;
+}
+
+.carriage-deposit-bar-fill--urgent {
+  background-color: var(--popup-warning);
+}

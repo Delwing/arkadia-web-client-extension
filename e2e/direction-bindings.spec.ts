@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, getLastOutgoingCommand, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getLastOutgoingCommand, pushText, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 async function pressNumpadKey(page: Page, code: string): Promise<void> {
@@ -55,6 +55,21 @@ test.describe('Direction key bindings', () => {
 
         const lastCommand = await getLastOutgoingCommand(page);
         expect(lastCommand).toBe('zerknij');
+    });
+
+    test('Numpad5 halts the carriage while it is rolling, and looks again once it stops', async ({page}) => {
+        await pushText(page, 'Siadasz na nieduzym jednokonnym wozie.');
+        await pushText(page, 'Nieduzy jednokonny woz rusza na zachod.');
+
+        await resetCommands(page);
+        await page.locator('#message-input').focus();
+        await pressNumpadKey(page, 'Numpad5');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zatrzymaj woz');
+
+        await pushText(page, 'Nieduzy jednokonny woz zatrzymuje sie.');
+        await resetCommands(page);
+        await pressNumpadKey(page, 'Numpad5');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zerknij');
     });
 
     test('direction keys do NOT fire when a modal is open', async ({page}) => {

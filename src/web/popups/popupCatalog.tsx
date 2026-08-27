@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 
 import AssistantPopup from '../AssistantPopup';
+import CarriagesPopup from '../CarriagesPopup';
 import CechyPopup from '../CechyPopup';
 import ChatPopup from '../ChatPopup';
 import ClockPopup from '../ClockPopup';
@@ -67,6 +68,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:clock', Component: ClockPopup },
     { id: 'popup:worldTime', Component: WorldTimePopup },
     { id: 'popup:contracts', Component: ContractsPopup },
+    { id: 'popup:carriages', Component: CarriagesPopup },
     { id: 'popup:fishing', Component: FishingPopup },
     { id: 'popup:herb', Component: HerbManager },
     { id: 'popup:herb-text', Component: HerbTextWindow },
