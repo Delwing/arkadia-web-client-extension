@@ -19,7 +19,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -39,22 +38,10 @@ var (
 	maxBuffer   = flag.Int("buffer", 2*1024*1024, "bytes of output held for a detached client")
 	ttl         = flag.Duration("ttl", 25*time.Minute, "how long an unattended session is kept before the game connection is dropped")
 	dialTimeout = flag.Duration("dial-timeout", 10*time.Second, "upstream connect timeout")
-	// A test instrument: it injects output into a live session, so it stays off unless
-	// asked for and has no business on a proxy players use.
-	allowSimulate = flag.Bool("allow-simulate", false, "expose /simulate, which manufactures a replay backlog for testing")
-	sampleFile    = flag.String("sample-lines", "", "JSON array of real game lines for /simulate; invented lines match no triggers")
 )
 
 func main() {
 	flag.Parse()
-
-	if *sampleFile != "" {
-		n, err := loadSampleLines(*sampleFile)
-		if err != nil {
-			log.Fatalf("could not load sample lines: %v", err)
-		}
-		log.Printf("simulating from %d real lines", n)
-	}
 
 	manager := newManager(*maxBuffer, *ttl)
 
@@ -88,38 +75,6 @@ func main() {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
-
-	// Off unless asked for. It injects output into a live session, so it is a test
-	// instrument, not something to leave reachable on a proxy players use.
-	if *allowSimulate {
-		mux.HandleFunc("/simulate", func(w http.ResponseWriter, r *http.Request) {
-			id := strings.TrimSpace(r.URL.Query().Get("session"))
-			session := manager.get(id)
-			if session == nil {
-				http.Error(w, "no such session", http.StatusNotFound)
-				return
-			}
-			lines := 4000
-			if v := r.URL.Query().Get("lines"); v != "" {
-				if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100_000 {
-					lines = n
-				}
-			}
-			span := 15 * time.Minute
-			if v := r.URL.Query().Get("span"); v != "" {
-				if d, err := time.ParseDuration(v); err == nil && d > 0 {
-					span = d
-				}
-			}
-
-			bytes := session.simulate(lines, span)
-			log.Printf("session %s… simulated %d lines (%d KB) across %s", short(id), lines, bytes/1024, span)
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"lines": lines, "bytes": bytes, "span": span.String(),
-			})
-		})
-	}
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
