@@ -169,6 +169,26 @@ class MudClient implements ClientAdapter {
         localStorage.setItem(MCCP_STORAGE_KEY, String(enabled));
     }
 
+    /**
+     * Decide whether compression may be used for the connection about to open.
+     *
+     * MCCP is a single zlib stream negotiated once and running for the life of the TCP
+     * connection. A client that attaches to a session already in progress has none of
+     * that decoder state, so it starts inflating from the middle of the stream and
+     * renders binary noise — which is exactly what a resumed session looked like before
+     * this existed.
+     *
+     * Sessions on the proxy are built for clients to come and go, so compression is
+     * declined there outright. Declining is enough: with the handler disabled we never
+     * answer IAC WILL COMPRESS2, so the game never starts compressing and every later
+     * reattach reads a plain stream. The saved bandwidth is not worth a session that
+     * cannot be resumed.
+     */
+    private applyMccpForConnection(): void {
+        const preferred = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
+        this.mccpHandler.enabled = preferred && !this.usesSessionProxy();
+    }
+
     isMccpEnabled(): boolean {
         return this.mccpHandler.enabled;
     }
@@ -265,6 +285,7 @@ class MudClient implements ClientAdapter {
             this.socket.onerror = null;
             this.socket.onopen = null;
         }
+        this.applyMccpForConnection();
         this.mccpHandler.reset();
         this.echoHandler.reset();
         this.gmcpInitialized = false;
