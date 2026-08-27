@@ -53,9 +53,16 @@ const PROXY_MODE_STORAGE_KEY = 'proxyMode';
 // A user-deployed proxy URL (from the "host your own" wizard) used in 'proxy'
 // mode in place of the default. Stored as a plain wss:// origin.
 const USER_PROXY_URL_STORAGE_KEY = 'userProxyUrl';
-// How long checkConnection() waits for the server to say anything at all before
-// it gives up on the socket.
-const CONNECTION_CHECK_TIMEOUT_MS = 5000;
+// How long each probe waits for the server to say anything at all.
+// Generous on purpose: a phone returning from the background has to bring its
+// radio back up, and a lost packet costs another retransmit on top. Silence for
+// a few seconds there is normal, not proof of a dead socket.
+const CONNECTION_CHECK_TIMEOUT_MS = 8000;
+// Consecutive unanswered probes before we accept the socket is gone. Getting this
+// wrong is not symmetric: hanging up on a live connection costs the user their
+// session and a manual re-login, while being slow to notice a dead one costs them
+// a few seconds of typing into the void.
+const CONNECTION_CHECK_MAX_PROBES = 3;
 // How far past its deadline that timer may land before we stop believing it.
 // A backgrounded mobile tab is suspended outright: the callback then runs on
 // resume, minutes late, while the server's reply is still queued behind it —
@@ -64,6 +71,12 @@ const CONNECTION_CHECK_TIMEOUT_MS = 5000;
 const CONNECTION_CHECK_LATE_MS = 1500;
 
 export type ProxyMode = 'direct' | 'helper' | 'proxy';
+
+/**
+ * Who ended the last connection. 'remote' covers the server, the network and the
+ * browser — anything we didn't do ourselves.
+ */
+export type CloseCause = 'remote' | 'user' | 'watchdog';
 
 class MudClient implements ClientAdapter {
     private socket!: WebSocket;
@@ -78,6 +91,9 @@ class MudClient implements ClientAdapter {
     private connectionCheckTimeout: number | null = null;
     /** Wall-clock time the pending connection check was due to fire. */
     private connectionCheckDeadline = 0;
+    /** Unanswered probes in the current check. Late firings don't count. */
+    private connectionCheckProbes = 0;
+    private closeCause: CloseCause = 'remote';
     private gmcpInitialized: boolean = false;
     // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
     // partial multi-byte char across WebSocket frames.
@@ -331,6 +347,7 @@ class MudClient implements ClientAdapter {
         // run, so a check still pending from it would outlive it and fire against the
         // socket we are about to open.
         this.clearConnectionCheck();
+        this.closeCause = 'remote';
         this.mccpHandler.reset();
         this.echoHandler.reset();
         this.gmcpInitialized = false;
@@ -438,6 +455,7 @@ class MudClient implements ClientAdapter {
         // otherwise hold that connection open until its TTL.
         resetProxySessionId();
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.closeCause = 'user';
             this.socket.close();
         }
         this.pingTracker.stop();
@@ -454,6 +472,11 @@ class MudClient implements ClientAdapter {
         return this.isSocketOpen() && this.echoHandler.serverEchoing;
     }
 
+    /** Who ended the last connection. Reset when a new one is opened. */
+    get lastCloseCause(): CloseCause {
+        return this.closeCause;
+    }
+
     /**
      * Ask the server to prove the socket is still alive, and hang up if it can't.
      *
@@ -462,6 +485,7 @@ class MudClient implements ClientAdapter {
      */
     checkConnection(): void {
         if (!this.isSocketOpen() || this.connectionCheckTimeout !== null) return;
+        this.connectionCheckProbes = 0;
         this.armConnectionCheck();
     }
 
@@ -491,11 +515,24 @@ class MudClient implements ClientAdapter {
             return;
         }
 
-        console.warn('[MudClient] no reply to the connection check; closing the socket');
+        this.connectionCheckProbes += 1;
+        if (this.connectionCheckProbes < CONNECTION_CHECK_MAX_PROBES) {
+            console.warn(
+                `[MudClient] connection check unanswered (${this.connectionCheckProbes}/${CONNECTION_CHECK_MAX_PROBES}); probing again`,
+            );
+            this.armConnectionCheck();
+            return;
+        }
+
+        console.warn(
+            `[MudClient] ${CONNECTION_CHECK_MAX_PROBES} unanswered connection checks; closing the socket`,
+        );
+        this.closeCause = 'watchdog';
         this.socket.close();
     }
 
     private clearConnectionCheck(): void {
+        this.connectionCheckProbes = 0;
         if (this.connectionCheckTimeout !== null) {
             clearTimeout(this.connectionCheckTimeout);
             this.connectionCheckTimeout = null;
