@@ -26,6 +26,7 @@ import initDirectionBinds from './scripts/directionBinds'
 import initEnemyBinds from './scripts/enemyBinds'
 import initMoveMode from './scripts/moveMode'
 import initCarriage from './scripts/carriage'
+import initCarriageBlocks from './scripts/carriageBlocks'
 import initIdz from './scripts/idz'
 import {initKillCounter} from './scripts/kill'
 import {initImproveCounter} from './scripts/improveCounter'
@@ -254,6 +255,7 @@ export function registerScripts(client: Client) {
     initChatHistory(client, aliases)
     initMoveMode(client)
     initCarriage(client, aliases)
+    initCarriageBlocks(client, aliases)
     initPausers(client)
     initIdz(client, aliases)
     initKillCounter(client, aliases)

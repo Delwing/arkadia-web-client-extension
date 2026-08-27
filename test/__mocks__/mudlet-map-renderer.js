@@ -20,6 +20,33 @@ class PathFinder {
   }
 }
 
+
+/**
+ * Minimal stand-in for the renderer's graph builder: reads each room's exits into an adjacency
+ * map, weighting every edge by the target room's weight the way the real one does. Enough for
+ * pathfinding code under test; the real traversal rules are covered by the package's own tests.
+ */
+class MapGraph {
+  constructor(reader) {
+    this.rooms = typeof reader?.getRooms === 'function' ? reader.getRooms() : [];
+  }
+
+  getAdj() {
+    const adj = new Map();
+    for (const room of this.rooms) {
+      const edges = [];
+      const exits = Object.assign({}, room.exits ?? {}, room.specialExits ?? {});
+      for (const target of Object.values(exits)) {
+        const to = this.rooms.find((r) => r.id === target);
+        if (!to) continue;
+        edges.push({ id: target, weight: Math.max(to.weight ?? 1, 1) });
+      }
+      adj.set(room.id, edges);
+    }
+    return adj;
+  }
+}
+
 function createSettings() {
   return {
     roomSize: 0.6,
@@ -66,5 +93,6 @@ function createSettings() {
 module.exports = {
   MapReader,
   PathFinder,
+  MapGraph,
   createSettings,
 };

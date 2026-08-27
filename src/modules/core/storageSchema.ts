@@ -90,6 +90,8 @@ export interface GlobalStorageSchema {
     contracts: ContractsSnapshot;
     custom_sounds: CustomSound[];
     last_world_rebirth: number;
+    /** Rooms a carriage cannot enter, gathered by the player. Shared across characters. */
+    carriage_blocked_rooms: number[];
 }
 
 /**
@@ -186,4 +188,5 @@ export const globalStorageKeys = [
     'settingsMigrationsVersion',
     'custom_sounds',
     'last_world_rebirth',
+    'carriage_blocked_rooms',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];

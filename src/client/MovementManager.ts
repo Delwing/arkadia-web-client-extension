@@ -1,31 +1,7 @@
 import type Client from "./Client";
 import { isDirection } from "@shared/map/directions";
+import { isDrivableExit } from "@shared/map/exitCommands";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
-
-/**
- * The only single-word special exits in the published map that are imperatives rather than places.
- * Everything multi-word is already excluded by the space rule, so this list stays short.
- */
-const VERB_EXITS = new Set(['zanurkuj', 'wyskocz', 'wyplyn', 'zawroc']);
-
-/**
- * Whether a movement command can carry a move-mode prefix.
- *
- * Special exits come in two shapes in the map data: places you move onto ("latarnia", "wyjscie",
- * "schody") and commands that move you ("wejdz na gore", "zanurkuj"). Only the first kind takes a
- * prefix — "jedz na wejdz na gore" is not a command.
- *
- * A space is the reliable tell: of the 262 multi-word special exits in the published map every
- * one is a command, while of the 138 single-word ones only the four above are. Compass directions
- * never contain a space ("polnocny-wschod" is hyphenated), so they are unaffected. The plain-word
- * test also drops the three exits that are not commands at all — two Mudlet `script:send(...)`
- * bodies and one recorded as a bare room number.
- */
-function canTakeMovePrefix(cmd: string): boolean {
-    const trimmed = cmd.trim();
-    if (!/^[a-z][a-z-]*$/i.test(trimmed)) return false;
-    return !VERB_EXITS.has(trimmed.toLowerCase());
-}
 
 export default class MovementManager {
     moveMode = 0;
@@ -115,7 +91,8 @@ export default class MovementManager {
 
     /** Prefix a movement command with the active move mode, when the command can take one. */
     applyMoveModePrefix(cmd: string): string {
-        if (!canTakeMovePrefix(cmd)) return cmd;
+        // The same question as "can a carriage use this exit" - see isDrivableExit.
+        if (!isDrivableExit(cmd)) return cmd;
         if (this.carriageMode) return `jedz na ${cmd}`;
         if (this.moveMode === 1) return `przemknij ${cmd}`;
         if (this.moveMode === 2) return `przemknij z druzyna ${cmd}`;

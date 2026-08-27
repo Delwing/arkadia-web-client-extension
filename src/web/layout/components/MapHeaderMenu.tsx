@@ -27,6 +27,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [showGrid, setShowGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
   const [showAreaExitLabels, setShowAreaExitLabels] = useBuiltInPanelSetting('map', 'showAreaExitLabels', true);
   const [showTransportStops, setShowTransportStops] = useBuiltInPanelSetting('map', 'showTransportStops', false);
+  const [showCarriageBlocks, setShowCarriageBlocks] = useBuiltInPanelSetting('map', 'showCarriageBlocks', false);
   const [hintsEnabled, setHintsEnabled] = useState(() =>
     getPopupSetting('popup:knowledgeDetails', 'showHints', false)
   );
@@ -68,6 +69,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   useEffect(() => {
     eventBus.emit('mapShowTransportStops', showTransportStops);
   }, [showTransportStops]);
+
+  useEffect(() => {
+    eventBus.emit('mapShowCarriageBlocks', showCarriageBlocks);
+  }, [showCarriageBlocks]);
 
   // Keep hintsEnabled and showCompleted in sync with KnowledgeDetailsReport
   useEffect(() => {
@@ -300,6 +305,11 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [setShowTransportStops, closeMenu]);
 
+  const handleToggleCarriageBlocks = useCallback(() => {
+    setShowCarriageBlocks((prev) => !prev);
+    closeMenu();
+  }, [setShowCarriageBlocks, closeMenu]);
+
   const handleToggleShowCompleted = useCallback(() => {
     const newShowCompleted = !showCompleted;
     setShowCompleted(newShowCompleted);
@@ -515,6 +525,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
               >
                 <span className={`map-header-menu__checkbox${showTransportStops ? ' map-header-menu__checkbox--checked' : ''}`} />
                 Przystanki transportu
+              </button>
+              <button
+                type="button"
+                className="map-header-menu__item map-header-menu__item--checkbox"
+                onClick={handleToggleCarriageBlocks}
+              >
+                <span className={`map-header-menu__checkbox${showCarriageBlocks ? ' map-header-menu__checkbox--checked' : ''}`} />
+                Nieprzejezdne dla wozu
               </button>
               {hintsEnabled && (
                 <button

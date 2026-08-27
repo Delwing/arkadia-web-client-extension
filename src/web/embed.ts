@@ -21,11 +21,13 @@ import { openMapContextMenu } from "@modules/core/contextMenus";
 import { PulseOverlay } from "./pulseOverlay";
 import { TransportHopsOverlay, type TransportHopMarker } from "./transportHopsOverlay";
 import { ParkedCarriagesOverlay, type ParkedCarriageMarker } from "./parkedCarriagesOverlay";
+import { CarriageBlocksOverlay } from "./carriageBlocksOverlay";
 import { buildTransportWaypoints } from "./transportWaypoints";
 
 const LOST_ROOMS_OVERLAY_ID = "lost-rooms";
 const TRANSPORT_HOPS_OVERLAY_ID = "transport-hops";
 const PARKED_CARRIAGES_OVERLAY_ID = "parked-carriages";
+const CARRIAGE_BLOCKS_OVERLAY_ID = "carriage-blocks";
 const TRANSPORT_STOPS_OVERLAY_ID = "transport-stops";
 
 const MIN_ZOOM = 0.01;
@@ -116,6 +118,10 @@ export class EmbeddedMap {
     private lostRoomsOverlay: PulseOverlay | null = null;
     private transportHopsOverlay: TransportHopsOverlay | null = null;
     private parkedCarriagesOverlay: ParkedCarriagesOverlay | null = null;
+    private carriageBlocksOverlay: CarriageBlocksOverlay | null = null;
+    /** Marked rooms are reference material, so they stay hidden until asked for. */
+    private carriageBlocksVisible = false;
+    private carriageBlockRooms: number[] = [];
     private transportStopsOverlay: WaypointOverlay | null = null;
     private waypointHover = false;
     private pointerDownPos: { x: number; y: number } | null = null;
@@ -280,6 +286,18 @@ export class EmbeddedMap {
             this.updateLostRoomsOverlay(roomIds);
         });
 
+        eventBus.on('mapCarriageBlocks', (roomIds: number[]) => {
+            this.carriageBlockRooms = roomIds ?? [];
+            this.updateCarriageBlocksOverlay();
+        });
+
+        eventBus.on('mapShowCarriageBlocks', (show: boolean) => {
+            this.carriageBlocksVisible = show;
+            this.updateCarriageBlocksOverlay();
+        });
+        // Apply the persisted setting on load (the menu also emits on mount).
+        this.carriageBlocksVisible = getBuiltInPanelSetting('map', 'showCarriageBlocks', false);
+
         eventBus.on('mapParkedCarriages', (markers: ParkedCarriageMarker[]) => {
             this.updateParkedCarriagesOverlay(markers ?? []);
         });
@@ -300,6 +318,7 @@ export class EmbeddedMap {
         eventBus.emit('requestMapHighlights');
         eventBus.emit('requestMapLostRooms');
         eventBus.emit('requestMapParkedCarriages');
+        eventBus.emit('requestMapCarriageBlocks');
         eventBus.emit('requestMapPath');
 
         eventBus.on('map.centerOn', (data: { roomId: number }) => {
@@ -759,6 +778,23 @@ export class EmbeddedMap {
             this.renderer.addSceneOverlay(LOST_ROOMS_OVERLAY_ID, this.lostRoomsOverlay);
         } else {
             this.lostRoomsOverlay.setRoomIds(roomIds);
+        }
+    }
+
+    private updateCarriageBlocksOverlay() {
+        const roomIds = this.carriageBlocksVisible ? this.carriageBlockRooms : [];
+        if (roomIds.length === 0) {
+            if (this.carriageBlocksOverlay) {
+                this.renderer.removeSceneOverlay(CARRIAGE_BLOCKS_OVERLAY_ID);
+                this.carriageBlocksOverlay = null;
+            }
+            return;
+        }
+        if (!this.carriageBlocksOverlay) {
+            this.carriageBlocksOverlay = new CarriageBlocksOverlay(roomIds);
+            this.renderer.addSceneOverlay(CARRIAGE_BLOCKS_OVERLAY_ID, this.carriageBlocksOverlay);
+        } else {
+            this.carriageBlocksOverlay.setRoomIds(roomIds);
         }
     }
 

@@ -1,5 +1,6 @@
 import Triggers from "./Triggers";
 import MapHelper from "@shared/map/MapHelper";
+import {getBlockedRooms} from "@modules/data/carriageBlocks";
 import {Colors, setXtermPalette} from "@modules/core/Colors";
 import MovementManager from "./MovementManager";
 import CommandProcessor from "./CommandProcessor";
@@ -68,6 +69,9 @@ export default class Client {
         shouldSetDrinkableBind: () => getBehaviorSettings().drinkableAsFunctionalBind !== false,
         setPreWalkCommands: (cmds: string[]) => { this.movementManager.preWalkCommands = cmds; },
         setPostWalkCommands: (cmds: string[]) => { this.movementManager.postWalkCommands = cmds; },
+    }, {
+        // Only constrains routing while a carriage is actually being driven.
+        carriageBlocks: () => (this.carriageMode ? getBlockedRooms() : null),
     });
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);

@@ -156,11 +156,14 @@ export interface KnownEvents {
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLostRooms": [number[]];
     "mapParkedCarriages": [Array<{ roomId: number; label: string }>];
+    "mapCarriageBlocks": [number[]];
+    "mapShowCarriageBlocks": [boolean];
     "mapLocationLabel": string;
     "requestMapLocationLabel": void;
     "requestMapHighlights": void;
     "requestMapLostRooms": void;
     "requestMapParkedCarriages": void;
+    "requestMapCarriageBlocks": void;
     "requestMapPath": void;
     "notify": NotificationPayload;
     "lampTimer": number | null;
@@ -290,6 +293,9 @@ export interface KnownEvents {
     "carriages.updated": { carriages: CarriageEntry[] };
     "carriages.remove": { key: string };
     "carriages.request": void;
+    "carriageBlocks.changed": void;
+    "carriageRoute": { transfer: number; driveRooms: number; walkRooms: number; destinationBlocked: boolean };
+    "carriageRouteStep": { nextCommand: string | null; atTransfer: boolean };
     "fishing.popup.open": FishingStatePayload;
     "fishing.state": FishingStatePayload;
     "fishing.cast": { bait: BaitType };

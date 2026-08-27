@@ -1,4 +1,5 @@
 import {MapReader, PathFinder} from "mudlet-map-renderer";
+import {CarriageRouter} from "./carriagePathFinder";
 import {getLongDir, getShortDir, isPolishDirection, longToShort} from "./directions";
 import {characterStorage} from "@modules/core/storage";
 
@@ -103,6 +104,12 @@ export interface MapStorage {
 
 export interface MapHelperOptions {
     storage?: MapStorage;
+    /**
+     * Rooms a carriage may not enter, or null when not driving one. Injected rather than read from
+     * client state so this stays UI- and client-agnostic; leadTo() consults it on every call, so
+     * toggling carriage mode needs no invalidation.
+     */
+    carriageBlocks?: () => ReadonlySet<number> | null;
 }
 
 const defaultStorage: MapStorage = {
@@ -166,6 +173,15 @@ export default class MapHelper {
         hops: Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }>;
     } | null = null;
     private highlights: number[] = [];
+    private readonly carriageBlocks?: () => ReadonlySet<number> | null;
+    /** Built on first carriage route and reused; the blocked set only affects the search. */
+    private carriageRouter: CarriageRouter | null = null;
+    /** Where we are currently leading to, so the route can be redrawn when the rules change. */
+    private leadTarget: number | null = null;
+    /** True while the drawn route came from the carriage router rather than the plain pathfinder. */
+    private carriageLead = false;
+    /** Transfer point already announced, so travelling along the route does not repeat itself. */
+    private announcedTransfer: number | null = null;
     private pendingBindAbort?: AbortController;
     private highlighterIdCounter = 0;
     private highlighters: Map<string, { roomIds: Set<number>; color: string; enabled: boolean }> = new Map();
@@ -177,6 +193,7 @@ export default class MapHelper {
     constructor(client: MapHelperClient, options: MapHelperOptions = {}) {
         this.client = client;
         this.storage = options.storage ?? defaultStorage;
+        this.carriageBlocks = options.carriageBlocks;
 
         const saved = this.storage.getItem('mapperRoomId');
         if (saved != null) {
@@ -246,6 +263,17 @@ export default class MapHelper {
 
         this.client.on("leadTo", (target: number) => {
             this.leadTo(target);
+        });
+
+        // Mounting or leaving a carriage changes which rooms are passable, as does marking one, so
+        // a route already on screen has to be worked out again.
+        this.client.on("carriageModeChanged", () => this.releadForChangedRules());
+        this.client.on("carriageBlocks.changed", () => this.releadForChangedRules());
+        // An ordinary lead is recomputed from the current room every time it is drawn, but a
+        // carriage route is stored as fixed segments, so without this it stays frozen where the
+        // journey began instead of following us along it.
+        this.client.on("enterLocation", () => {
+            if (this.carriageLead) this.releadForChangedRules();
         });
 
         this.client.on("clearLeadTo", () => {
@@ -1126,6 +1154,10 @@ export default class MapHelper {
             this.client.sendEvent("notify", { text: 'Jestes juz na miejscu' });
             return;
         }
+        if (this.leadTarget !== id) this.announcedTransfer = null;
+        this.leadTarget = id;
+        if (this.leadToByCarriage(currentId, id)) return;
+        this.clearCarriageRouteStep();
         const path = this.pathFinder?.findPath(currentId, id);
         if (!path || path.length <= 1) {
             this.client.sendEvent("notify", { text: 'Brak sciezki do lokacji' });
@@ -1136,6 +1168,54 @@ export default class MapHelper {
         this.emitDrawData();
     }
 
+    /**
+     * Lead by carriage when one is being driven, splitting the trip into a driven leg and a walked
+     * leg. Returns false when this is an ordinary journey on foot, so the caller falls through.
+     *
+     * The two legs are drawn through the same machinery the trip planner uses, so they arrive on
+     * the map as separately coloured segments for free.
+     */
+    private leadToByCarriage(fromId: number | undefined, toId: number): boolean {
+        // An empty set still routes: multi-word special exits are barred to a wagon whether or not
+        // anyone has marked a room, so the carriage graph differs from the walking one regardless.
+        const blocked = this.carriageBlocks?.();
+        if (!blocked || typeof fromId !== 'number' || !this.mapReader) return false;
+
+        if (!this.carriageRouter) this.carriageRouter = new CarriageRouter(this.mapReader);
+        const route = this.carriageRouter.findRoute(blocked, fromId, toId);
+        if (!route) {
+            this.client.sendEvent("notify", { text: 'Brak sciezki do lokacji' });
+            return true;
+        }
+        // Even with no leg on foot the drive itself must be drawn from here: falling back to the
+        // ordinary pathfinder would route the wagon straight through the rooms we just avoided.
+        const needsFootLeg = route.walk.length > 1;
+        const walkSegments: Array<{ path: number[]; color: string }> = [];
+        if (route.drive.length > 1) walkSegments.push({ path: route.drive, color: SEGMENT_COLORS[0] });
+        if (needsFootLeg) walkSegments.push({ path: route.walk, color: SEGMENT_COLORS[1] });
+        if (walkSegments.length === 0) return false;
+
+        this._destinations = [];
+        this.carriageLead = true;
+        this.setTransportRoute({ walkSegments, hops: [], finalDestination: toId });
+        this.client.sendEvent("carriageRouteStep", {
+            nextCommand: route.drive.length > 1 ? this.exitCommandTo(route.drive[1]) : null,
+            atTransfer: needsFootLeg && route.transfer === fromId,
+        });
+        // Only worth saying when the wagon has to be left somewhere, and only when that somewhere
+        // is news - the route is redrawn on every step, and repeating it each room would be noise.
+        if (needsFootLeg && route.transfer !== this.announcedTransfer) {
+            this.announcedTransfer = route.transfer;
+            this.client.sendEvent("carriageRoute", {
+                transfer: route.transfer,
+                driveRooms: Math.max(route.drive.length - 1, 0),
+                walkRooms: route.walk.length - 1,
+                destinationBlocked: route.destinationBlocked,
+            });
+        }
+        return true;
+    }
+
     setMultiDestinations(ids: number[]) {
         this._destinations = ids;
         this._transportRoute = null;
@@ -1143,9 +1223,53 @@ export default class MapHelper {
     }
 
     clearLeadTo() {
+        this.leadTarget = null;
+        this.clearCarriageRouteStep();
+        this.announcedTransfer = null;
         this._destinations = [];
         this._transportRoute = null;
         this.emitDrawData();
+    }
+
+    /** Stop offering a step: leading has ended, or is no longer a carriage matter. */
+    private clearCarriageRouteStep() {
+        if (this.carriageLead) {
+            this.client.sendEvent("carriageRouteStep", {nextCommand: null, atTransfer: false});
+        }
+        this.carriageLead = false;
+    }
+
+    /** The command that leaves the current room for `targetId`, or null when there is no such exit. */
+    private exitCommandTo(targetId: number): string | null {
+        const room = this.currentRoom;
+        if (!room) return null;
+        for (const [direction, id] of Object.entries(room.exits ?? {})) {
+            if (id === targetId) return getShortDir(direction);
+        }
+        for (const [exit, id] of Object.entries(room.specialExits ?? {})) {
+            if (id === targetId) return exit;
+        }
+        return null;
+    }
+
+    /**
+     * Redraw the route we are leading along, because what counts as passable has changed.
+     *
+     * Getting on or off a carriage changes the rules mid-journey: a route worked out on foot may
+     * run through rooms a wagon cannot enter, and one worked out for a wagon takes detours that are
+     * pointless once you are walking.
+     */
+    private releadForChangedRules() {
+        const target = this.leadTarget;
+        if (target === null) return;
+        if (target === this.currentRoom?.id) {
+            // Arrived. An ordinary lead is taken down by removeReachedDestination, but a carriage
+            // route lives in the transport segments instead of _destinations, so nothing else would
+            // ever clear it and the finished route would stay drawn.
+            if (this.carriageLead) this.clearLeadTo();
+            return;
+        }
+        this.leadTo(target);
     }
 
     setTransportRoute(route: {
