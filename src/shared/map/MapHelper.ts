@@ -775,6 +775,35 @@ export default class MapHelper {
         return command;
     }
 
+    /**
+     * What the map believes actually leads `direction` from the current room, without moving.
+     *
+     * The literal exit wins when it exists. Otherwise a special exit whose target sits that way is
+     * preferred, then any exit whose target sits that way — so "w" still works in a room whose
+     * only westward exit is recorded as "nw" or as a special-exit command. Returns `direction`
+     * unchanged when nothing better is known.
+     *
+     * Split out of move() so callers that must not advance the mapper (driving a carriage, where
+     * the ride is asynchronous and GMCP is the authority) can still resolve the direction.
+     */
+    resolveDirection(direction: string): string {
+        if (!this.mapReader || this.paused || !this.currentRoom) return direction;
+        const potentialExit = getLongDir(direction);
+        if (this.currentRoom.exits?.[potentialExit]) return direction;
+
+        const leadsThatWay = ([, id]: [string, number]) =>
+            this.findRoomByExit(this.currentRoom, this.mapReader.getRoom(id), potentialExit);
+
+        const specialExitMatch = Object.entries(this.currentRoom.specialExits ?? {})
+            .filter(leadsThatWay)
+            .map(([exit]) => exit);
+        if (specialExitMatch.length > 0) return getShortDir(specialExitMatch[0]);
+
+        const allExits = Object.assign({}, this.currentRoom.exits ?? {}, this.currentRoom.specialExits ?? {});
+        const exits = Object.entries(allExits).filter(leadsThatWay).map(([exit]) => exit);
+        return exits.length > 0 ? getShortDir(exits[0]) : direction;
+    }
+
     move(direction: string, isTeamFollow: boolean = false): { direction: string; moved: boolean; suppress?: boolean } {
         if (!this.mapReader) {
             return {direction, moved: false};
@@ -789,30 +818,7 @@ export default class MapHelper {
                 this.currentRoom.exits ?? {},
                 this.currentRoom.specialExits ?? {}
             );
-            const potentialExit = getLongDir(direction);
-            if (!this.currentRoom.exits || !this.currentRoom.exits[potentialExit]) {
-                const specialExitMatch = this.currentRoom.specialExits
-                    ? Object.entries(this.currentRoom.specialExits)
-                        .filter(([_, id]) => {
-                            const target = this.mapReader.getRoom(id);
-                            return this.findRoomByExit(this.currentRoom, target, potentialExit);
-                        })
-                        .map(([exit]) => exit)
-                    : [];
-                if (specialExitMatch.length > 0) {
-                    actualDirection = getShortDir(specialExitMatch[0]);
-                } else {
-                    const exits = Object.entries(allExits)
-                        .filter(([_, id]) => {
-                            const target = this.mapReader.getRoom(id);
-                            return this.findRoomByExit(this.currentRoom, target, potentialExit);
-                        })
-                        .map(([exit]) => exit);
-                    if (exits.length > 0) {
-                        actualDirection = getShortDir(exits[0]);
-                    }
-                }
-            }
+            actualDirection = this.resolveDirection(direction);
 
             if (actualDirection !== direction) {
                 if (!isTeamFollow) {
@@ -889,13 +895,11 @@ export default class MapHelper {
             const entries = this.currentRoom.userData.team_follow_link.split("#");
             for (const entry of entries) {
                 const [search, exit] = entry.split("*");
-                if (search && exit && direction.includes(search)) {
-                    const res = this.move(exit, true);
-                    if (res.moved) {
-                        return res.direction;
-                    }
-                }
-                if (fullFollow.includes(search)) {
+                if (!search || !exit) continue;
+                // Either the follow token itself or the wider follow text may carry the keyword.
+                // fullFollow is optional — the carriage and boat triggers pass only a direction —
+                // so it has to be probed defensively.
+                if (direction.includes(search) || fullFollow?.includes(search)) {
                     const res = this.move(exit, true);
                     if (res.moved) {
                         return res.direction;

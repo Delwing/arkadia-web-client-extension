@@ -20,10 +20,12 @@ import { showMapNoteTooltipForRoom, hideMapNoteTooltip } from "./mapNoteTooltip"
 import { openMapContextMenu } from "@modules/core/contextMenus";
 import { PulseOverlay } from "./pulseOverlay";
 import { TransportHopsOverlay, type TransportHopMarker } from "./transportHopsOverlay";
+import { ParkedCarriagesOverlay, type ParkedCarriageMarker } from "./parkedCarriagesOverlay";
 import { buildTransportWaypoints } from "./transportWaypoints";
 
 const LOST_ROOMS_OVERLAY_ID = "lost-rooms";
 const TRANSPORT_HOPS_OVERLAY_ID = "transport-hops";
+const PARKED_CARRIAGES_OVERLAY_ID = "parked-carriages";
 const TRANSPORT_STOPS_OVERLAY_ID = "transport-stops";
 
 const MIN_ZOOM = 0.01;
@@ -113,6 +115,7 @@ export class EmbeddedMap {
     private currentHighlights: { roomId: number; color: string }[] = [];
     private lostRoomsOverlay: PulseOverlay | null = null;
     private transportHopsOverlay: TransportHopsOverlay | null = null;
+    private parkedCarriagesOverlay: ParkedCarriagesOverlay | null = null;
     private transportStopsOverlay: WaypointOverlay | null = null;
     private waypointHover = false;
     private pointerDownPos: { x: number; y: number } | null = null;
@@ -277,6 +280,10 @@ export class EmbeddedMap {
             this.updateLostRoomsOverlay(roomIds);
         });
 
+        eventBus.on('mapParkedCarriages', (markers: ParkedCarriageMarker[]) => {
+            this.updateParkedCarriagesOverlay(markers ?? []);
+        });
+
         eventBus.on('mapTransportHops', (hops: TransportHopMarker[] | null) => {
             this.updateTransportHopsOverlay(hops ?? []);
         });
@@ -292,6 +299,7 @@ export class EmbeddedMap {
         // Request current highlights and path in case they were created before map loaded
         eventBus.emit('requestMapHighlights');
         eventBus.emit('requestMapLostRooms');
+        eventBus.emit('requestMapParkedCarriages');
         eventBus.emit('requestMapPath');
 
         eventBus.on('map.centerOn', (data: { roomId: number }) => {
@@ -751,6 +759,22 @@ export class EmbeddedMap {
             this.renderer.addSceneOverlay(LOST_ROOMS_OVERLAY_ID, this.lostRoomsOverlay);
         } else {
             this.lostRoomsOverlay.setRoomIds(roomIds);
+        }
+    }
+
+    private updateParkedCarriagesOverlay(markers: ParkedCarriageMarker[]) {
+        if (markers.length === 0) {
+            if (this.parkedCarriagesOverlay) {
+                this.renderer.removeSceneOverlay(PARKED_CARRIAGES_OVERLAY_ID);
+                this.parkedCarriagesOverlay = null;
+            }
+            return;
+        }
+        if (!this.parkedCarriagesOverlay) {
+            this.parkedCarriagesOverlay = new ParkedCarriagesOverlay(markers);
+            this.renderer.addSceneOverlay(PARKED_CARRIAGES_OVERLAY_ID, this.parkedCarriagesOverlay);
+        } else {
+            this.parkedCarriagesOverlay.setMarkers(markers);
         }
     }
 

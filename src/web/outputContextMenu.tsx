@@ -22,6 +22,7 @@ import {
     Shield,
     PawPrint,
     Dumbbell,
+    Caravan,
     type LucideIcon,
 } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
@@ -144,6 +145,11 @@ export function setupOutputContextMenu(
             {
                 label: iconLabel(ScrollText, 'Zlecenia'),
                 action: () => eventBus.emit('sendCommand', { command: '/zlecenia' }),
+                opensWindow: true,
+            },
+            {
+                label: iconLabel(Caravan, 'Wozy'),
+                action: () => eventBus.emit('sendCommand', { command: '/wozw' }),
                 opensWindow: true,
             },
             {

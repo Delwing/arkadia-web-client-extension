@@ -149,6 +149,11 @@ export class FunctionalBind {
         return this.currentPrintable !== null;
     }
 
+    /** The command currently bound, so a caller can tell whether the slot is still its own. */
+    getPrintable(): string | null {
+        return this.currentPrintable;
+    }
+
     updateOptions(options: FunctionalBindOptions = {}) {
         const oldLabel = this.label;
         if (options.key) {

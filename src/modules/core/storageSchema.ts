@@ -20,6 +20,7 @@ import type { ContractsSnapshot } from '@client/scripts/contracts';
 import type { AttackMode } from '@client/utils/attackController';
 import type { CharGender } from '@shared/events/gmcpTypes';
 import type { CechyHistoryEntry } from '@client/scripts/cechyHistory';
+import type { CarriageRecord } from '@client/scripts/carriage';
 
 /**
  * Character-scoped storage keys.
@@ -53,6 +54,7 @@ export interface CharacterStorageSchema {
     chat_history: any[]; // TODO: use serialized ChatEntry[] type
     gender: CharGender;
     pipe_filled: boolean;
+    carriages: Record<string, CarriageRecord>;
 }
 
 /**
@@ -154,6 +156,7 @@ export const characterStorageKeys = [
     'chat_history',
     'gender',
     'pipe_filled',
+    'carriages',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */

@@ -256,8 +256,19 @@ class Tracker {
 
     private goIdle(): void {
         this.stagedSet.clear();
-        this.lastBind = undefined;
+        this.clearBind();
         this.go({ kind: 'idle' });
+    }
+
+    /**
+     * Drop the transport bind. A board bind belongs to the location that offered it and an exit
+     * bind to the journey that set it; leaving either behind keeps ']' wired to a command you can
+     * no longer sensibly run, and leaves `lastBind` for onCarriageMode() to resurrect.
+     */
+    private clearBind(): void {
+        if (!this.lastBind) return;
+        this.lastBind = undefined;
+        this.client.FunctionalBind.clearCategory('transport');
     }
 
     // ── event handlers (called by triggers) ───────────────────────────────────
@@ -520,6 +531,7 @@ class Tracker {
     private onReset(): void { this.goIdle(); }
 
     private onLocationChange(id: number | null): void {
+        const moved = id !== this.locationId;
         this.prevLocationId = this.locationId;
         this.locationId = id;
         // Evict staged directions that were for the previous stop
@@ -530,6 +542,11 @@ class Tracker {
         }
         // on_board/exiting: do not clear here — transport stops also fire location events.
         // onGmcpMap(true) is the reliable disembark signal.
+        if (moved && this.state.kind !== 'on_board' && this.state.kind !== 'exiting') {
+            // Walked away from the dock. The room description of wherever we land re-offers a bind
+            // through the standing patterns, so dropping this one loses nothing.
+            this.clearBind();
+        }
     }
 
     private onGmcpMap(hasMap: boolean): void {

@@ -52,6 +52,54 @@ test.describe('Multi-functional Bind Categories', () => {
         );
     });
 
+    test('transport bind is dropped after walking away from the stop', async ({page}) => {
+        const output = page.locator('#main_text_output_msg_wrapper');
+        await waitForMapReady(page);
+
+        await pushText(page, 'czarny stojacy dylizans', { type: 'room.contents.object' });
+        await expect(output).toContainText('wsiadz do dylizansu');
+
+        // Walk off somewhere with no transport standing in it.
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: { x: 0, y: 0, name: 'Transport Docks' },
+        });
+
+        await resetCommandLog(page);
+        await page.keyboard.press('BracketRight');
+        await page.waitForTimeout(500);
+        expect(await getCommandLog(page)).not.toContain('wsiadz do dylizansu');
+    });
+
+    test('a stale transport bind is not resurrected by mounting a wagon elsewhere', async ({page}) => {
+        const output = page.locator('#main_text_output_msg_wrapper');
+        await waitForMapReady(page);
+
+        await pushText(page, 'czarny stojacy dylizans', { type: 'room.contents.object' });
+        await expect(output).toContainText('wsiadz do dylizansu');
+
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: { x: 0, y: 0, name: 'Transport Docks' },
+        });
+
+        // Leasing and mounting your own wagon flips carriage mode, which re-renders the tracker's
+        // last bind. It must have forgotten the dylizans by now.
+        await resetCommandLog(page);
+        await pushText(page, 'Siadasz na drewnianym wozie.');
+        await page.keyboard.press('BracketRight');
+        await page.waitForTimeout(500);
+        const log = await getCommandLog(page);
+        expect(log).not.toContain('wsiadz do dylizansu');
+        expect(log).not.toContain('wjedz do dylizansu');
+    });
+
     test('last-set category wins when default and gates share the same key', async ({page}) => {
         const output = page.locator('#main_text_output_msg_wrapper');
 

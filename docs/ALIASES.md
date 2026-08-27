@@ -173,8 +173,21 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | Komenda | Opis |
 |---------|------|
 | `/woz` | Przelacz tryb wozu (wlacz/wylacz) |
+| `/wozw` | Otworz okno "Wozy": data najmu, wozownia, koszt, kaucja i miejsce postoju |
 
-> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu. Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.
+> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.
+
+> **Wskazowka:** Okno "Wozy" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.
+
+> **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.
+
+> **Wskazowka:** Okno rozroznia, czy siedzisz w stojacym pojezdzie, czy jedziesz — znacznik przy nazwie pokazuje `stoisz` albo `jedziesz`, na podstawie komunikatow `... rusza na ...` i `... zatrzymuje sie.` twojego pojazdu.
+
+> **Wskazowka:** W czasie jazdy klawisz `zerknij` (domyslnie Numpad5) zatrzymuje pojazd — wysyla `zatrzymaj woz` / `zatrzymaj bryczke` / `zatrzymaj dylizans`. Kiedy pojazd stoi, klawisz znowu dziala jak `zerknij`.
+
+> **Wskazowka:** Po ponownym polaczeniu z gra ("przywracam polaczenie") gra wysadza cie z pojazdu, wiec klient zapisuje pojazd jako zaparkowany w biezacej lokacji. Jesli mapa nie nadazyla, miejsce postoju poprawia sie samo, gdy zobaczysz pojazd w opisie lokacji.
+
+> **Wskazowka:** Bindy: kiedy pojazd stanie na koncu drogi ("Nie ma tu zadnej drogi, ktora mozna by dalej jechac.") pod bindem glownym pojawia sie `zsiadz z wozu` / `zsiadz z bryczki` / `zsiadz z dylizansu`. Kiedy wracasz pieszo do lokacji, w ktorej stoi twoj pojazd, bind zmienia sie na `usiadz na wozie` / `usiadz na bryczce` / `usiadz na dylizansie`. Bind znika, gdy odejdziesz z lokacji. Komunikaty konczace jazde (`Dojechaliscie do rozdrozy.` i `Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`) sa podswietlane na zolto, zeby nie zginely w opisach mijanych lokacji.
 
 ## Odkladanie magii
 

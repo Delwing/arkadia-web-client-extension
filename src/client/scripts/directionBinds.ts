@@ -75,6 +75,12 @@ function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding
 }
 
 function sendDirection(client: Client, direction: string): void {
+    // Mid-ride the look key halts the carriage instead. The command is published by the carriage
+    // script and is null whenever nothing is rolling, so outside a ride this is a no-op.
+    if (direction === 'zerknij' && client.carriageStopCommand) {
+        client.sendCommand(client.carriageStopCommand);
+        return;
+    }
     if (direction === 'special') {
         const exits = client.Map.currentRoom?.specialExits ?? {};
         const first = Object.keys(exits)[0];
