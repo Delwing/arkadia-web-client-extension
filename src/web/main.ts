@@ -470,52 +470,6 @@ mudClient.on('client.connect', () => {
     console.log('Client connected to Arkadia server.');
 });
 
-// Disconnect diagnostics. A phone has no devtools, and "rozłączyło mnie" reads the
-// same whether the watchdog hung up, the user did, or the network did — so the one
-// line the player can actually see has to name the path and the close code.
-let lastCloseEvent: CloseEvent | null = null;
-let hiddenSince: number | null = null;
-let lastReturnFromBackground: {at: number; backgroundMs: number} | null = null;
-
-mudClient.on('close', (event) => {
-    lastCloseEvent = event;
-});
-
-const formatDuration = (ms: number): string => {
-    const seconds = Math.max(0, Math.round(ms / 1000));
-    if (seconds < 60) return `${seconds} s`;
-    const minutes = Math.floor(seconds / 60);
-    const rest = seconds % 60;
-    return rest ? `${minutes} min ${rest} s` : `${minutes} min`;
-};
-
-const describeDisconnect = (): string => {
-    const details: string[] = [];
-
-    if (mudClient.lastCloseCause === 'user') {
-        details.push('rozłączenie na żądanie');
-    } else if (mudClient.lastCloseCause === 'watchdog') {
-        details.push('brak odpowiedzi serwera na sprawdzenie połączenia');
-    } else {
-        details.push('połączenie zamknięte po stronie serwera lub sieci');
-    }
-
-    if (lastCloseEvent) {
-        details.push(`kod ${lastCloseEvent.code}${lastCloseEvent.wasClean ? '' : ', zerwane'}`);
-        if (lastCloseEvent.reason) details.push(lastCloseEvent.reason);
-    }
-
-    if (hiddenSince !== null) {
-        details.push(`karta w tle od ${formatDuration(Date.now() - hiddenSince)}`);
-    } else if (lastReturnFromBackground && Date.now() - lastReturnFromBackground.at < 120_000) {
-        details.push(
-            `powrót z tła ${formatDuration(Date.now() - lastReturnFromBackground.at)} temu, po ${formatDuration(lastReturnFromBackground.backgroundMs)} w tle`,
-        );
-    }
-
-    return details.join('; ');
-};
-
 // Handle client disconnect event
 mudClient.on('client.disconnect', () => {
     isConnected = false;
@@ -524,9 +478,8 @@ mudClient.on('client.disconnect', () => {
     authClosed = false;
     updateConnectButtons();
     disableTabSleepPrevention();
-    const reason = describeDisconnect();
-    client.println(`Rozłączono z serwerem Arkadii. [${reason}]`);
-    console.log(`Client disconnected from Arkadia server: ${reason}`);
+    client.println('Rozłączono z serwerem Arkadii.');
+    console.log('Client disconnected from Arkadia server.');
 });
 
 // `core.keepalive` toggling is only useful on Safari (where the original user
@@ -537,42 +490,28 @@ const isSafari = /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.us
 
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        hiddenSince = Date.now();
-        // Deliberately no connection check on the way out. Mobile suspends a
-        // backgrounded tab within moments of this event, so a check armed here can
-        // only ever expire unattended and report a silence nobody was listening for.
-        if (isConnected && isSafari) {
-            mudClient.sendGmcp('core.keepalive', {disabled: true});
-        }
-        return;
-    }
-
-    if (hiddenSince !== null) {
-        lastReturnFromBackground = {at: Date.now(), backgroundMs: Date.now() - hiddenSince};
-        hiddenSince = null;
-    }
-
-    // Coming back is when the answer matters: the socket may well have died while we
-    // were away, and the buttons have to reflect that.
     if (isConnected) {
         mudClient.checkConnection();
     }
 
-    // Suppress split view checks during tab reactivation reflow
-    outputMessageHandler.suppressSplitView(500);
+    if (!document.hidden) {
+        // Suppress split view checks during tab reactivation reflow
+        outputMessageHandler.suppressSplitView(500);
 
-    const socketOpen = mudClient.isSocketOpen();
-    if (socketOpen && !isConnected) {
-        isConnected = true;
-        updateConnectButtons();
-    } else if (!socketOpen && isConnected) {
-        isConnected = false;
-        isConnecting = false;
-        isDisconnecting = false;
-        updateConnectButtons();
-    } else if (socketOpen && isConnected && isSafari) {
-        mudClient.sendGmcp('core.keepalive', {disabled: false});
+        const socketOpen = mudClient.isSocketOpen();
+        if (socketOpen && !isConnected) {
+            isConnected = true;
+            updateConnectButtons();
+        } else if (!socketOpen && isConnected) {
+            isConnected = false;
+            isConnecting = false;
+            isDisconnecting = false;
+            updateConnectButtons();
+        } else if (socketOpen && isConnected && isSafari) {
+            mudClient.sendGmcp('core.keepalive', {disabled: false});
+        }
+    } else if (isConnected && isSafari) {
+        mudClient.sendGmcp('core.keepalive', {disabled: true});
     }
 });
 
