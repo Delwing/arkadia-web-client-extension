@@ -51,6 +51,30 @@ export function isReplaying(): boolean {
  * throw too: a failing trigger must not leave every later event dated to a moment that
  * has passed.
  */
+/**
+ * Schedule `fn` for `delayMs` after the event being processed, not after now.
+ *
+ * The counterpart to {@link eventNow} for the other half of the problem. Stamping is
+ * fixed by recording the right time; *waiting* is not — a trigger that schedules "do X in
+ * ten minutes" from a line replayed five minutes late would wait fifteen. The deadline
+ * belongs to the event, so the remaining wait is what is left of it.
+ *
+ * A deadline already past runs on the next tick rather than being dropped: for the cases
+ * this exists for — a recovery timer finishing, a stale marker being cleared, a state
+ * machine going idle — the work still needs doing, just not later. Deferring by a tick
+ * rather than calling straight through keeps it out of the trigger's own stack, where a
+ * throw would cost the line being processed.
+ *
+ * For live output this is exactly `setTimeout`, since the event time is the wall clock.
+ *
+ * Not for debounces. A timer that coalesces a burst of updates is measuring the gap
+ * between arrivals, not an age, and replay delivers the burst together anyway.
+ */
+export function scheduleFromEvent(delayMs: number, fn: () => void): ReturnType<typeof setTimeout> {
+    const remaining = eventNow() + delayMs - Date.now();
+    return setTimeout(fn, Math.max(0, remaining));
+}
+
 export function runWithEventTime<T>(at: number | undefined, fn: () => T): T {
     const previous = currentEventTime;
     currentEventTime = at;

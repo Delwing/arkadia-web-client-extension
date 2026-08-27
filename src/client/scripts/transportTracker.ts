@@ -9,6 +9,7 @@ import type {
     TransportLegDebug,
 } from "../types/transport";
 import { gmcp } from "../gmcp";
+import {scheduleFromEvent} from "@shared/eventClock";
 import {
     deleteTransportSegment,
     getAllTransportSegments,
@@ -528,7 +529,7 @@ class Tracker {
         if (this.state.kind !== 'on_board' || this.state.def !== def) return;
         const { next } = this.state;
         this.go({ kind: 'exiting', def, next });
-        this.exitTimeout = setTimeout(() => this.goIdle(), EXIT_TIMEOUT_MS);
+        this.exitTimeout = scheduleFromEvent(EXIT_TIMEOUT_MS, () => this.goIdle());
         console.log(`${LOG} Exiting ${def.name}`);
     }
 

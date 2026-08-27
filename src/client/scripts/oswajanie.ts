@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {scheduleFromEvent} from "@shared/eventClock";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
@@ -741,9 +742,12 @@ const animalDescState: { lines: string[] } = { lines: [] };
 function scheduleFeedAlert(): void {
   if (feedAlertTimer) clearTimeout(feedAlertTimer);
   if (CONFIG.recoveryTime > 0) {
-    feedAlertTimer = setTimeout(() => {
+    // Measured from the feeding, not from now. Recovery runs to minutes, so a player
+    // who feeds and then backgrounds the tab would otherwise be told they can tame
+    // again long after they actually could.
+    feedAlertTimer = scheduleFromEvent(CONFIG.recoveryTime * 60 * 1000, () => {
       client.notify("Mozesz oswajac zwierze.");
-    }, CONFIG.recoveryTime * 60 * 1000);
+    });
   }
 }
 
