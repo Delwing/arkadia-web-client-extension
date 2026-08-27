@@ -99,12 +99,29 @@ export default class SoundManager {
     private keepalive: HTMLAudioElement;
     private primerActivated = false;
     private muted = false;
+    // Keepalive lifecycle, kept for the disconnect diagnostics. "Never started" and
+    // "started, then something stopped it" look identical from a `paused` check but
+    // point at completely different fixes.
+    private keepaliveRequested = false;
+    private keepaliveStartedAt = 0;
+    private keepalivePausedAt = 0;
+    private keepaliveError: string | null = null;
 
     constructor(private readonly client: Client) {
         this.keepalive = new Audio();
         this.keepalive.preload = 'auto';
         this.keepalive.loop = true;
         this.keepalive.src = buildKeepaliveSrc();
+        this.keepalive.addEventListener('playing', () => {
+            this.keepaliveStartedAt = Date.now();
+            this.keepaliveError = null;
+        });
+        this.keepalive.addEventListener('pause', () => {
+            this.keepalivePausedAt = Date.now();
+        });
+        this.keepalive.addEventListener('error', () => {
+            this.keepaliveError = 'media error';
+        });
 
         this.client.on("sound:play", ({ key }) => {
             if (typeof key === "string" && key) {
@@ -149,6 +166,28 @@ export default class SoundManager {
      */
     get keepaliveRunning(): boolean {
         return !this.keepalive.paused;
+    }
+
+    /**
+     * Keepalive lifecycle for the disconnect post-mortem. `startedAt`/`pausedAt` are
+     * epoch ms, 0 for never — a loop that never started blames the start-up path,
+     * while one that started and later stopped blames whatever silenced it (Android
+     * audio focus, say), and only the second means the trick itself is unreliable.
+     */
+    get keepaliveDetail(): {
+        running: boolean;
+        skippedOnIOS: boolean;
+        startedAt: number;
+        pausedAt: number;
+        error: string | null;
+    } {
+        return {
+            running: this.keepaliveRunning,
+            skippedOnIOS: isIOS(),
+            startedAt: this.keepaliveStartedAt,
+            pausedAt: this.keepalivePausedAt,
+            error: this.keepaliveError,
+        };
     }
 
     mute(): void {
@@ -205,6 +244,13 @@ export default class SoundManager {
     }
 
     private activatePrimer(): void {
+        // Before the bail-out below, and deliberately so. The keepalive element carries
+        // its own source from the constructor and owes nothing to the sound cache, while
+        // on Android it is the only thing keeping the tab out of Chrome's freezer — and a
+        // frozen tab loses the game connection. Gating it on a sound chunk finishing its
+        // download meant the first taps of a cold mobile load bought no protection at all.
+        this.startKeepaliveLoop();
+
         if (this.elements.size === 0) {
             console.warn('[SoundManager] primer skipped: no elements cached yet');
             return;
@@ -232,20 +278,32 @@ export default class SoundManager {
             }
         }
 
-        // Start the continuous keepalive loop. Uses a dedicated near-silent
-        // noise source (set in the constructor) — the page just needs to be
-        // continuously playing real audio data at non-zero volume; the source
-        // is shaped to have no audible tonal content. Skipped on iOS where
-        // volume is read-only (would loop at full hardware volume) and isn't
-        // needed anyway.
-        if (!isIOS()) {
-            this.keepalive.volume = KEEPALIVE_VOLUME;
-            this.keepalive.muted = false;
-            this.keepalive.loop = true;
-            this.keepalive.play().catch((err) => {
-                console.warn('[SoundManager] keepalive failed', err);
-            });
-        }
+    }
+
+    /**
+     * Start the continuous keepalive loop, once. Uses a dedicated near-silent noise
+     * source (set in the constructor) — the page just needs to be continuously playing
+     * real audio data at non-zero volume; the source is shaped to have no audible tonal
+     * content. Skipped on iOS where volume is read-only (would loop at full hardware
+     * volume) and isn't needed anyway.
+     *
+     * Must be called from inside a user gesture: `play()` is refused otherwise.
+     */
+    private startKeepaliveLoop(): void {
+        if (isIOS() || this.keepaliveRequested) return;
+        this.keepaliveRequested = true;
+
+        this.keepalive.volume = KEEPALIVE_VOLUME;
+        this.keepalive.muted = false;
+        this.keepalive.loop = true;
+        this.keepalive.play().catch((err) => {
+            // Recorded rather than only logged: a phone cannot show a console, and
+            // whether this ever started decides between fixing the start-up path and
+            // giving up on the trick entirely.
+            this.keepaliveRequested = false;
+            this.keepaliveError = err instanceof Error ? err.name : String(err);
+            console.warn('[SoundManager] keepalive failed', err);
+        });
     }
 
     private ensureElement(key: SoundKey): Promise<HTMLAudioElement | undefined> {
