@@ -43,6 +43,7 @@ describe('proxy session identity', () => {
     });
 });
 
+
 describe('isSessionProxyUrl', () => {
     it('recognises the resumable proxy by its path', () => {
         expect(isSessionProxyUrl('wss://proxy.example.com/attach')).toBe(true);

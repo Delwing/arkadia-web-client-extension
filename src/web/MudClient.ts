@@ -1,5 +1,11 @@
 import {ClientAdapter} from "@client/Client";
-import {buildSessionProxyUrl, isSessionProxyUrl, resetProxySessionId} from "./proxySession";
+import {
+    buildSessionProxyUrl,
+    DEFAULT_SESSION_PROXY_URL,
+    FORCE_SESSION_PROXY,
+    isSessionProxyUrl,
+    resetProxySessionId,
+} from "./proxySession";
 import eventBus from "@modules/core/eventBus";
 import type {ClientEvents} from "@shared/events";
 import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
@@ -109,7 +115,9 @@ class MudClient implements ClientAdapter {
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
         this.proxyMode = MudClient.loadProxyMode();
-        this.userProxyUrl = localStorage.getItem(USER_PROXY_URL_STORAGE_KEY) || null;
+        this.userProxyUrl = FORCE_SESSION_PROXY
+            ? DEFAULT_SESSION_PROXY_URL
+            : localStorage.getItem(USER_PROXY_URL_STORAGE_KEY);
         this.echoHandler = new EchoHandler(
             (data) => this.sendRaw(data),
             (serverEchoing) => this.emit('telnet.echo', serverEchoing),
@@ -170,6 +178,12 @@ class MudClient implements ClientAdapter {
      * boolean on first run (true -> 'proxy', false/absent -> 'direct').
      */
     private static loadProxyMode(): ProxyMode {
+        // BRANCH ONLY, and deliberately ahead of the stored value: a tester who opened
+        // this origin on an earlier build has 'direct' persisted, and would otherwise
+        // never see the proxy this branch exists to test. See FORCE_SESSION_PROXY.
+        if (FORCE_SESSION_PROXY) {
+            return 'proxy';
+        }
         const stored = localStorage.getItem(PROXY_MODE_STORAGE_KEY);
         if (stored === 'direct' || stored === 'helper' || stored === 'proxy') {
             return stored;
