@@ -1368,6 +1368,10 @@ export default class MapHelper {
     }
 
     removeReachedDestination(roomId: number) {
+        // Arriving ends the journey, so stop remembering where it was going. Otherwise the next
+        // thing that redraws a route - mounting a carriage, marking a room barred - would lead us
+        // back to a destination we have already stood in.
+        if (roomId === this.leadTarget) this.leadTarget = null;
         const index = this._destinations.indexOf(roomId);
         if (index > -1) {
             this._destinations.splice(index, 1);

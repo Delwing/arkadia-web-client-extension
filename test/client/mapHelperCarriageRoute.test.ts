@@ -144,6 +144,37 @@ describe('MapHelper leading by carriage', () => {
     expect(map.destinations).toEqual([]);
   });
 
+  test('a journey finished on foot is not resurrected by mounting again', () => {
+    // Regression: reaching the destination cleared the drawn route but left the target remembered,
+    // so the next thing that redraws one led straight back to where we already were.
+    const client = makeClient();
+    const blocked = new Set([3]);
+    let driving = true;
+    const map = new MapHelper(client as any, { carriageBlocks: () => (driving ? blocked : null) });
+    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
+    (map as any).pathFinder = { findPath: () => [1, 2, 3] };
+    map.currentRoom = rooms[1];
+
+    map.leadTo(3);
+    // Get off; the rest of the trip is an ordinary lead on foot.
+    driving = false;
+    client.sendEvent('carriageModeChanged', false);
+    expect(map.destinations).toEqual([3]);
+
+    // Walk in. setMapRoom removes the reached destination and redraws, so do both.
+    map.currentRoom = rooms[3];
+    map.removeReachedDestination(3);
+    map.emitDrawData();
+    expect(map.destinations).toEqual([]);
+
+    // Move on, then get back on a wagon somewhere else.
+    map.currentRoom = rooms[6];
+    driving = true;
+    client.sendEvent('carriageModeChanged', true);
+    expect(map.destinations).toEqual([]);
+    expect(drawnSegments(client)).toBeNull();
+  });
+
   test('announces where to leave the wagon once, not once per room', () => {
     const { map, client } = newMap(new Set([3]));
     map.leadTo(3);
