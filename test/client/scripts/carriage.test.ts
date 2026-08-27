@@ -640,6 +640,19 @@ describe('carriage bookkeeping', () => {
       expect(client.bindSlot.printable).toBe('w');
     });
 
+    test('does not wipe the dead-end bind when the wagon reports stopping', () => {
+      // The two lines arrive together: the dead end offers the way out, then the wagon says it has
+      // stopped. That second line runs the route offer, which used to clear anything it found.
+      parse('Nieduzy jednokonny woz rusza na zachod.');
+      parse('Nie ma tu zadnej drogi, ktora mozna by dalej jechac.');
+      expect(client.bindSlot.printable).toBe('zsiadz z wozu');
+
+      parse('Nieduzy jednokonny woz zatrzymuje sie.');
+      expect(client.bindSlot.printable).toBe('zsiadz z wozu');
+      client.lastBindCallback!();
+      expect(client.sendCommand).toHaveBeenCalledWith('zsiadz z wozu');
+    });
+
     test('re-offers when the route changes under us', () => {
       client.sendEvent('carriageRouteStep', { nextCommand: 'w', atTransfer: false });
       // A blockade learned here sends us a different way.

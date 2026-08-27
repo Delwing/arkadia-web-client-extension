@@ -185,18 +185,32 @@ export default function initCarriage(
      * and setting the bind on every room passed would print a line each time. At the transfer point
      * the offer is the way out instead, which is the whole reason the route has a leg on foot.
      */
+    /** True while the bind on offer is this route's, so nothing else's bind gets cleared. */
+    let routeBindActive = false;
+
     const offerRouteBind = () => {
-        if (!client.carriageMode || moving || getBehaviorSettings().carriageRouteBinds === false) {
+        const wanted = (() => {
+            if (!client.carriageMode || moving) return null;
+            if (getBehaviorSettings().carriageRouteBinds === false) return null;
+            if (routeStep.atTransfer) {
+                const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
+                return noun ? `zsiadz z ${noun}` : null;
+            }
+            return routeStep.nextCommand;
+        })();
+
+        if (wanted) {
+            setBind(wanted);
+            routeBindActive = true;
+            return;
+        }
+        // Only take away a bind this put there. The wagon stopping runs through here, and a dead
+        // end has just offered the way out on the line before - clearing unconditionally left that
+        // one printed but dead.
+        if (routeBindActive) {
             clearOwnBind();
-            return;
+            routeBindActive = false;
         }
-        if (routeStep.atTransfer) {
-            const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
-            if (noun) setBind(`zsiadz z ${noun}`);
-            return;
-        }
-        if (routeStep.nextCommand) setBind(routeStep.nextCommand);
-        else clearOwnBind();
     };
 
     client.on('carriageRouteStep', step => {
