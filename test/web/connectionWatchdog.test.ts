@@ -193,4 +193,21 @@ describe('connection watchdog', () => {
         next.close();
         expect(arkadiaClient.lastCloseCause).toBe('remote');
     });
+
+    it('tracks when we last sent and last heard, so a freeze is tellable from a drop', () => {
+        const socket = openSocket();
+        const start = Date.now();
+
+        arkadiaClient.checkConnection();
+        expect(arkadiaClient.lastPingTime, 'the probe counts as a ping').toBe(start);
+
+        vi.setSystemTime(start + 4000);
+        socket.receive('Jestes w lesie.\r\n');
+        expect(arkadiaClient.lastInboundTime).toBe(start + 4000);
+
+        // A frozen page sends nothing: the ping timestamp stays put while wall-clock
+        // runs on, which is exactly the gap the disconnect line reports.
+        vi.setSystemTime(start + 320_000);
+        expect(Date.now() - arkadiaClient.lastPingTime).toBeGreaterThan(300_000);
+    });
 });

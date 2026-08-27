@@ -139,6 +139,18 @@ export default class SoundManager {
         return this.muted;
     }
 
+    /**
+     * Whether the near-silent keepalive loop is actually playing.
+     *
+     * Load-bearing beyond audio: a page playing audio is exempt from Chrome's
+     * background tab freezing and timer throttling, so on Android this loop is what
+     * keeps the game socket's ping alive while the user is in another app. Exposed
+     * so a disconnect can report whether that protection was in place.
+     */
+    get keepaliveRunning(): boolean {
+        return !this.keepalive.paused;
+    }
+
     mute(): void {
         if (!this.muted) {
             this.muted = true;

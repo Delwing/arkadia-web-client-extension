@@ -481,6 +481,17 @@ mudClient.on('close', (event) => {
     lastCloseEvent = event;
 });
 
+// Chrome's Page Lifecycle events. First-hand evidence that the browser suspended
+// us, rather than us inferring it from a timer that came back late — though the
+// absence of a freeze proves nothing, since Android can suspend the whole browser
+// process without the page ever being told.
+let freezeCount = 0;
+let lastFreezeAt: number | null = null;
+(document as EventTarget).addEventListener('freeze', () => {
+    freezeCount += 1;
+    lastFreezeAt = Date.now();
+});
+
 const formatDuration = (ms: number): string => {
     const seconds = Math.max(0, Math.round(ms / 1000));
     if (seconds < 60) return `${seconds} s`;
@@ -516,6 +527,41 @@ const describeDisconnect = (): string => {
     return details.join('; ');
 };
 
+/**
+ * The detail block for a drop nobody asked for. Every line answers a question that
+ * changes what we would fix next, so it is worth the screen space on a phone, where
+ * a screenshot of the output is the whole bug report.
+ */
+const disconnectDiagnostics = (): string[] => {
+    const now = Date.now();
+    const lines: string[] = [];
+
+    // Whether our own timers were running. The ping loop fires every 3s, so a gap in
+    // minutes means the page was frozen and no client-side keepalive could have run;
+    // seconds means we were awake and it was the connection that went.
+    const inbound = mudClient.lastInboundTime > 0
+        ? `${formatDuration(now - mudClient.lastInboundTime)} temu`
+        : 'nigdy';
+    const ping = mudClient.lastPingTime > 0
+        ? `${formatDuration(now - mudClient.lastPingTime)} temu`
+        : 'nigdy';
+    lines.push(`  ruch: ostatnie dane ${inbound}, ostatni ping ${ping}`);
+
+    lines.push(
+        lastFreezeAt !== null
+            ? `  karta: zamrozona przez przegladarke ${freezeCount}x, ostatnio ${formatDuration(now - lastFreezeAt)} temu`
+            : '  karta: bez zamrozenia zgloszonego przez przegladarke',
+    );
+
+    // A page playing audio is exempt from Chrome's tab freezing, so this loop is the
+    // only thing keeping the ping alive while the user is in another app.
+    lines.push(`  audio-keepalive: ${client.SoundManager.keepaliveRunning ? 'gra' : 'nie gra'}`);
+
+    lines.push(`  tryb polaczenia: ${mudClient.getProxyMode()}`);
+
+    return lines;
+};
+
 // Handle client disconnect event
 mudClient.on('client.disconnect', () => {
     isConnected = false;
@@ -526,7 +572,10 @@ mudClient.on('client.disconnect', () => {
     disableTabSleepPrevention();
     const reason = describeDisconnect();
     client.println(`Rozłączono z serwerem Arkadii. [${reason}]`);
-    console.log(`Client disconnected from Arkadia server: ${reason}`);
+    // A disconnect the user asked for needs no post-mortem.
+    const diagnostics = mudClient.lastCloseCause === 'user' ? [] : disconnectDiagnostics();
+    diagnostics.forEach(line => client.println(line));
+    console.log(`Client disconnected from Arkadia server: ${reason}`, diagnostics);
 });
 
 // `core.keepalive` toggling is only useful on Safari (where the original user
