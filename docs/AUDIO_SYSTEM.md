@@ -32,11 +32,17 @@ Three pieces, layered:
 
 **2. Audible primer on first user gesture.** A document-level capture-phase listener on `click`/`keydown`/`touchstart`/`pointerdown` plays every cached element once at `PRIMER_VOLUME` (~10%), then immediately pauses each as soon as its `play()` promise resolves. The audible duration is ~tens of ms per element, perceived as a single brief blip. This grants each element its per-element autoplay activation.
 
-**3. Continuous keepalive loop.** A separate `<audio>` element loops a dedicated near-silent source at `KEEPALIVE_VOLUME` (-60 dB) — Chrome counts it as real audio playback. Started immediately after the primer fires. While this loop runs, the page is in continuous "actively playing media" state, which Chrome treats as durable engagement — every `play()` on any primed element produces audible output regardless of how long since the last user interaction.
+**3. Continuous keepalive loop.** A separate `<audio>` element loops a dedicated near-silent source at `KEEPALIVE_VOLUME` (-60 dB) — Chrome counts it as real audio playback. Started on the first user gesture, *before* the primer's own bail-out — see "Why the keepalive starts first" below. While this loop runs, the page is in continuous "actively playing media" state, which Chrome treats as durable engagement — every `play()` on any primed element produces audible output regardless of how long since the last user interaction.
 
 The keepalive source is **not** the beep. `buildKeepaliveSrc()` generates a 1-second loop of low-amplitude pseudo-random noise (peak ~256 of 32767) as an in-memory WAV data URI. It deliberately avoids the beep because the beep is a full-scale tone: looping it at -60 dB still left a faintly audible periodic beep. Low-amplitude noise has no tonal peaks, so at `KEEPALIVE_VOLUME` it lands near -100 dBFS — genuinely inaudible — while remaining non-zero PCM (constraint #3 still satisfied). The source is generated deterministically (LCG, no `Math.random`) and cached.
 
 The visible cost: the tab speaker icon is shown continuously while the keepalive loop runs, and there's a small CPU/battery cost from decoding the looped audio. Both are acceptable trade-offs given the alternative is unreliable audio.
+
+### Why the keepalive starts first
+
+`activatePrimer()` returns early when no sound element is cached yet, which happens whenever the user's first tap beats the async `discoverAndPreload()` — routine on a cold mobile load. The keepalive used to start *after* that bail-out, so those first taps started no loop at all, and once Chrome's ~5s transient activation expired every later sound played silently until the next gesture. It now starts before the bail-out: the keepalive element carries its own generated source from the constructor and never needed the sound cache. `startKeepaliveLoop()` is idempotent, and a refused `play()` re-arms so a later gesture can retry.
+
+**This loop does not keep a backgrounded tab awake**, despite a plausible reading of Chrome's audio-playback exemption — it was believed to for a while, and measurement said otherwise: on a real Android phone Chrome froze the tab a second after the loop started playing, and paused the audio on the way in. A frozen page runs no JavaScript, so nothing scheduled inside it can hold a socket open. Surviving a frozen tab is the session proxy's job (`proxy/README.md`); this loop is about audio reliability and nothing else.
 
 **iOS exception:** The keepalive loop is skipped on iOS. iOS WebKit ignores `HTMLAudioElement.volume` (it always reads/plays at 1.0, under the user's hardware volume control), so a -60 dB loop would actually play the keepalive source at full volume on repeat — the original symptom that motivated this carve-out (back when the loop reused the audible beep). iOS also doesn't enforce Chrome's ~5s transient-activation expiration the same way; once an element is primed inside a user gesture, subsequent `play()` calls keep working. `isIOS()` in `SoundManager.ts` covers iPhone/iPod plus iPadOS 13+ (which reports as `MacIntel` but has multi-touch).
 
@@ -48,9 +54,10 @@ constructor
   ├─ kicks off discoverAndPreload() — populates this.elements
   └─ installGestureListeners() — primer fires on first gesture
 
-activatePrimer (runs once, in user-gesture stack)
-  ├─ for each cached element: volume = 0.1, play(), pause-on-resolve
-  └─ on non-iOS: starts the keepalive loop (volume = 0.001, loop = true) on the near-silent noise src
+activatePrimer (in user-gesture stack; retries on later gestures until sounds are cached)
+  ├─ on non-iOS: startKeepaliveLoop() — once, whether or not any sound is cached yet
+  ├─ no elements cached yet? → return; the next gesture retries the priming
+  └─ for each cached element: volume = 0.1, play(), pause-on-resolve
 
 play(key)
   ├─ cache hit → playElement(audio): volume = 1, currentTime = 0, play()
