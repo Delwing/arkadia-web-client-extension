@@ -1,6 +1,7 @@
 import { globalStorage } from "@modules/core/storage";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import {eventNow} from "@shared/eventClock";
 import type { CombatEntry } from "@client/scripts/combatWindow";
 import { currentSessionName } from "./sessionLogger";
 import { formatSessionFileName, formatDateTime, splitLines, collectLogStyles } from "./logBrowserUtils";
@@ -103,7 +104,10 @@ export default async function initLogFileSaver(client: SessionClient) {
         if (htmlText === "\n") htmlText = "";
 
         const cleanedText = htmlText.replace(CLICK_TAG_REG, "");
-        const ts = timestamp ?? Date.now();
+        // A log is a record of the game, so its times must be the game's. Output
+        // replayed after a frozen tab arrives minutes late, and stamping it on arrival
+        // would compress an evening into the moment the player came back.
+        const ts = timestamp ?? eventNow();
         addEntry(cleanedText, type, ts);
     });
 
@@ -113,7 +117,7 @@ export default async function initLogFileSaver(client: SessionClient) {
         if (entry.type === "separator") return;
         const htmlText = entry.buffer.toHtml();
         const cleanedText = htmlText.replace(CLICK_TAG_REG, "");
-        addEntry(cleanedText, entry.type, Date.now());
+        addEntry(cleanedText, entry.type, eventNow());
     });
 
     // Flush on page unload

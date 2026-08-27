@@ -298,14 +298,52 @@ func TestReapClosesOnlyAbandonedSessions(t *testing.T) {
 	}
 }
 
-func TestGetForgetsClosedSessions(t *testing.T) {
+func TestGetForgetsClosedSessionsOnceDrained(t *testing.T) {
 	m := newManager(4096, time.Minute)
 	s, _ := newTestSession(t, 4096)
 	m.put("gone", s)
 	s.finish("upstream vanished")
 
 	if m.get("gone") != nil {
-		t.Error("a closed session must not be handed out for resume")
+		t.Error("a closed session with nothing left to show must not be handed out")
+	}
+}
+
+func TestAnIdleTimeoutIsExplainedRatherThanSwallowed(t *testing.T) {
+	m := newManager(4096, time.Minute)
+	s, game := newTestSession(t, 4096)
+	m.put("idled", s)
+
+	// The player is away. Arkadia says goodbye and drops the connection — exactly what
+	// its inactivity setting does — with nobody attached to see it.
+	_, _ = game.Write([]byte("Zostajesz rozlaczony z powodu bezczynnosci.\r\n"))
+	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes > 0 })
+	_ = game.Close()
+	waitFor(t, func() bool { return s.isClosed() })
+
+	// Coming back must not mean a bare login screen with no explanation.
+	if m.get("idled") == nil {
+		t.Fatal("a dead session still holding the game's parting words was discarded")
+	}
+
+	c := &fakeClient{}
+	s.attach(c, true)
+
+	if got := c.data(t); len(got) != 1 || got[0] != "Zostajesz rozlaczony z powodu bezczynnosci.\r\n" {
+		t.Errorf("replay = %q, want the game's own goodbye", got)
+	}
+	ctrl := c.control(t)
+	if !ctrl.UpstreamClosed {
+		t.Error("the client should be told the game closed this, not the proxy")
+	}
+	if ctrl.CloseReason == "" {
+		t.Error("no reason given for the close")
+	}
+
+	// Drained: nothing left to come back for.
+	m.remove("idled")
+	if m.get("idled") != nil {
+		t.Error("the session should be gone once its output has been collected")
 	}
 }
 

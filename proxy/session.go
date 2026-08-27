@@ -25,6 +25,11 @@ type controlPayload struct {
 	ReplayedBytes int    `json:"replayedBytes"`
 	DroppedBytes  int    `json:"droppedBytes"`
 	Resumed       bool   `json:"resumed"`
+	// The game ended the connection while nobody was attached — an idle timeout, a
+	// quit, a server restart. Distinct from the proxy losing the session, and the
+	// difference is the whole answer to "what happened while I was away".
+	UpstreamClosed bool   `json:"upstreamClosed,omitempty"`
+	CloseReason    string `json:"closeReason,omitempty"`
 }
 
 // Session owns one telnet connection to the game and, at most, one attached client.
@@ -142,6 +147,8 @@ func (s *Session) attach(c clientConn, resumed bool) {
 	s.pendingBytes = 0
 	s.droppedBytes = 0
 	age := time.Since(s.created)
+	upstreamClosed := s.closed
+	closeReason := s.closeReason
 	s.mu.Unlock()
 
 	if previous != nil {
@@ -150,23 +157,28 @@ func (s *Session) attach(c clientConn, resumed bool) {
 	}
 
 	control, _ := json.Marshal(controlPayload{
-		Type:          "attached",
-		SessionAgeMs:  age.Milliseconds(),
-		ReplayedBytes: replayed,
-		DroppedBytes:  dropped,
-		Resumed:       resumed,
+		Type:           "attached",
+		SessionAgeMs:   age.Milliseconds(),
+		ReplayedBytes:  replayed,
+		DroppedBytes:   dropped,
+		Resumed:        resumed,
+		UpstreamClosed: upstreamClosed,
+		CloseReason:    closeReason,
 	})
 	_ = c.sendControl(control)
 
 	// A raw client cannot read the control payload, so tell it in the only language it
 	// has. Worth the intrusion: without it there is no way to tell a resumed session
 	// from a fresh one, which is the entire thing being tested.
-	if resumed {
+	if resumed && !upstreamClosed {
 		text := "[proxy] wznowiono sesje"
 		if dropped > 0 {
 			text = fmt.Sprintf("%s (utracono %d bajtow starszych danych)", text, dropped)
 		}
 		_ = c.notice(text)
+	}
+	if upstreamClosed {
+		_ = c.notice(fmt.Sprintf("[proxy] gra zamknela polaczenie: %s", closeReason))
 	}
 
 	// Each chunk keeps the time it actually arrived, which is the whole reason the
@@ -260,6 +272,13 @@ func (s *Session) isClosed() bool {
 	return s.closed
 }
 
+// hasUnreadOutput reports whether anything is still waiting for a client to collect it.
+func (s *Session) hasUnreadOutput() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.pending) > 0
+}
+
 // Manager keeps sessions addressable by id and reaps abandoned ones.
 type Manager struct {
 	mu        sync.Mutex
@@ -276,12 +295,20 @@ func newManager(maxBuffer int, ttl time.Duration) *Manager {
 	}
 }
 
-// get returns the live session for an id, or nil.
+/*
+get returns the session for an id, or nil.
+
+A session whose upstream has closed is still handed back while it holds output nobody
+has read. That is the difference between coming back to "you were idled out, here is the
+game saying so" and coming back to a bare login screen with no idea whether you quit
+safely or the proxy dropped you. Once drained it is gone, and the next attach opens a
+fresh connection.
+*/
 func (m *Manager) get(id string) *Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s := m.sessions[id]
-	if s != nil && s.isClosed() {
+	if s != nil && s.isClosed() && !s.hasUnreadOutput() {
 		delete(m.sessions, id)
 		return nil
 	}
