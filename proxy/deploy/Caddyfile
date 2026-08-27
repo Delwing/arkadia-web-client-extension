@@ -12,6 +12,12 @@ proxy.example.com {
 		reverse_proxy 127.0.0.1:8080
 	}
 
+	# Beacon a departing client sends so its session is closed rather than left holding
+	# a character in the world until the TTL.
+	handle /leaving* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
 	handle /health {
 		reverse_proxy 127.0.0.1:8080
 	}

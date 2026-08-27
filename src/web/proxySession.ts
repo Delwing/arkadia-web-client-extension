@@ -100,6 +100,34 @@ export function isSessionProxyUrl(url: string | null | undefined): boolean {
 }
 
 /**
+ * Tell the proxy this client is going away for good.
+ *
+ * Without it a closed tab leaves the character standing in the world until the session
+ * TTL expires — a quarter of an hour of someone else's character idling somewhere they
+ * did not choose to be.
+ *
+ * The proxy closes the session at once. This fires on reload too, and that is fine: a
+ * reload starting a fresh login is expected behaviour, so there is nothing worth keeping
+ * alive. `sendBeacon` is what makes it work at all — a normal request is cancelled when
+ * the page goes, while a beacon is handed to the browser to deliver afterwards.
+ *
+ * Deliberately not called when the tab is merely hidden. That is the case this whole
+ * proxy exists to survive.
+ */
+export function announceLeaving(baseUrl: string, sessionId = getProxySessionId()): boolean {
+    try {
+        const url = new URL(baseUrl);
+        url.pathname = url.pathname.replace(/\/attach$/, '/leaving');
+        url.protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
+        url.search = '';
+        url.searchParams.set('session', sessionId);
+        return navigator.sendBeacon(url.toString());
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Add this client's session id and ask for the framed protocol.
  *
  * `v=1` is what opts into headers carrying arrival times; without it the proxy streams

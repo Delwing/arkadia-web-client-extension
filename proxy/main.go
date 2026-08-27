@@ -51,6 +51,25 @@ func main() {
 	mux.HandleFunc("/attach", func(w http.ResponseWriter, r *http.Request) {
 		handleAttach(w, r, manager)
 	})
+	// Beacon from a client that is going away for good — a closed tab or a navigation,
+	// as opposed to the backgrounding this whole proxy exists to survive.
+	mux.HandleFunc("/leaving", func(w http.ResponseWriter, r *http.Request) {
+		id := strings.TrimSpace(r.URL.Query().Get("session"))
+		session := manager.get(id)
+		if session == nil {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		// Not closed outright: a reload fires the same beacon, and the page is back
+		// within a second or two. The grace period is long enough to cover that and
+		// short enough that a genuinely closed tab does not leave a character standing
+		// in the world for the full TTL.
+		session.leaving()
+		manager.remove(id)
+		log.Printf("session %s… client left; closed", short(id))
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{

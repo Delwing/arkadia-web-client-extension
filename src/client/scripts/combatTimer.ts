@@ -44,7 +44,9 @@ export default function initCombatTimer(client: Client) {
         if (timer !== null) {
             clearInterval(timer);
         }
-        timerStart = Date.now();
+        // client.now() so a fight replayed after a frozen tab starts its countdown from
+        // when it happened, not from when the player came back.
+        timerStart = client.now();
         lastEmitted = INITIAL_SECONDS;
         emit(INITIAL_SECONDS);
         timer = window.setInterval(updateTimer, 250);

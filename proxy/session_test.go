@@ -308,3 +308,24 @@ func TestGetForgetsClosedSessions(t *testing.T) {
 		t.Error("a closed session must not be handed out for resume")
 	}
 }
+
+func TestLeavingClosesTheSessionAtOnce(t *testing.T) {
+	m := newManager(4096, time.Hour)
+	s, _ := newTestSession(t, 4096)
+	c := &fakeClient{}
+	s.attach(c, false)
+	m.put("leaving", s)
+
+	// A closed tab. Without this the character stands in the world for the whole TTL.
+	s.leaving()
+
+	if !s.isClosed() {
+		t.Error("session should be closed immediately, not parked")
+	}
+	if c.closed == "" {
+		t.Error("the attached client should have been told why")
+	}
+	if m.get("leaving") != nil {
+		t.Error("a closed session must not be handed out for resume")
+	}
+}

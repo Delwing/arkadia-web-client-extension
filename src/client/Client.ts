@@ -111,6 +111,8 @@ export default class Client {
     get tempBinds() { return this.keyBindingManager.tempBinds; }
     set tempBinds(v) { this.keyBindingManager.tempBinds = v; }
     inLineProcess = false; //TODO figure out something else
+    /** When the line being processed happened; undefined for live output. See now(). */
+    private eventTime: number | undefined;
     defaultColor = 255;
     buffer: { out: AnsiAwareBuffer, type?: string }[] = [];
     suppressMapMoveEvent = false;
@@ -190,11 +192,11 @@ export default class Client {
             this.buffer = []
         });
 
-        this.on('flushLines', (groups: { text: string; type: string }[]) => {
+        this.on('flushLines', (groups: { text: string; type: string }[], options?: { timestamp?: number }) => {
             const deferred: Array<() => void> = [];
 
             for (const {text, type} of groups) {
-                const parts = this.onLine(text, type);
+                const parts = this.onLine(text, type, options?.timestamp);
                 for (const part of parts) {
                     part.originalText = text;
                     deferred.push(() => this.sendEvent(`gmcp_msg.${type}` as any, part));
@@ -290,13 +292,31 @@ export default class Client {
         return this.commandProcessor.unregisterCommandHook(id);
     }
 
-    onLine(line: string, type: string): AnsiAwareBuffer[] {
+    /**
+     * When the line currently being processed happened, falling back to the wall clock.
+     *
+     * Scripts must use this rather than `Date.now()` to stamp a game event. Output
+     * replayed by the session proxy describes things that happened while the tab was
+     * frozen, so stamping it with the wall clock dates every one of those events to the
+     * moment the player came back — a combat timer would start its full countdown for a
+     * fight that ended five minutes ago.
+     *
+     * Measuring elapsed time against the present is still `Date.now()`: a timer stamped
+     * with an old event time and ticked against the real clock reads as already expired,
+     * which is exactly right.
+     */
+    now(): number {
+        return this.eventTime ?? Date.now()
+    }
+
+    onLine(line: string, type: string, timestamp?: number): AnsiAwareBuffer[] {
         const buffer = new AnsiAwareBuffer(line)
         if (buffer.text.length === 0) {
             return []
         }
         let result: AnsiAwareBuffer[]
         this.inLineProcess = true
+        this.eventTime = timestamp
         try {
             this.sendEvent(LINE_START_EVENT)
             const multilineResult = this.Triggers.parseMultiline(buffer, type)
@@ -315,6 +335,7 @@ export default class Client {
             return [buffer]
         } finally {
             this.inLineProcess = false
+            this.eventTime = undefined
         }
 
         // Merge multiple lines back into a single buffer to keep multiline outputs grouped

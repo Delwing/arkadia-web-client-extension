@@ -35,7 +35,7 @@ export default function initOrderTimer(client: Client) {
             return;
         }
 
-        end = Date.now() + ORDER_TIME * 1000;
+        end = client.now() + ORDER_TIME * 1000;
         if (timer != null) {
             clearInterval(timer);
         }

@@ -210,6 +210,18 @@ func (s *Session) idleFor(now time.Time) time.Duration {
 	return now.Sub(s.detachedAt)
 }
 
+/*
+leaving ends the session because its client is going away deliberately — a closed tab, a
+navigation, or a reload — rather than the backgrounding this proxy exists to survive.
+
+Closing at once, with no grace period: a reload starting a fresh login is expected
+behaviour, so there is nothing to preserve. The alternative leaves someone's character
+standing in the world for the whole TTL after they shut the tab.
+*/
+func (s *Session) leaving() {
+	s.finish("client left")
+}
+
 // finish tears the session down: the game is gone, so the client should know.
 func (s *Session) finish(reason string) {
 	s.mu.Lock()

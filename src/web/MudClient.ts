@@ -1,6 +1,7 @@
 import {ClientAdapter} from "@client/Client";
 import {
     buildSessionProxyUrl,
+    announceLeaving,
     DEFAULT_SESSION_PROXY_URL,
     FORCE_SESSION_PROXY,
     isSessionProxyUrl,
@@ -99,6 +100,10 @@ class MudClient implements ClientAdapter {
     // Wire-format strategy, chosen at connect time: binary frames for the
     // proxy/helper, base64 for the native /wss endpoint. Defaults to base64.
     private codec: TransportCodec = base64Codec;
+    // When the server produced the batch being processed, if the transport told us.
+    // Replayed output is minutes old, and a script that stamps its own clock would
+    // date every one of those events to the moment the player came back.
+    private currentEventTime: number | undefined;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -127,6 +132,20 @@ class MudClient implements ClientAdapter {
                 event.preventDefault();
             }
         })
+
+        // The page is going: closed, navigated away from, or reloaded. Tell the proxy,
+        // or a closed tab leaves the character idling in the world for the whole session
+        // TTL. Deliberately on pagehide rather than visibilitychange — backgrounding a
+        // tab is the case the proxy exists to survive, and must not end anything.
+        addEventListener("pagehide", (event) => {
+            // `persisted` means the page is going into the back/forward cache and may be
+            // restored intact — the socket comes back with it, so this is not a
+            // departure and ending the session would strand a live client.
+            if (event.persisted) return;
+            if (this.usesSessionProxy() && this.userProxyUrl) {
+                announceLeaving(this.userProxyUrl);
+            }
+        });
 
         // Listen for render settings changes
         const initialRender = getRenderSettings();
@@ -522,7 +541,18 @@ class MudClient implements ClientAdapter {
      * via gmcp_msgs — so this is effectively a no-op there. The raw text path
      * matters for the telnet proxy.
      */
-    private processIncomingData(rawData: string, _options?: { timestamp?: number }) {
+    private processIncomingData(rawData: string, options?: { timestamp?: number }) {
+        // Carried on the instance because the batch is split, buffered and reassembled
+        // between here and the flush that finally emits the lines.
+        this.currentEventTime = options?.timestamp;
+        try {
+            this.processIncomingDataInner(rawData);
+        } finally {
+            this.currentEventTime = undefined;
+        }
+    }
+
+    private processIncomingDataInner(rawData: string) {
         const data = this.pendingSubneg + rawData;
         this.pendingSubneg = "";
 
@@ -698,7 +728,7 @@ class MudClient implements ClientAdapter {
         }
 
         if (out.length > 0) {
-            this.emit('flushLines', out);
+            this.emit('flushLines', out, this.currentEventTime ? {timestamp: this.currentEventTime} : undefined);
         }
     }
 
