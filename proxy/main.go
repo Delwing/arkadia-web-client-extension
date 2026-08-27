@@ -68,16 +68,46 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-// wsClient adapts a WebSocket to the little the Session needs from it.
+// wsClient adapts a WebSocket to the little the Session needs from it, and owns the
+// choice of wire format.
+//
+// framed clients get [type][timestamp][payload] and can stamp replayed output with when
+// it actually happened. Unframed is what the stock client speaks today: raw bytes, no
+// headers, no control channel — enough to test session resume with real play before any
+// client code changes.
 type wsClient struct {
-	conn *websocket.Conn
-	ctx  context.Context
+	conn   *websocket.Conn
+	ctx    context.Context
+	framed bool
 }
 
-func (c *wsClient) send(frame []byte) error {
+func (c *wsClient) write(payload []byte) error {
 	ctx, cancel := context.WithTimeout(c.ctx, 20*time.Second)
 	defer cancel()
-	return c.conn.Write(ctx, websocket.MessageBinary, frame)
+	return c.conn.Write(ctx, websocket.MessageBinary, payload)
+}
+
+func (c *wsClient) sendData(at time.Time, payload []byte) error {
+	if !c.framed {
+		return c.write(payload)
+	}
+	return c.write(encodeFrame(FrameData, at, payload))
+}
+
+func (c *wsClient) sendControl(payload []byte) error {
+	if !c.framed {
+		// A raw client would render this as game text. Silence is better.
+		return nil
+	}
+	return c.write(encodeFrame(FrameControl, time.Now(), payload))
+}
+
+func (c *wsClient) notice(text string) error {
+	if c.framed {
+		// Framed clients get the same facts in the control payload.
+		return nil
+	}
+	return c.write([]byte("\r\n" + text + "\r\n"))
 }
 
 func (c *wsClient) close(reason string) {
@@ -112,7 +142,13 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	conn.SetReadLimit(1 << 20)
 
 	ctx := r.Context()
-	client := &wsClient{conn: conn, ctx: context.Background()}
+	// Opt-in framing: the stock client sends no `v`, so it keeps getting raw bytes and
+	// works against this proxy unchanged.
+	client := &wsClient{
+		conn:   conn,
+		ctx:    context.Background(),
+		framed: r.URL.Query().Get("v") == "1",
+	}
 
 	session := manager.get(id)
 	resumed := session != nil
