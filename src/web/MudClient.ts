@@ -127,6 +127,11 @@ class MudClient implements ClientAdapter {
     // Replayed output is minutes old, and a script that stamps its own clock would
     // date every one of those events to the moment the player came back.
     private currentEventTime: number | undefined;
+    // Bytes of game output this client has handed to the pipeline, for the whole life of
+    // the proxy session. Reported on reattach so the proxy replays exactly what was
+    // missed — it cannot tell on its own, since a socket accepts writes long after the
+    // page behind it has stopped reading them.
+    private processedBytes = 0;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -188,6 +193,9 @@ class MudClient implements ClientAdapter {
                     and a bfcache restore returns above.
                 */
                 resetProxySessionId();
+                // A new session starts at byte zero. Carrying the old count over would make the
+                // proxy think this client had already seen the login banner and skip it.
+                this.processedBytes = 0;
             }
         });
 
@@ -380,7 +388,9 @@ class MudClient implements ClientAdapter {
             const url = this.resolveConnectUrl();
             // The session id is a credential, so it rides in the handshake rather than
             // the URL — see sessionSubprotocols().
-            this.socket = new WebSocket(url, this.usesSessionProxy() ? sessionSubprotocols() : []);
+            this.socket = new WebSocket(url, this.usesSessionProxy()
+                ? sessionSubprotocols(undefined, this.processedBytes)
+                : []);
             // Deliver binary frames (proxy) as ArrayBuffer rather than Blob;
             // harmless for the native endpoint's text frames.
             this.socket.binaryType = 'arraybuffer';
@@ -404,6 +414,10 @@ class MudClient implements ClientAdapter {
                     }
 
                     const decodedData = frame.bytes;
+                    // Counted before anything can go wrong with it: this is the number
+                    // the proxy resumes from, and it must mean "handed to the pipeline",
+                    // never "written to a socket". See sessionSubprotocols().
+                    this.processedBytes += decodedData.length;
                     if (decodedData.length === 0) return;
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
@@ -473,6 +487,9 @@ class MudClient implements ClientAdapter {
         // character the player meant to leave would be a surprise, and the proxy would
         // otherwise hold that connection open until its TTL.
         resetProxySessionId();
+        // A new session starts at byte zero. Carrying the old count over would make the
+        // proxy think this client had already seen the login banner and skip it.
+        this.processedBytes = 0;
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.closeCause = 'user';
             this.socket.close();

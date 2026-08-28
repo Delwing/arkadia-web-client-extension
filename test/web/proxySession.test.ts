@@ -148,3 +148,22 @@ describe('shouldReattachAfterClose', () => {
         expect(shouldReattachAfterClose(state({sessionEndedByGame: true}))).toBe(false);
     });
 });
+
+describe('resume offset', () => {
+    /*
+     * The proxy cannot work out what reached the screen: a write there lands in a kernel
+     * buffer, and the renderer that would draw it is the part that freezes. Only this end
+     * knows, so it says so and the proxy replays from exactly there.
+     */
+    it('reports how far this client got, so a resume repeats nothing', () => {
+        const offered = sessionSubprotocols('a'.repeat(32), 4096);
+
+        expect(offered).toContain('o.4096');
+    });
+
+    it('says nothing when it has read nothing, so a fresh session starts at the top', () => {
+        const offered = sessionSubprotocols('a'.repeat(32), 0);
+
+        expect(offered.some(v => v.startsWith('o.'))).toBe(false);
+    });
+});

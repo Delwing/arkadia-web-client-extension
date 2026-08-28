@@ -152,6 +152,9 @@ const SESSION_ID_SUBPROTOCOL_PREFIX = 's.';
 /** Prefix identifying the entry that carries the client build. */
 const BUILD_SUBPROTOCOL_PREFIX = 'b.';
 
+/** Prefix identifying the entry that carries how much output this client has read. */
+const OFFSET_SUBPROTOCOL_PREFIX = 'o.';
+
 /**
  * The WebSocket subprotocols that identify this client and its session.
  *
@@ -166,8 +169,21 @@ const BUILD_SUBPROTOCOL_PREFIX = 'b.';
  * offering only the id gets the raw byte stream, which is what a `wscat` session testing
  * the proxy by hand wants.
  */
-export function sessionSubprotocols(sessionId = getProxySessionId()): string[] {
+export function sessionSubprotocols(sessionId = getProxySessionId(), processedBytes = 0): string[] {
     const offered = [SESSION_SUBPROTOCOL, SESSION_ID_SUBPROTOCOL_PREFIX + sessionId];
+    /*
+     * How far this client actually got.
+     *
+     * The proxy cannot work this out for itself. A write succeeding there means the
+     * bytes reached a kernel buffer, not a screen — and the renderer that would have
+     * drawn them is the one part of the chain that freezes, while every layer beneath
+     * it keeps accepting data quite happily. A line was lost exactly that way.
+     *
+     * So this end counts what it has processed and says so on the way back in, and the
+     * proxy replays from there: nothing missed, nothing repeated. Same idea as a TCP
+     * sequence number or `Last-Event-ID`, and one integer covers it.
+     */
+    if (processedBytes > 0) offered.push(OFFSET_SUBPROTOCOL_PREFIX + processedBytes);
     // Which build is on the other end. A report of "it dropped me" is hard to act on
     // without knowing whether that tab was running the fix; the answer is otherwise
     // guessed at from when the report arrived. Kept to a token — the commit sha is
