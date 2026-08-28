@@ -7,6 +7,7 @@ import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
 import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
+import {DEFAULT_SESSION_PROXY_URL} from "./proxySession.ts";
 import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -1248,6 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (proxyControlsRoot) {
         createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
             relayBase: PROXY_WEBSOCKET_URL,
+            defaultProxy: DEFAULT_SESSION_PROXY_URL,
             initialMode: mudClient.getProxyMode(),
             initialUrl: mudClient.getUserProxyUrl() ?? '',
             onModeChange: (mode) => mudClient.setProxyMode(mode),
