@@ -161,9 +161,14 @@ describe('carriage blockades', () => {
     });
 
     test('never learns the rooms that refuse a ride for other reasons', () => {
-      client.Map.currentRoom = { id: 100, exits: { west: 1419, north: 1137 } } as any;
-      parse('Nie mozna jechac na zachod.');
-      parse('Nie mozna jechac na polnoc.');
+      client.Map.currentRoom = {
+        id: 100,
+        exits: { west: 1419, north: 1137, east: 5217, south: 5253 },
+        specialExits: { latarnia: 5235 },
+      } as any;
+      for (const way of ['zachod', 'polnoc', 'wschod', 'poludnie', 'latarnia']) {
+        parse(`Nie mozna jechac na ${way}.`);
+      }
       expect([...getBlockedRooms()]).toEqual([]);
       expect(client.println).not.toHaveBeenCalled();
 

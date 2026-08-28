@@ -18,6 +18,8 @@ const WHITE: FormatStateSnapshot = {foreground: {space: 'hex', color: '#dddddd'}
 const YELLOW: FormatStateSnapshot = {foreground: {space: 'hex', color: '#ffff00'}};
 const RESET: FormatStateSnapshot = {};
 
+const idRange = (from: number, to: number) => Array.from({length: to - from + 1}, (_, index) => from + index);
+
 /**
  * Rooms a refusal must never be taken as proof about.
  *
@@ -25,7 +27,11 @@ const RESET: FormatStateSnapshot = {};
  * a room that is in fact perfectly drivable and quietly route every later journey around it.
  * /wozblok still marks them by hand, since a deliberate mark is a statement, not a guess.
  */
-const NEVER_LEARNED = new Set([1419, 1137]);
+const NEVER_LEARNED = new Set([
+    1419, 1137,
+    // 5217-5253, a run with no gaps in it - the whole stretch refuses for its own reasons.
+    ...idRange(5217, 5253),
+]);
 
 /**
  * Rooms a carriage cannot enter, marked by hand.
