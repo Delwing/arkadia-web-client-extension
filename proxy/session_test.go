@@ -20,6 +20,7 @@ type fakeClient struct {
 	controls [][]byte
 	notices  []string
 	failing  bool
+	pings    bool
 	closed   string
 }
 
@@ -48,6 +49,10 @@ func (f *fakeClient) notice(text string) error {
 	f.notices = append(f.notices, text)
 	return nil
 }
+
+func (f *fakeClient) heartbeats() bool { return f.pings }
+
+func (f *fakeClient) version() string { return "" }
 
 func (f *fakeClient) close(reason string) {
 	f.mu.Lock()
@@ -84,7 +89,7 @@ func (f *fakeClient) control(t *testing.T) controlPayload {
 func newTestSession(t *testing.T, maxBuffer int) (*Session, net.Conn) {
 	t.Helper()
 	ours, theirs := net.Pipe()
-	s := newSession("test-session-id-000000", theirs, maxBuffer)
+	s := newSession("test-session-id-000000", theirs, maxBuffer, 20*time.Second)
 	t.Cleanup(func() { s.finish("test over"); _ = ours.Close() })
 	return s, ours
 }
@@ -130,7 +135,7 @@ func TestFrameRejectsShortInput(t *testing.T) {
 func TestOutputGoesStraightToAnAttachedClient(t *testing.T) {
 	s, game := newTestSession(t, 4096)
 	c := &fakeClient{}
-	s.attach(c, false)
+	s.attach(c, false, -1)
 
 	_, _ = game.Write([]byte("witaj"))
 
@@ -143,7 +148,7 @@ func TestOutputGoesStraightToAnAttachedClient(t *testing.T) {
 func TestOutputIsBufferedAndReplayedInOrder(t *testing.T) {
 	s, game := newTestSession(t, 4096)
 	first := &fakeClient{}
-	s.attach(first, false)
+	s.attach(first, false, -1)
 	s.detach(first)
 
 	// The frozen-tab case: the game keeps talking with nobody listening.
@@ -153,7 +158,7 @@ func TestOutputIsBufferedAndReplayedInOrder(t *testing.T) {
 	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 8 })
 
 	second := &fakeClient{}
-	s.attach(second, true)
+	s.attach(second, true, -1)
 
 	got := second.data(t)
 	if len(got) != 2 || got[0] != "jeden" || got[1] != "dwa" {
@@ -173,7 +178,7 @@ func TestReplayKeepsTheTimeEachChunkArrived(t *testing.T) {
 	time.Sleep(40 * time.Millisecond)
 
 	c := &fakeClient{}
-	s.attach(c, true)
+	s.attach(c, true, -1)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -191,7 +196,7 @@ func TestResumeTellsARawClientInItsOwnLanguage(t *testing.T) {
 	s, _ := newTestSession(t, 4096)
 
 	fresh := &fakeClient{}
-	s.attach(fresh, false)
+	s.attach(fresh, false, -1)
 	if len(fresh.notices) != 0 {
 		t.Errorf("a fresh session should announce nothing, got %q", fresh.notices)
 	}
@@ -200,7 +205,7 @@ func TestResumeTellsARawClientInItsOwnLanguage(t *testing.T) {
 	// A client with no control channel gets told in the only language it has, or it
 	// cannot tell a resumed session from a new one.
 	resumed := &fakeClient{}
-	s.attach(resumed, true)
+	s.attach(resumed, true, -1)
 	if len(resumed.notices) != 1 {
 		t.Fatalf("notices = %q, want one resume line", resumed.notices)
 	}
@@ -217,7 +222,7 @@ func TestBufferDropsOldestPastTheCap(t *testing.T) {
 	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.droppedBytes == 4 })
 
 	c := &fakeClient{}
-	s.attach(c, true)
+	s.attach(c, true, -1)
 
 	got := c.data(t)
 	if len(got) != 2 || got[0] != "bbbb" || got[1] != "cccc" {
@@ -231,13 +236,13 @@ func TestBufferDropsOldestPastTheCap(t *testing.T) {
 func TestAFailingSendParksBytesRatherThanLosingThem(t *testing.T) {
 	s, game := newTestSession(t, 4096)
 	c := &fakeClient{failing: true}
-	s.attach(c, false)
+	s.attach(c, false, -1)
 
 	_, _ = game.Write([]byte("nie zginie"))
 
 	waitFor(t, func() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.pendingBytes == 10 })
 	next := &fakeClient{}
-	s.attach(next, true)
+	s.attach(next, true, -1)
 	if got := next.data(t); len(got) != 1 || got[0] != "nie zginie" {
 		t.Fatalf("replay = %q, want the chunk the dying client never got", got)
 	}
@@ -246,9 +251,9 @@ func TestAFailingSendParksBytesRatherThanLosingThem(t *testing.T) {
 func TestASecondAttachReplacesTheFirst(t *testing.T) {
 	s, _ := newTestSession(t, 4096)
 	first := &fakeClient{}
-	s.attach(first, false)
+	s.attach(first, false, -1)
 	second := &fakeClient{}
-	s.attach(second, true)
+	s.attach(second, true, -1)
 
 	first.mu.Lock()
 	defer first.mu.Unlock()
@@ -280,7 +285,7 @@ func TestReapClosesOnlyAbandonedSessions(t *testing.T) {
 	m.put("idle", idle)
 
 	busy, _ := newTestSession(t, 4096)
-	busy.attach(&fakeClient{}, false)
+	busy.attach(&fakeClient{}, false, -1)
 	m.put("busy", busy)
 
 	time.Sleep(80 * time.Millisecond)
@@ -327,7 +332,7 @@ func TestAnIdleTimeoutIsExplainedRatherThanSwallowed(t *testing.T) {
 	}
 
 	c := &fakeClient{}
-	s.attach(c, true)
+	s.attach(c, true, -1)
 
 	if got := c.data(t); len(got) != 1 || got[0] != "Zostajesz rozlaczony z powodu bezczynnosci.\r\n" {
 		t.Errorf("replay = %q, want the game's own goodbye", got)
@@ -351,7 +356,7 @@ func TestLeavingClosesTheSessionAtOnce(t *testing.T) {
 	m := newManager(4096, time.Hour)
 	s, _ := newTestSession(t, 4096)
 	c := &fakeClient{}
-	s.attach(c, false)
+	s.attach(c, false, -1)
 	s.detach(c)
 	m.put("leaving", s)
 
@@ -374,7 +379,7 @@ func TestLeavingIsIgnoredWhileAClientIsAttached(t *testing.T) {
 	// so the replacement page can already be attached by the time it lands. Acting on
 	// it would kill the session that page is using.
 	replacement := &fakeClient{}
-	s.attach(replacement, true)
+	s.attach(replacement, true, -1)
 
 	if s.leaving() {
 		t.Error("leaving must not act while a client is attached")

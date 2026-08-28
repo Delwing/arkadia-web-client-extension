@@ -20,6 +20,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,6 +50,11 @@ var (
 	// peer instead, and the browser hop is compressed by permessage-deflate. See mccp.go.
 	// The flag is here to take it back out if the game's implementation misbehaves.
 	useMccp = flag.Bool("mccp", true, "negotiate MCCP2 with the game and hand the client plaintext")
+	// An open socket is not proof of a reader: a frozen tab keeps its WebSocket while
+	// the page behind it runs nothing. The client pings every 3s, so silence past this
+	// means output should be buffered rather than written into a socket nobody drains.
+	// Generous against a merely-throttled background tab, whose timers Chrome slows.
+	clientSilence = flag.Duration("client-silence", 20*time.Second, "how long an attached client may go silent before its output is buffered")
 )
 
 func main() {
@@ -80,12 +86,18 @@ func main() {
 			return
 		}
 		id := strings.TrimSpace(string(body))
+		// Logged rather than dropped in silence. Whether these beacons arrive at all has
+		// been an open question — a browser that never sends one leaves a character
+		// standing in the world until the TTL — and a handler that returns quietly on a
+		// malformed body cannot tell "never sent" from "sent wrong".
 		if len(id) < 20 {
+			log.Printf("leaving: ignoring a %d-byte body from %s", len(body), r.UserAgent())
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		session := manager.get(id)
 		if session == nil {
+			log.Printf("session %s… leaving, but no such session", short(id))
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -127,6 +139,9 @@ type wsClient struct {
 	conn   *websocket.Conn
 	ctx    context.Context
 	framed bool
+	// The client build, from the handshake, so "it broke for me" can be checked against
+	// what that user was actually running rather than guessed at from the time.
+	build string
 }
 
 func (c *wsClient) write(payload []byte) error {
@@ -156,6 +171,13 @@ func (c *wsClient) notice(text string) error {
 		return nil
 	}
 	return c.write([]byte("\r\n" + text + "\r\n"))
+}
+
+func (c *wsClient) version() string { return c.build }
+
+func (c *wsClient) heartbeats() bool {
+	// Our client pings every three seconds; a raw one may sit silent for minutes.
+	return c.framed
 }
 
 func (c *wsClient) close(reason string) {
@@ -206,6 +228,7 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 		conn:   conn,
 		ctx:    context.Background(),
 		framed: conn.Subprotocol() == sessionSubprotocol,
+		build:  buildFromSubprotocols(r),
 	}
 
 	session := manager.get(id)
@@ -216,14 +239,14 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 			_ = conn.Close(websocket.StatusInternalError, fmt.Sprintf("connect failed: %v", err))
 			return
 		}
-		session = newSession(id, upstream, *maxBuffer)
+		session = newSession(id, upstream, *maxBuffer, *clientSilence)
 		manager.put(id, session)
 		log.Printf("session %s… opened", short(id))
 	} else {
 		log.Printf("session %s… resumed", short(id))
 	}
 
-	session.attach(client, resumed)
+	session.attach(client, resumed, offsetFromSubprotocols(r))
 
 	// The game ended this session while nobody was attached — idled out, quit, server
 	// restarted. attach() has just handed over everything it never got to show,
@@ -278,6 +301,11 @@ func dialUpstream(label string) (net.Conn, error) {
 const (
 	sessionSubprotocol   = "arkadia-session-v1"
 	sessionIDSubprotocol = "s."
+	// Optional: which build the client is running, for tying a report to a deploy.
+	buildSubprotocol = "b."
+	// Optional: how many bytes of output the client has already processed, so a resume
+	// hands back exactly what it missed and nothing it already has.
+	offsetSubprotocol = "o."
 )
 
 /*
@@ -294,11 +322,45 @@ A browser cannot set arbitrary headers on a WebSocket, but it can set this one, 
 what makes the approach available at all.
 */
 func sessionFromSubprotocols(r *http.Request) string {
+	return subprotocolValue(r, sessionIDSubprotocol)
+}
+
+// buildFromSubprotocols reads the client's build, if it offered one. Optional by design:
+// an old client that does not send it still connects, it just shows as unknown.
+func buildFromSubprotocols(r *http.Request) string {
+	build := subprotocolValue(r, buildSubprotocol)
+	if len(build) > 40 {
+		build = build[:40]
+	}
+	return build
+}
+
+/*
+offsetFromSubprotocols reads how far the client got, or -1 if it did not say.
+
+Only the client can answer this. A write succeeding here proves the bytes reached a
+kernel buffer, not a screen — the renderer that would have drawn them is the one part of
+the chain that freezes, while every layer beneath it keeps accepting data. So the client
+counts what it has actually processed and reports it on the way back in.
+*/
+func offsetFromSubprotocols(r *http.Request) int64 {
+	raw := subprotocolValue(r, offsetSubprotocol)
+	if raw == "" {
+		return -1
+	}
+	offset, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || offset < 0 {
+		return -1
+	}
+	return offset
+}
+
+func subprotocolValue(r *http.Request, prefix string) string {
 	for _, header := range r.Header.Values("Sec-WebSocket-Protocol") {
 		for _, entry := range strings.Split(header, ",") {
 			entry = strings.TrimSpace(entry)
-			if id, ok := strings.CutPrefix(entry, sessionIDSubprotocol); ok {
-				return id
+			if value, ok := strings.CutPrefix(entry, prefix); ok {
+				return value
 			}
 		}
 	}
