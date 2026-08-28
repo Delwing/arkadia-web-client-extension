@@ -190,3 +190,183 @@ func TestAPingReleasesEarlierWrites(t *testing.T) {
 		t.Fatalf("still holding %d B after the client proved it was alive", held)
 	}
 }
+
+/*
+The reason the TTL sits past Arkadia's own idle limit: when the game logs an abandoned
+character out, its parting words are in the buffer, and a player returning to a bare
+login screen cannot tell an idle-out from the proxy having lost them.
+
+The reaper used to discard any closed session on its next 30-second tick, buffer and
+all — so the explanation was almost never still there to collect.
+*/
+func TestKeepsAClosedSessionWhileItStillHasSomethingToSay(t *testing.T) {
+	m := newManager(4096, time.Hour)
+	s, _ := newTestSession(t, 4096)
+	m.put("kept-session-id-000000", s)
+
+	// The game ends it while nobody is attached, leaving its last words behind.
+	s.deliver(chunk{at: time.Now(), bytes: []byte("Zostajesz rozlaczony z powodu bezczynnosci.\r\n")})
+	s.finish("upstream closed the connection")
+
+	_, _ = m.reap(time.Now())
+
+	if m.count() != 1 {
+		t.Fatal("threw away a closed session that still had output waiting")
+	}
+	if got := m.get("kept-session-id-000000"); got == nil {
+		t.Fatal("a returning player could not claim it")
+	}
+}
+
+// Once drained it is genuinely finished, and holding it would leak.
+func TestReapsAClosedSessionOnceItHasBeenRead(t *testing.T) {
+	m := newManager(4096, time.Hour)
+	s, _ := newTestSession(t, 4096)
+	m.put("drained-session-id-0000", s)
+
+	s.deliver(chunk{at: time.Now(), bytes: []byte("ostatnie slowa\r\n")})
+	s.finish("upstream closed the connection")
+	s.attach(&fakeClient{}, true, -1) // the player came back and read it
+
+	_, _ = m.reap(time.Now())
+
+	if m.count() != 0 {
+		t.Fatal("held a closed session with nothing left to hand over")
+	}
+}
+
+/*
+The retention clock for a closed session cannot be detachedAt. A frozen tab keeps its
+socket, so the client is still "attached" at the moment the game hangs up — detachedAt is
+never set, idleFor answers zero forever, and the session would be held for good.
+*/
+func TestAClosedSessionExpiresOnItsOwnClock(t *testing.T) {
+	m := newManager(4096, 50*time.Millisecond)
+	s, _ := newTestSession(t, 4096)
+	m.put("frozen-tab-session-000000", s)
+
+	// The tab froze with its socket open, so it never detached.
+	s.attach(&fakeClient{pings: true}, false, -1)
+	s.deliver(chunk{at: time.Now(), bytes: []byte("Zostajesz rozlaczony.\r\n")})
+	s.finish("upstream closed the connection")
+
+	s.mu.Lock()
+	neverDetached := s.detachedAt.IsZero()
+	s.mu.Unlock()
+	if !neverDetached {
+		t.Fatal("test no longer covers the case it was written for")
+	}
+
+	if _, _ = m.reap(time.Now()); m.count() != 1 {
+		t.Fatal("dropped it before anybody could come back for it")
+	}
+
+	time.Sleep(60 * time.Millisecond)
+	_, _ = m.reap(time.Now())
+
+	if m.count() != 0 {
+		t.Fatal("held a closed session past its retention; nothing would ever free it")
+	}
+}
+
+/*
+A tab that wakes, takes the buffer and dies again.
+
+Its ping proves the page was running a moment ago — not that it has read what the flush
+is handing it now. Those chunks are as unconfirmed as any other write, and dropping them
+from the held window left nothing to replay from: the buffer was spent, and the client
+never got it.
+*/
+func TestAFlushedBufferIsStillHeldUntilConfirmed(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+	go func() { _, _ = io.ReadAll(game) }()
+	s.silenceLimit = 50 * time.Millisecond
+	client := &fakeClient{pings: true}
+	s.attach(client, false, -1)
+
+	// Asleep: buffered rather than written.
+	time.Sleep(60 * time.Millisecond)
+	s.deliver(chunk{at: time.Now(), bytes: []byte("Ork cie atakuje!\r\n")})
+
+	// Awake again on the same socket, so the buffer is handed straight over.
+	_ = s.write([]byte("core.ping"))
+	if len(client.chunks) != 1 {
+		t.Fatalf("flush sent %d chunks, want 1", len(client.chunks))
+	}
+
+	// ...and then it dies before reading any of it, coming back having processed nothing.
+	returning := &fakeClient{pings: true}
+	s.attach(returning, true, 0)
+
+	var replayed string
+	for _, c := range returning.chunks {
+		replayed += c.payload
+	}
+	if !strings.Contains(replayed, "Ork cie atakuje!") {
+		t.Fatalf("the flushed buffer was not held for a retry:\n%q", replayed)
+	}
+}
+
+// Ordering across the two holding places: unconfirmed was written before the client went
+// quiet, pending accumulated after, so a replay has to hand them over in that order.
+func TestAReplayKeepsUnconfirmedAndBufferedInOrder(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+	s.silenceLimit = 50 * time.Millisecond
+	client := &fakeClient{pings: true}
+	s.attach(client, false, -1)
+
+	s.deliver(chunk{at: time.Now(), bytes: []byte("pierwsza\r\n")}) // written, unconfirmed
+	time.Sleep(60 * time.Millisecond)
+	s.deliver(chunk{at: time.Now(), bytes: []byte("druga\r\n")}) // buffered
+
+	returning := &fakeClient{pings: true}
+	s.attach(returning, true, 0)
+
+	var replayed string
+	for _, c := range returning.chunks {
+		replayed += c.payload
+	}
+	if i, j := strings.Index(replayed, "pierwsza"), strings.Index(replayed, "druga"); i < 0 || j < 0 || i > j {
+		t.Fatalf("replay out of order:\n%q", replayed)
+	}
+}
+
+/*
+A clean logout used to end with its final messages unconfirmed forever: the
+acknowledgement rides on the client's next ping, and there is no next ping once the
+socket is gone. The session was then held as still-owed for its whole retention — and
+archived — for output the player demonstrably read.
+
+Staying attached for a moment longer turns that into a definite answer.
+*/
+func TestAFinalPingDuringTheGraceConfirmsTheLastMessages(t *testing.T) {
+	s, _ := newTestSessionWithGrace(t, 4096, 200*time.Millisecond)
+	client := &fakeClient{pings: true}
+	s.attach(client, false, -1)
+
+	s.deliver(chunk{at: time.Now(), bytes: []byte("Zegnaj.\r\n")})
+	s.finish("upstream closed the connection")
+
+	// The client is still there and still pinging, as it would be for a few more seconds.
+	_ = s.write([]byte("core.ping"))
+
+	if s.hasUnreadOutput() {
+		t.Fatal("still owes output the client acknowledged during the grace")
+	}
+}
+
+// Without the grace the socket is gone before any acknowledgement can arrive, and the
+// session is rightly kept: unconfirmed means unconfirmed.
+func TestWithoutAGraceTheLastMessagesStayOwed(t *testing.T) {
+	s, _ := newTestSessionWithGrace(t, 4096, 0)
+	client := &fakeClient{pings: true}
+	s.attach(client, false, -1)
+
+	s.deliver(chunk{at: time.Now(), bytes: []byte("Zegnaj.\r\n")})
+	s.finish("upstream closed the connection")
+	_ = s.write([]byte("core.ping"))
+
+	if !s.hasUnreadOutput() {
+		t.Fatal("dropped output that was never acknowledged")
+	}
+}

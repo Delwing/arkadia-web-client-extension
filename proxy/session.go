@@ -54,11 +54,15 @@ type Session struct {
 	pendingBytes int
 	droppedBytes int
 	closed       bool
-	closeReason  string
+	// When the game connection ended. The retention clock for a closed session that
+	// still holds output: detachedAt cannot serve, since a frozen tab is still
+	// "attached" at the moment the game hangs up.
+	closedAt    time.Time
+	closeReason string
 
 	// When the current client attached and when it last said anything. Both feed
-	// clientStale, which is the only thing standing between a frozen tab and output
-	// written into a socket nobody reads.
+	// clientStale, the only thing standing between a frozen tab and output written into
+	// a socket nobody reads.
 	attachedAt time.Time
 	lastClient time.Time
 
@@ -66,6 +70,9 @@ type Session struct {
 	// output is buffered rather than written into a socket nobody is reading.
 	clientHeartbeats bool
 	silenceLimit     time.Duration
+	// How long a closed session keeps its socket open so a last ping can confirm what
+	// was just sent. Zero closes at once.
+	closeGrace time.Duration
 	// Build the attached client reports at handshake, so a bug report can be tied to a
 	// deploy rather than guessed at.
 	clientVersion string
@@ -116,13 +123,14 @@ type clientConn interface {
 	close(reason string)
 }
 
-func newSession(id string, upstream net.Conn, maxBuffer int, silenceLimit time.Duration) *Session {
+func newSession(id string, upstream net.Conn, maxBuffer int, silenceLimit, closeGrace time.Duration) *Session {
 	s := &Session{
 		id:           id,
 		created:      time.Now(),
 		upstream:     upstream,
 		maxBuffer:    maxBuffer,
 		silenceLimit: silenceLimit,
+		closeGrace:   closeGrace,
 	}
 	s.detachedAt = s.created
 	go s.pump()
@@ -282,16 +290,31 @@ func (s *Session) flushPendingLocked() {
 	pending := s.pending
 	s.pending = nil
 	s.pendingBytes = 0
-	for _, ch := range pending {
+	for i, ch := range pending {
 		if err := s.client.sendData(ch.at, ch.bytes); err != nil {
 			s.client = nil
 			s.detachedAt = time.Now()
-			// Put back what never made it, so a later attach still has it.
-			s.pending = append(s.pending, ch)
-			s.pendingBytes += len(ch.bytes)
+			// Put back everything from here on, so a later attach still has it.
+			s.pending = append(s.pending, pending[i:]...)
+			for _, missed := range pending[i:] {
+				s.pendingBytes += len(missed.bytes)
+			}
 			return
 		}
+		/*
+			Written, and therefore no safer than any other write: the ping that triggered
+			this flush proves the page was running a moment ago, not that it has read what
+			we are handing it now. Leaving these out of the held window — as this did —
+			meant a tab that woke, took the buffer and died again lost exactly the output
+			it had just been given, with nothing left to replay from.
+		*/
+		s.unconfirmed = append(s.unconfirmed, ch)
+		s.unconfirmedBytes += len(ch.bytes)
+		if end := ch.offset + int64(len(ch.bytes)); end > s.deliveredTo {
+			s.deliveredTo = end
+		}
 	}
+	s.trimUnconfirmedLocked()
 }
 
 // attach hands the session to a client, replacing any previous one, and replays
@@ -468,11 +491,25 @@ func (s *Session) finish(reason string) {
 		return
 	}
 	s.closed = true
+	s.closedAt = time.Now()
 	s.closeReason = reason
 	client := s.client
-	s.client = nil
+	heartbeats := s.clientHeartbeats
 	if s.upstream != nil {
 		_ = s.upstream.Close()
+	}
+	/*
+		The client stays attached through the grace below, so its next ping can still
+		confirm the last thing it was sent.
+
+		Without that, a clean logout always ends with its final messages unconfirmed —
+		the acknowledgement would have ridden on a ping that never comes, because the
+		socket is already gone. The session is then held as still-owed for its full
+		retention, and archived, for output the player demonstrably read.
+	*/
+	waiting := client != nil && heartbeats && s.closeGrace > 0
+	if !waiting {
+		s.client = nil
 	}
 	s.mu.Unlock()
 
@@ -496,7 +533,23 @@ func (s *Session) finish(reason string) {
 		})
 		_ = client.sendControl(control)
 		_ = client.notice(fmt.Sprintf("[proxy] gra zamknela polaczenie: %s", reason))
-		client.close(reason)
+
+		if !waiting {
+			client.close(reason)
+			return
+		}
+		// Held open just long enough for one more ping — the client sends them every
+		// three seconds, so this is a short wait for a definite answer rather than a
+		// guess either way.
+		go func() {
+			time.Sleep(s.closeGrace)
+			s.mu.Lock()
+			if s.client == client {
+				s.client = nil
+			}
+			s.mu.Unlock()
+			client.close(reason)
+		}()
 	}
 }
 
@@ -510,7 +563,11 @@ func (s *Session) isClosed() bool {
 func (s *Session) hasUnreadOutput() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return len(s.pending) > 0
+	// Unconfirmed counts as unread, and has to: it was written into a socket that
+	// accepted it, which is no evidence anybody read it — that is the whole reason it is
+	// kept. A closed session holding only unconfirmed writes still owes the player
+	// something, and reaping it would throw away exactly the bytes a frozen tab missed.
+	return len(s.pending) > 0 || len(s.unconfirmed) > 0
 }
 
 // Manager keeps sessions addressable by id and reaps abandoned ones.
@@ -569,23 +626,95 @@ func (m *Manager) count() int {
 
 // reap closes sessions nobody has come back to. Without it an abandoned character
 // stays logged in indefinitely, which is both a resource leak and a gameplay problem.
-func (m *Manager) reap(now time.Time) int {
+/*
+reap ends sessions nobody has come back to.
+
+Returns those whose unread output outlived its welcome in memory, so the caller can put
+them on disk: without that an abandoned character stays logged in indefinitely, and with
+only that a player who forgets they were playing loses the explanation entirely.
+*/
+func (m *Manager) reap(now time.Time) (expiredCount int, stale []staleSession) {
 	m.mu.Lock()
-	var expired []*Session
+	var expired []staleSession
 	for id, s := range m.sessions {
+		/*
+			A closed session is kept while it still holds output nobody has read. That is
+			the whole reason the TTL sits past Arkadia's own idle limit: the game's
+			parting words are in that buffer, and a player who comes back to a bare login
+			screen cannot tell an idle-out from the proxy having lost them. Discarding it
+			on the next 30-second tick, as this did, threw that away before almost anyone
+			could collect it.
+
+			On its own clock, not idleFor's. A frozen tab keeps its socket, so the client
+			can still be "attached" when the game closes — detachedAt is never set, and
+			idleFor would answer zero forever.
+		*/
 		if s.isClosed() {
-			delete(m.sessions, id)
+			if !s.hasUnreadOutput() {
+				delete(m.sessions, id)
+			} else if s.closedFor(now) > m.ttl {
+				// Out of time in memory, but still owed. Handed to the caller to put on
+				// disk, where it stays claimable for far longer than a session can be.
+				stale = append(stale, staleSession{id: id, session: s})
+				delete(m.sessions, id)
+			}
 			continue
 		}
 		if s.idleFor(now) > m.ttl {
-			expired = append(expired, s)
+			expired = append(expired, staleSession{id: id, session: s})
 			delete(m.sessions, id)
 		}
 	}
 	m.mu.Unlock()
 
 	for _, s := range expired {
-		s.finish("session abandoned for longer than the TTL")
+		s.session.finish("session abandoned for longer than the TTL")
+		// Nobody came back for it, which is exactly the case the archive is for: the
+		// buffer holds output the player never saw, and dropping it here would throw
+		// away the only copy.
+		stale = append(stale, s)
 	}
-	return len(expired)
+	return len(expired), stale
+}
+
+// staleSession is a closed session whose buffer is being moved out of memory.
+type staleSession struct {
+	id      string
+	session *Session
+}
+
+/*
+archivable describes everything a player is still owed, for storing past the TTL.
+
+Unconfirmed writes come first and count as owed: a socket accepting them is no evidence
+anybody read them, which is the whole reason they are kept.
+*/
+func (s *Session) archivable() *archivedSession {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	chunks := append(append([]chunk{}, s.unconfirmed...), s.pending...)
+	if len(chunks) == 0 {
+		return nil
+	}
+	return &archivedSession{
+		archiveRecord: archiveRecord{
+			CreatedAt:    s.created,
+			ClosedAt:     s.closedAt,
+			CloseReason:  s.closeReason,
+			DroppedBytes: s.droppedBytes,
+			Produced:     s.produced,
+		},
+		Chunks: chunks,
+	}
+}
+
+// closedFor reports how long ago the game connection ended; zero while it is open.
+func (s *Session) closedFor(now time.Time) time.Duration {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.closed || s.closedAt.IsZero() {
+		return 0
+	}
+	return now.Sub(s.closedAt)
 }

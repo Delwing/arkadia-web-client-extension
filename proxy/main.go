@@ -54,6 +54,13 @@ var (
 	// the page behind it runs nothing. The client pings every 3s, so silence past this
 	// means output should be buffered rather than written into a socket nobody drains.
 	// Generous against a merely-throttled background tab, whose timers Chrome slows.
+	// Where unclaimed sessions go once their buffer outlives memory, and for how long.
+	// Empty disables it: this puts gameplay on disk, which is a deliberate choice.
+	archiveDir = flag.String("archive-dir", "", "directory for unclaimed session buffers; empty disables archiving")
+	archiveTTL = flag.Duration("archive-ttl", 7*24*time.Hour, "how long an unclaimed archive is kept")
+	// Long enough for one more client ping (they arrive every 3s), so a clean logout
+	// ends with its last messages confirmed rather than held as still-owed.
+	closeGrace    = flag.Duration("close-grace", 4*time.Second, "how long a closed session waits for a final acknowledgement before hanging up")
 	clientSilence = flag.Duration("client-silence", 20*time.Second, "how long an attached client may go silent before its output is buffered")
 )
 
@@ -62,17 +69,45 @@ func main() {
 
 	manager := newManager(*maxBuffer, *ttl)
 
+	archive, err := newArchiveStore(*archiveDir, *archiveTTL)
+	if err != nil {
+		log.Fatalf("archive: %v", err)
+	}
+	if archive.enabled() {
+		log.Printf("archiving unclaimed sessions to %s for %s (%d held)",
+			*archiveDir, *archiveTTL, archive.count())
+	}
+
 	go func() {
+		lastPrune := time.Now()
 		for range time.Tick(30 * time.Second) {
-			if n := manager.reap(time.Now()); n > 0 {
-				log.Printf("reaped %d abandoned session(s)", n)
+			expired, stale := manager.reap(time.Now())
+			if expired > 0 {
+				log.Printf("reaped %d abandoned session(s)", expired)
+			}
+			// Out of memory, not out of reach: a player who forgets they were playing
+			// and comes back hours later still gets what they missed.
+			for _, s := range stale {
+				if record := s.session.archivable(); record != nil {
+					if err := archive.save(s.id, record); err != nil {
+						log.Printf("session %s… archive failed: %v", short(s.id), err)
+					} else {
+						log.Printf("session %s… archived %d chunk(s)", short(s.id), len(record.Chunks))
+					}
+				}
+			}
+			if time.Since(lastPrune) > time.Hour {
+				lastPrune = time.Now()
+				if n := archive.prune(time.Now()); n > 0 {
+					log.Printf("pruned %d archive(s) past %s", n, *archiveTTL)
+				}
 			}
 		}
 	}()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/attach", func(w http.ResponseWriter, r *http.Request) {
-		handleAttach(w, r, manager)
+		handleAttach(w, r, manager, archive)
 	})
 	// Beacon from a client that is going away for good — a closed tab or a navigation,
 	// as opposed to the backgrounding this whole proxy exists to survive.
@@ -116,6 +151,7 @@ func main() {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"ok":       true,
 			"sessions": manager.count(),
+			"archived": archive.count(),
 		})
 	})
 
@@ -188,7 +224,7 @@ func (c *wsClient) close(reason string) {
 	_ = c.conn.Close(websocket.StatusNormalClosure, reason)
 }
 
-func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
+func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager, archive *archiveStore) {
 	id := sessionFromSubprotocols(r)
 	// The id is what lets a returning player pick their character back up, so it is a
 	// credential: anything that can guess one attaches to a logged-in character. The
@@ -234,12 +270,29 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	session := manager.get(id)
 	resumed := session != nil
 	if session == nil {
+		/*
+			Nothing live under that id, but there may be something owed.
+
+			A player who forgot they were playing comes back to a session the game ended
+			hours ago. Opening a fresh connection first would bury what they missed under
+			a login banner, so the archive is handed over on its own and the socket
+			closed: they are told when and why it ended, read the rest, and log in when
+			they choose to.
+		*/
+		if record := archive.load(id); record != nil {
+			serveArchive(client, record, offsetFromSubprotocols(r))
+			archive.remove(id)
+			log.Printf("session %s… archive claimed after %s",
+				short(id), time.Since(record.ClosedAt).Round(time.Minute))
+			return
+		}
+
 		upstream, err := dialUpstream(short(id))
 		if err != nil {
 			_ = conn.Close(websocket.StatusInternalError, fmt.Sprintf("connect failed: %v", err))
 			return
 		}
-		session = newSession(id, upstream, *maxBuffer, *clientSilence)
+		session = newSession(id, upstream, *maxBuffer, *clientSilence, *closeGrace)
 		manager.put(id, session)
 		log.Printf("session %s… opened", short(id))
 	} else {
@@ -373,4 +426,47 @@ func short(id string) string {
 		return "??????"
 	}
 	return id[:6]
+}
+
+/*
+serveArchive hands a returning player what an ended session left them, and nothing else.
+
+Deliberately not followed by a fresh game connection. The value here is the explanation —
+when the session ended and what the game said as it went — and a login banner scrolling in
+on top of it would bury exactly the thing they came back for. The control frame carries
+`upstreamClosed`, which is what stops the client reattaching over it.
+
+The client's own offset is honoured, so anything it managed to read before its socket died
+is not shown twice.
+*/
+func serveArchive(client *wsClient, record *archivedSession, clientOffset int64) {
+	replayed := 0
+	control, _ := json.Marshal(controlPayload{
+		Type:           "archived",
+		SessionAgeMs:   record.ClosedAt.Sub(record.CreatedAt).Milliseconds(),
+		DetachedForMs:  time.Since(record.ClosedAt).Milliseconds(),
+		DroppedBytes:   record.DroppedBytes,
+		Resumed:        true,
+		UpstreamClosed: true,
+		CloseReason:    record.CloseReason,
+	})
+	_ = client.sendControl(control)
+	_ = client.notice(fmt.Sprintf("[proxy] sesja zakonczona %s temu: %s",
+		time.Since(record.ClosedAt).Round(time.Minute), record.CloseReason))
+
+	for _, c := range record.Chunks {
+		end := c.offset + int64(len(c.bytes))
+		if clientOffset >= 0 && end <= clientOffset {
+			continue // already on their screen before the socket went
+		}
+		payload := c.bytes
+		if clientOffset > c.offset && clientOffset < end {
+			payload = payload[clientOffset-c.offset:]
+		}
+		if err := client.sendData(c.at, payload); err != nil {
+			return
+		}
+		replayed += len(payload)
+	}
+	client.close("archived session replayed")
 }

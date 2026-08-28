@@ -89,7 +89,7 @@ func (f *fakeClient) control(t *testing.T) controlPayload {
 func newTestSession(t *testing.T, maxBuffer int) (*Session, net.Conn) {
 	t.Helper()
 	ours, theirs := net.Pipe()
-	s := newSession("test-session-id-000000", theirs, maxBuffer, 20*time.Second)
+	s := newSession("test-session-id-000000", theirs, maxBuffer, 20*time.Second, 0)
 	t.Cleanup(func() { s.finish("test over"); _ = ours.Close() })
 	return s, ours
 }
@@ -289,7 +289,7 @@ func TestReapClosesOnlyAbandonedSessions(t *testing.T) {
 	m.put("busy", busy)
 
 	time.Sleep(80 * time.Millisecond)
-	if n := m.reap(time.Now()); n != 1 {
+	if n, _ := m.reap(time.Now()); n != 1 {
 		t.Fatalf("reaped %d, want 1", n)
 	}
 	if !idle.isClosed() {
@@ -390,4 +390,14 @@ func TestLeavingIsIgnoredWhileAClientIsAttached(t *testing.T) {
 	if replacement.closed != "" {
 		t.Error("the attached client should not have been disconnected")
 	}
+}
+
+// newTestSessionWithGrace is newTestSession with control over how long a closed session
+// waits for a final acknowledgement.
+func newTestSessionWithGrace(t *testing.T, maxBuffer int, grace time.Duration) (*Session, net.Conn) {
+	t.Helper()
+	ours, theirs := net.Pipe()
+	s := newSession("test-session-id-000000", theirs, maxBuffer, 20*time.Second, grace)
+	t.Cleanup(func() { s.finish("test over"); _ = ours.Close() })
+	return s, ours
 }

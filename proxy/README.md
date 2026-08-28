@@ -149,6 +149,29 @@ and has its output buffered instead. It matters less than it used to: unconfirme
 are replayed either way, so the threshold now only chooses between holding and buffering,
 not between arriving and vanishing.
 
+## Unclaimed sessions
+
+Holding an ended session in memory covers coming back in half an hour. It does not cover
+forgetting you were playing and coming back after two, which is the same mistake with a
+longer gap and exactly as unwelcome.
+
+With `-archive-dir` set, a buffer that outlives memory is gzipped to disk instead of
+dropped: only the bytes nobody read, claimable by the same session id, swept after
+`-archive-ttl` (a week). Claiming one replays it, says when and why the session ended, and
+does **not** open a fresh game connection — a login banner scrolling in on top would bury
+the thing the player came back for. The id lives in the tab's `sessionStorage`, so this
+works for as long as that tab stays open; closing it forfeits the session, which is the
+deal already.
+
+Filenames are a SHA-256 of the session id, because a directory listing must not be a list
+of credentials. Sizing, measured against real traffic rather than guessed: a full 2 MB
+buffer gzips to about 750 KB, so thirty players abandoning one session a day for a week is
+roughly 150 MB.
+
+Off unless the flag is set. This puts other people's gameplay — tells, deaths, party chat
+— on disk rather than letting it die with the process, and that is a decision rather than
+a default. `ProtectSystem=strict` in the unit means it also needs a `StateDirectory`.
+
 Abandoned sessions are reaped after `-ttl`, which defaults to **35 minutes** — past
 Arkadia's own inactivity limit of 30, on purpose. Holding slightly longer lets the game
 be the one to end an abandoned session, and since a dead upstream lingers with its
@@ -166,7 +189,8 @@ go build -o session-proxy .
 
 Flags: `-addr`, `-upstream-host`, `-upstream-port`, `-buffer` (bytes held for a detached
 client, default 2 MiB — see the sizing note in main.go), `-ttl`, `-dial-timeout`,
-`-mccp`, `-client-silence`. `GET /health` reports the live session count.
+`-mccp`, `-client-silence`, `-close-grace`, `-archive-dir`, `-archive-ttl`. `GET /health`
+reports live sessions and archives held.
 
 ### Deployment
 

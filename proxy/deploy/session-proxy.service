@@ -5,7 +5,14 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/opt/session-proxy/session-proxy -addr 127.0.0.1:8080 -ttl 35m
+ExecStart=/opt/session-proxy/session-proxy -addr 127.0.0.1:8080 -ttl 35m \
+    -archive-dir /var/lib/session-proxy/archive
+
+# ProtectSystem=strict makes the whole filesystem read-only, so the archive needs its own
+# writable directory. systemd creates it owned by the service user and it survives a
+# restart, which is the point: an unclaimed session outlives the process holding it.
+StateDirectory=session-proxy
+StateDirectoryMode=0700
 # A restart drops every live session, so this exists for crashes, not for deploys.
 # Deploy when nobody is playing.
 Restart=always
