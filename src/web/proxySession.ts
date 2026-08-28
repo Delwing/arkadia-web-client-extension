@@ -185,9 +185,9 @@ export function sessionSubprotocols(sessionId = getProxySessionId(), processedBy
      */
     if (processedBytes > 0) offered.push(OFFSET_SUBPROTOCOL_PREFIX + processedBytes);
     // Which build is on the other end. A report of "it dropped me" is hard to act on
-    // without knowing whether that tab was running the fix; the answer is otherwise
-    // guessed at from when the report arrived. Kept to a token — the commit sha is
-    // hex — since a subprotocol value cannot carry anything else.
+    // without knowing whether that tab was running the fix, and the answer is otherwise
+    // guessed at from when the report arrived. Kept to a token — the commit sha is hex —
+    // since a subprotocol value cannot carry anything else.
     const build = typeof __COMMIT_SHA__ === 'string' ? __COMMIT_SHA__.replace(/[^0-9a-zA-Z]/g, '') : '';
     if (build) offered.push(BUILD_SUBPROTOCOL_PREFIX + build);
     return offered;
