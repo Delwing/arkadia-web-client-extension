@@ -160,6 +160,18 @@ describe('carriage blockades', () => {
       expect(client.println).not.toHaveBeenCalled();
     });
 
+    test('never learns the rooms that refuse a ride for other reasons', () => {
+      client.Map.currentRoom = { id: 100, exits: { west: 1419, north: 1137 } } as any;
+      parse('Nie mozna jechac na zachod.');
+      parse('Nie mozna jechac na polnoc.');
+      expect([...getBlockedRooms()]).toEqual([]);
+      expect(client.println).not.toHaveBeenCalled();
+
+      // A deliberate mark is a statement, not a guess, so it still stands.
+      client.run('/wozblok 1419');
+      expect([...getBlockedRooms()]).toEqual([1419]);
+    });
+
     test('does nothing when the map does not know that exit', () => {
       parse('Nie mozna jechac na poludnie.');
       expect([...getBlockedRooms()]).toEqual([]);

@@ -37,6 +37,8 @@ class FakeClient {
     currentRoom: { id: 100 } as { id: number },
     tryGetMapReader: () => ({ getRoom: (id: number) => ({ name: id === 999 ? String(id) : `Pokoj ${id}`, area: 7 }) }),
     getAreaName: (area: string) => (area === '7' ? 'Scala' : ''),
+    /** Stand-in for the real resolver: identity unless a test says otherwise. */
+    resolveDirection: jest.fn((direction: string) => direction),
   };
   /** Last payload the script pushed for a given sendEvent type. */
   lastEvent(type: string) {
@@ -743,6 +745,20 @@ describe('carriage bookkeeping', () => {
         parse(refusal);
         expect(hookFor(short)).toBe(`zsiadz z wozu;${short}`);
       }
+    });
+
+    test('matches a special exit the map resolved the direction into', () => {
+      // "w" in a room whose only westward exit is the special "barka" goes out as "jedz na barka",
+      // and that is the name the refusal comes back with. Comparing the key that was pressed to it
+      // never matched, so repeating the ride did nothing.
+      client.Map.resolveDirection = jest.fn((direction: string) => (direction === 'w' ? 'barka' : direction));
+      parse('Nie mozna jechac na barka.');
+      expect(hookFor('w')).toBe('zsiadz z wozu;w');
+    });
+
+    test('matches a special exit typed out in full', () => {
+      parse('Nie mozna jechac na barka.');
+      expect(hookFor('barka')).toBe('zsiadz z wozu;barka');
     });
 
     test('does nothing while the option is off', () => {

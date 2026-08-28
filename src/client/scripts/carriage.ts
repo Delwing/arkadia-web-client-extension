@@ -5,7 +5,7 @@ import {characterStorage} from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus.ts";
 import {createColorFormat} from "@modules/core/Colors";
 import {getBehaviorSettings} from "@modules/core/settings";
-import {getLongDir} from "@shared/map/directions";
+import {getLongDir, isDirection} from "@shared/map/directions";
 
 const STORAGE_KEY = 'carriages';
 
@@ -546,6 +546,21 @@ export default function initCarriage(
      */
     let refused: { exit: string; roomId: number | null } | null = null;
 
+    /**
+     * The exit driving `command` would actually aim at, named the way the refusal names it.
+     *
+     * A compass command is resolved through the map before the ride goes out, so "w" in a room
+     * whose only westward exit is the special "barka" is sent as "jedz na barka" - and "barka" is
+     * what comes back refused. Comparing the command as typed would never match that, which is why
+     * the resolution is repeated here rather than the raw word compared. A special exit is not a
+     * direction and has no long form, so it compares as itself.
+     */
+    const drivenExit = (command: string): string => {
+        const cmd = command.trim().toLowerCase();
+        if (!isDirection(cmd)) return getLongDir(cmd);
+        return getLongDir(client.Map?.resolveDirection?.(cmd) ?? cmd);
+    };
+
     // The refusal is the driver acting on our order rather than a reply to it, so it can land on
     // the prompt line - the same reason the on-foot "Nie widzisz zadnego wyjscia" trigger tolerates
     // a leading prompt.
@@ -577,9 +592,9 @@ export default function initCarriage(
         if (!refused || !client.carriageMode) return undefined;
         if (getBehaviorSettings().dismountOnRefusedRide !== true) return undefined;
         // The refusal names the direction in full ("Nie mozna jechac na poludnie.") while the
-        // command that provoked it is usually the short form, so both go through the same
-        // normalisation. A special exit has no long form and compares as itself.
-        if (getLongDir(command.trim().toLowerCase()) !== getLongDir(refused.exit)) return undefined;
+        // command that provoked it is usually the short form, and may not be a direction at all
+        // once the map has resolved it into a special exit - so both go through drivenExit.
+        if (drivenExit(command) !== getLongDir(refused.exit)) return undefined;
 
         const noun = currentKey ? VEHICLE_GENITIVE[nounOf(currentKey)] : undefined;
         if (!noun) return undefined;

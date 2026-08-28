@@ -8156,11 +8156,6 @@
   gap: 0.25rem;
 }
 
-.carriage-item--urgent {
-  border-color: var(--popup-warning);
-  background-color: rgba(245, 158, 11, 0.1);
-}
-
 .carriage-header {
   display: flex;
   align-items: center;

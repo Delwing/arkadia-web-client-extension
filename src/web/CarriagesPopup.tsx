@@ -154,13 +154,12 @@ const CarriagesPopup: React.FC = () => {
                 <div className="popup-list carriages-list">
                     {rows.map(({ carriage, leasedInDistance, parkedInDistance }) => {
                         const left = carriage.depositExpiresAt > 0 ? carriage.depositExpiresAt - now : null;
-                        const isUrgent = left !== null && left <= URGENT_MS;
+                        // A whole tinted box for every carriage nearing its deadline drowns out the
+                        // list, so the warning lives in the deadline line and its bar alone.
+                        const warn = left !== null && left <= URGENT_MS;
 
                         return (
-                            <div
-                                key={carriage.key}
-                                className={`carriage-item${isUrgent ? ' carriage-item--urgent' : ''}`}
-                            >
+                            <div key={carriage.key} className="carriage-item">
                                 <div className="carriage-header">
                                     <span className="carriage-name">{carriage.name}</span>
                                     {carriage.driven && (
@@ -206,12 +205,12 @@ const CarriagesPopup: React.FC = () => {
 
                                 {left !== null && (
                                     <>
-                                        <div className={`carriage-deadline${isUrgent ? ' carriage-deadline--urgent' : ''}`}>
+                                        <div className={`carriage-deadline${warn ? ' carriage-deadline--urgent' : ''}`}>
                                             Kaucja w calosci do {formatMoment(carriage.depositExpiresAt)} ({formatLeft(left)})
                                         </div>
                                         <div className="carriage-deposit-bar">
                                             <div
-                                                className={`carriage-deposit-bar-fill${isUrgent ? ' carriage-deposit-bar-fill--urgent' : ''}`}
+                                                className={`carriage-deposit-bar-fill${warn ? ' carriage-deposit-bar-fill--urgent' : ''}`}
                                                 style={{ width: `${remainingPercent(carriage, now)}%` }}
                                             />
                                         </div>

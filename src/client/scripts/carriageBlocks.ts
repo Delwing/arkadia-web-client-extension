@@ -19,6 +19,15 @@ const YELLOW: FormatStateSnapshot = {foreground: {space: 'hex', color: '#ffff00'
 const RESET: FormatStateSnapshot = {};
 
 /**
+ * Rooms a refusal must never be taken as proof about.
+ *
+ * These do refuse a ride, but not because a wagon cannot be there - so learning from it would bar
+ * a room that is in fact perfectly drivable and quietly route every later journey around it.
+ * /wozblok still marks them by hand, since a deliberate mark is a statement, not a guess.
+ */
+const NEVER_LEARNED = new Set([1419, 1137]);
+
+/**
  * Rooms a carriage cannot enter, marked by hand.
  *
  * Nobody has this data yet - the Mudlet package that first had the idea shipped none, which is why
@@ -137,6 +146,7 @@ export default function initCarriageBlocks(
 
     /** Record a blockade and say so, with the undo right there in the line. */
     const learnBlock = (roomId: number) => {
+        if (NEVER_LEARNED.has(roomId)) return false;
         if (isBlocked(roomId) || !blockRoom(roomId)) return false;
         const note = new AnsiAwareBuffer();
         note.append('Zapamietane: woz nie przejedzie przez ', YELLOW);
