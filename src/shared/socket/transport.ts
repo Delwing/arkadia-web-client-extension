@@ -20,6 +20,15 @@ export interface SessionControl {
     replayedBytes?: number;
     droppedBytes?: number;
     resumed?: boolean;
+    /**
+     * The game ended this session while nobody was attached — idled out, quit, or the
+     * server restarted. Distinct from the proxy losing the session, and the difference
+     * is the whole answer to "what happened while I was away": the replay just handed
+     * over carries the game's own parting words. Reconnecting on top of that would
+     * bury the explanation under a fresh login banner.
+     */
+    upstreamClosed?: boolean;
+    closeReason?: string;
 }
 
 /** One decoded inbound frame, with whatever metadata the wire format carried. */

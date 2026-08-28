@@ -122,6 +122,27 @@ export function announceLeaving(baseUrl: string, sessionId = getProxySessionId()
     }
 }
 
+/**
+ * Whether a closed socket should be reattached without asking the player.
+ *
+ * Silently reconnecting is right in exactly one situation and wrong in the rest, so the
+ * conditions are here rather than inline: only a session proxy can hand a player back
+ * the character they had, and only when the session is still there to reclaim.
+ *
+ *   - Without one, a reconnect lands on a login prompt nobody asked for.
+ *   - After a deliberate disconnect, resuming a character they chose to leave would be
+ *     a surprise — and the id is dropped then anyway, so it would be a fresh login.
+ *   - Once the game has ended the session, the replay just delivered explains why. A
+ *     reconnect would open a new connection and bury it under a login banner.
+ */
+export function shouldReattachAfterClose(state: {
+    usesSessionProxy: boolean;
+    closedByUser: boolean;
+    sessionEndedByGame: boolean;
+}): boolean {
+    return state.usesSessionProxy && !state.closedByUser && !state.sessionEndedByGame;
+}
+
 /** Marks a client that speaks the framed protocol; also what the proxy selects back. */
 export const SESSION_SUBPROTOCOL = 'arkadia-session-v1';
 

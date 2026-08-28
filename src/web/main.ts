@@ -7,7 +7,7 @@ import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
 import mudClient from "./MudClient.ts";
-import {DEFAULT_SESSION_PROXY_URL} from "./proxySession.ts";
+import {DEFAULT_SESSION_PROXY_URL, shouldReattachAfterClose} from "./proxySession.ts";
 import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -536,6 +536,10 @@ the case the proxy itself is unreachable, and after the last one we say so plain
 const PROXY_RESUME_DELAYS_MS = [0, 2_000, 5_000, 15_000, 30_000];
 let proxyResumeAttempt = 0;
 let proxyResumeTimer: number | null = null;
+// Set when the proxy reports the game ended the session. Reattaching then is not a
+// resume — it is a fresh login the player did not ask for, on top of the explanation
+// they came back to read.
+let proxySessionEnded = false;
 
 const cancelProxyResume = (): void => {
     if (proxyResumeTimer !== null) {
@@ -543,6 +547,9 @@ const cancelProxyResume = (): void => {
         proxyResumeTimer = null;
     }
     proxyResumeAttempt = 0;
+    // Consumed: it only ever suppresses the one reattach that would have followed the
+    // session the game ended. A later connection starts with a clean slate.
+    proxySessionEnded = false;
 };
 
 const scheduleProxyResume = (): void => {
@@ -566,7 +573,11 @@ const scheduleProxyResume = (): void => {
 
 // Handle client disconnect event
 mudClient.on('client.disconnect', () => {
-    const willResume = mudClient.lastCloseCause !== 'user' && mudClient.usesSessionProxy();
+    const willResume = shouldReattachAfterClose({
+        usesSessionProxy: mudClient.usesSessionProxy(),
+        closedByUser: mudClient.lastCloseCause === 'user',
+        sessionEndedByGame: proxySessionEnded,
+    });
     isConnected = false;
     isConnecting = false;
     isDisconnecting = false;
@@ -591,6 +602,15 @@ mudClient.on('client.disconnect', () => {
 // player pressed nothing and their character is still where they left it, which is
 // otherwise indistinguishable from a fresh login that happened to work.
 mudClient.on('proxy.session', (info) => {
+    if (info?.upstreamClosed) {
+        // The game itself ended this session while nobody was listening. The replay
+        // that arrived just before this carries its parting words — "zostajesz
+        // rozlaczony z powodu bezczynnosci" and the like — which is the entire reason
+        // an ended session is kept around instead of dropped. Reattaching would open a
+        // fresh connection and bury that under a login banner.
+        proxySessionEnded = true;
+        return;
+    }
     if (!info?.resumed) return;
     // Already in the world: the login screen has nothing left to ask for.
     authClosed = true;

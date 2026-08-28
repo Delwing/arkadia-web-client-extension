@@ -4,6 +4,7 @@ import {
     isSessionProxyUrl,
     resetProxySessionId,
     sessionSubprotocols,
+    shouldReattachAfterClose,
 } from '@web/proxySession.ts';
 
 describe('proxy session identity', () => {
@@ -101,5 +102,38 @@ describe('sessionSubprotocols', () => {
         for (const value of sessionSubprotocols()) {
             expect(value).toMatch(/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/);
         }
+    });
+});
+
+describe('shouldReattachAfterClose', () => {
+    const state = (over: Partial<Parameters<typeof shouldReattachAfterClose>[0]> = {}) => ({
+        usesSessionProxy: true,
+        closedByUser: false,
+        sessionEndedByGame: false,
+        ...over,
+    });
+
+    /*
+     * The case the proxy exists for: a phone froze the tab, the socket died, the game
+     * connection did not. The player pressed nothing and should have to press nothing.
+     */
+    it('reattaches when the browser lost its socket behind a session proxy', () => {
+        expect(shouldReattachAfterClose(state())).toBe(true);
+    });
+
+    it('stays put without a session proxy, where a reconnect means a login prompt', () => {
+        expect(shouldReattachAfterClose(state({usesSessionProxy: false}))).toBe(false);
+    });
+
+    it('respects a deliberate disconnect rather than resuming what was left', () => {
+        expect(shouldReattachAfterClose(state({closedByUser: true}))).toBe(false);
+    });
+
+    /*
+     * The proxy holds an ended session precisely so the player can read the game's own
+     * "zostajesz rozlaczony z powodu bezczynnosci". Reconnecting buries it.
+     */
+    it('does not reconnect over the game\'s own parting words', () => {
+        expect(shouldReattachAfterClose(state({sessionEndedByGame: true}))).toBe(false);
     });
 });
