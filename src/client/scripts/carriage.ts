@@ -302,10 +302,13 @@ export default function initCarriage(
     };
 
     /**
-     * Reconnecting parks the carriage and puts you on the ground, whether you asked or not, so the
-     * bookkeeping has to follow even though no dismount line is ever printed.
+     * The game put you on the ground without a dismount line, so the bookkeeping has to follow.
+     *
+     * Both reconnecting and leaving the world do this: the wagon stays exactly where it was and you
+     * are no longer on it. Unlike the fresh-session case below, the room is not a guess - we are
+     * still standing in it - so it is parked silently, with no note.
      */
-    const reconnected = () => {
+    const groundedInPlace = () => {
         if (!currentKey) return;
         park();
         setCarriageMode(false);
@@ -457,7 +460,18 @@ export default function initCarriage(
     // short drop, "polaczenie zostalo przywrocone" for a longer one - and both carry other text
     // around them, so this is unanchored.
     client.Triggers.registerTrigger(/przywracam polaczenie|polaczenie zostalo przywrocone/, line => {
-        reconnected();
+        groundedInPlace();
+        return line;
+    }, "carriageMode");
+    /**
+     * Quitting leaves the wagon standing where you were, so mark it there before the session ends.
+     *
+     * Without this the record stays "driving" and the map shows no wheel at all - and by the next
+     * login the room is only whatever the mapper happened to persist, which the fresh-session path
+     * can do no better than guess at.
+     */
+    client.Triggers.registerTrigger(/^[ >]*Opuszczasz realny swiat\.$/, line => {
+        groundedInPlace();
         return line;
     }, "carriageMode");
     // "Wynajmujesz lekki woz, placac dwadziescia piec zlotych monet kosztu najmu oraz jedna

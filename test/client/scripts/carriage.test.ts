@@ -516,6 +516,34 @@ describe('carriage bookkeeping', () => {
     expect(records()[carriageKey('nieduzy jednokonny woz')!].parkedIn).toBe(1234);
   });
 
+  test('leaving the world parks the carriage where we stood', () => {
+    client.Map.currentRoom = { id: 8555 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    parse('Nieduzy jednokonny woz rusza na zachod.');
+
+    client.Map.currentRoom = { id: 4321 };
+    parse('Opuszczasz realny swiat.');
+
+    expect(client.carriageMode).toBe(false);
+    expect(client.carriageStopCommand).toBeNull();
+    const record = records()[carriageKey('nieduzy jednokonny woz')!];
+    expect(record.driving).toBe(false);
+    expect(record.parkedIn).toBe(4321);
+    expect(client.lastEvent('mapParkedCarriages')).toEqual([{ roomId: 4321, label: 'woz' }]);
+  });
+
+  test('leaving the world on foot changes nothing', () => {
+    client.Map.currentRoom = { id: 8555 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    client.Map.currentRoom = { id: 1234 };
+    parse('Zsiadasz z nieduzego jednokonnego wozu.');
+
+    client.Map.currentRoom = { id: 4321 };
+    parse('Opuszczasz realny swiat.');
+
+    expect(records()[carriageKey('nieduzy jednokonny woz')!].parkedIn).toBe(1234);
+  });
+
   test('a fresh session after a long drop parks the carriage where we last were', () => {
     client.Map.currentRoom = { id: 8555 };
     parse('Siadasz na nieduzym jednokonnym wozie.');
