@@ -6,7 +6,7 @@ import '@web-ui/messageFlair.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
-import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
+import mudClient from "./MudClient.ts";
 import {DEFAULT_SESSION_PROXY_URL} from "./proxySession.ts";
 import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
@@ -1248,7 +1248,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const proxyControlsRoot = document.getElementById('proxy-controls-root');
     if (proxyControlsRoot) {
         createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
-            relayBase: PROXY_WEBSOCKET_URL,
             defaultProxy: DEFAULT_SESSION_PROXY_URL,
             initialMode: mudClient.getProxyMode(),
             initialUrl: mudClient.getUserProxyUrl() ?? '',

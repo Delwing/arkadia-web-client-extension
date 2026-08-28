@@ -42,10 +42,6 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL ?? 'wss://arkadia.rpg.pl/wss';
 // Query the proxy worker reads to know which telnet host/port to bridge to.
 const PROXY_QUERY = '?host=arkadia.rpg.pl&port=23';
-// Opt-in telnet->WebSocket proxy (Arkadia's raw telnet port). Selected via the
-// "proxy" checkbox on the connection screen; off by default. Exported so the
-// "host your own proxy" wizard can reuse it as the CORS relay for its API calls.
-export const PROXY_WEBSOCKET_URL = `wss://arkadia-proxy.delwing.workers.dev${PROXY_QUERY}`;
 const MCCP_STORAGE_KEY = 'mccpEnabled';
 // Legacy boolean flag (proxy on/off), kept only to migrate to PROXY_MODE_STORAGE_KEY.
 const PROXY_STORAGE_KEY = 'proxyEnabled';
@@ -95,7 +91,7 @@ class MudClient implements ClientAdapter {
     private pendingMsgTails = new Map<string, string>();
     // How to reach the game (direct / helper / proxy); see PROXY_MODE_STORAGE_KEY.
     private proxyMode: ProxyMode = 'direct';
-    // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL in 'proxy' mode.
+    // User-deployed proxy URL; overrides DEFAULT_SESSION_PROXY_URL in 'proxy' mode.
     private userProxyUrl: string | null = null;
     // Wire-format strategy, chosen at connect time: binary frames for the
     // proxy/helper, base64 for the native /wss endpoint. Defaults to base64.

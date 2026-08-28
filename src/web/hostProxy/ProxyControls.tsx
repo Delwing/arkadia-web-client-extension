@@ -12,11 +12,6 @@ const MODES: {value: ProxyMode; label: string}[] = [
 ];
 
 interface Props {
-    /**
-     * The stateless worker, used only as the CORS relay for the wizard's Cloudflare
-     * API calls. Deliberately not the default proxy any more — see `defaultProxy`.
-     */
-    relayBase: string;
     /** The proxy an empty URL field falls back to, shown as the placeholder. */
     defaultProxy: string;
     /** Currently persisted connection mode. */
@@ -37,7 +32,7 @@ interface Props {
  * that opens the proxy URL settings and the host-your-own wizard. Holds the UI
  * state; the persistence callbacks keep it decoupled from the client.
  */
-export function ProxyControls({relayBase, defaultProxy, initialMode, initialUrl, onModeChange, onUrlChange, onUseProxy}: Props) {
+export function ProxyControls({defaultProxy, initialMode, initialUrl, onModeChange, onUrlChange, onUseProxy}: Props) {
     const [mode, setMode] = useState<ProxyMode>(initialMode);
     const [url, setUrl] = useState(initialUrl);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -92,7 +87,6 @@ export function ProxyControls({relayBase, defaultProxy, initialMode, initialUrl,
             <HostProxyModal
                 show={hostOpen}
                 onClose={() => setHostOpen(false)}
-                relayBase={relayBase}
                 onUseProxy={deployed => {
                     setUrl(deployed);
                     changeMode('proxy');
