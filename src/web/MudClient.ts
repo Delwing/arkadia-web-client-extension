@@ -171,6 +171,23 @@ class MudClient implements ClientAdapter {
             const proxyUrl = this.effectiveProxyUrl();
             if (this.usesSessionProxy() && proxyUrl) {
                 announceLeaving(proxyUrl);
+                /*
+                    Drop the id as well, so a reload cannot land back in the session the
+                    page just left.
+
+                    The beacon alone does not settle it. It is handed to the browser as
+                    the page goes and delivered afterwards, so the replacement page can
+                    attach first — and the proxy ignores a leaving notice while somebody
+                    is attached, precisely so that race cannot kill a live client. The
+                    result was a reload silently resuming, which is not what a reload
+                    means.
+
+                    Forgetting the id here removes the race instead of trying to win it:
+                    the next page cannot claim a session it has no name for. Only genuine
+                    departures reach this point — a frozen tab resumes without unloading,
+                    and a bfcache restore returns above.
+                */
+                resetProxySessionId();
             }
         });
 
