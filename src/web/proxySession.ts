@@ -143,6 +143,34 @@ export function shouldReattachAfterClose(state: {
     return state.usesSessionProxy && !state.closedByUser && !state.sessionEndedByGame;
 }
 
+const RESUME_NOTICE_KEY = 'proxyResumeNotice';
+
+/**
+ * Whether to announce a resumed session in the output.
+ *
+ * On by default, because the first few times it happens the player needs telling: they
+ * pressed nothing, and a silent reattach is indistinguishable from the client having sat
+ * there doing nothing. Once it is plainly working, it becomes a line of noise on every
+ * return to the tab — which on a phone is often — so it can be turned off.
+ *
+ * A lost-output warning is not covered by this and always shows. That one is not routine.
+ */
+export function isResumeNoticeEnabled(): boolean {
+    try {
+        return localStorage.getItem(RESUME_NOTICE_KEY) !== 'false';
+    } catch {
+        return true;
+    }
+}
+
+export function setResumeNoticeEnabled(enabled: boolean): void {
+    try {
+        localStorage.setItem(RESUME_NOTICE_KEY, String(enabled));
+    } catch {
+        // Storage unavailable; the default stands for this session.
+    }
+}
+
 /** Marks a client that speaks the framed protocol; also what the proxy selects back. */
 export const SESSION_SUBPROTOCOL = 'arkadia-session-v1';
 

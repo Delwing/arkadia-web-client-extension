@@ -14,6 +14,10 @@ const MODES: {value: ProxyMode; label: string}[] = [
 interface Props {
     /** The proxy an empty URL field falls back to, shown as the placeholder. */
     defaultProxy: string;
+    /** Whether a resumed session is announced in the output. */
+    initialResumeNotice: boolean;
+    /** Persist a changed resume-notice preference. */
+    onResumeNoticeChange: (enabled: boolean) => void;
     /** Currently persisted connection mode. */
     initialMode: ProxyMode;
     /** Current user-defined proxy URL, or '' for the default. */
@@ -32,10 +36,14 @@ interface Props {
  * that opens the proxy URL settings and the self-hosting guide. Holds the UI
  * state; the persistence callbacks keep it decoupled from the client.
  */
-export function ProxyControls({defaultProxy, initialMode, initialUrl, onModeChange, onUrlChange, onUseProxy}: Props) {
+export function ProxyControls({
+    defaultProxy, initialMode, initialUrl, initialResumeNotice,
+    onModeChange, onUrlChange, onResumeNoticeChange, onUseProxy,
+}: Props) {
     const [mode, setMode] = useState<ProxyMode>(initialMode);
     const [url, setUrl] = useState(initialUrl);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [resumeNotice, setResumeNotice] = useState(initialResumeNotice);
     const [hostOpen, setHostOpen] = useState(false);
 
     const changeMode = (next: ProxyMode) => {
@@ -79,6 +87,11 @@ export function ProxyControls({defaultProxy, initialMode, initialUrl, onModeChan
                     onUrlChange(next);
                 }}
                 defaultProxy={defaultProxy}
+                resumeNotice={resumeNotice}
+                onResumeNoticeChange={next => {
+                    setResumeNotice(next);
+                    onResumeNoticeChange(next);
+                }}
                 onHostYourOwn={() => {
                     setSettingsOpen(false);
                     setHostOpen(true);

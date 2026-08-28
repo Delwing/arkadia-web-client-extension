@@ -7,7 +7,12 @@ import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
 import mudClient from "./MudClient.ts";
-import {DEFAULT_SESSION_PROXY_URL, shouldReattachAfterClose} from "./proxySession.ts";
+import {
+    DEFAULT_SESSION_PROXY_URL,
+    isResumeNoticeEnabled,
+    setResumeNoticeEnabled,
+    shouldReattachAfterClose,
+} from "./proxySession.ts";
 import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -618,7 +623,11 @@ mudClient.on('proxy.session', (info) => {
     const away = typeof info.sessionAgeMs === 'number'
         ? ` (sesja trwa ${Math.round(info.sessionAgeMs / 1000)} s)`
         : '';
-    client.println(`Wznowiono polaczenie z gra${away}.`);
+    if (isResumeNoticeEnabled()) {
+        client.println(`Wznowiono polaczenie z gra${away}.`);
+    }
+    // Not covered by the setting. Losing output is not routine, and a gap the player
+    // cannot account for is worse than a line they asked not to see.
     if (info.droppedBytes) {
         client.println(`Czesc tekstu z czasu nieobecnosci przepadla (${info.droppedBytes} bajtow).`);
     }
@@ -1384,6 +1393,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (proxyControlsRoot) {
         createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
             defaultProxy: DEFAULT_SESSION_PROXY_URL,
+            initialResumeNotice: isResumeNoticeEnabled(),
+            onResumeNoticeChange: (enabled: boolean) => setResumeNoticeEnabled(enabled),
             initialMode: mudClient.getProxyMode(),
             initialUrl: mudClient.getUserProxyUrl() ?? '',
             onModeChange: (mode) => mudClient.setProxyMode(mode),

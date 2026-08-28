@@ -1,9 +1,11 @@
 import {
     DEFAULT_SESSION_PROXY_URL,
     getProxySessionId,
+    isResumeNoticeEnabled,
     isSessionProxyUrl,
     resetProxySessionId,
     sessionSubprotocols,
+    setResumeNoticeEnabled,
     shouldReattachAfterClose,
 } from '@web/proxySession.ts';
 
@@ -165,5 +167,30 @@ describe('resume offset', () => {
         const offered = sessionSubprotocols('a'.repeat(32), 0);
 
         expect(offered.some(v => v.startsWith('o.'))).toBe(false);
+    });
+});
+
+describe('resume notice', () => {
+    beforeEach(() => localStorage.clear());
+
+    /*
+     * On until told otherwise: the first few silent reattaches are indistinguishable
+     * from the client having done nothing at all, and the player pressed no button.
+     */
+    it('is on by default', () => {
+        expect(isResumeNoticeEnabled()).toBe(true);
+    });
+
+    it('stays off once turned off, since on a phone it fires on every return', () => {
+        setResumeNoticeEnabled(false);
+
+        expect(isResumeNoticeEnabled()).toBe(false);
+    });
+
+    it('can be turned back on', () => {
+        setResumeNoticeEnabled(false);
+        setResumeNoticeEnabled(true);
+
+        expect(isResumeNoticeEnabled()).toBe(true);
     });
 });
