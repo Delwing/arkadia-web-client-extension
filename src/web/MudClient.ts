@@ -203,9 +203,13 @@ class MudClient implements ClientAdapter {
      *
      * Sessions on the proxy are built for clients to come and go, so compression is
      * declined there outright. Declining is enough: with the handler disabled we never
-     * answer IAC WILL COMPRESS2, so the game never starts compressing and every later
-     * reattach reads a plain stream. The saved bandwidth is not worth a session that
-     * cannot be resumed.
+     * answer IAC WILL COMPRESS2, so no reattach can land mid-stream.
+     *
+     * It costs no bandwidth. The proxy holds the telnet connection for the whole
+     * session, which makes it the right end to be the zlib peer: it negotiates
+     * COMPRESS2 with the game itself and hands us plaintext, and the browser hop is
+     * compressed by the WebSocket's own permessage-deflate, whose context is per
+     * connection and so survives resuming. See proxy/mccp.go.
      */
     private applyMccpForConnection(): void {
         const preferred = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';

@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	addr        = flag.String("addr", "127.0.0.1:8080", "listen address (front this with a TLS terminator)")
+	addr         = flag.String("addr", "127.0.0.1:8080", "listen address (front this with a TLS terminator)")
 	upstreamHost = flag.String("upstream-host", "arkadia.rpg.pl", "the only host the bridge will dial")
 	upstreamPort = flag.Int("upstream-port", 23, "upstream telnet port")
 	// Sized from a real session log rather than picked: a busy hour measured ~27 KB/min
@@ -35,7 +35,7 @@ var (
 	// 950 KB. 2 MB leaves room for a session busier than that measurement, because
 	// overflowing drops the *oldest* output, which is the part a player who died while
 	// away most wants to read. See test/web/replayVolume.test.ts.
-	maxBuffer   = flag.Int("buffer", 2*1024*1024, "bytes of output held for a detached client")
+	maxBuffer = flag.Int("buffer", 2*1024*1024, "bytes of output held for a detached client")
 	// Past Arkadia's own limit on purpose. Its inactivity timeout tops out at 30
 	// minutes, so a session held slightly longer lets the game be the one to end it —
 	// and the dead upstream lingers with its buffer, so a player returning at 33
@@ -43,6 +43,11 @@ var (
 	// a bare login screen. Undercutting it would throw that explanation away.
 	ttl         = flag.Duration("ttl", 35*time.Minute, "how long an unattended session is kept before the game connection is dropped")
 	dialTimeout = flag.Duration("dial-timeout", 10*time.Second, "upstream connect timeout")
+	// A client cannot speak MCCP through this proxy — one zlib stream for the life of the
+	// connection means a mid-session attach inflates garbage — so this end is the zlib
+	// peer instead, and the browser hop is compressed by permessage-deflate. See mccp.go.
+	// The flag is here to take it back out if the game's implementation misbehaves.
+	useMccp = flag.Bool("mccp", true, "negotiate MCCP2 with the game and hand the client plaintext")
 )
 
 func main() {
@@ -162,6 +167,13 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		// The client is served from a different origin than this bridge.
 		InsecureSkipVerify: true,
+		// The browser hop's compression, and the reason declining MCCP costs the player
+		// nothing. Context takeover keeps a 32 KB window across messages, which suits
+		// repetitive MUD output, and that window belongs to the WebSocket — so a
+		// resuming client starts a fresh one and replayed output decodes like anything
+		// else. Browsers offer the extension by default; Safari does not implement it
+		// and falls back to no compression rather than failing.
+		CompressionMode: websocket.CompressionContextTakeover,
 	})
 	if err != nil {
 		log.Printf("websocket accept failed: %v", err)
@@ -183,7 +195,7 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	session := manager.get(id)
 	resumed := session != nil
 	if session == nil {
-		upstream, err := dialUpstream()
+		upstream, err := dialUpstream(short(id))
 		if err != nil {
 			_ = conn.Close(websocket.StatusInternalError, fmt.Sprintf("connect failed: %v", err))
 			return
@@ -229,14 +241,20 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	}
 }
 
-func dialUpstream() (net.Conn, error) {
+func dialUpstream(label string) (net.Conn, error) {
 	if *upstreamHost == "" {
 		return nil, errors.New("no upstream host configured")
 	}
 	// Pinned to one host on purpose. This bridge is reachable by anyone who finds it,
 	// so an arbitrary-destination TCP relay would be an open proxy and an SSRF pivot.
 	address := net.JoinHostPort(*upstreamHost, fmt.Sprint(*upstreamPort))
-	return net.DialTimeout("tcp", address, *dialTimeout)
+	conn, err := net.DialTimeout("tcp", address, *dialTimeout)
+	if err != nil || !*useMccp {
+		return conn, err
+	}
+	return newMccpConn(conn, func() {
+		log.Printf("session %s… mccp active upstream", label)
+	}), nil
 }
 
 // short trims a session id for logs, which must never carry the whole credential.

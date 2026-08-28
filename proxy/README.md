@@ -74,6 +74,25 @@ uses the event clock while measuring *how long ago* stays on `Date.now()` — an
 output can be replayed, so anything driven by a player's own command is live by
 definition.
 
+## Compression
+
+A client behind this proxy cannot speak MCCP end to end — MCCP2 is one zlib stream for
+the life of the telnet connection, so a client attaching halfway through inflates
+garbage. That is why the client declines it here.
+
+Declining is not doing without. This process holds the telnet connection for the whole
+session, so it is the right end of the wire to be the zlib peer: it answers
+`IAC WILL COMPRESS2` itself, inflates, and buffers plaintext. The browser hop is then
+compressed by the WebSocket's own `permessage-deflate`, whose context belongs to the
+connection — a resuming client starts a fresh one, which is exactly the property MCCP
+lacks. Both hops end up compressed and resume still works.
+
+Arkadia offers `COMPRESS2` (86) and the older `COMPRESS` (85); only 86 is answered.
+Nothing else in the telnet stream is touched: GMCP, ECHO and the prompt markers are
+forwarded byte for byte. Safari does not implement `permessage-deflate` and falls back to
+an uncompressed browser hop rather than failing. `-mccp=false` turns the upstream half
+off.
+
 ## Sessions
 
 A session is addressed by an opaque id the client generates and stores. **It is a
@@ -101,8 +120,8 @@ go build -o session-proxy .
 ```
 
 Flags: `-addr`, `-upstream-host`, `-upstream-port`, `-buffer` (bytes held for a detached
-client, default 2 MiB — see the sizing note in main.go), `-ttl`, `-dial-timeout`. `GET /health` reports the live session
-count.
+client, default 2 MiB — see the sizing note in main.go), `-ttl`, `-dial-timeout`,
+`-mccp`. `GET /health` reports the live session count.
 
 ### Deployment
 
@@ -149,8 +168,8 @@ Done (`src/web/proxySession.ts`, `src/shared/socket/transport.ts`, `MudClient`, 
 - A resume is announced in the output, along with any dropped byte count.
 - Returning to a tab whose socket died reconnects automatically — but only behind a
   session proxy, where it costs the player nothing.
-- Compression is declined on a session proxy: MCCP is one zlib stream for the life of a
-  connection, so a client attaching midway inflates garbage.
+- Compression is declined on a session proxy, and handed to it instead — see
+  *Compression* above. Nothing to configure.
 - Event time reaches triggers, GMCP listeners, timers, recordings and stored logs.
 - Choosing proxy mode gets this proxy rather than the stateless worker. Nothing is
   forced; direct connections are untouched.
