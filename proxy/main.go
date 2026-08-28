@@ -16,6 +16,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -70,7 +71,19 @@ func main() {
 	// Beacon from a client that is going away for good — a closed tab or a navigation,
 	// as opposed to the backgrounding this whole proxy exists to survive.
 	mux.HandleFunc("/leaving", func(w http.ResponseWriter, r *http.Request) {
-		id := strings.TrimSpace(r.URL.Query().Get("session"))
+		// In the body, not the query, for the same reason the socket's id is in a
+		// handshake header: a credential in a URL ends up in logs. Capped because this
+		// is unauthenticated and the id has a known, small size.
+		body, err := io.ReadAll(io.LimitReader(r.Body, 256))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		id := strings.TrimSpace(string(body))
+		if len(id) < 20 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		session := manager.get(id)
 		if session == nil {
 			w.WriteHeader(http.StatusNoContent)
@@ -107,9 +120,9 @@ func main() {
 // choice of wire format.
 //
 // framed clients get [type][timestamp][payload] and can stamp replayed output with when
-// it actually happened. Unframed is what the stock client speaks today: raw bytes, no
-// headers, no control channel — enough to test session resume with real play before any
-// client code changes.
+// it actually happened. Unframed is raw bytes, no headers, no control channel — what a
+// client that did not ask for the subprotocol receives, which keeps the proxy testable
+// by hand with `wscat`.
 type wsClient struct {
 	conn   *websocket.Conn
 	ctx    context.Context
@@ -154,7 +167,7 @@ func (c *wsClient) close(reason string) {
 }
 
 func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
-	id := strings.TrimSpace(r.URL.Query().Get("session"))
+	id := sessionFromSubprotocols(r)
 	// The id is what lets a returning player pick their character back up, so it is a
 	// credential: anything that can guess one attaches to a logged-in character. The
 	// client generates a high-entropy value; all this end does is refuse the obviously
@@ -165,6 +178,9 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	}
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		// Selected back only when the client offered it, which is how it says it can
+		// read framed output. A client offering just its id gets raw bytes.
+		Subprotocols: []string{sessionSubprotocol},
 		// The client is served from a different origin than this bridge.
 		InsecureSkipVerify: true,
 		// The browser hop's compression, and the reason declining MCCP costs the player
@@ -184,12 +200,12 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager) {
 	conn.SetReadLimit(1 << 20)
 
 	ctx := r.Context()
-	// Opt-in framing: the stock client sends no `v`, so it keeps getting raw bytes and
-	// works against this proxy unchanged.
+	// Opt-in framing: a client that did not ask for the subprotocol — `wscat`, say —
+	// keeps getting raw bytes and can still exercise the proxy by hand.
 	client := &wsClient{
 		conn:   conn,
 		ctx:    context.Background(),
-		framed: r.URL.Query().Get("v") == "1",
+		framed: conn.Subprotocol() == sessionSubprotocol,
 	}
 
 	session := manager.get(id)
@@ -255,6 +271,38 @@ func dialUpstream(label string) (net.Conn, error) {
 	return newMccpConn(conn, func() {
 		log.Printf("session %s… mccp active upstream", label)
 	}), nil
+}
+
+// Handshake subprotocols. The versioned name says the client can read framed output;
+// the prefixed one carries the session id.
+const (
+	sessionSubprotocol   = "arkadia-session-v1"
+	sessionIDSubprotocol = "s."
+)
+
+/*
+sessionFromSubprotocols pulls the session id out of the handshake.
+
+It rides in `Sec-WebSocket-Protocol` rather than the query string because it is a
+credential that attaches to a logged-in character, and a URL is written down everywhere
+it goes: access logs, error pages, upstream proxies, a screenshot of a devtools panel.
+Keeping it out of them by configuration — this deployment strips the URI from Caddy's log
+— works right up until one hop is configured differently. A header nothing logs by
+default removes the class of mistake instead of guarding against it.
+
+A browser cannot set arbitrary headers on a WebSocket, but it can set this one, which is
+what makes the approach available at all.
+*/
+func sessionFromSubprotocols(r *http.Request) string {
+	for _, header := range r.Header.Values("Sec-WebSocket-Protocol") {
+		for _, entry := range strings.Split(header, ",") {
+			entry = strings.TrimSpace(entry)
+			if id, ok := strings.CutPrefix(entry, sessionIDSubprotocol); ok {
+				return id
+			}
+		}
+	}
+	return ""
 }
 
 // short trims a session id for logs, which must never carry the whole credential.

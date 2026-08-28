@@ -102,6 +102,11 @@ export function isSessionProxyUrl(url: string | null | undefined): boolean {
  * alive. `sendBeacon` is what makes it work at all — a normal request is cancelled when
  * the page goes, while a beacon is handed to the browser to deliver afterwards.
  *
+ * The id goes in the body rather than the query string for the same reason it rides in a
+ * subprotocol on the socket: it is a credential, and URLs are written down everywhere.
+ * A plain-text body keeps this a simple request, so no preflight — which a beacon fired
+ * during unload would not survive anyway.
+ *
  * Deliberately not called when the tab is merely hidden. That is the case this whole
  * proxy exists to survive.
  */
@@ -111,25 +116,32 @@ export function announceLeaving(baseUrl: string, sessionId = getProxySessionId()
         url.pathname = url.pathname.replace(/\/attach$/, '/leaving');
         url.protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
         url.search = '';
-        url.searchParams.set('session', sessionId);
-        return navigator.sendBeacon(url.toString());
+        return navigator.sendBeacon(url.toString(), new Blob([sessionId], {type: 'text/plain'}));
     } catch {
         return false;
     }
 }
 
+/** Marks a client that speaks the framed protocol; also what the proxy selects back. */
+export const SESSION_SUBPROTOCOL = 'arkadia-session-v1';
+
+/** Prefix identifying the entry that carries the session id. */
+const SESSION_ID_SUBPROTOCOL_PREFIX = 's.';
+
 /**
- * Add this client's session id and ask for the framed protocol.
+ * The WebSocket subprotocols that identify this client and its session.
  *
- * `v=1` is what opts into headers carrying arrival times; without it the proxy streams
- * raw bytes for older clients. Any session id already in the URL wins, so a hand-crafted
- * one used for testing is left alone.
+ * The id is a credential, and a query string is the worst place to keep one: it lands in
+ * every access log, error page and devtools panel along the way, and staying out of them
+ * depends on each hop being configured to strip it. A browser cannot set headers on a
+ * WebSocket, but it can set `Sec-WebSocket-Protocol` — which is not logged by default
+ * anywhere, and is the conventional carrier for exactly this.
+ *
+ * Two entries, because they answer different questions: the first says this client
+ * understands framing (the proxy selects it back), the second carries the id. A client
+ * offering only the id gets the raw byte stream, which is what a `wscat` session testing
+ * the proxy by hand wants.
  */
-export function buildSessionProxyUrl(base: string, sessionId = getProxySessionId()): string {
-    const url = new URL(base);
-    if (!url.searchParams.get('session')) {
-        url.searchParams.set('session', sessionId);
-    }
-    url.searchParams.set('v', '1');
-    return url.toString();
+export function sessionSubprotocols(sessionId = getProxySessionId()): string[] {
+    return [SESSION_SUBPROTOCOL, SESSION_ID_SUBPROTOCOL_PREFIX + sessionId];
 }

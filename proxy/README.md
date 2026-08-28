@@ -100,6 +100,26 @@ credential**: whoever holds it attaches to a logged-in character. Generate it wi
 `crypto.randomUUID()` or better, keep it per character, and never log it whole — this
 end enforces only a 20–200 character length and logs a six-character prefix.
 
+It travels in the handshake, not the URL:
+
+```
+Sec-WebSocket-Protocol: arkadia-session-v1, s.<id>
+```
+
+The first entry says the client can read framed output and is selected back; the second
+carries the id. Offer only the second and you get the raw byte stream, which is what
+`wscat` wants. `/leaving` takes the id as its request body for the same reason.
+
+A query string would be the obvious place and the wrong one: it is written into access
+logs, error pages, upstream proxies and any screenshot of a devtools panel, so keeping it
+out of them depends on every hop being configured to strip it — this deployment does
+exactly that in its Caddyfile, and it is one edit away from not. A header that nothing
+logs by default removes the class of mistake rather than guarding against it. A browser
+cannot set arbitrary headers on a WebSocket, but it can set this one.
+
+Guessing is not the threat that matters here — 128 bits of CSPRNG is not brute-forced —
+so leakage is the whole of the risk, and the query string was the leak.
+
 Attaching with an unknown id opens a fresh game connection; a known one resumes.
 A second attach to a live session displaces the first, because two clients on one
 character interleave input unpredictably.
@@ -164,7 +184,8 @@ Done (`src/web/proxySession.ts`, `src/shared/socket/transport.ts`, `MudClient`, 
 - A per-tab session id in `sessionStorage`, generated with the CSPRNG and dropped on a
   deliberate disconnect.
 - `framedCodec` decodes the protocol; the proxy is recognised by its `/attach` path, so
-  the existing proxy setting configures it with no new UI.
+  the existing proxy setting configures it with no new UI. The session id is offered as a
+  handshake subprotocol rather than a query parameter.
 - A resume is announced in the output, along with any dropped byte count.
 - Returning to a tab whose socket died reconnects automatically — but only behind a
   session proxy, where it costs the player nothing.

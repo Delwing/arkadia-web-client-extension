@@ -1,10 +1,10 @@
 import {ClientAdapter} from "@client/Client";
 import {
-    buildSessionProxyUrl,
     announceLeaving,
     DEFAULT_SESSION_PROXY_URL,
     isSessionProxyUrl,
     resetProxySessionId,
+    sessionSubprotocols,
 } from "./proxySession";
 import eventBus from "@modules/core/eventBus";
 import {eventNow, runWithEventTime} from "@shared/eventClock";
@@ -292,15 +292,15 @@ class MudClient implements ClientAdapter {
         }
         if (this.proxyMode === 'proxy') {
             if (this.userProxyUrl) {
-                // The resumable proxy takes a session id instead of a host/port: it
-                // knows where the game is, and the id is what lets a returning client
-                // reclaim a connection the browser lost.
+                // The resumable proxy needs no query at all: it knows where the game is,
+                // and the session id that lets a returning client reclaim its connection
+                // travels in the handshake's subprotocols rather than the URL.
                 if (isSessionProxyUrl(this.userProxyUrl)) {
-                    return buildSessionProxyUrl(this.userProxyUrl);
+                    return this.userProxyUrl;
                 }
                 return this.userProxyUrl.includes('?') ? this.userProxyUrl : this.userProxyUrl + PROXY_QUERY;
             }
-            return buildSessionProxyUrl(DEFAULT_SESSION_PROXY_URL);
+            return DEFAULT_SESSION_PROXY_URL;
         }
         return WEBSOCKET_URL;
     }
@@ -361,7 +361,9 @@ class MudClient implements ClientAdapter {
         this.clearTailTimer();
         try {
             const url = this.resolveConnectUrl();
-            this.socket = new WebSocket(url, []);
+            // The session id is a credential, so it rides in the handshake rather than
+            // the URL — see sessionSubprotocols().
+            this.socket = new WebSocket(url, this.usesSessionProxy() ? sessionSubprotocols() : []);
             // Deliver binary frames (proxy) as ArrayBuffer rather than Blob;
             // harmless for the native endpoint's text frames.
             this.socket.binaryType = 'arraybuffer';

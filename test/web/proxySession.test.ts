@@ -1,8 +1,9 @@
 import {
-    buildSessionProxyUrl,
+    DEFAULT_SESSION_PROXY_URL,
     getProxySessionId,
     isSessionProxyUrl,
     resetProxySessionId,
+    sessionSubprotocols,
 } from '@web/proxySession.ts';
 
 describe('proxy session identity', () => {
@@ -64,29 +65,41 @@ describe('isSessionProxyUrl', () => {
     });
 });
 
-describe('buildSessionProxyUrl', () => {
+describe('sessionSubprotocols', () => {
     beforeEach(() => {
         sessionStorage.clear();
         resetProxySessionId();
     });
 
-    it('adds the session id and asks for the framed protocol', () => {
-        const url = new URL(buildSessionProxyUrl('wss://proxy.example.com/attach', 'a'.repeat(32)));
-
-        expect(url.searchParams.get('session')).toBe('a'.repeat(32));
-        expect(url.searchParams.get('v')).toBe('1');
+    it('offers the framed protocol first, then the id', () => {
+        expect(sessionSubprotocols('a'.repeat(32))).toEqual([
+            'arkadia-session-v1',
+            's.' + 'a'.repeat(32),
+        ]);
     });
 
-    it('keeps a session id already in the URL, so hand-set test values survive', () => {
-        const url = new URL(buildSessionProxyUrl('wss://proxy.example.com/attach?session=mine', 'b'.repeat(32)));
+    it('defaults to this tab\'s session, so a reconnect claims the same one', () => {
+        const id = getProxySessionId();
 
-        expect(url.searchParams.get('session')).toBe('mine');
-        expect(url.searchParams.get('v')).toBe('1');
+        expect(sessionSubprotocols()[1]).toBe('s.' + id);
     });
 
-    it('preserves other query parameters', () => {
-        const url = new URL(buildSessionProxyUrl('wss://proxy.example.com/attach?host=arkadia.rpg.pl'));
+    /*
+     * The point of the exercise. A credential in a query string is written into every
+     * access log, error page and devtools panel between here and the proxy, and staying
+     * out of them depends on each hop being configured to strip it.
+     */
+    it('keeps the credential out of the URL entirely', () => {
+        const id = getProxySessionId();
 
-        expect(url.searchParams.get('host')).toBe('arkadia.rpg.pl');
+        expect(DEFAULT_SESSION_PROXY_URL).not.toContain(id);
+        expect(DEFAULT_SESSION_PROXY_URL).not.toContain('session=');
+        expect(sessionSubprotocols().join(',')).toContain(id);
+    });
+
+    it('produces entries usable as HTTP tokens, which the header demands', () => {
+        for (const value of sessionSubprotocols()) {
+            expect(value).toMatch(/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/);
+        }
     });
 });

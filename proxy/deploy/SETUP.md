@@ -125,7 +125,7 @@ A JSON body over HTTPS means TLS, Caddy, the unit and the firewall are all corre
 To exercise the whole path including WebSockets and resume, from any machine:
 
 ```bash
-npx wscat -c "wss://proxy.example.com/attach?session=$(openssl rand -hex 16)"
+npx wscat -c wss://proxy.example.com/attach -s "s.$(openssl rand -hex 16)"
 ```
 
 You should see Arkadia's login banner arrive as binary frames. Disconnect, reconnect
