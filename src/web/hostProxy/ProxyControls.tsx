@@ -22,14 +22,14 @@ interface Props {
     onModeChange: (mode: ProxyMode) => void;
     /** Persist a changed proxy URL ('' clears it back to the default). */
     onUrlChange: (url: string) => void;
-    /** A proxy was deployed via the wizard — persist it and switch to proxy mode. */
+    /** The user supplied their own proxy — persist it and switch to proxy mode. */
     onUseProxy: (url: string) => void;
 }
 
 /**
  * Connection-screen control for how to reach the game: a segmented toggle for
  * the mode (direct / helper / remote proxy) with, in proxy mode, a cog button
- * that opens the proxy URL settings and the host-your-own wizard. Holds the UI
+ * that opens the proxy URL settings and the self-hosting guide. Holds the UI
  * state; the persistence callbacks keep it decoupled from the client.
  */
 export function ProxyControls({defaultProxy, initialMode, initialUrl, onModeChange, onUrlChange, onUseProxy}: Props) {

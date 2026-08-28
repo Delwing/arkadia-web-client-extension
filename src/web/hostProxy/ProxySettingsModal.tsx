@@ -9,13 +9,13 @@ export interface ProxySettingsModalProps {
     onUrlChange: (url: string) => void;
     /** Default proxy URL shown as the placeholder. */
     defaultProxy: string;
-    /** Open the "host your own proxy" wizard. */
+    /** Open the "host your own proxy" guide. */
     onHostYourOwn: () => void;
 }
 
 /**
  * Small proxy-settings modal: paste/reuse an existing proxy URL, or jump to the
- * deploy wizard. Decoupled — persisting the URL is the caller's job (onUrlChange).
+ * self-hosting guide. Decoupled — persisting the URL is the caller's job (onUrlChange).
  */
 export function ProxySettingsModal({show, onClose, url, onUrlChange, defaultProxy, onHostYourOwn}: ProxySettingsModalProps) {
     return (

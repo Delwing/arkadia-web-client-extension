@@ -1244,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Connection mode (direct / helper / proxy) plus the proxy URL settings and
-    // "host your own" wizard, mounted as one React island on the connect screen.
+    // "host your own" guide, mounted as one React island on the connect screen.
     const proxyControlsRoot = document.getElementById('proxy-controls-root');
     if (proxyControlsRoot) {
         createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
