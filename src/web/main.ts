@@ -462,6 +462,7 @@ mudClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     isDisconnecting = false;
+    cancelProxyResume();
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
     const wakeLockSetting = getShellSettings().wakeLock;
@@ -471,9 +472,11 @@ mudClient.on('client.connect', () => {
     console.log('Client connected to Arkadia server.');
 });
 
-// Disconnect diagnostics. A phone has no devtools, and "rozłączyło mnie" reads the
-// same whether the watchdog hung up, the user did, or the network did — so the one
-// line the player can actually see has to name the path and the close code.
+// Disconnect diagnostics, for the console only. They were shown in the output while we
+// were working out why mobile players were being dropped, and that investigation is
+// over: the answer was that Chrome freezes a backgrounded tab, which the session proxy
+// now survives. Close codes and background timings say nothing to a player and read as
+// alarming noise attached to an event that, behind the proxy, costs them nothing.
 let lastCloseEvent: CloseEvent | null = null;
 let hiddenSince: number | null = null;
 let lastReturnFromBackground: {at: number; backgroundMs: number} | null = null;
@@ -517,17 +520,71 @@ const describeDisconnect = (): string => {
     return details.join('; ');
 };
 
+/*
+Reattach after the browser's socket dies behind a session proxy.
+
+Losing that socket is not losing the game: the proxy still holds the telnet connection
+and the character is still standing where it was. A phone freezing a backgrounded tab
+produces exactly this, several times a session, so it has to heal itself rather than
+hand the player a disconnect notice and a Połącz button.
+
+The first attempt is immediate — a hidden tab still runs JavaScript, so the socket is
+often back before the player looks. A frozen one runs nothing, but the close event is
+delivered on resume and the attempt happens then instead. Later attempts back off, for
+the case the proxy itself is unreachable, and after the last one we say so plainly.
+*/
+const PROXY_RESUME_DELAYS_MS = [0, 2_000, 5_000, 15_000, 30_000];
+let proxyResumeAttempt = 0;
+let proxyResumeTimer: number | null = null;
+
+const cancelProxyResume = (): void => {
+    if (proxyResumeTimer !== null) {
+        clearTimeout(proxyResumeTimer);
+        proxyResumeTimer = null;
+    }
+    proxyResumeAttempt = 0;
+};
+
+const scheduleProxyResume = (): void => {
+    if (proxyResumeTimer !== null) return;
+    if (proxyResumeAttempt >= PROXY_RESUME_DELAYS_MS.length) {
+        proxyResumeAttempt = 0;
+        authClosed = false;
+        updateConnectButtons();
+        disableTabSleepPrevention();
+        client.println('Nie udało się wznowić połączenia. Kliknij Połącz, aby spróbować ponownie.');
+        return;
+    }
+    const delay = PROXY_RESUME_DELAYS_MS[proxyResumeAttempt];
+    proxyResumeAttempt += 1;
+    proxyResumeTimer = window.setTimeout(() => {
+        proxyResumeTimer = null;
+        if (isConnected || isConnecting) return;
+        mudClient.connect();
+    }, delay);
+};
+
 // Handle client disconnect event
 mudClient.on('client.disconnect', () => {
+    const willResume = mudClient.lastCloseCause !== 'user' && mudClient.usesSessionProxy();
     isConnected = false;
     isConnecting = false;
     isDisconnecting = false;
-    authClosed = false;
+    // Reopening the login overlay would be wrong while a reattach is in flight: the
+    // character is still in the world, so there is nothing to log in to, and it would
+    // flash over the output for as long as the reconnect takes.
+    if (!willResume) authClosed = false;
     updateConnectButtons();
+    console.log(`Client disconnected from Arkadia server: ${describeDisconnect()}`);
+
+    if (willResume) {
+        scheduleProxyResume();
+        return;
+    }
+
+    cancelProxyResume();
     disableTabSleepPrevention();
-    const reason = describeDisconnect();
-    client.println(`Rozłączono z serwerem Arkadii. [${reason}]`);
-    console.log(`Client disconnected from Arkadia server: ${reason}`);
+    client.println('Rozłączono z serwerem Arkadii.');
 });
 
 // What the session proxy reports on attach. A resume is worth saying out loud: the
@@ -585,18 +642,15 @@ document.addEventListener('visibilitychange', () => {
         isConnected = true;
         updateConnectButtons();
     } else if (!socketOpen && isConnected) {
+        // Belt and braces: a socket that closed without delivering its close event.
+        // The ordinary path is client.disconnect, which fires on resume for a tab that
+        // was frozen, and reattaches there.
         isConnected = false;
         isConnecting = false;
         isDisconnecting = false;
         updateConnectButtons();
-        // The socket died while we were away — the ordinary outcome of a phone
-        // freezing a backgrounded tab. Behind a session proxy the game connection
-        // outlived it, so reconnecting costs the player nothing and puts them back
-        // in their character; without one it would land them at a login prompt they
-        // did not ask for, so it stays manual.
-        if (mudClient.usesSessionProxy() && !isDisconnecting) {
-            client.println('Wznawianie polaczenia...');
-            mudClient.connect();
+        if (mudClient.usesSessionProxy()) {
+            scheduleProxyResume();
         }
     } else if (socketOpen && isConnected && isSafari) {
         mudClient.sendGmcp('core.keepalive', {disabled: false});
