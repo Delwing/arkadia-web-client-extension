@@ -149,6 +149,9 @@ export const SESSION_SUBPROTOCOL = 'arkadia-session-v1';
 /** Prefix identifying the entry that carries the session id. */
 const SESSION_ID_SUBPROTOCOL_PREFIX = 's.';
 
+/** Prefix identifying the entry that carries the client build. */
+const BUILD_SUBPROTOCOL_PREFIX = 'b.';
+
 /**
  * The WebSocket subprotocols that identify this client and its session.
  *
@@ -164,5 +167,12 @@ const SESSION_ID_SUBPROTOCOL_PREFIX = 's.';
  * the proxy by hand wants.
  */
 export function sessionSubprotocols(sessionId = getProxySessionId()): string[] {
-    return [SESSION_SUBPROTOCOL, SESSION_ID_SUBPROTOCOL_PREFIX + sessionId];
+    const offered = [SESSION_SUBPROTOCOL, SESSION_ID_SUBPROTOCOL_PREFIX + sessionId];
+    // Which build is on the other end. A report of "it dropped me" is hard to act on
+    // without knowing whether that tab was running the fix; the answer is otherwise
+    // guessed at from when the report arrived. Kept to a token — the commit sha is
+    // hex — since a subprotocol value cannot carry anything else.
+    const build = typeof __COMMIT_SHA__ === 'string' ? __COMMIT_SHA__.replace(/[^0-9a-zA-Z]/g, '') : '';
+    if (build) offered.push(BUILD_SUBPROTOCOL_PREFIX + build);
+    return offered;
 }

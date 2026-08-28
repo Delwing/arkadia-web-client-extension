@@ -73,10 +73,21 @@ describe('sessionSubprotocols', () => {
     });
 
     it('offers the framed protocol first, then the id', () => {
-        expect(sessionSubprotocols('a'.repeat(32))).toEqual([
-            'arkadia-session-v1',
-            's.' + 'a'.repeat(32),
-        ]);
+        const offered = sessionSubprotocols('a'.repeat(32));
+
+        expect(offered[0]).toBe('arkadia-session-v1');
+        expect(offered[1]).toBe('s.' + 'a'.repeat(32));
+    });
+
+    /*
+     * So a "it dropped me" report can be checked against what that tab was running,
+     * rather than guessed at from when it was sent.
+     */
+    it('reports the build, which the proxy shows against the session', () => {
+        const build = sessionSubprotocols().find(v => v.startsWith('b.'));
+
+        expect(build).toBeDefined();
+        expect(build!.length).toBeGreaterThan(2);
     });
 
     it('defaults to this tab\'s session, so a reconnect claims the same one', () => {
