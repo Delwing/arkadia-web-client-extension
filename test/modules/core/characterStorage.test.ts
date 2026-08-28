@@ -50,6 +50,25 @@ describe('CharacterTypedStorage', () => {
             characterStorage.setCharacter('');
             expect(localStorage.getItem('currentCharacter')).toBeNull();
         });
+
+        test('onCharacterChange fires on a switch', () => {
+            const listener = jest.fn();
+            const off = characterStorage.onCharacterChange(listener);
+            characterStorage.setCharacter('Alice');
+            characterStorage.setCharacter('Bob');
+            off();
+            expect(listener.mock.calls).toEqual([['Alice'], ['Bob']]);
+        });
+
+        test('onCharacterChange stays quiet when the same name is announced again', () => {
+            characterStorage.setCharacter('Alice');
+            const listener = jest.fn();
+            const off = characterStorage.onCharacterChange(listener);
+            // char.info re-announces the name through the session; nothing about the scope moved.
+            characterStorage.setCharacter('Alice');
+            off();
+            expect(listener).not.toHaveBeenCalled();
+        });
     });
 
     describe('first-character migration', () => {

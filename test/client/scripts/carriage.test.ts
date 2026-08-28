@@ -878,3 +878,80 @@ describe('carriage bookkeeping', () => {
     expect(client.lastEvent('mapParkedCarriages')).toEqual([{ roomId: 77, label: 'woz' }]);
   });
 });
+
+describe('switching character', () => {
+  let client: FakeClient;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
+
+  const recordsOf = (character: string) =>
+    JSON.parse(localStorage.getItem(`${character}:carriages`) ?? '{}');
+
+  beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('Woznica');
+    client = new FakeClient();
+    initCarriage((client as unknown) as any);
+    parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
+  });
+
+  afterEach(() => {
+    characterStorage.setCharacter('Woznica');
+  });
+
+  test('shows the new character its own carriages, not the ones we just left', () => {
+    client.Map.currentRoom = { id: 1234 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    parse('Zsiadasz z nieduzego jednokonnego wozu.');
+    expect(client.lastEvent('mapParkedCarriages')).toEqual([{ roomId: 1234, label: 'woz' }]);
+
+    const seen = jest.fn();
+    const off = eventBus.on('carriages.updated', seen);
+    characterStorage.setCharacter('Furman');
+    off?.();
+
+    expect(seen.mock.calls.at(-1)![0].carriages).toEqual([]);
+    expect(client.lastEvent('mapParkedCarriages')).toEqual([]);
+    expect(client.carriageMode).toBe(false);
+  });
+
+  test('the ride we were on stays with the character we were driving it as', () => {
+    client.Map.currentRoom = { id: 8555 };
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    expect(client.carriageMode).toBe(true);
+
+    // Logging in as somebody else: the scope switches first, then the new object number lands.
+    characterStorage.setCharacter('Furman');
+    expect(client.carriageMode).toBe(false);
+    characterStorage.set('mapperRoomId', 4242);
+    client.sendEvent('reset');
+
+    // Nothing of the other character's was touched - and nothing of ours was invented.
+    expect(recordsOf('Furman')).toEqual({});
+    const left = recordsOf('Woznica')[carriageKey('nieduzy jednokonny woz')!];
+    expect(left.driving).toBe(true);
+  });
+
+  test('a wagon left ridden is parked when that character logs in', () => {
+    // Woznica left a wagon marked as ridden in an earlier session, and this one started as Furman,
+    // so the wagon is nowhere in memory: the switch has to hand `reset` the key it will park.
+    const key = carriageKey('nieduzy jednokonny woz')!;
+    localStorage.setItem('Woznica:carriages', JSON.stringify({
+      [key]: {name: 'nieduzy jednokonny woz', leasedAt: 0, leasedIn: null, rent: null, deposit: null, parkedIn: null, driving: true},
+    }));
+    characterStorage.setCharacter('Furman');
+
+    characterStorage.setCharacter('Woznica');
+    characterStorage.set('mapperRoomId', 4242);
+    client.sendEvent('reset');
+
+    const record = recordsOf('Woznica')[key];
+    expect(record.driving).toBe(false);
+    expect(record.parkedIn).toBe(4242);
+  });
+
+  test('char.info repeating the same name leaves the ride alone', () => {
+    parse('Siadasz na nieduzym jednokonnym wozie.');
+    characterStorage.setCharacter('Woznica');
+    expect(client.carriageMode).toBe(true);
+  });
+});

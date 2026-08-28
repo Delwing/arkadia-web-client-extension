@@ -625,6 +625,27 @@ export default function initCarriage(
         return `zsiadz z ${noun};${walk}`;
     });
 
+    /**
+     * Switching character switches the carriages, and everything held in memory about the ride
+     * belongs to the one we just left.
+     *
+     * Re-derived rather than merely cleared: the new character may well have a wagon still marked
+     * as ridden, and `reset` - which parks it where the game left it - fires right after this, so
+     * it has to find that key already in hand or the record stays ridden for ever.
+     */
+    characterStorage.onCharacterChange(() => {
+        currentKey = Object.entries(load()).find(([, record]) => record.driving)?.[0] ?? null;
+        refused = null;
+        routeStep = {nextCommand: null, atTransfer: false};
+        clearOwnBind();
+        routeBindActive = false;
+        stopMoving();
+        setCarriageMode(false);
+
+        eventBus.emit('carriages.updated', {carriages: entries()});
+        publishMarkers();
+    });
+
     client.on('reset', () => newSession());
 
     client.on('requestMapParkedCarriages', () => publishMarkers());

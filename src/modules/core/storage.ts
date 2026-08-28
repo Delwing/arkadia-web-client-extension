@@ -179,6 +179,11 @@ export class CharacterTypedStorage extends TypedStorage<CharacterStorageSchema> 
             localStorage.removeItem('currentCharacter');
         }
 
+        // The name is re-announced through the session, and re-announcing it changes nothing about
+        // what this storage points at. Listeners hear about a switch only when it is one, so none
+        // of them has to tell a switch from a repeat for itself.
+        if (prev === currentCharacter) return;
+
         // Fire change events for all character-scoped keys
         this.notifyCharacterChange(prev);
 
@@ -190,6 +195,7 @@ export class CharacterTypedStorage extends TypedStorage<CharacterStorageSchema> 
     handleCrossTabCharacterChange(newCharacterValue: string | null): void {
         const prev = currentCharacter;
         currentCharacter = newCharacterValue;
+        if (prev === currentCharacter) return;
         this.notifyCharacterChange(prev);
         this.characterChangeListeners.forEach(l => l(currentCharacter));
     }
