@@ -250,10 +250,13 @@ test.describe('Mobile buttons color and command configuration', () => {
         const modal = await openMobileButtonsSettings(page);
         await expect(modal).toBeVisible();
 
-        // Check that mode toggle buttons exist
-        const soloButton = page.getByRole('button', { name: 'Bez druzyny' });
-        const teamButton = page.getByRole('button', { name: 'W druzynie' });
-        const leaderButton = page.getByRole('button', { name: 'Prowadzacy' });
+        // Check that mode toggle buttons exist. Solo is labelled "Bazowy" because
+        // team/leader are stored as sparse overrides on top of it, and the mode
+        // matching the character's current team state gets a marker appended, so
+        // match on the label prefix rather than the exact accessible name.
+        const soloButton = page.getByRole('button', { name: /^Bazowy/ });
+        const teamButton = page.getByRole('button', { name: /^W druzynie/ });
+        const leaderButton = page.getByRole('button', { name: /^Prowadzacy/ });
 
         await expect(soloButton, 'solo mode button should be visible').toBeVisible();
         await expect(teamButton, 'team mode button should be visible').toBeVisible();
@@ -328,6 +331,67 @@ test.describe('Mobile buttons color and command configuration', () => {
         // Verify the command was sent
         const lastCommand = await getLastOutgoingCommand(page);
         expect(lastCommand, 'should send configured command when button clicked').toBe('zerknij');
+    });
+
+    test('base edits propagate to modes that did not override the button', async ({ page }) => {
+        // Two modal sessions with a reload in between; the default 10s budget is too tight on CI.
+        test.setTimeout(30000);
+        await page.goto('/');
+        await waitForCommandInput(page);
+
+        const configPanel = page.locator('.mobile-button-config');
+        const soloButton = page.getByRole('button', { name: /^Bazowy/ });
+        const teamButton = page.getByRole('button', { name: /^W druzynie/ });
+        const teamPreview = page.locator('#mobile-buttons-preview-team:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const teamButton2 = teamPreview.locator('[data-button-id="button-2"]');
+        const teamButton3 = teamPreview.locator('[data-button-id="button-3"]');
+
+        async function expectTeamFollowsBase() {
+            await teamButton2.waitFor({ timeout: 5000 });
+            await expect(teamButton3, 'untouched cell should still be marked inherited').toHaveClass(/inherited/);
+            await expect(teamButton3, 'untouched cell should follow the new base color')
+                .toHaveCSS('background-color', 'rgb(0, 255, 0)');
+            await expect(teamButton2, 'overridden cell should follow the new base color')
+                .toHaveCSS('background-color', 'rgb(255, 0, 0)');
+            await expect(teamButton2, 'overridden cell should keep its own label').toHaveText('TEAM-2');
+        }
+
+        // Give team an explicit override on button-2 — its label only.
+        let modal = await openMobileButtonsSettings(page);
+        await teamButton.click();
+        await teamButton2.waitFor({ timeout: 5000 });
+        await teamButton2.click();
+        await expect(configPanel, 'config panel should open for team button-2').toBeVisible();
+        await configPanel.locator('.mobile-button-label').fill('TEAM-2');
+        await configPanel.locator('.btn-close').click();
+        await expect(configPanel, 'config panel should close').not.toBeVisible();
+
+        // Recolor two base buttons: one team overrides (button-2), one it doesn't (button-3).
+        await soloButton.click();
+        await soloPreview.locator('[data-button-id="button-2"]').waitFor({ timeout: 5000 });
+        for (const [id, color] of [['button-2', '#ff0000'], ['button-3', '#00ff00']]) {
+            await soloPreview.locator(`[data-button-id="${id}"]`).click();
+            await expect(configPanel, `config panel should open for base ${id}`).toBeVisible();
+            await configPanel.locator('.mobile-button-color-row').first().locator('input[type="color"]').fill(color);
+            await configPanel.locator('.btn-close').click();
+            await expect(configPanel, 'config panel should close').not.toBeVisible();
+        }
+
+        // The team preview picks the base colors up straight away — no override reset needed.
+        await teamButton.click();
+        await expectTeamFollowsBase();
+
+        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await expect(modal, 'modal should close after save').not.toBeVisible();
+
+        await page.reload();
+        await waitForCommandInput(page);
+
+        // ...and the base edit was not baked into the stored override.
+        modal = await openMobileButtonsSettings(page);
+        await teamButton.click();
+        await expectTeamFollowsBase();
     });
 
     test('direction button sends direction command', async ({ page }) => {

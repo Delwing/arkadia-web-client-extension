@@ -10,6 +10,7 @@ import {
     defaultOrder,
     defaultSettings,
     loadSettings,
+    rebaseOverrides,
     saveSettings,
     Settings,
 } from "../mobileButtonSettings";
@@ -77,6 +78,11 @@ type SettingsMap = Record<string, MobileButtonSetting>;
 
 const modes: Mode[] = ['solo', 'team', 'leader'];
 
+function getCurrentMode(): Mode {
+    const { isInAnyTeam, isLeader } = getTeamState();
+    return isLeader ? 'leader' : isInAnyTeam ? 'team' : 'solo';
+}
+
 function MobileButtons() {
     const [settings, setSettings] = useState<Settings>({
         solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
@@ -91,7 +97,7 @@ function MobileButtons() {
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
     const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
     const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
-    const [view, setView] = useState<Mode>('solo');
+    const [view, setView] = useState<Mode>(() => getCurrentMode());
     const [isMobile, setIsMobile] = useState(false);
     const [configOpen, setConfigOpen] = useState(false);
     const soloRef = useRef<HTMLDivElement>(null);
@@ -125,6 +131,13 @@ function MobileButtons() {
     }, []);
     const notEditable: string[] = [];
 
+    // Every layout-changing update goes through here: when the base (solo) layout
+    // changes, team/leader are re-resolved so cells they don't explicitly override
+    // pick up the new base instead of freezing the old value into an override.
+    function updateSettings(updater: (prev: Settings) => Settings) {
+        setSettings(prev => rebaseOverrides(prev, updater(prev)));
+    }
+
     function nextId(ids: string[]) {
         let current = ids.reduce((m, id) => {
             const match = /^button-(\d+)$/.exec(id);
@@ -134,7 +147,7 @@ function MobileButtons() {
     }
 
     function addRow(pos: 'top' | 'bottom') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             const makeId = nextId(set.order);
             const ids = Array.from({ length: set.cols }, () => makeId());
@@ -148,7 +161,7 @@ function MobileButtons() {
     }
 
     function removeRow(pos: 'top' | 'bottom') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             const rows = Math.floor(set.order.length / set.cols);
             if (rows <= 1) return prev;
@@ -162,7 +175,7 @@ function MobileButtons() {
     }
 
     function addCol(side: 'left' | 'right') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             const makeId = nextId(set.order);
             const buttons: SettingsMap = { ...set.buttons };
@@ -187,7 +200,7 @@ function MobileButtons() {
     }
 
     function removeCol(side: 'left' | 'right') {
-        setSettings(prev => {
+        updateSettings(prev => {
             const set = prev[view];
             if (set.cols <= 1) return prev;
             const rows = Math.floor(set.order.length / set.cols);
@@ -239,7 +252,7 @@ function MobileButtons() {
     }
 
     function update(setName: Mode, id: string, field: keyof MobileButtonSetting, value: any) {
-        setSettings(prev => ({
+        updateSettings(prev => ({
             ...prev,
             [setName]: {
                 ...prev[setName],
@@ -252,7 +265,7 @@ function MobileButtons() {
     }
 
     function updateAllDirections(field: 'color' | 'activeColor' | 'fontColor', value: string) {
-        setSettings(prev => {
+        updateSettings(prev => {
             const updateSet = (set: Settings['solo']) => {
                 const buttons: SettingsMap = { ...set.buttons };
                 set.order.forEach(id => {
@@ -300,7 +313,7 @@ function MobileButtons() {
     }
 
     function makeBlank(setName: Mode, id: string) {
-        setSettings(prev => ({
+        updateSettings(prev => ({
             ...prev,
             [setName]: {
                 ...prev[setName],
@@ -310,7 +323,7 @@ function MobileButtons() {
     }
 
     function restoreDefaults(setName: Mode) {
-        setSettings(prev => ({
+        updateSettings(prev => ({
             ...prev,
             [setName]: createDefaultLayout(),
         }));
@@ -324,7 +337,15 @@ function MobileButtons() {
     function copyLayout(from: Mode) {
         const to = view;
         if (from === to) return;
-        setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
+        updateSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
+    }
+
+    // Reset all overrides for the current view: makes it inherit from base (solo) entirely.
+    function resetOverrides() {
+        if (view === 'solo') return;
+        setSettings(prev => ({ ...prev, [view]: JSON.parse(JSON.stringify(prev.solo)) }));
+        setActive(null);
+        setConfigOpen(false);
     }
 
     function save() {
@@ -337,6 +358,8 @@ function MobileButtons() {
     const activeCfg = active ? (settings[active.set].buttons[active.id] || defaultSettings[active.id] || emptySetting) : null;
     const currentBackground = settings[view].background || defaultBackground;
     const { hex: backgroundHex, alpha: backgroundAlpha } = parseBackgroundColor(currentBackground);
+    const currentMode = getCurrentMode();
+    const isOverrideMode = view !== 'solo';
 
     return (
         <div onClick={close} className="w-100 position-relative">
@@ -346,22 +369,25 @@ function MobileButtons() {
                         size="sm"
                         variant={view === 'solo' ? 'primary' : 'secondary'}
                         onClick={() => changeView('solo')}
+                        title={currentMode === 'solo' ? 'Aktualny tryb' : undefined}
                     >
-                        Bez druzyny
+                        Bazowy{currentMode === 'solo' ? ' •' : ''}
                     </Button>
                     <Button
                         size="sm"
                         variant={view === 'team' ? 'primary' : 'secondary'}
                         onClick={() => changeView('team')}
+                        title={currentMode === 'team' ? 'Aktualny tryb' : undefined}
                     >
-                        W druzynie
+                        W druzynie{currentMode === 'team' ? ' •' : ''}
                     </Button>
                     <Button
                         size="sm"
                         variant={view === 'leader' ? 'primary' : 'secondary'}
                         onClick={() => changeView('leader')}
+                        title={currentMode === 'leader' ? 'Aktualny tryb' : undefined}
                     >
-                        Prowadzacy
+                        Prowadzacy{currentMode === 'leader' ? ' •' : ''}
                     </Button>
                 </div>
                 <div className="d-flex align-items-center gap-2">
@@ -378,6 +404,12 @@ function MobileButtons() {
                     />
                 </div>
             </div>
+
+            {isOverrideMode && (
+                <div className="alert alert-info py-2 px-3 small mb-2" onClick={ev => ev.stopPropagation()}>
+                    Ten tryb dziedziczy z trybu Bazowy. Zmiany ponizej sa zapisywane jako nadpisania. Uzyj "Resetuj nadpisania", aby przywrocic pelne dziedziczenie.
+                </div>
+            )}
 
             {/* Button size and gap section */}
             <div
@@ -478,7 +510,7 @@ function MobileButtons() {
                         value={backgroundHex}
                         onChange={e => {
                             const hex = e.target.value;
-                            setSettings(prev => {
+                            updateSettings(prev => {
                                 const bg = prev[view].background || defaultBackground;
                                 const { alpha } = parseBackgroundColor(bg);
                                 return {
@@ -499,7 +531,7 @@ function MobileButtons() {
                             value={Math.round(backgroundAlpha * 100)}
                             onChange={e => {
                                 const alphaValue = Number(e.target.value) / 100;
-                                setSettings(prev => {
+                                updateSettings(prev => {
                                     const bg = prev[view].background || defaultBackground;
                                     const { hex } = parseBackgroundColor(bg);
                                     return {
@@ -518,7 +550,7 @@ function MobileButtons() {
                         size="sm"
                         variant="outline-secondary"
                         onClick={() => {
-                            setSettings(prev => ({
+                            updateSettings(prev => ({
                                 ...prev,
                                 [view]: { ...prev[view], background: defaultBackground },
                             }));
@@ -717,13 +749,18 @@ function MobileButtons() {
                 <Button size="sm" variant="outline-secondary" onClick={() => restoreDefaults(view)}>
                     Domyslne
                 </Button>
+                {isOverrideMode && (
+                    <Button size="sm" variant="outline-secondary" onClick={resetOverrides} title="Wyczysc nadpisania i odziedzicz wszystko z trybu Bazowy">
+                        Resetuj nadpisania
+                    </Button>
+                )}
                 <Form.Select
                     size="sm"
                     value={copyFrom}
                     onChange={e => setCopyFrom(e.target.value as Mode)}
                     style={{ width: 'auto', minWidth: '120px' }}
                 >
-                    <option value="solo">Bez druzyny</option>
+                    <option value="solo">Bazowy</option>
                     <option value="team">W druzynie</option>
                     <option value="leader">Prowadzacy</option>
                 </Form.Select>
