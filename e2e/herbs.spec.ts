@@ -1,9 +1,12 @@
 import {expect, test} from './support/fixtures';
 import {
     ensureGameSocket,
+    getCommandLog,
     getRecentOutput,
+    GMCP_PATHS,
     pushGmcp,
     pushText,
+    resetCommandLog,
     submitCommand,
     waitForCharacter,
     waitForCommandInput,
@@ -129,6 +132,46 @@ test.describe('Herb bag tracking', () => {
         // The herb manager should be visible and contain some content
         const herbManager = page.locator('.herb-manager');
         await expect(herbManager, 'should display herb manager after reload').toBeVisible();
+    });
+
+    test('give panel hands herbs from the basket to a team member', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, 'char.info', {name: 'HerbGiver', object_num: 60005});
+        await waitForCharacter(page, 'HerbGiver');
+
+        await simulateHerbBagScan(page, [
+            {content: 'trzy jasnozielone lodygi'},
+        ]);
+
+        // Put a team member on the location
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
+            '60005': {desc: 'HerbGiver', team: true, team_leader: true, hp: 6},
+            '60106': {desc: 'Scout', team: true, hp: 5},
+        });
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [60005, 60106]);
+
+        await submitCommand(page, '/ziola');
+        const herbPopup = page.locator('.herb-window');
+        await expect(herbPopup).toBeVisible({timeout: 5000});
+
+        // Enable give mode; the team member should be offered as target
+        await herbPopup.getByRole('button', {name: 'Daj', exact: true}).click();
+        const panel = page.locator('.herb-give-panel');
+        await expect(panel).toBeVisible();
+        await expect(panel.locator('.herb-give-select')).toHaveValue('Scout');
+
+        // Drag the herb stack into the give basket
+        const pill = page.locator('.herb-bag .herb-pill').first();
+        await pill.dragTo(panel.locator('.herb-give-basket'));
+        await expect(panel.locator('.herb-give-basket .herb-pill')).toHaveCount(1);
+
+        await resetCommandLog(page);
+        await panel.getByRole('button', {name: /^Daj \(/}).click();
+
+        await expect.poll(() => getCommandLog(page)).toContain('daj ziola ob_60106');
     });
 
     test('should show empty state when no herbs have been scanned', async ({page}) => {

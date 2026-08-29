@@ -65,9 +65,28 @@ export interface HerbMoveOptions {
     toBag: number;
 }
 
+export interface HerbGiveItem {
+    herbId: string;
+    amount: number;
+    fromBag?: number;
+}
+
+export interface HerbGiveTarget {
+    id: number;
+    name: string;
+}
+
+export interface HerbGiveResult {
+    targetFound: boolean;
+    given: number;
+    missing: string[];
+}
+
 export interface HerbManagerApi {
     getBags(): HerbBagsState;
     take(herbId: string, amount: number, fromBag?: number): Promise<number>;
     put(herbId: string, amount: number, bag: number): Promise<number>;
     move(options: HerbMoveOptions): Promise<void>;
+    getGiveTargets(): HerbGiveTarget[];
+    give(target: string | number, items: HerbGiveItem[]): Promise<HerbGiveResult>;
 }

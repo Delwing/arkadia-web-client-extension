@@ -3,7 +3,7 @@ import {parseItems} from "./prettyContainers";
 import loadHerbs, {HerbsData, isHerbSmokable} from "./herbsLoader";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
-import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState} from "../types/herbs";
+import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState, HerbGiveItem, HerbGiveResult, HerbGiveTarget} from "../types/herbs";
 import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {registerHerbManagerProvider} from "@modules/core/herbManagerProvider";
 import {getWearValue} from "./wearUsed";
@@ -660,11 +660,60 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         }
     }
 
+    const findByShortcut = (short: string) => {
+        const lower = short.toLowerCase();
+        return client.ObjectManager
+            .getObjectsOnLocation()
+            .find(o => o.shortcut?.toLowerCase() === lower);
+    };
+
+    // Accept either a letter/number shortcut (as in /z, /zas), a team member
+    // name, or a raw object id (from the herb manager popup).
+    const resolveGiveTarget = (target: string | number): number | undefined => {
+        if (typeof target === 'number') {
+            return Number.isFinite(target) && target > 0 ? target : undefined;
+        }
+        return findByShortcut(target)?.num
+            ?? client.TeamManager.getTeamMemberObjectId(target);
+    };
+
+    const getGiveTargets = (): HerbGiveTarget[] =>
+        client.TeamManager.getTeamObjectsOnLocation()
+            .filter(o => o.desc)
+            .map(o => ({id: o.num, name: o.desc!}));
+
+    async function give(target: string | number, items: HerbGiveItem[]): Promise<HerbGiveResult> {
+        await ensureData();
+        const objectId = resolveGiveTarget(target);
+        if (objectId === undefined) {
+            return {targetFound: false, given: 0, missing: []};
+        }
+        let given = 0;
+        const missing: string[] = [];
+        for (const item of items) {
+            const amount = Math.floor(item.amount);
+            if (!item.herbId || !Number.isFinite(amount) || amount <= 0) {
+                continue;
+            }
+            const taken = await take(item.herbId, amount, item.fromBag);
+            given += taken;
+            if (taken < amount && !missing.includes(item.herbId)) {
+                missing.push(item.herbId);
+            }
+        }
+        if (given > 0) {
+            client.sendCommand(`daj ziola ob_${objectId}`);
+        }
+        return {targetFound: true, given, missing};
+    }
+
     const herbManagerApi: HerbManagerApi = {
         getBags: cloneBags,
         take,
         put,
         move,
+        getGiveTargets,
+        give,
     };
     client.herbManager = herbManagerApi;
     registerHerbManagerProvider(herbManagerApi);
@@ -751,13 +800,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             }
         });
 
-        const findByShortcut = (short: string) => {
-            const lower = short.toLowerCase();
-            return client.ObjectManager
-                .getObjectsOnLocation()
-                .find(o => o.shortcut?.toLowerCase() === lower);
-        };
-
         const giveHerb = async (who: string, herb: string, count: number) => {
             if (count <= 0) {
                 client.println('Ilosc musi byc wieksza od zera.');
@@ -768,19 +810,14 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
                 client.println(`Nieznane ziolo: ${herb}`);
                 return;
             }
-            // Accept either a letter/number shortcut (as in /z, /zas) or a name.
-            const objectId = findByShortcut(who)?.num
-                ?? client.TeamManager.getTeamMemberObjectId(who);
-            if (objectId === undefined) {
+            const result = await give(who, [{herbId: herb, amount: count}]);
+            if (!result.targetFound) {
                 client.println(`Nie znaleziono celu: ${who}`);
                 return;
             }
-            const taken = await take(herb, count);
-            if (taken === 0) {
+            if (result.given === 0) {
                 client.println(`Brak ziola: ${herb}`);
-                return;
             }
-            client.sendCommand(`daj ziola ob_${objectId}`);
         };
 
         aliases.push({

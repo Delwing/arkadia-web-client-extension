@@ -1,7 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { characterStorage } from "@modules/core/storage";
-import type { HerbBagState, HerbBagsState, HerbMoveOptions } from "@client/types/herbs";
+import type { HerbBagState, HerbBagsState, HerbGiveTarget, HerbMoveOptions } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
 import { openHerbContextMenu } from "@modules/core/contextMenus";
 import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
@@ -33,6 +33,13 @@ interface HerbBag {
 interface DragPayload {
     bagNumber: number;
     stackId: string;
+}
+
+interface GiveBasketItem {
+    instanceId: string;
+    herbId: string;
+    count: number;
+    fromBag: number;
 }
 
 type HerbPillStyle = React.CSSProperties & {
@@ -146,6 +153,56 @@ const moveLocally = (
     return { next: cloned, moved };
 };
 
+const extractLocally = (
+    current: HerbBag[],
+    fromBag: number,
+    stackId: string,
+): { next: HerbBag[]; stack: HerbStack } | null => {
+    const cloned = current.map(b => ({
+        bagNumber: b.bagNumber,
+        items: b.items.map(item => ({ ...item })),
+        condition: b.condition,
+    }));
+    const source = cloned.find(b => b.bagNumber === fromBag);
+    if (!source) {
+        return null;
+    }
+    const index = source.items.findIndex(item => item.instanceId === stackId);
+    if (index === -1) {
+        return null;
+    }
+    const [stack] = source.items.splice(index, 1);
+    if (!stack) {
+        return null;
+    }
+    source.items = sortItems(source.items);
+    return { next: cloned, stack };
+};
+
+const returnLocally = (
+    current: HerbBag[],
+    item: GiveBasketItem,
+    allocateId: () => string,
+): HerbBag[] => {
+    const cloned = current.map(b => ({
+        bagNumber: b.bagNumber,
+        items: b.items.map(entry => ({ ...entry })),
+        condition: b.condition,
+    }));
+    const target = ensureBag(cloned, item.fromBag);
+    const existingIndex = target.items.findIndex(entry => entry.herbId === item.herbId && !entry.isSplit);
+    if (existingIndex >= 0) {
+        const existing = target.items[existingIndex];
+        target.items[existingIndex] = { ...existing, count: existing.count + item.count };
+    } else {
+        target.items = sortItems([
+            ...target.items,
+            { herbId: item.herbId, count: item.count, instanceId: allocateId() },
+        ]);
+    }
+    return cloned;
+};
+
 const getInitialCounts = (): HerbCounts => {
     const stored = characterStorage.get("herb_counts");
     if (!stored) {
@@ -219,6 +276,11 @@ const HerbManager = () => {
     const [activeBag, setActiveBag] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [giveMode, setGiveMode] = useState(false);
+    const [giveTargets, setGiveTargets] = useState<HerbGiveTarget[]>([]);
+    const [giveTarget, setGiveTarget] = useState("");
+    const [basket, setBasket] = useState<GiveBasketItem[]>([]);
+    const [giveDropActive, setGiveDropActive] = useState(false);
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
 
@@ -273,6 +335,9 @@ const HerbManager = () => {
         const unsubscribe = eventBus.on("herbCounts", (detail) => {
             if (detail && typeof detail === "object") {
                 setError(null);
+                // Fresh counts are authoritative for the bag grid; anything held
+                // in the give basket would be double-counted, so drop it.
+                setBasket([]);
                 setBags(rebuildBags(detail as HerbCounts));
             }
         });
@@ -305,8 +370,32 @@ const HerbManager = () => {
     useEffect(() => {
         if (!isOpen) {
             setActiveBag(null);
+            setGiveMode(false);
+            setGiveDropActive(false);
+            setBasket([]);
         }
     }, [isOpen]);
+
+    const refreshGiveTargets = useCallback(() => {
+        const manager = getHerbManager();
+        const targets = typeof manager?.getGiveTargets === "function" ? manager.getGiveTargets() : [];
+        setGiveTargets(targets);
+        setGiveTarget(prev => (prev && targets.some(t => t.name === prev) ? prev : (targets[0]?.name ?? "")));
+    }, []);
+
+    const toggleGiveMode = useCallback(() => {
+        if (giveMode) {
+            setGiveMode(false);
+            setGiveDropActive(false);
+            if (basket.length > 0) {
+                setBasket([]);
+                eventBus.emit('requestHerbCounts');
+            }
+        } else {
+            refreshGiveTargets();
+            setGiveMode(true);
+        }
+    }, [giveMode, basket.length, refreshGiveTargets]);
 
     const handleSplit = (bagNumber: number, stack: HerbStack) => (event: React.MouseEvent) => {
         if (!event.shiftKey) {
@@ -432,6 +521,112 @@ const HerbManager = () => {
         }
     };
 
+    const handleGiveDrop = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        setGiveDropActive(false);
+        setActiveBag(null);
+        if (busy) {
+            return;
+        }
+        const raw = event.dataTransfer.getData("application/json") || event.dataTransfer.getData("text/plain");
+        if (!raw) {
+            return;
+        }
+        try {
+            const payload = JSON.parse(raw) as DragPayload;
+            if (typeof payload.bagNumber !== "number" || typeof payload.stackId !== "string") {
+                return;
+            }
+            const extracted = extractLocally(bags, payload.bagNumber, payload.stackId);
+            if (!extracted) {
+                return;
+            }
+            setBags(extracted.next);
+            setBasket(prev => {
+                const existingIndex = prev.findIndex(item => item.herbId === extracted.stack.herbId && item.fromBag === payload.bagNumber);
+                if (existingIndex >= 0) {
+                    const next = prev.slice();
+                    const existing = next[existingIndex];
+                    next[existingIndex] = { ...existing, count: existing.count + extracted.stack.count };
+                    return next;
+                }
+                return [...prev, {
+                    instanceId: nextInstanceId(),
+                    herbId: extracted.stack.herbId,
+                    count: extracted.stack.count,
+                    fromBag: payload.bagNumber,
+                }];
+            });
+        } catch {
+            // ignore malformed payload
+        }
+    };
+
+    const handleGiveDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setGiveDropActive(true);
+    };
+
+    const handleGiveDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+        const related = event.relatedTarget as Node | null;
+        if (!related || !event.currentTarget.contains(related)) {
+            setGiveDropActive(false);
+        }
+    };
+
+    const removeBasketItem = (item: GiveBasketItem) => {
+        if (busy) {
+            return;
+        }
+        setBags(prev => returnLocally(prev, item, nextInstanceId));
+        setBasket(prev => prev.filter(entry => entry.instanceId !== item.instanceId));
+    };
+
+    const clearBasket = () => {
+        if (busy || basket.length === 0) {
+            return;
+        }
+        setBasket([]);
+        eventBus.emit('requestHerbCounts');
+    };
+
+    const performGive = () => {
+        if (busy || basket.length === 0 || !giveTarget) {
+            return;
+        }
+        const manager = getHerbManager();
+        if (!manager || typeof manager.give !== "function") {
+            setError("Brak połączenia z licznikiem ziół.");
+            return;
+        }
+        setError(null);
+        setBusy(true);
+        const items = basket.map(item => ({ herbId: item.herbId, amount: item.count, fromBag: item.fromBag }));
+        const target = giveTarget;
+        Promise.resolve(manager.give(target, items))
+            .then(result => {
+                if (!result.targetFound) {
+                    setError(`Nie znaleziono celu: ${target}.`);
+                    eventBus.emit('requestHerbCounts');
+                    refreshGiveTargets();
+                    return;
+                }
+                if (result.missing.length > 0) {
+                    setError(`Nie udało się wyjąć: ${result.missing.join(", ")}.`);
+                }
+                setBasket([]);
+            })
+            .catch(err => {
+                const message = err instanceof Error ? err.message : "Nie udało się przekazać ziół.";
+                setError(message);
+                eventBus.emit('requestHerbCounts');
+            })
+            .finally(() => {
+                setBusy(false);
+            });
+    };
+
     const handleContextMenu = (stack: HerbStack) => async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         const { pageX, pageY } = event;
@@ -452,7 +647,11 @@ const HerbManager = () => {
         });
     };
 
-    const emptyState = useMemo(() => bags.length === 0 || bags.every(bag => bag.items.length === 0), [bags]);
+    const emptyState = useMemo(
+        () => basket.length === 0 && (bags.length === 0 || bags.every(bag => bag.items.length === 0)),
+        [bags, basket.length],
+    );
+    const basketTotal = useMemo(() => basket.reduce((sum, item) => sum + item.count, 0), [basket]);
 
     // Calculate optimal grid columns based on bag count
     const gridStyle = useMemo(() => {
@@ -474,6 +673,14 @@ const HerbManager = () => {
         <>
             <button
                 type="button"
+                className={`herb-window__toggle${giveMode ? ' herb-window__toggle--active' : ''}`}
+                onClick={toggleGiveMode}
+                title="Przekaż zioła członkowi drużyny"
+            >
+                Daj
+            </button>
+            <button
+                type="button"
                 className={`herb-window__toggle${showEffects ? ' herb-window__toggle--active' : ''}`}
                 onClick={() => setShowEffects(!showEffects)}
                 title={showEffects ? 'Ukryj efekty' : 'Pokaż efekty ziół'}
@@ -489,7 +696,7 @@ const HerbManager = () => {
                 Kompaktowy
             </button>
         </>
-    ), [showEffects, isCompact, setShowEffects, setIsCompact]);
+    ), [showEffects, isCompact, setShowEffects, setIsCompact, giveMode, toggleGiveMode]);
 
     const handleBackdropClick = () => {
         if (isPinned) {
@@ -531,6 +738,78 @@ const HerbManager = () => {
                     {error && (
                         <div className="alert alert-danger herb-manager-status" role="alert">
                             {error}
+                        </div>
+                    )}
+                    {giveMode && (
+                        <div
+                            className={`herb-give-panel${giveDropActive ? " herb-give-panel--active" : ""}`}
+                            onDragOver={handleGiveDragOver}
+                            onDrop={handleGiveDrop}
+                            onDragLeave={handleGiveDragLeave}
+                        >
+                            <div className="herb-give-header">
+                                <span className="herb-give-title">Daj zioła</span>
+                                <div className="herb-give-target">
+                                    <select
+                                        className="herb-give-select"
+                                        value={giveTarget}
+                                        onChange={event => setGiveTarget(event.target.value)}
+                                        disabled={busy}
+                                    >
+                                        {giveTargets.length === 0 && <option value="">— brak drużyny —</option>}
+                                        {giveTargets.map(target => (
+                                            <option key={target.id} value={target.name}>{target.name}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        className="herb-window__toggle"
+                                        onClick={refreshGiveTargets}
+                                        title="Odśwież listę drużyny"
+                                    >
+                                        ↻
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="herb-give-basket">
+                                {basket.length === 0 ? (
+                                    <span className="herb-give-hint">
+                                        Przeciągnij tu zioła z woreczków. Shift+klik dzieli stos na pół.
+                                    </span>
+                                ) : (
+                                    basket.map(item => (
+                                        <button
+                                            key={item.instanceId}
+                                            type="button"
+                                            className="herb-pill"
+                                            style={getHerbStyle(item.herbId)}
+                                            onClick={() => removeBasketItem(item)}
+                                            title={`Z woreczka ${item.fromBag} — kliknij, aby odłożyć`}
+                                        >
+                                            <span className="herb-pill-count">{item.count} ×</span>
+                                            <span className="herb-pill-label">{item.herbId}</span>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                            <div className="herb-give-actions">
+                                <button
+                                    type="button"
+                                    className="herb-give-btn"
+                                    onClick={clearBasket}
+                                    disabled={busy || basket.length === 0}
+                                >
+                                    Wyczyść
+                                </button>
+                                <button
+                                    type="button"
+                                    className="herb-give-btn herb-give-btn--primary"
+                                    onClick={performGive}
+                                    disabled={busy || basket.length === 0 || !giveTarget}
+                                >
+                                    Daj{basketTotal > 0 ? ` (${basketTotal} szt.)` : ""}
+                                </button>
+                            </div>
                         </div>
                     )}
                     {emptyState ? (

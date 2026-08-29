@@ -5241,6 +5241,102 @@
   font-size: 0.7rem;
 }
 
+/* Give panel — drop herbs here, pick a team member, hand everything over */
+.herb-give-panel {
+  background: linear-gradient(160deg, var(--popup-section-bg), var(--popup-bg));
+  border: 1px dashed var(--popup-border-strong);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.herb-give-panel--active {
+  border-color: var(--popup-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px var(--popup-accent-border);
+}
+
+.herb-give-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-weight: 600;
+  color: var(--popup-text-strong);
+}
+
+.herb-give-target {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.herb-give-select {
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-bright);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  max-width: 14rem;
+}
+
+.herb-give-basket {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  min-height: 2.4rem;
+  align-items: center;
+}
+
+.herb-give-hint {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--popup-text-dim);
+}
+
+.herb-give-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.herb-give-btn {
+  background-color: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.herb-give-btn:hover:not(:disabled) {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-bright);
+}
+
+.herb-give-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.herb-give-btn--primary {
+  background-color: var(--popup-success-bg);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--popup-success);
+  font-weight: 600;
+}
+
+.herb-give-btn--primary:hover:not(:disabled) {
+  background-color: var(--popup-success-hover-bg);
+  color: var(--popup-success);
+}
+
 /* ── knowledge (/wiedza, /biblioteki) ─────────────────────────
    Knowledge report body + libraries (Ksiegi/Wiedza Total/Import/History).
    Was never swept (opened with a "size overrides" header). Includes the

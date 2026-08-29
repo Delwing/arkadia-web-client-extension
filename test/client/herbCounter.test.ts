@@ -288,6 +288,66 @@ describe('herb counter', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
   });
 
+  test('herb manager give takes herbs from the requested bags and sends a single daj', async () => {
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 }, 2: { deliona: 2 } });
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([]) };
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(77) };
+    const manager = (client as unknown as any).herbManager;
+    client.sendCommand.mockClear();
+    const result = await manager.give('Pablo', [
+      { herbId: 'deliona', amount: 2, fromBag: 1 },
+      { herbId: 'deliona', amount: 2, fromBag: 2 }
+    ]);
+    expect(result).toEqual({ targetFound: true, given: 4, missing: [] });
+    expect(client.sendCommand).toHaveBeenCalledWith('wez 2 zolte jasne kwiaty z 1. swojego woreczka');
+    expect(client.sendCommand).toHaveBeenCalledWith('wez 2 zolte jasne kwiaty z 2. swojego woreczka');
+    const dajCalls = client.sendCommand.mock.calls.filter(call => call[0] === 'daj ziola ob_77');
+    expect(dajCalls).toHaveLength(1);
+    const stored = characterStorage.get('herb_counts');
+    expect(stored).toEqual({ 1: { herbs: { deliona: 1 } }, 2: { herbs: {} } });
+  });
+
+  test('herb manager give accepts a numeric object id as target', async () => {
+    initHerbClient((client as unknown) as any, { 1: { deliona: 1 } });
+    const manager = (client as unknown as any).herbManager;
+    client.sendCommand.mockClear();
+    const result = await manager.give(42, [{ herbId: 'deliona', amount: 1 }]);
+    expect(result).toEqual({ targetFound: true, given: 1, missing: [] });
+    expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
+  });
+
+  test('herb manager give reports partially missing herbs', async () => {
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } });
+    const manager = (client as unknown as any).herbManager;
+    client.sendCommand.mockClear();
+    const result = await manager.give(42, [{ herbId: 'deliona', amount: 5 }]);
+    expect(result).toEqual({ targetFound: true, given: 3, missing: ['deliona'] });
+    expect(client.sendCommand).toHaveBeenCalledWith('daj ziola ob_42');
+  });
+
+  test('herb manager give sends nothing for an unknown target', async () => {
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3 } });
+    (client as any).ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([]) };
+    (client as any).TeamManager = { getTeamMemberObjectId: jest.fn().mockReturnValue(undefined) };
+    const manager = (client as unknown as any).herbManager;
+    client.sendCommand.mockClear();
+    const result = await manager.give('Nikt', [{ herbId: 'deliona', amount: 1 }]);
+    expect(result).toEqual({ targetFound: false, given: 0, missing: [] });
+    expect(client.sendCommand).not.toHaveBeenCalled();
+  });
+
+  test('herb manager lists team members on location as give targets', () => {
+    initHerbClient((client as unknown) as any, {});
+    (client as any).TeamManager = {
+      getTeamObjectsOnLocation: jest.fn().mockReturnValue([
+        { num: 5, desc: 'Pablo' },
+        { num: 6 }
+      ])
+    };
+    const manager = (client as unknown as any).herbManager;
+    expect(manager.getGiveTargets()).toEqual([{ id: 5, name: 'Pablo' }]);
+  });
+
   test('ziola_odloz_woreczek sends 3 commands for empty bag', () => {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     initHerbClient((client as unknown) as any, { 2: {} }, defaultHerbData, aliases);
