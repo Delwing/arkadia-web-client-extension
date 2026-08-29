@@ -1336,7 +1336,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            if (!isConnected) {
+            // Re-submitting while a connection is in flight re-arms the credential
+            // listeners above, but must not open a second socket: two attaches with
+            // one session id make the proxy kill one as "replaced by a newer attach".
+            if (!isConnected && !isConnecting) {
                 isConnecting = true;
                 lastSystemLoginMessage = null;
                 updateConnectButtons();
@@ -1369,6 +1372,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isConnected) {
             mudClient.disconnect();
         } else {
+            // A second connect while one is in flight opens a second socket with the
+            // same session id, and the proxy kills one of them as "replaced by a
+            // newer attach" — a double tap must not race itself.
+            if (isConnecting) {
+                return;
+            }
             isConnecting = true;
             lastSystemLoginMessage = null;
             updateConnectButtons();

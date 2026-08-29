@@ -89,9 +89,11 @@ lacks. Both hops end up compressed and resume still works.
 
 Arkadia offers `COMPRESS2` (86) and the older `COMPRESS` (85); only 86 is answered.
 Nothing else in the telnet stream is touched: GMCP, ECHO and the prompt markers are
-forwarded byte for byte. Safari does not implement `permessage-deflate` and falls back to
-an uncompressed browser hop rather than failing. `-mccp=false` turns the upstream half
-off.
+forwarded byte for byte. WebKit's socket stack — desktop Safari, and every browser on
+iOS — offers `permessage-deflate` but implements it incorrectly (broken since Safari 15,
+when WebSockets moved to NSURLSession), so the proxy declines compression for those
+clients and their browser hop runs uncompressed; at MUD volumes that costs nothing.
+`-mccp=false` turns the upstream half off.
 
 ## Sessions
 

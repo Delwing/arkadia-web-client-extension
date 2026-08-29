@@ -409,6 +409,9 @@ class MudClient implements ClientAdapter {
                     if (frame.control) {
                         // Session metadata, not game output: never goes near the
                         // trigger pipeline.
+                        if (frame.control.resumed && !frame.control.upstreamClosed) {
+                            this.renegotiateGmcpAfterResume();
+                        }
                         this.emit('proxy.session', frame.control);
                         return;
                     }
@@ -637,6 +640,26 @@ class MudClient implements ClientAdapter {
         // turn on base64 encoding for gmcp_msgs so its text decodes consistently.
         this.sendGmcp('Core.Supports.Add', ['Objects 1', 'Gmcp_msgs 1', 'Mail 1']);
         this.sendGmcp('Core.Options.Set', ['base64_gmcp_msgs']);
+    }
+
+    /**
+     * Re-offer GMCP when resuming a proxy session, without waiting to be asked.
+     *
+     * The game sends IAC WILL GMCP exactly once, when the telnet session opens — and
+     * negotiation here is otherwise reactive: nothing but that WILL ever makes this
+     * client send its DO. A resumed attach replays from this client's byte offset,
+     * and the greeting is counted as processed the moment it arrives, before the DO
+     * goes out. So a connection that dies in that window — one bad moment, once —
+     * leaves the game with GMCP off, the WILL behind the offset where no replay will
+     * ever surface it, and a session that has lost vitals, room and comms for good.
+     *
+     * Offering unprompted closes that hole for every such death, whatever killed the
+     * socket. It is safe when GMCP is already on, which is the common case: a
+     * duplicate DO is ignored, and Core.Supports re-accepted.
+     */
+    private renegotiateGmcpAfterResume(): void {
+        this.sendRaw(GMCP_DO);
+        this.negotiateGmcpSupports();
     }
 
     sendGmcp(path: string, payload: any = {}): void {

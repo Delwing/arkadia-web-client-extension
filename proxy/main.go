@@ -235,19 +235,23 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager, arch
 		return
 	}
 
+	// The browser hop's compression, and the reason declining MCCP costs the player
+	// nothing. Context takeover keeps a 32 KB window across messages, which suits
+	// repetitive MUD output, and that window belongs to the WebSocket — so a
+	// resuming client starts a fresh one and replayed output decodes like anything
+	// else. Declined for WebKit's socket stack, whose deflate is broken — see
+	// webkitSocket.
+	compression := websocket.CompressionContextTakeover
+	if webkitSocket(r.UserAgent()) {
+		compression = websocket.CompressionDisabled
+	}
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		// Selected back only when the client offered it, which is how it says it can
 		// read framed output. A client offering just its id gets raw bytes.
 		Subprotocols: []string{sessionSubprotocol},
 		// The client is served from a different origin than this bridge.
 		InsecureSkipVerify: true,
-		// The browser hop's compression, and the reason declining MCCP costs the player
-		// nothing. Context takeover keeps a 32 KB window across messages, which suits
-		// repetitive MUD output, and that window belongs to the WebSocket — so a
-		// resuming client starts a fresh one and replayed output decodes like anything
-		// else. Browsers offer the extension by default; Safari does not implement it
-		// and falls back to no compression rather than failing.
-		CompressionMode: websocket.CompressionContextTakeover,
+		CompressionMode:    compression,
 	})
 	if err != nil {
 		log.Printf("websocket accept failed: %v", err)
@@ -331,6 +335,45 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager, arch
 			return
 		}
 	}
+}
+
+/*
+webkitSocket reports whether the request comes from WebKit's WebSocket stack — desktop
+Safari, or any browser on iOS, since Apple's platform rule puts them all on WebKit.
+
+Compression must not be negotiated with it. Since Safari 15 that stack (NSURLSession)
+offers permessage-deflate, but the implementation is broken in documented ways — context
+takeover is mishandled, and compressed messages split across frames kill the connection.
+The observed result inverted this proxy's entire purpose: an iPhone connected, dropped
+within moments, resumed, and dropped again on the next message — and the very first drop
+tended to land between the game's IAC WILL GMCP and the client's answer, leaving the
+session without GMCP for good. Chrome and Firefox negotiate the same extension correctly
+and keep it.
+
+MUD output is small — a busy hour measures ~27 KB/min — so an uncompressed browser hop
+for these clients costs effectively nothing.
+*/
+func webkitSocket(ua string) bool {
+	// iOS browsers do not say "Chrome" or "Firefox": they are "CriOS", "FxiOS" and
+	// "EdgiOS", all wrapping WebKit. "EdgiOS" must be caught here, before the
+	// desktop-engine exclusions below would misread its "Edg" prefix as Chromium.
+	for _, token := range []string{"iPhone", "iPad", "iPod", "CriOS", "FxiOS", "EdgiOS"} {
+		if strings.Contains(ua, token) {
+			return true
+		}
+	}
+	// Desktop Safari. Every Chromium-based browser also says "Safari", so the name
+	// only counts when no other engine is named. An iPad in its default desktop mode
+	// lands here too: its user agent masquerades as macOS Safari.
+	if !strings.Contains(ua, "Safari") {
+		return false
+	}
+	for _, token := range []string{"Chrome", "Chromium", "Edg", "Android"} {
+		if strings.Contains(ua, token) {
+			return false
+		}
+	}
+	return true
 }
 
 func dialUpstream(label string) (net.Conn, error) {
