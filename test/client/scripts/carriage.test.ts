@@ -380,6 +380,18 @@ describe('carriage bookkeeping', () => {
     expect(client.bindSlot.printable).toBeNull();
   });
 
+  test('re-boarding a dylizans is "usiadz w", not "usiadz na"', () => {
+    parse('Siadasz w czarnym dylizansie.');
+    client.Map.currentRoom = { id: 1234 };
+    parse('Zsiadasz z czarnego dylizansu.');
+
+    parse('Czarny dylizans.', 'room.contents.object');
+    expect(client.bindSlot.printable).toBe('usiadz w dylizansie');
+
+    client.lastBindCallback!();
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz w dylizansie');
+  });
+
   test('finds the carriage in a room description that lists several things', () => {
     parse('Siadasz na nieduzym jednokonnym wozie.');
     client.Map.currentRoom = { id: 1234 };

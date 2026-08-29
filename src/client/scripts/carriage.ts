@@ -66,8 +66,8 @@ const VEHICLE_NOUNS: Record<string, string> = {
 /** Genitive of each vehicle type, for "zsiadz z ...". */
 const VEHICLE_GENITIVE: Record<string, string> = {woz: 'wozu', bryczka: 'bryczki', dylizans: 'dylizansu'};
 
-/** Locative of each vehicle type, for "usiadz na ...". */
-const VEHICLE_LOCATIVE: Record<string, string> = {woz: 'wozie', bryczka: 'bryczce', dylizans: 'dylizansie'};
+/** Re-boarding command per vehicle type - you sit ON a wagon or a bryczka, but IN a dylizans. */
+const VEHICLE_SEAT_COMMAND: Record<string, string> = {woz: 'usiadz na wozie', bryczka: 'usiadz na bryczce', dylizans: 'usiadz w dylizansie'};
 
 /** Grammatical gender of each vehicle type - only bryczka is feminine. */
 const VEHICLE_GENDER: Record<string, 'm' | 'f'> = {woz: 'm', bryczka: 'f', dylizans: 'm'};
@@ -545,8 +545,8 @@ export default function initCarriage(
             all[key].parkedIn = here;
             save(all);
         }
-        const noun = VEHICLE_LOCATIVE[nounOf(key)];
-        if (noun) setBind(`usiadz na ${noun}`);
+        const command = VEHICLE_SEAT_COMMAND[nounOf(key)];
+        if (command) setBind(command);
         return line;
     }, "carriageMode");
 
