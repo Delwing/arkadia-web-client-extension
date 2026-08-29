@@ -272,6 +272,20 @@ describe('object aliases', () => {
     );
   });
 
+  test('/za2 alias restores group_cover to default when mirror has no value', () => {
+    delete (gmcp.char as any).options.group_cover;
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 11, shortcut: 'C' }]);
+    const mockMap = new Map();
+    mockMap.set(11, { team: true });
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
+    shieldGroup(['', '2', 'C'] as unknown as RegExpMatchArray);
+    expect(client.sendGMCP).toHaveBeenNthCalledWith(
+      2,
+      'char.options',
+      { group_cover: 1 }
+    );
+  });
+
   test('/w alias withdraws behind object', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 17, shortcut: 'X' }]);
     withdraw(['', 'X'] as unknown as RegExpMatchArray);

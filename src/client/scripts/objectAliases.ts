@@ -306,7 +306,10 @@ export default function initObjectAliases(
         aliases.push({
             pattern: /^\/za([234]) ([A-Za-z0-9@]+)$/,
             callback: (m: RegExpMatchArray) => {
-                const original = gmcp?.char?.options?.group_cover;
+                // Fall back to the game default — restoring an undefined value
+                // would serialize to an empty payload and leave the elevated
+                // cover active on the server.
+                const original = gmcp?.char?.options?.group_cover ?? 1;
                 const coverValue = parseInt(m[1], 10);
                 client.sendGMCP('char.options', {group_cover: coverValue});
                 setGmcp('char.options.group_cover', coverValue);
