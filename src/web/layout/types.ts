@@ -54,6 +54,7 @@ export type BuiltInPopupType =
   | 'worldTime'
   | 'contracts'
   | 'carriages'
+  | 'carriageBlocks'
   | 'letter'
   | 'herb'
   | 'knowledgeReport'

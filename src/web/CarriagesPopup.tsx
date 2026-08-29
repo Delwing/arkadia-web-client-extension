@@ -99,6 +99,10 @@ const CarriagesPopup: React.FC = () => {
         eventBus.emit('sendCommand', { command: `/prowadz ${locationId}` });
     }, []);
 
+    const handleOpenBlocks = useCallback(() => {
+        eventBus.emit('carriageBlocks.popup.open');
+    }, []);
+
     const rows = useMemo(() => carriages.map(carriage => ({
         carriage,
         leasedInDistance: getDistance(currentLocationId, carriage.leasedIn),
@@ -136,6 +140,17 @@ const CarriagesPopup: React.FC = () => {
         </div>
     );
 
+    const headerActions = (
+        <button
+            type="button"
+            className="popup-btn popup-btn--sm"
+            onClick={handleOpenBlocks}
+            title="Lokacje nieprzejezdne dla wozu"
+        >
+            Blokady
+        </button>
+    );
+
     return (
         <DockablePopupWrapper
             {...wrapperProps}
@@ -147,6 +162,7 @@ const CarriagesPopup: React.FC = () => {
             initialHeight={320}
             className="carriages-window"
             bodyClassName="carriages-window-body"
+            headerActions={headerActions}
         >
             {rows.length === 0 ? (
                 <div className="popup-empty">Brak wynajetych pojazdow.</div>

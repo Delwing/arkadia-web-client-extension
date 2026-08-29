@@ -173,7 +173,7 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | Komenda | Opis |
 |---------|------|
 | `/woz` | Przelacz tryb wozu (wlacz/wylacz) |
-| `/wozw` | Otworz okno "Wozy": data najmu, wozownia, koszt, kaucja i miejsce postoju |
+| `/wozw` | Otworz okno "Wozy": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk "Blokady" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy |
 | `/wozblok` | Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji) |
 | `/wozbloki` | Pokaz liste nieprzejezdnych lokacji i linie do skopiowania |
 | `/wozbloki+ <numery>` | Wczytaj liste nieprzejezdnych lokacji |

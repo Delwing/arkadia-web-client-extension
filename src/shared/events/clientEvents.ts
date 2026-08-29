@@ -299,6 +299,7 @@ export interface KnownEvents {
     "carriages.remove": { key: string };
     "carriages.request": void;
     "carriageBlocks.changed": void;
+    "carriageBlocks.popup.open": void;
     "carriageRoute": { transfer: number; driveRooms: number; walkRooms: number; destinationBlocked: boolean; boarding: string | null };
     "carriageRouteStep": { nextCommand: string | null; atTransfer: boolean };
     "fishing.popup.open": FishingStatePayload;
