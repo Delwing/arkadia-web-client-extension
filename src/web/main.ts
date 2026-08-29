@@ -6,7 +6,13 @@ import '@web-ui/messageFlair.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
-import mudClient, {PROXY_WEBSOCKET_URL} from "./MudClient.ts";
+import mudClient from "./MudClient.ts";
+import {
+    DEFAULT_SESSION_PROXY_URL,
+    isResumeNoticeEnabled,
+    setResumeNoticeEnabled,
+    shouldReattachAfterClose,
+} from "./proxySession.ts";
 import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
@@ -461,6 +467,7 @@ mudClient.on('client.connect', () => {
     isConnected = true;
     isConnecting = false;
     isDisconnecting = false;
+    cancelProxyResume();
     updateConnectButtons();
     eventBus.emit('refreshPositionWhenAble');
     const wakeLockSetting = getShellSettings().wakeLock;
@@ -470,16 +477,160 @@ mudClient.on('client.connect', () => {
     console.log('Client connected to Arkadia server.');
 });
 
+// Disconnect diagnostics, for the console only. They were shown in the output while we
+// were working out why mobile players were being dropped, and that investigation is
+// over: the answer was that Chrome freezes a backgrounded tab, which the session proxy
+// now survives. Close codes and background timings say nothing to a player and read as
+// alarming noise attached to an event that, behind the proxy, costs them nothing.
+let lastCloseEvent: CloseEvent | null = null;
+let hiddenSince: number | null = null;
+let lastReturnFromBackground: {at: number; backgroundMs: number} | null = null;
+
+mudClient.on('close', (event) => {
+    lastCloseEvent = event;
+});
+
+const formatDuration = (ms: number): string => {
+    const seconds = Math.max(0, Math.round(ms / 1000));
+    if (seconds < 60) return `${seconds} s`;
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return rest ? `${minutes} min ${rest} s` : `${minutes} min`;
+};
+
+const describeDisconnect = (): string => {
+    const details: string[] = [];
+
+    if (mudClient.lastCloseCause === 'user') {
+        details.push('rozłączenie na żądanie');
+    } else if (mudClient.lastCloseCause === 'watchdog') {
+        details.push('brak odpowiedzi serwera na sprawdzenie połączenia');
+    } else {
+        details.push('połączenie zamknięte po stronie serwera lub sieci');
+    }
+
+    if (lastCloseEvent) {
+        details.push(`kod ${lastCloseEvent.code}${lastCloseEvent.wasClean ? '' : ', zerwane'}`);
+        if (lastCloseEvent.reason) details.push(lastCloseEvent.reason);
+    }
+
+    if (hiddenSince !== null) {
+        details.push(`karta w tle od ${formatDuration(Date.now() - hiddenSince)}`);
+    } else if (lastReturnFromBackground && Date.now() - lastReturnFromBackground.at < 120_000) {
+        details.push(
+            `powrót z tła ${formatDuration(Date.now() - lastReturnFromBackground.at)} temu, po ${formatDuration(lastReturnFromBackground.backgroundMs)} w tle`,
+        );
+    }
+
+    return details.join('; ');
+};
+
+/*
+Reattach after the browser's socket dies behind a session proxy.
+
+Losing that socket is not losing the game: the proxy still holds the telnet connection
+and the character is still standing where it was. A phone freezing a backgrounded tab
+produces exactly this, several times a session, so it has to heal itself rather than
+hand the player a disconnect notice and a Połącz button.
+
+The first attempt is immediate — a hidden tab still runs JavaScript, so the socket is
+often back before the player looks. A frozen one runs nothing, but the close event is
+delivered on resume and the attempt happens then instead. Later attempts back off, for
+the case the proxy itself is unreachable, and after the last one we say so plainly.
+*/
+const PROXY_RESUME_DELAYS_MS = [0, 2_000, 5_000, 15_000, 30_000];
+let proxyResumeAttempt = 0;
+let proxyResumeTimer: number | null = null;
+// Set when the proxy reports the game ended the session. Reattaching then is not a
+// resume — it is a fresh login the player did not ask for, on top of the explanation
+// they came back to read.
+let proxySessionEnded = false;
+
+const cancelProxyResume = (): void => {
+    if (proxyResumeTimer !== null) {
+        clearTimeout(proxyResumeTimer);
+        proxyResumeTimer = null;
+    }
+    proxyResumeAttempt = 0;
+    // Consumed: it only ever suppresses the one reattach that would have followed the
+    // session the game ended. A later connection starts with a clean slate.
+    proxySessionEnded = false;
+};
+
+const scheduleProxyResume = (): void => {
+    if (proxyResumeTimer !== null) return;
+    if (proxyResumeAttempt >= PROXY_RESUME_DELAYS_MS.length) {
+        proxyResumeAttempt = 0;
+        authClosed = false;
+        updateConnectButtons();
+        disableTabSleepPrevention();
+        client.println('Nie udało się wznowić połączenia. Kliknij Połącz, aby spróbować ponownie.');
+        return;
+    }
+    const delay = PROXY_RESUME_DELAYS_MS[proxyResumeAttempt];
+    proxyResumeAttempt += 1;
+    proxyResumeTimer = window.setTimeout(() => {
+        proxyResumeTimer = null;
+        if (isConnected || isConnecting) return;
+        mudClient.connect();
+    }, delay);
+};
+
 // Handle client disconnect event
 mudClient.on('client.disconnect', () => {
+    const willResume = shouldReattachAfterClose({
+        usesSessionProxy: mudClient.usesSessionProxy(),
+        closedByUser: mudClient.lastCloseCause === 'user',
+        sessionEndedByGame: proxySessionEnded,
+    });
     isConnected = false;
     isConnecting = false;
     isDisconnecting = false;
-    authClosed = false;
+    // Reopening the login overlay would be wrong while a reattach is in flight: the
+    // character is still in the world, so there is nothing to log in to, and it would
+    // flash over the output for as long as the reconnect takes.
+    if (!willResume) authClosed = false;
     updateConnectButtons();
+    console.log(`Client disconnected from Arkadia server: ${describeDisconnect()}`);
+
+    if (willResume) {
+        scheduleProxyResume();
+        return;
+    }
+
+    cancelProxyResume();
     disableTabSleepPrevention();
     client.println('Rozłączono z serwerem Arkadii.');
-    console.log('Client disconnected from Arkadia server.');
+});
+
+// What the session proxy reports on attach. A resume is worth saying out loud: the
+// player pressed nothing and their character is still where they left it, which is
+// otherwise indistinguishable from a fresh login that happened to work.
+mudClient.on('proxy.session', (info) => {
+    if (info?.upstreamClosed) {
+        // The game itself ended this session while nobody was listening. The replay
+        // that arrived just before this carries its parting words — "zostajesz
+        // rozlaczony z powodu bezczynnosci" and the like — which is the entire reason
+        // an ended session is kept around instead of dropped. Reattaching would open a
+        // fresh connection and bury that under a login banner.
+        proxySessionEnded = true;
+        return;
+    }
+    if (!info?.resumed) return;
+    // Already in the world: the login screen has nothing left to ask for.
+    authClosed = true;
+    updateConnectButtons();
+    const away = typeof info.sessionAgeMs === 'number'
+        ? ` (sesja trwa ${Math.round(info.sessionAgeMs / 1000)} s)`
+        : '';
+    if (isResumeNoticeEnabled()) {
+        client.println(`Wznowiono polaczenie z gra${away}.`);
+    }
+    // Not covered by the setting. Losing output is not routine, and a gap the player
+    // cannot account for is worse than a line they asked not to see.
+    if (info.droppedBytes) {
+        client.println(`Czesc tekstu z czasu nieobecnosci przepadla (${info.droppedBytes} bajtow).`);
+    }
 });
 
 // `core.keepalive` toggling is only useful on Safari (where the original user
@@ -490,28 +641,48 @@ const isSafari = /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.us
 
 // Ensure button state is correct when returning to the tab
 document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        hiddenSince = Date.now();
+        // Deliberately no connection check on the way out. Mobile suspends a
+        // backgrounded tab within moments of this event, so a check armed here can
+        // only ever expire unattended and report a silence nobody was listening for.
+        if (isConnected && isSafari) {
+            mudClient.sendGmcp('core.keepalive', {disabled: true});
+        }
+        return;
+    }
+
+    if (hiddenSince !== null) {
+        lastReturnFromBackground = {at: Date.now(), backgroundMs: Date.now() - hiddenSince};
+        hiddenSince = null;
+    }
+
+    // Coming back is when the answer matters: the socket may well have died while we
+    // were away, and the buttons have to reflect that.
     if (isConnected) {
         mudClient.checkConnection();
     }
 
-    if (!document.hidden) {
-        // Suppress split view checks during tab reactivation reflow
-        outputMessageHandler.suppressSplitView(500);
+    // Suppress split view checks during tab reactivation reflow
+    outputMessageHandler.suppressSplitView(500);
 
-        const socketOpen = mudClient.isSocketOpen();
-        if (socketOpen && !isConnected) {
-            isConnected = true;
-            updateConnectButtons();
-        } else if (!socketOpen && isConnected) {
-            isConnected = false;
-            isConnecting = false;
-            isDisconnecting = false;
-            updateConnectButtons();
-        } else if (socketOpen && isConnected && isSafari) {
-            mudClient.sendGmcp('core.keepalive', {disabled: false});
+    const socketOpen = mudClient.isSocketOpen();
+    if (socketOpen && !isConnected) {
+        isConnected = true;
+        updateConnectButtons();
+    } else if (!socketOpen && isConnected) {
+        // Belt and braces: a socket that closed without delivering its close event.
+        // The ordinary path is client.disconnect, which fires on resume for a tab that
+        // was frozen, and reattaches there.
+        isConnected = false;
+        isConnecting = false;
+        isDisconnecting = false;
+        updateConnectButtons();
+        if (mudClient.usesSessionProxy()) {
+            scheduleProxyResume();
         }
-    } else if (isConnected && isSafari) {
-        mudClient.sendGmcp('core.keepalive', {disabled: true});
+    } else if (socketOpen && isConnected && isSafari) {
+        mudClient.sendGmcp('core.keepalive', {disabled: false});
     }
 });
 
@@ -1130,6 +1301,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mudClient.on('client.disconnect', clearPendingLogin);
 
+        // A resumed session is already logged in, so nothing armed by the login form
+        // should ever fire. The character-name handler waits for the next line of game
+        // text — which after a resume is ordinary output — and would type the name into
+        // the world as a command; the password handler waits for an echo-off prompt that
+        // is never coming and stays armed until something else triggers it.
+        mudClient.on('proxy.session', (info) => {
+            if (info?.resumed) {
+                clearPendingLogin();
+            }
+        });
+
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearPendingLogin();
@@ -1206,11 +1388,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Connection mode (direct / helper / proxy) plus the proxy URL settings and
-    // "host your own" wizard, mounted as one React island on the connect screen.
+    // "host your own" guide, mounted as one React island on the connect screen.
     const proxyControlsRoot = document.getElementById('proxy-controls-root');
     if (proxyControlsRoot) {
         createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
-            relayBase: PROXY_WEBSOCKET_URL,
+            defaultProxy: DEFAULT_SESSION_PROXY_URL,
+            initialResumeNotice: isResumeNoticeEnabled(),
+            onResumeNoticeChange: (enabled: boolean) => setResumeNoticeEnabled(enabled),
             initialMode: mudClient.getProxyMode(),
             initialUrl: mudClient.getUserProxyUrl() ?? '',
             onModeChange: (mode) => mudClient.setProxyMode(mode),

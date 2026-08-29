@@ -1,0 +1,6 @@
+# Local `go build` output. The deploy script builds into /tmp, so no binary here
+# belongs in the repo — a 9 MB one was committed twice before this file existed.
+proxy
+proxy.exe
+session-proxy
+session-proxy.exe

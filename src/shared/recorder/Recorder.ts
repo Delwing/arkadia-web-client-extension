@@ -1,3 +1,4 @@
+import {eventNow} from "../eventClock";
 export interface RecordedEvent {
     message: string;
     timestamp: number;
@@ -360,7 +361,7 @@ export default class Recorder<CommandOptions = unknown> {
 
         const event: RecordedEvent = {
             message,
-            timestamp: Date.now(),
+            timestamp: eventNow(),
             direction
         };
         const currentLocation = this.readCurrentLocation();

@@ -99,6 +99,9 @@ export default class SoundManager {
     private keepalive: HTMLAudioElement;
     private primerActivated = false;
     private muted = false;
+    // Latches once the loop has been asked to play, so repeated gestures do not
+    // restart it. Cleared again if play() is refused, so a later gesture can retry.
+    private keepaliveRequested = false;
 
     constructor(private readonly client: Client) {
         this.keepalive = new Audio();
@@ -137,6 +140,11 @@ export default class SoundManager {
 
     get isMuted(): boolean {
         return this.muted;
+    }
+
+    /** Whether the near-silent keepalive loop is actually playing. */
+    get keepaliveRunning(): boolean {
+        return !this.keepalive.paused;
     }
 
     mute(): void {
@@ -193,6 +201,18 @@ export default class SoundManager {
     }
 
     private activatePrimer(): void {
+        // Before the bail-out below, and deliberately so. The keepalive element carries
+        // its own source from the constructor and owes nothing to the sound cache, so
+        // gating it on a sound chunk finishing its download meant the first taps of a
+        // cold mobile load started no loop at all — and without the loop running, Chrome's
+        // transient activation expires after a few seconds and later sounds play silently.
+        //
+        // This loop was also believed to keep Android from freezing a backgrounded tab.
+        // It does not: measured against a real phone, Chrome froze the tab a second after
+        // the loop started playing, and paused the audio on the way in. Keeping the game
+        // connection alive is the session proxy's job; this is about audio only.
+        this.startKeepaliveLoop();
+
         if (this.elements.size === 0) {
             console.warn('[SoundManager] primer skipped: no elements cached yet');
             return;
@@ -220,20 +240,30 @@ export default class SoundManager {
             }
         }
 
-        // Start the continuous keepalive loop. Uses a dedicated near-silent
-        // noise source (set in the constructor) — the page just needs to be
-        // continuously playing real audio data at non-zero volume; the source
-        // is shaped to have no audible tonal content. Skipped on iOS where
-        // volume is read-only (would loop at full hardware volume) and isn't
-        // needed anyway.
-        if (!isIOS()) {
-            this.keepalive.volume = KEEPALIVE_VOLUME;
-            this.keepalive.muted = false;
-            this.keepalive.loop = true;
-            this.keepalive.play().catch((err) => {
-                console.warn('[SoundManager] keepalive failed', err);
-            });
-        }
+    }
+
+    /**
+     * Start the continuous keepalive loop, once. Uses a dedicated near-silent noise
+     * source (set in the constructor) — the page just needs to be continuously playing
+     * real audio data at non-zero volume; the source is shaped to have no audible tonal
+     * content. Skipped on iOS where volume is read-only (would loop at full hardware
+     * volume) and isn't needed anyway.
+     *
+     * Must be called from inside a user gesture: `play()` is refused otherwise.
+     */
+    private startKeepaliveLoop(): void {
+        if (isIOS() || this.keepaliveRequested) return;
+        this.keepaliveRequested = true;
+
+        this.keepalive.volume = KEEPALIVE_VOLUME;
+        this.keepalive.muted = false;
+        this.keepalive.loop = true;
+        this.keepalive.play().catch((err) => {
+            // Un-latch so a later gesture can try again — the first tap of a session
+            // is the one most likely to be refused.
+            this.keepaliveRequested = false;
+            console.warn('[SoundManager] keepalive failed', err);
+        });
     }
 
     private ensureElement(key: SoundKey): Promise<HTMLAudioElement | undefined> {

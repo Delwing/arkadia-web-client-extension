@@ -316,7 +316,9 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     client.Triggers.registerTrigger(deadlinePattern, (line, matches) => {
         if (matches && pendingContract && pendingContract.type) {
             const daysRemaining = parsePolishDays(matches[1]);
-            const deadlineTimestamp = Date.now() + (daysRemaining * ONE_INGAME_DAY_MS);
+            // Anchored to when the contract was given, so a replayed one is not
+            // silently granted extra time.
+            const deadlineTimestamp = client.now() + (daysRemaining * ONE_INGAME_DAY_MS);
 
             const contract: Contract = {
                 id: generateContractId(),
@@ -328,7 +330,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
                 unit: pendingContract.unit,
                 quality: pendingContract.quality,
                 deadlineTimestamp,
-                createdAt: Date.now(),
+                createdAt: client.now(),
             };
 
             addContract(contract);

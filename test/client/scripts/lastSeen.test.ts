@@ -25,6 +25,9 @@ class FakeClient {
     println = jest.fn();
     Triggers = { registerTrigger: jest.fn() };
     TeamManager = { getTeamMembers: () => [] as string[] };
+    // The event clock. Live output carries no server timestamp, so it is the wall
+    // clock — which is what these tests exercise.
+    now = () => Date.now();
     on(event: string, cb: any) {
         this.emitter.on(event, cb);
     }

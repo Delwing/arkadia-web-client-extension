@@ -15,6 +15,7 @@ import {characterStorage} from "@modules/core/storage";
 import {getBehaviorSettings, getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import eventBus from "@modules/core/eventBus";
+import {eventNow, runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
 
 import type {HerbManagerApi} from "./types/herbs";
@@ -203,11 +204,11 @@ export default class Client {
             this.buffer = []
         });
 
-        this.on('flushLines', (groups: { text: string; type: string }[]) => {
+        this.on('flushLines', (groups: { text: string; type: string }[], options?: { timestamp?: number }) => {
             const deferred: Array<() => void> = [];
 
             for (const {text, type} of groups) {
-                const parts = this.onLine(text, type);
+                const parts = this.onLine(text, type, options?.timestamp);
                 for (const part of parts) {
                     part.originalText = text;
                     deferred.push(() => this.sendEvent(`gmcp_msg.${type}` as any, part));
@@ -303,11 +304,32 @@ export default class Client {
         return this.commandProcessor.unregisterCommandHook(id);
     }
 
-    onLine(line: string, type: string): AnsiAwareBuffer[] {
+    /**
+     * When the line currently being processed happened, falling back to the wall clock.
+     *
+     * Scripts must use this rather than `Date.now()` to stamp a game event. Output
+     * replayed by the session proxy describes things that happened while the tab was
+     * frozen, so stamping it with the wall clock dates every one of those events to the
+     * moment the player came back — a combat timer would start its full countdown for a
+     * fight that ended five minutes ago.
+     *
+     * Measuring elapsed time against the present is still `Date.now()`: a timer stamped
+     * with an old event time and ticked against the real clock reads as already expired,
+     * which is exactly right.
+     */
+    now(): number {
+        return eventNow()
+    }
+
+    onLine(line: string, type: string, timestamp?: number): AnsiAwareBuffer[] {
         const buffer = new AnsiAwareBuffer(line)
         if (buffer.text.length === 0) {
             return []
         }
+        return runWithEventTime(timestamp, () => this.processLine(buffer, type))
+    }
+
+    private processLine(buffer: AnsiAwareBuffer, type: string): AnsiAwareBuffer[] {
         let result: AnsiAwareBuffer[]
         // Pristine text exactly as the MUD sent it, captured before any trigger runs.
         // The multiline pass may rewrite the buffer (insert markers, recolor, drop text),
@@ -342,6 +364,7 @@ export default class Client {
             return [buffer]
         } finally {
             this.inLineProcess = false
+
         }
 
         // Merge multiple lines back into a single buffer to keep multiline outputs grouped

@@ -1,0 +1,40 @@
+[Unit]
+Description=Arkadia session proxy
+Documentation=https://github.com/Delwing/arkadia-web-client-extension/tree/master/proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/opt/session-proxy/session-proxy -addr 127.0.0.1:8080 -ttl 35m \
+    -archive-dir /var/lib/session-proxy/archive
+
+# ProtectSystem=strict makes the whole filesystem read-only, so the archive needs its own
+# writable directory. systemd creates it owned by the service user and it survives a
+# restart, which is the point: an unclaimed session outlives the process holding it.
+StateDirectory=session-proxy
+StateDirectoryMode=0700
+# A restart drops every live session, so this exists for crashes, not for deploys.
+# Deploy when nobody is playing.
+Restart=always
+RestartSec=2
+User=sessionproxy
+Group=sessionproxy
+
+# It listens on loopback and dials one host. It needs nothing else, so take it away.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

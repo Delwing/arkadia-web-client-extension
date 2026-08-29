@@ -1,5 +1,13 @@
 import {ClientAdapter} from "@client/Client";
+import {
+    announceLeaving,
+    DEFAULT_SESSION_PROXY_URL,
+    isSessionProxyUrl,
+    resetProxySessionId,
+    sessionSubprotocols,
+} from "./proxySession";
 import eventBus from "@modules/core/eventBus";
+import {eventNow, runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
 import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
@@ -19,6 +27,7 @@ import {
     TELNET_GA,
     TELNET_EOR,
     type TransportCodec,
+    type DecodedFrame,
 } from "@shared/socket";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 
@@ -33,10 +42,6 @@ type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents
 const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL ?? 'wss://arkadia.rpg.pl/wss';
 // Query the proxy worker reads to know which telnet host/port to bridge to.
 const PROXY_QUERY = '?host=arkadia.rpg.pl&port=23';
-// Opt-in telnet->WebSocket proxy (Arkadia's raw telnet port). Selected via the
-// "proxy" checkbox on the connection screen; off by default. Exported so the
-// "host your own proxy" wizard can reuse it as the CORS relay for its API calls.
-export const PROXY_WEBSOCKET_URL = `wss://arkadia-proxy.delwing.workers.dev${PROXY_QUERY}`;
 const MCCP_STORAGE_KEY = 'mccpEnabled';
 // Legacy boolean flag (proxy on/off), kept only to migrate to PROXY_MODE_STORAGE_KEY.
 const PROXY_STORAGE_KEY = 'proxyEnabled';
@@ -48,8 +53,30 @@ const PROXY_MODE_STORAGE_KEY = 'proxyMode';
 // A user-deployed proxy URL (from the "host your own" wizard) used in 'proxy'
 // mode in place of the default. Stored as a plain wss:// origin.
 const USER_PROXY_URL_STORAGE_KEY = 'userProxyUrl';
+// How long each probe waits for the server to say anything at all.
+// Generous on purpose: a phone returning from the background has to bring its
+// radio back up, and a lost packet costs another retransmit on top. Silence for
+// a few seconds there is normal, not proof of a dead socket.
+const CONNECTION_CHECK_TIMEOUT_MS = 8000;
+// Consecutive unanswered probes before we accept the socket is gone. Getting this
+// wrong is not symmetric: hanging up on a live connection costs the user their
+// session and a manual re-login, while being slow to notice a dead one costs them
+// a few seconds of typing into the void.
+const CONNECTION_CHECK_MAX_PROBES = 3;
+// How far past its deadline that timer may land before we stop believing it.
+// A backgrounded mobile tab is suspended outright: the callback then runs on
+// resume, minutes late, while the server's reply is still queued behind it —
+// so a late firing says nothing about the socket and must not close it.
+// Sub-second lateness is ordinary scheduling jitter under load.
+const CONNECTION_CHECK_LATE_MS = 1500;
 
 export type ProxyMode = 'direct' | 'helper' | 'proxy';
+
+/**
+ * Who ended the last connection. 'remote' covers the server, the network and the
+ * browser — anything we didn't do ourselves.
+ */
+export type CloseCause = 'remote' | 'user' | 'watchdog';
 
 class MudClient implements ClientAdapter {
     private socket!: WebSocket;
@@ -62,6 +89,11 @@ class MudClient implements ClientAdapter {
     private autoLowercaseCommands: boolean = false;
     private commandEcho: boolean = true;
     private connectionCheckTimeout: number | null = null;
+    /** Wall-clock time the pending connection check was due to fire. */
+    private connectionCheckDeadline = 0;
+    /** Unanswered probes in the current check. Late firings don't count. */
+    private connectionCheckProbes = 0;
+    private closeCause: CloseCause = 'remote';
     private gmcpInitialized: boolean = false;
     // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
     // partial multi-byte char across WebSocket frames.
@@ -86,18 +118,32 @@ class MudClient implements ClientAdapter {
     private pendingMsgTails = new Map<string, string>();
     // How to reach the game (direct / helper / proxy); see PROXY_MODE_STORAGE_KEY.
     private proxyMode: ProxyMode = 'direct';
-    // User-deployed proxy URL; overrides PROXY_WEBSOCKET_URL in 'proxy' mode.
+    // User-deployed proxy URL; overrides DEFAULT_SESSION_PROXY_URL in 'proxy' mode.
     private userProxyUrl: string | null = null;
     // Wire-format strategy, chosen at connect time: binary frames for the
     // proxy/helper, base64 for the native /wss endpoint. Defaults to base64.
     private codec: TransportCodec = base64Codec;
+    // When the server produced the batch being processed, if the transport told us.
+    // Replayed output is minutes old, and a script that stamps its own clock would
+    // date every one of those events to the moment the player came back.
+    private currentEventTime: number | undefined;
+    // Bytes of game output this client has handed to the pipeline, for the whole life of
+    // the proxy session. Reported on reattach so the proxy replays exactly what was
+    // missed — it cannot tell on its own, since a socket accepts writes long after the
+    // page behind it has stopped reading them.
+    private processedBytes = 0;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
-                this.emit(`gmcp.${path}`, value);
-                this.emit('gmcp', {path, value});
+                // GMCP carries most of what the client reacts to — vitals, room, comms —
+                // and it is replayed and recorded like any other output, so its listeners
+                // need the same event clock the text pipeline gets.
+                runWithEventTime(this.currentEventTime, () => {
+                    this.emit(`gmcp.${path}`, value);
+                    this.emit('gmcp', {path, value});
+                });
             },
             onMessage: (text, type) => {
                 this.messageBuffer.push({text, type});
@@ -107,7 +153,7 @@ class MudClient implements ClientAdapter {
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
         this.proxyMode = MudClient.loadProxyMode();
-        this.userProxyUrl = localStorage.getItem(USER_PROXY_URL_STORAGE_KEY) || null;
+        this.userProxyUrl = localStorage.getItem(USER_PROXY_URL_STORAGE_KEY);
         this.echoHandler = new EchoHandler(
             (data) => this.sendRaw(data),
             (serverEchoing) => this.emit('telnet.echo', serverEchoing),
@@ -117,6 +163,41 @@ class MudClient implements ClientAdapter {
                 event.preventDefault();
             }
         })
+
+        // The page is going: closed, navigated away from, or reloaded. Tell the proxy,
+        // or a closed tab leaves the character idling in the world for the whole session
+        // TTL. Deliberately on pagehide rather than visibilitychange — backgrounding a
+        // tab is the case the proxy exists to survive, and must not end anything.
+        addEventListener("pagehide", (event) => {
+            // `persisted` means the page is going into the back/forward cache and may be
+            // restored intact — the socket comes back with it, so this is not a
+            // departure and ending the session would strand a live client.
+            if (event.persisted) return;
+            const proxyUrl = this.effectiveProxyUrl();
+            if (this.usesSessionProxy() && proxyUrl) {
+                announceLeaving(proxyUrl);
+                /*
+                    Drop the id as well, so a reload cannot land back in the session the
+                    page just left.
+
+                    The beacon alone does not settle it. It is handed to the browser as
+                    the page goes and delivered afterwards, so the replacement page can
+                    attach first — and the proxy ignores a leaving notice while somebody
+                    is attached, precisely so that race cannot kill a live client. The
+                    result was a reload silently resuming, which is not what a reload
+                    means.
+
+                    Forgetting the id here removes the race instead of trying to win it:
+                    the next page cannot claim a session it has no name for. Only genuine
+                    departures reach this point — a frozen tab resumes without unloading,
+                    and a bfcache restore returns above.
+                */
+                resetProxySessionId();
+                // A new session starts at byte zero. Carrying the old count over would make the
+                // proxy think this client had already seen the login banner and skip it.
+                this.processedBytes = 0;
+            }
+        });
 
         // Listen for render settings changes
         const initialRender = getRenderSettings();
@@ -157,6 +238,30 @@ class MudClient implements ClientAdapter {
     setMccpEnabled(enabled: boolean): void {
         this.mccpHandler.enabled = enabled;
         localStorage.setItem(MCCP_STORAGE_KEY, String(enabled));
+    }
+
+    /**
+     * Decide whether compression may be used for the connection about to open.
+     *
+     * MCCP is a single zlib stream negotiated once and running for the life of the TCP
+     * connection. A client that attaches to a session already in progress has none of
+     * that decoder state, so it starts inflating from the middle of the stream and
+     * renders binary noise — which is exactly what a resumed session looked like before
+     * this existed.
+     *
+     * Sessions on the proxy are built for clients to come and go, so compression is
+     * declined there outright. Declining is enough: with the handler disabled we never
+     * answer IAC WILL COMPRESS2, so no reattach can land mid-stream.
+     *
+     * It costs no bandwidth. The proxy holds the telnet connection for the whole
+     * session, which makes it the right end to be the zlib peer: it negotiates
+     * COMPRESS2 with the game itself and hands us plaintext, and the browser hop is
+     * compressed by the WebSocket's own permessage-deflate, whose context is per
+     * connection and so survives resuming. See proxy/mccp.go.
+     */
+    private applyMccpForConnection(): void {
+        const preferred = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
+        this.mccpHandler.enabled = preferred && !this.usesSessionProxy();
     }
 
     isMccpEnabled(): boolean {
@@ -212,11 +317,41 @@ class MudClient implements ClientAdapter {
         }
         if (this.proxyMode === 'proxy') {
             if (this.userProxyUrl) {
+                // The resumable proxy needs no query at all: it knows where the game is,
+                // and the session id that lets a returning client reclaim its connection
+                // travels in the handshake's subprotocols rather than the URL.
+                if (isSessionProxyUrl(this.userProxyUrl)) {
+                    return this.userProxyUrl;
+                }
                 return this.userProxyUrl.includes('?') ? this.userProxyUrl : this.userProxyUrl + PROXY_QUERY;
             }
-            return PROXY_WEBSOCKET_URL;
+            return DEFAULT_SESSION_PROXY_URL;
         }
         return WEBSOCKET_URL;
+    }
+
+    /**
+     * The proxy this client would dial, or null when it would not use one.
+     *
+     * The default is now the resumable proxy rather than the stateless worker: anyone
+     * who had already chosen proxy mode is moved across without touching a setting, on
+     * the grounds that they opted into a proxy and this is a better one. Direct
+     * connections — nearly everybody — are untouched.
+     */
+    private effectiveProxyUrl(): string | null {
+        if (this.proxyMode !== 'proxy') return null;
+        return this.userProxyUrl || DEFAULT_SESSION_PROXY_URL;
+    }
+
+    /**
+     * Whether the current connection can survive the browser's socket dying.
+     *
+     * The UI needs this to decide whether a drop is worth reconnecting through
+     * automatically: with a session proxy that costs the player nothing, and without one
+     * it would silently drop them at a login prompt.
+     */
+    usesSessionProxy(): boolean {
+        return isSessionProxyUrl(this.effectiveProxyUrl());
     }
 
     /**
@@ -232,6 +367,12 @@ class MudClient implements ClientAdapter {
             this.socket.onerror = null;
             this.socket.onopen = null;
         }
+        this.applyMccpForConnection();
+        // Detaching the handlers above also means the old socket's onclose will never
+        // run, so a check still pending from it would outlive it and fire against the
+        // socket we are about to open.
+        this.clearConnectionCheck();
+        this.closeCause = 'remote';
         this.mccpHandler.reset();
         this.echoHandler.reset();
         this.gmcpInitialized = false;
@@ -241,23 +382,43 @@ class MudClient implements ClientAdapter {
         this.pendingMsgTails.clear();
         this.gaDriver = false;
         // Proxy/helper speak raw binary frames; native /wss speaks base64 text.
-        this.codec = selectCodec(this.proxyMode !== 'direct');
+        this.codec = selectCodec(this.proxyMode !== 'direct', this.usesSessionProxy());
         this.clearTailTimer();
         try {
             const url = this.resolveConnectUrl();
-            this.socket = new WebSocket(url, []);
+            // The session id is a credential, so it rides in the handshake rather than
+            // the URL — see sessionSubprotocols().
+            this.socket = new WebSocket(url, this.usesSessionProxy()
+                ? sessionSubprotocols(undefined, this.processedBytes)
+                : []);
             // Deliver binary frames (proxy) as ArrayBuffer rather than Blob;
             // harmless for the native endpoint's text frames.
             this.socket.binaryType = 'arraybuffer';
 
             this.socket.onmessage = (event: MessageEvent<string | ArrayBuffer>) => {
                 try {
-                    const decodedData = this.codec.decode(event.data);
-                    if (decodedData.length === 0) return;
-                    if (this.connectionCheckTimeout !== null) {
-                        clearTimeout(this.connectionCheckTimeout);
-                        this.connectionCheckTimeout = null;
+                    // The session proxy's frames carry when the server produced the
+                    // bytes; the plain codecs have no such notion and fall back.
+                    const frame = this.codec.decodeFrame
+                        ? this.codec.decodeFrame(event.data)
+                        : {bytes: this.codec.decode(event.data)} as DecodedFrame;
+
+                    // Anything at all from the server proves the socket is alive.
+                    this.clearConnectionCheck();
+
+                    if (frame.control) {
+                        // Session metadata, not game output: never goes near the
+                        // trigger pipeline.
+                        this.emit('proxy.session', frame.control);
+                        return;
                     }
+
+                    const decodedData = frame.bytes;
+                    // Counted before anything can go wrong with it: this is the number
+                    // the proxy resumes from, and it must mean "handed to the pipeline",
+                    // never "written to a socket". See sessionSubprotocols().
+                    this.processedBytes += decodedData.length;
+                    if (decodedData.length === 0) return;
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
                     if (data.includes(GMCP_WILL)) {
@@ -265,13 +426,19 @@ class MudClient implements ClientAdapter {
                         this.negotiateGmcpSupports();
                     }
                     this.echoHandler.processData(data);
-                    this.emit('socket.incoming', data);
-                    try {
-                        this.processIncomingData(data);
-                    } catch (processingError) {
-                        console.error('Error during trigger processing:', processingError);
-                        console.error('Line was recorded but not processed:', data.substring(0, 100));
-                    }
+                    // Everything downstream of here runs on the server's clock, not the
+                    // moment we happened to read the frame: `socket.incoming` feeds the
+                    // recorder, which would otherwise record a resumed session with its
+                    // gaps flattened, and processIncomingData carries it on to triggers.
+                    runWithEventTime(frame.at, () => {
+                        this.emit('socket.incoming', data);
+                        try {
+                            this.processIncomingData(data, frame.at ? {timestamp: frame.at} : undefined);
+                        } catch (processingError) {
+                            console.error('Error during trigger processing:', processingError);
+                            console.error('Line was recorded but not processed:', data.substring(0, 100));
+                        }
+                    });
                 } catch (error) {
                     console.error('Error processing incoming message:', error);
                 }
@@ -282,10 +449,13 @@ class MudClient implements ClientAdapter {
             };
 
             this.socket.onclose = (event: CloseEvent) => {
-                if (this.connectionCheckTimeout !== null) {
-                    clearTimeout(this.connectionCheckTimeout);
-                    this.connectionCheckTimeout = null;
-                }
+                // Logged because the code is the only thing that separates "the server
+                // (or the network) dropped us" from "we hung up on ourselves" when a
+                // disconnect report comes in from a phone.
+                console.log(
+                    `[MudClient] socket closed: code=${event.code} clean=${event.wasClean} reason=${event.reason || '(none)'}`,
+                );
+                this.clearConnectionCheck();
                 this.flushPendingLineTail();
                 this.flushMessageBuffer(true);
                 this.emit('close', event);
@@ -313,7 +483,15 @@ class MudClient implements ClientAdapter {
      * Disconnect from the WebSocket server
      */
     disconnect(): void {
+        // Leaving on purpose ends the session rather than parking it: resuming into a
+        // character the player meant to leave would be a surprise, and the proxy would
+        // otherwise hold that connection open until its TTL.
+        resetProxySessionId();
+        // A new session starts at byte zero. Carrying the old count over would make the
+        // proxy think this client had already seen the login banner and skip it.
+        this.processedBytes = 0;
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.closeCause = 'user';
             this.socket.close();
         }
         this.pingTracker.stop();
@@ -330,15 +508,71 @@ class MudClient implements ClientAdapter {
         return this.isSocketOpen() && this.echoHandler.serverEchoing;
     }
 
+    /** Who ended the last connection. Reset when a new one is opened. */
+    get lastCloseCause(): CloseCause {
+        return this.closeCause;
+    }
+
+    /**
+     * Ask the server to prove the socket is still alive, and hang up if it can't.
+     *
+     * Any inbound frame counts as proof and cancels the check (see onmessage) —
+     * we are testing the connection, not the ping handler.
+     */
     checkConnection(): void {
         if (!this.isSocketOpen() || this.connectionCheckTimeout !== null) return;
+        this.connectionCheckProbes = 0;
+        this.armConnectionCheck();
+    }
+
+    private armConnectionCheck(): void {
         this.sendGmcp('core.ping');
-        this.connectionCheckTimeout = window.setTimeout(() => {
+        this.connectionCheckDeadline = Date.now() + CONNECTION_CHECK_TIMEOUT_MS;
+        this.connectionCheckTimeout = window.setTimeout(
+            () => this.onConnectionCheckExpired(),
+            CONNECTION_CHECK_TIMEOUT_MS,
+        );
+    }
+
+    private onConnectionCheckExpired(): void {
+        this.connectionCheckTimeout = null;
+        if (!this.isSocketOpen()) return;
+
+        // Silence only means something if we were awake to hear it. A callback that
+        // lands well past its deadline means the page was frozen or throttled — the
+        // reply may be sitting in the receive queue right behind this task — so start
+        // the check over rather than kill a connection we never actually listened to.
+        const lateBy = Date.now() - this.connectionCheckDeadline;
+        if (lateBy > CONNECTION_CHECK_LATE_MS) {
+            console.warn(
+                `[MudClient] connection check fired ${Math.round(lateBy)}ms late (page suspended?); re-checking instead of closing`,
+            );
+            this.armConnectionCheck();
+            return;
+        }
+
+        this.connectionCheckProbes += 1;
+        if (this.connectionCheckProbes < CONNECTION_CHECK_MAX_PROBES) {
+            console.warn(
+                `[MudClient] connection check unanswered (${this.connectionCheckProbes}/${CONNECTION_CHECK_MAX_PROBES}); probing again`,
+            );
+            this.armConnectionCheck();
+            return;
+        }
+
+        console.warn(
+            `[MudClient] ${CONNECTION_CHECK_MAX_PROBES} unanswered connection checks; closing the socket`,
+        );
+        this.closeCause = 'watchdog';
+        this.socket.close();
+    }
+
+    private clearConnectionCheck(): void {
+        this.connectionCheckProbes = 0;
+        if (this.connectionCheckTimeout !== null) {
+            clearTimeout(this.connectionCheckTimeout);
             this.connectionCheckTimeout = null;
-            if (this.isSocketOpen()) {
-                this.socket.close();
-            }
-        }, 5000);
+        }
     }
 
     send(message: string, _echo?: boolean, options?: CommandOptions): void {
@@ -419,7 +653,9 @@ class MudClient implements ClientAdapter {
     }
 
     output(text?: string | AnsiAwareBuffer, type?: string, timestamp?: number) {
-        const ts = typeof timestamp === 'number' ? timestamp : Date.now();
+        // eventNow(), not Date.now(): with per-line timestamps turned on, replayed
+        // output would otherwise all be labelled with the moment the player returned.
+        const ts = typeof timestamp === 'number' ? timestamp : eventNow();
         this.emit('message', text, type, ts)
     }
 
@@ -447,7 +683,18 @@ class MudClient implements ClientAdapter {
      * via gmcp_msgs — so this is effectively a no-op there. The raw text path
      * matters for the telnet proxy.
      */
-    private processIncomingData(rawData: string, _options?: { timestamp?: number }) {
+    private processIncomingData(rawData: string, options?: { timestamp?: number }) {
+        // Carried on the instance because the batch is split, buffered and reassembled
+        // between here and the flush that finally emits the lines.
+        this.currentEventTime = options?.timestamp;
+        try {
+            this.processIncomingDataInner(rawData);
+        } finally {
+            this.currentEventTime = undefined;
+        }
+    }
+
+    private processIncomingDataInner(rawData: string) {
         const data = this.pendingSubneg + rawData;
         this.pendingSubneg = "";
 
@@ -623,7 +870,7 @@ class MudClient implements ClientAdapter {
         }
 
         if (out.length > 0) {
-            this.emit('flushLines', out);
+            this.emit('flushLines', out, this.currentEventTime ? {timestamp: this.currentEventTime} : undefined);
         }
     }
 

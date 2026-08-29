@@ -1751,7 +1751,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                         categoryDative: dativeText.trim(),
                         type: 'tick',
                         locationId: roomId ? parseInt(roomId, 10) : 0,
-                        timestamp: Date.now(),
+                        timestamp: client.now(),
                     });
                     client.sendEvent('knowledgeTickEvent', {
                         category,

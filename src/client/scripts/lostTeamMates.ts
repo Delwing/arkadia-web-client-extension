@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {scheduleFromEvent} from "@shared/eventClock";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 
@@ -40,7 +41,7 @@ export default function initLostTeamMates(client: Client) {
         if (existing) {
             clearTimeout(existing.timer);
         }
-        const timer = setTimeout(() => clearLost(id), LOST_TIMEOUT_MS);
+        const timer = scheduleFromEvent(LOST_TIMEOUT_MS, () => clearLost(id));
         lostMembers.set(id, {roomId, timer});
         emitLostRooms();
     };

@@ -46,7 +46,8 @@ export default function initLastSeen(
 
     client.on("gmcp.objects.data", (data: any) => {
         if (!data || typeof data !== "object") return;
-        const now = Date.now();
+        // When the game reported these people, not when we got round to reading it.
+        const now = client.now();
         Object.keys(data).forEach(numStr => {
             const num = Number(numStr);
             const obj = data[numStr];

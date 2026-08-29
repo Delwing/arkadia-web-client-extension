@@ -1,0 +1,41 @@
+# Caddy exists here for one reason: the client page is HTTPS, so the browser will only
+# open wss://, which needs a real certificate on a real domain. Caddy obtains one from
+# Let's Encrypt on first start and renews it on its own. Note that Let's Encrypt will
+# not issue for a bare IP address — a hostname is not optional.
+#
+# Replace the domain, put this at /etc/caddy/Caddyfile, then: systemctl reload caddy
+
+proxy.example.com {
+	# Only the two endpoints the proxy actually serves are exposed. Anything else that
+	# finds this host gets a flat 404 rather than a hint that something is here.
+	handle /attach* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	# Beacon a departing client sends so its session is closed rather than left holding
+	# a character in the world until the TTL.
+	handle /leaving* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle /health {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle {
+		respond "not found" 404
+	}
+
+	# Session ids ride in the query string and are credentials — they attach to a
+	# logged-in character. Drop the URI from the access log entirely rather than
+	# writing every player's session id to disk.
+	log {
+		output file /var/log/caddy/session-proxy.log
+		format filter {
+			wrap json
+			fields {
+				request>uri delete
+			}
+		}
+	}
+}

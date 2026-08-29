@@ -12,8 +12,12 @@ const MODES: {value: ProxyMode; label: string}[] = [
 ];
 
 interface Props {
-    /** Default proxy URL (with query); also the wizard's CORS relay. */
-    relayBase: string;
+    /** The proxy an empty URL field falls back to, shown as the placeholder. */
+    defaultProxy: string;
+    /** Whether a resumed session is announced in the output. */
+    initialResumeNotice: boolean;
+    /** Persist a changed resume-notice preference. */
+    onResumeNoticeChange: (enabled: boolean) => void;
     /** Currently persisted connection mode. */
     initialMode: ProxyMode;
     /** Current user-defined proxy URL, or '' for the default. */
@@ -22,20 +26,24 @@ interface Props {
     onModeChange: (mode: ProxyMode) => void;
     /** Persist a changed proxy URL ('' clears it back to the default). */
     onUrlChange: (url: string) => void;
-    /** A proxy was deployed via the wizard — persist it and switch to proxy mode. */
+    /** The user supplied their own proxy — persist it and switch to proxy mode. */
     onUseProxy: (url: string) => void;
 }
 
 /**
  * Connection-screen control for how to reach the game: a segmented toggle for
  * the mode (direct / helper / remote proxy) with, in proxy mode, a cog button
- * that opens the proxy URL settings and the host-your-own wizard. Holds the UI
+ * that opens the proxy URL settings and the self-hosting guide. Holds the UI
  * state; the persistence callbacks keep it decoupled from the client.
  */
-export function ProxyControls({relayBase, initialMode, initialUrl, onModeChange, onUrlChange, onUseProxy}: Props) {
+export function ProxyControls({
+    defaultProxy, initialMode, initialUrl, initialResumeNotice,
+    onModeChange, onUrlChange, onResumeNoticeChange, onUseProxy,
+}: Props) {
     const [mode, setMode] = useState<ProxyMode>(initialMode);
     const [url, setUrl] = useState(initialUrl);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [resumeNotice, setResumeNotice] = useState(initialResumeNotice);
     const [hostOpen, setHostOpen] = useState(false);
 
     const changeMode = (next: ProxyMode) => {
@@ -78,7 +86,12 @@ export function ProxyControls({relayBase, initialMode, initialUrl, onModeChange,
                     setUrl(next);
                     onUrlChange(next);
                 }}
-                defaultProxy={relayBase.split('?')[0]}
+                defaultProxy={defaultProxy}
+                resumeNotice={resumeNotice}
+                onResumeNoticeChange={next => {
+                    setResumeNotice(next);
+                    onResumeNoticeChange(next);
+                }}
                 onHostYourOwn={() => {
                     setSettingsOpen(false);
                     setHostOpen(true);
@@ -87,7 +100,6 @@ export function ProxyControls({relayBase, initialMode, initialUrl, onModeChange,
             <HostProxyModal
                 show={hostOpen}
                 onClose={() => setHostOpen(false)}
-                relayBase={relayBase}
                 onUseProxy={deployed => {
                     setUrl(deployed);
                     changeMode('proxy');

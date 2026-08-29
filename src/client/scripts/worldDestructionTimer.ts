@@ -23,7 +23,7 @@ export default function initWorldDestructionTimer(client: Client) {
     }
 
     function startTimer(minutes: number) {
-        end = Date.now() + minutes * 60 * 1000;
+        end = client.now() + minutes * 60 * 1000;
         if (timer != null) {
             clearInterval(timer);
         }

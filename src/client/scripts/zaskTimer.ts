@@ -43,7 +43,7 @@ export default function initZaskTimer(client: Client) {
     }
 
     function startTimer() {
-        start = Date.now();
+        start = client.now();
         active = true;
         clearTimer();
         updateTimer();

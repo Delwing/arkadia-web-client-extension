@@ -14,6 +14,9 @@ describe("zask timer", () => {
       return () => this.emitter.off(event, cb);
     };
 
+    // The event clock; live output falls back to the wall clock.
+    now = () => Date.now();
+
     dispatchEvent = (event: Event) => {
       this.emitter.emit(event.type, (event as CustomEvent).detail);
     };

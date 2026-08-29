@@ -14,6 +14,12 @@ describe("combat timer", () => {
     }
 
     off(): void {}
+
+    // The event clock. Live output has no server timestamp, so it is the wall clock —
+    // which is what these tests exercise.
+    now() {
+      return Date.now();
+    }
   }
 
   beforeEach(() => {

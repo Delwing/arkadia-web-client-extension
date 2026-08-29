@@ -1,3 +1,4 @@
+import {eventNow} from '@shared/eventClock';
 import { globalStorage } from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
@@ -67,7 +68,8 @@ async function save(db: IDBDatabase, text: string, type?: string, timestamp?: nu
   try {
     const tx = db.transaction(storeName, 'readwrite');
     await new Promise<void>((resolve, reject) => {
-      const req = tx.objectStore(storeName).add({ text, type, timestamp: timestamp ?? Date.now() });
+      // Event time, not arrival: a stored log is a record of the game.
+      const req = tx.objectStore(storeName).add({ text, type, timestamp: timestamp ?? eventNow() });
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });

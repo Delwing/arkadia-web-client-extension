@@ -418,8 +418,10 @@ export interface KnownEvents {
     "firebase.sync.uploaded": { categories: SyncCategory[]; timestamps: CategorySyncTimes; encrypted: boolean; auto: boolean };
     "firebase.autosync.pending": { pending: boolean };
     "firebase.listener.status": { active: boolean };
-    "flushLines": [{ text: string; type: string }[]];
+    "flushLines": [groups: { text: string; type: string }[], options?: { timestamp?: number }];
     "socket.incoming": string;
+    /** Session metadata from the resumable proxy: whether we resumed, what was lost. */
+    "proxy.session": import("@shared/socket").SessionControl;
     "socket.outgoing": string;
     "telnet.echo": boolean;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];

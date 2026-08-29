@@ -9,6 +9,7 @@ import type {
     TransportLegDebug,
 } from "../types/transport";
 import { gmcp } from "../gmcp";
+import {scheduleFromEvent} from "@shared/eventClock";
 import {
     deleteTransportSegment,
     getAllTransportSegments,
@@ -366,7 +367,10 @@ class Tracker {
         if (this.state.kind !== 'on_board' || this.state.def !== def || this.state.leg) return;
 
         const s = this.state;
-        const now = Date.now();
+        // The departure line is a game event: if it arrives replayed, the leg must be
+        // dated to when the transport actually left, or the timer below starts its
+        // countdown afresh for a journey already underway.
+        const now = this.client.now();
 
         if (s.next.size === 1) {
             const stopIdx = [...s.next][0];
@@ -429,7 +433,7 @@ class Tracker {
 
         // Record timing
         if (s.kind === 'on_board' && s.leg) {
-            this.recordSegment(def, stopIdx, s.leg.startedAt, Date.now());
+            this.recordSegment(def, stopIdx, s.leg.startedAt, this.client.now());
         }
 
         const next = new Set([(stopIdx + 1) % n]);
@@ -521,14 +525,14 @@ class Tracker {
 
     private startLegIfDeparted(s: { departed?: boolean }, stopIdx: number): Leg | undefined {
         if (!s.departed) return undefined;
-        return { stopIdx, startedAt: Date.now() };
+        return { stopIdx, startedAt: this.client.now() };
     }
 
     private onExit(def: Def): void {
         if (this.state.kind !== 'on_board' || this.state.def !== def) return;
         const { next } = this.state;
         this.go({ kind: 'exiting', def, next });
-        this.exitTimeout = setTimeout(() => this.goIdle(), EXIT_TIMEOUT_MS);
+        this.exitTimeout = scheduleFromEvent(EXIT_TIMEOUT_MS, () => this.goIdle());
         console.log(`${LOG} Exiting ${def.name}`);
     }
 

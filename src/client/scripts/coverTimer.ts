@@ -40,7 +40,7 @@ export default function initCoverTimer(client: Client) {
     }
 
     function startTimer() {
-        end = Date.now() + COVER_TIME * 1000;
+        end = client.now() + COVER_TIME * 1000;
         if (timer != null) {
             clearInterval(timer);
         }
