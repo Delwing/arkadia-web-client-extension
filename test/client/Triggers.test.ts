@@ -125,6 +125,32 @@ describe('Triggers', () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
+  test('token trigger with caseInsensitive matches different case and preserves line casing', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn((buffer: AnsiAwareBuffer, matches: RegExpMatchArray) => {
+      if (!matches) return buffer;
+      buffer.insert(matches.index! + matches[0].length, ']');
+      buffer.insert(matches.index!, '[');
+      return buffer;
+    });
+    triggers.registerTokenTrigger('czarna ksiega', cb, undefined, { caseInsensitive: true });
+
+    const result = triggers.parseLine(new AnsiAwareBuffer('Czarna Ksiega lezy tutaj.'), '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(result?.text).toBe('[Czarna Ksiega] lezy tutaj.');
+  });
+
+  test('token trigger without caseInsensitive does not match different case', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn();
+    triggers.registerTokenTrigger('czarna ksiega', cb);
+
+    triggers.parseLine(new AnsiAwareBuffer('Czarna Ksiega lezy tutaj.'), '');
+
+    expect(cb).not.toHaveBeenCalled();
+  });
+
   test('caseInsensitive option matches string patterns regardless of case', () => {
     const triggers = new Triggers({} as any);
     const cb = jest.fn();

@@ -1112,7 +1112,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     continue;
                 }
 
-                const existing = bookVariants.get(trimmed);
+                const variantKey = trimmed.toLowerCase();
+                const existing = bookVariants.get(variantKey);
                 if (existing) {
                     for (const cat of categories) {
                         if (!existing.categories.includes(cat)) {
@@ -1120,7 +1121,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                         }
                     }
                 } else {
-                    bookVariants.set(trimmed, {
+                    bookVariants.set(variantKey, {
                         bookKey: key,
                         dopelniacz: book.dopelniacz,
                         biernik: book.biernik,
@@ -1165,11 +1166,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                             });
                             getUiPort().showContextMenu(items, ev.pageX, ev.pageY);
                         },
-                    });
+                    }, {caseInsensitive: true});
 
                     return line;
                 },
                 BOOK_TRIGGER_TAG,
+                {caseInsensitive: true},
             );
         }
     }
