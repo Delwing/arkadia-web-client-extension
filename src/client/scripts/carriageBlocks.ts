@@ -2,6 +2,7 @@ import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import eventBus from "@modules/core/eventBus.ts";
 import {getLongDir} from "@shared/map/directions";
+import {isDrivableExit} from "@shared/map/exitCommands";
 import type {FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 import {
     blockRoom,
@@ -184,6 +185,80 @@ export default function initCarriageBlocks(
     client.Triggers.registerTrigger(/^[ >]*Nie mozna jechac na (.+)\.$/, (line, matches) => {
         const roomId = exitTarget(matches[1]);
         if (roomId !== null) learnBlock(roomId);
+        return line;
+    }, 'carriageBlocks');
+
+    /**
+     * Whether the room we now stand in was described together with its exits message.
+     *
+     * The dead-end notice is only trusted when the game itself just listed the ways out - a
+     * room.short or room.long message followed by room.exits. When the description came without
+     * one, the game said nothing about the exits, so the map's picture of them is not confirmed
+     * and nothing may be learned from the notice.
+     *
+     * Tracked off the parsed lines' own types rather than the gmcp_msg events: those are deferred
+     * until the whole flush is processed, and the dead-end line arrives in the same flush as the
+     * description of the room it stops in - by trigger time the events would still describe the
+     * previous room.
+     */
+    let exitsAnnounced = false;
+    const roomMessage = (): RegExpMatchArray => {
+        const matches = [] as unknown as RegExpMatchArray;
+        matches.index = 0;
+        return matches;
+    };
+    client.Triggers.registerTrigger(
+        (_line, _matches, type) =>
+            type === 'room.short' || type === 'room.long' || type === 'room.exits'
+                ? roomMessage()
+                : undefined,
+        (line, _matches, type) => {
+            exitsAnnounced = type === 'room.exits';
+            return line;
+        },
+        'carriageBlocks'
+    );
+
+    /**
+     * Where we were before this room, so a dead end knows which way it may still go back.
+     *
+     * Tracked from the event's own room ids rather than by reading the map when it fires: the map
+     * has already moved us by then, so it would only ever report where we now are.
+     */
+    let previousRoomId: number | null = null;
+    let lastRoomId: number | null = null;
+    client.on('enterLocation', payload => {
+        const id = (payload as { id?: number })?.id;
+        if (typeof id !== 'number' || id === lastRoomId) return;
+        previousRoomId = lastRoomId;
+        lastRoomId = id;
+    });
+
+    /**
+     * A dead end bars every way on, so mark them all in one go.
+     *
+     * "Nie ma tu zadnej drogi, ktora mozna by dalej jechac." is the game saying no road continues
+     * from here - unlike a junction, which announces itself as one. So every neighbour except the
+     * one we drove in from is unreachable by wagon along that exit.
+     *
+     * Exits that are already barred by their shape ("wejdz na gore" and friends) are skipped on
+     * purpose: they are handled without any data, and the room behind one may well be perfectly
+     * drivable from its other side, which a room-level mark would wrongly deny.
+     */
+    client.Triggers.registerTrigger(/^Nie ma tu zadnej drogi, ktora mozna by dalej jechac\.$/, line => {
+        if (!client.carriageMode || previousRoomId === null || !exitsAnnounced) return line;
+        const room = client.Map?.currentRoom as
+            { exits?: Record<string, number>; specialExits?: Record<string, number> } | undefined;
+        if (!room) return line;
+
+        const ways = {...(room.exits ?? {}), ...(room.specialExits ?? {})};
+        // Only trust this when the way back is among them, so we know where we came from.
+        if (!Object.values(ways).includes(previousRoomId)) return line;
+
+        for (const [exit, target] of Object.entries(ways)) {
+            if (target === previousRoomId || !isDrivableExit(exit)) continue;
+            learnBlock(target);
+        }
         return line;
     }, 'carriageBlocks');
 

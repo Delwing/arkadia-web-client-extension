@@ -206,17 +206,76 @@ describe('carriage blockades', () => {
     });
   });
 
-  test('the dead-end notice no longer marks anything on its own', () => {
-    client.Map.currentRoom = {
-      id: 100,
-      exits: { south: 50, north: 60, east: 61 },
-    } as any;
-    Triggers.prototype.parseLine.call(
-      client.Triggers,
-      new AnsiAwareBuffer('Nie ma tu zadnej drogi, ktora mozna by dalej jechac.'),
-      ''
-    );
-    expect([...getBlockedRooms()]).toEqual([]);
+  describe('a dead end bars every way on', () => {
+    let parse: (line: string, type?: string) => unknown;
+    const deadEnd = 'Nie ma tu zadnej drogi, ktora mozna by dalej jechac.';
+
+    beforeEach(() => {
+      client.carriageMode = true;
+      parse = (line: string, type = '') =>
+        Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
+      // Drove in from 50; onward are 60, 61, and a climb to 62.
+      client.sendEvent('enterLocation', { id: 50 });
+      client.sendEvent('enterLocation', { id: 100 });
+      client.Map.currentRoom = {
+        id: 100,
+        exits: { south: 50, north: 60, east: 61 },
+        specialExits: { 'wejdz na gore': 62 },
+      } as any;
+      // The game described the room and listed its ways out.
+      parse('Slepy zaulek.', 'room.short');
+      parse('Sa tu trzy wyjscia: ...', 'room.exits');
+    });
+
+    test('marks the onward rooms but never the one we drove in from', () => {
+      parse(deadEnd);
+      const blocked = [...getBlockedRooms()].sort((a, b) => a - b);
+      expect(blocked).toContain(60);
+      expect(blocked).toContain(61);
+      expect(blocked).not.toContain(50);
+      expect(blocked).not.toContain(100);
+    });
+
+    test('skips a way that is already barred by its shape', () => {
+      parse(deadEnd);
+      // "wejdz na gore" needs no marking, and the room above may be drivable from its other side.
+      expect([...getBlockedRooms()]).not.toContain(62);
+    });
+
+    test('does nothing when we do not know which way we came from', () => {
+      const fresh = new FakeClient();
+      fresh.carriageMode = true;
+      initCarriageBlocks((fresh as unknown) as any);
+      fresh.Map.currentRoom = { id: 100, exits: { north: 60 } } as any;
+      Triggers.prototype.parseLine.call(fresh.Triggers, new AnsiAwareBuffer(deadEnd), '');
+      expect([...getBlockedRooms()]).toEqual([]);
+    });
+
+    test('does nothing on foot', () => {
+      client.carriageMode = false;
+      parse(deadEnd);
+      expect([...getBlockedRooms()]).toEqual([]);
+    });
+
+    test('does nothing when the description came without an exits message', () => {
+      // A new room described by its short line alone: the game said nothing about the exits.
+      parse('Ciemna pieczara.', 'room.short');
+      parse(deadEnd);
+      expect([...getBlockedRooms()]).toEqual([]);
+    });
+
+    test('a long description without exits withdraws the trust just the same', () => {
+      parse('Stoisz w ciemnej pieczarze, sciany ociekaja woda.', 'room.long');
+      parse(deadEnd);
+      expect([...getBlockedRooms()]).toEqual([]);
+    });
+
+    test('trusts the notice again once the exits are listed anew', () => {
+      parse('Ciemna pieczara.', 'room.short');
+      parse('Sa tu trzy wyjscia: ...', 'room.exits');
+      parse(deadEnd);
+      expect([...getBlockedRooms()]).not.toEqual([]);
+    });
   });
 
   test('explains a split journey when leading somewhere the wagon cannot reach', () => {
