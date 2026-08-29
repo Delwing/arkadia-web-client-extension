@@ -31,9 +31,13 @@ export function isType(type: string): TriggerMatchFunction {
 }
 
 export class Trigger {
+    /** How many faults to report per trigger before going quiet about it. */
+    private static readonly MAX_REPORTED_FAULTS = 3;
+
     id = Math.random().toString(36).slice(2);
     children: Map<string, Trigger> = new Map();
     private openInstances: number[] = [];
+    private faultCount = 0;
 
     constructor(
         private manager: Triggers,
@@ -90,6 +94,30 @@ export class Trigger {
         return child;
     }
 
+    /** Human-readable identity for fault logs: the tag if there is one, plus the pattern(s). */
+    private describe(): string {
+        const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
+        const source = patterns
+            .map(p => p instanceof RegExp ? p.source : typeof p === "function" ? "<match fn>" : String(p))
+            .join(" | ");
+        return this.tag ? `${this.tag} (${source})` : source;
+    }
+
+    /**
+     * A trigger that throws is a bug in that trigger, not a reason to drop the line —
+     * but a trigger that throws on *every* line would drown the console, and user
+     * triggers and plugins both run arbitrary code here. Report the first few faults
+     * in full, then say once that the rest are suppressed.
+     */
+    private reportFault(stage: string, err: unknown): void {
+        this.faultCount++;
+        if (this.faultCount <= Trigger.MAX_REPORTED_FAULTS) {
+            console.error(`[Triggers] ${stage} threw in trigger ${this.describe()}`, err);
+        } else if (this.faultCount === Trigger.MAX_REPORTED_FAULTS + 1) {
+            console.error(`[Triggers] suppressing further faults from trigger ${this.describe()}`);
+        }
+    }
+
     execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer | null {
         // Use pre-trimmed plainLine if provided, otherwise compute from originalText/line.text
         if (plainLine === undefined) {
@@ -114,7 +142,14 @@ export class Trigger {
                     matches.input = plainLine;
                 }
             } else if (typeof pattern === "function") {
-                matches = pattern(line, null, type);
+                try {
+                    matches = pattern(line, null, type);
+                } catch (err) {
+                    // A match function that throws decides nothing: treat it as no match
+                    // and let the remaining patterns (and triggers) have their say.
+                    this.reportFault("match function", err);
+                    matches = undefined;
+                }
             }
             if (matches) {
                 break;
@@ -131,7 +166,16 @@ export class Trigger {
         }
         if (matched) {
             if (matches && this.callback) {
-                const result = this.callback(line, matches, type, originalText ?? line.text);
+                let result: AnsiAwareBuffer | null | undefined;
+                try {
+                    result = this.callback(line, matches, type, originalText ?? line.text);
+                } catch (err) {
+                    // A throwing callback costs its own effect and nothing more: the buffer
+                    // travels on as the callback left it, this trigger's children still run,
+                    // and every later trigger still sees the line.
+                    this.reportFault("callback", err);
+                    result = undefined;
+                }
                 if (result === null) {
                     return null;
                 }
@@ -180,6 +224,25 @@ export default class Triggers {
         return trigger;
     }
 
+    /**
+     * Registers a trigger matched against a whole received frame instead of a single line,
+     * so a pattern can span newlines.
+     *
+     * A frame is whatever the game flushed in one go, *not* one logical message — a `kto`
+     * reply and a carriage moving off can arrive together. So an open-ended tail capture
+     * (`([\s\S]+)$`, a greedy wildcard with nothing required after it) may hold trailing
+     * lines that belong to something else. That is fine as long as the callback expects it:
+     * decide where the message ends before you parse, decorate or drop what you captured.
+     * Either the pattern can settle it (PackageHelper ends on the `Symbolem \* oznaczono...`
+     * terminator the message must contain) or the callback can (whoCount's `sliceKtoBody`
+     * cuts the body at the first line with a period, which no kto line ever has). What does
+     * not work is treating the whole capture as message content by default — a callback that
+     * reprocesses all of `line.text` rather than what it matched has the same problem
+     * without the regex.
+     *
+     * Text a multiline callback inserts does not disturb single-line matching: Client.onLine
+     * carries the pristine per-line text into the per-line pass.
+     */
     registerMultilineTrigger(pattern: TriggerPattern, callback?: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = new Trigger(this, pattern, callback, tag, undefined, options);
         this.multilineTriggers.set(trigger.id, trigger);
@@ -212,6 +275,7 @@ export default class Triggers {
         return trigger;
     }
 
+    /** As {@link registerMultilineTrigger} — including what it says about open-ended tail captures — but removed after it first fires. */
     registerOneTimeMultilineTrigger(pattern: TriggerPattern, callback: TriggerCallback, tag?: string, options?: TriggerOptions) {
         const trigger = this.registerMultilineTrigger(
             pattern,
@@ -256,8 +320,11 @@ export default class Triggers {
     }
 
     parseLine(line: AnsiAwareBuffer, type: string): AnsiAwareBuffer | null {
-        // Preserve original text for pattern matching
-        const originalText = line.text;
+        // Every trigger in this pass matches the line as the MUD sent it, never as an
+        // earlier trigger left it. `originalText` carries the pristine text across the
+        // multiline pass (set by Client.onLine); `line.text` is the fallback for buffers
+        // that never went through it.
+        const originalText = line.originalText ?? line.text;
         const plain = originalText.replace(/\s$/g, "");
         let tokens: string[] | undefined;
         const getTokens = () => {

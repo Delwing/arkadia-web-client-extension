@@ -55,3 +55,53 @@ describe('skills alias', () => {
       printed.forEach((l) => expect(l.length).toBeLessThanOrEqual(40));
     });
   });
+
+describe('um table sharing a frame with unrelated output', () => {
+    const TABLE = [
+      'akrobatyka:             troche',
+      'gornictwo:              ledwo',
+      'zielarstwo:             troche',
+    ];
+    const CARRIAGE = 'Wraz z Wexlinem i dojrzalym malomownym mezczyzna jedziesz duzym dwuosiowym dylizansem na poludniowy-wschod.';
+
+    function start() {
+      jest.useFakeTimers();
+      const client = new FakeClient();
+      const aliases: { pattern: RegExp; callback: () => void }[] = [];
+      initSkills((client as unknown) as any, aliases);
+      (aliases[0].callback as any)();
+      return client;
+    }
+
+    test('a line flushed after the table reaches the screen instead of being dropped', () => {
+      const client = start();
+      const raw = [...TABLE, CARRIAGE].join('\n');
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      const printed = (out?.text || '').split('\n');
+      expect(printed[printed.length - 1]).toBe(CARRIAGE);
+      expect(printed[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10]/);
+    });
+
+    test('a line flushed before the table reaches the screen too', () => {
+      const client = start();
+      const raw = [CARRIAGE, ...TABLE].join('\n');
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      const printed = (out?.text || '').split('\n');
+      expect(printed[0]).toBe(CARRIAGE);
+      expect(printed[1]).toMatch(/akrobatyka:\s+troche\s+\[2\/10]/);
+    });
+
+    test('a colon-shaped line that is not a skill row does not spend the one shot', () => {
+      const client = start();
+      const chatter = 'Zorlan mowi: czesc';
+
+      const first = client.Triggers.parseMultiline(new AnsiAwareBuffer(chatter), '');
+      expect(first?.text).toBe(chatter);
+
+      // The trigger is still armed, so the table that follows is still formatted.
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(TABLE.join('\n')), '');
+      expect((out?.text || '').split('\n')[0]).toMatch(/akrobatyka:\s+troche\s+\[2\/10]/);
+    });
+});

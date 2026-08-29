@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
+import {findTableRange, lineOffset} from "./skillTable";
 
 const COLORS = [
     createColorFormat("#ff0000"),
@@ -27,6 +28,28 @@ const skillsDesc: Record<string, number> = {
     perfekcyjnie: 9,
     mistrzowsko: 10,
 };
+
+/** Every `nazwa: poziom` pair on a line — a row may carry two columns. */
+function skillPairs(line: string): { name: string; level: string }[] {
+    const pairs = line.match(/[^:]+:\s+\S+/g) ?? [];
+    const out: { name: string; level: string }[] = [];
+    for (const pair of pairs) {
+        const m = pair.match(/([^:]+):\s+(\S+)/);
+        if (m) out.push({ name: m[1].trim(), level: m[2].trim() });
+    }
+    return out;
+}
+
+/**
+ * Whether a line is a row of the `um` table. The level vocabulary is what decides it: the
+ * `nazwa: wartosc` shape alone would also accept "Zorlan mowi: czesc", and a line the game
+ * flushed alongside the table must not be mistaken for part of it. One known level on the
+ * line is enough, so a skill whose level word we don't recognise still renders as long as
+ * it shares a row with one we do.
+ */
+function isSkillRow(line: string): boolean {
+    return skillPairs(line).some((p) => skillsDesc[p.level.toLowerCase()] !== undefined);
+}
 
 function pad(str: string, len: number) {
     return str + " ".repeat(Math.max(0, len - str.length));
@@ -73,24 +96,30 @@ export default function initSkills(
         return result;
     }
 
-    function process(raw: string, originalFormatting?: FormatStateSnapshot): AnsiAwareBuffer {
-        const lines = raw.split("\n").filter((l) => /[^:]+:\s+\S+/.test(l));
-        const skills: { name: string; level: string }[] = [];
-        lines.forEach((l) => {
-            const pairs = l.match(/[^:]+:\s+\S+/g);
-            pairs?.forEach((p) => {
-                const m = p.match(/([^:]+):\s+(\S+)/);
-                if (m) skills.push({ name: m[1].trim(), level: m[2].trim() });
-            });
-        });
-        if (!skills.length) return new AnsiAwareBuffer(raw);
+    /**
+     * Reformat the `um` table found in a frame, or null when the frame holds none.
+     * Anything the game flushed alongside the table is passed through untouched — see
+     * {@link findTableRange}.
+     */
+    function process(line: AnsiAwareBuffer): AnsiAwareBuffer | null {
+        const parts = line.splitLines();
+        const lines = parts.map((p) => p.text);
+        const range = findTableRange(lines, isSkillRow);
+        if (!range) return null;
+
+        const skills = lines.slice(range.start, range.end).flatMap(skillPairs);
+        if (!skills.length) return null;
+
+        // Style the rebuilt table after the state the table itself started in, not after
+        // whatever line happened to share the frame ahead of it.
+        const originalFormatting = line.getStateAt(lineOffset(lines, range.start));
 
         const maxName = Math.max(...skills.map((s) => s.name.length));
         const maxLevel = Math.max(...skills.map((s) => s.level.length));
-        const result = new AnsiAwareBuffer();
+        const table = new AnsiAwareBuffer();
         for (let i = 0; i < skills.length; i += 2) {
             if (i > 0) {
-                result.append("\n", originalFormatting);
+                table.append("\n", originalFormatting);
             }
             const col1 = formatSkill(skills[i], maxName, maxLevel, originalFormatting);
             if (i + 1 < skills.length) {
@@ -102,15 +131,30 @@ export default function initSkills(
                     client.contentWidth &&
                     combined.text.length > client.contentWidth
                 ) {
-                    result.appendBuffer(col1);
-                    result.append("\n", originalFormatting);
-                    result.appendBuffer(col2);
+                    table.appendBuffer(col1);
+                    table.append("\n", originalFormatting);
+                    table.appendBuffer(col2);
                 } else {
-                    result.appendBuffer(combined);
+                    table.appendBuffer(combined);
                 }
             } else {
-                result.appendBuffer(col1);
+                table.appendBuffer(col1);
             }
+        }
+
+        if (range.start === 0 && range.end === parts.length) {
+            return table;
+        }
+
+        const result = new AnsiAwareBuffer();
+        for (let i = 0; i < range.start; i++) {
+            result.appendBuffer(parts[i]);
+            result.append("\n", originalFormatting);
+        }
+        result.appendBuffer(table);
+        for (let i = range.end; i < parts.length; i++) {
+            result.append("\n", originalFormatting);
+            result.appendBuffer(parts[i]);
         }
         return result;
     }
@@ -120,9 +164,10 @@ export default function initSkills(
         client.Triggers.registerMultilineTrigger(
             /[^:]+:\s+\S+/,
             (line) => {
-                const raw = line.text;
-                const originalFormatting = line.getStateAt(0);
-                const out = process(raw, originalFormatting);
+                const out = process(line);
+                // Something colon-shaped that isn't the table beat the reply into the
+                // frame; keep the one shot for the table itself (the timeout still ends it).
+                if (!out) return line;
                 disable();
                 return out;
             },

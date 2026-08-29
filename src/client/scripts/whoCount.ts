@@ -13,6 +13,21 @@ const RED = createColorFormat('#ff0000');
 const DEFAULT_NAME_COLOR = createColorFormat('#ffffff');
 
 /**
+ * Cut the captured body down to the part that actually belongs to the kto reply.
+ *
+ * The body capture has no terminator of its own, so whatever the game flushes into the
+ * same frame — a carriage moving off, someone arriving — lands inside it. No line of the
+ * reply itself ever contains a period: names have none, and neither do the long-format
+ * descriptions. So the first line that does contain one marks where the reply ended and
+ * unrelated output began, and everything from there on is neither parsed nor decorated.
+ */
+export function sliceKtoBody(body: string): string {
+    const lines = body.split('\n');
+    const end = lines.findIndex(l => l.includes('.'));
+    return end === -1 ? body : lines.slice(0, end).join('\n');
+}
+
+/**
  * Parse names from the kto response body.
  * Supports two formats:
  * - Long format (kto / kto l): each person on a separate line with descriptions and commas
@@ -115,14 +130,15 @@ export default function initWhoCount(client: Client) {
     }
 
     /**
-     * Find position of a name in the buffer text (after bodyStart), respecting word boundaries.
-     * Both the character before and after must be non-word characters to prevent
-     * matching a shorter name inside a longer one (e.g. "Ana" inside "Anarion").
+     * Find position of a name in the buffer text (within [bodyStart, bodyEnd)), respecting
+     * word boundaries. Both the character before and after must be non-word characters to
+     * prevent matching a shorter name inside a longer one (e.g. "Ana" inside "Anarion").
+     * The end bound keeps a decoration from landing on unrelated output that shared the frame.
      * Returns the insert position (before * if present), or -1 if not found.
      */
-    function findNamePosition(text: string, name: string, bodyStart: number): number {
+    function findNamePosition(text: string, name: string, bodyStart: number, bodyEnd: number): number {
         let idx = text.indexOf(name, bodyStart);
-        while (idx >= 0) {
+        while (idx >= 0 && idx + name.length <= bodyEnd) {
             const before = idx > 0 ? text[idx - 1] : undefined;
             const afterIdx = idx + name.length;
             const after = afterIdx < text.length ? text[afterIdx] : undefined;
@@ -176,35 +192,31 @@ export default function initWhoCount(client: Client) {
     client.Triggers.registerMultilineTrigger(ktoMultilinePattern, (line, matches) => {
         if (!matches) return line;
 
-        const body = matches[1];
+        const body = sliceKtoBody(matches[1]);
         const currentNames = parseKtoNames(body);
         const currentSet = new Set(currentNames);
         const previousSet = new Set(previousNames);
 
-        // Mark new names with green "+" (only if we had a previous set)
+        // Decorations only make sense once we have something to compare against
         if (previousNames.length > 0) {
-            const newNames = currentNames.filter(n => !previousSet.has(n));
-
-            // Insert green "+" before each new name, process in reverse to preserve positions
             const headerEnd = line.text.indexOf('\n');
             if (headerEnd < 0) return line;
+            const bodyEnd = Math.min(headerEnd + 1 + body.length, line.length);
+
+            // Resolve the new arrivals up front, while no insertion has shifted anything yet
+            const newNames = currentNames.filter(n => !previousSet.has(n));
             const positions: number[] = [];
             for (const name of newNames) {
-                const pos = findNamePosition(line.text, name, headerEnd);
+                const pos = findNamePosition(line.text, name, headerEnd, bodyEnd);
                 if (pos >= 0) {
                     positions.push(pos);
                 }
             }
 
-            // Sort by position descending to insert from end to start
-            positions.sort((a, b) => b - a);
-            for (const pos of positions) {
-                line.insert(pos, '+ ', GREEN);
-            }
-        }
-
-        // Print disappeared names
-        if (previousNames.length > 0) {
+            // "Zakonczyli" belongs to the kto reply, so it goes at the end of the reply body
+            // rather than after whatever else the game flushed into the same frame — printing
+            // it separately would always have pushed it past those lines. Inserting it before
+            // the markers is safe: every marker position sits before bodyEnd.
             const disappeared = previousNames.filter(n => !currentSet.has(n));
             if (disappeared.length > 0) {
                 const output = new AnsiAwareBuffer("\nZakonczyli: ");
@@ -216,7 +228,13 @@ export default function initWhoCount(client: Client) {
                         output.append(", ", {});
                     }
                 }
-                client.print(output);
+                line.insertBuffer(bodyEnd, output);
+            }
+
+            // Insert green "+" before each new name, from the end back so earlier positions stay valid
+            positions.sort((a, b) => b - a);
+            for (const pos of positions) {
+                line.insert(pos, '+ ', GREEN);
             }
         }
 

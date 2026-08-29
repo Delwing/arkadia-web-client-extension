@@ -53,6 +53,19 @@ export interface ClientAdapter {
     shouldEchoCommand(): boolean;
 }
 
+/**
+ * Splits a raw frame the way {@link AnsiAwareBuffer.splitLines} does, so the two
+ * results can be zipped index by index. The only divergence is a trailing newline:
+ * `splitLines` never emits an empty tail line, `String.split` does.
+ */
+function splitPristineLines(text: string): string[] {
+    const lines = text.split('\n')
+    if (lines.length > 1 && lines[lines.length - 1] === '') {
+        lines.pop()
+    }
+    return lines
+}
+
 export default class Client {
     clientAdapter: ClientAdapter;
     Colors = Colors;
@@ -296,6 +309,11 @@ export default class Client {
             return []
         }
         let result: AnsiAwareBuffer[]
+        // Pristine text exactly as the MUD sent it, captured before any trigger runs.
+        // The multiline pass may rewrite the buffer (insert markers, recolor, drop text),
+        // and without this the per-line pass would match against that rewritten text —
+        // an inserted prefix silently breaks every `^`-anchored single-line trigger.
+        const originalLines = splitPristineLines(buffer.text)
         this.inLineProcess = true
         try {
             this.sendEvent(LINE_START_EVENT)
@@ -305,13 +323,22 @@ export default class Client {
             }
 
             const split = multilineResult.splitLines()
+            // Only a multiline trigger that added or removed a line breaks the 1:1 mapping;
+            // there is no way to tell which original line a part came from, so those parts
+            // fall back to matching their own (rewritten) text.
+            if (split.length === originalLines.length) {
+                for (let i = 0; i < split.length; i++) {
+                    split[i].originalText = originalLines[i]
+                }
+            }
             result = split.map(part => this.Triggers.parseLine(part, type)).filter(part => part !== null)
         } catch (err) {
-            // A throwing trigger must cost us one line, not the whole session: leaving
-            // inLineProcess set would stop print() from ever emitting 'output-sent' again and
-            // freeze all output until reload. The bus swallows what escapes here, so this is also
-            // the only place such a fault becomes visible — log it and show the text unprocessed.
-            console.error('[Client] trigger failed while processing a line', err)
+            // Trigger callbacks and match functions guard themselves (Trigger.execute), so a
+            // fault normally costs only that one trigger's effect. This is the last-resort net
+            // for what throws outside them — buffer splitting, the token walk. It must not cost
+            // the session: leaving inLineProcess set would stop print() from ever emitting
+            // 'output-sent' again and freeze all output until reload.
+            console.error('[Client] trigger pipeline failed while processing a line', err)
             return [buffer]
         } finally {
             this.inLineProcess = false
