@@ -36,9 +36,9 @@ Modul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z z
 
 ## Dawanie ziol z okna woreczkow
 
-W oknie `/ziola` przycisk **Daj** wlacza panel przekazywania ziol czlonkowi druzyny:
+W oknie `/ziola` przycisk **Daj** wlacza panel przekazywania ziol:
 
-1. Wybierz cel z listy (czlonkowie druzyny obecni na lokacji, przycisk odswiezania obok).
+1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; druzyna jest wyswietlana osobno, przycisk odswiezania obok).
 2. Przeciagnij ziola z woreczkow do panelu - shift+klik dzieli stos na pol, jesli chcesz dac tylko czesc.
 3. Klikniecie ziola w panelu odklada je z powrotem do woreczka.
 4. Przycisk **Daj** wyjmuje wszystkie zebrane ziola z woreczkow i przekazuje je jedna komenda `daj`.

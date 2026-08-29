@@ -146,22 +146,27 @@ test.describe('Herb bag tracking', () => {
             {content: 'trzy jasnozielone lodygi'},
         ]);
 
-        // Put a team member on the location
+        // Put a team member and a bystander on the location
         await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
             '60005': {desc: 'HerbGiver', team: true, team_leader: true, hp: 6},
             '60106': {desc: 'Scout', team: true, hp: 5},
+            '60207': {desc: 'wedrowiec', hp: 3},
         });
-        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [60005, 60106]);
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [60005, 60106, 60207]);
 
         await submitCommand(page, '/ziola');
         const herbPopup = page.locator('.herb-window');
         await expect(herbPopup).toBeVisible({timeout: 5000});
 
-        // Enable give mode; the team member should be offered as target
+        // Enable give mode; the team member should be preselected, with the
+        // bystander offered in a separate group
         await herbPopup.getByRole('button', {name: 'Daj', exact: true}).click();
         const panel = page.locator('.herb-give-panel');
         await expect(panel).toBeVisible();
-        await expect(panel.locator('.herb-give-select')).toHaveValue('Scout');
+        const select = panel.locator('.herb-give-select');
+        await expect(select).toHaveValue('60106');
+        await expect(select.locator('optgroup[label="Drużyna"] option')).toHaveText(['Scout']);
+        await expect(select.locator('optgroup[label="Pozostali"] option')).toHaveText(['wedrowiec']);
 
         // Drag the herb stack into the give basket
         const pill = page.locator('.herb-bag .herb-pill').first();

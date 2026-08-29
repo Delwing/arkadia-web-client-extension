@@ -336,16 +336,21 @@ describe('herb counter', () => {
     expect(client.sendCommand).not.toHaveBeenCalled();
   });
 
-  test('herb manager lists team members on location as give targets', () => {
+  test('herb manager lists everyone on location as give targets, excluding the player', () => {
     initHerbClient((client as unknown) as any, {});
-    (client as any).TeamManager = {
-      getTeamObjectsOnLocation: jest.fn().mockReturnValue([
-        { num: 5, desc: 'Pablo' },
-        { num: 6 }
+    (client as any).ObjectManager = {
+      getObjectsOnLocation: jest.fn().mockReturnValue([
+        { num: 1, desc: 'Ja', __category: 'player' },
+        { num: 5, desc: 'Pablo', __category: 'team' },
+        { num: 9, desc: 'krasnolud', __category: 'rest' },
+        { num: 10, __category: 'rest' }
       ])
     };
     const manager = (client as unknown as any).herbManager;
-    expect(manager.getGiveTargets()).toEqual([{ id: 5, name: 'Pablo' }]);
+    expect(manager.getGiveTargets()).toEqual([
+      { id: 5, name: 'Pablo', team: true },
+      { id: 9, name: 'krasnolud', team: false }
+    ]);
   });
 
   test('ziola_odloz_woreczek sends 3 commands for empty bag', () => {

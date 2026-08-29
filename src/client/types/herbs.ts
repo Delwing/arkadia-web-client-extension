@@ -74,6 +74,7 @@ export interface HerbGiveItem {
 export interface HerbGiveTarget {
     id: number;
     name: string;
+    team: boolean;
 }
 
 export interface HerbGiveResult {

@@ -380,7 +380,7 @@ const HerbManager = () => {
         const manager = getHerbManager();
         const targets = typeof manager?.getGiveTargets === "function" ? manager.getGiveTargets() : [];
         setGiveTargets(targets);
-        setGiveTarget(prev => (prev && targets.some(t => t.name === prev) ? prev : (targets[0]?.name ?? "")));
+        setGiveTarget(prev => (prev && targets.some(t => String(t.id) === prev) ? prev : (targets[0] ? String(targets[0].id) : "")));
     }, []);
 
     const toggleGiveMode = useCallback(() => {
@@ -595,6 +595,11 @@ const HerbManager = () => {
         if (busy || basket.length === 0 || !giveTarget) {
             return;
         }
+        const target = giveTargets.find(t => String(t.id) === giveTarget);
+        if (!target) {
+            refreshGiveTargets();
+            return;
+        }
         const manager = getHerbManager();
         if (!manager || typeof manager.give !== "function") {
             setError("Brak połączenia z licznikiem ziół.");
@@ -603,11 +608,10 @@ const HerbManager = () => {
         setError(null);
         setBusy(true);
         const items = basket.map(item => ({ herbId: item.herbId, amount: item.count, fromBag: item.fromBag }));
-        const target = giveTarget;
-        Promise.resolve(manager.give(target, items))
+        Promise.resolve(manager.give(target.id, items))
             .then(result => {
                 if (!result.targetFound) {
-                    setError(`Nie znaleziono celu: ${target}.`);
+                    setError(`Nie znaleziono celu: ${target.name}.`);
                     eventBus.emit('requestHerbCounts');
                     refreshGiveTargets();
                     return;
@@ -675,7 +679,7 @@ const HerbManager = () => {
                 type="button"
                 className={`herb-window__toggle${giveMode ? ' herb-window__toggle--active' : ''}`}
                 onClick={toggleGiveMode}
-                title="Przekaż zioła członkowi drużyny"
+                title="Przekaż zioła komuś na lokacji"
             >
                 Daj
             </button>
@@ -756,10 +760,21 @@ const HerbManager = () => {
                                         onChange={event => setGiveTarget(event.target.value)}
                                         disabled={busy}
                                     >
-                                        {giveTargets.length === 0 && <option value="">— brak drużyny —</option>}
-                                        {giveTargets.map(target => (
-                                            <option key={target.id} value={target.name}>{target.name}</option>
-                                        ))}
+                                        {giveTargets.length === 0 && <option value="">— nikogo tu nie ma —</option>}
+                                        {giveTargets.some(t => t.team) && (
+                                            <optgroup label="Drużyna">
+                                                {giveTargets.filter(t => t.team).map(target => (
+                                                    <option key={target.id} value={String(target.id)}>{target.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                        {giveTargets.some(t => !t.team) && (
+                                            <optgroup label="Pozostali">
+                                                {giveTargets.filter(t => !t.team).map(target => (
+                                                    <option key={target.id} value={String(target.id)}>{target.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
                                     </select>
                                     <button
                                         type="button"

@@ -677,10 +677,12 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             ?? client.TeamManager.getTeamMemberObjectId(target);
     };
 
+    // Everyone on the location except the player; ObjectManager orders the
+    // team first, so the popup's default selection lands on a teammate.
     const getGiveTargets = (): HerbGiveTarget[] =>
-        client.TeamManager.getTeamObjectsOnLocation()
-            .filter(o => o.desc)
-            .map(o => ({id: o.num, name: o.desc!}));
+        client.ObjectManager.getObjectsOnLocation()
+            .filter(o => o.desc && o.__category !== 'player')
+            .map(o => ({id: o.num, name: o.desc!, team: o.__category === 'team'}));
 
     async function give(target: string | number, items: HerbGiveItem[]): Promise<HerbGiveResult> {
         await ensureData();
