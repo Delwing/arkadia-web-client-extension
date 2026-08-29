@@ -9,7 +9,7 @@
     ],
     "exit_command": "zejdz ze statku",
     "standing_patterns": [
-        "^(?!.*(?:plaskodenny|drewniany|solidny)).*prom"
+        "^(?!.*(?:plaskodenny|drewniany|solidny)).*\\bprom\\b"
     ],
     "stops": [
         {
