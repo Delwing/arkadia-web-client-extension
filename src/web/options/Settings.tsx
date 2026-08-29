@@ -367,6 +367,14 @@ function SettingsForm({registerSave}: { registerSave: (cb: (sharedSettings: Sett
                                 onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
                                 className="me-2"
                             />
+                            <Form.Check
+                                type="checkbox"
+                                id="carriageTeamTickets"
+                                label={<>Bilety dla druzyny przy wjezdzie wozem <span title="Gdy wjezdzasz wozem na statek, bind wejscia kupuje bilety takze dla czlonkow druzyny na lokacji i wrecza im je (jak /bilety). Wylaczone: kupuje tylko twoj bilet." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
+                                checked={settings.carriageTeamTickets}
+                                onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
+                                className="me-2"
+                            />
                             <Form.Group className="d-flex align-items-center me-2">
                                 <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii
                                     listu:</Form.Label>

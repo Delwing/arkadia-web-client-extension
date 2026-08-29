@@ -22,6 +22,8 @@ import {
     type RawTransportDefinition,
     type RawTransportStop,
 } from "./transports/definitions";
+import { characterStorage } from "@modules/core/storage";
+import { teamTicketCommands } from "./bilety";
 
 interface CompiledStop extends RawTransportStop {
     stopRegex?: RegExp;
@@ -670,16 +672,34 @@ class Tracker {
 
     // ── binds ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Driving aboard takes the whole team along - passengers sit on the wagon and cannot buy
+     * their own tickets - so the driver's "kup bilet" grows a purchase and a hand-over per
+     * teammate on the location, spliced into the def's existing wem...wlm wrap rather than
+     * adding a second one the way the standalone /bilety alias does.
+     */
+    private withTeamTickets(cmds: string[]): string[] {
+        if (!this.client.carriageMode) return cmds;
+        if (characterStorage.get('settings')?.carriageTeamTickets === false) return cmds;
+        const idx = cmds.indexOf('kup bilet');
+        if (idx === -1) return cmds;
+        const tickets = teamTicketCommands(this.client);
+        if (!tickets.length) return cmds;
+        return [...cmds.slice(0, idx + 1), ...tickets, ...cmds.slice(idx + 1)];
+    }
+
     private setBoardBind(def: Def, sound = false, uncertain = false): void {
         const raw = def.board_commands;
         if (!raw?.length) return;
         if (sound) this.client.sendEvent('sound:category', 'transport');
         this.lastBind = { kind: 'board', def, uncertain };
-        const cmds = this.client.carriageMode ? raw.map(carriageCommand) : raw;
+        const base = this.client.carriageMode ? raw.map(carriageCommand) : raw;
+        const cmds = this.withTeamTickets(base);
         const name = uncertain ? `${def.name} (?)` : def.name;
         const label = `${cmds.join(';')} [${name}]`;
         this.client.FunctionalBind.setCategory('transport', label, () => {
-            cmds.forEach(cmd => this.client.sendCommand(cmd));
+            // Recomputed at press time - teammates may have arrived or left since the bind was set.
+            this.withTeamTickets(base).forEach(cmd => this.client.sendCommand(cmd));
         }, false);
     }
 

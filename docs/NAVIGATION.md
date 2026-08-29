@@ -48,6 +48,8 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 
 > **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.
 
+> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja "Bilety dla druzyny przy wjezdzie wozem") — wtedy kupowany jest tylko wlasny bilet.
+
 ## Wyszukiwanie na mapie
 
 | Komenda | Opis |
