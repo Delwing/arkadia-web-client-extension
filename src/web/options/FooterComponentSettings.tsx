@@ -35,6 +35,7 @@ const DISPLAY_NAMES: Record<string, string> = {
     'combat-timer': 'Timer walki (30s)',
     'world-destruction-timer': 'Timer apokalipsy',
     'team-panel': 'Panel druzyny',
+    'connection-status': 'Ping i zegar proxy',
 };
 
 interface SortableItemProps {

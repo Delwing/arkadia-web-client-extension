@@ -15,6 +15,7 @@ import {
   WeaponChip,
   CoverChip,
   OrderChip,
+  ConnectionChip,
 } from "./chips";
 
 /**
@@ -43,6 +44,7 @@ export const BUILTIN_FOOTER_ITEMS: FooterItem[] = [
   { id: "mail-status", order: 180, source: "builtin", render: () => <MailChip /> },
   { id: "world-destruction-timer", order: 190, source: "builtin", render: () => <ApocalypseChip /> },
   { id: "break-item-warning", order: 200, source: "builtin", render: () => <BreakItemChip /> },
+  { id: "connection-status", order: 210, source: "builtin", render: () => <ConnectionChip /> },
 ];
 
 /** Register the built-in chips into the common registry (call once per UI that wants them). */

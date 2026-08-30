@@ -55,6 +55,13 @@ export interface RoomChange {
     exits?: Partial<Record<MapData.direction, number>>;
     /** Replaces the room's special exits wholesale. */
     specialExits?: Record<string, number>;
+    /**
+     * Replaces the room's drawn exit lines wholesale, keyed by short direction
+     * (`n`, `se`, …) or special-exit name. Points are in **source orientation**
+     * (y-up), the same as `mapExport.json` — unlike `x`/`y` above, which the
+     * reader has already flipped.
+     */
+    customLines?: Record<string, MapData.Line>;
     /** Merged into existing userData; a `null` value removes that key. */
     userData?: Record<string, string | null>;
 }
@@ -718,6 +725,10 @@ export default class MapHelper {
             }
             if (change.specialExits) {
                 room.specialExits = {...change.specialExits};
+                touched = true;
+            }
+            if (change.customLines) {
+                room.customLines = {...change.customLines};
                 touched = true;
             }
             if (change.userData) {

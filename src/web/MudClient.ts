@@ -13,6 +13,7 @@ import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings"
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
+import {OFFSET_REPORT_STEP_MS, ProxyClockOffset} from "./proxyClockOffset";
 import {
     base64Codec,
     createGmcpStream,
@@ -58,6 +59,9 @@ const USER_PROXY_URL_STORAGE_KEY = 'userProxyUrl';
 // radio back up, and a lost packet costs another retransmit on top. Silence for
 // a few seconds there is normal, not proof of a dead socket.
 const CONNECTION_CHECK_TIMEOUT_MS = 8000;
+// Drift worth mentioning in the console: the correction handles it, but a gap this wide
+// means one of the two machines has its clock wrong and someone may want to know.
+const LARGE_CLOCK_OFFSET_MS = 2000;
 // Consecutive unanswered probes before we accept the socket is gone. Getting this
 // wrong is not symmetric: hanging up on a live connection costs the user their
 // session and a manual re-login, while being slow to notice a dead one costs them
@@ -132,6 +136,16 @@ class MudClient implements ClientAdapter {
     // missed — it cannot tell on its own, since a socket accepts writes long after the
     // page behind it has stopped reading them.
     private processedBytes = 0;
+    // How far the proxy clock runs ahead of ours, learned from the frames themselves.
+    // Frame timestamps are another machine's wall clock, and every timer built on them
+    // ticks against this one, so the two have to be reconciled before a timestamp is let
+    // anywhere near a script. See proxyClockOffset.ts.
+    private readonly clockOffset = new ProxyClockOffset();
+    // The last offset announced on the bus, so a stream of frames does not announce the
+    // same estimate over and over.
+    private reportedClockOffset: number | null = null;
+    // Whether this connection has already said out loud that the drift is large.
+    private clockOffsetWarned = false;
 
     constructor() {
         this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
@@ -375,6 +389,11 @@ class MudClient implements ClientAdapter {
         this.closeCause = 'remote';
         this.mccpHandler.reset();
         this.echoHandler.reset();
+        // A reconnect may be to a different proxy, and the first control frame reseeds
+        // this within a round trip anyway.
+        this.clockOffset.reset();
+        this.reportedClockOffset = null;
+        this.clockOffsetWarned = false;
         this.gmcpInitialized = false;
         this.textDecoder = new TextDecoder('utf-8', {fatal: false});
         this.pendingSubneg = "";
@@ -406,6 +425,11 @@ class MudClient implements ClientAdapter {
                     // Anything at all from the server proves the socket is alive.
                     this.clearConnectionCheck();
 
+                    // Sampled before the timestamp is used, so the control frame that
+                    // opens every attach - the one frame guaranteed to be live - seeds
+                    // the estimate for the backlog replayed right behind it.
+                    const at = frame.at === undefined ? undefined : this.trackClockOffset(frame.at);
+
                     if (frame.control) {
                         // Session metadata, not game output: never goes near the
                         // trigger pipeline.
@@ -433,10 +457,10 @@ class MudClient implements ClientAdapter {
                     // moment we happened to read the frame: `socket.incoming` feeds the
                     // recorder, which would otherwise record a resumed session with its
                     // gaps flattened, and processIncomingData carries it on to triggers.
-                    runWithEventTime(frame.at, () => {
+                    runWithEventTime(at, () => {
                         this.emit('socket.incoming', data);
                         try {
-                            this.processIncomingData(data, frame.at ? {timestamp: frame.at} : undefined);
+                            this.processIncomingData(data, at ? {timestamp: at} : undefined);
                         } catch (processingError) {
                             console.error('Error during trigger processing:', processingError);
                             console.error('Line was recorded but not processed:', data.substring(0, 100));
@@ -640,6 +664,35 @@ class MudClient implements ClientAdapter {
         // turn on base64 encoding for gmcp_msgs so its text decodes consistently.
         this.sendGmcp('Core.Supports.Add', ['Objects 1', 'Gmcp_msgs 1', 'Mail 1']);
         this.sendGmcp('Core.Options.Set', ['base64_gmcp_msgs']);
+    }
+
+    /**
+     * Fold a proxy frame's timestamp onto this machine's clock, updating the offset
+     * estimate with it on the way through.
+     *
+     * The proxy stamps frames with its own wall clock and nothing keeps the two machines
+     * in step, so a proxy running fast hands scripts event times in the future: cover
+     * stamps its deadline with client.now() and ticks it against Date.now(), and a
+     * five-second skew turns a five-second cooldown into a ten-second one. Correcting
+     * here rather than in each script means one site for every consumer of the event
+     * clock, and leaves replay exactly as it was - a backlog frame stays as old as it
+     * really is, because both its stamp and the correction come from the same clock.
+     */
+    private trackClockOffset(frameAt: number): number {
+        const offset = this.clockOffset.sample(frameAt);
+        if (this.reportedClockOffset === null
+            || Math.abs(offset - this.reportedClockOffset) >= OFFSET_REPORT_STEP_MS) {
+            this.reportedClockOffset = offset;
+            this.emit('proxy.clockOffset', offset);
+        }
+        if (!this.clockOffsetWarned && Math.abs(offset) >= LARGE_CLOCK_OFFSET_MS) {
+            // Corrected either way. Said once because a gap this wide is a machine with
+            // a wrong clock, and that is worth seeing in a console log rather than
+            // inferring from timers that read oddly.
+            this.clockOffsetWarned = true;
+            console.warn(`[MudClient] proxy clock differs from ours by ${Math.round(offset / 1000)}s; event times corrected`);
+        }
+        return this.clockOffset.toLocal(frameAt);
     }
 
     /**

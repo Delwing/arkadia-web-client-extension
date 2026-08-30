@@ -162,7 +162,7 @@ Klient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspek
 
 **Sledzenie:** postepy (zabici, zlecenia, staz), kontrakty, dostawy, licznik usprawnien, wyroznienie, profesja
 
-**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, toniety, labirynty (Raon, Rinde)
+**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, labirynty (Raon, Rinde, Taragorn)
 
 **Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki
 

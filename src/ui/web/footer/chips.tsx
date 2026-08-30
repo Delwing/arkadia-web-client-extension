@@ -227,6 +227,45 @@ export function CoverChip() {
   );
 }
 
+/**
+ * Round-trip time to the game, plus how far the session proxy's clock sits from ours.
+ *
+ * A diagnostic pair rather than anything to play by, which is why the chip is hidden
+ * unless the player turns it on. The drift half only appears on the session proxy, and
+ * only matters because event times come from that machine's clock: MudClient folds the
+ * skew out before any script sees a timestamp, and this is where you can see how much
+ * it is folding out.
+ */
+export function ConnectionChip() {
+  const [ping, setPing] = useState<number | null>(null);
+  const [offset, setOffset] = useState<number | null>(null);
+  useClientEvent<number | null>("ping", (v) => setPing(typeof v === "number" ? v : null));
+  useClientEvent<number>("proxy.clockOffset", (v) => setOffset(typeof v === "number" ? v : null));
+  if (ping == null && offset == null) return null;
+  const drift = offset == null ? null : offset / 1000;
+  // Sub-half-second drift is the network delay this is measured through, not a clock
+  // worth reporting, so the chip only changes colour past that.
+  const tone: ChipTone | undefined = offset != null && Math.abs(offset) >= 2000
+    ? "danger"
+    : offset != null && Math.abs(offset) >= 500
+      ? "warn"
+      : ping != null && ping >= 400
+        ? "warn"
+        : "ok";
+  const parts: string[] = [];
+  if (ping != null) parts.push(`${Math.round(ping)}ms`);
+  if (drift != null) parts.push(`${drift >= 0 ? "+" : ""}${drift.toFixed(1)}s`);
+  return (
+    <Chip
+      icon={<ChipIcon name="signal" />}
+      label="Lacze"
+      value={parts.join(" ")}
+      tone={tone}
+      title={drift == null ? "Ping" : "Ping i zegar proxy wzgledem tego komputera"}
+    />
+  );
+}
+
 /** Team-order cooldown (leader only). */
 export function OrderChip() {
   const [leader, setLeader] = useState(false);

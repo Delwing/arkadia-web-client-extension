@@ -16,7 +16,8 @@ import {
   MailStatus,
   WeaponState,
   TeamPanel,
-  PlaybackControls
+  PlaybackControls,
+  ConnectionStatus
 } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
 import MultiBindStrip from "./footer/MultiBindStrip";
@@ -49,6 +50,7 @@ export const mountMigratedComponents = (): MountResult => {
     { id: "mail-status", Component: MailStatus },
     { id: "weapon-state", Component: WeaponState },
     { id: "team-panel", Component: TeamPanel },
+    { id: "connection-status", Component: ConnectionStatus },
   ];
 
   componentConfigs.forEach(({ id, Component }) => {

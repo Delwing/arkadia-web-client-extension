@@ -7,3 +7,4 @@ export { PackageStatus } from "./PackageStatus";
 export { MailStatus } from "./MailStatus";
 export { WeaponState } from "./WeaponState";
 export { PlaybackControls } from "./PlaybackControls";
+export { ConnectionStatus } from "./ConnectionStatus";

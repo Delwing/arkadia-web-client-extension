@@ -78,6 +78,14 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M10 5.6V10l3 2" />
     </>
   ),
+  signal: (
+    <>
+      <path d="M4 13v3" />
+      <path d="M8 10.5v5.5" />
+      <path d="M12 8v8" />
+      <path d="M16 5v11" />
+    </>
+  ),
   banner: (
     <>
       <path d="M6 3v14.5" />

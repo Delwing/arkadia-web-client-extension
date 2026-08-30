@@ -37,6 +37,8 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'combat-timer', visible: true, order: 12 },
     { id: 'world-destruction-timer', visible: true, order: 13 },
     { id: 'team-panel', visible: true, order: 14 },
+    // Off by default: a diagnostic, not something to watch while playing.
+    { id: 'connection-status', visible: false, order: 15 },
 ];
 
 /** Stock-UI chrome defaults (this UI only); references the stock footer list. */

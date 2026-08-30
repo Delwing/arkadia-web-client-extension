@@ -208,6 +208,7 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |
 | `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |
 | `/raon_mapa` | Przelacz mapper Labiryntu Raon |
+| `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |
 
 ## Odswiezanie danych
 

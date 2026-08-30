@@ -423,6 +423,12 @@ export interface KnownEvents {
     "socket.incoming": string;
     /** Session metadata from the resumable proxy: whether we resumed, what was lost. */
     "proxy.session": import("@shared/socket").SessionControl;
+    /**
+     * Milliseconds the session proxy clock runs ahead of this machine (negative: behind),
+     * estimated from frame timestamps. Diagnostic - the correction itself is applied in
+     * MudClient before any script sees an event time.
+     */
+    "proxy.clockOffset": number;
     "socket.outgoing": string;
     "telnet.echo": boolean;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];
