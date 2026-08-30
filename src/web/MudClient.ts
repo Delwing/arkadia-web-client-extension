@@ -102,9 +102,12 @@ class MudClient implements ClientAdapter {
     // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
     // partial multi-byte char across WebSocket frames.
     private textDecoder = new TextDecoder('utf-8', {fatal: false});
-    // Start of a subnegotiation that arrived without its closing IAC SE, held
-    // until the next frame completes it.
+    // Start of a telnet sequence the frame boundary cut in half — an open
+    // subnegotiation or a truncated command — held until the next frame completes it.
     private pendingSubneg = "";
+    // Last two bytes of the previous frame, so the negotiation scan can still see a
+    // three-byte IAC WILL X the transport split across frames.
+    private negotiationCarry = "";
     // Text after the last '\n' of a frame, held back until the next frame
     // continues the line, a prompt (IAC GA/EOR) arrives, or the idle timer
     // fires — prevents spurious line breaks when a line is split across frames.
@@ -397,6 +400,7 @@ class MudClient implements ClientAdapter {
         this.gmcpInitialized = false;
         this.textDecoder = new TextDecoder('utf-8', {fatal: false});
         this.pendingSubneg = "";
+        this.negotiationCarry = "";
         this.pendingLineTail = "";
         this.pendingMsgTails.clear();
         this.gaDriver = false;
@@ -448,11 +452,19 @@ class MudClient implements ClientAdapter {
                     if (decodedData.length === 0) return;
                     // Decompress MCCP data before any other processing
                     const data = this.mccpHandler.processData(decodedData);
-                    if (data.includes(GMCP_WILL)) {
+                    // Negotiation is a byte-scan over a stream the transport may cut
+                    // anywhere, so carry the last two bytes into the next frame: a
+                    // three-byte IAC WILL X split across frames is invisible to either
+                    // half alone, and losing the game's one WILL GMCP costs the whole
+                    // session's GMCP. Two carried bytes cannot hold a whole sequence,
+                    // so nothing is ever answered twice.
+                    const negotiable = this.negotiationCarry + data;
+                    this.negotiationCarry = negotiable.slice(-2);
+                    if (negotiable.includes(GMCP_WILL)) {
                         this.sendRaw(GMCP_DO);
                         this.negotiateGmcpSupports();
                     }
-                    this.echoHandler.processData(data);
+                    this.echoHandler.processData(negotiable);
                     // Everything downstream of here runs on the server's clock, not the
                     // moment we happened to read the frame: `socket.incoming` feeds the
                     // recorder, which would otherwise record a resumed session with its
@@ -491,6 +503,7 @@ class MudClient implements ClientAdapter {
                 this.mccpHandler.reset();
                 this.echoHandler.reset();
                 this.pendingSubneg = "";
+                this.negotiationCarry = "";
                 this.pendingLineTail = "";
                 this.pendingMsgTails.clear();
                 this.clearTailTimer();
@@ -774,9 +787,10 @@ class MudClient implements ClientAdapter {
         const data = this.pendingSubneg + rawData;
         this.pendingSubneg = "";
 
-        // Hold back a subnegotiation that arrived without its closing IAC SE so
-        // stripTelnetSequences doesn't mangle a half-frame GMCP/MCCP packet.
-        const incompleteAt = findIncompleteSubnegStart(data);
+        // Hold back a telnet sequence the frame boundary cut in half — an open
+        // subnegotiation, or a command missing its tail — so stripTelnetSequences
+        // doesn't mangle a half-frame GMCP/MCCP packet.
+        const incompleteAt = findIncompleteTelnetStart(data);
         let processable = data;
         if (incompleteAt !== -1) {
             this.pendingSubneg = data.substring(incompleteAt);
@@ -953,12 +967,18 @@ class MudClient implements ClientAdapter {
 }
 
 /**
- * Index of the first IAC SB (subnegotiation start) that has no matching IAC SE
- * later in the string, or -1 if every subnegotiation is complete. Used to detect
- * a GMCP/MCCP subnegotiation split across WebSocket frames so it can be held
- * back until the closing IAC SE arrives.
+ * Index at which this batch stops being safely processable: the first IAC SB
+ * (subnegotiation start) with no matching IAC SE later in the string, or a telnet
+ * command the frame boundary cut in half at the very end. -1 when everything in
+ * the batch is complete.
+ *
+ * The transport hands over whatever bytes the TCP stream gave it, so a packet can
+ * be cut anywhere — including between the IAC and the SB that follows it, or
+ * between IAC WILL and its option byte. A head that short matches nothing in
+ * stripTelnetSequences, which then drops the stray IAC and renders the remainder
+ * as game text: that is how a raw `char.state {...}` reaches the main output.
  */
-function findIncompleteSubnegStart(data: string): number {
+function findIncompleteTelnetStart(data: string): number {
     const IAC = 0xFF;
     const SB = 0xFA;
     const SE = 0xF0;
@@ -979,6 +999,16 @@ function findIncompleteSubnegStart(data: string): number {
         } else {
             i++;
         }
+    }
+
+    // Nothing is left open, but the batch may still end mid-command. A trailing
+    // IAC could turn into anything once the next frame lands, and IAC
+    // WILL/WONT/DO/DONT is still missing its option byte — hold either back.
+    const last = data.length - 1;
+    if (last >= 0 && data.charCodeAt(last) === IAC) return last;
+    if (last >= 1 && data.charCodeAt(last - 1) === IAC) {
+        const command = data.charCodeAt(last);
+        if (command >= 0xFB && command <= 0xFE) return last - 1;
     }
     return -1;
 }
