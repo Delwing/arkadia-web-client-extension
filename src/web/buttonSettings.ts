@@ -8,6 +8,7 @@ export type MacroType =
     | 'command'
     | 'specialExit'
     | 'kierunek'
+    | 'zerknij'
     | 'wesprzyj'
     | 'moveMode'
     | 'toggleButtons'
@@ -73,6 +74,7 @@ export const macroOptions: { value: MacroType; label: string }[] = [
     { value: "command", label: "Wyślij komendę" },
     { value: "kierunek", label: "Kierunek" },
     { value: "specialExit", label: "Wyjście specjalne" },
+    { value: "zerknij", label: "Zerknij / zatrzymaj pojazd" },
     { value: "wesprzyj", label: "Wesprzyj prowadzącego" },
     { value: "moveMode", label: "Tryb ruchu" },
     { value: "toggleButtons", label: "Przełącz przyciski" },

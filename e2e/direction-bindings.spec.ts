@@ -72,6 +72,23 @@ test.describe('Direction key bindings', () => {
         await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zerknij');
     });
 
+    test('the mobile "zerknij" button halts the carriage and looks again once it stops', async ({page}) => {
+        const zerknijButton = page.locator('#mobile-direction-buttons #c-button');
+        await expect(zerknijButton).toBeVisible();
+
+        await pushText(page, 'Siadasz na nieduzym jednokonnym wozie.');
+        await pushText(page, 'Nieduzy jednokonny woz rusza na zachod.');
+
+        await resetCommands(page);
+        await zerknijButton.click();
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zatrzymaj woz');
+
+        await pushText(page, 'Nieduzy jednokonny woz zatrzymuje sie.');
+        await resetCommands(page);
+        await zerknijButton.click();
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zerknij');
+    });
+
     test('direction keys do NOT fire when a modal is open', async ({page}) => {
         await resetCommands(page);
 
