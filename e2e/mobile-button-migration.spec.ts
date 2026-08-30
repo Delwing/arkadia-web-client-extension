@@ -2,6 +2,7 @@ import { expect, test } from './support/fixtures';
 import {
     ensureGameSocket,
     getCommandLog,
+    pushText,
     resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
@@ -21,7 +22,7 @@ test.describe('Mobile button settings migration (macro → macroType)', () => {
                             label: 'Test',
                             color: '#6EB4DC',
                             fontColor: '#f1f5f9',
-                            command: 'zerknij',
+                            command: 'ekwipunek',
                         },
                         'button-2': {
                             macro: 'compound',
@@ -29,7 +30,7 @@ test.describe('Mobile button settings migration (macro → macroType)', () => {
                             color: '#6EB4DC',
                             fontColor: '#f1f5f9',
                             steps: [
-                                { macro: 'command', command: 'zerknij' },
+                                { macro: 'command', command: 'ekwipunek' },
                                 { macro: 'kierunek', direction: 'n' },
                             ],
                         },
@@ -42,7 +43,7 @@ test.describe('Mobile button settings migration (macro → macroType)', () => {
                             holdEnabled: true,
                             hold: {
                                 macro: 'command',
-                                command: 'zerknij',
+                                command: 'spojrz',
                             },
                         },
                     },
@@ -144,5 +145,51 @@ test.describe('Mobile button settings migration (macro → macroType)', () => {
             async () => await getCommandLog(page),
             { message: 'should send command after migration', timeout: 5000 }
         ).toEqual(expect.arrayContaining(['zerknij']));
+    });
+
+    test('an old "zerknij" command button becomes the zerknij macro and halts the carriage', async ({ page }) => {
+        await page.addInitScript(() => {
+            const settings = {
+                solo: {
+                    buttons: {
+                        'button-1': {
+                            macroType: 'command',
+                            label: 'Zerknij',
+                            color: '#6EB4DC',
+                            fontColor: '#f1f5f9',
+                            command: 'zerknij',
+                        },
+                    },
+                    order: ['button-1'],
+                    cols: 1,
+                    background: 'rgba(135, 206, 235, 0.7)',
+                },
+                team: { buttons: {}, order: [], cols: 4, background: 'rgba(135, 206, 235, 0.7)' },
+                leader: { buttons: {}, order: [], cols: 4, background: 'rgba(135, 206, 235, 0.7)' },
+                locked: true,
+                radial: { enabled: true, commands: [] },
+            };
+            localStorage.setItem('mobileButtonSettings', JSON.stringify(settings));
+        });
+
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('mobileButtonSettings')!));
+        expect(stored.solo.buttons['button-1'].macroType).toBe('zerknij');
+
+        await pushText(page, 'Siadasz na nieduzym jednokonnym wozie.');
+        await pushText(page, 'Nieduzy jednokonny woz rusza na zachod.');
+        await resetCommandLog(page);
+
+        const btn = page.locator('#button-1');
+        await expect(btn).toBeVisible({ timeout: 5000 });
+        await btn.click();
+
+        await expect.poll(
+            async () => await getCommandLog(page),
+            { message: 'migrated button should halt the carriage', timeout: 5000 }
+        ).toEqual(expect.arrayContaining(['zatrzymaj woz']));
     });
 });

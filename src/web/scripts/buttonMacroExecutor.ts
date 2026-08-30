@@ -4,6 +4,7 @@ import {
     executeButtonMacro,
     type AnyButtonSetting,
 } from "@modules/core/pluginButtonMacroRegistry";
+import { lookCommand } from "@client/scripts/directionBinds";
 export const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
 export const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
@@ -59,6 +60,10 @@ export function executeMacro(
             } else if (config.direction) {
                 client.sendCommand(config.direction);
             }
+            break;
+        case 'zerknij':
+            // Same slot as the numpad "zerknij" key: looks around, halts the carriage mid-ride.
+            client.sendCommand(lookCommand(client));
             break;
         case 'specialExit': {
             const specialExits = client.Map.currentRoom?.specialExits ?? {};

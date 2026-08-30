@@ -74,11 +74,20 @@ function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding
         event.shiftKey === !!binding.shift;
 }
 
+/**
+ * What the "zerknij" slot does right now: mid-ride it halts the carriage - looking around is not
+ * what you reach for while rolling. The stop command is published by the carriage script and is
+ * null whenever nothing is rolling, so off a ride this is a plain `zerknij`.
+ *
+ * Shared with the `zerknij` button macro so the button and the key behave identically.
+ */
+export function lookCommand(client: Client): string {
+    return client.carriageStopCommand ?? 'zerknij';
+}
+
 function sendDirection(client: Client, direction: string): void {
-    // Mid-ride the look key halts the carriage instead. The command is published by the carriage
-    // script and is null whenever nothing is rolling, so outside a ride this is a no-op.
-    if (direction === 'zerknij' && client.carriageStopCommand) {
-        client.sendCommand(client.carriageStopCommand);
+    if (direction === 'zerknij') {
+        client.sendCommand(lookCommand(client));
         return;
     }
     if (direction === 'special') {

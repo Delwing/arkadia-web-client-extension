@@ -4,6 +4,8 @@ import {
     getLatestMigrationVersion,
     migrateImportedValue,
     migrateMobileButtonMacroData,
+    migrateZerknijButtonMacro,
+    migrateZerknijButtonMacroData,
 } from '@modules/core/settingsMigrations';
 import type { Settings } from '@modules/core/defaultSettings';
 
@@ -200,6 +202,89 @@ describe('settingsMigrations', () => {
         it('handles non-object input without throwing', () => {
             expect(migrateMobileButtonMacroData(null).changed).toBe(false);
             expect(migrateMobileButtonMacroData('x').changed).toBe(false);
+        });
+    });
+
+    describe('migration v11: zerknij command buttons become the zerknij macro', () => {
+        it('converts a mobile button that sends a literal zerknij', () => {
+            const input = {
+                solo: {
+                    buttons: {
+                        'c-button': { macroType: 'command', command: 'zerknij', label: 'zerknij' },
+                        'go-button': { macroType: 'command', command: '/go', label: '/go' },
+                    },
+                },
+            };
+
+            const { data, changed } = migrateZerknijButtonMacroData(input);
+
+            expect(changed).toBe(true);
+            expect(data.solo.buttons['c-button']).toMatchObject({ macroType: 'zerknij', command: '' });
+            expect(data.solo.buttons['go-button']).toMatchObject({ macroType: 'command', command: '/go' });
+            // Original left intact
+            expect(input.solo.buttons['c-button'].macroType).toBe('command');
+        });
+
+        it('reaches hold configs, compound steps and desktop button arrays', () => {
+            const input = {
+                buttons: [
+                    {
+                        id: 'b1',
+                        macroType: 'compound',
+                        command: '',
+                        steps: [{ macroType: 'command', command: ' Zerknij ' }],
+                        hold: { macroType: 'command', command: 'zerknij' },
+                    },
+                ],
+            };
+
+            const { data, changed } = migrateZerknijButtonMacroData(input);
+
+            expect(changed).toBe(true);
+            expect(data.buttons[0].steps[0].macroType).toBe('zerknij');
+            expect(data.buttons[0].hold.macroType).toBe('zerknij');
+        });
+
+        it('leaves multi-command buttons alone', () => {
+            const input = { solo: { buttons: { b: { macroType: 'command', command: 'zerknij\nekwipunek' } } } };
+            expect(migrateZerknijButtonMacroData(input).changed).toBe(false);
+        });
+
+        it('handles non-object input without throwing', () => {
+            expect(migrateZerknijButtonMacroData(null).changed).toBe(false);
+            expect(migrateZerknijButtonMacroData('x').changed).toBe(false);
+        });
+
+        it('rewrites stored mobile and desktop button settings once', () => {
+            localStorage.setItem('mobileButtonSettings', JSON.stringify({
+                solo: { buttons: { 'c-button': { macroType: 'command', command: 'zerknij' } } },
+            }));
+            localStorage.setItem('desktopButtonSettings', JSON.stringify({
+                buttons: [{ id: 'b1', macroType: 'command', command: 'zerknij' }],
+            }));
+
+            migrateZerknijButtonMacro();
+
+            expect(JSON.parse(localStorage.getItem('mobileButtonSettings')!)
+                .solo.buttons['c-button'].macroType).toBe('zerknij');
+            expect(JSON.parse(localStorage.getItem('desktopButtonSettings')!)
+                .buttons[0].macroType).toBe('zerknij');
+        });
+
+        it('is skipped once the migration version is past it', () => {
+            localStorage.setItem('settingsMigrationsVersion', String(getLatestMigrationVersion()));
+            const stored = JSON.stringify({ solo: { buttons: { b: { macroType: 'command', command: 'zerknij' } } } });
+            localStorage.setItem('mobileButtonSettings', stored);
+
+            migrateZerknijButtonMacro();
+
+            expect(localStorage.getItem('mobileButtonSettings')).toBe(stored);
+        });
+
+        it('migrates imported button settings', () => {
+            const raw = JSON.stringify({ buttons: [{ id: 'b1', macroType: 'command', command: 'zerknij' }] });
+            const migrated = JSON.parse(migrateImportedValue('desktopButtonSettings', raw));
+            expect(migrated.buttons[0].macroType).toBe('zerknij');
         });
     });
 
