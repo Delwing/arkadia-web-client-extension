@@ -48,7 +48,7 @@ export function createDefaultSettings(): DesktopButtonsSettings {
 
 const validMacroTypes: MacroType[] = [
     'functional', 'zList', 'zaList', 'wList', 'przeList', 'idzList',
-    'command', 'specialExit', 'kierunek', 'wesprzyj', 'moveMode',
+    'command', 'specialExit', 'kierunek', 'zerknij', 'wesprzyj', 'moveMode',
     'toggleButtons', 'attackEnemy', 'blockEnemy', 'attackAllEnemies', 'mute', 'unmute', 'empty', 'compound'
 ];
 

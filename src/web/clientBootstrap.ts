@@ -12,6 +12,7 @@ import {
     migrateLayoutManagerState,
     migrateMobileButtonMacroField,
     migrateUiSettingsSplit,
+    migrateZerknijButtonMacro,
     runAllSettingsMigrations,
 } from "@modules/core/settingsMigrations";
 import { bridgeSendCommand, bridgeNpcStore } from "./clientBootstrapBridges";
@@ -42,6 +43,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // Split uiSettings into concern-scoped keys before runAllSettingsMigrations()
     // bumps the version counter past this migration's gate.
     migrateUiSettingsSplit();
+    migrateZerknijButtonMacro();
     runAllSettingsMigrations();
     migrateButtonSizeMultiplier();
     migrateFooterComponentVisibility();

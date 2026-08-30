@@ -8,34 +8,31 @@ function makeClient(carriageStopCommand: string | null) {
     };
 }
 
-describe('button "zerknij" macro', () => {
-    test('halts the carriage mid-ride instead of looking around', () => {
-        const client = makeClient('zatrzymaj woz');
-        executeMacro(client as never, 'command', { command: 'zerknij' } as never);
-        expect(client.sendCommand).toHaveBeenCalledWith('zatrzymaj woz');
-    });
-
+describe('zerknij button macro', () => {
     test('looks around when nothing is rolling', () => {
         const client = makeClient(null);
-        executeMacro(client as never, 'command', { command: 'zerknij' } as never);
+        executeMacro(client as never, 'zerknij', { macroType: 'zerknij' });
         expect(client.sendCommand).toHaveBeenCalledWith('zerknij');
     });
 
-    test('only the zerknij line of a multi-command button is redirected', () => {
+    test('halts the carriage mid-ride, like the numpad key', () => {
+        const client = makeClient('zatrzymaj woz');
+        executeMacro(client as never, 'zerknij', { macroType: 'zerknij' });
+        expect(client.sendCommand).toHaveBeenCalledWith('zatrzymaj woz');
+    });
+
+    test('as a compound step it halts the carriage too', () => {
         const client = makeClient('zatrzymaj bryczke');
-        executeMacro(client as never, 'command', { command: 'zerknij\nekwipunek' } as never);
+        executeMacro(client as never, 'compound', {
+            macroType: 'compound',
+            steps: [{ macroType: 'zerknij' }, { macroType: 'command', command: 'ekwipunek' }],
+        });
         expect(client.sendCommand.mock.calls.flat()).toEqual(['zatrzymaj bryczke', 'ekwipunek']);
     });
 
-    test('a kierunek button bound to zerknij halts the carriage too', () => {
-        const client = makeClient('zatrzymaj dylizans');
-        executeMacro(client as never, 'kierunek', { direction: 'zerknij' } as never);
-        expect(client.sendCommand).toHaveBeenCalledWith('zatrzymaj dylizans');
-    });
-
-    test('other direction buttons are untouched while riding', () => {
+    test('a plain command button is left alone even while riding', () => {
         const client = makeClient('zatrzymaj woz');
-        executeMacro(client as never, 'kierunek', { direction: 'polnoc' } as never);
-        expect(client.sendCommand).toHaveBeenCalledWith('polnoc');
+        executeMacro(client as never, 'command', { macroType: 'command', command: 'zerknij' });
+        expect(client.sendCommand).toHaveBeenCalledWith('zerknij');
     });
 });

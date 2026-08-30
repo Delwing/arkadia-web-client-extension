@@ -79,7 +79,7 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
         command: 'w',
         direction: 'w',
     },
-    'c-button': { macroType: 'command', label: 'zerknij', color: '#6CA6CD', fontColor: defaultFontColor, command: 'zerknij' },
+    'c-button': { macroType: 'zerknij', label: 'zerknij', color: '#6CA6CD', fontColor: defaultFontColor },
     'e-button': {
         macroType: 'kierunek',
         label: '→',

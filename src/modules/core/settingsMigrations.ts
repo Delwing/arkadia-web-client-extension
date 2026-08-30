@@ -121,6 +121,11 @@ const migrations: Migration[] = [
         description: 'Split uiSettings into shell/render/map/behavior keys (handled by migrateUiSettingsSplit)',
         migrate: settings => settings, // No-op for core Settings; actual migration is below
     },
+    {
+        version: 11,
+        description: 'Convert "zerknij" command buttons to the zerknij macro (handled by migrateZerknijButtonMacro)',
+        migrate: settings => settings, // No-op for core Settings; actual migration is below
+    },
 ];
 
 /**
@@ -252,7 +257,12 @@ export function migrateImportedValue(baseKey: string, raw: string): string {
             return JSON.stringify(migrateSettings(parsed, 0).settings);
         }
         if (baseKey === 'mobileButtonSettings') {
-            const { data, changed } = migrateMobileButtonMacroData(JSON.parse(raw));
+            const renamed = migrateMobileButtonMacroData(JSON.parse(raw));
+            const zerknij = migrateZerknijButtonMacroData(renamed.data);
+            return renamed.changed || zerknij.changed ? JSON.stringify(zerknij.data) : raw;
+        }
+        if (baseKey === 'desktopButtonSettings') {
+            const { data, changed } = migrateZerknijButtonMacroData(JSON.parse(raw));
             return changed ? JSON.stringify(data) : raw;
         }
         if (baseKey === 'uiSettings') {
@@ -465,6 +475,63 @@ export function migrateMobileButtonMacroData(input: unknown): { data: any; chang
     }
 
     return { data, changed };
+}
+
+/**
+ * Pure transform for migration v11: turn buttons that send a literal `zerknij` into the dedicated
+ * `zerknij` macro, which halts the carriage mid-ride exactly like the numpad key. Walks any button
+ * config shape - mobile layouts (solo/team/leader or the legacy flat form), the desktop button
+ * array, hold configs and compound steps - by looking for `macroType` anywhere in the tree.
+ * Operates on a clone and reports whether anything changed.
+ */
+export function migrateZerknijButtonMacroData(input: unknown): { data: any; changed: boolean } {
+    if (!input || typeof input !== 'object') {
+        return { data: input, changed: false };
+    }
+
+    const data: any = structuredClone(input);
+    let changed = false;
+
+    const visit = (node: any): void => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) {
+            node.forEach(visit);
+            return;
+        }
+        if (node.macroType === 'command' && typeof node.command === 'string'
+            && node.command.trim().toLowerCase() === 'zerknij') {
+            node.macroType = 'zerknij';
+            // Desktop buttons type `command` as required, so blank it rather than dropping it.
+            node.command = '';
+            changed = true;
+        }
+        Object.values(node).forEach(visit);
+    };
+
+    visit(data);
+    return { data, changed };
+}
+
+export function migrateZerknijButtonMacro(): void {
+    const currentVersion = getMigrationsVersion();
+
+    // This is migration version 11
+    if (currentVersion >= 11) {
+        return;
+    }
+
+    for (const key of ['mobileButtonSettings', 'desktopButtonSettings'] as const) {
+        try {
+            const raw: any = globalStorage.get(key);
+            const { data, changed } = migrateZerknijButtonMacroData(raw);
+            if (changed) {
+                globalStorage.set(key, data);
+                console.log(`[SettingsMigrations] Converted "zerknij" command buttons to the zerknij macro in ${key}`);
+            }
+        } catch (e) {
+            console.error(`[SettingsMigrations] Failed to migrate zerknij buttons in ${key}:`, e);
+        }
+    }
 }
 
 export function migrateMobileButtonMacroField(): void {
