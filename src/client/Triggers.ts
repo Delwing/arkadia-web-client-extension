@@ -240,6 +240,11 @@ export default class Triggers {
      * reprocesses all of `line.text` rather than what it matched has the same problem
      * without the regex.
      *
+     * The split runs the other way too: one logical message may arrive over several frames,
+     * so a long reply can be cut short and continue in the next one. A callback that needs
+     * all of it has to collect across frames — whoCount keeps the kto reply open until a
+     * line ends it — rather than treat every frame as a whole message.
+     *
      * Text a multiline callback inserts does not disturb single-line matching: Client.onLine
      * carries the pristine per-line text into the per-line pass.
      */

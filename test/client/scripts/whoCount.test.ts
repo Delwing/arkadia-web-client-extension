@@ -1,4 +1,7 @@
-import { parseKtoNames, sliceKtoBody } from '@client/scripts/whoCount';
+import { vi } from 'vitest';
+import Client from '@client/Client';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import initWhoCount, { parseKtoNames, sliceKtoBody, takeKtoBody } from '@client/scripts/whoCount';
 
 describe('parseKtoNames', () => {
     describe('empty input', () => {
@@ -210,5 +213,109 @@ describe('sliceKtoBody', () => {
         // The cut is per line, not per character: a period late in a line still
         // discards that whole line rather than half of it.
         expect(sliceKtoBody('Zorlan   Norvath\nCos sie stalo. I jeszcze cos')).toBe('Zorlan   Norvath');
+    });
+});
+
+describe('takeKtoBody', () => {
+    it('reports the reply as still open when no line ends it', () => {
+        expect(takeKtoBody('Zorlan   Norvath\nDrevos   Halven')).toEqual({
+            body: 'Zorlan   Norvath\nDrevos   Halven',
+            ended: false,
+        });
+    });
+
+    it('reports the reply as ended at the first line with a period', () => {
+        expect(takeKtoBody('Zorlan   Norvath\nKot siedzi.\nDrevos')).toEqual({
+            body: 'Zorlan   Norvath',
+            ended: true,
+        });
+    });
+});
+
+describe('a kto reply split across frames', () => {
+    const HEADER = 'Sposrod czterdziestu trzech osob przebywajacych obecnie w swiecie Arkadii, znane tobie to:';
+    const ROW1 = 'Zorlan     Brackov    Yendrel';
+    const ROW2 = 'Drevos     Halven     Corvath';
+    const ROOM = 'Kot siedzi na plocie.';
+
+    function createClient(output: (buffer: AnsiAwareBuffer) => void = () => {}): Client {
+        const client = new Client({
+            send: () => {},
+            output,
+            sendGmcp: () => {},
+            flushMessageBuffer: () => {},
+            emit: () => {},
+            shouldEchoCommand: () => true,
+        });
+        initWhoCount(client);
+        return client;
+    }
+
+    const render = (parts: AnsiAwareBuffer[]) => parts.map(p => p.text).join('\n');
+
+    it('remembers the names below the cut instead of reading them as departures', () => {
+        const client = createClient();
+
+        // First reply arrives in two frames — the second one carries the tail.
+        client.onLine(`${HEADER}\n${ROW1}\n`, 'text');
+        client.onLine(`${ROW2}\n${ROOM}`, 'text');
+
+        // Nobody came or went, so the next reply must be undecorated.
+        const out = render(client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'text'));
+        expect(out).not.toContain('Zakonczyli');
+        expect(out).not.toContain('+ ');
+    });
+
+    it('marks an arrival that only shows up in the continuation frame', () => {
+        const client = createClient();
+        client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'text');
+
+        client.onLine(`${HEADER}\n${ROW1}\n`, 'text');
+        const out = render(client.onLine([`${ROW2}    Nowicjusz`, ROOM].join('\n'), 'text'));
+
+        expect(out).toContain('+ Nowicjusz');
+        expect(out).not.toContain('Zakonczyli');
+    });
+
+    it('holds the departure list back until the reply is whole', () => {
+        const client = createClient();
+        client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'text');
+
+        const first = render(client.onLine(`${HEADER}\n${ROW1}\n`, 'text'));
+        expect(first).not.toContain('Zakonczyli');
+
+        const second = render(client.onLine(['Drevos     Halven', ROOM].join('\n'), 'text'));
+        expect(second).toContain('Zakonczyli');
+        expect(second).toContain('Corvath');
+        expect(second.indexOf('Zakonczyli')).toBeLessThan(second.indexOf(ROOM));
+    });
+
+    it('closes the reply on the prompt that ends the burst', () => {
+        const client = createClient();
+        client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'text');
+
+        client.onLine(`${HEADER}\n${ROW1}\n`, 'text');
+        const out = render(client.onLine('> ', 'prompt'));
+
+        expect(out).toContain('Zakonczyli');
+        expect(out).toContain('Corvath');
+    });
+
+    it('prints the departures once nothing more arrives', () => {
+        vi.useFakeTimers();
+        try {
+            const printed: string[] = [];
+            const client = createClient(buffer => printed.push(buffer.text));
+            client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'text');
+
+            client.onLine(`${HEADER}\n${ROW1}`, 'text');
+            expect(printed.join('')).not.toContain('Zakonczyli');
+
+            vi.advanceTimersByTime(700);
+            expect(printed.join('')).toContain('Zakonczyli');
+            expect(printed.join('')).toContain('Corvath');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
