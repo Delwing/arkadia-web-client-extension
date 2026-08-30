@@ -74,11 +74,20 @@ function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding
         event.shiftKey === !!binding.shift;
 }
 
+/**
+ * Mid-ride a "zerknij" halts the carriage instead - looking around is not what you reach for while
+ * rolling. The stop command is published by the carriage script and is null whenever nothing is
+ * rolling, so outside a ride this returns null and the command goes out unchanged.
+ *
+ * Shared with the button macros so a "zerknij" button behaves exactly like the numpad key.
+ */
+export function carriageStopFor(client: Client, command: string): string | null {
+    return command.trim().toLowerCase() === 'zerknij' ? client.carriageStopCommand : null;
+}
+
 function sendDirection(client: Client, direction: string): void {
-    // Mid-ride the look key halts the carriage instead. The command is published by the carriage
-    // script and is null whenever nothing is rolling, so outside a ride this is a no-op.
-    if (direction === 'zerknij' && client.carriageStopCommand) {
-        client.sendCommand(client.carriageStopCommand);
+    if (direction === 'zerknij') {
+        client.sendCommand(carriageStopFor(client, direction) ?? direction);
         return;
     }
     if (direction === 'special') {

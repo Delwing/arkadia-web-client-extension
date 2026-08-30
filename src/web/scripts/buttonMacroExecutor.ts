@@ -4,6 +4,7 @@ import {
     executeButtonMacro,
     type AnyButtonSetting,
 } from "@modules/core/pluginButtonMacroRegistry";
+import { carriageStopFor } from "@client/scripts/directionBinds";
 export const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
 export const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
@@ -49,17 +50,18 @@ export function executeMacro(
             if (config.command) {
                 const commands = config.command.split('\n').filter(cmd => cmd.trim());
                 for (const cmd of commands) {
-                    client.sendCommand(cmd.trim());
+                    // A "zerknij" button halts the carriage mid-ride, same as the numpad key.
+                    client.sendCommand(carriageStopFor(client, cmd) ?? cmd.trim());
                 }
             }
             break;
-        case 'kierunek':
-            if (config.command) {
-                client.sendCommand(config.command);
-            } else if (config.direction) {
-                client.sendCommand(config.direction);
+        case 'kierunek': {
+            const command = config.command || config.direction;
+            if (command) {
+                client.sendCommand(carriageStopFor(client, command) ?? command);
             }
             break;
+        }
         case 'specialExit': {
             const specialExits = client.Map.currentRoom?.specialExits ?? {};
             const firstExit = Object.keys(specialExits)[0];
