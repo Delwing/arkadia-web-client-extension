@@ -109,6 +109,10 @@ export function isSessionProxyUrl(url: string | null | undefined): boolean {
  *
  * Deliberately not called when the tab is merely hidden. That is the case this whole
  * proxy exists to survive.
+ *
+ * The proxy ignores a notice sent while a client is still attached, so a caller that is
+ * not unloading has to wait for its own socket to close first — see MudClient's
+ * queueLeavingNotice.
  */
 export function announceLeaving(baseUrl: string, sessionId = getProxySessionId()): boolean {
     try {

@@ -140,7 +140,8 @@ func main() {
 			manager.remove(id)
 			log.Printf("session %s… client left; closed", short(id))
 		} else {
-			// A reload: the replacement page beat the beacon here.
+			// A reload: the replacement page beat the beacon here, and stayed attached
+			// for the grace leaving() waits out.
 			log.Printf("session %s… leaving ignored, a client is attached", short(id))
 		}
 		w.WriteHeader(http.StatusNoContent)

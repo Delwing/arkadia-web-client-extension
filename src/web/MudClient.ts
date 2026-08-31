@@ -2,6 +2,7 @@ import {ClientAdapter} from "@client/Client";
 import {
     announceLeaving,
     DEFAULT_SESSION_PROXY_URL,
+    getProxySessionId,
     isSessionProxyUrl,
     resetProxySessionId,
     sessionSubprotocols,
@@ -73,6 +74,10 @@ const CONNECTION_CHECK_MAX_PROBES = 3;
 // so a late firing says nothing about the socket and must not close it.
 // Sub-second lateness is ordinary scheduling jitter under load.
 const CONNECTION_CHECK_LATE_MS = 1500;
+// How long a deliberate disconnect waits for its socket to actually close before telling
+// the proxy the session is over anyway. The close event is the normal trigger; this only
+// covers the paths where it never arrives.
+const LEAVE_NOTICE_DELAY_MS = 1000;
 
 export type ProxyMode = 'direct' | 'helper' | 'proxy';
 
@@ -139,6 +144,10 @@ class MudClient implements ClientAdapter {
     // missed — it cannot tell on its own, since a socket accepts writes long after the
     // page behind it has stopped reading them.
     private processedBytes = 0;
+    // A "this session is over" notice owed to the proxy, held until our socket has
+    // actually closed. See queueLeavingNotice.
+    private pendingLeave: {url: string; sessionId: string} | null = null;
+    private leaveTimer: ReturnType<typeof setTimeout> | null = null;
     // How far the proxy clock runs ahead of ours, learned from the frames themselves.
     // Frame timestamps are another machine's wall clock, and every timer built on them
     // ticks against this one, so the two have to be reconciled before a timestamp is let
@@ -495,6 +504,10 @@ class MudClient implements ClientAdapter {
                     `[MudClient] socket closed: code=${event.code} clean=${event.wasClean} reason=${event.reason || '(none)'}`,
                 );
                 this.clearConnectionCheck();
+                // The proxy has seen this socket go by now, so a leaving notice owed
+                // from a deliberate disconnect can no longer be mistaken for one client
+                // trying to end another's session.
+                this.flushLeavingNotice();
                 this.flushPendingLineTail();
                 this.flushMessageBuffer(true);
                 this.emit('close', event);
@@ -525,7 +538,10 @@ class MudClient implements ClientAdapter {
     disconnect(): void {
         // Leaving on purpose ends the session rather than parking it: resuming into a
         // character the player meant to leave would be a surprise, and the proxy would
-        // otherwise hold that connection open until its TTL.
+        // otherwise hold that connection open until its TTL. Forgetting the id is only
+        // half of that — it stops us resuming, not the character standing in the world —
+        // so the proxy is told as well, before the id is gone.
+        this.queueLeavingNotice();
         resetProxySessionId();
         // A new session starts at byte zero. Carrying the old count over would make the
         // proxy think this client had already seen the login banner and skip it.
@@ -535,6 +551,48 @@ class MudClient implements ClientAdapter {
             this.socket.close();
         }
         this.pingTracker.stop();
+    }
+
+    /**
+     * Owe the proxy the same leaving notice a closing tab sends, delivered once our
+     * socket is gone.
+     *
+     * Identical to the pagehide path in every respect but timing, and timing is the whole
+     * difference between the two departures. There the page is dying: the socket dies
+     * with it, so the beacon — handed to the browser and delivered afterwards — lands on
+     * a session with nobody attached, and the proxy acts on it. Here nothing is
+     * unloading, so sending it inline means sending it while we are still the attached
+     * client, and the proxy ignores it exactly then — the guard that stops a reload's
+     * late beacon killing the page that replaced it.
+     *
+     * So the notice waits for our own close instead of racing it.
+     */
+    private queueLeavingNotice(): void {
+        const proxyUrl = this.effectiveProxyUrl();
+        // No socket means nothing was ever claimed under this id, and asking for the id
+        // here would mint one just to announce a session that does not exist.
+        if (!this.socket || !this.usesSessionProxy() || !proxyUrl) return;
+        this.pendingLeave = {url: proxyUrl, sessionId: getProxySessionId()};
+        if (this.socket.readyState !== WebSocket.OPEN) {
+            // Already closing or closed: nothing to wait for.
+            this.flushLeavingNotice();
+            return;
+        }
+        // The backstop. A close event is the normal path, but connect() detaches the old
+        // socket's handlers, so a quick Rozlacz-then-Polacz would otherwise swallow it.
+        this.leaveTimer = setTimeout(() => this.flushLeavingNotice(), LEAVE_NOTICE_DELAY_MS);
+    }
+
+    /** Send the owed leaving notice, if there is one. Safe to call twice. */
+    private flushLeavingNotice(): void {
+        if (this.leaveTimer !== null) {
+            clearTimeout(this.leaveTimer);
+            this.leaveTimer = null;
+        }
+        const pending = this.pendingLeave;
+        this.pendingLeave = null;
+        if (!pending) return;
+        announceLeaving(pending.url, pending.sessionId);
     }
 
     /**

@@ -392,6 +392,27 @@ func TestLeavingIsIgnoredWhileAClientIsAttached(t *testing.T) {
 	}
 }
 
+func TestLeavingWaitsForAClientOnItsWayOut(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+	c := &fakeClient{}
+	s.attach(c, false, -1)
+
+	// A player disconnecting from the menu unloads nothing, so their notice is an
+	// ordinary request racing its own socket's close. It arrives while this end is
+	// still in the read loop that is about to detach.
+	go func() {
+		time.Sleep(30 * time.Millisecond)
+		s.detach(c)
+	}()
+
+	if !s.leaving() {
+		t.Fatal("leaving should act once the departing client is actually gone")
+	}
+	if !s.isClosed() {
+		t.Error("the character was left standing in the world until the TTL")
+	}
+}
+
 // newTestSessionWithGrace is newTestSession with control over how long a closed session
 // waits for a final acknowledgement.
 func newTestSessionWithGrace(t *testing.T, maxBuffer int, grace time.Duration) (*Session, net.Conn) {

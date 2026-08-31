@@ -128,6 +128,13 @@ Attaching with an unknown id opens a fresh game connection; a known one resumes.
 A second attach to a live session displaces the first, because two clients on one
 character interleave input unpredictably.
 
+`/leaving` ends a session outright rather than parking it, for the departures that are
+deliberate: a closed tab, a navigation, a player pressing disconnect. It is refused while
+a client is attached — a reload's beacon is delivered after the replacement page has
+attached, and acting on it would kill a live client — but waits half a second first, since
+a disconnect that unloads nothing sends its notice as its socket is closing and this end
+may be a moment behind. Without it the character stands in the world until the TTL.
+
 ## Resuming exactly
 
 `o.<bytes>` is what makes a reattach lossless, and it has to come from the client because

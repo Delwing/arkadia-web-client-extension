@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+const (
+	// How long a leaving notice waits for a client that is on its way out. Long enough
+	// to cover a socket close crossing the network and this end noticing it, short
+	// enough that a beacon from a reload — where the replacement client stays put — is
+	// answered promptly rather than held. See Session.leaving.
+	detachGrace = 500 * time.Millisecond
+	detachPoll  = 10 * time.Millisecond
+)
+
 // A chunk of game output and when the proxy received it.
 type chunk struct {
 	at    time.Time
@@ -461,26 +470,48 @@ func (s *Session) idleFor(now time.Time) time.Duration {
 }
 
 /*
-leaving ends the session because its client is going away deliberately — a closed tab or
-a navigation — rather than the backgrounding this proxy exists to survive.
+leaving ends the session because its client is going away deliberately — a closed tab, a
+navigation, or the player pressing disconnect — rather than the backgrounding this proxy
+exists to survive.
 
 Ignored while a client is attached, which is what makes a reload safe. The beacon is
 sent as the old page unloads but delivered by the browser afterwards, so the replacement
 page can attach first; acting on it then would kill the session that page is already
 using. Somebody being attached means the notice is stale, whoever sent it.
 
-No grace period otherwise: with nobody attached there is nothing to protect, and the
-alternative leaves a character standing in the world for the whole TTL.
+The wait is for the other order. A player disconnecting from the menu is not unloading
+anything, so its notice is an ordinary request racing its own socket's close: the client
+sends it once that socket is gone, but "gone" is decided at two ends, and this one can
+still be inside the read loop that will detach a moment later. Refusing outright then
+leaves the character standing in the world for the whole TTL — the exact outcome the
+notice exists to prevent — over a few milliseconds of scheduling. A reload is unaffected:
+the page that replaced it stays attached, so the wait simply expires.
 */
 func (s *Session) leaving() bool {
-	s.mu.Lock()
-	attached := s.client != nil
-	s.mu.Unlock()
-	if attached {
+	if !s.awaitDetach(detachGrace) {
 		return false
 	}
 	s.finish("client left")
 	return true
+}
+
+// awaitDetach reports whether the session has no attached client, waiting up to d for
+// one on its way out. Polled rather than signalled: this runs once per departure, and a
+// condition variable would put coordination into every attach and detach to serve it.
+func (s *Session) awaitDetach(d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for {
+		s.mu.Lock()
+		attached := s.client != nil
+		s.mu.Unlock()
+		if !attached {
+			return true
+		}
+		if !time.Now().Before(deadline) {
+			return false
+		}
+		time.Sleep(detachPoll)
+	}
 }
 
 // finish tears the session down: the game is gone, so the client should know.
