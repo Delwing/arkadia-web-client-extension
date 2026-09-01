@@ -85,6 +85,10 @@ export default class ObjectManager {
             hp: number | undefined,
             attack_num: boolean | number | undefined,
             avatar_target: boolean | undefined,
+            // Both are assigned by makeObj below; they were missing from this
+            // type only because the literal is cast with `as Obj`.
+            attack_target?: boolean,
+            defense_target?: boolean,
             shortcut?: string,
             __category?: 'player' | 'team' | 'rest' | 'rest-noncombat',
         };

@@ -296,6 +296,21 @@ export class CommandLineEngine {
     /** Escape: select all, rewind history browsing, drop completion state. */
     onEscape(): void {
         this.selectEntireInput();
+        this.resetHistoryBrowsing();
+    }
+
+    /**
+     * Rewind history browsing and completion state, touching neither focus nor
+     * selection.
+     *
+     * `submit` leaves `historyBuffer` pointing mid-ring (at 1 when
+     * `clearInputOnSend` is off), so anything that starts a fresh editing
+     * session has to rewind or its first ArrowUp is already at the end of
+     * history. `onEscape` does that too, but it also focuses and selects the
+     * field -- fine for a real Escape keypress, wrong for a caller that is
+     * about to put the caret somewhere else (see `activeCommandLine`).
+     */
+    resetHistoryBrowsing(): void {
         this.historyBuffer = 0;
         this.resetAllCompletionState();
     }

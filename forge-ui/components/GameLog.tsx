@@ -9,25 +9,11 @@ import {
     createTimestampElement,
     setupOutputMessageHandler,
 } from '@shared/dom/outputMessageHandler';
+import { decodeOutputEntities, plainTextOf as textOf } from '@shared/dom/outputText';
 import { buildCharPlaque } from './charPlaque';
 
 // How many trailing lines the split-view sticky area mirrors while scrolled up.
 const STICKY_LINES = 50;
-
-const textOf = (message: string | AnsiAwareBuffer): string =>
-    message instanceof AnsiAwareBuffer ? message.text : message;
-
-// The client emits string output (e.g. command echoes) HTML-encoded — resolveObjectIds
-// and echoCommand produce `&lt;desc&gt;` for the stock UI's innerHTML renderer. We render
-// via textContent, so decode those entities back to literal characters first.
-// (Decode &amp; last so an escaped entity like `&amp;lt;` survives as `&lt;`.)
-const decodeEntities = (text: string): string =>
-    text
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&amp;/g, '&');
 
 // The location line rendered inline for `room.short`.
 const buildLocale = (name: string): HTMLElement => {
@@ -74,7 +60,7 @@ const buildMessageLine = (
             message.notifyRender(content);
         }
     } else {
-        content.appendChild(document.createTextNode(message === '' ? ' ' : decodeEntities(message)));
+        content.appendChild(document.createTextNode(message === '' ? ' ' : decodeOutputEntities(message)));
     }
     line.appendChild(content);
     return line;

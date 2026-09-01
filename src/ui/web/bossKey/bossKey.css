@@ -1,0 +1,1395 @@
+/*
+ * Word 2016/365 chrome, drawn entirely in CSS -- no images, no icon font, so it
+ * costs nothing until the overlay is actually raised.
+ *
+ * The palette is Word's classic blue title bar (#2b579a) rather than the newer
+ * flatter grey one: it is the single most recognisable thing about the app and
+ * reads as "Word" from across a room, which is the whole job here.
+ *
+ * Everything is scoped under .bosskey and nothing inherits from the client, so
+ * this cannot leak into the game UI underneath.
+ */
+
+.bosskey {
+    --bk-blue: #2b579a;
+    --bk-blue-dark: #204072;
+    --bk-ribbon: #f3f2f1;
+    --bk-border: #d4d4d4;
+    --bk-text: #262626;
+    --bk-muted: #605e5c;
+    --bk-canvas: #868686;
+
+    /* The client sets `color-scheme: dark` on :root (style.css). Word is a light
+       application, and inheriting dark makes the browser paint form controls --
+       the composer input -- on a black default background. Opt this subtree back
+       into light so native controls and scrollbars render Word-side-up. */
+    color-scheme: light;
+
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: flex;
+    flex-direction: column;
+    background: var(--bk-canvas);
+    color: var(--bk-text);
+    font-family: "Segoe UI", Tahoma, system-ui, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    cursor: default;
+    user-select: none;
+    overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- title bar */
+
+.bosskey .bk-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 32px;
+    padding: 0 0 0 8px;
+    background: var(--bk-blue);
+    color: #fff;
+    flex: 0 0 auto;
+}
+
+.bosskey .bk-qat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.bosskey .bk-word-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    background: #fff;
+    color: var(--bk-blue);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.bosskey .bk-autosave {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    opacity: 0.95;
+}
+
+/* The Autozapis pill, switched on -- Word's default in a saved cloud document. */
+.bosskey .bk-toggle {
+    position: relative;
+    width: 26px;
+    height: 13px;
+    border-radius: 7px;
+    background: #fff;
+}
+
+.bosskey .bk-toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--bk-blue);
+}
+
+.bosskey .bk-qat-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.9;
+    border: 1.5px solid #fff;
+}
+
+.bosskey .bk-i-save {
+    border-radius: 1px;
+}
+
+/* Undo / redo arcs. */
+.bosskey .bk-i-undo,
+.bosskey .bk-i-redo {
+    border-radius: 50%;
+    border-color: #fff transparent transparent #fff;
+    transform: rotate(-45deg);
+}
+
+.bosskey .bk-i-redo {
+    border-color: #fff #fff transparent transparent;
+    transform: rotate(45deg);
+}
+
+.bosskey .bk-doc-name {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bosskey .bk-saved {
+    opacity: 0.75;
+}
+
+.bosskey .bk-window-buttons {
+    display: flex;
+    flex: 0 0 auto;
+    height: 100%;
+}
+
+.bosskey .bk-window-buttons > span {
+    position: relative;
+    width: 46px;
+    height: 100%;
+}
+
+.bosskey .bk-min::before,
+.bosskey .bk-max::before,
+.bosskey .bk-close::before,
+.bosskey .bk-close::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: #fff;
+}
+
+.bosskey .bk-min::before {
+    width: 10px;
+    height: 1px;
+    transform: translate(-50%, -50%);
+}
+
+.bosskey .bk-max::before {
+    width: 9px;
+    height: 9px;
+    background: none;
+    border: 1px solid #fff;
+    transform: translate(-50%, -50%);
+}
+
+.bosskey .bk-close::before,
+.bosskey .bk-close::after {
+    width: 12px;
+    height: 1px;
+}
+
+.bosskey .bk-close::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.bosskey .bk-close::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* ------------------------------------------------------------- ribbon tabs */
+
+.bosskey .bk-tabs {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 30px;
+    padding: 0 8px;
+    background: var(--bk-blue);
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.bosskey .bk-tab {
+    padding: 6px 11px 7px;
+    color: #fff;
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: 3px 3px 0 0;
+}
+
+.bosskey .bk-tab.file {
+    background: var(--bk-blue-dark);
+}
+
+.bosskey .bk-tab.active {
+    background: var(--bk-ribbon);
+    color: var(--bk-blue);
+}
+
+.bosskey .bk-search {
+    margin-left: 14px;
+    padding-bottom: 8px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 11.5px;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ ribbon */
+
+.bosskey .bk-ribbon {
+    display: flex;
+    align-items: stretch;
+    height: 94px;
+    padding: 4px 6px 0;
+    background: var(--bk-ribbon);
+    border-bottom: 1px solid var(--bk-border);
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.bosskey .bk-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 8px 2px;
+    border-right: 1px solid #e1dfdd;
+    flex: 0 0 auto;
+}
+
+.bosskey .bk-group-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    flex: 1 1 auto;
+}
+
+.bosskey .bk-group-body.bk-col {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.bosskey .bk-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.bosskey .bk-group-label {
+    padding-top: 2px;
+    color: var(--bk-muted);
+    font-size: 10.5px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.bosskey .bk-big-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 46px;
+    padding-top: 4px;
+    font-size: 11px;
+}
+
+/* Clipboard glyph: a sheet on a board. */
+.bosskey .bk-g-paste {
+    position: relative;
+    width: 22px;
+    height: 26px;
+    border: 1.5px solid #7a7a7a;
+    border-radius: 2px;
+    background: #fff;
+}
+
+.bosskey .bk-g-paste::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 11px;
+    height: 6px;
+    border: 1.5px solid #7a7a7a;
+    border-radius: 2px;
+    background: #d9d9d9;
+    transform: translateX(-50%);
+}
+
+.bosskey .bk-small-col,
+.bosskey .bk-editing {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 4px;
+}
+
+.bosskey .bk-small-btn {
+    padding: 2px 6px 2px 18px;
+    position: relative;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* A little document glyph rather than a bare square -- an empty outlined box
+   at this size reads as a checkbox, which is the one thing Word's command
+   lists never look like. The notch is a folded corner. */
+.bosskey .bk-small-btn::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    width: 9px;
+    height: 11px;
+    background: #fff;
+    border: 1px solid #8a8886;
+    border-radius: 1px;
+    transform: translateY(-50%);
+    clip-path: polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%);
+}
+
+.bosskey .bk-small-btn::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin-top: -1px;
+    background-image: linear-gradient(#8a8886, #8a8886), linear-gradient(#8a8886, #8a8886);
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: 0 0, 0 3px;
+}
+
+/* Znajdz leads the Edytowanie group, and in Word that one is a magnifier. */
+.bosskey .bk-editing .bk-small-btn:first-child::before {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    clip-path: none;
+}
+
+.bosskey .bk-editing .bk-small-btn:first-child::after {
+    left: 10px;
+    top: calc(50% + 3px);
+    width: 4px;
+    height: 1.5px;
+    margin-top: 0;
+    background: #8a8886;
+    background-image: none;
+    transform: rotate(45deg);
+}
+
+.bosskey .bk-combo {
+    display: inline-flex;
+    align-items: center;
+    height: 21px;
+    padding: 0 16px 0 6px;
+    position: relative;
+    background: #fff;
+    border: 1px solid #b3b0ad;
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.bosskey .bk-combo::after {
+    content: "";
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    border-left: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-top: 3px solid #5a5a5a;
+    transform: translateY(-25%);
+}
+
+.bosskey .bk-font-name {
+    width: 132px;
+}
+
+.bosskey .bk-font-size {
+    width: 44px;
+}
+
+.bosskey .bk-fmt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 3px;
+    font-size: 12px;
+    color: #3b3a39;
+    border: 1px solid transparent;
+    border-radius: 2px;
+}
+
+.bosskey .bk-fmt.active {
+    background: #dfdfdf;
+    border-color: #c8c6c4;
+}
+
+.bosskey .bk-bold {
+    font-weight: 700;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.bosskey .bk-italic {
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.bosskey .bk-underline {
+    text-decoration: underline;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.bosskey .bk-strike {
+    text-decoration: line-through;
+    font-size: 11px;
+}
+
+/* Highlighter and font colour: a letter sitting on a colour swatch. */
+.bosskey .bk-highlight,
+.bosskey .bk-fontcolor {
+    flex-direction: column;
+    gap: 1px;
+    font-size: 10px;
+    line-height: 1;
+    padding-top: 3px;
+}
+
+.bosskey .bk-highlight::after,
+.bosskey .bk-fontcolor::after {
+    content: "";
+    width: 13px;
+    height: 3px;
+    background: #ffff00;
+}
+
+.bosskey .bk-fontcolor::after {
+    background: #c00000;
+}
+
+.bosskey .bk-sep {
+    width: 1px;
+    height: 16px;
+    margin: 0 3px;
+    background: #d2d0ce;
+}
+
+/* List / indent / align glyphs: stacks of rules, which is what they are. */
+.bosskey .bk-list-bullet,
+.bosskey .bk-list-number,
+.bosskey .bk-list-multi,
+.bosskey .bk-indent-less,
+.bosskey .bk-indent-more,
+.bosskey .bk-align,
+.bosskey .bk-linespacing,
+.bosskey .bk-shading,
+.bosskey .bk-pilcrow {
+    position: relative;
+}
+
+.bosskey .bk-list-bullet::before,
+.bosskey .bk-list-number::before,
+.bosskey .bk-list-multi::before,
+.bosskey .bk-indent-less::before,
+.bosskey .bk-indent-more::before,
+.bosskey .bk-align::before,
+.bosskey .bk-linespacing::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 13px;
+    height: 9px;
+    transform: translate(-50%, -50%);
+    background-image: linear-gradient(#5a5a5a, #5a5a5a), linear-gradient(#5a5a5a, #5a5a5a),
+        linear-gradient(#5a5a5a, #5a5a5a);
+    background-repeat: no-repeat;
+    background-size: 100% 1.5px, 100% 1.5px, 100% 1.5px;
+    background-position: 0 0, 0 3.75px, 0 7.5px;
+}
+
+/* Bulleted / numbered lists get a marker column to the left of the rules. */
+.bosskey .bk-list-bullet::after,
+.bosskey .bk-list-number::after,
+.bosskey .bk-list-multi::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: calc(50% - 9px);
+    width: 3px;
+    height: 9px;
+    transform: translateY(-50%);
+    background-image: radial-gradient(circle, #5a5a5a 55%, transparent 56%),
+        radial-gradient(circle, #5a5a5a 55%, transparent 56%), radial-gradient(circle, #5a5a5a 55%, transparent 56%);
+    background-repeat: no-repeat;
+    background-size: 3px 3px;
+    background-position: 0 0, 0 3.75px, 0 7.5px;
+}
+
+/* Ragged right edge reads as left-aligned; the centre/right/justify variants
+   shift which rules are short, exactly like the real icons. */
+.bosskey .bk-align-left::before {
+    background-size: 100% 1.5px, 70% 1.5px, 100% 1.5px;
+}
+
+.bosskey .bk-align-center::before {
+    background-size: 100% 1.5px, 70% 1.5px, 100% 1.5px;
+    background-position: 0 0, 15% 3.75px, 0 7.5px;
+}
+
+.bosskey .bk-align-right::before {
+    background-size: 100% 1.5px, 70% 1.5px, 100% 1.5px;
+    background-position: 0 0, 30% 3.75px, 0 7.5px;
+}
+
+.bosskey .bk-indent-less::before,
+.bosskey .bk-indent-more::before {
+    width: 10px;
+    left: calc(50% + 2px);
+}
+
+.bosskey .bk-indent-less::after,
+.bosskey .bk-indent-more::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: calc(50% - 8px);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transform: translateY(-50%);
+}
+
+.bosskey .bk-indent-less::after {
+    border-right: 4px solid #5a5a5a;
+}
+
+.bosskey .bk-indent-more::after {
+    border-left: 4px solid #5a5a5a;
+}
+
+/* \00b6 is the pilcrow. Written as an escape to keep this file ASCII, like the
+   rest of the overlay's source (see chrome.ts). */
+.bosskey .bk-pilcrow::before {
+    content: "\00b6";
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 13px;
+    color: #5a5a5a;
+}
+
+.bosskey .bk-shading::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #dbe5f1;
+    border: 1px solid #9aa8bd;
+    transform: translate(-50%, -50%);
+}
+
+/* Style gallery: a preview chip over its name, the selected one boxed in blue. */
+.bosskey .bk-group-styles .bk-group-body {
+    gap: 2px;
+}
+
+.bosskey .bk-style {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 62px;
+    height: 56px;
+    padding: 2px;
+    background: #fff;
+    border: 1px solid #d2d0ce;
+}
+
+.bosskey .bk-style.active {
+    border-color: var(--bk-blue);
+    background: #eff4fb;
+}
+
+.bosskey .bk-style-preview {
+    font-size: 12px;
+    color: #2f2f2f;
+    white-space: nowrap;
+}
+
+.bosskey .bk-style-2,
+.bosskey .bk-style-3 {
+    color: #2e74b5;
+}
+
+.bosskey .bk-style-2 {
+    font-size: 13px;
+}
+
+.bosskey .bk-style-4 {
+    font-size: 14px;
+    color: #2f5496;
+}
+
+.bosskey .bk-style-name {
+    font-size: 9.5px;
+    color: var(--bk-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* ------------------------------------------------------------------ canvas */
+
+.bosskey .bk-canvas {
+    flex: 1 1 auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    background: var(--bk-canvas);
+}
+
+.bosskey .bk-canvas-main {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ---------------------------------------------------- navigation pane */
+
+.bosskey .bk-navpane {
+    flex: 0 0 262px;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-right: 1px solid var(--bk-border);
+    overflow: hidden;
+}
+
+.bosskey .bk-nav-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 10px 7px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f1f1f;
+}
+
+.bosskey .bk-nav-close {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    opacity: 0.6;
+}
+
+.bosskey .bk-nav-close::before,
+.bosskey .bk-nav-close::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 11px;
+    height: 1px;
+    background: #3b3a39;
+}
+
+.bosskey .bk-nav-close::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.bosskey .bk-nav-close::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.bosskey .bk-nav-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 26px;
+    margin: 0 10px 10px 12px;
+    padding: 0 30px 0 8px;
+    background: #fff;
+    border: 1px solid #b3b0ad;
+    color: #8a8886;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Magnifier: a ring (::after) plus its angled handle (::before). Drawing the
+   handle with a box-shadow instead collapsed into a blob at this size. */
+.bosskey .bk-nav-search::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    margin-top: -5px;
+    border: 1.5px solid #605e5c;
+    border-radius: 50%;
+}
+
+.bosskey .bk-nav-search::before {
+    content: "";
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    width: 5px;
+    height: 1.5px;
+    margin-top: 3px;
+    background: #605e5c;
+    transform: rotate(45deg);
+    transform-origin: left center;
+}
+
+.bosskey .bk-nav-tabs {
+    display: flex;
+    gap: 14px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--bk-border);
+}
+
+.bosskey .bk-nav-tab {
+    padding: 4px 1px 6px;
+    color: var(--bk-muted);
+    font-size: 11.5px;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+}
+
+.bosskey .bk-nav-tab.active {
+    color: var(--bk-blue);
+    border-bottom-color: var(--bk-blue);
+}
+
+.bosskey .bk-nav-list {
+    flex: 1 1 auto;
+    padding: 6px 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+/* One outline entry per nearby object. Laid out as a table-of-contents row:
+   name on the left, its number on the right, joined by a dot leader. */
+.bosskey .bk-nav-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 3px 12px 3px 14px;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #2b2b2b;
+    border-left: 3px solid transparent;
+}
+
+.bosskey .bk-nav-entry-text {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bosskey .bk-nav-page {
+    flex: 1 0 auto;
+    margin-left: auto;
+    padding-left: 6px;
+    color: var(--bk-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Your own line. It carries your HP like every other entry -- reading your own
+   number in the same column as everyone else's is the point -- so it only needs
+   to be identifiable, not loud. */
+.bosskey .bk-nav-entry.self {
+    font-weight: 600;
+    color: #1f1f1f;
+}
+
+/* Teammates indent like sub-headings under the entries above them. */
+.bosskey .bk-nav-entry.sub {
+    padding-left: 30px;
+    color: #4a4a4a;
+}
+
+/* The attack target reads as the heading you are currently inside, which is
+   exactly how Word marks your position in the outline. */
+.bosskey .bk-nav-entry.current {
+    font-weight: 600;
+    color: var(--bk-blue);
+    background: #eff4fb;
+    border-left-color: var(--bk-blue);
+}
+
+/* Your attack target gets Word's outline caret as well as the highlight. The
+   pane marks the heading you are inside exactly this way, and under pressure a
+   background tint on its own is easy to miss. \25b8 is a small right triangle,
+   written as an escape to keep this file ASCII like the rest of the overlay. */
+.bosskey .bk-nav-entry.current::before {
+    content: "\25b8";
+    flex: 0 0 auto;
+    margin-left: -8px;
+    color: var(--bk-blue);
+}
+
+/* The object's targeting shortcut, set like outline numbering. */
+.bosskey .bk-nav-num {
+    flex: 0 0 auto;
+    min-width: 12px;
+    color: var(--bk-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.bosskey .bk-nav-entry.current .bk-nav-num {
+    color: var(--bk-blue);
+}
+
+.bosskey .bk-nav-empty {
+    padding: 10px 14px;
+    color: var(--bk-muted);
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+/* Word's own scrollbar, at the window edge over the canvas. The thumb sits at
+   the bottom because the document is always scrolled to its insertion point. */
+.bosskey .bk-scrollbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    background: #f1f1f1;
+    border-left: 1px solid #d6d6d6;
+}
+
+.bosskey .bk-scrollbar::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    bottom: 18px;
+    height: 84px;
+    border-radius: 4px;
+    background: #b8b8b8;
+}
+
+/* The ruler. Page margins show as grey bands at each end -- the proportion
+   matches .bk-page's own 68px padding on an 820px sheet -- with the ticked
+   writable span between them. */
+.bosskey .bk-ruler {
+    position: relative;
+    display: flex;
+    width: min(820px, 92%);
+    height: 18px;
+    margin-top: 6px;
+    flex: 0 0 auto;
+    background: #fff;
+    border: 1px solid #c9c9c9;
+}
+
+.bosskey .bk-ruler-margin {
+    flex: 0 0 8.3%;
+    background: #d4d4d4;
+}
+
+.bosskey .bk-ruler-track {
+    flex: 1 1 auto;
+    background-image: repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent 17px,
+        #a9a9a9 17px,
+        #a9a9a9 18px
+    );
+}
+
+/* Indent markers, drawn as CSS triangles on the margin boundaries. */
+.bosskey .bk-ruler-indent {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 4.5px solid transparent;
+    border-right: 4.5px solid transparent;
+}
+
+/* First-line indent: wedge pointing DOWN from the top edge. */
+.bosskey .bk-indent-first {
+    top: 0;
+    left: 8.3%;
+    margin-left: -4.5px;
+    border-top: 6px solid #7a7a7a;
+}
+
+/* Hanging indent: wedge pointing UP from the bottom edge. */
+.bosskey .bk-indent-hanging {
+    bottom: 3px;
+    left: 8.3%;
+    margin-left: -4.5px;
+    border-bottom: 6px solid #7a7a7a;
+}
+
+/* Left indent: the small block beneath the hanging wedge. */
+.bosskey .bk-indent-left {
+    bottom: 0;
+    left: 8.3%;
+    margin-left: -4.5px;
+    width: 9px;
+    height: 3px;
+    border: 0;
+    background: #7a7a7a;
+}
+
+/* Right indent: wedge pointing UP on the right margin. */
+.bosskey .bk-indent-right {
+    bottom: 0;
+    right: 8.3%;
+    margin-right: -4.5px;
+    border-bottom: 6px solid #7a7a7a;
+}
+
+.bosskey .bk-page {
+    width: min(820px, 92%);
+    /* The sheet always fills the canvas. It must NOT size to its content --
+       a half-height white block stops reading as a page at all, which is the
+       one thing this element has to do. */
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+    padding: 46px 68px 0;
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    font-family: Calibri, Carlito, "Segoe UI", sans-serif;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+/* The transcript region: bounded, sits directly under the title block, and is
+   the only thing that scrolls. The real scrollbar is hidden -- .bk-scrollbar
+   draws Word's, at the window edge over the grey canvas where Word puts it. */
+.bosskey .bk-doc-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    padding-bottom: 12px;
+}
+
+.bosskey .bk-doc-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+/* The document's title block. Fixed at the top of the sheet -- the transcript
+   scrolls below it, in .bk-doc-body, so nothing ever slides underneath it. */
+.bosskey .bk-doc-titleblock {
+    flex: 0 0 auto;
+    margin: 0 0 12px;
+}
+
+.bosskey .bk-doc-h1 {
+    margin: 0 0 2px;
+    font-size: 25px;
+    font-weight: 400;
+    color: #2f5496;
+    text-align: left;
+    letter-spacing: 0.2px;
+}
+
+.bosskey .bk-doc-sub {
+    margin: 0 0 22px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #a8b6cc;
+    font-size: 13px;
+    color: #595959;
+    text-align: left;
+}
+
+.bosskey .bk-doc-h2 {
+    margin: 18px 0 5px;
+    font-size: 16px;
+    font-weight: 400;
+    color: #2e74b5;
+    text-align: left;
+}
+
+.bosskey .bk-page p {
+    margin: 0 0 10px;
+}
+
+/* Transcript lines. One game line per document line, wrapping like a long line
+   of prose rather than being reflowed into a paragraph -- the game leans on line
+   structure for combat, listings and tells, and joining them made the page
+   pretty but unreadable. `pre-wrap` keeps the game's own leading indentation. */
+.bosskey .bk-doc-body p.bk-doc-line {
+    margin: 0;
+    white-space: pre-wrap;
+    /* Wrapped continuations hang, so a wrapped long line still reads as one
+       line rather than as two entries. */
+    padding-left: 1.4em;
+    text-indent: -1.4em;
+    overflow-wrap: anywhere;
+}
+
+/* A blank line in the transcript: real vertical space, not a collapsed <p>. */
+.bosskey .bk-doc-body p.bk-doc-blank {
+    margin: 0;
+    height: 0.75em;
+}
+
+/* The static fallback report (shown before any output exists) still reads as
+   prose, since there is no line structure there worth preserving. */
+.bosskey .bk-doc-para {
+    text-align: justify;
+    text-indent: 1.25em;
+}
+
+/* The line being "written". A real input, stripped of every control affordance
+   so it is indistinguishable from body copy -- and it brings a real blinking
+   caret with it, which is the detail that sells the document as open. */
+.bosskey .bk-compose-line {
+    margin-bottom: 10px;
+}
+
+.bosskey .bk-page .bk-composer {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    /* Explicit, not `transparent`/`inherit`: the client's own input styling and
+       the dark UA default both have to lose here, or the "paragraph" you type
+       into shows up as a dark band across the page. */
+    background: #fff;
+    background-image: none;
+    color: #1a1a1a;
+    box-shadow: none;
+    border-radius: 0;
+    /* `inherit` picks up the page's Calibri/size/line-height. */
+    font: inherit;
+    line-height: inherit;
+    text-indent: inherit;
+    caret-color: #1a1a1a;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Chrome paints an autofill background; it would light up the "paragraph". */
+.bosskey .bk-composer:-webkit-autofill {
+    -webkit-text-fill-color: #1a1a1a;
+    box-shadow: 0 0 0 1000px #fff inset;
+}
+
+/* -------------------------------------------------------------- status bar */
+
+.bosskey .bk-statusbar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    height: 24px;
+    padding: 0 12px;
+    background: var(--bk-blue);
+    color: #fff;
+    font-size: 11.5px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.bosskey .bk-status-spacer {
+    flex: 1 1 auto;
+}
+
+.bosskey .bk-status-views {
+    display: flex;
+    gap: 7px;
+}
+
+.bosskey .bk-view {
+    width: 13px;
+    height: 11px;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    border-radius: 1px;
+}
+
+.bosskey .bk-view.active {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.bosskey .bk-zoom {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.bosskey .bk-zoom-step {
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.bosskey .bk-zoom-track {
+    position: relative;
+    width: 92px;
+    height: 11px;
+}
+
+.bosskey .bk-zoom-track::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+/* The 100% detent, dead centre, like Word's. */
+.bosskey .bk-zoom-track::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 50%;
+    width: 1px;
+    height: 9px;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.bosskey .bk-zoom-knob {
+    position: absolute;
+    top: 0;
+    width: 5px;
+    height: 11px;
+    margin-left: -2.5px;
+    background: #fff;
+    border-radius: 1px;
+    transition: left 0.25s ease-out;
+}
+
+.bosskey .bk-zoom-value {
+    min-width: 34px;
+    text-align: right;
+}
+
+/* Narrow windows: drop the chatty status items and the wider ribbon groups
+   before the page itself gets squeezed. The page number stays -- it is the
+   only status item that is actually load-bearing. */
+@media (max-width: 1180px) {
+    .bosskey .bk-status-a11y,
+    .bosskey .bk-group-styles {
+        display: none;
+    }
+}
+
+/* The nav pane is the first thing to go when the page would be squeezed. */
+@media (max-width: 1000px) {
+    .bosskey .bk-navpane {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .bosskey .bk-tabs .bk-tab:nth-child(n + 7) {
+        display: none;
+    }
+
+    .bosskey .bk-search,
+    .bosskey .bk-status-item:not(.bk-status-page):not(.bk-zoom-value),
+    .bosskey .bk-status-views {
+        display: none;
+    }
+
+    .bosskey .bk-page {
+        padding: 30px 26px 0;
+    }
+}
+
+/* ------------------------------------------------------------------ figure */
+
+/* The map, framed as a document figure with its caption underneath. Kept small:
+   it is a reference while you read, not the subject of the page. */
+/* Its own column beside the text, not a float in it -- see the comment in
+   BossKeyOverlay for why wrapping and a stable map cannot both be had here. */
+.bosskey .bk-doc-main {
+    display: flex;
+    /* Stretch, NOT flex-start: with flex-start the text column sizes to its own
+       content, so a long transcript makes it taller than the sheet and focusing
+       the composer scrolls the whole page, carrying the title off the top. The
+       column must fill the row and scroll inside itself. */
+    align-items: stretch;
+    gap: 20px;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.bosskey .bk-doc-main .bk-doc-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* The figure column: map on top, vitals chart under it. */
+.bosskey .bk-figures {
+    flex: 0 0 224px;
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    margin-top: 2px;
+}
+
+.bosskey .bk-figure {
+    margin: 0;
+    background: #fff;
+}
+
+.bosskey .bk-figure-frame {
+    position: relative;
+    height: 158px;
+    background: #fff;
+    border: 1px solid #b9b9b9;
+    overflow: hidden;
+}
+
+/* The relocated #map fills the frame. It carries inline geometry from wherever
+   it was docked before, so those have to be overridden here. The filter pulls
+   the game's vivid environment colours back to something a printed schematic
+   would plausibly use -- doing it in CSS keeps the renderer's own settings (and
+   therefore the user's real map) untouched. */
+.bosskey .bk-figure-frame > #map {
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    inset: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    filter: saturate(0.3) contrast(0.92) brightness(1.04);
+}
+
+.bosskey .bk-figure-caption {
+    margin-top: 5px;
+    color: #595959;
+    font-size: 11px;
+    line-height: 1.35;
+    text-align: center;
+}
+
+/* On a narrow window the text column matters more than the figure. */
+@media (max-width: 1180px) {
+    .bosskey .bk-figure {
+        display: none;
+    }
+}
+
+/* ----------------------------------------------------------- vitals chart */
+
+/* The second figure: a plain column chart of the vitals. Drawn in CSS -- no
+   chart library, no canvas -- because it is a dozen boxes with a baseline.
+   The blue is Office's default series colour, so it reads as a chart pasted
+   from Excel, which is where a chart in a Word report usually comes from. */
+.bosskey .bk-chart-figure {
+    margin-top: 16px;
+}
+
+.bosskey .bk-chart {
+    height: 118px;
+    padding: 8px 6px 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #b9b9b9;
+}
+
+/* Plot area, with the horizontal gridlines a default Office chart draws. */
+.bosskey .bk-chart-plot {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 0 6px;
+    border-bottom: 1px solid #adadad;
+    background-image: repeating-linear-gradient(
+        to top,
+        transparent 0,
+        transparent 21px,
+        #e6e6e6 21px,
+        #e6e6e6 22px
+    );
+}
+
+.bosskey .bk-chart-col {
+    flex: 1 1 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 100%;
+    min-width: 0;
+}
+
+.bosskey .bk-chart-bar {
+    width: 100%;
+    min-height: 1px;
+    background: #4472c4;
+}
+
+/* One colour per series, in Office's default accent order (blue, orange, grey,
+   gold). A multi-colour chart is what you get from Excel when each column is
+   its own series, so this reads more like a pasted chart than a single-series
+   block would -- and it makes the four vitals tellable apart at a glance. The
+   series are fixed and always rendered, so nth-child is a stable mapping. */
+.bosskey .bk-chart-col:nth-child(1) .bk-chart-bar {
+    background: #4472c4;
+}
+
+.bosskey .bk-chart-col:nth-child(2) .bk-chart-bar {
+    background: #ed7d31;
+}
+
+.bosskey .bk-chart-col:nth-child(3) .bk-chart-bar {
+    background: #a5a5a5;
+}
+
+.bosskey .bk-chart-col:nth-child(4) .bk-chart-bar {
+    background: #ffc000;
+}
+
+.bosskey .bk-chart-axis {
+    display: flex;
+    gap: 10px;
+    padding: 3px 6px 0;
+}
+
+.bosskey .bk-chart-label {
+    flex: 1 1 0;
+    min-width: 0;
+    color: #595959;
+    font-size: 8px;
+    line-height: 1.2;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* The attackers sub-line under an entry: who is currently hitting it, by the
+   object list's own shortcut codes. Set smaller and lighter than a real entry
+   so it reads as an annotation under the heading rather than another heading. */
+.bosskey .bk-nav-attackers {
+    font-size: 11px;
+    color: var(--bk-muted);
+    padding-top: 0;
+    padding-bottom: 4px;
+}

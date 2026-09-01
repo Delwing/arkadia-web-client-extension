@@ -3,6 +3,7 @@ import {CommandLineEngine} from "./CommandLineEngine";
 import {domEditableField} from "./editableField";
 import {localStorageHistoryStore} from "./commandHistoryStore";
 import {harvestOutputWords} from "./outputWords";
+import {type ActiveCommandLine, setActiveCommandLine} from "./activeCommandLine";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
@@ -78,6 +79,11 @@ export class CommandInputController {
         this.abortController = ac;
         const o = {signal: ac.signal};
 
+        // Publish this as *the* command line, so anything that needs to send
+        // without owning an input (the boss key overlay) borrows this engine
+        // rather than standing up a second one over the same history key.
+        setActiveCommandLine(this.asActiveCommandLine());
+
         this.deps.sendButton.addEventListener('click', () => this.engine.submit(false), o);
 
         this.deps.passwordInput.addEventListener('keydown', (e) => {
@@ -150,6 +156,47 @@ export class CommandInputController {
     detach(): void {
         this.abortController?.abort();
         this.abortController = null;
+        setActiveCommandLine(null);
+    }
+
+    /**
+     * Expose this controller's engine as a borrowable command line.
+     *
+     * Each operation stages the borrower's text on the real field, drives the
+     * engine, then hands back whatever the field ended up holding. The field is
+     * cleared after a submit regardless of `clearInputOnSend`: the text was
+     * never typed here, so leaving it behind (which the setting would do) would
+     * put a stray command in the input the user has to notice and delete.
+     */
+    private asActiveCommandLine(): ActiveCommandLine {
+        return {
+            submit: (text: string) => {
+                this.input.value = text;
+                this.engine.submit(false);
+                this.input.value = '';
+            },
+            historyMove: (text: string, direction: 'up' | 'down') => {
+                this.input.value = text;
+                this.engine.historyMove(direction);
+                return this.input.value;
+            },
+            tabComplete: (text: string, forward: boolean) => {
+                this.input.value = text;
+                this.engine.handleTabCompletion(forward);
+                return this.input.value;
+            },
+            reset: () => {
+                this.input.value = '';
+                // Rewind history browsing and completion state, not just the
+                // text. `submit` leaves historyBuffer pointing mid-ring (at 1
+                // when clearInputOnSend is off), so a borrower that only
+                // cleared the field would find its very first ArrowUp already
+                // at the end of history and silently do nothing. NOT
+                // `onEscape()`: that also focuses this input, stealing the
+                // caret from whatever the borrower is about to focus.
+                this.engine.resetHistoryBrowsing();
+            },
+        };
     }
 
     // ── Keyboard Handlers (web-chrome specific) ────────────────────────

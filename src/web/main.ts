@@ -22,8 +22,9 @@ import initPipeStatus from "./pipeStatus";
 import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
-import FightTitle from "./FightTitle";
+import FightTitle, {suppressTitleUpdates} from "./FightTitle";
 import HpTitle from "./HpTitle";
+import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
@@ -1479,6 +1480,16 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoot(document.createElement('div')).render(createElement(MobileDirectionButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(MobileCommandRadial, { client }));
+
+    // Boss key: Pause / ScrollLock drops a fake Word window over the whole
+    // client. Same detached-root pattern as the buttons above — it portals to
+    // document.body itself. FightTitle must already exist so suppressTitleUpdates
+    // can freeze the "Arkadia [5/7]" tab title while the overlay is up.
+    createRoot(document.createElement('div')).render(createElement(BossKeyOverlay, {
+        client,
+        soundControl: client.SoundManager,
+        suppressTitle: suppressTitleUpdates,
+    }));
 
     const uiSettingsRoot = document.getElementById('ui-settings-root');
     if (uiSettingsRoot) {

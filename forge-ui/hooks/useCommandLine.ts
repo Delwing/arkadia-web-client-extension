@@ -5,6 +5,7 @@ import { CommandLineEngine } from '@web/commandInput/CommandLineEngine';
 import { domEditableField } from '@web/commandInput/editableField';
 import { localStorageHistoryStore } from '@web/commandInput/commandHistoryStore';
 import { harvestOutputWords } from '@web/commandInput/outputWords';
+import { setActiveCommandLine } from '@web/commandInput/activeCommandLine';
 import { useClient } from '../client/ClientContext';
 import { useClientEvent } from './useClientEvent';
 
@@ -58,6 +59,32 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
             getOutputWords: () => harvestOutputWords(resolveOutput()),
             getClearInputOnSend: () => getRenderSettings().clearInputOnSend,
             store: localStorageHistoryStore(),
+        });
+
+        // Publish this as *the* command line so borrowers (the boss key overlay)
+        // send through this engine instead of standing up a second one over the
+        // same history key -- two engines clobber each other's rings on save.
+        setActiveCommandLine({
+            submit: (text) => {
+                input.value = text;
+                engine.submit(false);
+                input.value = '';
+            },
+            historyMove: (text, direction) => {
+                input.value = text;
+                engine.historyMove(direction);
+                return input.value;
+            },
+            tabComplete: (text, forward) => {
+                input.value = text;
+                engine.handleTabCompletion(forward);
+                return input.value;
+            },
+            reset: () => {
+                input.value = '';
+                // Rewind history browsing too -- see CommandInputController.
+                engine.resetHistoryBrowsing();
+            },
         });
 
         const ac = new AbortController();
@@ -154,7 +181,10 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
         // Initial focus on mount (unless the game already asked for a password).
         if (!mudClient.isPasswordMode()) input.focus();
 
-        return () => ac.abort();
+        return () => {
+            ac.abort();
+            setActiveCommandLine(null);
+        };
         // Engine + listeners are built once; refs are stable for the mount.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

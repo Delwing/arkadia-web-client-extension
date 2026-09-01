@@ -9,6 +9,7 @@ import { useClient } from '../client/ClientContext';
 import { ConnectionProvider } from '../client/ConnectionContext';
 import { mountForgedMap } from '../map/forgedMap';
 import LoginGate from './LoginGate';
+import BossKeyOverlay from '@web-ui/bossKey/BossKeyOverlay';
 
 /**
  * The Forged HUD shell, built on the SHARED dock manager.
@@ -72,6 +73,10 @@ export default function App() {
             {/* Last, so it layers over the whole HUD without needing a higher
                 z-index than forge's own floating chrome. */}
             <LoginGate />
+            {/* Boss key (Pause / ScrollLock). Portals to document.body, so it
+                covers the login gate too. Forge never writes document.title, so
+                no title suppressor is needed here. */}
+            <BossKeyOverlay client={client} soundControl={client.SoundManager} />
         </ConnectionProvider>
     );
 }
