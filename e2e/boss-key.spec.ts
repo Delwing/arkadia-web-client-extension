@@ -54,25 +54,31 @@ test.describe('boss key', () => {
         await expect(page.locator(OVERLAY)).toBeHidden();
     });
 
-    test('the tab claims to be a Word document even while the game is running', async ({page}) => {
+    test('the tab claims to be a Word document while the overlay is up', async ({page}) => {
         await boot(page);
 
-        // The tab is the one thing an overlay cannot cover and it is on screen
-        // constantly, so the disguise is permanent: it must already be in place
-        // before the panic key is touched, and must not flip when it is.
+        // The tab is the one thing the overlay cannot cover, so it is disguised
+        // too -- but only for as long as the overlay is up. Outside a panic the
+        // game keeps its own title (HpTitle, FightTitle).
         await expect(page.locator(OVERLAY)).toBeHidden();
+        await expect(page).toHaveTitle(/Arkadia/);
+        const gameFavicon = await page.locator('link[rel~="icon"]').first().getAttribute('href');
+
+        await page.keyboard.press('Pause');
         await expect(page).toHaveTitle(/\.docx - Word$/);
         const favicon = await page.locator('link[rel~="icon"]').first().getAttribute('href');
         expect(favicon).toContain('image/svg+xml');
 
-        // Game state that would normally rewrite the title must not surface.
+        // Game state that would normally rewrite the title must not surface
+        // while the overlay is up.
         await pushGmcp(page, 'char.state', {hp: 2});
         await expect(page).not.toHaveTitle(/Arkadia/);
 
-        await page.keyboard.press('Pause');
-        await expect(page).toHaveTitle(/\.docx - Word$/);
+        // Dismissing hands the tab back, with the game state that arrived in
+        // the meantime applied.
         await page.keyboard.press('Escape');
-        await expect(page).toHaveTitle(/\.docx - Word$/);
+        await expect(page).toHaveTitle(/Arkadia \[3\/7\]/);
+        await expect(page.locator('link[rel~="icon"]').first()).toHaveAttribute('href', gameFavicon ?? '');
     });
 
     test('ScrollLock works as a second panic key, and toggles back off', async ({page}) => {

@@ -4,19 +4,14 @@ import { APP_NAME, APP_TITLE } from "./chrome";
  * The parts of the disguise that live outside the overlay's own DOM: the tab
  * title, the favicon, and sound.
  *
- * These split into two very different lifetimes.
+ * All of them are per-activation. The tab is the one part of the client an
+ * overlay cannot cover, so it has to be disguised too -- but only while the
+ * overlay is actually up. Claiming the title for the whole session would mean
+ * the game's own title features (`HpTitle`'s "[5/7]", `FightTitle`'s combat
+ * sword) never show at all, which is too high a price to pay outside a panic.
  *
- * The **tab identity is permanent**. It is the one part of the client an
- * overlay cannot cover, and it is on screen constantly -- in the tab strip, in
- * the taskbar, in a window switcher -- so disguising it only during a panic is
- * backwards: anyone glancing over before you hit the key has already read
- * "Arkadia", and the title visibly flipping the moment you do is itself a tell.
- * So the browser tab claims to be a Word document for the whole session, and the
- * boss key changes nothing about it. The cost is that the game's own title
- * features stop showing (`HpTitle`'s "[5/7]" and `FightTitle`'s combat sword).
- *
- * **Sound is per-activation.** Muting is only wanted while the window is
- * covered, and the player's own mute setting has to survive it.
+ * Muting is the same: wanted only while the window is covered, and the player's
+ * own mute setting has to survive it.
  */
 
 /** Minimal view of `Client.SoundManager` --- structural so tests can fake it. */
@@ -37,14 +32,14 @@ const WORD_FAVICON =
             "</svg>",
     );
 
-/** The title the tab carries for the whole session. */
+/** The title the tab carries while the overlay is up. */
 export const DISGUISED_TITLE = `${APP_TITLE} - ${APP_NAME}`;
 
 const iconLinks = (): HTMLLinkElement[] =>
     Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"], link[rel="apple-touch-icon"]'));
 
 /**
- * Make the browser tab claim to be a Word document, for good.
+ * Make the browser tab claim to be a Word document.
  *
  * `suppressTitle` is injected rather than imported so this stays usable from any
  * UI: the stock UI passes `suppressTitleUpdates` from `FightTitle` (which also

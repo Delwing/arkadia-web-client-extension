@@ -208,11 +208,12 @@ export default function BossKeyOverlay({ client, soundControl, suppressTitle }: 
         return mountMapFigure(frame);
     }, [active]);
 
-    // The tab claims to be a Word document for the WHOLE session, not just while
-    // the overlay is up -- see disguise.ts for why. This is what makes the panic
-    // key instant and silent: there is no title to flip when it is pressed, and
-    // nothing reading "Arkadia" for anyone who glanced over beforehand.
-    useEffect(() => installTitleDisguise(suppressTitle), [suppressTitle]);
+    // The tab claims to be a Word document while the overlay is up, and hands the
+    // title and favicon back on dismiss -- see disguise.ts.
+    useEffect(() => {
+        if (!active) return;
+        return installTitleDisguise(suppressTitle);
+    }, [active, suppressTitle]);
 
     // Never leave the client muted if the host unmounts mid-panic.
     useEffect(() => () => unmuteAfterOverlay(soundControl), [soundControl]);
