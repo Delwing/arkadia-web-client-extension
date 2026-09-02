@@ -372,6 +372,16 @@ export default function DesktopButtons({ client }: { client: Client }) {
 
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>, btnSettings: DesktopButtonSetting) => {
         if (e.button !== 0) return;
+        // Keep the keyboard focus where it already is — normally the command
+        // input. The container is portalled to `document.body`, so it sits
+        // outside the `#content-area` pointerup handler that otherwise puts
+        // focus back on the command line, and a mousedown on a button moves
+        // focus off it: on Windows/Linux the button itself takes focus, while
+        // Chrome on macOS treats buttons as not mouse-focusable and clears the
+        // focus entirely. Suppressing the default focus action of the mousedown
+        // avoids both. Drag/hold still work — they run off document-level
+        // mousemove/mouseup — and the click event is unaffected.
+        e.preventDefault();
         const btn = e.currentTarget;
         armHoldDetection(btnSettings, btn, e.clientX, e.clientY);
         if (settingsRef.current.locked) return;
@@ -432,6 +442,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
                     type="button"
                     className="desktop-button-list-item"
                     style={listItemStyle(btnSettings)}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={(e) => {
                         e.stopPropagation();
                         client.sendCommand(c.cmd);
@@ -455,6 +466,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
                 type="button"
                 className="desktop-button-list-item"
                 style={listItemStyle(btnSettings)}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                     e.stopPropagation();
                     client.sendCommand(`/${spec.prefix} ${v}`);
