@@ -9416,6 +9416,10 @@
                   {
                     "pattern": "Nagle czujesz,  jak dziwna sila opanowuje twe czlonki.  Nie jestes w stanie kontrolowac swojego zachowania!",
                     "type": 0
+                  },
+                  {
+                    "pattern": "Czujesz, ze efekt dzialania czaru 'rozbrojenie postaci' konczy sie i powoli odzyskujesz czucie w swoich dloniach.",
+                    "type": 0
                   }
                 ],
                 "script": "trigger_func_skrypty_ui_gags_color_color_other_mozesz_dobywac()"
