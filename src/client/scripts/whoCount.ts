@@ -22,20 +22,23 @@ const REPLY_IDLE_MS = 600;
 
 const KTO_HEADER = /^Sposrod\s+.+\s+osob przebywajacych obecnie w swiecie Arkadii, znane tobie to:/m;
 
+/** Sentence punctuation, which no kto line has. See {@link takeKtoBody}. */
+const SENTENCE_END = /[.!?]/;
+
 /**
  * Split a frame into the part that still belongs to the kto reply and whether the reply
  * ended inside it.
  *
  * The reply has no terminator of its own, so both halves of this rest on one fact: no line
- * of the reply ever contains a period — names have none, and neither do the long-format
- * descriptions. So the first line that does is where the reply ended and unrelated output
- * began, and everything from there on is neither parsed nor decorated. When no line has
- * one, the frame is reply body all the way to its end and the reply may well continue in
- * the next frame.
+ * of the reply ever ends a sentence — names carry no period, exclamation or question mark,
+ * and neither do the long-format descriptions. So the first line that does is where the
+ * reply ended and unrelated output began (a weapon shouting "Tarcza!", say), and everything
+ * from there on is neither parsed nor decorated. When no line has one, the frame is reply
+ * body all the way to its end and the reply may well continue in the next frame.
  */
 export function takeKtoBody(text: string): { body: string; ended: boolean } {
     const lines = text.split('\n');
-    const end = lines.findIndex(l => l.includes('.'));
+    const end = lines.findIndex(l => SENTENCE_END.test(l));
     if (end === -1) {
         return { body: text, ended: false };
     }

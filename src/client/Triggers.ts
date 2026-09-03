@@ -235,7 +235,8 @@ export default class Triggers {
      * decide where the message ends before you parse, decorate or drop what you captured.
      * Either the pattern can settle it (PackageHelper ends on the `Symbolem \* oznaczono...`
      * terminator the message must contain) or the callback can (whoCount's `sliceKtoBody`
-     * cuts the body at the first line with a period, which no kto line ever has). What does
+     * cuts the body at the first line with sentence punctuation, which no kto line ever
+     * has). What does
      * not work is treating the whole capture as message content by default — a callback that
      * reprocesses all of `line.text` rather than what it matched has the same problem
      * without the regex.

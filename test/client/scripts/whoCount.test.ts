@@ -209,6 +209,22 @@ describe('sliceKtoBody', () => {
         expect(sliceKtoBody('Kot siedzi.\nZorlan   Norvath')).toBe('');
     });
 
+    it('should cut at an exclamation, as in a talking weapon flushed into the frame', () => {
+        const body = [
+            'Arcain     Deli       Einholt    Jasko      Musin      Rashnak    Vesper',
+            'Blob       Dracco     Grung      Kilron     Muzikuhr   Torgen',
+            'Twoj kruczoczarny misterny miecz mowi do ciebie: Tarcza! Do tego sluzy tarcza!',
+        ].join('\n');
+        expect(sliceKtoBody(body)).toBe([
+            'Arcain     Deli       Einholt    Jasko      Musin      Rashnak    Vesper',
+            'Blob       Dracco     Grung      Kilron     Muzikuhr   Torgen',
+        ].join('\n'));
+    });
+
+    it('should cut at a question mark', () => {
+        expect(sliceKtoBody('Zorlan   Norvath\nCzy na pewno chcesz odejsc?')).toBe('Zorlan   Norvath');
+    });
+
     it('should leave a name that never gets sliced intact', () => {
         // The cut is per line, not per character: a period late in a line still
         // discards that whole line rather than half of it.
