@@ -12,6 +12,14 @@ export const ONE_WEEK_IN_SECONDS = 604800;
 export interface ProfessionState {
     start_time: number;
     plus_events: number[];
+    /**
+     * Unix seconds of the last explicit edit (/staz N, popup start/plus override,
+     * re-init). Plain +staz events do not bump it — only operations that are meant
+     * to replace the whole state. The merge treats the newest edit as authoritative
+     * so that lowering the count or restarting the training is not undone by the
+     * grow-only union with the cloud copy.
+     */
+    edited_at?: number;
 }
 
 interface LegacyProfessionState {
@@ -96,6 +104,7 @@ function initTraining(client: Client, plusPoints: number): void {
     const state: ProfessionState = {
         start_time: startTime,
         plus_events,
+        edited_at: startTime,
     };
     setState(state);
     eventBus.emit("profession.updated");
@@ -131,8 +140,18 @@ function showPercentage(client: Client): void {
 }
 
 /**
- * Merge two profession states using CRDT grow-only set semantics.
- * Takes the union of plus_events arrays (deduplicated) and the earlier start_time.
+ * Merge two profession states.
+ *
+ * Without an explicit edit on either side this is a CRDT grow-only set: the
+ * union of plus_events (deduplicated) and the earlier start_time, so a +staz
+ * event recorded on another device is never lost.
+ *
+ * When one side carries a newer `edited_at`, that side replaces the other
+ * wholesale — it is the result of the user restating the whole state (/staz N,
+ * popup override) and must survive the union. Only events from the other side
+ * that postdate the edit are folded back in, since those are +staz events the
+ * edit could not have taken into account.
+ *
  * Handles both legacy and new format on either side.
  */
 export function mergeProfessionStates(
@@ -146,11 +165,32 @@ export function mergeProfessionStates(
     const normalLocal = normalize(local);
     const normalCloud = normalize(cloud);
 
+    const localEdit = normalLocal.edited_at ?? 0;
+    const cloudEdit = normalCloud.edited_at ?? 0;
+
+    if (localEdit !== cloudEdit) {
+        const [base, other] = localEdit > cloudEdit
+            ? [normalLocal, normalCloud]
+            : [normalCloud, normalLocal];
+        const cutoff = base.edited_at!;
+        const eventSet = new Set([
+            ...base.plus_events,
+            ...other.plus_events.filter((time) => time > cutoff),
+        ]);
+        return {
+            start_time: base.start_time,
+            plus_events: Array.from(eventSet).sort((a, b) => a - b),
+            edited_at: cutoff,
+        };
+    }
+
     const start_time = Math.min(normalLocal.start_time, normalCloud.start_time);
     const eventSet = new Set([...normalLocal.plus_events, ...normalCloud.plus_events]);
     const plus_events = Array.from(eventSet).sort((a, b) => a - b);
 
-    return { start_time, plus_events };
+    const merged: ProfessionState = { start_time, plus_events };
+    if (localEdit) merged.edited_at = localEdit;
+    return merged;
 }
 
 export default function initProfession(

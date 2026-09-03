@@ -82,7 +82,11 @@ const ProfessionPopup: React.FC = () => {
         if (!state) return;
         const d = new Date(startInput);
         if (isNaN(d.getTime())) return;
-        const newState: ProfessionState = { ...state, start_time: Math.floor(d.getTime() / 1000) };
+        const newState: ProfessionState = {
+            ...state,
+            start_time: Math.floor(d.getTime() / 1000),
+            edited_at: Math.floor(Date.now() / 1000),
+        };
         setState(newState);
         setLocalState(newState);
         setEditingStart(false);
@@ -106,7 +110,11 @@ const ProfessionPopup: React.FC = () => {
                 newEvents.push(baseTime + i + 1);
             }
         }
-        const newState: ProfessionState = { ...state, plus_events: newEvents };
+        const newState: ProfessionState = {
+            ...state,
+            plus_events: newEvents,
+            edited_at: Math.floor(Date.now() / 1000),
+        };
         setState(newState);
         setLocalState(newState);
         setEditingPlus(false);
@@ -114,9 +122,11 @@ const ProfessionPopup: React.FC = () => {
     };
 
     const handleInit = () => {
+        const startTime = Math.floor(Date.now() / 1000);
         const newState: ProfessionState = {
-            start_time: Math.floor(Date.now() / 1000),
+            start_time: startTime,
             plus_events: [],
+            edited_at: startTime,
         };
         setState(newState);
         setLocalState(newState);

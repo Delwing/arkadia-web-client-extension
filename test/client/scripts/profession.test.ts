@@ -81,6 +81,60 @@ describe('mergeProfessionStates', () => {
         expect(merged.plus_events).toEqual([2001]);
     });
 
+    it('lets a newer edit replace the other side (restart via /staz)', () => {
+        // Phone: /staz 20 at t=5000 -> 7 synthetic events. Computer: stale state.
+        const local: ProfessionState = {
+            start_time: 5000,
+            plus_events: [5001, 5002, 5003, 5004, 5005, 5006, 5007],
+            edited_at: 5000,
+        };
+        const cloud: ProfessionState = { start_time: 1000, plus_events: [1001, 2002, 3003] };
+        const merged = mergeProfessionStates(local, cloud)!;
+        expect(merged.start_time).toBe(5000);
+        expect(merged.plus_events).toEqual([5001, 5002, 5003, 5004, 5005, 5006, 5007]);
+        expect(merged.edited_at).toBe(5000);
+    });
+
+    it('applies a newer cloud edit over stale local state', () => {
+        const local: ProfessionState = { start_time: 1000, plus_events: [1001, 2002] };
+        const cloud: ProfessionState = { start_time: 5000, plus_events: [5001], edited_at: 5000 };
+        const merged = mergeProfessionStates(local, cloud)!;
+        expect(merged.start_time).toBe(5000);
+        expect(merged.plus_events).toEqual([5001]);
+    });
+
+    it('keeps events recorded after the newer edit', () => {
+        const local: ProfessionState = { start_time: 5000, plus_events: [5001], edited_at: 5000 };
+        // Other device kept playing: one event predates the edit, one postdates it.
+        const cloud: ProfessionState = { start_time: 1000, plus_events: [4000, 6000] };
+        const merged = mergeProfessionStates(local, cloud)!;
+        expect(merged.plus_events).toEqual([5001, 6000]);
+    });
+
+    it('takes the newer of two edits', () => {
+        const local: ProfessionState = { start_time: 3000, plus_events: [3001], edited_at: 3000 };
+        const cloud: ProfessionState = { start_time: 5000, plus_events: [5001], edited_at: 5000 };
+        const merged = mergeProfessionStates(local, cloud)!;
+        expect(merged.start_time).toBe(5000);
+        expect(merged.plus_events).toEqual([5001]);
+        expect(merged.edited_at).toBe(5000);
+    });
+
+    it('falls back to the union when both sides carry the same edit', () => {
+        const local: ProfessionState = { start_time: 1000, plus_events: [1001], edited_at: 1000 };
+        const cloud: ProfessionState = { start_time: 1000, plus_events: [2002], edited_at: 1000 };
+        const merged = mergeProfessionStates(local, cloud)!;
+        expect(merged.plus_events).toEqual([1001, 2002]);
+        expect(merged.edited_at).toBe(1000);
+    });
+
+    it('is idempotent — re-merging the result changes nothing', () => {
+        const local: ProfessionState = { start_time: 5000, plus_events: [5001], edited_at: 5000 };
+        const cloud: ProfessionState = { start_time: 1000, plus_events: [1001, 6000] };
+        const merged = mergeProfessionStates(local, cloud)!;
+        expect(mergeProfessionStates(merged, cloud)).toEqual(merged);
+    });
+
     it('handles empty plus_events arrays', () => {
         const local: ProfessionState = { start_time: 1000, plus_events: [] };
         const cloud: ProfessionState = { start_time: 1000, plus_events: [] };
