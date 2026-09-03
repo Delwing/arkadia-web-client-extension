@@ -65,6 +65,8 @@ import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayout
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {CommandInputController} from "./commandInput/CommandInputController";
+import {attachVoiceInput} from "./voice/voiceInput";
+import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
@@ -781,6 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
             disableTabSleepPrevention();
         }
     });
+    const voiceButton = document.getElementById('voice-button') as HTMLButtonElement | null;
     const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
     const historyDownButton = document.getElementById('history-down-button') as HTMLButtonElement | null;
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
@@ -1364,8 +1367,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     commandInputController.attach();
 
+    const voiceInput = voiceButton
+        ? attachVoiceInput({
+            button: voiceButton,
+            input: messageInput,
+            // What is on screen is the vocabulary the recogniser lacks.
+            getVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
+        })
+        : null;
+
     eventBus.on('telnet.echo', (serverEchoing) => {
         commandInputController.setPasswordMode(serverEchoing);
+        // Never listen while the server is asking for a password.
+        voiceInput?.setEnabled(!serverEchoing);
     });
 
     // Handle connect/disconnect button click

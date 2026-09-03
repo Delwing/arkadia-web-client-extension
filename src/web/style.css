@@ -1947,6 +1947,47 @@ h1 {
   white-space: nowrap;
 }
 
+#voice-button {
+  padding: 0 1.25vh;
+  line-height: 1;
+}
+
+#voice-button.voice-error {
+  color: var(--popup-danger);
+  opacity: 0.7;
+}
+
+/* Listening is a state the player has to notice from across the screen, so
+   the button carries a pulsing ring in its own colour, not a tinted glyph. */
+#voice-button.listening {
+  border-color: var(--popup-danger);
+  color: var(--popup-danger);
+  animation: voice-button-pulse 1.4s ease-in-out infinite;
+}
+
+/* Hands-free keeps the microphone open, so it pulses in the accent colour
+   and stays lit between utterances. */
+#voice-button.listening-continuous {
+  border-color: var(--popup-accent);
+  color: var(--popup-accent);
+}
+
+@keyframes voice-button-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 0 0.25rem currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #voice-button.listening {
+    animation: none;
+    box-shadow: 0 0 0 0.2rem currentColor;
+  }
+}
+
 #connect-button {
   white-space: nowrap;
   width: 100%;
