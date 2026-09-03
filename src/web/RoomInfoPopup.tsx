@@ -208,7 +208,7 @@ const RoomInfoPopup: React.FC = () => {
         : [];
 
     // Parse gps: JSON array of GPS entries
-    let gpsEntries: { gps_string_lines: string[]; room_id: number; area_name?: string; within_room_ids?: number[] }[] = [];
+    let gpsEntries: { gps_string_lines: string[]; gps_line_modes?: (string | null)[]; area_name?: string; within_room_ids?: number[] }[] = [];
     if (gpsRaw) {
         try {
             gpsEntries = JSON.parse(gpsRaw);
@@ -467,13 +467,15 @@ const RoomInfoPopup: React.FC = () => {
                         <div className="room-info-popup__section-title">GPS ({gpsEntries.length})</div>
                         {gpsEntries.map((gps, i) => (
                             <div key={i} className="room-info-popup__gps-entry">
-                                <div className="room-info-popup__row">
-                                    <span className="room-info-popup__label">room_id:</span>
-                                    <span className="room-info-popup__value">{gps.room_id}</span>
-                                </div>
                                 <div className="room-info-popup__gps-lines">
                                     {gps.gps_string_lines.map((line, j) => (
-                                        <div key={j} className="room-info-popup__gps-line">{line}</div>
+                                        <div key={j} className="room-info-popup__gps-line">
+                                            {line}
+                                            {/* A pattern line reads as a broken literal otherwise. */}
+                                            {gps.gps_line_modes?.[j] === 'regex' && (
+                                                <span className="room-info-popup__gps-line-mode">regex</span>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                                 {gps.area_name && (

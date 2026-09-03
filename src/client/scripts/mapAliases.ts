@@ -260,17 +260,18 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                     }
                 }
 
-                let gpsEntries: { gps_string_lines: string[]; room_id: number; area_name?: string }[] = [];
+                let gpsEntries: { gps_string_lines: string[]; gps_line_modes?: (string | null)[]; area_name?: string }[] = [];
                 if (userData.gps) {
                     try { gpsEntries = JSON.parse(userData.gps); } catch { /* ignore */ }
                 }
                 if (gpsEntries.length > 0) {
                     output.append(`GPS (${gpsEntries.length})\n`, gray);
                     for (const gps of gpsEntries) {
-                        row('  room_id', String(gps.room_id));
-                        for (const line of gps.gps_string_lines) {
-                            output.append(`    ${line}\n`);
-                        }
+                        gps.gps_string_lines.forEach((line, idx) => {
+                            // A pattern line reads as a broken literal otherwise.
+                            const mode = gps.gps_line_modes?.[idx] === 'regex' ? ' [regex]' : '';
+                            output.append(`    ${line}${mode}\n`);
+                        });
                         if (gps.area_name) row('  area', gps.area_name);
                     }
                 }

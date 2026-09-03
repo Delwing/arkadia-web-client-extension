@@ -3804,6 +3804,16 @@
   word-break: break-word;
 }
 
+.room-info-popup__gps-line-mode {
+  margin-left: 0.35rem;
+  padding: 0 0.25rem;
+  border-radius: 2px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--popup-text-medium);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* Compass Rose Box (mode 2) */
 .compass-rose-box {
   position: absolute;
