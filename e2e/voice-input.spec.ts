@@ -217,6 +217,21 @@ test.describe('hands-free voice input', () => {
         expect(await getLastOutgoingCommand(page)).toBe('wybierz paczke 1');
     });
 
+    test('a command announced twice is only sent once', async ({page}) => {
+        await page.locator('#voice-button').click({modifiers: ['Shift']});
+
+        // What mobile Chrome does: the final result arrives again a moment later.
+        await speak(page, 'szczelina enter');
+        await speak(page, 'szczelina enter');
+
+        const sent = await page.evaluate(() => {
+            const sockets: any[] = (window as any).__mockSockets ?? [];
+            const commands = sockets.flatMap((socket) => socket?.commands ?? []);
+            return commands.filter((command: string) => command === 'szczelina').length;
+        });
+        expect(sent).toBe(1);
+    });
+
     test('a misheard line can be thrown away by voice', async ({page}) => {
         await page.locator('#voice-button').click({modifiers: ['Shift']});
 

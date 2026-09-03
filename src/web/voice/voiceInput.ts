@@ -62,6 +62,17 @@ function matchesKeyword(token: string, keywords: readonly string[]): boolean {
 /** Hold the button this long to start a hands-free run instead of one command. */
 const LONG_PRESS_MS = 500;
 
+/**
+ * Mobile Chrome re-announces a final result, and after reopening a stream it
+ * can recognise the tail of the same audio again, so one spoken command arrives
+ * twice. Sending it twice is not harmless in a game — it attacks twice, buys
+ * twice — so an identical result this soon after the last one is dropped.
+ *
+ * The window is deliberately short: saying a command over again takes a second
+ * or more, while the duplicate lands almost immediately.
+ */
+const DUPLICATE_WINDOW_MS = 800;
+
 const IDLE_TITLE = 'Dyktowanie głosowe (przytrzymaj, aby dyktować bez przerwy)';
 const LISTENING_TITLE = 'Słucham — kliknij, aby zakończyć';
 const CONTINUOUS_TITLE = 'Tryb ciągły — powiedz "wyślij", aby wysłać';
@@ -128,6 +139,14 @@ export function attachVoiceInput(deps: VoiceInputDeps): VoiceInputHandle {
     let interim = '';
     // Sticks around after a failed run so the button can explain itself.
     let errorTitle: string | null = null;
+    // What was last heard and last sent, for the duplicate guard above.
+    let lastFinal = '';
+    let lastFinalAt = 0;
+    let lastSent = '';
+    let lastSentAt = 0;
+
+    const isRepeat = (value: string, previous: string, at: number): boolean =>
+        value !== '' && value === previous && Date.now() - at < DUPLICATE_WINDOW_MS;
 
     /** Anchor the next utterance to wherever the caret is now. */
     const baseline = (): void => {
@@ -154,6 +173,14 @@ export function attachVoiceInput(deps: VoiceInputDeps): VoiceInputHandle {
         const vocabulary = buildVocabulary(getVocabulary());
         const heard = chooseTranscript(candidates, vocabulary);
 
+        if (isRepeat(heard, lastFinal, lastFinalAt)) {
+            // Keep the window rolling: duplicates can arrive in a run of three.
+            lastFinalAt = Date.now();
+            return;
+        }
+        lastFinal = heard;
+        lastFinalAt = Date.now();
+
         const continuous = dictation.getMode() === 'continuous';
         // The keyword is split off before repair: it is not a word from the
         // game, so pulling it towards one on screen could only break it.
@@ -178,7 +205,11 @@ export function attachVoiceInput(deps: VoiceInputDeps): VoiceInputHandle {
 
         if (action === 'send') {
             const command = input.value.trim();
-            if (command) submit(command);
+            // The same command can survive the check above by arriving with a
+            // different tail — "szczelina enter" once, "szczelina wyslij" next.
+            if (command && !isRepeat(command, lastSent, lastSentAt)) submit(command);
+            lastSent = command;
+            lastSentAt = Date.now();
             input.value = '';
             prefix = '';
             suffix = '';

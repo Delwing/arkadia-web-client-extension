@@ -497,6 +497,65 @@ describe('attachVoiceInput in continuous mode', () => {
         expect(submit).toHaveBeenCalledWith('polnocny-zachod');
     });
 
+    it('sends once when the browser announces the same result twice', () => {
+        const {button, input} = mount();
+        const submit = vi.fn();
+        attachVoiceInput({button, input, submit, isBrowserSupported: () => true});
+
+        shiftClick(button);
+        // Mobile Chrome fires the final result again a moment later.
+        lastRecognition?.say('szczelina enter', true);
+        lastRecognition?.say('szczelina enter', true);
+
+        expect(submit).toHaveBeenCalledTimes(1);
+        expect(submit).toHaveBeenCalledWith('szczelina');
+    });
+
+    it('sends once when the duplicate arrives with a different tail', () => {
+        const {button, input} = mount();
+        const submit = vi.fn();
+        attachVoiceInput({button, input, submit, isBrowserSupported: () => true});
+
+        shiftClick(button);
+        lastRecognition?.say('szczelina enter', true);
+        // Reopening the stream can re-recognise the same audio differently.
+        lastRecognition?.say('szczelina wyslij', true);
+
+        expect(submit).toHaveBeenCalledTimes(1);
+    });
+
+    it('still lets the same command be given again deliberately', () => {
+        vi.useFakeTimers();
+        try {
+            const {button, input} = mount();
+            const submit = vi.fn();
+            attachVoiceInput({button, input, submit, isBrowserSupported: () => true});
+
+            shiftClick(button);
+            lastRecognition?.say('polnoc wyslij', true);
+            // Long enough to have said it over again — two rooms north.
+            vi.advanceTimersByTime(2000);
+            lastRecognition?.say('polnoc wyslij', true);
+
+            expect(submit).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not confuse two different commands for a duplicate', () => {
+        const {button, input} = mount();
+        const submit = vi.fn();
+        attachVoiceInput({button, input, submit, isBrowserSupported: () => true});
+
+        shiftClick(button);
+        lastRecognition?.say('polnoc wyslij', true);
+        lastRecognition?.say('wschod wyslij', true);
+
+        expect(submit).toHaveBeenNthCalledWith(1, 'polnoc');
+        expect(submit).toHaveBeenNthCalledWith(2, 'wschod');
+    });
+
     it('keeps listening after a send', () => {
         const {button, input} = mount();
         const submit = vi.fn();
