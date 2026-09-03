@@ -49,6 +49,16 @@ describe('lamp triggers', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'napelnij lampe olejem');
   });
 
+  test.each([
+    'Butelka oleju jest pusta.',
+    'Butla oleju jest pusta.',
+    'Flaszeczka oleju jest pusta.',
+    'Buklak oleju jest pusty.',
+  ])('binds empty bottle handling for "%s"', (line) => {
+    parse(line);
+    expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+  });
+
   test('binds bottle taking', () => {
     parse('Czym chcesz napelnic lampe');
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);

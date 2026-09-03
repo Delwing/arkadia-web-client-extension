@@ -81,10 +81,12 @@ export default function initLamp(client: Client) {
         /^[ >]*Woda szybko gasi(?: .*)? lampe\.$/
     ]
     const refillPattern = /^[ >]*Dopelniasz(?: [a-z ]+)? [a-z]+ oleju/
+    // The vessel noun varies (butelka, butla, flaszeczka, ...) and so
+    // does its gender ("pusta" / "pusty"), so match on the oil phrase itself
+    // instead of listing every container.
     const emptyPatterns = [
         /oprozniajac zupelnie(?: [a-z ]+)? [a-z]+ oleju\./,
-        /utelka oleju jest pusta\./,
-        /utla oleju jest pusta\./
+        /\boleju jest pust[ay]\./
     ]
     const noBottlePattern = /^Czym chcesz napelnic(?: [a-z ]+)? lampe/
 
