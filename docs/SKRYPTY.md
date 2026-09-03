@@ -166,7 +166,7 @@ Klient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspek
 
 **Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki
 
-**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, wycena kamieni, wycena cen, szyldy gildii
+**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, kamienna plyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii
 
 ---
 

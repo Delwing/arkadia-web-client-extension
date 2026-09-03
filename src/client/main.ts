@@ -152,6 +152,8 @@ import initTaragornLabyrinth from './scripts/taragornLabyrinth'
 import initDataRefresh from './scripts/dataRefresh'
 import initTcolor from './scripts/tcolor'
 import initOpal from './scripts/opal'
+import initBagno from './scripts/bagno'
+import initWrak from './scripts/wrak'
 import initLastSeen from './scripts/lastSeen'
 import initZlom from './scripts/zlom'
 import initBilety from './scripts/bilety'
@@ -375,6 +377,8 @@ export function registerScripts(client: Client) {
     initDataRefresh(client, aliases)
     initTcolor(client, aliases)
     initOpal(client)
+    initBagno(client)
+    initWrak(client)
     initLastSeen(client, aliases)
     initBilety(client, aliases)
 
