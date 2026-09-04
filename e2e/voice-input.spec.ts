@@ -241,3 +241,74 @@ test.describe('hands-free voice input', () => {
         await expect(page.locator('#message-input')).toHaveValue('');
     });
 });
+
+/** Open the UI settings modal, the way `ui-settings.spec.ts` does. */
+async function openUiSettings(page: Page) {
+    // Wait out any in-progress hide animation, or the open is swallowed.
+    await page.waitForFunction(() => {
+        const el = document.getElementById('ui-settings-modal');
+        return !el || window.getComputedStyle(el).display === 'none';
+    });
+    await page.click('#menu-button');
+    await page.click('#ui-settings-button');
+    const modal = page.locator('#ui-settings-modal');
+    await expect(modal).toBeVisible();
+    await page.waitForFunction(() => {
+        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
+        if (!d) return false;
+        const t = window.getComputedStyle(d).transform;
+        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+    });
+    return modal;
+}
+
+/** Flip the mic-button setting and save. */
+async function setVoiceButtonEnabled(page: Page, enabled: boolean): Promise<void> {
+    const modal = await openUiSettings(page);
+    const checkbox = modal.locator('#ui-show-voice-button');
+    if (enabled) {
+        await checkbox.check();
+    } else {
+        await checkbox.uncheck();
+    }
+    await modal.locator('#ui-settings-save').click();
+    await expect(modal).not.toBeVisible();
+}
+
+test.describe('the microphone button can be switched off', () => {
+    test.beforeEach(async ({page}) => {
+        await installSpeechStub(page);
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+    });
+
+    test('unchecking the setting takes the button away and keeps it away', async ({page}) => {
+        const button = page.locator('#voice-button');
+        await expect(button).toBeVisible();
+
+        await setVoiceButtonEnabled(page, false);
+
+        // No reload needed: the setting applies where it was made.
+        await expect(button).toBeHidden();
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await expect(button).toBeHidden();
+    });
+
+    test('checking it back on returns a working button', async ({page}) => {
+        await setVoiceButtonEnabled(page, false);
+        await expect(page.locator('#voice-button')).toBeHidden();
+
+        await setVoiceButtonEnabled(page, true);
+        await expect(page.locator('#voice-button')).toBeVisible();
+
+        await page.locator('#voice-button').click();
+        await speak(page, 'polnoc');
+
+        await expect(page.locator('#message-input')).toHaveValue('polnoc');
+    });
+});

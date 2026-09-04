@@ -151,6 +151,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     objectsFontSize: { type: 'number', min: 0.3, max: 3 },
     buttonSize: { type: 'number', min: 0.1, max: 10, optional: true },
     showButtons: { type: 'boolean' },
+    showVoiceButton: { type: 'boolean', label: 'Przycisk mikrofonu' },
     mapHeight: { type: 'number', min: 0, max: 100, integer: true, label: 'Wysokosc mapy (%)' },
     mapPosition: {
         type: 'enum',

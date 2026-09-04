@@ -48,6 +48,7 @@ export const defaultChromeSettings: ChromeSettings = {
     ...defaultDeviceViewSettings,
     objectsFontSize: 0.6,
     showButtons: true,
+    showVoiceButton: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     mapPosition: 'top-overlay',
     footerMode: 0,

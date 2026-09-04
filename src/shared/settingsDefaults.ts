@@ -124,7 +124,7 @@ export const deviceViewSettingsKeys = [
 // device-scoped view prefs above, so save() persists them to `uiSettings`.
 export const chromeSettingsKeys = [
     'contentFontSize', 'mapScale', 'outputMaxElements',
-    'objectsFontSize', 'buttonSize', 'showButtons', 'mapHeight', 'mapPosition',
+    'objectsFontSize', 'buttonSize', 'showButtons', 'showVoiceButton', 'mapHeight', 'mapPosition',
     'footerMode', 'footerComponents', 'keepMultibindsVisible', 'splitViewHeight',
     'showCombatTimer', 'showTransportLabel', 'objectListBackgroundColor',
     'objectListBackgroundAlpha', 'alwaysVisibleBars', 'barOrder',

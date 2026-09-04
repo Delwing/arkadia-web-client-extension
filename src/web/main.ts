@@ -65,7 +65,7 @@ import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayout
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {CommandInputController} from "./commandInput/CommandInputController";
-import {attachVoiceInput} from "./voice/voiceInput";
+import {attachVoiceInput, type VoiceInputHandle} from "./voice/voiceInput";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
@@ -1367,19 +1367,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     commandInputController.attach();
 
-    const voiceInput = voiceButton
-        ? attachVoiceInput({
-            button: voiceButton,
-            input: messageInput,
-            // What is on screen is the vocabulary the recogniser lacks.
-            getVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
-        })
-        : null;
+    let voiceInput: VoiceInputHandle | null = null;
+    // The server asks for a password by taking echo away; dictation goes with it.
+    let serverEchoing = false;
+    // Turning the button off detaches the recogniser entirely rather than just
+    // hiding it, so a player who does not want it never holds a microphone open.
+    const syncVoiceButton = () => {
+        if (!voiceButton) return;
+        if (globalStorage.get('uiSettings')?.showVoiceButton === false) {
+            voiceInput?.detach();
+            voiceInput = null;
+            voiceButton.style.display = 'none';
+            return;
+        }
+        if (!voiceInput) {
+            // `attachVoiceInput` hides the button again where the API is missing.
+            voiceButton.style.display = '';
+            voiceInput = attachVoiceInput({
+                button: voiceButton,
+                input: messageInput,
+                // What is on screen is the vocabulary the recogniser lacks.
+                getVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
+            });
+        }
+        voiceInput.setEnabled(!serverEchoing);
+    };
+    syncVoiceButton();
 
-    eventBus.on('telnet.echo', (serverEchoing) => {
-        commandInputController.setPasswordMode(serverEchoing);
+    globalStorage.onChange('uiSettings', (next) => {
+        if (!next || !('showVoiceButton' in next)) return;
+        syncVoiceButton();
+    });
+
+    eventBus.on('telnet.echo', (echoing) => {
+        commandInputController.setPasswordMode(echoing);
+        serverEchoing = echoing;
         // Never listen while the server is asking for a password.
-        voiceInput?.setEnabled(!serverEchoing);
+        voiceInput?.setEnabled(!echoing);
     });
 
     // Handle connect/disconnect button click

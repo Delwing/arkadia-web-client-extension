@@ -121,6 +121,8 @@ export interface ChromeSettings extends DeviceViewSettings {
     /** @deprecated Migrated to mobileButtonSettings.buttonSize */
     buttonSize?: number;
     showButtons: boolean;
+    /** Mic button in the command bar. Off leaves the bar without dictation. */
+    showVoiceButton: boolean;
     mapHeight: number;
     mapPosition: MapPosition;
     footerMode: number;

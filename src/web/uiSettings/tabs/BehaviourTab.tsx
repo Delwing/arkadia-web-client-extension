@@ -22,6 +22,7 @@ function BehaviourTab({ draft, update, onEnableNotifications }: BehaviourTabProp
                 <CheckboxRow id="ui-clear-input" label="Czyść pole komend po wysłaniu" checked={draft.clearInputOnSend} onChange={(v) => update({ clearInputOnSend: v })} />
                 <CheckboxRow id="ui-auto-lowercase-commands" label="Automatycznie małe litery w komendach" checked={draft.autoLowercaseCommands} onChange={(v) => update({ autoLowercaseCommands: v })} />
                 <CheckboxRow id="ui-command-echo" label="Echo komend" checked={draft.commandEcho} onChange={(v) => update({ commandEcho: v })} />
+                <CheckboxRow id="ui-show-voice-button" label="Przycisk mikrofonu (dyktowanie głosowe)" checked={draft.showVoiceButton} onChange={(v) => update({ showVoiceButton: v })} />
                 <CheckboxRow id="ui-keep-multibinds-visible" label="Zawsze pokazuj pasek multibindów" checked={draft.keepMultibindsVisible} onChange={(v) => update({ keepMultibindsVisible: v })} />
                 <CheckboxRow id="ui-drinkable-as-functional-bind" label="Bind picia na bind funkcyjny" checked={draft.drinkableAsFunctionalBind} onChange={(v) => update({ drinkableAsFunctionalBind: v })} />
                 <CheckboxRow id="ui-gate-as-functional-bind" label="Bind bramy na bind funkcyjny" checked={draft.gateAsFunctionalBind} onChange={(v) => update({ gateAsFunctionalBind: v })} />
