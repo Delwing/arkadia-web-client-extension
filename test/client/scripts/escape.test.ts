@@ -61,6 +61,50 @@ describe('escape triggers', () => {
     ]);
   });
 
+  test('ignores movement of someone other than the escapee', () => {
+    parse('Baz uciekl ci.');
+    const result = parse('[1] Evandeil podaza na polnocny-zachod.');
+    expect(result?.text).toBe('[1] Evandeil podaza na polnocny-zachod.');
+    expect(client.print).not.toHaveBeenCalled();
+  });
+
+  test('ignores panic escape of someone other than the escapee', () => {
+    parse('Baz uciekl ci.');
+    parse('Evandeil w panice ucieka na polnoc.');
+    expect(client.print).not.toHaveBeenCalled();
+  });
+
+  test('draws arrow for the escapee even when the line is prefixed', () => {
+    parse('Baz uciekl ci.');
+    parse('[1] Baz podaza na wschod.');
+    expect(client.print).toHaveBeenCalled();
+  });
+
+  test('draws arrow for a descriptive escapee name', () => {
+    parse('Zlotowlosy zwinny elfi tancerz wojny uciekl ci.');
+    parse('Zlotowlosy zwinny elfi tancerz wojny podaza na poludnie.');
+    expect(client.print).toHaveBeenCalled();
+  });
+
+  test('draws arrow when the elfka runs off laughing', () => {
+    parse('Kolorowowlosa rozesmiana elfka wybiega smiejac sie na caly glos na wschod.');
+    const printed = client.print.mock.calls.map(c => typeof c[0] === 'string' ? c[0] : c[0]?.text);
+    expect(printed).toEqual([
+      '\n',
+      '                  #',
+      '                   #',
+      '              #######',
+      '                   #',
+      '                  #',
+      '\n'
+    ]);
+  });
+
+  test('draws arrow when the elfka runs off giggling', () => {
+    parse('Kolorowowlosa rozesmiana elfka wybiega chichoczac na polnoc.');
+    expect(client.print).toHaveBeenCalled();
+  });
+
   test('highlights escape success line', () => {
     const result = parse('Udalo ci sie gdzies uciec!');
     expect(result?.text).toContain('Udalo ci sie gdzies uciec!');
