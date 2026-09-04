@@ -154,7 +154,7 @@ Klient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspek
 
 **Magia:** ladowanie magii, klucze magiczne, zaklecia, odkadanie magii
 
-**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol
+**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol, leczenie chorob i zatruc
 
 **Rzemioslo:** kowalstwo, lowienie ryb, oswajanie zwierzat, wiedza, umiejetnosci, jezyki, nauczyciel jezykow
 

@@ -23,6 +23,16 @@ Modul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z z
 | `/z_akcja ziolo` | Alternatywa dla `/zi` - np. `/z_zjedz deliona` |
 | `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z iloscia - np. `/z_przyloz lawenda 3` |
 
+## Leczenie
+
+Przy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klient wypisuje liste ziol, ktorymi mozna sie wyleczyc. Ziola, ktore masz w woreczkach, sa zielone i klikalne - klikniecie wysyla odpowiednia komende `/zi`.
+
+| Komenda | Opis |
+|---------|------|
+| `/leczenie` | Wyswietl liste wszystkich chorob i zapisanych na nie ziol |
+
+> **Wskazowka:** Dostepnosc ziol jest sprawdzana na podstawie licznika woreczkow, wiec warto najpierw uzyc `/ziola_buduj`.
+
 ## Zarzadzanie woreczkami
 
 | Komenda | Opis |

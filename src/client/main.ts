@@ -44,6 +44,7 @@ import initArmorShop from './scripts/armorShop'
 import initSmith from './scripts/smith'
 import initHerbCounter from './scripts/herbCounter'
 import initHerbDescriptions from './scripts/herbDescriptions'
+import initRemedies from './scripts/remedies'
 import initLvlCalc from './scripts/lvlCalc'
 import initCechyHistory from './scripts/cechyHistory'
 import initItemCondition from './scripts/itemCondition'
@@ -285,6 +286,7 @@ export function registerScripts(client: Client) {
     initCommandPreserveCaseMode(client)
     initHerbCounter(client, aliases)
     initHerbDescriptions(client)
+    initRemedies(client, aliases)
     initLvlCalc(client, aliases)
     initCechyHistory(client, aliases)
     initCompareAll(client, aliases)
