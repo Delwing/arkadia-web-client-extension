@@ -1,6 +1,7 @@
 import Client from "../Client";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
+import { resolveDuplicateToMain } from "./duplicateToMain";
 
 const HISTORY_LIMIT = 200;
 
@@ -70,6 +71,11 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
 
             // Add to combat history
             addEntry(line, type);
+
+            // Messages too important to hide behind the popup get a copy echoed
+            // into the main window; the redirect below is unaffected.
+            const duplicate = resolveDuplicateToMain(line, type);
+            if (duplicate) client.print(duplicate);
 
             // Mark as deleted to prevent showing in main window
             return line.markAsDeleted();
