@@ -15,6 +15,7 @@ import Elich from "../ships/Elich.json";
 import Flavius from "../ships/Flavius.json";
 import Francois from "../ships/Francois.json";
 import Gervais from "../ships/Gervais.json";
+import Giangaleazzo from "../ships/Giangaleazzo.json";
 import Gmeath from "../ships/Gmeath.json";
 import Gvidon from "../ships/Gvidon.json";
 import Hallgerda from "../ships/Hallgerda.json";
@@ -76,7 +77,8 @@ export const RAW_TRANSPORT_DEFINITIONS: Array<[string, RawTransportDefinition]> 
     ["Charonda", Charonda as RawTransportDefinition], ["Creyard", Creyard as RawTransportDefinition],
     ["Daniel", Daniel as RawTransportDefinition], ["Elich", Elich as RawTransportDefinition],
     ["Flavius", Flavius as RawTransportDefinition], ["Francois", Francois as RawTransportDefinition],
-    ["Gervais", Gervais as RawTransportDefinition], ["Gmeath", Gmeath as RawTransportDefinition],
+    ["Gervais", Gervais as RawTransportDefinition],
+    ["Giangaleazzo", Giangaleazzo as RawTransportDefinition], ["Gmeath", Gmeath as RawTransportDefinition],
     ["Gvidon", Gvidon as RawTransportDefinition], ["Hallgerda", Hallgerda as RawTransportDefinition],
     ["Haming", Haming as RawTransportDefinition], ["Jacob", Jacob as RawTransportDefinition],
     ["Kelim", Kelim as RawTransportDefinition], ["Louis", Louis as RawTransportDefinition],

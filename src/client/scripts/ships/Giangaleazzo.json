@@ -1,0 +1,30 @@
+{
+    "label": "Iseo dolny bieg - Iseo gorny bieg",
+    "enter": "Wchodzisz na nieduza rzeczna barke.",
+    "exit": "Schodzisz z barki.",
+    "start": "Barka odbija od brzegu.",
+    "bind": "ob widok",
+    "board_commands": [
+        "wsiadz na statek"
+    ],
+    "exit_command": "zejdz ze statku",
+    "standing_patterns": [
+        "Nieduza rzeczna barka"
+    ],
+    "stops": [
+        {
+            "start": 5343,
+            "destination": 5324,
+            "time": 32,
+            "stop_pattern": "^(?:Giangaleazzo|Blady zylasty mezczyzna|Jakis mezczyzna) krzyczy(?: na barce)?: Doplynelismy do przystani w gornym biegu Iseo! Mozna wysiadac!$",
+            "label": "Iseo gorny bieg"
+        },
+        {
+            "start": 5324,
+            "destination": 5343,
+            "time": 32,
+            "stop_pattern": "^(?:Giangaleazzo|Blady zylasty mezczyzna|Jakis mezczyzna) krzyczy(?: na barce)?: Doplynelismy do przystani w dolnym biegu Iseo! Mozna wysiadac!$",
+            "label": "Iseo dolny bieg"
+        }
+    ]
+}
