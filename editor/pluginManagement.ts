@@ -182,6 +182,17 @@ export async function savePlugin(
     plugin.createdAt = now
   }
 
+  // The catalogue link is written straight to IndexedDB when a plugin is
+  // published, so the editor's in-memory copy - loaded when the plugin was
+  // opened, before any publish - does not carry it. Re-read it before
+  // overwriting the record: without this the first save after publishing
+  // unlinks the plugin from its catalogue entry, and the next release is
+  // offered as a brand new plugin instead of an update to the existing one.
+  if (pluginId && !plugin.registrySlug) {
+    const stored = await getEditorPlugin(pluginId)
+    if (stored?.registrySlug) plugin.registrySlug = stored.registrySlug
+  }
+
   // Store in editor database
   await storeEditorPlugin(plugin)
 

@@ -1077,8 +1077,18 @@ i `plugin.json`.
 Po udanej publikacji edytor zapamiętuje identyfikator pluginu w katalogu, więc kolejne wysyłki są
 rozpoznawane jako aktualizacja, a nie nowy plugin.
 
-Opis i nazwa brane są z `PluginInfo`, które zwraca Twoja funkcja `init()` — to jest źródło prawdy,
-a nie metadane edytora.
+Nazwa, opis **i wersja** brane są z `PluginInfo`, które zwraca Twoja funkcja `init()` — to jest
+źródło prawdy, a nie metadane edytora.
+
+### Wydanie aktualizacji
+
+1. Podbij `version` w obiekcie, który zwraca Twój `init()` — np. z `'1.0.0'` na `'1.1.0'`
+2. Zapisz i kliknij "Publish"
+3. Pole "Wersja" w oknie katalogu zostaw puste — katalog weźmie wersję z kodu
+
+Wersje są niezmienne i muszą rosnąć zgodnie z semver, więc nowa musi być wyższa od ostatnio
+opublikowanej (okno katalogu pokazuje, która to). Wersję możesz też wpisać ręcznie — wtedy wygrywa
+ona, ale klient nadal pokaże graczom tę z `PluginInfo`, więc najbezpieczniej trzymać obie zgodne.
 
 ### Przez Parametr URL
 
