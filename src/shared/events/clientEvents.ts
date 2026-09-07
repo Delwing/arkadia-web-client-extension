@@ -19,6 +19,7 @@ import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
 import type {CarriageEntry} from "@client/scripts/carriage.ts";
 import type {RouteSegment} from "@shared/map/transportPathFinder.ts";
+import type {MapLostReason} from "@shared/map/MapHelper.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
 import type {CombatStatsSnapshot} from "@client/scripts/combatStats.ts";
@@ -164,9 +165,12 @@ export interface KnownEvents {
     "mapCarriageBlocks": [number[]];
     "mapShowCarriageBlocks": [boolean];
     "mapLocationLabel": string;
+    /** The mapper is sure the room it draws is not the room we stand in - or sure again that it is. */
+    "mapPositionLost": { lost: boolean; reason: MapLostReason | null };
     "requestMapLocationLabel": void;
     "requestMapHighlights": void;
     "requestMapLostRooms": void;
+    "requestMapPositionLost": void;
     "requestMapParkedCarriages": void;
     "requestMapCarriageBlocks": void;
     "requestMapPath": void;

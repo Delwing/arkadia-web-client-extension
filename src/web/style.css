@@ -2238,6 +2238,52 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   color: #ff8800;
 }
 
+/* Top-right corner of the map, opposite the location label. Travels with the
+   map into the layout manager's panel, the same way the label does. */
+#map-lost-wrapper {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1011;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.map-lost-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.6rem;
+  background-color: #c9302c;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: help;
+  pointer-events: auto;
+  user-select: none;
+  animation: map-lost-badge-blink 2.4s ease-in-out infinite;
+}
+
+/* Enough to catch the eye at the edge of vision, not enough to nag. */
+@keyframes map-lost-badge-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-lost-badge {
+    animation: none;
+  }
+}
+
 /* Mobile-specific styles */
 @media (max-width: 768px) {
   body {

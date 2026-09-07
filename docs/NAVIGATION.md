@@ -13,6 +13,8 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 | `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |
 | `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |
 
+> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).
+
 ## Automatyczne chodzenie
 
 | Komenda | Opis |

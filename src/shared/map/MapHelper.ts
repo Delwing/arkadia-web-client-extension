@@ -141,6 +141,21 @@ const defaultStorage: MapStorage = {
     setItem: (_key: string, value: any) => characterStorage.set('mapperRoomId', value),
 };
 
+/**
+ * Why the mapper believes its position is wrong. A closed set, so a UI can word
+ * the warning without re-deriving anything.
+ */
+export type MapLostReason = 'follow' | 'gmcp';
+
+/**
+ * How long a follow the mapper could not resolve is given before it counts as a
+ * loss. Following a team leader normally leaves the map a room behind for a
+ * moment - the next room.info puts it right - so warning at once would blink on
+ * every step. Only a stale position that outlives this window, and that GMCP
+ * cannot rescue, is a real loss.
+ */
+const LOST_CONFIRM_DELAY_MS = 1500;
+
 // 20-color palette for trip planner segments - visually distinct colors
 export const SEGMENT_COLORS = [
     '#7FFF00', // chartreuse (green-yellow)
@@ -178,6 +193,10 @@ export default class MapHelper {
     // not yet been reconciled with a follow-step. Lets followMove() avoid moving
     // a second time on top of a position GMCP already advanced this step.
     private gmcpJustMoved = false;
+    /** True once the room drawn on the map is certainly not the room we stand in. */
+    private lost = false;
+    private lostReason: MapLostReason | null = null;
+    private lostCheckTimer?: ReturnType<typeof setTimeout>;
     private hashes: Record<string, number> = {};
     private internalIds: Record<string, number> = {};
     private gmcpPosition!: Position;
@@ -251,12 +270,16 @@ export default class MapHelper {
             // Reset per room.info so a leftover flag from a step without a
             // follow-step can't suppress the next step's relative move.
             this.gmcpJustMoved = false;
-            if (this.refreshPosition) {
+            // While lost the position on screen is known to be wrong, so the first
+            // room.info that names a room the map knows is taken as the way back,
+            // whether or not a refresh was already pending.
+            if (this.refreshPosition || this.lost) {
                 const before = this.currentRoom?.id;
-                this.setMapPosition(this.gmcpPosition);
-                this.refreshPosition = false;
-                if (this.currentRoom?.id !== before) {
-                    this.gmcpJustMoved = true;
+                if (this.setMapPosition(this.gmcpPosition)) {
+                    this.refreshPosition = false;
+                    if (this.currentRoom?.id !== before) {
+                        this.gmcpJustMoved = true;
+                    }
                 }
             }
         });
@@ -333,11 +356,70 @@ export default class MapHelper {
             this.emitPath();
         });
 
+        this.client.on("requestMapPositionLost", () => {
+            this.emitPositionLost();
+        });
+
         this.client.sendEvent("refreshPositionWhenAble");
     }
 
     setBlockable(isBlockable: boolean) {
         this.isBlockable = isBlockable;
+    }
+
+    /** True when the mapper knows the room it draws is not the room we are in. */
+    get isLost(): boolean {
+        return this.lost;
+    }
+
+    emitPositionLost() {
+        this.client.sendEvent("mapPositionLost", {lost: this.lost, reason: this.lostReason});
+    }
+
+    private setLost(lost: boolean, reason: MapLostReason | null = null) {
+        const nextReason = lost ? reason : null;
+        if (this.lost === lost && this.lostReason === nextReason) {
+            return;
+        }
+        this.lost = lost;
+        this.lostReason = nextReason;
+        this.emitPositionLost();
+    }
+
+    /** Position confirmed from an authoritative source - drop any doubt about it. */
+    private clearLost() {
+        if (this.lostCheckTimer !== undefined) {
+            clearTimeout(this.lostCheckTimer);
+            this.lostCheckTimer = undefined;
+        }
+        this.setLost(false);
+    }
+
+    /** The room id GMCP is pointing at, or undefined when the map has no such room. */
+    private resolveGmcpRoom(data?: Position): number | undefined {
+        if (!data || data.x === undefined || data.y === undefined || !data.name) {
+            return undefined;
+        }
+        return this.hashes[`${data.x}:${data.y}:0:${data.name}`];
+    }
+
+    /**
+     * Something moved us in a way the mapper could not work out. That alone is not
+     * a loss - GMCP usually catches up on the next room.info - so the verdict waits
+     * a beat and is only passed when GMCP has no room to offer either.
+     */
+    private suspectLost(reason: MapLostReason) {
+        if (this.lostCheckTimer !== undefined) {
+            clearTimeout(this.lostCheckTimer);
+        }
+        this.lostCheckTimer = setTimeout(() => {
+            this.lostCheckTimer = undefined;
+            if (this.isGmcpPositionCurrent() || this.resolveGmcpRoom(this.gmcpPosition) !== undefined) {
+                this.setLost(false);
+                return;
+            }
+            this.setLost(true, reason);
+        }, LOST_CONFIRM_DELAY_MS);
     }
 
     initialize(mapData: MapData.Map, colors: any): { startId: number; reader: MapReader; pathFinder: PathFinder } {
@@ -896,7 +978,7 @@ export default class MapHelper {
             if (locationId) {
                 this.locationHistory.push(locationId);
                 this.lastMoveDirection = getLongDir(actualDirection);
-                this.renderRoomById(locationId, true);
+                this.renderRoomById(locationId, true, {relative: true});
                 if (!this.client.getSuppressMapMoveEvent()) {
                     this.client.sendEvent("mapMove");
                 } else {
@@ -975,6 +1057,7 @@ export default class MapHelper {
 
         if (!this.isGmcpPositionCurrent()) {
             this.refreshPosition = true;
+            this.suspectLost('follow');
         }
 
         return undefined;
@@ -982,8 +1065,7 @@ export default class MapHelper {
 
     private isGmcpPositionCurrent(): boolean {
         if (!this.gmcpPosition || !this.currentRoom) return false;
-        const hash = `${this.gmcpPosition.x}:${this.gmcpPosition.y}:0:${this.gmcpPosition.name}`;
-        return this.hashes[hash] === this.currentRoom.id;
+        return this.resolveGmcpRoom(this.gmcpPosition) === this.currentRoom.id;
     }
 
     refresh() {
@@ -996,16 +1078,26 @@ export default class MapHelper {
 
     setMapPosition(data: Position) {
         if (data && data.x !== undefined && data.y !== undefined && data.name) {
-            const hash = `${data.x}:${data.y}:0:${data.name}`;
-            const room = this.hashes[hash];
+            const room = this.resolveGmcpRoom(data);
+            if (room === undefined) {
+                // The game put us somewhere the map does not know. Blanking the map
+                // would only lose the last good room, so the marker stays where it
+                // is and the warning says it cannot be trusted.
+                if (this.mapReady) {
+                    this.setLost(true, 'gmcp');
+                }
+                return false;
+            }
             this.setMapRoom(room);
             this.refreshPosition = false;
+            this.clearLost();
             return true;
         }
         return false;
     }
 
     setMapRoomById(id: number, options?: { silent?: boolean; direction?: string | null }) {
+        this.clearLost();
         if (this.currentRoom?.id === id) {
             if (!options?.silent) {
                 this.client.sendEvent("enterLocation", {
@@ -1040,7 +1132,7 @@ export default class MapHelper {
             this.client.sendEvent("stepBack");
             return;
         }
-        this.renderRoomById(this.locationHistory[this.locationHistory.length - 1]);
+        this.renderRoomById(this.locationHistory[this.locationHistory.length - 1], true, {relative: true});
         this.client.sendEvent("stepBack");
         if (!this.client.getSuppressMapMoveEvent()) {
             this.client.sendEvent("mapMove");
@@ -1062,10 +1154,20 @@ export default class MapHelper {
         }
     }
 
-    renderRoomById(id: number, sendEvent = true) {
+    /**
+     * @param options.relative - the room was reached by stepping there from the
+     * room already on screen, rather than asserted by whoever knows better. Every
+     * other caller - /ustaw, the GPS, the labyrinth mappers, a plugin, a GMCP
+     * fix - is placing us, so landing anywhere new that way settles any doubt
+     * about where we are.
+     */
+    renderRoomById(id: number, sendEvent = true, options?: { relative?: boolean }) {
         if (!this.mapReader) {
             this.savedRoomId = id;
             return;
+        }
+        if (!options?.relative && id !== this.currentRoom?.id) {
+            this.clearLost();
         }
         this.currentRoom = this.mapReader.getRoom(id);
         this.savedRoomId = id;

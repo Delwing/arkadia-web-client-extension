@@ -16,6 +16,7 @@ export function MapPanel({ mapElement }: MapPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const originalParentRef = useRef<HTMLElement | null>(null);
   const locationWrapperRef = useRef<HTMLElement | null>(null);
+  const lostWrapperRef = useRef<HTMLElement | null>(null);
   const { updateBuiltInPanelState } = useLayoutManager();
   const mapViewingState = useMapViewingState();
   const [labelVisible, setLabelVisible] = useState(() => getBuiltInPanelSetting('map', 'labelVisible', true));
@@ -109,6 +110,15 @@ export function MapPanel({ mapElement }: MapPanelProps) {
       locationWrapper.style.display = labelVisible ? '' : 'none';
     }
 
+    // The lost-position badge sits in the map's top-right corner, so it has to
+    // follow the map here too. It stays visible even with the label hidden -
+    // it is a warning, not chrome.
+    const lostWrapper = document.getElementById('map-lost-wrapper');
+    lostWrapperRef.current = lostWrapper;
+    if (lostWrapper) {
+      containerRef.current.appendChild(lostWrapper);
+    }
+
     // Ensure map fills container
     mapElement.style.width = '100%';
     mapElement.style.height = '100%';
@@ -122,6 +132,9 @@ export function MapPanel({ mapElement }: MapPanelProps) {
         originalParentRef.current.appendChild(mapElement);
         if (locationWrapperRef.current) {
           originalParentRef.current.appendChild(locationWrapperRef.current);
+        }
+        if (lostWrapperRef.current) {
+          originalParentRef.current.appendChild(lostWrapperRef.current);
         }
         window.dispatchEvent(new Event('resize'));
       }

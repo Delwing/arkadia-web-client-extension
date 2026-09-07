@@ -47,6 +47,7 @@ import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import {PauseIcon} from "@web-ui/components/map/PauseIcon"
+import {MapLostBadge} from "@web-ui/components/map/MapLostBadge"
 import Binds from "./options/Binds.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
@@ -336,6 +337,11 @@ Promise.all([mapDataPromise, colorsPromise])
         const pauseIconElement = document.getElementById('pause-icon');
         if (pauseIconElement) {
             createRoot(pauseIconElement).render(createElement(PauseIcon));
+        }
+
+        const mapLostBadgeElement = document.getElementById('map-lost-wrapper');
+        if (mapLostBadgeElement) {
+            createRoot(mapLostBadgeElement).render(createElement(MapLostBadge));
         }
 
         const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
