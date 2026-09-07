@@ -700,6 +700,34 @@ export default function initSpells(client: Client) {
         tag
     );
 
+    // === STAFF / WAND CASTING ===
+
+    // Czarowanie z kostura - on me
+    client.Triggers.registerTrigger(
+        /^.+? kieruje w twoja strone (?:swoj|swoja|swoje) .+?, wokol (?:ktorego|ktorej) zaczyna gromadzic sie magiczna energia\.\.\.$/,
+        (line) => {
+            client.sendEvent("sound:category", "spell");
+
+            const result = formatSpellOnMe(line, "CZAR");
+            result.append("\n\t\t\t");
+            result.append(" <><> CZARUJE Z KOSTURA <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
+            return result;
+        },
+        tag
+    );
+
+    // Czarowanie z kostura - on others
+    client.Triggers.registerTrigger(
+        /^.+? kieruje w strone (?<cel>.+?) (?:swoj|swoja|swoje) .+?, wokol (?:ktorego|ktorej) zaczyna gromadzic sie magiczna energia\.\.\.$/,
+        (line, matches) => {
+            const result = formatSpellOnOthers(line, "CZAR", matches.groups?.cel);
+            result.append("\n\t\t\t");
+            result.append(" <><> CZARUJE Z KOSTURA <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
+            return result;
+        },
+        tag
+    );
+
     // === SCROLL CASTING ===
 
     // Czarowanie ze zwoju - on others
