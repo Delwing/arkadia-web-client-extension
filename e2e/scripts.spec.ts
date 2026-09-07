@@ -212,8 +212,13 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
     await expect(card, 'should list the catalogue plugin').toBeVisible();
     await expect(card.getByText('42 instalacji'), 'should show the install count').toBeVisible();
 
-    await card.getByRole('button', {name: 'Zainstaluj'}).click();
-    await expect(card.getByRole('button', {name: 'Zainstalowany'}), 'should mark it installed').toBeVisible();
+    await card.getByRole('button', {name: 'Zainstaluj', exact: true}).click();
+    // The chip states it is installed; the button is then free to offer removal.
+    await expect(card.locator('.plugin-chip--installed'), 'should mark it installed').toBeVisible();
+    await expect(
+        card.getByRole('button', {name: 'Odinstaluj'}),
+        'should offer removal straight from the catalogue',
+    ).toBeVisible();
 
     await scriptsModal.locator('.plugin-tab', {hasText: 'Zainstalowane'}).click();
 
@@ -244,4 +249,21 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
         const parsed = stored ? JSON.parse(stored) : [];
         return parsed.length === 1 && parsed[0] === url;
     }, `${REGISTRY}/r/katalogowy/1.1.0/plugin.js`);
+
+    // Uninstalling from the catalogue tab drops it whichever version is pinned.
+    const modal = page.locator(SCRIPTS_MODAL);
+    await modal.locator('.plugin-tab', {hasText: 'Katalog'}).click();
+    await modal
+        .locator('.plugin-card', {hasText: 'Katalogowy'})
+        .getByRole('button', {name: 'Odinstaluj'})
+        .click();
+
+    await expect(
+        modal.locator('.plugin-card', {hasText: 'Katalogowy'}).getByRole('button', {name: 'Zainstaluj', exact: true}),
+        'should offer installing again',
+    ).toBeVisible();
+    await page.waitForFunction(() => {
+        const stored = localStorage.getItem('scripts');
+        return Boolean(stored) && JSON.parse(stored!).length === 0;
+    });
 });

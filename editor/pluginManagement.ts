@@ -348,11 +348,23 @@ export async function buildPluginArchive(plugin: EditorPluginData): Promise<Blob
     zip.file(filePath, file.content)
   }
 
-  // Add plugin metadata
+  // Add plugin metadata.
+  //
+  // Deliberately without a version: the editor has no version field, so the one
+  // on `plugin.metadata` is not something anybody typed - `savePlugin` stamps a
+  // fixed '1.0.0' on every save. Writing it into plugin.json makes the package
+  // assert a version its own code contradicts the moment the author bumps
+  // `version` in what `init()` returns, and the registry rejects the release
+  // ("PluginInfo w kodzie deklaruje wersje X, a plugin.json Y"). The version
+  // belongs to the code, which is also the only one the client ever shows.
   const metadata = {
     name: plugin.name,
     entryPoint: plugin.entryPoint,
-    metadata: plugin.metadata,
+    metadata: plugin.metadata && {
+      name: plugin.metadata.name,
+      author: plugin.metadata.author,
+      description: plugin.metadata.description,
+    },
     folders: plugin.folders || [],
   }
   zip.file('plugin.json', JSON.stringify(metadata, null, 2))

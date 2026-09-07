@@ -23,9 +23,13 @@ export interface RegistryPluginSummary {
     tags: string[]
     latestVersion: string | null
     installs: number
-    owner: { handle: string; displayName: string } | null
+    /** Only the public handle: the registry deliberately does not expose real names. */
+    owner: { handle: string } | null
     repositoryUrl?: string
     deprecated?: string
+    /** The author's own "this may break Arkadia's rules" warning, and what it covers. */
+    rulesRisk?: boolean
+    rulesRiskNote?: string
     updatedAt: string
     trustedPublisher: boolean
 }

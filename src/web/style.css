@@ -4855,10 +4855,23 @@ body.layout-manager-enabled #notification-center {
   color: var(--popup-text-bright);
 }
 
-.plugin-chip--installed,
-.plugin-chip--trusted {
+.plugin-chip--installed {
   color: var(--popup-success-light);
   background: var(--popup-success-subtle-bg);
+}
+
+/* Provenance, not an endorsement: it only says a release came from the author's
+   GitHub workflow. Deliberately not the success colour, which would read as a
+   quality verdict the catalogue does not make. */
+.plugin-chip--trusted {
+  color: var(--popup-text-bright);
+}
+
+/* The author own rules-risk warning: loud enough to be read before installing. */
+.plugin-chip--risk {
+  color: var(--popup-warning-light);
+  background: var(--popup-warning-bg);
+  border-color: var(--popup-warning-border);
 }
 
 .plugin-chip--deprecated {

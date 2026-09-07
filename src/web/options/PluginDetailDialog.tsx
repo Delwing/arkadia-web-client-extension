@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Spinner } from "react-bootstrap";
-import { ArrowUpCircle, Check, Download, ExternalLink, Github, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowUpCircle, Download, ExternalLink, Github, Trash2 } from "lucide-react";
 import SubDialog from "../SubDialog";
 import { renderPluginReadme } from "./pluginReadme";
 import {
@@ -16,6 +16,7 @@ export interface PluginDetailDialogProps {
     /** The version currently installed, if any — drives install vs. update. */
     installedVersion?: string;
     onInstall: (slug: string, version: string) => void;
+    onUninstall: (slug: string) => void;
     onClose: () => void;
 }
 
@@ -24,7 +25,13 @@ export interface PluginDetailDialogProps {
  * release history — so a player can read what they are about to run before they
  * run it, and pick an older release when the newest one misbehaves.
  */
-function PluginDetailDialog({ slug, installedVersion, onInstall, onClose }: PluginDetailDialogProps) {
+function PluginDetailDialog({
+    slug,
+    installedVersion,
+    onInstall,
+    onUninstall,
+    onClose,
+}: PluginDetailDialogProps) {
     const [detail, setDetail] = useState<RegistryPluginDetail | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [showAllVersions, setShowAllVersions] = useState(false);
@@ -72,10 +79,21 @@ function PluginDetailDialog({ slug, installedVersion, onInstall, onClose }: Plug
                         <ExternalLink size={14} className="me-1" />
                         Katalog
                     </Button>
-                    {latest && (
+                    {installedVersion && (
+                        <Button
+                            variant="outline-danger"
+                            onClick={() => {
+                                onUninstall(slug);
+                                onClose();
+                            }}
+                        >
+                            <Trash2 size={14} className="me-1" />
+                            Odinstaluj
+                        </Button>
+                    )}
+                    {latest && (!installedVersion || upgradable) && (
                         <Button
                             variant="primary"
-                            disabled={Boolean(installedVersion) && !upgradable}
                             onClick={() => {
                                 onInstall(slug, latest);
                                 onClose();
@@ -85,11 +103,6 @@ function PluginDetailDialog({ slug, installedVersion, onInstall, onClose }: Plug
                                 <>
                                     <ArrowUpCircle size={14} className="me-1" />
                                     Aktualizuj do v{latest}
-                                </>
-                            ) : installedVersion ? (
-                                <>
-                                    <Check size={14} className="me-1" />
-                                    Zainstalowany
                                 </>
                             ) : (
                                 <>
@@ -116,15 +129,15 @@ function PluginDetailDialog({ slug, installedVersion, onInstall, onClose }: Plug
                     <p className="plugin-detail__description">{detail.plugin.description}</p>
 
                     <div className="plugin-detail__facts">
-                        <span>
-                            Autor:{" "}
-                            {detail.plugin.owner ? `${detail.plugin.owner.displayName} (@${detail.plugin.owner.handle})` : "nieznany"}
-                        </span>
+                        <span>Autor: {detail.plugin.owner ? `@${detail.plugin.owner.handle}` : "nieznany"}</span>
                         <span>{detail.plugin.installs} instalacji</span>
                         {detail.license && <span>Licencja: {detail.license}</span>}
                         {detail.plugin.trustedPublisher && (
-                            <span className="plugin-chip plugin-chip--trusted">
-                                <ShieldCheck size={12} />
+                            <span
+                                className="plugin-chip plugin-chip--trusted"
+                                title="Wydawany automatycznie z workflow GitHub Actions powiazanego z repozytorium autora"
+                            >
+                                <Github size={12} />
                                 Wydawane z repozytorium
                             </span>
                         )}
@@ -135,6 +148,16 @@ function PluginDetailDialog({ slug, installedVersion, onInstall, onClose }: Plug
                             </a>
                         )}
                     </div>
+
+                    {detail.plugin.rulesRisk && (
+                        <div className="plugin-banner plugin-banner--warning">
+                            <AlertTriangle size={16} />
+                            <span>
+                                Autor oznaczyl ten plugin jako mogacy naruszac zasady Arkadii
+                                {detail.plugin.rulesRiskNote ? `: ${detail.plugin.rulesRiskNote}` : "."}
+                            </span>
+                        </div>
+                    )}
 
                     {detail.plugin.deprecated && (
                         <div className="plugin-banner plugin-banner--warning">

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { savePlugin } from '../../editor/pluginManagement';
+import JSZip from 'jszip';
+import { buildPluginArchive, savePlugin } from '../../editor/pluginManagement';
 import {
     getEditorPlugin,
     storeEditorPlugin,
@@ -70,5 +71,41 @@ describe('savePlugin', () => {
         await savePlugin(editorPlugin({ registrySlug: 'new-slug' }), PLUGIN_ID, '', new Set(), bundle, status);
 
         expect((await getEditorPlugin(PLUGIN_ID))?.registrySlug).toBe('new-slug');
+    });
+});
+
+describe('buildPluginArchive', () => {
+    async function manifestOf(plugin: EditorPluginData) {
+        const zip = await JSZip.loadAsync(await buildPluginArchive(plugin));
+        return JSON.parse(await zip.file('plugin.json')!.async('string'));
+    }
+
+    it('never writes a version into plugin.json', async () => {
+        // savePlugin stamps a fixed 1.0.0 that nobody typed. Carrying it into the
+        // package makes the ZIP assert a version the code contradicts as soon as
+        // the author bumps it in what init() returns, and the registry rejects
+        // the release rather than guessing which one is right.
+        const manifest = await manifestOf(
+            editorPlugin({ metadata: { name: 'Combat Alert', version: '1.0.0', author: 'A', description: 'D' } })
+        );
+
+        expect(manifest.metadata).not.toHaveProperty('version');
+        expect(manifest).not.toHaveProperty('version');
+    });
+
+    it('keeps the metadata that does describe the plugin', async () => {
+        const manifest = await manifestOf(
+            editorPlugin({ metadata: { name: 'Combat Alert', version: '1.0.0', author: 'QA', description: 'Sledzi walke.' } })
+        );
+
+        expect(manifest.name).toBe('Combat Alert');
+        expect(manifest.entryPoint).toBe('index.ts');
+        expect(manifest.metadata).toEqual({ name: 'Combat Alert', author: 'QA', description: 'Sledzi walke.' });
+    });
+
+    it('ships every source file so the package can be rebuilt', async () => {
+        const zip = await JSZip.loadAsync(await buildPluginArchive(editorPlugin()));
+
+        expect(zip.file('index.ts')).not.toBeNull();
     });
 });

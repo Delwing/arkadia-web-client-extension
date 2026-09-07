@@ -71,13 +71,12 @@ describe('handoffMetadata', () => {
     it('keeps metadata the author actually set', () => {
         const meta = handoffMetadata({
             name: 'ignored',
-            metadata: { name: 'Combat Alert', version: '2.3.0', description: 'Sledzi walke.' },
+            metadata: { name: 'Combat Alert', description: 'Sledzi walke.' },
             registrySlug: 'combat-alert',
         });
 
         expect(meta).toEqual({
             name: 'Combat Alert',
-            version: '2.3.0',
             description: 'Sledzi walke.',
             slug: 'combat-alert',
         });

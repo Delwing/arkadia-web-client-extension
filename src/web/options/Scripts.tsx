@@ -42,6 +42,7 @@ function Scripts() {
         addUrl,
         installFromRegistry,
         updateFromRegistry,
+        uninstallFromRegistry,
         remove,
         reloadStored,
     } = useInstalledPlugins();
@@ -192,6 +193,7 @@ function Scripts() {
                         search={search}
                         installedSlugs={installedSlugs}
                         onInstall={installFromRegistry}
+                        onUninstall={uninstallFromRegistry}
                     />
                 )}
             </div>

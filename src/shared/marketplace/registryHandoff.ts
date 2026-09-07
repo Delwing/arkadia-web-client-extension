@@ -26,10 +26,10 @@ export const REGISTRY_URL: string = (
 export interface HandoffPackageMessage {
     type: typeof HANDOFF_PACKAGE
     name?: string
-    version?: string
     description?: string
     slug?: string
     zip: ArrayBuffer
+    // No version: it comes out of the package itself, see `handoffMetadata`.
 }
 
 export interface HandoffPublishedMessage {
@@ -86,18 +86,22 @@ export function readRegistryMessage(
  * `version: '1.0.0'` and a placeholder description, so those values say nothing
  * about the plugin. They are dropped here and the registry falls back to the
  * PluginInfo the code itself returns from `init()`.
+ *
+ * No version is sent at all. The registry treats one that arrives with a package
+ * as an assertion and refuses the release if the code disagrees - which is right
+ * for a CI publish from a git tag, and impossible for the editor to satisfy: it
+ * has no version field, so anything it sent would be a guess picked up from an
+ * earlier import, contradicting the code the moment the author bumps it.
  */
 export function handoffMetadata(plugin: {
     name: string
-    metadata?: { name?: string; version?: string; description?: string }
+    metadata?: { name?: string; description?: string }
     registrySlug?: string
-}): { name?: string; version?: string; description?: string; slug?: string } {
+}): { name?: string; description?: string; slug?: string } {
     const description = plugin.metadata?.description
-    const version = plugin.metadata?.version
 
     return {
         name: plugin.metadata?.name || plugin.name || undefined,
-        version: version && version !== '1.0.0' ? version : undefined,
         description:
             description && description !== EDITOR_PLACEHOLDER_DESCRIPTION ? description : undefined,
         slug: plugin.registrySlug || undefined,

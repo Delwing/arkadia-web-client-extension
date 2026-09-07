@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Form, Spinner } from "react-bootstrap";
-import { AlertTriangle, ArrowUpCircle, Check, Download, SearchX, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowUpCircle, Check, Download, Github, SearchX, Trash2 } from "lucide-react";
 import PluginCard from "./PluginCard";
 import PluginDetailDialog from "./PluginDetailDialog";
 import {
@@ -23,6 +23,7 @@ export interface ScriptsMarketplaceProps {
     /** slug -> installed version, so a card knows whether to offer install or update. */
     installedSlugs: Map<string, string>;
     onInstall: (slug: string, version: string) => void;
+    onUninstall: (slug: string) => void;
 }
 
 /**
@@ -33,7 +34,7 @@ export interface ScriptsMarketplaceProps {
  * scrolls, and a scroll-driven loader inside a scroll container inside a dialog
  * is a reliable way to make a phone feel broken.
  */
-function ScriptsMarketplace({ search, installedSlugs, onInstall }: ScriptsMarketplaceProps) {
+function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: ScriptsMarketplaceProps) {
     const [sort, setSort] = useState<RegistrySort>("popular");
     const [tag, setTag] = useState<string | null>(null);
     const [items, setItems] = useState<RegistryPluginSummary[]>([]);
@@ -160,19 +161,36 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall }: ScriptsMarket
                             version={item.latestVersion ?? undefined}
                             badges={
                                 <>
-                                    {installed && !upgradable && (
+                                    {/* The chip carries the state, so the button underneath is
+                                        free to offer the action instead of restating it. */}
+                                    {installed && (
                                         <span className="plugin-chip plugin-chip--installed">
                                             <Check size={12} />
                                             Zainstalowany
                                         </span>
                                     )}
+                                    {/* Provenance, not a seal of approval: the release came from a
+                                        GitHub Actions workflow bound to the author's repository. */}
                                     {item.trustedPublisher && (
                                         <span
                                             className="plugin-chip plugin-chip--trusted"
-                                            title="Wydawany automatycznie z repozytorium autora"
+                                            title="Wydawany automatycznie z workflow GitHub Actions powiazanego z repozytorium autora"
                                         >
-                                            <ShieldCheck size={12} />
-                                            Zweryfikowany
+                                            <Github size={12} />
+                                            Z repozytorium
+                                        </span>
+                                    )}
+                                    {/* The author's own warning that the plugin may count as
+                                        disallowed automation. It is the one thing on a card a
+                                        player must see before installing, so it is never folded
+                                        away behind the detail dialog. */}
+                                    {item.rulesRisk && (
+                                        <span
+                                            className="plugin-chip plugin-chip--risk"
+                                            title={item.rulesRiskNote || "Autor oznaczyl ten plugin jako mogacy naruszac zasady Arkadii"}
+                                        >
+                                            <AlertTriangle size={12} />
+                                            Ryzyko zasad
                                         </span>
                                     )}
                                     {item.deprecated && (
@@ -189,32 +207,45 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall }: ScriptsMarket
                             onActivate={() => setDetailSlug(item.slug)}
                             actions={
                                 item.latestVersion ? (
-                                    <Button
-                                        size="sm"
-                                        variant={upgradable ? "primary" : installed ? "outline-secondary" : "primary"}
-                                        className="plugin-action plugin-action--labelled"
-                                        disabled={Boolean(installed) && !upgradable}
-                                        onClick={() => onInstall(item.slug, item.latestVersion!)}
-                                    >
-                                        {upgradable ? (
-                                            <>
-                                                <ArrowUpCircle size={15} />
-                                                <span className="plugin-action__label">
-                                                    Aktualizuj do v{item.latestVersion}
-                                                </span>
-                                            </>
-                                        ) : installed ? (
-                                            <>
-                                                <Check size={15} />
-                                                <span className="plugin-action__label">Zainstalowany</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Download size={15} />
-                                                <span className="plugin-action__label">Zainstaluj</span>
-                                            </>
+                                    <>
+                                        {(!installed || upgradable) && (
+                                            <Button
+                                                size="sm"
+                                                variant="primary"
+                                                className="plugin-action plugin-action--labelled"
+                                                onClick={() => onInstall(item.slug, item.latestVersion!)}
+                                            >
+                                                {upgradable ? (
+                                                    <>
+                                                        <ArrowUpCircle size={15} />
+                                                        <span className="plugin-action__label">
+                                                            Aktualizuj do v{item.latestVersion}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Download size={15} />
+                                                        <span className="plugin-action__label">Zainstaluj</span>
+                                                    </>
+                                                )}
+                                            </Button>
                                         )}
-                                    </Button>
+                                        {/* An installed plugin can be removed from here too - the
+                                            chip above already says it is installed, so a disabled
+                                            "Zainstalowany" button was only taking up the space.
+                                            Last, and never the card's leading action. */}
+                                        {installed && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline-danger"
+                                                className="plugin-action plugin-action--labelled"
+                                                onClick={() => onUninstall(item.slug)}
+                                            >
+                                                <Trash2 size={15} />
+                                                <span className="plugin-action__label">Odinstaluj</span>
+                                            </Button>
+                                        )}
+                                    </>
                                 ) : null
                             }
                         />
@@ -242,6 +273,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall }: ScriptsMarket
                     slug={detailSlug}
                     installedVersion={installedSlugs.get(detailSlug)}
                     onInstall={onInstall}
+                    onUninstall={onUninstall}
                     onClose={() => setDetailSlug(null)}
                 />
             )}

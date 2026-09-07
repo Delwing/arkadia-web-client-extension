@@ -213,7 +213,7 @@ export function useInstalledPlugins() {
                 source: registry ? ("registry" as const) : ("url" as const),
                 name: runtime?.info?.name ?? summary?.displayName ?? registry?.slug ?? url,
                 version: runtime?.info?.version ?? registry?.version,
-                author: runtime?.info?.author ?? summary?.owner?.displayName,
+                author: runtime?.info?.author ?? (summary?.owner ? `@${summary.owner.handle}` : undefined),
                 description: runtime?.info?.description ?? summary?.description,
                 status: runtime?.status ?? "unknown",
                 error: runtime?.error,
@@ -271,6 +271,17 @@ export function useInstalledPlugins() {
         [urls, saveUrls]
     );
 
+    /**
+     * Remove a catalogue plugin by slug rather than by stored id, so the
+     * catalogue tab can uninstall without knowing which version is pinned.
+     */
+    const uninstallFromRegistry = useCallback(
+        (slug: string) => {
+            saveUrls(urls.filter((entry) => parseRegistryBundleUrl(entry)?.slug !== slug));
+        },
+        [urls, saveUrls]
+    );
+
     /** Swap a pinned catalogue URL for a newer one, keeping its place in the list. */
     const updateFromRegistry = useCallback(
         (slug: string, version: string) => {
@@ -316,6 +327,7 @@ export function useInstalledPlugins() {
         addUrl,
         installFromRegistry,
         updateFromRegistry,
+        uninstallFromRegistry,
         remove,
         reloadStored,
     };
