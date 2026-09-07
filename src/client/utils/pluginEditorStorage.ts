@@ -34,6 +34,8 @@ export interface EditorPluginData {
   updatedAt: number
   /** Last compilation timestamp */
   lastCompiledAt: number
+  /** Catalogue entry this plugin was published as, so later releases update it */
+  registrySlug?: string
 }
 
 const DB_CONFIG = {

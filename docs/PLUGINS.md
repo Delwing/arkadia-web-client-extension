@@ -1061,6 +1061,24 @@ const ORANGE_COLOR = api.colors.fromHex('#ffa500');
 3. Kliknij "Dodaj"
 4. Plugin zostanie załadowany i zainicjalizowany
 
+### Publikacja w katalogu (z edytora)
+
+W edytorze pluginów przycisk **Publish** wysyła plugin do katalogu pluginów.
+
+1. Zapisz plugin (przycisk "Save")
+2. Kliknij "Publish" — otworzy się okno katalogu
+3. Zaloguj się (Google, GitHub albo e-mail) i potwierdź publikację
+
+Edytor **nie przechowuje żadnych danych logowania** — konto i publikacja obsługiwane są po stronie
+katalogu. Do katalogu trafia to samo archiwum ZIP, które tworzy przycisk "Download": pliki źródłowe
+i `plugin.json`.
+
+Po udanej publikacji edytor zapamiętuje identyfikator pluginu w katalogu, więc kolejne wysyłki są
+rozpoznawane jako aktualizacja, a nie nowy plugin.
+
+Opis i nazwa brane są z `PluginInfo`, które zwraca Twoja funkcja `init()` — to jest źródło prawdy,
+a nie metadane edytora.
+
 ### Przez Parametr URL
 
 ```

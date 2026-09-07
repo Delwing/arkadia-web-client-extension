@@ -56,6 +56,7 @@ import {
   showNewPluginModal,
 } from './modals'
 import {adoptStoredPlugin, createNewPlugin, deletePlugin, downloadPlugin, refreshPluginList, savePlugin, uploadPlugin,} from './pluginManagement'
+import {publishToRegistry} from './registryPublish'
 import { getDevServer, type DevServerStatus } from './devServer'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
@@ -958,6 +959,16 @@ async function downloadCurrentPlugin() {
   await downloadPlugin(state.currentPluginId, updateStatus)
 }
 
+// Publish plugin to the registry wrapper
+async function publishCurrentPlugin() {
+  if (!state.currentPluginId) {
+    updateStatus('No plugin selected', 'error')
+    return
+  }
+
+  await publishToRegistry(state.currentPluginId, updateStatus)
+}
+
 // Upload plugin wrapper
 async function uploadPluginFromFile() {
   const input = document.createElement('input')
@@ -1433,6 +1444,9 @@ function setupEventListeners() {
 
   const downloadBtn = document.getElementById('download-btn')!
   downloadBtn.addEventListener('click', downloadCurrentPlugin)
+
+  const publishBtn = document.getElementById('publish-btn')!
+  publishBtn.addEventListener('click', publishCurrentPlugin)
 
   const uploadBtn = document.getElementById('upload-btn')!
   uploadBtn.addEventListener('click', uploadPluginFromFile)

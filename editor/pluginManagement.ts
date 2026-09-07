@@ -325,20 +325,11 @@ export async function destroy(): Promise<void> {
 }
 
 /**
- * Download a plugin as a ZIP file containing all source files
+ * Package a plugin exactly as "Download" does: sources plus plugin.json.
+ * Shared so publishing to the registry sends the same archive the client's ZIP
+ * import already understands.
  */
-export async function downloadPlugin(
-  pluginId: string,
-  updateStatus: (message: string, type: StatusType) => void
-): Promise<void> {
-  const plugin = await getEditorPlugin(pluginId)
-  if (!plugin) {
-    updateStatus('Plugin not found', 'error')
-    return
-  }
-
-  updateStatus('Creating ZIP file...', 'normal')
-
+export async function buildPluginArchive(plugin: EditorPluginData): Promise<Blob> {
   const zip = new JSZip()
 
   // Add all files to the ZIP
@@ -355,8 +346,25 @@ export async function downloadPlugin(
   }
   zip.file('plugin.json', JSON.stringify(metadata, null, 2))
 
-  // Generate and download the ZIP file
-  const blob = await zip.generateAsync({ type: 'blob' })
+  return zip.generateAsync({ type: 'blob' })
+}
+
+/**
+ * Download a plugin as a ZIP file containing all source files
+ */
+export async function downloadPlugin(
+  pluginId: string,
+  updateStatus: (message: string, type: StatusType) => void
+): Promise<void> {
+  const plugin = await getEditorPlugin(pluginId)
+  if (!plugin) {
+    updateStatus('Plugin not found', 'error')
+    return
+  }
+
+  updateStatus('Creating ZIP file...', 'normal')
+
+  const blob = await buildPluginArchive(plugin)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
