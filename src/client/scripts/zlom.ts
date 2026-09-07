@@ -202,6 +202,7 @@ export async function mergeZlomData(
                     const prev = list[idx];
                     const merged: T = { ...e };
                     if (!merged.color && prev.color) merged.color = prev.color;
+                    if (!merged.shortAlt && prev.shortAlt) merged.shortAlt = prev.shortAlt;
                     list[idx] = merged;
                 } else {
                     list.push(e);
@@ -387,8 +388,10 @@ export default function initZlom(
 
     const roomId = (): number | null => client.Map?.currentRoom?.id ?? null;
 
-    const altShort = (): string | undefined =>
-        ctx?.shortAlt && ctx.shortAlt !== ctx.short ? ctx.shortAlt : undefined;
+    // Kept verbatim even when it equals `short`: masculine inanimate and neuter
+    // nouns share mianownik/biernik, so collapsing identical forms would make a
+    // fully parsed entry indistinguishable from one whose biernik was never seen.
+    const altShort = (): string | undefined => ctx?.shortAlt;
 
     const persistBron = () => {
         if (!ctx || ctx.kind !== "bron" || !ctx.short || !ctx.opis) return;

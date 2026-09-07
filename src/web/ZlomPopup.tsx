@@ -365,7 +365,7 @@ const ZlomPopup: React.FC = () => {
         return (
             <span
                 className="zlom-tag zlom-tag--warn"
-                title="Brak alternatywnego shorta (biernika)"
+                title="Biernik nieznany - wpis nie pochodzi z oceny (import lub stary zapis). Ocen przedmiot ponownie."
             >
                 ⚠
             </span>

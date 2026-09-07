@@ -199,6 +199,24 @@ describe('zlom script', () => {
     expect(entry!.srebro).toBe(1);
   });
 
+  test('stores shortAlt even when biernik equals mianownik', async () => {
+    parse('Oceniasz starannie gorniczy typowy oskard.');
+    parse('Typowy oskard jakich wiele mozna zobaczyc w kopalniach.');
+    parse('Wyglada na to, ze jest w znakomitym stanie.');
+    parse('Oceniasz, ze gorniczy typowy oskard wazy 5300 gramow, zas jego objetosc wynosi 2400 mililitrow.');
+    parse('Wydaje ci sie, ze jest wart okolo 110 miedziakow.');
+    parse('Zauwazasz, iz oskard jest przystosowany do chwytania oburacz.');
+    parse('Za jego pomoca mozna zadawac rany klute.');
+    parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na dwureczny mlot jest on wyjatkowo zle wywazony i kompletnie nieskuteczny.');
+    await flush();
+
+    const entry = findWeapon('gorniczy typowy oskard');
+    expect(entry).toBeDefined();
+    // Masculine inanimate: both cases surface identically, but the biernik was
+    // seen, so it must be recorded rather than collapsed to undefined.
+    expect(entry!.shortAlt).toBe('gorniczy typowy oskard');
+  });
+
   test('highlight fires on the accusative form', async () => {
     parse('Oceniasz starannie szeroka posrebrzana glewie.');
     parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.');
