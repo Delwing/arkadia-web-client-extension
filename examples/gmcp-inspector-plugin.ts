@@ -19,8 +19,8 @@
  * Jak uzyc:
  * 1. Zbuduj: `yarn build:examples`
  * 2. Uruchom serwer: `yarn serve:examples`
- * 3. Dodaj URL `http://localhost:3030/plugins/gmcp-inspector-plugin.js`
- *    w sekcji "Skrypty" w kliencie
+ * 3. W sekcji "Skrypty" w kliencie: "Dodaj plugin" -> "Z adresu URL", wpisz
+ *    `http://localhost:3030/plugins/gmcp-inspector-plugin.js`
  */
 
 import type { PluginApi, PluginInfo, PersistentPopupHandle } from '@arkadia/plugin-types';

@@ -1057,8 +1057,9 @@ const ORANGE_COLOR = api.colors.fromHex('#ffa500');
 ### Przez UI
 
 1. Kliknij przycisk "Skrypty" w kliencie
-2. Wpisz URL swojego pluginu
-3. Kliknij "Dodaj"
+2. Zakładka "Katalog" — znajdź plugin i kliknij "Zainstaluj". Klient zapisuje konkretną wersję,
+   a nowsze wydania pojawiają się na liście zainstalowanych jako "Aktualizuj"
+3. Własny plugin dodasz przyciskiem "Dodaj plugin" → "Z adresu URL" (albo ZIP / wklejony kod)
 4. Plugin zostanie załadowany i zainicjalizowany
 
 ### Publikacja w katalogu (z edytora)

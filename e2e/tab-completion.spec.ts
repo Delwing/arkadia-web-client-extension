@@ -31,10 +31,13 @@ async function loadSuggestionPlugin(page: Page, words: string[]): Promise<void> 
     const modal = page.locator('#scripts-modal');
     await expect(modal).toBeVisible();
 
-    const input = modal.getByPlaceholder('URL skryptu');
-    const addBtn = modal.getByRole('button', {name: 'Dodaj'});
-    await input.fill(SUGGESTION_PLUGIN_URL);
-    await addBtn.click();
+    // "Dodaj plugin" opens a chooser; the URL field lives behind its "Z adresu URL" route.
+    await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
+    await page.locator('.plugin-route', {hasText: 'Z adresu URL'}).click();
+
+    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    await dialog.getByPlaceholder('URL skryptu').fill(SUGGESTION_PLUGIN_URL);
+    await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
     await expect(modal.getByText('Suggestion Plugin')).toBeVisible();
 
     await modal.locator('.btn-close').first().click();

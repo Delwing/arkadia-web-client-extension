@@ -136,6 +136,10 @@ $enable-shadows: false;
         // Stock (non-Bootstrap) "Lista obiektow" documentation + object-card
         // component classes, scoped alongside (Dokumentacja → Lista obiektow).
         @import "stock-object-list-doc";
+
+        // Stock (non-Bootstrap) plugin-manager classes for the Skrypty panel —
+        // the installed list and the catalogue grid — scoped alongside.
+        @import "stock-plugin-manager";
     }
 
     // ── The portal-root gap ─────────────────────────────────

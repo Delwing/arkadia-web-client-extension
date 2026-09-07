@@ -1,0 +1,686 @@
+// ============================================================
+//  Stock plugin-manager (Skrypty) classes — reused verbatim, scoped.
+//
+//  Same arrangement as the other _stock-*.scss partials here: these classes
+//  are not Bootstrap, they live in stock global `src/web/style.css`, and forge
+//  cannot load that sheet globally. This partial carries just the
+//  `.plugin-*` block and is @imported INSIDE the `.forge-menu-modal { … }`
+//  block of forge-modal-bootstrap.scss, so every selector compiles prefixed.
+//  All colours come through the `--popup-*` vars floatingPopup.css defines on
+//  `.forge-menu-modal`, so the copy stays faithful and recolours for free.
+//  Keep it in sync with the "Plugin manager (Skrypty)" block in style.css.
+// ============================================================
+
+.plugin-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
+  padding: 0.75rem;
+}
+
+.plugin-manager__tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--popup-control-bg);
+  border: 1px solid var(--popup-border);
+  border-radius: 0.6rem;
+  flex: 0 0 auto;
+}
+
+.plugin-tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--popup-text-dim);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.plugin-tab:hover {
+  color: var(--popup-text);
+  background: var(--popup-hover-bg);
+}
+
+.plugin-tab--active {
+  background: var(--popup-section-bg);
+  color: var(--popup-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.plugin-tab__count {
+  font-size: 0.72rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 1rem;
+  background: var(--popup-control-active-bg);
+}
+
+.plugin-tab--active .plugin-tab__count {
+  background: var(--popup-accent-bg);
+  color: var(--popup-accent);
+}
+
+.plugin-tab__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--popup-accent);
+}
+
+.plugin-manager__toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.plugin-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.plugin-search .form-control {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.plugin-search__icon {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--popup-text-dim);
+  pointer-events: none;
+}
+
+.plugin-search__clear {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--popup-text-dim);
+  cursor: pointer;
+}
+
+.plugin-search__clear:hover {
+  color: var(--popup-text);
+  background: var(--popup-hover-bg);
+}
+
+.plugin-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.plugin-manager__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.plugin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.plugin-filter-bar {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+}
+
+.plugin-filter {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--popup-border);
+  border-radius: 1rem;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.plugin-filter:hover:not(:disabled) {
+  color: var(--popup-text);
+  border-color: var(--popup-border-strong);
+}
+
+.plugin-filter--active {
+  background: var(--popup-accent-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-text);
+}
+
+.plugin-filter:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.plugin-filter__count {
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+.plugin-catalog-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.plugin-catalog-sort {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.plugin-filter-bar--tags {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.plugin-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.plugin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--popup-section-bg);
+  border: 1px solid var(--popup-border);
+  border-radius: 0.55rem;
+}
+
+.plugin-card--interactive {
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.plugin-card--interactive:hover {
+  border-color: var(--popup-accent-border);
+}
+
+.plugin-card--interactive:focus-visible {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 2px;
+}
+
+.plugin-card__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.plugin-card__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.plugin-card__version {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.1rem 0.4rem;
+  border-radius: 1rem;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-bright);
+}
+
+.plugin-card__status {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.plugin-card__status--ok {
+  color: var(--popup-success);
+}
+
+.plugin-card__status--error {
+  color: var(--popup-danger);
+}
+
+.plugin-card__status--warning {
+  color: var(--popup-warning);
+}
+
+.plugin-card__description {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--popup-text-subtle);
+}
+
+.plugin-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--popup-text-dim);
+}
+
+.plugin-card__meta-item + .plugin-card__meta-item::before {
+  content: "\00b7";
+  margin-right: 0.4rem;
+}
+
+.plugin-card__detail {
+  font-size: 0.72rem;
+  color: var(--popup-text-dim);
+  overflow-wrap: anywhere;
+}
+
+.plugin-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.plugin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-dim);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.plugin-chip--registry {
+  color: var(--popup-accent);
+  background: var(--popup-accent-dim-bg);
+}
+
+.plugin-chip--local {
+  color: var(--popup-warning-light);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.plugin-chip--url {
+  color: var(--popup-text-bright);
+}
+
+.plugin-chip--installed,
+.plugin-chip--trusted {
+  color: var(--popup-success-light);
+  background: var(--popup-success-subtle-bg);
+}
+
+.plugin-chip--deprecated {
+  color: var(--popup-danger-light);
+  background: var(--popup-danger-subtle-bg);
+}
+
+.plugin-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.plugin-notice--update {
+  background: var(--popup-accent-dim-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-text);
+}
+
+.plugin-notice--error {
+  background: var(--popup-danger-subtle-bg);
+  border-color: var(--popup-danger-bg);
+  color: var(--popup-danger-light);
+  overflow-wrap: anywhere;
+}
+
+.plugin-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--popup-border);
+  border-radius: 0.45rem;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+  font-size: 0.83rem;
+}
+
+.plugin-banner--update {
+  background: var(--popup-accent-dim-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-text);
+}
+
+.plugin-banner--error {
+  background: var(--popup-danger-subtle-bg);
+  border-color: var(--popup-danger-bg);
+  color: var(--popup-danger-light);
+}
+
+.plugin-banner--warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: var(--popup-warning-border);
+  color: var(--popup-warning-light);
+}
+
+.plugin-banner--success {
+  background: var(--popup-success-subtle-bg);
+  border-color: var(--popup-success-border);
+  color: var(--popup-success-light);
+}
+
+.plugin-banner--muted {
+  color: var(--popup-text-dim);
+}
+
+.plugin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--popup-text-dim);
+}
+
+.plugin-empty__title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--popup-text);
+}
+
+.plugin-empty__text {
+  margin: 0;
+  max-width: 38ch;
+  font-size: 0.85rem;
+}
+
+.plugin-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--popup-text-dim);
+  font-size: 0.85rem;
+}
+
+.plugin-more {
+  display: flex;
+  justify-content: center;
+}
+
+.plugin-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.plugin-action__label {
+  display: none;
+}
+
+.plugin-action--labelled .plugin-action__label {
+  display: inline;
+}
+
+.plugin-route-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.plugin-route {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--popup-border);
+  border-radius: 0.5rem;
+  background: var(--popup-control-bg);
+  color: var(--popup-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.plugin-route:hover {
+  border-color: var(--popup-accent-border);
+  background: var(--popup-control-hover-bg);
+}
+
+.plugin-route--primary {
+  border-color: var(--popup-accent-border);
+  background: var(--popup-accent-dim-bg);
+}
+
+.plugin-route__icon {
+  color: var(--popup-accent);
+}
+
+.plugin-route__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.plugin-route__text {
+  font-size: 0.78rem;
+  color: var(--popup-text-dim);
+}
+
+.plugin-detail__description {
+  font-size: 0.9rem;
+  color: var(--popup-text-subtle);
+}
+
+.plugin-detail__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--popup-text-dim);
+}
+
+.plugin-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.plugin-detail__heading {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.plugin-detail__readme {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--popup-border);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.plugin-detail__readme h1,
+.plugin-detail__readme h2,
+.plugin-detail__readme h3,
+.plugin-detail__readme h4 {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.plugin-detail__readme p,
+.plugin-detail__readme ul,
+.plugin-detail__readme ol {
+  margin: 0 0 0.6rem;
+}
+
+.plugin-detail__readme pre {
+  padding: 0.6rem;
+  border-radius: 0.4rem;
+  background: var(--popup-control-bg);
+  overflow-x: auto;
+}
+
+.plugin-detail__readme code {
+  font-size: 0.8rem;
+}
+
+.plugin-detail__readme table {
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.plugin-detail__readme img {
+  max-width: 100%;
+}
+
+.plugin-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-version {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.4rem;
+  background: var(--popup-control-bg);
+  font-size: 0.82rem;
+}
+
+.plugin-version__number {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plugin-version__date {
+  font-size: 0.75rem;
+  color: var(--popup-text-dim);
+}
+
+.plugin-version__changelog {
+  flex: 1 1 100%;
+  font-size: 0.78rem;
+  color: var(--popup-text-subtle);
+}
+
+@media (max-width: 767.98px) {
+  .plugin-manager {
+    padding: 0.5rem;
+  }
+
+  .plugin-manager__toolbar {
+    flex-wrap: wrap;
+  }
+
+  .plugin-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .plugin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plugin-action__label {
+    display: inline;
+  }
+
+  .plugin-card__actions .plugin-action {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .plugin-notice {
+    flex-wrap: wrap;
+  }
+
+  .plugin-notice .btn {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+}
+
+.plugin-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Catalogue tiles share a row height, so pinning the action to the bottom keeps
+   every "Zainstaluj" on one line instead of floating at each card's own end. */
+.plugin-grid .plugin-card__actions {
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+@media (min-width: 768px) {
+  /* The installed list is one wide column: with the actions below the text every
+     card wasted a row and half its width. Side by side, a card is a line of
+     information with its controls where the eye already is. */
+  .plugin-list .plugin-card {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .plugin-list .plugin-card__actions {
+    flex: 0 0 auto;
+    margin-top: 0;
+  }
+}

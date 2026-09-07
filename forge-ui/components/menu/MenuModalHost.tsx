@@ -143,7 +143,7 @@ const TITLES: Record<ModalKey, string> = {
  * dialogs these components were authored against, which carry `h-100`). Flowing
  * panels stay content-sized so short ones don't stretch into a tall empty box.
  */
-const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'export-import', 'radial']);
+const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'export-import', 'radial', 'scripts']);
 
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // The two dense settings panels flow their sections into a 2–3 column
@@ -151,6 +151,9 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // wide shell so all three columns fit, matching stock's wide settings modal.
     options: 'xl',
     ui: 'xl',
+    // Skrypty is two tabs over a fixed toolbar: an installed list plus a
+    // catalogue grid that wants at least three columns to read as a catalogue.
+    scripts: 'xl',
     characters: 'md',
     helper: 'xl',
     logs: 'xl',

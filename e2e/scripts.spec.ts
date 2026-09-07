@@ -1,17 +1,34 @@
 import {expect, test} from './support/fixtures';
+import type {Page} from '@playwright/test';
 import {waitForCommandInput} from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
 const SCRIPTS_BUTTON = '#scripts-button';
 const SCRIPTS_MODAL = '#scripts-modal';
-const SCRIPT_INPUT_PLACEHOLDER = 'URL skryptu';
 
-async function openScriptsModal(page) {
+/** Default registry origin — see REGISTRY_URL in src/shared/marketplace/registryHandoff.ts. */
+const REGISTRY = 'https://arkadia-package-repository.vercel.app';
+
+async function openScriptsModal(page: Page) {
     await page.click(MENU_BUTTON);
     await page.click(SCRIPTS_BUTTON);
     const modal = page.locator(SCRIPTS_MODAL);
     await expect(modal, 'should show scripts modal').toBeVisible();
     return modal;
+}
+
+/** Walk the "Dodaj plugin" chooser to one of its routes. */
+async function chooseAddRoute(page: Page, title: string) {
+    const modal = page.locator(SCRIPTS_MODAL);
+    await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
+    await page.locator('.plugin-route', {hasText: title}).click();
+}
+
+async function addScriptUrl(page: Page, url: string) {
+    await chooseAddRoute(page, 'Z adresu URL');
+    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    await dialog.getByPlaceholder('URL skryptu').fill(url);
+    await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
 }
 
 test('Pasted plugin code can be opened and edited in the plugin editor', async ({page, context}) => {
@@ -24,20 +41,20 @@ test('Pasted plugin code can be opened and edited in the plugin editor', async (
     await waitForCommandInput(page);
 
     const scriptsModal = await openScriptsModal(page);
-    await scriptsModal.getByRole('button', {name: 'Wklej kod'}).click();
+    await chooseAddRoute(page, 'Wklej kod');
 
     const codeDialog = page.locator('.modal', {hasText: 'Dodaj plugin z kodu'}).last();
     await codeDialog.getByPlaceholder('Moja wtyczka').fill('Wklejony Test');
     await codeDialog.getByPlaceholder('export async function init(api) { ... }').fill(pluginCode);
     await codeDialog.getByRole('button', {name: 'Dodaj plugin'}).click();
 
-    const pastedItem = scriptsModal.locator('section', {hasText: 'Wklejony Test'});
+    const pastedItem = scriptsModal.locator('.plugin-card', {hasText: 'Wklejony Test'});
     await expect(pastedItem, 'should list the pasted plugin').toBeVisible();
+    await expect(pastedItem.locator('.plugin-chip'), 'should mark it as a local plugin').toHaveText('Lokalny');
 
-    const editButton = pastedItem.getByTitle('Edytuj w edytorze');
     const [editorPage] = await Promise.all([
         context.waitForEvent('page'),
-        editButton.click(),
+        pastedItem.getByTitle('Edytuj w edytorze').click(),
     ]);
 
     await editorPage.waitForLoadState('domcontentloaded');
@@ -80,26 +97,21 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
 
     let scriptsModal = await openScriptsModal(page);
 
-    const scriptInput = scriptsModal.getByPlaceholder(SCRIPT_INPUT_PLACEHOLDER);
-    const addButton = scriptsModal.getByRole('button', {name: 'Dodaj'});
-
-    await scriptInput.fill(primaryUrl);
-    await addButton.click();
+    await addScriptUrl(page, primaryUrl);
 
     await expect(
-        scriptsModal.locator('section', {hasText: primaryUrl}),
-        'should display script added with button',
+        scriptsModal.locator('.plugin-card', {hasText: primaryUrl}),
+        'should display the script that was added',
     ).toBeVisible();
     await expect(scriptsModal.getByText('Test Plugin'), 'should render loaded plugin name').toBeVisible();
     await expect(scriptsModal.getByText('v1.2.3'), 'should render loaded plugin version badge').toBeVisible();
     await expect(scriptsModal.getByText('Lifecycle check'), 'should render plugin description').toBeVisible();
 
-    await scriptInput.fill(secondaryUrl);
-    await scriptInput.press('Enter');
+    await addScriptUrl(page, secondaryUrl);
 
     await expect(
-        scriptsModal.locator('section', {hasText: secondaryUrl}),
-        'should display script added with Enter key',
+        scriptsModal.locator('.plugin-card', {hasText: secondaryUrl}),
+        'should display the second script',
     ).toBeVisible();
 
     await page.waitForFunction(([first, second]) => {
@@ -117,8 +129,8 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
     await waitForCommandInput(page);
     scriptsModal = await openScriptsModal(page);
 
-    const primaryItem = scriptsModal.locator('section', {hasText: primaryUrl});
-    const secondaryItem = scriptsModal.locator('section', {hasText: secondaryUrl});
+    const primaryItem = scriptsModal.locator('.plugin-card', {hasText: primaryUrl});
+    const secondaryItem = scriptsModal.locator('.plugin-card', {hasText: secondaryUrl});
 
     await expect(primaryItem, 'should persist primary script after reload').toBeVisible();
     await expect(secondaryItem, 'should persist secondary script after reload').toBeVisible();
@@ -132,12 +144,17 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
     ).toBeVisible();
     await expect(secondaryItem.locator('.spinner-border'), 'should hide spinner on error').toHaveCount(0);
 
-    await primaryItem.getByRole('button').click();
+    // The "Problemy" filter is the fast way to the one script that broke.
+    await scriptsModal.locator('.plugin-filter', {hasText: 'Problemy'}).click();
+    await expect(scriptsModal.locator('.plugin-card'), 'should isolate the failing script').toHaveCount(1);
+    await scriptsModal.locator('.plugin-filter', {hasText: 'Wszystkie'}).click();
+
+    await primaryItem.getByTitle('Usun').click();
     await expect(primaryItem, 'should remove primary script entry').toHaveCount(0);
 
-    await secondaryItem.getByRole('button').click();
+    await secondaryItem.getByTitle('Usun').click();
     await expect(secondaryItem, 'should remove secondary script entry').toHaveCount(0);
-    await expect(scriptsModal.locator('section.character-settings-section'), 'should clear scripts list after removals').toHaveCount(0);
+    await expect(scriptsModal.locator('.plugin-card'), 'should clear scripts list after removals').toHaveCount(0);
 
     await page.waitForFunction(() => {
         const stored = localStorage.getItem('scripts');
@@ -149,4 +166,82 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
             return false;
         }
     });
+});
+
+test('Catalogue tab installs a plugin and then offers its update', async ({page}) => {
+    let latestVersion = '1.0.0';
+    const bundle = (version: string) =>
+        `export async function init() { return { name: 'Katalogowy', version: '${version}', author: 'QA', description: 'Z katalogu' }; }`;
+
+    const summary = () => ({
+        slug: 'katalogowy',
+        displayName: 'Katalogowy',
+        description: 'Plugin prosto z katalogu',
+        tags: ['walka'],
+        latestVersion,
+        installs: 42,
+        owner: {handle: 'qa', displayName: 'QA'},
+        updatedAt: new Date().toISOString(),
+        trustedPublisher: true,
+    });
+
+    await page.route(`${REGISTRY}/api/v1/plugins**`, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+                new URL(route.request().url()).searchParams.has('slugs')
+                    ? {items: [summary()]}
+                    : {items: [summary()], total: 1, page: 1, perPage: 24},
+            ),
+        });
+    });
+
+    await page.route(`${REGISTRY}/r/katalogowy/*/plugin.js`, async (route) => {
+        const version = new URL(route.request().url()).pathname.split('/')[3];
+        await route.fulfill({status: 200, contentType: 'application/javascript', body: bundle(version)});
+    });
+
+    await page.goto('/');
+    await waitForCommandInput(page);
+
+    const scriptsModal = await openScriptsModal(page);
+    await scriptsModal.locator('.plugin-tab', {hasText: 'Katalog'}).click();
+
+    const card = scriptsModal.locator('.plugin-card', {hasText: 'Katalogowy'});
+    await expect(card, 'should list the catalogue plugin').toBeVisible();
+    await expect(card.getByText('42 instalacji'), 'should show the install count').toBeVisible();
+
+    await card.getByRole('button', {name: 'Zainstaluj'}).click();
+    await expect(card.getByRole('button', {name: 'Zainstalowany'}), 'should mark it installed').toBeVisible();
+
+    await scriptsModal.locator('.plugin-tab', {hasText: 'Zainstalowane'}).click();
+
+    const installed = scriptsModal.locator('.plugin-card', {hasText: 'Katalogowy'});
+    await expect(installed, 'should appear on the installed tab').toBeVisible();
+    await expect(installed.locator('.plugin-chip'), 'should be tagged as a catalogue install').toHaveText('Katalog');
+    await expect(installed.getByText('v1.0.0'), 'should run the version it pinned').toBeVisible();
+
+    await page.waitForFunction((url) => {
+        const stored = localStorage.getItem('scripts');
+        return Boolean(stored && JSON.parse(stored).includes(url));
+    }, `${REGISTRY}/r/katalogowy/1.0.0/plugin.js`);
+
+    // A newer release shows up in the catalogue: the panel offers it, and taking
+    // it replaces the pinned URL rather than adding a second copy.
+    latestVersion = '1.1.0';
+    await page.reload();
+    await waitForCommandInput(page);
+    await openScriptsModal(page);
+
+    const updated = page.locator(SCRIPTS_MODAL).locator('.plugin-card', {hasText: 'Katalogowy'});
+    await expect(updated.getByText('Dostepna wersja'), 'should offer the newer release').toBeVisible();
+    await updated.getByRole('button', {name: 'Aktualizuj', exact: true}).click();
+
+    await expect(updated.getByText('v1.1.0'), 'should run the new version').toBeVisible();
+    await page.waitForFunction((url) => {
+        const stored = localStorage.getItem('scripts');
+        const parsed = stored ? JSON.parse(stored) : [];
+        return parsed.length === 1 && parsed[0] === url;
+    }, `${REGISTRY}/r/katalogowy/1.1.0/plugin.js`);
 });

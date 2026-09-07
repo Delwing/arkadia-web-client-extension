@@ -127,8 +127,10 @@ test.describe('forge menu', () => {
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 
-        await modal.getByRole('button', { name: 'Wklej kod' }).click();
         const dialog = modal.locator('.modal.show');
+        await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
+        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin');
+        await dialog.locator('.plugin-route', { hasText: 'Wklej kod' }).click();
         await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
         // Typing must land in the dialog's fields, not be swallowed by a trap.
         const code = dialog.getByPlaceholder('export async function init(api) { ... }');
@@ -138,7 +140,8 @@ test.describe('forge menu', () => {
         await dialog.getByRole('button', { name: 'Anuluj' }).click();
         await expect(dialog).toHaveCount(0);
 
-        await modal.getByRole('button', { name: 'Wygeneruj z AI' }).click();
+        await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
+        await dialog.locator('.plugin-route', { hasText: 'Wygeneruj z AI' }).click();
         await expect(dialog.locator('.modal-title')).toHaveText('Wygeneruj plugin z AI');
         // "Mam kod, wklej go" hands over to the paste dialog.
         await dialog.getByRole('button', { name: 'Mam kod, wklej go' }).click();
@@ -147,9 +150,10 @@ test.describe('forge menu', () => {
 
         // The editor is a sibling entry at the app root; resolving its link
         // relative to this page would aim at the non-existent /forge-ui/editor/.
+        await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
         const [editor] = await Promise.all([
             page.waitForEvent('popup'),
-            modal.getByRole('button', { name: 'Edytor' }).click(),
+            dialog.locator('.plugin-route', { hasText: 'Otworz edytor' }).click(),
         ]);
         expect(new URL(editor.url()).pathname).toBe('/editor/index.html');
         await editor.close();

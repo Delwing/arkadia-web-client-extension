@@ -62,10 +62,15 @@ Rozszerzasz klienta o wlasne funkcje — lub instalujesz pluginy innych graczy.
 
 ### Instalacja
 
-- **Przez UI** — wklej URL i kliknij "Dodaj"
+Panel **Skrypty** ma dwie zakladki: *Zainstalowane* (co masz) i *Katalog* (co mozesz miec).
+
+- **Z katalogu** — zakladka "Katalog" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,
+  zajrzyj w opis i historie wersji, a potem kliknij "Zainstaluj". Klient zapamietuje konkretna
+  wersje, wiec plugin nie zmieni sie sam pod reka — gdy autor wyda nowsza, na liscie
+  zainstalowanych pojawi sie przycisk "Aktualizuj"
 - **Przez link** — otworz URL z parametrem `?add-script=...` i plugin zainstaluje sie automatycznie
-- **Przez edytor** — pisz plugin bezposrednio w wbudowanym edytorze
-- **Import plikow** — wrzuc plik .js/.ts z dysku
+- **Wlasny plugin** — przycisk "Dodaj plugin" prowadzi do pozostalych drog: import paczki ZIP,
+  wklejenie kodu, adres URL, wygenerowanie promptu dla AI albo napisanie pluginu w edytorze
 
 ### Co plugin moze robic
 

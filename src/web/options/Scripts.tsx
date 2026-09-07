@@ -1,544 +1,213 @@
-import { useEffect, useState, useRef, ChangeEvent } from "react";
-import { Button, Form, Badge, Spinner } from "react-bootstrap";
-import { Trash2, Pencil, ExternalLink, Upload, Sparkles } from "lucide-react";
-import { globalStorage } from "@modules/core/storage";
-import { getPluginManager } from "@client/main";
-import type { LoadedPlugin } from "@shared/types/Plugin";
-import { storePluginScript, generatePluginId, deletePluginScript, getAllStoredPluginIds, getAllStoredPlugins } from "@client/utils/pluginStorage";
-import { storeEditorPlugin, deleteEditorPlugin, createEditorPluginFromSource, type EditorPluginData } from "@client/utils/pluginEditorStorage";
-import { buildAiPluginPrompt } from "../aiPluginPrompt";
+import { useCallback, useState, type ChangeEvent } from "react";
+import { Button, Form, Spinner } from "react-bootstrap";
+import { Plus, Search, Store, X } from "lucide-react";
+import { generatePluginId, storePluginScript } from "@client/utils/pluginStorage";
+import { createEditorPluginFromSource, storeEditorPlugin } from "@client/utils/pluginEditorStorage";
 import { editorUrl } from "../appUrls";
-import SubDialog from "../SubDialog";
-import type { PluginImportWorkerResponse } from "../pluginImport.shared";
-import PluginImportWorker from "../pluginImport.worker?worker";
+import { useInstalledPlugins } from "./useInstalledPlugins";
+import { usePluginZipImport } from "./usePluginZipImport";
+import ScriptsInstalled from "./ScriptsInstalled";
+import ScriptsMarketplace from "./ScriptsMarketplace";
+import {
+    AddPluginDialog,
+    AddUrlDialog,
+    AiPromptDialog,
+    PasteCodeDialog,
+    type AddRoute,
+} from "./ScriptsAddDialogs";
 
 /**
- * The "Wklej kod" / "Wygeneruj z AI" dialogs use the shared inline `SubDialog`
- * (see `@web/SubDialog` for why a portaled react-bootstrap `<Modal>` cannot be
- * used inside these panels).
+ * "Skrypty" — the plugin manager.
  *
- * They replace markup that used to live in stock's index.html and be driven by
- * id (`#add-plugin-code-modal`, `#ai-plugin-modal`): those shells exist only in
- * the stock page, so under forge — which hosts this very component in its own
- * menu modal — every button that reached for them was a silent no-op. Rendering
- * inline also keeps the dialog inside `.forge-menu-modal`, so the scoped
- * Bootstrap sheet and forge's palette reach it without the portal-tagging
- * workaround.
+ * Two tabs over one search box: what is installed, and the public catalogue
+ * (arkadia-plugin-marketplace) it can be installed from. Everything that used to
+ * be a row of five buttons is behind one "Dodaj plugin" chooser, so the panel
+ * opens on the list rather than on its own toolbar.
+ *
+ * A catalogue install is nothing more than the registry's pinned bundle URL
+ * appended to the same `scripts` list a hand-typed URL goes into — see
+ * `useInstalledPlugins` for why that, and not a new store, is the source of
+ * truth for "which plugins came from the catalogue".
+ *
+ * The sub-dialogs use the shared inline `SubDialog` (see `@web/SubDialog` for
+ * why a portaled react-bootstrap `<Modal>` cannot be used inside these panels).
  */
+type Tab = "installed" | "catalog";
+
 function Scripts() {
-    const [scripts, setScripts] = useState<string[]>([]);
-    const [storedScripts, setStoredScripts] = useState<string[]>([]);
-    const [pluginInfo, setPluginInfo] = useState<Map<string, LoadedPlugin>>(new Map());
-    const [storedPluginMetadata, setStoredPluginMetadata] = useState<Map<string, any>>(new Map());
-    const [input, setInput] = useState("");
-    // The "Wklej kod" / "Wygeneruj z AI" dialogs are owned by this component now
-    // (see SubDialog above) instead of being host-page markup driven by id.
-    const [showCodeModal, setShowCodeModal] = useState(false);
-    const [showAiModal, setShowAiModal] = useState(false);
-    const [pluginName, setPluginName] = useState("");
-    const [pluginCode, setPluginCode] = useState("");
-    const [aiDescription, setAiDescription] = useState("");
-    const [aiCopied, setAiCopied] = useState(false);
-    const [uploadStatus, setUploadStatus] = useState<{ message: string; type: 'success' | 'error' | 'loading' } | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const {
+        plugins,
+        installedSlugs,
+        catalogError,
+        addUrl,
+        installFromRegistry,
+        updateFromRegistry,
+        remove,
+        reloadStored,
+    } = useInstalledPlugins();
 
-    // Refresh plugin info from PluginManager
-    const refreshPluginInfo = () => {
-        const manager = getPluginManager();
-        if (manager) {
-            const loadedPlugins = manager.getLoadedPlugins();
-            const map = new Map<string, LoadedPlugin>();
-            loadedPlugins.forEach(plugin => {
-                map.set(plugin.url, plugin);
-            });
-            setPluginInfo(map);
-        }
-    };
+    const [tab, setTab] = useState<Tab>("installed");
+    const [search, setSearch] = useState("");
+    const [dialog, setDialog] = useState<AddRoute | "chooser" | null>(null);
 
-    // Load stored scripts from IndexedDB
-    const loadStoredScriptsFromDB = async () => {
-        try {
-            const plugins = await getAllStoredPlugins();
-            const ids = plugins.map(p => p.id);
-            setStoredScripts(ids);
+    const zip = usePluginZipImport(reloadStored);
 
-            // Also load metadata for stored plugins
-            const metadataMap = new Map();
-            plugins.forEach(plugin => {
-                if (plugin.metadata) {
-                    metadataMap.set(plugin.id, plugin.metadata);
-                }
-            });
-            setStoredPluginMetadata(metadataMap);
-        } catch (error) {
-            console.error("Failed to load stored scripts from IndexedDB:", error);
-        }
-    };
-
-    useEffect(() => {
-        const savedScripts = globalStorage.get("scripts");
-        if (Array.isArray(savedScripts)) {
-            setScripts(savedScripts);
-        }
-
-        // Load stored scripts directly from IndexedDB instead of localStorage
-        loadStoredScriptsFromDB();
-
-        // Initial plugin info refresh
-        refreshPluginInfo();
-
-        // Listen for plugin events
-        let handlePluginLoaded: (() => void) | null = null;
-        let handlePluginError: (() => void) | null = null;
-        let handlePluginDestroyed: (() => void) | null = null;
-
-        if (window.client) {
-            handlePluginLoaded = () => refreshPluginInfo();
-            handlePluginError = () => refreshPluginInfo();
-            handlePluginDestroyed = () => refreshPluginInfo();
-
-            window.client.on('plugin:loaded', handlePluginLoaded);
-            window.client.on('plugin:error', handlePluginError);
-            window.client.on('plugin:destroyed', handlePluginDestroyed);
-        }
-
-        // Cleanup function
-        return () => {
-            if (window.client && handlePluginLoaded && handlePluginError && handlePluginDestroyed) {
-                window.client.off('plugin:loaded', handlePluginLoaded);
-                window.client.off('plugin:error', handlePluginError);
-                window.client.off('plugin:destroyed', handlePluginDestroyed);
-            }
-        };
+    const openCatalog = useCallback(() => {
+        setDialog(null);
+        setSearch("");
+        setTab("catalog");
     }, []);
 
-    function save(list: string[]) {
-        setScripts(list);
-        globalStorage.set("scripts", list);
-    }
-    function add() {
-        const url = input.trim();
-        if (!url) return;
-        if (!scripts.includes(url)) {
-            const updated = [...scripts, url];
-            save(updated);
-        }
-        setInput("");
-    }
+    const pickRoute = useCallback(
+        (route: AddRoute) => {
+            if (route === "catalog") {
+                openCatalog();
+                return;
+            }
+            if (route === "editor") {
+                setDialog(null);
+                window.open(editorUrl(), "_blank");
+                return;
+            }
+            if (route === "zip") {
+                setDialog(null);
+                zip.pick();
+                return;
+            }
+            setDialog(route);
+        },
+        [openCatalog, zip]
+    );
 
-    const handleModalSubmit = async () => {
-        const code = pluginCode.trim();
-        const name = pluginName.trim();
+    const addPastedCode = useCallback(
+        async (name: string, code: string) => {
+            const source = code.trim();
+            if (!source) return;
 
-        if (!code) {
-            alert("Proszę wkleić kod pluginu");
-            return;
-        }
-
-        try {
-            // Generate a unique ID for the plugin
-            const pluginId = generatePluginId(name || code);
-
+            const id = generatePluginId(name.trim() || source);
             const metadata = {
-                name: name || "Wklejony plugin",
-                version: '1.0.0',
-                author: 'Wklejony kod',
+                name: name.trim() || "Wklejony plugin",
+                version: "1.0.0",
+                author: "Wklejony kod",
                 description: 'Dodany przez "Wklej kod"',
             };
 
-            // Store the plugin in IndexedDB
-            await storePluginScript(pluginId, code, metadata);
-
-            // Also store an editor record under the same id, so the pasted code
-            // can be opened and edited in the plugin editor (it reads a separate
-            // database and would otherwise report "Plugin not found").
-            await storeEditorPlugin(
-                createEditorPluginFromSource(pluginId, metadata.name, code, metadata)
-            );
-
-            // Reload stored scripts list from IndexedDB
-            await loadStoredScriptsFromDB();
-
-            // Trigger storage event to reload plugins
-            const ids = await getAllStoredPluginIds();
-            globalStorage.set("stored_scripts", ids);
-
-            setPluginName("");
-            setPluginCode("");
-            setShowCodeModal(false);
-        } catch (error) {
-            console.error("Failed to store plugin:", error);
-            alert("Failed to store plugin: " + (error instanceof Error ? error.message : String(error)));
-        }
-    };
-
-    const handleAiCopy = async () => {
-        const description = aiDescription.trim();
-        if (!description) {
-            alert("Proszę opisać, co ma robić plugin");
-            return;
-        }
-        try {
-            await navigator.clipboard.writeText(buildAiPluginPrompt(description));
-            setAiCopied(true);
-            setTimeout(() => setAiCopied(false), 3000);
-        } catch (error) {
-            console.error("Failed to copy AI prompt:", error);
-            alert("Nie udało się skopiować promptu do schowka");
-        }
-    };
-
-    async function remove(identifier: string) {
-        // Check if it's a stored plugin or URL
-        if (storedScripts.includes(identifier)) {
-            // Delete from IndexedDB
             try {
-                await deletePluginScript(identifier);
-                // Drop the editor record too, otherwise the deleted plugin keeps
-                // showing up in the editor's plugin list.
-                await deleteEditorPlugin(identifier);
-                // Reload from IndexedDB to update the list
-                await loadStoredScriptsFromDB();
-                // Trigger storage event to reload plugins
-                const ids = await getAllStoredPluginIds();
-                globalStorage.set("stored_scripts", ids);
-            } catch (err) {
-                console.error("Failed to delete plugin from IndexedDB:", err);
+                await storePluginScript(id, source, metadata);
+                // Mirror it into the editor's own database as well, or the plugin
+                // cannot be opened for editing ("Plugin not found").
+                await storeEditorPlugin(createEditorPluginFromSource(id, metadata.name, source, metadata));
+                await reloadStored();
+                setDialog(null);
+            } catch (error) {
+                console.error("Failed to store plugin:", error);
             }
-        } else {
-            // Remove from URL scripts
-            const updated = scripts.filter(u => u !== identifier);
-            save(updated);
-        }
-    }
+        },
+        [reloadStored]
+    );
 
-    const allScripts = [...scripts, ...storedScripts];
-
-    // Resolved against the client root, not the current document: the forge UI is
-    // served from `<root>/forge-ui/`, where a relative `editor/index.html` would
-    // 404 (there is no editor nested under the sub-apps). See ../appUrls.ts.
-    const openEditor = () => {
-        window.open(editorUrl(), '_blank');
-    };
-
-    const editStoredPlugin = (pluginId: string) => {
-        window.open(editorUrl(pluginId), '_blank');
-    };
-
-    const handleZipUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Reset input so same file can be selected again
-        e.target.value = '';
-
-        setUploadStatus({ message: 'Importowanie...', type: 'loading' });
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const worker = new PluginImportWorker();
-
-            worker.onmessage = async (event: MessageEvent<PluginImportWorkerResponse>) => {
-                const response = event.data;
-
-                if (response.type === 'progress') {
-                    setUploadStatus({ message: response.message, type: 'loading' });
-                    return;
-                }
-
-                worker.terminate();
-
-                if (response.type === 'error') {
-                    setUploadStatus({ message: response.message, type: 'error' });
-                    setTimeout(() => setUploadStatus(null), 5000);
-                    return;
-                }
-
-                try {
-                    const { id, name, compiled, files, folders, entryPoint, metadata } = response.plugin;
-
-                    const now = Date.now();
-
-                    // Store in Editor format (so it appears in Editor)
-                    const editorPluginData: EditorPluginData = {
-                        id,
-                        name,
-                        compiled,
-                        files,
-                        folders,
-                        entryPoint,
-                        metadata: metadata ? {
-                            name: metadata.name,
-                            version: metadata.version || '1.0.0',
-                            author: metadata.author || 'Imported',
-                            description: metadata.description || 'Imported from ZIP',
-                        } : {
-                            name,
-                            version: '1.0.0',
-                            author: 'Imported',
-                            description: 'Imported from ZIP',
-                        },
-                        createdAt: now,
-                        updatedAt: now,
-                        lastCompiledAt: now,
-                    };
-
-                    await storeEditorPlugin(editorPluginData);
-
-                    // Also store compiled JS for runtime
-                    await storePluginScript(id, compiled, editorPluginData.metadata);
-
-                    // Reload stored scripts list
-                    await loadStoredScriptsFromDB();
-
-                    // Trigger storage event to reload plugins
-                    const ids = await getAllStoredPluginIds();
-                    globalStorage.set("stored_scripts", ids);
-
-                    // Trigger localStorage update for other tabs
-                    localStorage.setItem('stored_scripts_updated', Date.now().toString());
-
-                    setUploadStatus({
-                        message: `Zaimportowano: ${name}`,
-                        type: 'success',
-                    });
-                    setTimeout(() => setUploadStatus(null), 3000);
-                } catch (err) {
-                    console.error('Failed to store plugin:', err);
-                    setUploadStatus({
-                        message: 'Blad podczas zapisywania pluginu.',
-                        type: 'error',
-                    });
-                    setTimeout(() => setUploadStatus(null), 5000);
-                }
-            };
-
-            worker.onerror = (err) => {
-                console.error('Worker error:', err);
-                worker.terminate();
-                setUploadStatus({ message: 'Blad podczas importu.', type: 'error' });
-                setTimeout(() => setUploadStatus(null), 5000);
-            };
-
-            worker.postMessage({ type: 'import', file: arrayBuffer });
-        } catch {
-            setUploadStatus({ message: 'Nie udalo sie odczytac pliku.', type: 'error' });
-            setTimeout(() => setUploadStatus(null), 5000);
-        }
-    };
+    const installed = plugins.length;
+    const updates = plugins.filter((plugin) => plugin.updateVersion).length;
 
     return (
-        <div className="m-2 d-flex flex-column gap-2">
+        <div className="plugin-manager">
             <input
-                ref={fileInputRef}
+                ref={zip.inputRef}
                 type="file"
                 accept=".zip"
-                onChange={handleZipUpload}
-                style={{ display: 'none' }}
+                onChange={zip.handleFile}
+                style={{ display: "none" }}
             />
-            <div className="d-flex flex-wrap gap-2 align-items-center">
-                <Form.Control
-                    type="text"
-                    size="sm"
-                    value={input}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
-                    onKeyDown={e => {
-                        if (e.key === "Enter") {
-                            e.preventDefault();
-                            add();
-                        }
-                    }}
-                    placeholder="URL skryptu"
-                    style={{width: 'auto', flex: '1 1 auto', minWidth: '200px', maxWidth: '400px'}}
-                />
-                <Button size="sm" onClick={add}>Dodaj URL</Button>
-                <Button size="sm" variant="success" onClick={() => setShowCodeModal(true)}>
-                    Wklej kod
-                </Button>
-                <Button size="sm" variant="outline-primary" onClick={() => setShowAiModal(true)}>
-                    <Sparkles size={14} className="me-1" />
-                    Wygeneruj z AI
-                </Button>
-                <Button size="sm" variant="warning" onClick={() => fileInputRef.current?.click()}>
-                    <Upload size={14} className="me-1" />
-                    Importuj ZIP
-                </Button>
-                <Button size="sm" variant="info" onClick={openEditor}>
-                    <ExternalLink size={14} className="me-1" />
-                    Edytor
+
+            <div className="plugin-manager__tabs">
+                <button
+                    type="button"
+                    className={`plugin-tab${tab === "installed" ? " plugin-tab--active" : ""}`}
+                    onClick={() => setTab("installed")}
+                >
+                    Zainstalowane
+                    {installed > 0 && <span className="plugin-tab__count">{installed}</span>}
+                    {updates > 0 && <span className="plugin-tab__dot" title={`${updates} aktualizacji`} />}
+                </button>
+                <button
+                    type="button"
+                    className={`plugin-tab${tab === "catalog" ? " plugin-tab--active" : ""}`}
+                    onClick={() => setTab("catalog")}
+                >
+                    <Store size={14} />
+                    Katalog
+                </button>
+            </div>
+
+            <div className="plugin-manager__toolbar">
+                <div className="plugin-search">
+                    <Search size={15} className="plugin-search__icon" />
+                    <Form.Control
+                        type="search"
+                        size="sm"
+                        value={search}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
+                        placeholder={tab === "installed" ? "Szukaj wsrod zainstalowanych" : "Szukaj w katalogu"}
+                    />
+                    {search && (
+                        <button
+                            type="button"
+                            className="plugin-search__clear"
+                            onClick={() => setSearch("")}
+                            title="Wyczysc"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
+                <Button size="sm" variant="primary" className="plugin-add" onClick={() => setDialog("chooser")}>
+                    <Plus size={15} />
+                    Dodaj plugin
                 </Button>
             </div>
-            {uploadStatus && (
-                <div className={`alert alert-${uploadStatus.type === 'error' ? 'danger' : uploadStatus.type === 'loading' ? 'info' : 'success'} py-1 px-2 mb-0`} style={{ fontSize: '0.85rem' }}>
-                    {uploadStatus.type === 'loading' && <Spinner animation="border" size="sm" className="me-2" />}
-                    {uploadStatus.message}
+
+            {zip.status && (
+                <div
+                    className={`plugin-banner plugin-banner--${
+                        zip.status.type === "error" ? "error" : zip.status.type === "loading" ? "muted" : "success"
+                    }`}
+                >
+                    {zip.status.type === "loading" && <Spinner animation="border" size="sm" />}
+                    <span>{zip.status.message}</span>
                 </div>
             )}
 
-            <div className="d-flex flex-column gap-2">
-                {allScripts.map(identifier => {
-                    const plugin = pluginInfo.get(identifier);
-                    const hasPluginInfo = plugin?.info;
-                    const isLoading = plugin?.status === 'loading';
-                    const hasError = plugin?.status === 'error';
-                    const isLegacy = plugin?.status === 'legacy';
-
-                    const isStored = storedScripts.includes(identifier);
-                    const storedMetadata = storedPluginMetadata.get(identifier);
-
-                    // Use metadata from IndexedDB for stored plugins if available
-                    const displayInfo = hasPluginInfo ? plugin.info : storedMetadata;
-
-                    return (
-                        <section key={identifier} className="character-settings-section" style={{ marginBottom: 0 }}>
-                            <div className="d-flex align-items-center gap-2">
-                                {isLoading && <Spinner animation="border" size="sm" />}
-
-                                {displayInfo ? (
-                                    <div className="d-flex flex-column">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <strong>{displayInfo.name}</strong>
-                                            <Badge bg="primary" pill>v{displayInfo.version}</Badge>
-                                            {displayInfo.author && (
-                                                <small className="text-muted">by {displayInfo.author}</small>
-                                            )}
-                                            {isStored && (
-                                                <Badge bg="info" className="ms-2">Stored</Badge>
-                                            )}
-                                        </div>
-                                        {displayInfo.description && (
-                                            <small className="text-muted">{displayInfo.description}</small>
-                                        )}
-                                        {!isStored && (
-                                            <small className="text-muted font-monospace">{identifier}</small>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="d-flex flex-column">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <span className="font-monospace">{isStored ? "Stored Plugin" : identifier}</span>
-                                            {isStored && (
-                                                <Badge bg="info">Stored</Badge>
-                                            )}
-                                        </div>
-                                        {isLegacy && (
-                                            <Badge bg="secondary" className="align-self-start">Legacy Script</Badge>
-                                        )}
-                                        {hasError && (
-                                            <small className="text-danger">{plugin.error}</small>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="ms-auto d-flex gap-2">
-                                    {isStored && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline-primary"
-                                            onClick={() => editStoredPlugin(identifier)}
-                                            title="Edytuj w edytorze"
-                                        >
-                                            <Pencil size={16} />
-                                        </Button>
-                                    )}
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={() => remove(identifier)}
-                                    >
-                                        <Trash2 size={16} />
-                                    </Button>
-                                </div>
-                            </div>
-                        </section>
-                    );
-                })}
+            <div className="plugin-manager__body">
+                {tab === "installed" ? (
+                    <ScriptsInstalled
+                        plugins={plugins}
+                        search={search}
+                        catalogError={catalogError}
+                        onUpdate={updateFromRegistry}
+                        onRemove={remove}
+                        onBrowseCatalog={openCatalog}
+                    />
+                ) : (
+                    <ScriptsMarketplace
+                        search={search}
+                        installedSlugs={installedSlugs}
+                        onInstall={installFromRegistry}
+                    />
+                )}
             </div>
 
-            {showCodeModal && (
-                <SubDialog
-                    size="lg"
-                    title="Dodaj plugin z kodu"
-                    onClose={() => setShowCodeModal(false)}
-                    footer={(
-                        <>
-                            <Button variant="secondary" onClick={() => setShowCodeModal(false)}>Anuluj</Button>
-                            <Button variant="primary" onClick={handleModalSubmit}>Dodaj plugin</Button>
-                        </>
-                    )}
-                >
-                    <Form.Group className="mb-3">
-                        <Form.Label>Nazwa pluginu (opcjonalnie)</Form.Label>
-                        <Form.Control
-                            type="text"
-                            value={pluginName}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => setPluginName(e.target.value)}
-                            placeholder="Moja wtyczka"
-                            autoComplete="off"
-                        />
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Kod JavaScript</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={15}
-                            value={pluginCode}
-                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setPluginCode(e.target.value)}
-                            placeholder="export async function init(api) { ... }"
-                            autoComplete="off"
-                            style={{ fontFamily: 'monospace', fontSize: '0.9em' }}
-                        />
-                    </Form.Group>
-                </SubDialog>
+            {dialog === "chooser" && <AddPluginDialog onPick={pickRoute} onClose={() => setDialog(null)} />}
+            {dialog === "url" && (
+                <AddUrlDialog
+                    onAdd={addUrl}
+                    onClose={() => setDialog(null)}
+                />
             )}
-
-            {showAiModal && (
-                <SubDialog
-                    size="lg"
-                    title="Wygeneruj plugin z AI"
-                    onClose={() => setShowAiModal(false)}
-                    footer={(
-                        <>
-                            <Button variant="secondary" onClick={() => setShowAiModal(false)}>Zamknij</Button>
-                            <Button
-                                variant="success"
-                                onClick={() => {
-                                    setShowAiModal(false);
-                                    setShowCodeModal(true);
-                                }}
-                            >
-                                Mam kod, wklej go
-                            </Button>
-                        </>
-                    )}
-                >
-                    <p className="text-muted">
-                        Opisz czego ma dokonywać plugin, skopiuj wygenerowany prompt i wklej go do wybranego czatu AI
-                        (np. Claude, ChatGPT). AI zwróci kod w bloku kodu — użyj przycisku kopiowania przy tym bloku,
-                        a następnie wklej go w oknie "Wklej kod".
-                    </p>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Co ma robić ten plugin?</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={4}
-                            value={aiDescription}
-                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setAiDescription(e.target.value)}
-                            placeholder="Np. podswietl na czerwono linie zawierajace moje imie"
-                            autoComplete="off"
-                        />
-                    </Form.Group>
-                    <div className="d-flex flex-wrap gap-2">
-                        <Button variant="primary" onClick={handleAiCopy}>Kopiuj prompt</Button>
-                        <Button variant="outline-secondary" href="https://claude.ai/new" target="_blank" rel="noopener">
-                            Otwórz Claude
-                        </Button>
-                        <Button variant="outline-secondary" href="https://chatgpt.com/" target="_blank" rel="noopener">
-                            Otwórz ChatGPT
-                        </Button>
-                    </div>
-                    {aiCopied && <div className="mt-2 text-success">Skopiowano do schowka!</div>}
-                </SubDialog>
+            {dialog === "code" && (
+                <PasteCodeDialog onSubmit={addPastedCode} onClose={() => setDialog(null)} />
+            )}
+            {dialog === "ai" && (
+                <AiPromptDialog onHaveCode={() => setDialog("code")} onClose={() => setDialog(null)} />
             )}
         </div>
     );
