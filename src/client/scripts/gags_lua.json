@@ -235,7 +235,7 @@
                             "type": 0
                           },
                           {
-                            "pattern": "^(?<attacker>.+?) ledwo muska (?<target>.+?) upiornym ciemnym mlotem, trafiajac (?:go|ja) w (?<where>.*)\\.$",
+                            "pattern": "^(?<attacker>.+?) ledwo muska (?<target>.+?) upiornym ciemnym \\w+, trafiajac (?:go|ja) w (?<where>.*)\\.$",
                             "type": 1
                           }
                         ],
@@ -249,7 +249,7 @@
                             "type": 0
                           },
                           {
-                            "pattern": "^Gwaltownym wymachem upiornego ciemnego mlota w (?<where>.+?) dosiegasz (?<target>.+?), lekko (?:go|ja) raniac\\.$",
+                            "pattern": "^Gwaltownym wymachem upiornego ciemnego \\w+ w (?<where>.+?) dosiegasz (?<target>.+?), lekko (?:go|ja) raniac\\.$",
                             "type": 1
                           }
                         ],
