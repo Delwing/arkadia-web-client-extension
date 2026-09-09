@@ -92,7 +92,11 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
                 if (enabled.ok) {
                     notify('Gotowe. To urządzenie będzie dostawać powiadomienia.');
                 } else if (enabled.error === 'denied') {
-                    notify('Przeglądarka blokuje powiadomienia. Odblokuj je dla tej strony i spróbuj ponownie.');
+                    notify('Powiadomienia są zablokowane dla tej strony. Odblokuj je w ustawieniach przeglądarki — sama strona nie może poprosić ponownie.');
+                } else if (enabled.error === 'not_granted') {
+                    // Includes browsers that will not prompt without a click,
+                    // which this page-load path cannot provide.
+                    notify('Sparowano. Potwierdź zgodę: Ustawienia interfejsu → Powiadomienia → Odbieraj na tym urządzeniu.');
                 } else if (enabled.error === 'unsupported') {
                     notify('Ta przeglądarka nie obsługuje powiadomień push. Na iPhone dodaj stronę do ekranu głównego.');
                 } else {

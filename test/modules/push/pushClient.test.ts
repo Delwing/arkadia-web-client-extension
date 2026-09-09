@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import {
   claimPairingFromLocation,
+  enablePush,
   isPushEnabled,
   resetPushCooldown,
   sendPush,
@@ -124,6 +125,25 @@ describe('sendPush', () => {
     window.location.hash = '';
     expect(await claimPairingFromLocation()).toEqual({ status: 'none' });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test('treats a blocked site as terminal without re-prompting', async () => {
+    // requestPermission() resolves as denied without showing anything once a
+    // site is blocked, so calling it would be pointless — and reporting "try
+    // again" would be a lie, since only browser settings can undo it.
+    const requestPermission = vi.fn();
+    vi.stubGlobal('Notification', Object.assign(class {}, {
+      permission: 'denied',
+      requestPermission,
+    }));
+    vi.stubGlobal('PushManager', class {});
+    Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+      value: { getRegistration: async () => undefined, register: vi.fn() },
+      configurable: true,
+    });
+
+    expect(await enablePush()).toEqual({ ok: false, error: 'denied' });
+    expect(requestPermission).not.toHaveBeenCalled();
   });
 
   test('survives the worker being unreachable', async () => {

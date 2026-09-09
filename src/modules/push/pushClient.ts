@@ -119,11 +119,26 @@ export async function enablePush(): Promise<{ ok: boolean; error?: string }> {
         return { ok: false, error: 'unsupported' };
     }
 
-    // Must happen in response to a user gesture; browsers reject a bare
-    // page-load request, so this function has to be called from a click.
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-        return { ok: false, error: permission };
+    // `denied` is terminal and worth separating: requestPermission() resolves
+    // immediately as denied without showing anything, and a page can never
+    // re-prompt its way out. Only site settings can undo it, so telling the
+    // player to "try again" would be a lie.
+    if (Notification.permission === 'denied') {
+        return { ok: false, error: 'denied' };
+    }
+
+    // Already granted short-circuits without a prompt, which is what makes
+    // auto-enabling on a pairing load work on a device that has said yes before.
+    if (Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            // Not necessarily a refusal. Firefox and Safari require a real user
+            // gesture here, and this runs on page load after a QR scan, so a
+            // gesture-less call is reported as a non-grant too. Both cases are
+            // fixed the same way — press the button in settings — so they share
+            // an outcome distinct from the terminal `denied` above.
+            return { ok: false, error: 'not_granted' };
+        }
     }
 
     let subscription: PushSubscription;

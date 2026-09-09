@@ -64,7 +64,14 @@ function PushNotificationsSection() {
         } else if (result.error === "denied") {
             setStatus({
                 kind: "error",
-                text: "Przeglądarka zablokowała powiadomienia. Odblokuj je w ustawieniach strony i spróbuj ponownie.",
+                text: "Powiadomienia są zablokowane dla tej strony. Odblokuj je w ustawieniach przeglądarki — sama strona nie może poprosić ponownie.",
+            });
+        } else if (result.error === "not_granted") {
+            // Unlike the pairing path, this one runs from a click, so there was
+            // a real prompt and it was dismissed.
+            setStatus({
+                kind: "error",
+                text: "Nie przyznano zgody na powiadomienia.",
             });
         } else {
             setStatus({ kind: "error", text: `Nie udało się włączyć: ${result.error}` });
