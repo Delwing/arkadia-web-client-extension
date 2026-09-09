@@ -91,7 +91,11 @@ export function isPushSupported(): boolean {
 async function currentSubscription(): Promise<PushSubscription | null> {
     if (!isPushSupported()) return null;
     try {
-        const registration = await navigator.serviceWorker.ready;
+        // getRegistration(), never `ready`: `ready` hangs forever when nothing
+        // is registered yet rather than rejecting, so any caller awaiting it on
+        // a fresh browser would wait for good.
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) return null;
         return await registration.pushManager.getSubscription();
     } catch {
         return null;
@@ -124,6 +128,12 @@ export async function enablePush(): Promise<{ ok: boolean; error?: string }> {
 
     let subscription: PushSubscription;
     try {
+        // Register before awaiting `ready`. Nothing guarantees the service
+        // worker is already registered — NotificationManager only does it when
+        // local notifications are switched on — and `ready` never resolves if
+        // it is not, so without this the button hangs silently on a browser
+        // that has not enabled them. register() is idempotent.
+        await navigator.serviceWorker.register('sw.js');
         const registration = await navigator.serviceWorker.ready;
         const existing = await registration.pushManager.getSubscription();
         subscription =

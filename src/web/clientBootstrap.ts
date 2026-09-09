@@ -68,7 +68,27 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // keeps boot from fetching a chunk that virtually nobody needs.
     if (/[#&]push-pair=/.test(window.location.hash)) {
         void import('@modules/push/pushClient')
-            .then(({ claimPairingFromLocation }) => claimPairingFromLocation())
+            .then(async ({ claimPairingFromLocation, isPushEnabled }) => {
+                const claimed = await claimPairingFromLocation();
+                // Say something either way. Claiming writes nothing the player
+                // can see — the credential lands in storage and the code is
+                // consumed server-side — so without this, a successful pairing
+                // and an expired one look identical: nothing happens.
+                if (!claimed) {
+                    client.sendEvent('notify', {
+                        text: 'Kod parowania wygasł lub został już użyty. Wygeneruj nowy na drugim urządzeniu.',
+                        time: 10000,
+                    });
+                    return;
+                }
+                const alreadyReceiving = await isPushEnabled();
+                client.sendEvent('notify', {
+                    text: alreadyReceiving
+                        ? 'Sparowano powiadomienia na tym urządzeniu.'
+                        : 'Sparowano. Włącz odbieranie w Ustawieniach interfejsu → Powiadomienia.',
+                    time: 10000,
+                });
+            })
             .catch(() => {});
     }
 

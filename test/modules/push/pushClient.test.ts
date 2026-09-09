@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { resetPushCooldown, sendPush } from '@modules/push/pushClient';
+import { isPushEnabled, resetPushCooldown, sendPush } from '@modules/push/pushClient';
 import { loadPushCredentials } from '@modules/push/pushCredentials';
 
 vi.mock('@modules/push/pushCredentials', () => ({
@@ -78,6 +78,25 @@ describe('sendPush', () => {
     expect((await sendPush({ title: 'a', body: 'later' })).ok).toBe(true);
 
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('isPushEnabled resolves when no service worker is registered', async () => {
+    // Regression: this used to await navigator.serviceWorker.ready, which never
+    // resolves when nothing is registered — it does not reject, it simply hangs.
+    // Every caller awaiting it on a fresh browser waited for good, which is how
+    // the "enable" button appeared to do nothing at all.
+    vi.stubGlobal('Notification', class {});
+    vi.stubGlobal('PushManager', class {});
+    Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+      value: { getRegistration: async () => undefined },
+      configurable: true,
+    });
+
+    const settled = await Promise.race([
+      isPushEnabled().then(() => 'resolved'),
+      new Promise(resolve => setTimeout(() => resolve('hung'), 1000)),
+    ]);
+    expect(settled).toBe('resolved');
   });
 
   test('survives the worker being unreachable', async () => {
