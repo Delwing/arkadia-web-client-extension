@@ -63,11 +63,14 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     registerEnemyStatusFilter(client);
 
     // A push pairing code arrives in the URL fragment, from a QR scanned on
-    // another device. Adopt it before anything else touches the location, and
-    // note it is a no-op on every normal load.
-    void import('@modules/push/pushClient')
-        .then(({ claimPairingFromLocation }) => claimPairingFromLocation())
-        .catch(() => {});
+    // another device. The cheap synchronous test comes first on purpose: this
+    // is a no-op on every normal load, and gating the dynamic import behind it
+    // keeps boot from fetching a chunk that virtually nobody needs.
+    if (/[#&]push-pair=/.test(window.location.hash)) {
+        void import('@modules/push/pushClient')
+            .then(({ claimPairingFromLocation }) => claimPairingFromLocation())
+            .catch(() => {});
+    }
 
     // Session logging (sessionLogger first — logFileSaver imports its session name).
     initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));

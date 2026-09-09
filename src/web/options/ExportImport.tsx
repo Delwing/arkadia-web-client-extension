@@ -4,10 +4,9 @@ import LocalExportTab from "./LocalExportTab";
 import GoogleDriveTab from "./GoogleDriveTab";
 import FirebaseTab from "./FirebaseTab";
 import DeviceManagementTab from "./DeviceManagementTab";
-import PushNotificationsTab from "./PushNotificationsTab";
 import { collectCharacters, DEFAULT_EXPORT_OPTIONS, type ExportOptions } from "./exportUtils";
 
-type Tab = 'local' | 'google-drive' | 'firebase' | 'devices' | 'push';
+type Tab = 'local' | 'google-drive' | 'firebase' | 'devices';
 
 function ExportImport() {
     const [activeTab, setActiveTab] = useState<Tab>('firebase');
@@ -56,13 +55,6 @@ function ExportImport() {
                 >
                     Urzadzenia
                 </Button>
-                <Button
-                    size="sm"
-                    variant={activeTab === 'push' ? 'primary' : 'secondary'}
-                    onClick={() => setActiveTab('push')}
-                >
-                    Powiadomienia
-                </Button>
             </div>
 
             {/* Tab content */}
@@ -89,11 +81,6 @@ function ExportImport() {
                 {activeTab === 'devices' && (
                     <div className="h-100 overflow-auto" style={{ minHeight: 0 }}>
                         <DeviceManagementTab />
-                    </div>
-                )}
-                {activeTab === 'push' && (
-                    <div className="h-100 overflow-auto" style={{ minHeight: 0 }}>
-                        <PushNotificationsTab />
                     </div>
                 )}
             </div>

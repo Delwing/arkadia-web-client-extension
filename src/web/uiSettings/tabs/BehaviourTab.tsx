@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { UiSettings } from "../../uiSettingsCore";
 import { CheckboxRow, NumberField, SelectField, SettingsSection } from "../fields";
 import ObjectContextMenuEditor from "../ObjectContextMenuEditor";
+import PushNotificationsSection from "../PushNotificationsSection";
 
 interface BehaviourTabProps {
     draft: UiSettings;
@@ -43,9 +44,7 @@ function BehaviourTab({ draft, update, onEnableNotifications }: BehaviourTabProp
                 </div>
             </SettingsSection>
 
-            <SettingsSection title="Inne">
-                <CheckboxRow id="ui-fight-title-icon" label="Ikona walki w tytule" checked={draft.fightTitleIcon} onChange={(v) => update({ fightTitleIcon: v })} />
-                <CheckboxRow id="ui-wake-lock" label="Blokada usypiania ekranu (Wake Lock)" checked={draft.wakeLock} onChange={(v) => update({ wakeLock: v })} />
+            <SettingsSection title="Powiadomienia">
                 {!notifGranted && (
                     <button
                         type="button"
@@ -56,6 +55,12 @@ function BehaviourTab({ draft, update, onEnableNotifications }: BehaviourTabProp
                         Włącz powiadomienia
                     </button>
                 )}
+                <PushNotificationsSection />
+            </SettingsSection>
+
+            <SettingsSection title="Inne">
+                <CheckboxRow id="ui-fight-title-icon" label="Ikona walki w tytule" checked={draft.fightTitleIcon} onChange={(v) => update({ fightTitleIcon: v })} />
+                <CheckboxRow id="ui-wake-lock" label="Blokada usypiania ekranu (Wake Lock)" checked={draft.wakeLock} onChange={(v) => update({ wakeLock: v })} />
             </SettingsSection>
         </>
     );
