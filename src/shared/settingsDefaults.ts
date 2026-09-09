@@ -81,6 +81,7 @@ export const defaultBehaviorSettings: BehaviorSettings = {
     carriageRouteBinds: true,
     teamNumberingMode: 'letters',
     objectContextMenuCommands: ['ob', 'ocen', 'zapros', 'wskaz'],
+    pushOnlyWhenHidden: false,
 };
 
 // Explicit key lists (include optional fields, so accessors pick them out of a
@@ -109,7 +110,7 @@ export const mapSettingsKeys = [
 export const behaviorSettingsKeys = [
     'explorationMode', 'instantMove', 'drinkableAsFunctionalBind', 'gateAsFunctionalBind',
     'dismountOnRefusedRide', 'carriageRouteBinds',
-    'teamNumberingMode', 'objectContextMenuCommands',
+    'teamNumberingMode', 'objectContextMenuCommands', 'pushOnlyWhenHidden',
 ] as const satisfies readonly (keyof BehaviorSettings)[];
 
 // Device-scoped view prefs read/written through the deviceView accessor. Kept

@@ -9,6 +9,13 @@ import {
     type PairingOffer,
 } from "@modules/push/pushClient";
 import { clearPushCredentials, loadPushCredentials } from "@modules/push/pushCredentials";
+import type { UiSettings } from "../uiSettingsCore";
+import { CheckboxRow } from "./fields";
+
+interface PushNotificationsSectionProps {
+    draft: UiSettings;
+    update: (patch: Partial<UiSettings>) => void;
+}
 
 /**
  * Push notifications — alerts on a device that is not in front of you.
@@ -17,7 +24,7 @@ import { clearPushCredentials, loadPushCredentials } from "@modules/push/pushCre
  * from the player's side these are one feature ("tell me when something
  * happens"), differing only in which device gets told.
  */
-function PushNotificationsSection() {
+function PushNotificationsSection({ draft, update }: PushNotificationsSectionProps) {
     const supported = isPushSupported();
     const [enabled, setEnabled] = useState(false);
     const [hasAccount, setHasAccount] = useState(() => loadPushCredentials() !== null);
@@ -131,10 +138,16 @@ function PushNotificationsSection() {
     return (
         <div className="d-flex flex-column gap-2">
             <div className="small text-secondary">
-                Alerty z gry trafiają na sparowane urządzenia tylko wtedy, gdy karta klienta
-                jest ukryta — jeśli patrzysz na grę, nic nie zostanie wysłane. Kolejne alerty
-                są ograniczone do jednego na minutę.
+                Alerty z gry trafiają na sparowane urządzenia niezależnie od tego, czy karta
+                klienta jest aktywna. Kolejne alerty są ograniczone do jednego na minutę.
             </div>
+
+            <CheckboxRow
+                id="push-only-when-hidden"
+                label="Wysyłaj tylko gdy karta klienta jest ukryta"
+                checked={draft.pushOnlyWhenHidden}
+                onChange={(v) => update({ pushOnlyWhenHidden: v })}
+            />
 
             {status && (
                 <div className={`small ${status.kind === "ok" ? "text-success" : "text-danger"}`}>

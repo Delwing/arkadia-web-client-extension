@@ -1,3 +1,4 @@
+import { getBehaviorSettings } from '@modules/core/settings';
 import { sendPush } from '@modules/push/pushClient';
 
 export default class NotificationManager {
@@ -38,14 +39,21 @@ export default class NotificationManager {
     }
 
     /**
-     * Send the alert onward only when nobody is looking at this tab.
+     * Send the alert onward to the player's other devices.
      *
-     * That is the whole point of the feature — if the client is on screen the
-     * player has already seen the message, and a phone buzzing in their pocket
-     * at the same moment is noise.
+     * By default this happens regardless of whether the tab is focused: a tab
+     * left open on a second monitor while its owner is in the kitchen is still
+     * an unwatched client, and page visibility cannot tell the difference.
+     * `pushOnlyWhenHidden` restores the stricter behaviour for anyone who does
+     * not want their phone buzzing while they are plainly at the desk.
      */
     private async pushToOtherDevices(message: string) {
-        if (typeof document !== 'undefined' && document.visibilityState !== 'hidden') {
+        const onlyWhenHidden = getBehaviorSettings().pushOnlyWhenHidden;
+        if (
+            onlyWhenHidden &&
+            typeof document !== 'undefined' &&
+            document.visibilityState !== 'hidden'
+        ) {
             return;
         }
 

@@ -55,7 +55,7 @@ function BehaviourTab({ draft, update, onEnableNotifications }: BehaviourTabProp
                         Włącz powiadomienia
                     </button>
                 )}
-                <PushNotificationsSection />
+                <PushNotificationsSection draft={draft} update={update} />
             </SettingsSection>
 
             <SettingsSection title="Inne">

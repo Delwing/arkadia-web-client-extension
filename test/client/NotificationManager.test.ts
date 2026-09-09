@@ -1,12 +1,22 @@
 import { vi } from 'vitest';
 import NotificationManager from '@client/NotificationManager';
 import { sendPush } from '@modules/push/pushClient';
+import { getBehaviorSettings } from '@modules/core/settings';
 
 vi.mock('@modules/push/pushClient', () => ({
   sendPush: vi.fn().mockResolvedValue({ ok: true, delivered: 1 }),
 }));
 
+vi.mock('@modules/core/settings', () => ({
+  getBehaviorSettings: vi.fn(() => ({ pushOnlyWhenHidden: false })),
+}));
+
 const mockedSendPush = vi.mocked(sendPush);
+const mockedSettings = vi.mocked(getBehaviorSettings);
+
+function setOnlyWhenHidden(value: boolean) {
+  mockedSettings.mockReturnValue({ pushOnlyWhenHidden: value } as ReturnType<typeof getBehaviorSettings>);
+}
 
 function setVisibility(state: 'visible' | 'hidden') {
   Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
@@ -15,6 +25,7 @@ function setVisibility(state: 'visible' | 'hidden') {
 beforeEach(() => {
   mockedSendPush.mockClear();
   setVisibility('visible');
+  setOnlyWhenHidden(false);
 });
 
 afterEach(() => {
@@ -62,16 +73,38 @@ describe('NotificationManager', () => {
 });
 
 describe('NotificationManager push fan-out', () => {
-  test('does not push while the player is looking at the tab', async () => {
-    // The whole point of the feature is reaching someone who stepped away. A
-    // phone buzzing while the client is on screen is pure noise.
+  test('pushes even while the tab is focused, by default', async () => {
+    // A tab left open on a second monitor while its owner is in the kitchen is
+    // still an unwatched client, and page visibility cannot tell the two apart.
     (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
     setVisibility('visible');
 
     new NotificationManager().notify('Jestes ciezko ranny');
     await Promise.resolve();
 
+    expect(mockedSendPush).toHaveBeenCalledTimes(1);
+  });
+
+  test('holds back while the tab is focused when the setting is on', async () => {
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    setOnlyWhenHidden(true);
+    setVisibility('visible');
+
+    new NotificationManager().notify('Jestes ciezko ranny');
+    await Promise.resolve();
+
     expect(mockedSendPush).not.toHaveBeenCalled();
+  });
+
+  test('pushes when hidden even with the setting on', async () => {
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    setOnlyWhenHidden(true);
+    setVisibility('hidden');
+
+    new NotificationManager().notify('Jestes ciezko ranny');
+    await Promise.resolve();
+
+    expect(mockedSendPush).toHaveBeenCalledTimes(1);
   });
 
   test('pushes to other devices when the tab is hidden', async () => {

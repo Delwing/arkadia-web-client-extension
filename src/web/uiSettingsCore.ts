@@ -533,6 +533,9 @@ export function load(): UiSettings {
             const carriageRouteBinds = typeof parsed.carriageRouteBinds === 'boolean'
                 ? parsed.carriageRouteBinds
                 : defaultUiSettings.carriageRouteBinds;
+            const pushOnlyWhenHidden = typeof parsed.pushOnlyWhenHidden === 'boolean'
+                ? parsed.pushOnlyWhenHidden
+                : defaultUiSettings.pushOnlyWhenHidden;
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
@@ -604,6 +607,7 @@ export function load(): UiSettings {
                 gateAsFunctionalBind,
                 dismountOnRefusedRide,
                 carriageRouteBinds,
+                pushOnlyWhenHidden,
                 wakeLock,
                 commandEcho,
                 showTimestamps,
