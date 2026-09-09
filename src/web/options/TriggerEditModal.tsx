@@ -616,10 +616,12 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
 
     const isValid = triggerType === 'event' ? !!event : !!pattern.trim();
 
+    const selectedEvent =
+        triggerType === 'event' ? SUPPORTED_EVENTS.find(e => e.id === event) : undefined;
+
     // Placeholders offered by the currently selected event. Pattern triggers
     // get none — their macros already fall back to the matched text.
-    const selectedEventArgs: EventArg[] =
-        (triggerType === 'event' && SUPPORTED_EVENTS.find(e => e.id === event)?.args) || [];
+    const selectedEventArgs: EventArg[] = selectedEvent?.args ?? [];
 
     return (
         <div
@@ -727,6 +729,11 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                                         ));
                                     })()}
                                 </Form.Select>
+                                {selectedEvent?.description && (
+                                    <Form.Text className="text-muted d-block mt-1">
+                                        {selectedEvent.description}
+                                    </Form.Text>
+                                )}
                             </div>
                         )}
 
