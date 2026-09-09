@@ -10,8 +10,13 @@ import {
 import eventBus from "@modules/core/eventBus";
 import TriggerEditModal from "./TriggerEditModal";
 import { normalizeTriggerList } from "./userTriggerNormalize";
+import {
+    SUPPORTED_EVENTS,
+    type EventArg,
+    type SupportedEvent,
+} from "@client/scripts/userTriggers";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
@@ -85,32 +90,12 @@ export const GMCP_MSG_TYPES: GmcpMsgTypeOption[] = [
     { id: 'other', label: 'Pozostale komunikaty' },
 ];
 
-export interface SupportedEvent {
-    id: string;
-    label: string;
-    category: string;
-}
-
-export const SUPPORTED_EVENTS: SupportedEvent[] = [
-    // Combat
-    { id: 'kill', label: 'Zabicie (ja/druzyna)', category: 'Walka' },
-    { id: 'enemyKilled', label: 'Wrog zabity', category: 'Walka' },
-    { id: 'allEnemiesKilled', label: 'Wszyscy wrogowie zabici', category: 'Walka' },
-    { id: 'combatState:true', label: 'Walka - start', category: 'Walka' },
-    { id: 'combatState:false', label: 'Walka - koniec', category: 'Walka' },
-    { id: 'enemy.paralyzed', label: 'Wrog ogluszony', category: 'Walka' },
-    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
-    { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
-
-    // Connection
-    { id: 'client.connect', label: 'Polaczenie', category: 'Polaczenie' },
-    { id: 'client.disconnect', label: 'Rozlaczenie', category: 'Polaczenie' },
-
-    // Timers
-    { id: 'zaskTimer', label: 'Timer zaskoczenia', category: 'Timery' },
-    { id: 'coverTimer', label: 'Timer oslony', category: 'Timery' },
-    { id: 'transportTimer', label: 'Timer transportu', category: 'Timery' },
-];
+// The event catalogue lives with the runtime that fires the events, in
+// @client/scripts/userTriggers, and is re-exported here rather than copied.
+// It was duplicated before, and the copies drifted: events added on the client
+// side never appeared in this editor at all.
+export type { SupportedEvent, EventArg };
+export { SUPPORTED_EVENTS };
 
 // Shared with the AI assistant's apply path — see userTriggerNormalize.ts for
 // why these no longer live here.

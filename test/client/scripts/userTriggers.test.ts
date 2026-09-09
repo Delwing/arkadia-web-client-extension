@@ -13,7 +13,17 @@ const mockedSendPush = vi.mocked(sendPush);
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  sendEvent = jest.fn();
+  /** Minimal event bus, so event triggers can be exercised too. */
+  handlers = new Map<string, ((payload?: unknown) => void)[]>();
+  sendEvent = jest.fn((type: string, payload?: unknown) => {
+    [...(this.handlers.get(type) ?? [])].forEach(h => h(payload));
+  });
+  on = (event: string, handler: (payload?: unknown) => void) => {
+    this.handlers.set(event, [...(this.handlers.get(event) ?? []), handler]);
+  };
+  off = (event: string, handler: (payload?: unknown) => void) => {
+    this.handlers.set(event, (this.handlers.get(event) ?? []).filter(h => h !== handler));
+  };
   sendCommand = jest.fn();
   FunctionalBind = {
     set: jest.fn(),
@@ -145,6 +155,56 @@ describe('userTriggers', () => {
       { title: 'Arkadia', body: 'urgent' },
       { bypassCooldown: true },
     );
+  });
+
+  test('event macros fill {name} placeholders from the payload', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'enemy.attack',
+      macros: [{ type: 'push', message: 'Atakuje cie {attacker}!' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('enemy.attack', { attacker: 'Zbojca' });
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'Atakuje cie Zbojca!' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('an unknown placeholder is left visible rather than blanked', () => {
+    // A literal {nonsense} arriving on the phone tells the player their
+    // reference is wrong; an empty string would look like a misfire.
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'enemy.attack',
+      macros: [{ type: 'push', message: 'Kto: {nonsense}' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('enemy.attack', { attacker: 'Zbojca' });
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'Kto: {nonsense}' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('a non-object payload is exposed as {value}', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'zaskTimer',
+      macros: [{ type: 'command', command: 'echo {value}' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('zaskTimer', 12);
+
+    expect(client.sendCommand).toHaveBeenCalledWith('echo 12');
   });
 
   test('slowBlink applies slow blink to match', () => {

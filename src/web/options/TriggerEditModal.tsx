@@ -6,7 +6,7 @@ import {
     isTriggerMacroAvailable,
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
-import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent } from './UserTriggers';
+import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent, EventArg } from './UserTriggers';
 import { SUPPORTED_EVENTS, GMCP_MSG_TYPES } from './UserTriggers';
 
 const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push']);
@@ -85,6 +85,41 @@ function normalizeMacro(macro: UserMacro): UserMacro {
     return macro;
 }
 
+/**
+ * The placeholders an event offers, as buttons that append `{name}` to a field.
+ *
+ * Appending rather than inserting at the caret on purpose: the caret position
+ * is lost the moment the button takes focus, and restoring it reliably across
+ * every field type is more machinery than this earns.
+ */
+function EventArgChips({
+    args,
+    onInsert,
+}: {
+    args: EventArg[];
+    onInsert: (token: string) => void;
+}) {
+    if (args.length === 0) return null;
+    return (
+        <div className="d-flex flex-wrap gap-1 mt-1 align-items-center">
+            <span className="text-muted" style={{ fontSize: '0.75rem' }}>Wstaw:</span>
+            {args.map(arg => (
+                <Button
+                    key={arg.name}
+                    variant="outline-secondary"
+                    size="sm"
+                    className="py-0 px-1"
+                    style={{ fontSize: '0.72rem' }}
+                    title={arg.label}
+                    onClick={() => onInsert(`{${arg.name}}`)}
+                >
+                    {`{${arg.name}}`}
+                </Button>
+            ))}
+        </div>
+    );
+}
+
 function MacroEditor({
     macro,
     onChange,
@@ -93,6 +128,7 @@ function MacroEditor({
     onRequestSoundUpload,
     pluginMacros,
     isEventTrigger = false,
+    eventArgs = [],
 }: {
     macro: UserMacro;
     onChange: (m: UserMacro) => void;
@@ -101,6 +137,8 @@ function MacroEditor({
     onRequestSoundUpload: () => Promise<string | undefined>;
     pluginMacros: PluginTriggerMacro[];
     isEventTrigger?: boolean;
+    /** Placeholders the selected event offers. Empty for pattern triggers. */
+    eventArgs?: EventArg[];
 }) {
     const notificationsSupported = typeof Notification !== 'undefined';
     const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
@@ -214,6 +252,12 @@ function MacroEditor({
                         spellCheck={false}
                     />
                 )}
+                {macro.type === 'command' && (
+                    <EventArgChips
+                        args={eventArgs}
+                        onInsert={(token) => onChange({ ...macro, command: (macro.command ?? '') + token })}
+                    />
+                )}
                 {macro.type === 'push' && (
                     <>
                         <Form.Control
@@ -227,6 +271,10 @@ function MacroEditor({
                             autoComplete="off"
                             autoCapitalize="off"
                             spellCheck={false}
+                        />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
                         />
                         <Form.Check
                             className="mt-1"
@@ -257,6 +305,10 @@ function MacroEditor({
                             autoComplete="off"
                             autoCapitalize="off"
                             spellCheck={false}
+                        />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
                         />
                         {notifPermission !== 'granted' && (
                             <Form.Text className="text-warning d-block">
@@ -290,6 +342,10 @@ function MacroEditor({
                             autoCapitalize="off"
                             spellCheck={false}
                         />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, label: (macro.label ?? '') + token })}
+                        />
                         <Form.Control
                             className="mt-1 font-monospace"
                             type="text"
@@ -301,6 +357,10 @@ function MacroEditor({
                             autoComplete="off"
                             autoCapitalize="off"
                             spellCheck={false}
+                        />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, command: (macro.command ?? '') + token })}
                         />
                     </>
                 )}
@@ -556,6 +616,11 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
 
     const isValid = triggerType === 'event' ? !!event : !!pattern.trim();
 
+    // Placeholders offered by the currently selected event. Pattern triggers
+    // get none — their macros already fall back to the matched text.
+    const selectedEventArgs: EventArg[] =
+        (triggerType === 'event' && SUPPORTED_EVENTS.find(e => e.id === event)?.args) || [];
+
     return (
         <div
             className="modal show d-block"
@@ -679,6 +744,7 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                                 onRequestSoundUpload={onRequestSoundUpload}
                                 pluginMacros={pluginMacros}
                                 isEventTrigger={triggerType === 'event'}
+                                eventArgs={selectedEventArgs}
                             />
                         ))}
                     </div>
