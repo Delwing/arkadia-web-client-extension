@@ -23,7 +23,11 @@ export const VAPID_PUBLIC_KEY =
  * `0x04 || x || y`), which `atob` cannot read directly — the `-`/`_` alphabet
  * and the stripped padding both have to be undone first.
  */
-export function vapidPublicKeyBytes(): Uint8Array {
+// The `<ArrayBuffer>` argument matters: TypeScript 5.7+ makes typed arrays
+// generic over their backing buffer, and a bare `Uint8Array` defaults to
+// `ArrayBufferLike` — which `pushManager.subscribe()` rejects, because that
+// admits SharedArrayBuffer.
+export function vapidPublicKeyBytes(): Uint8Array<ArrayBuffer> {
     const padded = VAPID_PUBLIC_KEY.padEnd(
         VAPID_PUBLIC_KEY.length + ((4 - (VAPID_PUBLIC_KEY.length % 4)) % 4),
         '=',

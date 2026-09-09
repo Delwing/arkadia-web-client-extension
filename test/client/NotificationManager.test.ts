@@ -1,4 +1,21 @@
+import { vi } from 'vitest';
 import NotificationManager from '@client/NotificationManager';
+import { sendPush } from '@modules/push/pushClient';
+
+vi.mock('@modules/push/pushClient', () => ({
+  sendPush: vi.fn().mockResolvedValue({ ok: true, delivered: 1 }),
+}));
+
+const mockedSendPush = vi.mocked(sendPush);
+
+function setVisibility(state: 'visible' | 'hidden') {
+  Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+}
+
+beforeEach(() => {
+  mockedSendPush.mockClear();
+  setVisibility('visible');
+});
 
 afterEach(() => {
   delete (global as any).Notification;
@@ -41,5 +58,77 @@ describe('NotificationManager', () => {
     delete (global as any).Notification;
     const mgr = new NotificationManager();
     mgr.notify('test');
+  });
+});
+
+describe('NotificationManager push fan-out', () => {
+  test('does not push while the player is looking at the tab', async () => {
+    // The whole point of the feature is reaching someone who stepped away. A
+    // phone buzzing while the client is on screen is pure noise.
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    setVisibility('visible');
+
+    new NotificationManager().notify('Jestes ciezko ranny');
+    await Promise.resolve();
+
+    expect(mockedSendPush).not.toHaveBeenCalled();
+  });
+
+  test('pushes to other devices when the tab is hidden', async () => {
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    setVisibility('hidden');
+
+    new NotificationManager().notify('Jestes ciezko ranny');
+    await Promise.resolve();
+
+    expect(mockedSendPush).toHaveBeenCalledTimes(1);
+    expect(mockedSendPush).toHaveBeenCalledWith({
+      title: 'Arkadia',
+      body: 'Jestes ciezko ranny',
+    });
+  });
+
+  test('throttles a burst down to a single push', async () => {
+    // hpAlert fires on every drop, so one fight would otherwise become dozens
+    // of pushes and a phone that buzzes for a solid minute.
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    setVisibility('hidden');
+
+    const mgr = new NotificationManager();
+    for (let i = 0; i < 10; i++) mgr.notify('hit ' + i);
+    await Promise.resolve();
+
+    expect(mockedSendPush).toHaveBeenCalledTimes(1);
+  });
+
+  test('pushes again once the cooldown has elapsed', async () => {
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    setVisibility('hidden');
+    const nowSpy = vi.spyOn(Date, 'now');
+
+    const mgr = new NotificationManager();
+    nowSpy.mockReturnValue(1_000_000);
+    mgr.notify('first');
+    nowSpy.mockReturnValue(1_000_000 + 59_000);
+    mgr.notify('too soon');
+    nowSpy.mockReturnValue(1_000_000 + 61_000);
+    mgr.notify('later');
+    await Promise.resolve();
+
+    expect(mockedSendPush).toHaveBeenCalledTimes(2);
+    expect(mockedSendPush.mock.calls[1]![0]).toMatchObject({ body: 'later' });
+    nowSpy.mockRestore();
+  });
+
+  test('still pushes when this browser cannot show a local notification', async () => {
+    // The desktop that sends alerts may itself have denied permission; that
+    // must not stop the phone being told.
+    delete (global as any).Notification;
+    setVisibility('hidden');
+
+    new NotificationManager().notify('Jestes ciezko ranny');
+    await Promise.resolve();
+
+    expect(mockedSendPush).toHaveBeenCalledTimes(1);
   });
 });

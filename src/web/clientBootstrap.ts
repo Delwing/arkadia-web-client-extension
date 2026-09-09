@@ -62,6 +62,13 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // stock UI and silently drop it everywhere else.
     registerEnemyStatusFilter(client);
 
+    // A push pairing code arrives in the URL fragment, from a QR scanned on
+    // another device. Adopt it before anything else touches the location, and
+    // note it is a no-op on every normal load.
+    void import('@modules/push/pushClient')
+        .then(({ claimPairingFromLocation }) => claimPairingFromLocation())
+        .catch(() => {});
+
     // Session logging (sessionLogger first — logFileSaver imports its session name).
     initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));
     initLogFileSaver(mudClient).catch(err => console.error('File saver init failed', err));
