@@ -69,6 +69,28 @@ describe('sendPush', () => {
     expect(results[1]).toMatchObject({ ok: false, error: 'cooldown' });
   });
 
+  test('bypassCooldown sends inside the window', async () => {
+    await sendPush({ title: 'a', body: 'first' });
+    expect((await sendPush({ title: 'a', body: 'blocked' })).ok).toBe(false);
+
+    const urgent = await sendPush({ title: 'a', body: 'urgent' }, { bypassCooldown: true });
+    expect(urgent.ok).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('a bypassing send does not consume the ordinary budget', async () => {
+    // It is exempt from the limit, so it must not push the next automatic
+    // alert out by a further minute.
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy.mockReturnValue(1_000_000);
+
+    await sendPush({ title: 'a', body: 'urgent' }, { bypassCooldown: true });
+    // Immediately afterwards a normal send is still allowed, because the
+    // bypassing one never stamped the clock.
+    expect((await sendPush({ title: 'a', body: 'normal' })).ok).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('the limit is shared, not per caller', async () => {
     // A `push` trigger macro and the hp alert reach the same phone, so the
     // cooldown has to be common to both rather than held by either.

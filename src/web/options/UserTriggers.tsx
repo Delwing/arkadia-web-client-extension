@@ -23,6 +23,9 @@ export interface UserMacro {
     soundKey?: string;
     label?: string;
     message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
+    /** push only: send even inside the rate-limit window. Mirrors the field on
+     *  `UserMacro` in @client/scripts/userTriggers, which this duplicates. */
+    bypassCooldown?: boolean;
     pluginConfig?: Record<string, any>;
     // Dim effect options
     dimStartOpacity?: number;
@@ -301,8 +304,10 @@ function UserTriggers() {
                         return m.label && m.command ? `bind [${m.label}] → ${m.command}` : 'functional bind';
                     case 'notify':
                         return m.message ? `notify ${m.message}` : 'notify';
-                    case 'push':
-                        return m.message ? `push ${m.message}` : 'push';
+                    case 'push': {
+                        const label = m.message ? `push ${m.message}` : 'push';
+                        return m.bypassCooldown ? `${label} (zawsze)` : label;
+                    }
                     case 'wrap': {
                         const parts: string[] = [];
                         if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);

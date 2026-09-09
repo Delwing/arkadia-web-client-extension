@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
+import React, { useState, useEffect, useId, useRef, ChangeEvent } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import { Trash2 } from 'lucide-react';
 import { CustomSound } from '@modules/core/customSounds';
@@ -106,6 +106,10 @@ function MacroEditor({
     const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
         notificationsSupported ? Notification.permission : 'unsupported'
     );
+
+    // Several macro editors render at once, so the checkbox needs an id unique
+    // to this row or clicking one would toggle another's label target.
+    const bypassCooldownId = useId();
 
     const requestNotificationPermission = async () => {
         if (!notificationsSupported) return;
@@ -224,9 +228,19 @@ function MacroEditor({
                             autoCapitalize="off"
                             spellCheck={false}
                         />
+                        <Form.Check
+                            className="mt-1"
+                            type="checkbox"
+                            id={bypassCooldownId}
+                            label="Wysylaj zawsze (pomin limit raz na minute)"
+                            checked={!!macro.bypassCooldown}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, bypassCooldown: e.target.checked })}
+                        />
                         <Form.Text className="text-muted d-block">
                             Wysylane na sparowane urzadzenia niezaleznie od tego, czy patrzysz na klienta.
-                            Nie czesciej niz raz na minute. Wymaga sparowania w Ustawieniach interfejsu → Powiadomienia.
+                            Domyslnie nie czesciej niz raz na minute — zaznacz powyzej dla alertow, ktorych
+                            nie chcesz stracic przez wczesniejsze powiadomienie. Wymaga sparowania
+                            w Ustawieniach interfejsu → Powiadomienia.
                         </Form.Text>
                     </>
                 )}

@@ -16,6 +16,13 @@ export interface UserMacro {
     soundKey?: string;
     label?: string;
     message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
+    /**
+     * push only: send even if another push went out within the rate-limit
+     * window. For alerts the player considers important enough that being
+     * swallowed by an unrelated hp alert a moment earlier is worse than the
+     * extra buzz.
+     */
+    bypassCooldown?: boolean;
     pluginConfig?: Record<string, any>;
     // Dim effect options
     dimStartOpacity?: number;
@@ -154,8 +161,10 @@ function applyMacrosToMatch(
                 // Unlike the automatic hp alert, this is sent whether or not the
                 // client is on screen: a trigger the player wrote deliberately
                 // should not silently do nothing while they are at the desk.
-                // The shared rate limit in sendPush still applies.
-                void sendPush({ title: 'Arkadia', body: text });
+                void sendPush(
+                    { title: 'Arkadia', body: text },
+                    { bypassCooldown: macro.bypassCooldown },
+                );
                 break;
             }
             default:
@@ -209,7 +218,10 @@ function applyEventMacros(
                 // No matched text to fall back on for an event trigger, so a
                 // message is required rather than optional.
                 if (macro.message) {
-                    void sendPush({ title: 'Arkadia', body: macro.message });
+                    void sendPush(
+                        { title: 'Arkadia', body: macro.message },
+                        { bypassCooldown: macro.bypassCooldown },
+                    );
                 }
                 break;
             // Note: Plugin macros are not supported for event triggers

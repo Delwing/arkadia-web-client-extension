@@ -200,17 +200,25 @@ export async function disablePush(): Promise<void> {
  * every drop, so without this one fight becomes a phone that buzzes for a
  * minute straight and a burst the push service would rather rate-limit itself.
  */
-export async function sendPush(message: PushMessage): Promise<NotifyResult> {
+export async function sendPush(
+    message: PushMessage,
+    options: { bypassCooldown?: boolean } = {},
+): Promise<NotifyResult> {
     if (!loadPushCredentials()) {
         return { ok: false, delivered: 0, error: 'no_account' };
     }
 
-    const now = Date.now();
-    if (now - lastPushAt < PUSH_COOLDOWN_MS) {
-        return { ok: false, delivered: 0, error: 'cooldown' };
+    if (!options.bypassCooldown) {
+        const now = Date.now();
+        if (now - lastPushAt < PUSH_COOLDOWN_MS) {
+            return { ok: false, delivered: 0, error: 'cooldown' };
+        }
+        // Recorded before awaiting, so a burst in one tick cannot all slip through.
+        lastPushAt = now;
     }
-    // Recorded before awaiting, so a burst in one tick cannot all slip through.
-    lastPushAt = now;
+    // A bypassing send deliberately does not stamp `lastPushAt` either: it is
+    // exempt from the limit, so it should not consume the ordinary budget and
+    // suppress the next automatic alert for a minute.
 
     const result = await call('/push/notify', message);
     if (!result.ok) {

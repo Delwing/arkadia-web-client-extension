@@ -1,7 +1,15 @@
+import { vi } from 'vitest';
 import initUserTriggers, { UserTrigger } from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage } from '@modules/core/storage';
+import { sendPush } from '@modules/push/pushClient';
+
+vi.mock('@modules/push/pushClient', () => ({
+  sendPush: vi.fn().mockResolvedValue({ ok: true, delivered: 1 }),
+}));
+
+const mockedSendPush = vi.mocked(sendPush);
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
@@ -92,6 +100,51 @@ describe('userTriggers', () => {
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
     expect(result?.text).toBe('bar foo baz');
     expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'foo', system: true });
+  });
+
+  test('push sends the given message to paired devices', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'push', message: 'hello' }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    // The line itself must be untouched — push is a side effect, not a filter.
+    expect(result?.text).toBe('foo');
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'hello' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('push falls back to the matched text when no message is given', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'push' }] }];
+    globalStorage.set('triggers', list);
+    client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'foo' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('push passes the cooldown bypass through', () => {
+    // Without this the alert can be swallowed by an unrelated hp alert that
+    // happened to fire moments earlier, which reads as the macro not working.
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [
+      { pattern: 'foo', macros: [{ type: 'push', message: 'urgent', bypassCooldown: true }] },
+    ];
+    globalStorage.set('triggers', list);
+    client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'urgent' },
+      { bypassCooldown: true },
+    );
   });
 
   test('slowBlink applies slow blink to match', () => {
