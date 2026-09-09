@@ -57,6 +57,14 @@ export interface SupportedEvent {
     label: string;
     category: string;
     /**
+     * When the event actually fires, shown under the picker in the editor.
+     *
+     * Worth writing wherever the label alone leaves it ambiguous — several of
+     * these fire on a delay, or only when some other setting is enabled, and a
+     * label has no room to say so. Omitted where the label is self-evident.
+     */
+    description?: string;
+    /**
      * Values this event's payload carries. Macro text fields may reference them
      * as `{name}`; see `interpolateEventArgs`. Events without a declared list
      * simply offer no placeholders rather than offering broken ones.
@@ -78,6 +86,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         id: 'enemy.attack',
         label: 'Atak wroga (ten z beepem)',
         category: 'Walka',
+        description:
+            'Gdy atakuje cie ktos z gildii oznaczonej jako wroga — dokladnie w tym samym momencie, w ktorym odzywa sie beep.',
         args: [{ name: 'attacker', label: 'Nazwa atakujacego' }],
     },
 
@@ -87,6 +97,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         id: 'hp.low',
         label: 'Niskie zycie',
         category: 'Postac',
+        description:
+            'Gdy kondycja spadnie do progu ustawionego w "Alarm niskiego zdrowia" (Opcje → Ustawienia).',
         args: [
             { name: 'text', label: 'Opis kondycji' },
             { name: 'hp', label: 'Poziom zycia (GMCP)' },
@@ -94,14 +106,20 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     },
     {
         id: 'hp.full',
-        label: 'Pelne zycie',
+        label: 'Pelne zycie (3 min bez walki)',
         category: 'Postac',
+        description:
+            '3 minuty po odzyskaniu pelnego zycia, o ile w tym czasie zycie nie spadlo i nie atakowales. '
+            + 'Wymaga wlaczonej opcji "Informacja o pelnym zdrowiu" — bez niej nie zadziala wcale.',
         args: [{ name: 'text', label: 'Tresc alertu' }],
     },
     {
         id: 'hp.idleFull',
-        label: 'Pelne zycie (bezczynnosc)',
+        label: 'Pelne zycie po bezczynnosci',
         category: 'Postac',
+        description:
+            'W chwili odzyskania pelnego zycia, jesli przez ostatnie 2 minuty nie wyslales zadnej komendy. '
+            + 'To zdarzenie do powiadomien "wrocilem, jestem wyleczony".',
         args: [{ name: 'text', label: 'Tresc alertu' }],
     },
 

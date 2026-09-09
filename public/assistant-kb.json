@@ -378,8 +378,8 @@
       "enemy.broken_defense — Wrog - zlamana obrona (Walka)",
       "enemy.attack — Atak wroga (ten z beepem) (Walka)",
       "hp.low — Niskie zycie (Postac)",
-      "hp.full — Pelne zycie (Postac)",
-      "hp.idleFull — Pelne zycie (bezczynnosc) (Postac)",
+      "hp.full — Pelne zycie (3 min bez walki) (Postac)",
+      "hp.idleFull — Pelne zycie po bezczynnosci (Postac)",
       "client.connect — Polaczenie (Polaczenie)",
       "client.disconnect — Rozlaczenie (Polaczenie)",
       "zaskTimer — Timer zaskoczenia (Timery)",
@@ -636,7 +636,7 @@
     "trigger": {
       "name": "UserTrigger",
       "description": "Trigger uzytkownika. Przechowywany w localStorage pod kluczem `triggers` jako tablica UserTrigger[]. Dwa rodzaje: wzorcowy (dopasowuje tekst z gry) i zdarzeniowy (reaguje na zdarzenie klienta).",
-      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    macros: UserMacro[];\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n    /**\r\n     * Values this event's payload carries. Macro text fields may reference them\r\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\r\n     * simply offer no placeholders rather than offering broken ones.\r\n     */\r\n    args?: EventArg[];\r\n}",
+      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    macros: UserMacro[];\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n    /**\r\n     * When the event actually fires, shown under the picker in the editor.\r\n     *\r\n     * Worth writing wherever the label alone leaves it ambiguous — several of\r\n     * these fire on a delay, or only when some other setting is enabled, and a\r\n     * label has no room to say so. Omitted where the label is self-evident.\r\n     */\r\n    description?: string;\r\n    /**\r\n     * Values this event's payload carries. Macro text fields may reference them\r\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\r\n     * simply offer no placeholders rather than offering broken ones.\r\n     */\r\n    args?: EventArg[];\r\n}",
       "fields": [
         {
           "name": "type",
@@ -5706,6 +5706,7 @@
       "id": "enemy.attack",
       "label": "Atak wroga (ten z beepem)",
       "category": "Walka",
+      "description": "Gdy atakuje cie ktos z gildii oznaczonej jako wroga — dokladnie w tym samym momencie, w ktorym odzywa sie beep.",
       "args": [
         {
           "name": "attacker",
@@ -5717,6 +5718,7 @@
       "id": "hp.low",
       "label": "Niskie zycie",
       "category": "Postac",
+      "description": "Gdy kondycja spadnie do progu ustawionego w \"Alarm niskiego zdrowia\" (Opcje → Ustawienia).",
       "args": [
         {
           "name": "text",
@@ -5730,8 +5732,9 @@
     },
     {
       "id": "hp.full",
-      "label": "Pelne zycie",
+      "label": "Pelne zycie (3 min bez walki)",
       "category": "Postac",
+      "description": "3 minuty po odzyskaniu pelnego zycia, o ile w tym czasie zycie nie spadlo i nie atakowales. Wymaga wlaczonej opcji \"Informacja o pelnym zdrowiu\" — bez niej nie zadziala wcale.",
       "args": [
         {
           "name": "text",
@@ -5741,8 +5744,9 @@
     },
     {
       "id": "hp.idleFull",
-      "label": "Pelne zycie (bezczynnosc)",
+      "label": "Pelne zycie po bezczynnosci",
       "category": "Postac",
+      "description": "W chwili odzyskania pelnego zycia, jesli przez ostatnie 2 minuty nie wyslales zadnej komendy. To zdarzenie do powiadomien \"wrocilem, jestem wyleczony\".",
       "args": [
         {
           "name": "text",
@@ -6018,8 +6022,8 @@
     }
   ],
   "gaps": [],
-  "version": "e5c86f4547b03d0e",
-  "generatedAt": "2026-09-09T17:38:08.077Z",
+  "version": "c195246b9b696a17",
+  "generatedAt": "2026-09-09T18:18:51.530Z",
   "stats": {
     "settings": 124,
     "settingsWithLabels": 124,
@@ -6027,9 +6031,9 @@
     "commandsWithDescriptions": 226,
     "events": 17,
     "docs": 12,
-    "leanChars": 42379,
-    "leanTokens": 10595,
-    "fatChars": 220375,
-    "fatTokens": 55094
+    "leanChars": 42399,
+    "leanTokens": 10600,
+    "fatChars": 221401,
+    "fatTokens": 55351
   }
 }
