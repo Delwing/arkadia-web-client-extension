@@ -1,0 +1,115 @@
+{
+  // Cloudflare recommends wrangler.jsonc for new projects; some newer Wrangler
+  // features are JSON-config only.
+  // https://developers.cloudflare.com/workers/wrangler/configuration/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arkadia-push-worker",
+  "main": "src/index.ts",
+  // Docs: "Set this to today's date" when starting a project.
+  "compatibility_date": "2026-09-09",
+  // Deliberately no `nodejs_compat`: everything here is Web-standard
+  // (crypto.subtle, fetch, TextEncoder). The AI Worker sets it; we do not need
+  // it, and leaving it off keeps the isolate smaller.
+  "compatibility_flags": [],
+
+  "observability": {
+    "enabled": true
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "PUSH_KV",
+      // Replace with the id printed by:
+      //   npx wrangler kv namespace create PUSH_KV
+      "id": "87fa08ad408f4648b5a4cedeed385249"
+    }
+  ],
+
+  "vars": {
+    // Same allowlist as the AI Worker, maintained separately on purpose — the
+    // two deploy independently, and a shared value would couple them again.
+    "ALLOWED_ORIGINS": "https://delwing.github.io",
+
+    // Contact URI in the VAPID JWT's `sub` claim — how a push service operator
+    // reaches us "in the case of exceptional situations" (RFC 8292 section 1.1),
+    // i.e. when our sender misbehaves and they are deciding whether to block it.
+    // RFC 8292 section 2.1 allows either a mailto: or an https: URI; the issue
+    // tracker keeps a personal address out of a committed config file.
+    //
+    // Not a secret — it is sent to every push service on every delivery.
+    "VAPID_SUBJECT": "https://github.com/Delwing/arkadia-web-client-extension/issues",
+
+    // Hard ceiling on subscriptions kept per user. Beyond this the oldest is
+    // evicted: a user with a dozen stale browser profiles should not turn one
+    // alert into a dozen deliveries.
+    "MAX_SUBSCRIPTIONS_PER_USER": "10"
+  },
+
+  // Secret *names* only — values never live in this file.
+  // Set with: npx wrangler secret put <NAME>
+  //
+  // EVERY secret the Worker may read must be listed here, including optional
+  // ones: per the Wrangler config schema, defining this property "replaces
+  // .dev.vars/.env/process.env inference", so an undeclared name is silently
+  // ignored even when present in .dev.vars. (That cost the AI Worker an
+  // afternoon — see the same block in ../worker/wrangler.jsonc.)
+  //
+  // A listed secret must EXIST at deploy time: `wrangler deploy` fails with
+  // "required secrets have not been set". Set VAPID_PRIVATE_KEY before the
+  // first deploy of this Worker.
+  //
+  // This failure mode is also the reason push does not live in the AI Worker.
+  // Sharing one config would mean a missing push secret takes the assistant
+  // down with it.
+  "secrets": {
+    "required": [
+      // Private half of the Web Push VAPID keypair, stored as JWK JSON so the
+      // Worker can importKey('jwk', ...) with no format conversion. The public
+      // half is derived from its `x`/`y` at runtime, so there is no second
+      // secret to keep in step.
+      //
+      // NEVER ROTATE THIS. The public half is baked into every browser's push
+      // subscription; replacing the keypair silently invalidates all of them,
+      // with no error on any side, until every user re-subscribes by hand.
+      "VAPID_PRIVATE_KEY"
+    ]
+  },
+
+  "env": {
+    // Local smoke test against a real phone:  npx wrangler dev --env dev
+    //
+    // This environment serves a self-contained test page at `/dev` (see
+    // src/devPage.ts) so the delivery chain can be exercised end to end from a
+    // phone without the real client.
+    //
+    // It does NOT weaken authentication: every push route requires a bearer
+    // credential here exactly as it does in production. DEV_TEST_PAGE is set
+    // ONLY here, and the top-level environment above — what `wrangler deploy`
+    // publishes — has no such var, so the harness cannot appear in production.
+    // `test/config.test.ts` asserts the default stays off.
+    "dev": {
+      "kv_namespaces": [
+        {
+          "binding": "PUSH_KV",
+          "id": "87fa08ad408f4648b5a4cedeed385249"
+        }
+      ],
+      "vars": {
+        // Empty: the dev page is served by the Worker itself, same-origin, and
+        // a tunnel hostname is not known ahead of time.
+        "ALLOWED_ORIGINS": "",
+        "VAPID_SUBJECT": "https://github.com/Delwing/arkadia-web-client-extension/issues",
+        "MAX_SUBSCRIPTIONS_PER_USER": "10",
+        "DEV_TEST_PAGE": "true"
+      },
+      // `secrets` is not inherited by environments, and Wrangler warns on every
+      // `wrangler dev --env dev` when an environment omits it. Repeating it
+      // here silences that. Nothing is deployed from this environment, so the
+      // "must exist at deploy time" rule never applies — locally the value
+      // comes from .dev.vars.
+      "secrets": {
+        "required": ["VAPID_PRIVATE_KEY"]
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "arkadia-push-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker delivering Web Push (VAPID) alerts to the Arkadia web client.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run --outdir dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.4",
+    "wrangler": "^4.42.0"
+  }
+}
