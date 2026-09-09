@@ -1,0 +1,103 @@
+# Cloudflare Worker (Web Push) — test on PRs, deploy from master.
+#
+# Deliberately separate from worker.yml: the two Workers deploy independently so
+# that neither can break the other's rollout. See push-worker/README.md.
+#
+# Required repository secrets:
+#   CLOUDFLARE_API_TOKEN   — "Edit Cloudflare Workers" template token
+#   CLOUDFLARE_ACCOUNT_ID  — the account the Worker lives in
+#
+# VAPID_PRIVATE_KEY is NOT needed here: Worker secrets are stored on the Worker
+# and survive redeploys. It must be set once with `wrangler secret put` before
+# the first deploy, or the deploy fails with "required secrets have not been set".
+name: Push Worker
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'push-worker/**'
+      - '.github/workflows/push-worker.yml'
+  pull_request:
+    paths:
+      - 'push-worker/**'
+      - '.github/workflows/push-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never let two deploys race; queue them instead of cancelling, so the last
+  # commit on master is always what ends up live.
+  group: push-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: push-worker
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: push-worker/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Typecheck
+        run: yarn typecheck
+      - name: Run worker tests
+        run: yarn test
+      - name: Build bundle (dry run)
+        # Surfaces a bundling failure on the PR rather than at deploy time.
+        # Needs no credentials.
+        run: yarn build
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-push-worker
+      url: https://arkadia-push-worker.delwing.workers.dev
+    defaults:
+      run:
+        working-directory: push-worker
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: push-worker/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
+      - name: Verify the deployed bindings
+        # A missing VAPID secret or an unreplaced KV namespace id fails silently
+        # at runtime, not at deploy time — /health is the only place it shows.
+        # Rollout is usually instant but not guaranteed to be, so poll.
+        run: |
+          for attempt in $(seq 1 10); do
+            # Tolerated on purpose: the runner shell is `bash -eo pipefail`, so an
+            # unguarded curl blip would abort the step instead of retrying.
+            live=$(curl -fsS "https://arkadia-push-worker.delwing.workers.dev/health?cb=$attempt" || true)
+            vapid=$(echo "$live" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).vapid" 2>/dev/null || true)
+            kv=$(echo "$live" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).kv" 2>/dev/null || true)
+            if [ "$vapid" = "configured" ] && [ "$kv" = "bound" ]; then
+              echo "health ok: vapid=$vapid kv=$kv"
+              exit 0
+            fi
+            echo "attempt $attempt: vapid=$vapid kv=$kv, retrying"
+            sleep 6
+          done
+          echo "::error::Deployed push worker reports vapid=$vapid kv=$kv, expected configured/bound"
+          exit 1

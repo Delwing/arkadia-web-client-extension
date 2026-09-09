@@ -62,6 +62,50 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // stock UI and silently drop it everywhere else.
     registerEnemyStatusFilter(client);
 
+    // A push pairing code arrives in the URL fragment, from a QR scanned on
+    // another device. The cheap synchronous test comes first on purpose: this
+    // is a no-op on every normal load, and gating the dynamic import behind it
+    // keeps boot from fetching a chunk that virtually nobody needs.
+    if (/[#&]push-pair=/.test(window.location.hash)) {
+        void import('@modules/push/pushClient')
+            .then(async ({ claimPairingFromLocation, enablePush }) => {
+                const outcome = await claimPairingFromLocation();
+                if (outcome.status === 'none') return;
+
+                // Confirm before enabling, never after. Pairing writes nothing
+                // the player can see, and the permission prompt that enabling
+                // raises does not settle while it sits unanswered — so waiting
+                // would make an ignored prompt look like a silent failure.
+                const notify = (text: string) =>
+                    client.sendEvent('notify', { text, time: 10000 });
+
+                if (outcome.status === 'expired') {
+                    notify('Kod parowania wygasł lub został już użyty. Wygeneruj nowy na drugim urządzeniu.');
+                    return;
+                }
+
+                notify('Sparowano. Włączam powiadomienia na tym urządzeniu...');
+
+                // Scanning the QR is the decision to receive here, so this is
+                // not left for the player to find in a settings screen.
+                const enabled = await enablePush();
+                if (enabled.ok) {
+                    notify('Gotowe. To urządzenie będzie dostawać powiadomienia.');
+                } else if (enabled.error === 'denied') {
+                    notify('Powiadomienia są zablokowane dla tej strony. Odblokuj je w ustawieniach przeglądarki — sama strona nie może poprosić ponownie.');
+                } else if (enabled.error === 'not_granted') {
+                    // Includes browsers that will not prompt without a click,
+                    // which this page-load path cannot provide.
+                    notify('Sparowano. Potwierdź zgodę: Ustawienia interfejsu → Powiadomienia → Odbieraj na tym urządzeniu.');
+                } else if (enabled.error === 'unsupported') {
+                    notify('Ta przeglądarka nie obsługuje powiadomień push. Na iPhone dodaj stronę do ekranu głównego.');
+                } else {
+                    notify('Sparowano, ale nie udało się włączyć odbierania. Spróbuj w Ustawieniach interfejsu → Powiadomienia.');
+                }
+            })
+            .catch(() => {});
+    }
+
     // Session logging (sessionLogger first — logFileSaver imports its session name).
     initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));
     initLogFileSaver(mudClient).catch(err => console.error('File saver init failed', err));

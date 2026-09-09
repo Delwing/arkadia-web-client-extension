@@ -51,6 +51,8 @@ describe('hp alert', () => {
     const msg = colorString(plain, color).prepend("\n").append('\n');
     expect(client.println).toHaveBeenCalledWith(msg);
     expect(client.notify).toHaveBeenCalledWith(plain);
+    // Bindable in the trigger editor, so a player can forward it to a phone.
+    expect(client.sendEvent).toHaveBeenCalledWith('hp.low', { text: plain, hp: 1 });
   });
 
   test('prints again on further decrease', () => {

@@ -1,11 +1,29 @@
+import { vi } from 'vitest';
 import initUserTriggers, { UserTrigger } from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage } from '@modules/core/storage';
+import { sendPush } from '@modules/push/pushClient';
+
+vi.mock('@modules/push/pushClient', () => ({
+  sendPush: vi.fn().mockResolvedValue({ ok: true, delivered: 1 }),
+}));
+
+const mockedSendPush = vi.mocked(sendPush);
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  sendEvent = jest.fn();
+  /** Minimal event bus, so event triggers can be exercised too. */
+  handlers = new Map<string, ((payload?: unknown) => void)[]>();
+  sendEvent = jest.fn((type: string, payload?: unknown) => {
+    [...(this.handlers.get(type) ?? [])].forEach(h => h(payload));
+  });
+  on = (event: string, handler: (payload?: unknown) => void) => {
+    this.handlers.set(event, [...(this.handlers.get(event) ?? []), handler]);
+  };
+  off = (event: string, handler: (payload?: unknown) => void) => {
+    this.handlers.set(event, (this.handlers.get(event) ?? []).filter(h => h !== handler));
+  };
   sendCommand = jest.fn();
   FunctionalBind = {
     set: jest.fn(),
@@ -92,6 +110,101 @@ describe('userTriggers', () => {
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
     expect(result?.text).toBe('bar foo baz');
     expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'foo', system: true });
+  });
+
+  test('push sends the given message to paired devices', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'push', message: 'hello' }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    // The line itself must be untouched — push is a side effect, not a filter.
+    expect(result?.text).toBe('foo');
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'hello' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('push falls back to the matched text when no message is given', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'push' }] }];
+    globalStorage.set('triggers', list);
+    client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'foo' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('push passes the cooldown bypass through', () => {
+    // Without this the alert can be swallowed by an unrelated hp alert that
+    // happened to fire moments earlier, which reads as the macro not working.
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [
+      { pattern: 'foo', macros: [{ type: 'push', message: 'urgent', bypassCooldown: true }] },
+    ];
+    globalStorage.set('triggers', list);
+    client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'urgent' },
+      { bypassCooldown: true },
+    );
+  });
+
+  test('event macros fill {name} placeholders from the payload', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'enemy.attack',
+      macros: [{ type: 'push', message: 'Atakuje cie {attacker}!' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('enemy.attack', { attacker: 'Zbojca' });
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'Atakuje cie Zbojca!' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('an unknown placeholder is left visible rather than blanked', () => {
+    // A literal {nonsense} arriving on the phone tells the player their
+    // reference is wrong; an empty string would look like a misfire.
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'enemy.attack',
+      macros: [{ type: 'push', message: 'Kto: {nonsense}' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('enemy.attack', { attacker: 'Zbojca' });
+
+    expect(mockedSendPush).toHaveBeenCalledWith(
+      { title: 'Arkadia', body: 'Kto: {nonsense}' },
+      { bypassCooldown: undefined },
+    );
+  });
+
+  test('a non-object payload is exposed as {value}', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'zaskTimer',
+      macros: [{ type: 'command', command: 'echo {value}' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('zaskTimer', 12);
+
+    expect(client.sendCommand).toHaveBeenCalledWith('echo 12');
   });
 
   test('slowBlink applies slow blink to match', () => {

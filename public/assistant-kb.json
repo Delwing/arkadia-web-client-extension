@@ -15,157 +15,163 @@
     "panels": [
       "P1 = Menu (⋮) → Ustawienia (Opcje) → Gildie",
       "P2 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Walka",
-      "P3 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów",
-      "P4 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
-      "P5 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Pojemniki",
-      "P6 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wycinanie/Wyrywanie",
-      "P7 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Dobywanie/Opuszczanie",
-      "P8 = Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
-      "P9 = Menu (⋮) → Ustawienia (Opcje) → Magiki",
-      "P10 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Pozostałe opcje",
+      "P3 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Pozostałe opcje",
+      "P4 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów",
+      "P5 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+      "P6 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Pojemniki",
+      "P7 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wycinanie/Wyrywanie",
+      "P8 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Dobywanie/Opuszczanie",
+      "P9 = Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+      "P10 = Menu (⋮) → Ustawienia (Opcje) → Magiki",
       "P11 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zioła",
       "P12 = Menu (⋮) → Ustawienia (Opcje) → Ogólne → Język",
       "P13 = Menu (⋮) → Ustawienia (Opcje) → Magiki → Kolory",
       "P14 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Komendy",
       "P15 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Mapa",
       "P16 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Okno wyjścia i lista obiektów",
-      "P17 = Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Stan postaci",
-      "P18 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Pomieszczenia i linie",
-      "P19 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Podświetlenie pomieszczeń",
-      "P20 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Marker gracza",
-      "P21 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Wygląd",
-      "P22 = Menu (⋮) → Interfejs (Ustawienia UI) → Dźwięk",
-      "P23 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
-      "P24 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Inne",
-      "P25 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Przyciski mobilne",
-      "P26 = Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki",
-      "P27 = Menu (⋮) → Przyciski"
+      "P17 = Menu (⋮) → Ustawienia interfejsu → Powiadomienia",
+      "P18 = Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Stan postaci",
+      "P19 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Pomieszczenia i linie",
+      "P20 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Podświetlenie pomieszczeń",
+      "P21 = Menu (⋮) → Interfejs (Ustawienia UI) → Mapa → Marker gracza",
+      "P22 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Wygląd",
+      "P23 = Menu (⋮) → Interfejs (Ustawienia UI) → Dźwięk",
+      "P24 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
+      "P25 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Inne",
+      "P26 = Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Przyciski mobilne",
+      "P27 = Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki",
+      "P28 = Menu (⋮) → Przyciski"
     ],
     "settings": [
       "## settings.* (character)",
       "allyGuilds | Gildie sojusznicze | P1 | string[] | []",
       "attackCommand | Komenda ataku | P2 | string | zabij",
-      "collectCopper | Miedziane monety | P3 | boolean | true",
-      "collectExtra | Dodatkowe przedmioty do zbierania | P3 | string[] | []",
-      "collectGems | Kamienie | P3 | boolean | true",
-      "collectGold | Zlote monety | P3 | boolean | true",
-      "collectMode | Tryb zbierania | P3 | enum: 1|2|3|4 | 1",
-      "collectOverrides | Wyjątki zbierania dla wrogów | P3 | CollectOverride[] | [{\"enemy\":\"troll\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bykocentaur\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"ghoul\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"grzyboczlek\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bagiennik\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zjawa\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wiwerna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wyverna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"harpia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"krasnozwierz\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bestia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ziemi\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak wody\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak powietrza\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ognia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]}]",
-      "collectSilver | Srebrne monety | P3 | boolean | true",
-      "collectTiming | Kiedy zbierac | P3 | enum: 1|2|3 | 1",
-      "compassBackExits | Powrót na czerwono | P4 | boolean | false",
-      "containerClose | Zamykaj pojemnik | P5 | boolean | true",
-      "containerColumns | Kolumny | P5 | number 1..4 | 2",
-      "containerOpen | Otwieraj pojemnik | P5 | boolean | true",
-      "cuttingPostAction | Komendy po wycinaniu | P6 | string | \"\"",
-      "cuttingPreAction | Komendy przed wycinaniem | P6 | string | \"\"",
-      "dobCommand1 | Komenda /dob 1 | P7 | string | \"\"",
-      "dobCommand2 | Komenda /dob 2 | P7 | string | \"\"",
-      "dobCommand3 | Komenda /dob 3 | P7 | string | \"\"",
+      "carriageTeamTickets | Bilety dla druzyny przy wjezdzie wozem | P3 | boolean | true",
+      "collectCopper | Miedziane monety | P4 | boolean | true",
+      "collectExtra | Dodatkowe przedmioty do zbierania | P4 | string[] | []",
+      "collectGems | Kamienie | P4 | boolean | true",
+      "collectGold | Zlote monety | P4 | boolean | true",
+      "collectMode | Tryb zbierania | P4 | enum: 1|2|3|4 | 1",
+      "collectOverrides | Wyjątki zbierania dla wrogów | P4 | CollectOverride[] | [{\"enemy\":\"troll\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bykocentaur\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"ghoul\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"grzyboczlek\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bagiennik\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zjawa\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wiwerna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wyverna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"harpia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"krasnozwierz\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bestia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ziemi\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak wody\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak powietrza\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ognia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]}]",
+      "collectSilver | Srebrne monety | P4 | boolean | true",
+      "collectTiming | Kiedy zbierac | P4 | enum: 1|2|3 | 1",
+      "compassBackExits | Powrót na czerwono | P5 | boolean | false",
+      "containerClose | Zamykaj pojemnik | P6 | boolean | true",
+      "containerColumns | Kolumny | P6 | number 1..4 | 2",
+      "containerOpen | Otwieraj pojemnik | P6 | boolean | true",
+      "cuttingPostAction | Komendy po wycinaniu | P7 | string | \"\"",
+      "cuttingPreAction | Komendy przed wycinaniem | P7 | string | \"\"",
+      "dobCommand1 | Komenda /dob 1 | P8 | string | \"\"",
+      "dobCommand2 | Komenda /dob 2 | P8 | string | \"\"",
+      "dobCommand3 | Komenda /dob 3 | P8 | string | \"\"",
       "drawWeaponCommand | Komenda dobycia broni | P2 | string | dobadz",
-      "enemyBindsEnabledSlots | Włączone sloty bindów wrogów (F1-F3) | P8 | [boolean, boolean, boolean] | [true,true,true]",
-      "enemyBindsKeepUnchanged | Nie zmieniaj przypisanych wrogow | P8 | boolean | false",
-      "enemyBindsShowMode | Wyświetlanie bindów wrogów | P8 | enum: always|whenBound|never | always",
+      "enemyBindsEnabledSlots | Włączone sloty bindów wrogów (F1-F3) | P9 | [boolean, boolean, boolean] | [true,true,true]",
+      "enemyBindsKeepUnchanged | Nie zmieniaj przypisanych wrogow | P9 | boolean | false",
+      "enemyBindsShowMode | Wyświetlanie bindów wrogów | P9 | enum: always|whenBound|never | always",
       "enemyGuilds | Gildie wrogie | P1 | string[] | []",
-      "favoriteMagicKeys | Ulubione klucze magiczne | P9 | string[] | []",
-      "favoriteMagicTypes | Ulubione magiki | P9 | string[] | []",
-      "fullHpMessage | Informacja o pelnym zdrowiu | P10 | boolean | false",
+      "favoriteMagicKeys | Ulubione klucze magiczne | P10 | string[] | []",
+      "favoriteMagicTypes | Ulubione magiki | P10 | string[] | []",
+      "fullHpMessage | Informacja o pelnym zdrowiu | P3 | boolean | false",
       "guildColors | Kolory gildii | P1 | Record<string, string | undefined> | {}",
       "guilds | Moje gildie | P1 | string[] | []",
       "herbPostUseCommand | Komendy po użyciu | P11 | string | \"\"",
       "herbPreUseCommand | Komendy przed użyciem | P11 | string | \"\"",
       "herbWieleCount | Ilosc \"wiele\" | P11 | number 1.. | 25",
-      "inlineCompassRose | Roza wiatrow | P4 | enum: 0|1|3|2|4 | 0",
+      "inlineCompassRose | Roza wiatrow | P5 | enum: 0|1|3|2|4 | 0",
       "language | Domyślny język | P12 | enum: potoczna|bretonski|drukh-eltharin|estalijski|fan-eltharin|gnomi|grumbarth|halflinski|khazalid|kislevicki|krasnoludzki|mroczna mowa|nilfgaardzki|norski|reikspiel|skelliganski|starsza mowa|tar-eltharin|tileanski|zerrikanski|ghassall | potoczna",
       "languageAdjective | Przyslowek | P12 | string | \"\"",
       "languageAliases | Aliasy języków | P12 | { alias: string; adjective: string; language: string }[] | []",
-      "letterLineWidth | Szerokosc linii listu | P10 | number | 72",
-      "lowHpAlert | Alarm niskiego zdrowia | P10 | enum: 0|1|2|3|4|5|6|7 | 2",
+      "letterLineWidth | Szerokosc linii listu | P3 | number | 72",
+      "lowHpAlert | Alarm niskiego zdrowia | P3 | enum: 0|1|2|3|4|5|6|7 | 2",
       "magicKeysColor | Kolor kluczy magicznych | P13 | string | #00ff87",
       "magicsColor | Kolor magików | P13 | string | #d75f5f",
-      "opCommand1 | Komenda /op 1 | P7 | string | \"\"",
-      "opCommand2 | Komenda /op 2 | P7 | string | \"\"",
-      "opCommand3 | Komenda /op 3 | P7 | string | \"\"",
-      "packageHelper | Asystent paczek | P10 | boolean | true",
-      "packageInContainer | Paczka do pojemnika | P10 | boolean | false",
-      "prettyContainers | Formatuj pojemniki | P5 | boolean | true",
-      "shortenExits | Skrócone wyjścia | P4 | boolean | false",
-      "shortExitsBackgroundColor | Kolor tła skróconych wyjść | P4 | string | transparent",
-      "shortExitsColor | Kolor skróconych wyjść | P4 | string | #ffa500",
-      "shortExitsPrefix | Przedrostek skróconych wyjść | P4 | string | -----:",
-      "shortExitsSeparator | Separator skróconych wyjść | P4 | string |  ",
-      "sunTracker | Ramki wschodu/zachodu | P10 | boolean | false",
+      "opCommand1 | Komenda /op 1 | P8 | string | \"\"",
+      "opCommand2 | Komenda /op 2 | P8 | string | \"\"",
+      "opCommand3 | Komenda /op 3 | P8 | string | \"\"",
+      "packageHelper | Asystent paczek | P3 | boolean | true",
+      "packageInContainer | Paczka do pojemnika | P3 | boolean | false",
+      "prettyContainers | Formatuj pojemniki | P6 | boolean | true",
+      "shortenExits | Skrócone wyjścia | P5 | boolean | false",
+      "shortExitsBackgroundColor | Kolor tła skróconych wyjść | P5 | string | transparent",
+      "shortExitsColor | Kolor skróconych wyjść | P5 | string | #ffa500",
+      "shortExitsPrefix | Przedrostek skróconych wyjść | P5 | string | -----:",
+      "shortExitsSeparator | Separator skróconych wyjść | P5 | string |  ",
+      "sunTracker | Ramki wschodu/zachodu | P3 | boolean | false",
       "supportCommand | Komenda wsparcia | P2 | string | wesprzyj",
       "zlomSilver | Kolorowanie złomu (srebro) | P- | { color: string; off?: boolean; } | {\"color\":\"#dadada\"}",
       "## behaviorSettings.* (ui)",
+      "carriageRouteBinds | Bindy trasy wozu (nastepny krok, zsiadanie) | P14 | boolean | true",
+      "dismountOnRefusedRide | Powtorzenie odrzuconej jazdy zsiada z wozu i idzie pieszo | P14 | boolean | false",
       "drinkableAsFunctionalBind | Bind picia na bind funkcyjny | P14 | boolean | true",
       "explorationMode | Tryb eksploracji mapy | P15 | boolean | false",
       "gateAsFunctionalBind | Bind bramy na bind funkcyjny | P14 | boolean | false",
       "instantMove | Natychmiastowe przechodzenie po mapie | P15 | boolean | true",
       "objectContextMenuCommands | Komendy menu kontekstowego obiektów | P16 | string[] | [\"ob\",\"ocen\",\"zapros\",\"wskaz\"]",
+      "pushOnlyWhenHidden | Wysylaj powiadomienia push tylko gdy karta jest ukryta | P17 | boolean | false",
       "teamNumberingMode | Numerowanie druzyny na liscie obiektow | P16 | enum: letters|numbers | letters",
       "## mapSettings.* (ui)",
-      "emojiLabels | Etykiety emoji | P17 | boolean | false",
+      "emojiLabels | Etykiety emoji | P18 | boolean | false",
       "highlightCurrentRoom | Podświetl bieżące pomieszczenie | P15 | boolean | true",
       "labelRenderMode | Tryb renderowania etykiet | P15 | enum: image|data|none | data",
-      "mapBackgroundColor | Kolor tła mapy | P18 | string | #000000",
-      "mapHighlightDashEnabled | Przerywane obramowanie | P19 | boolean | true",
-      "mapHighlightFillAlpha | Przezroczystość wypełnienia | P19 | number 0..1 | 0",
-      "mapHighlightShape | Kształt podświetlenia | P19 | enum: match|rectangle|roundedRectangle|circle | match",
-      "mapHighlightSizeFactor | Mnożnik rozmiaru | P19 | number 0.5..3 | 1.425",
-      "mapHighlightStrokeAlpha | Przezroczystość obramowania | P19 | number 0..1 | 1",
-      "mapHighlightStrokeWidth | Grubość obramowania | P19 | number 0.01..0.3 | 0.1",
-      "mapLineColor | Kolor linii | P18 | string | #e1ffe1",
-      "mapLineWidth | Szerokość linii | P18 | number 0.01..0.1 | 0.025",
-      "mapPlayerMarkerDashEnabled | Przerywane obramowanie markera | P20 | boolean | true",
-      "mapPlayerMarkerFillAlpha | Przezroczystość wypełnienia | P20 | number 0..1 | 0",
-      "mapPlayerMarkerFillColor | Kolor wypełnienia markera gracza | P20 | string | #00e5b2",
-      "mapPlayerMarkerSizeFactor | Mnożnik rozmiaru markera | P20 | number 0.5..3 | 1.7",
-      "mapPlayerMarkerStrokeAlpha | Przezroczystość obramowania | P20 | number 0..1 | 1",
-      "mapPlayerMarkerStrokeColor | Kolor obramowania markera gracza | P20 | string | #00e5b2",
-      "mapPlayerMarkerStrokeWidth | Grubość obramowania markera | P20 | number 0.01..0.3 | 0.1",
-      "mapRoomShape | Kształt pomieszczeń | P18 | enum: rectangle|circle|roundedRectangle | rectangle",
-      "mapRoomSize | Rozmiar pomieszczeń | P18 | number 0.1..1.5 | 0.6",
+      "mapBackgroundColor | Kolor tła mapy | P19 | string | #000000",
+      "mapHighlightDashEnabled | Przerywane obramowanie | P20 | boolean | true",
+      "mapHighlightFillAlpha | Przezroczystość wypełnienia | P20 | number 0..1 | 0",
+      "mapHighlightShape | Kształt podświetlenia | P20 | enum: match|rectangle|roundedRectangle|circle | match",
+      "mapHighlightSizeFactor | Mnożnik rozmiaru | P20 | number 0.5..3 | 1.425",
+      "mapHighlightStrokeAlpha | Przezroczystość obramowania | P20 | number 0..1 | 1",
+      "mapHighlightStrokeWidth | Grubość obramowania | P20 | number 0.01..0.3 | 0.1",
+      "mapLineColor | Kolor linii | P19 | string | #e1ffe1",
+      "mapLineWidth | Szerokość linii | P19 | number 0.01..0.1 | 0.025",
+      "mapPlayerMarkerDashEnabled | Przerywane obramowanie markera | P21 | boolean | true",
+      "mapPlayerMarkerFillAlpha | Przezroczystość wypełnienia | P21 | number 0..1 | 0",
+      "mapPlayerMarkerFillColor | Kolor wypełnienia markera gracza | P21 | string | #00e5b2",
+      "mapPlayerMarkerSizeFactor | Mnożnik rozmiaru markera | P21 | number 0.5..3 | 1.7",
+      "mapPlayerMarkerStrokeAlpha | Przezroczystość obramowania | P21 | number 0..1 | 1",
+      "mapPlayerMarkerStrokeColor | Kolor obramowania markera gracza | P21 | string | #00e5b2",
+      "mapPlayerMarkerStrokeWidth | Grubość obramowania markera | P21 | number 0.01..0.3 | 0.1",
+      "mapRoomShape | Kształt pomieszczeń | P19 | enum: rectangle|circle|roundedRectangle | rectangle",
+      "mapRoomSize | Rozmiar pomieszczeń | P19 | number 0.1..1.5 | 0.6",
       "pathFindingAlgorithm | Algorytm wyszukiwania drogi | P15 | enum: dijkstra|astar | dijkstra",
       "transparentLabels | Przezroczyste etykiety (wymusza tryb danych) | P15 | boolean | true",
       "## renderSettings.* (ui)",
       "autoLowercaseCommands | Automatycznie małe litery w komendach | P14 | boolean | false",
       "clearInputOnSend | Czyść pole komend po wysłaniu | P14 | boolean | false",
-      "colorTheme | Motyw kolorystyczny | P21 | enum: default|fantasy|forest|icy|gray|dark-neutral|light-parchment|light-silver|custom-dark | default",
+      "colorTheme | Motyw kolorystyczny | P22 | enum: default|fantasy|forest|icy|gray|dark-neutral|light-parchment|light-silver|custom-dark | default",
       "commandEcho | Echo komend | P14 | boolean | true",
-      "customBeepSoundKey | Własny dźwięk beep | P22 | enum: |__upload__ | -",
-      "customFontFamily | Nazwa rodziny czcionki | P21 | string | \"\"",
-      "customFontUrl | Adres arkusza czcionki | P21 | string | \"\"",
-      "customThemeColor | Kolor własnego motywu | P21 | string | -",
-      "fontFamily | Czcionka okna wyjścia i listy obiektów | P21 | enum: default|fira-code|jetbrains-mono|cascadia-mono|custom | default",
-      "highlightMessageBlocks | Wyróżniaj bloki wiadomości | P21 | boolean | false",
-      "outputBackground | Kolor tła okna głównego | P21 | string | #242424",
+      "customBeepSoundKey | Własny dźwięk beep | P23 | enum: |__upload__ | -",
+      "customFontFamily | Nazwa rodziny czcionki | P22 | string | \"\"",
+      "customFontUrl | Adres arkusza czcionki | P22 | string | \"\"",
+      "customThemeColor | Kolor własnego motywu | P22 | string | -",
+      "fontFamily | Czcionka okna wyjścia i listy obiektów | P22 | enum: default|fira-code|jetbrains-mono|cascadia-mono|custom | default",
+      "highlightMessageBlocks | Wyróżniaj bloki wiadomości | P22 | boolean | false",
+      "outputBackground | Kolor tła okna głównego | P22 | string | #242424",
       "outputBottomPadding | Dolny padding okna (px) | P16 | number 0.. | 0",
-      "showTimestamps | Znaczniki czasu w oknie wyjścia | P23 | boolean | false",
-      "soundCategories | Dźwięki kategorii | P22 | SoundCategories | {}",
-      "xtermPalette | Paleta kolorów | P21 | enum: arkadia|proper | arkadia",
+      "showTimestamps | Znaczniki czasu w oknie wyjścia | P24 | boolean | false",
+      "soundCategories | Dźwięki kategorii | P23 | SoundCategories | {}",
+      "xtermPalette | Paleta kolorów | P22 | enum: arkadia|proper | arkadia",
       "## shellSettings.* (ui)",
-      "fightTitleIcon | Ikona walki w tytule | P24 | boolean | true",
-      "hapticFeedback | Wibracje (haptyka) na urządzeniach mobilnych | P25 | boolean | true",
-      "wakeLock | Blokada usypiania ekranu (Wake Lock) | P24 | boolean | true",
+      "fightTitleIcon | Ikona walki w tytule | P25 | boolean | true",
+      "hapticFeedback | Wibracje (haptyka) na urządzeniach mobilnych | P26 | boolean | true",
+      "wakeLock | Blokada usypiania ekranu (Wake Lock) | P25 | boolean | true",
       "## uiSettings.* (ui)",
-      "alwaysVisibleBars | Zawsze widoczne paski stanu | P17 | string[] | []",
-      "barOrder | Kolejność pasków stanu | P17 | string[] | [\"hp\",\"fatigue\",\"stuffed\",\"encumbrance\",\"soaked\",\"mana\",\"improve\",\"form\",\"intox\",\"headache\",\"panic\"]",
+      "alwaysVisibleBars | Zawsze widoczne paski stanu | P18 | string[] | []",
+      "barOrder | Kolejność pasków stanu | P18 | string[] | [\"hp\",\"fatigue\",\"stuffed\",\"encumbrance\",\"soaked\",\"mana\",\"improve\",\"form\",\"intox\",\"headache\",\"panic\"]",
       "buttonSize | Rozmiar przycisków (przestarzałe) | P- | number | -",
-      "contentFontSize | Rozmiar czcionki treści (rem) | P21 | number | 0.775",
-      "footerComponents | Elementy stopki | P26 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14}]",
-      "footerMode | Tryb stopki | P17 | enum: 0|1|2|3 | 0",
+      "contentFontSize | Rozmiar czcionki treści (rem) | P22 | number | 0.775",
+      "footerComponents | Elementy stopki | P27 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15}]",
+      "footerMode | Tryb stopki | P18 | enum: 0|1|2|3 | 0",
       "keepMultibindsVisible | Zawsze pokazuj pasek multibindów | P14 | boolean | false",
       "mapHeight | Wysokość mapy (vh) | P15 | number | 30",
       "mapPosition | Położenie mapy | P15 | enum: top-overlay|bottom-overlay|right-overlay|left-overlay|top|bottom|right|left | top-overlay",
       "mapScale | Powiększenie mapy | P15 | number 0.05.. | 0.3",
-      "objectListBackgroundAlpha | Przezroczystość | P21 | number 0..1 | 0.4",
-      "objectListBackgroundColor | Kolor tła listy obiektów | P21 | string | #000000",
-      "objectsFontSize | Rozmiar czcionki listy obiektów (rem) | P21 | number | 0.6",
+      "objectListBackgroundAlpha | Przezroczystość | P22 | number 0..1 | 0.4",
+      "objectListBackgroundColor | Kolor tła listy obiektów | P22 | string | #000000",
+      "objectsFontSize | Rozmiar czcionki listy obiektów (rem) | P22 | number | 0.6",
       "outputMaxElements | Maksymalna liczba linii w buforze | P16 | number 100.. | 1000",
-      "showButtons | Pokazuj przyciski | P27 | boolean | true",
-      "showCombatTimer | Pokazuj licznik walki | P26 | boolean | -",
-      "showTransportLabel | Pokazuj etykietę transportu | P26 | boolean | -",
+      "showButtons | Pokazuj przyciski | P28 | boolean | true",
+      "showCombatTimer | Pokazuj licznik walki | P27 | boolean | -",
+      "showTransportLabel | Pokazuj etykietę transportu | P27 | boolean | -",
+      "showVoiceButton | Przycisk mikrofonu (dyktowanie głosowe) | P14 | boolean | true",
       "splitViewHeight | Wysokość podzielonego widoku | P- | number | -"
     ],
     "commands": [
@@ -197,6 +203,7 @@
       "/info — Wyswietl informacje o biezacej lokacji w oknie wyjscia",
       "/labirynt — Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia)",
       "/labirynt_mapa — Przelacz mapper Labiryntu Rinde",
+      "/leczenie — Wyswietl liste wszystkich chorob i zapisanych na nie ziol",
       "/list — Otworz edytor pisania listow w kliencie",
       "/loot — Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...)",
       "/mapa — Otworz nowe okno mapy na biezacej lokacji",
@@ -253,7 +260,7 @@
       "/pre_walk (/pre_walk komendy) — Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`)",
       "/pre_walk- — Wyczysc komendy pre-walk",
       "/pro (/pro id) — Przekaz prowadzenie obiektowi",
-      "/prowadz (/prowadz id) — Rozpocznij prowadzenie innej osoby do wskazanego pokoju",
+      "/prowadz (/prowadz id) — Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem)",
       "/prowadz- — Zakoncz prowadzenie (czysci tez trase z transportem)",
       "/prowadzt (/prowadzt id) — Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie",
       "/prze (/prze [id]) — Przelamuje obrone celu lub wskazanego obiektu",
@@ -305,6 +312,11 @@
       "/wolniej — Zwieksz opoznienie o 0.5 s",
       "/woreczki_buduj — Ocen stan wszystkich woreczkow i zapisz w liczniku",
       "/woz — Przelacz tryb wozu (wlacz/wylacz)",
+      "/wozblok — Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji)",
+      "/wozbloki — Pokaz liste nieprzejezdnych lokacji i linie do skopiowania",
+      "/wozbloki- — Wyczysc liste nieprzejezdnych lokacji",
+      "/wozbloki+ (/wozbloki+ <numery>) — Wczytaj liste nieprzejezdnych lokacji",
+      "/wozw — Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy",
       "/wyc — Wycinaj ze wszystkich cial w pomieszczeniu",
       "/wycinaj — Wycinaj ze wszystkich cial w pomieszczeniu",
       "/wyr — Wyrywaj ze wszystkich cial w pomieszczeniu",
@@ -364,6 +376,10 @@
       "enemy.paralyzed — Wrog ogluszony (Walka)",
       "enemy.paralyzed.end — Wrog - koniec ogluszenia (Walka)",
       "enemy.broken_defense — Wrog - zlamana obrona (Walka)",
+      "enemy.attack — Atak wroga (ten z beepem) (Walka)",
+      "hp.low — Niskie zycie (Postac)",
+      "hp.full — Pelne zycie (Postac)",
+      "hp.idleFull — Pelne zycie (bezczynnosc) (Postac)",
       "client.connect — Polaczenie (Polaczenie)",
       "client.disconnect — Rozlaczenie (Polaczenie)",
       "zaskTimer — Timer zaskoczenia (Timery)",
@@ -396,7 +412,7 @@
           "Okno mapy",
           "Multibindy lokacji"
         ],
-        "tokens": 1043
+        "tokens": 1331
       },
       {
         "id": "COMBAT.md",
@@ -436,10 +452,12 @@
         "headings": [
           "Komendy",
           "Wyjmowanie ziol",
+          "Leczenie",
           "Zarzadzanie woreczkami",
+          "Dawanie ziol z okna woreczkow",
           "Ustawienia"
         ],
-        "tokens": 435
+        "tokens": 681
       },
       {
         "id": "TRACKING.md",
@@ -501,7 +519,7 @@
           "Labirynty",
           "Odswiezanie danych"
         ],
-        "tokens": 2299
+        "tokens": 3492
       },
       {
         "id": "SKRYPTY.md",
@@ -514,7 +532,7 @@
           "System pluginow",
           "Wbudowane skrypty"
         ],
-        "tokens": 1931
+        "tokens": 2059
       },
       {
         "id": "SYNCHRONIZACJA.md",
@@ -618,7 +636,7 @@
     "trigger": {
       "name": "UserTrigger",
       "description": "Trigger uzytkownika. Przechowywany w localStorage pod kluczem `triggers` jako tablica UserTrigger[]. Dwa rodzaje: wzorcowy (dopasowuje tekst z gry) i zdarzeniowy (reaguje na zdarzenie klienta).",
-      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    macros: UserMacro[];\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n}",
+      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    macros: UserMacro[];\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n    /**\r\n     * Values this event's payload carries. Macro text fields may reference them\r\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\r\n     * simply offer no placeholders rather than offering broken ones.\r\n     */\r\n    args?: EventArg[];\r\n}",
       "fields": [
         {
           "name": "type",
@@ -636,7 +654,7 @@
           "name": "event",
           "type": "string",
           "required": false,
-          "note": "Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: kill, enemyKilled, allEnemiesKilled, combatState:true, combatState:false, enemy.paralyzed, enemy.paralyzed.end, enemy.broken_defense, client.connect, client.disconnect, zaskTimer, coverTimer, transportTimer."
+          "note": "Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: kill, enemyKilled, allEnemiesKilled, combatState:true, combatState:false, enemy.paralyzed, enemy.paralyzed.end, enemy.broken_defense, enemy.attack, hp.low, hp.full, hp.idleFull, client.connect, client.disconnect, zaskTimer, coverTimer, transportTimer."
         },
         {
           "name": "flags",
@@ -727,13 +745,13 @@
     "userMacro": {
       "name": "UserMacro",
       "description": "Pojedyncza akcja wykonywana przez trigger uzytkownika. Trigger ma tablice `macros` wykonywanych po kolei.",
-      "typescript": "export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';\n\nexport interface UserMacro {\r\n    type: BuiltInMacroType | string;  // string allows plugin macros like \"plugin:...\"\r\n    color?: string;\r\n    to?: string;\r\n    command?: string;\r\n    soundKey?: string;\r\n    label?: string;\r\n    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers\r\n    pluginConfig?: Record<string, any>;\r\n    // Dim effect options\r\n    dimStartOpacity?: number;\r\n    dimEndOpacity?: number;\r\n    dimDuration?: number;\r\n    dimEasing?: DimEasing;\r\n    // Wrap (prefix/suffix) options\r\n    wrapPrefix?: string;\r\n    wrapSuffix?: string;\r\n    wrapScope?: 'match' | 'line';\r\n}",
+      "typescript": "export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';\n\nexport interface UserMacro {\r\n    type: BuiltInMacroType | string;  // string allows plugin macros like \"plugin:...\"\r\n    color?: string;\r\n    to?: string;\r\n    command?: string;\r\n    soundKey?: string;\r\n    label?: string;\r\n    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers\r\n    /**\r\n     * push only: send even if another push went out within the rate-limit\r\n     * window. For alerts the player considers important enough that being\r\n     * swallowed by an unrelated hp alert a moment earlier is worse than the\r\n     * extra buzz.\r\n     */\r\n    bypassCooldown?: boolean;\r\n    pluginConfig?: Record<string, any>;\r\n    // Dim effect options\r\n    dimStartOpacity?: number;\r\n    dimEndOpacity?: number;\r\n    dimDuration?: number;\r\n    dimEasing?: DimEasing;\r\n    // Wrap (prefix/suffix) options\r\n    wrapPrefix?: string;\r\n    wrapSuffix?: string;\r\n    wrapScope?: 'match' | 'line';\r\n}",
       "fields": [
         {
           "name": "type",
           "type": "BuiltInMacroType | string",
           "required": true,
-          "note": "Jeden z: uppercase, color, replace, beep, mute, unmute, command, slowBlink, rapidBlink, dim, functionalBind, wrap, notify. Wartosci zaczynajace sie od \"plugin:\" to makra z pluginow."
+          "note": "Jeden z: uppercase, color, replace, beep, mute, unmute, command, slowBlink, rapidBlink, dim, functionalBind, wrap, notify, push. Wartosci zaczynajace sie od \"plugin:\" to makra z pluginow."
         },
         {
           "name": "color",
@@ -770,6 +788,11 @@
           "type": "string",
           "required": false,
           "note": "Tresc powiadomienia dla type=\"notify\"; puste = dopasowany tekst (tylko triggery wzorcowe)."
+        },
+        {
+          "name": "bypassCooldown",
+          "type": "boolean",
+          "required": false
         },
         {
           "name": "pluginConfig",
@@ -1027,6 +1050,23 @@
       ],
       "label": "Komenda ataku",
       "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Walka"
+    },
+    {
+      "path": "character.settings.carriageTeamTickets",
+      "scope": "character",
+      "storageKey": "settings",
+      "key": "carriageTeamTickets",
+      "type": "boolean",
+      "optional": false,
+      "default": true,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/modules/core/defaultSettings.ts",
+        "src/web/options/Settings.tsx"
+      ],
+      "label": "Bilety dla druzyny przy wjezdzie wozem",
+      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.collectCopper",
@@ -2242,6 +2282,42 @@
       "note": "Ustawiane przez okno Zlom (`/zlom`), nie przez panel ustawien."
     },
     {
+      "path": "ui.behaviorSettings.carriageRouteBinds",
+      "scope": "ui",
+      "storageKey": "behaviorSettings",
+      "key": "carriageRouteBinds",
+      "type": "boolean",
+      "optional": false,
+      "default": true,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/tabs/BehaviourTab.tsx"
+      ],
+      "label": "Bindy trasy wozu (nastepny krok, zsiadanie)",
+      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Komendy"
+    },
+    {
+      "path": "ui.behaviorSettings.dismountOnRefusedRide",
+      "scope": "ui",
+      "storageKey": "behaviorSettings",
+      "key": "dismountOnRefusedRide",
+      "type": "boolean",
+      "optional": false,
+      "default": false,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/tabs/BehaviourTab.tsx"
+      ],
+      "label": "Powtorzenie odrzuconej jazdy zsiada z wozu i idzie pieszo",
+      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Komendy"
+    },
+    {
       "path": "ui.behaviorSettings.drinkableAsFunctionalBind",
       "scope": "ui",
       "storageKey": "behaviorSettings",
@@ -2335,6 +2411,25 @@
       ],
       "label": "Komendy menu kontekstowego obiektów",
       "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Okno wyjścia i lista obiektów"
+    },
+    {
+      "path": "ui.behaviorSettings.pushOnlyWhenHidden",
+      "scope": "ui",
+      "storageKey": "behaviorSettings",
+      "key": "pushOnlyWhenHidden",
+      "type": "boolean",
+      "optional": false,
+      "default": false,
+      "control": "checkbox",
+      "exposedInUi": false,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/shared/settingsDefaults.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Wysylaj powiadomienia push tylko gdy karta jest ukryta",
+      "uiLocation": "Menu (⋮) → Ustawienia interfejsu → Powiadomienia",
+      "note": "Domyslnie wylaczone, czyli powiadomienia na sparowane urzadzenia sa wysylane niezaleznie od tego, czy karta klienta jest aktywna. Wlaczenie wstrzymuje je, gdy gracz patrzy na klienta."
     },
     {
       "path": "ui.behaviorSettings.teamNumberingMode",
@@ -3443,6 +3538,11 @@
           "id": "team-panel",
           "visible": true,
           "order": 14
+        },
+        {
+          "id": "connection-status",
+          "visible": false,
+          "order": 15
         }
       ],
       "control": "complex",
@@ -3738,6 +3838,24 @@
       "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki"
     },
     {
+      "path": "ui.uiSettings.showVoiceButton",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "showVoiceButton",
+      "type": "boolean",
+      "optional": false,
+      "default": true,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/tabs/BehaviourTab.tsx"
+      ],
+      "label": "Przycisk mikrofonu (dyktowanie głosowe)",
+      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Komendy"
+    },
+    {
       "path": "ui.uiSettings.splitViewHeight",
       "scope": "ui",
       "storageKey": "uiSettings",
@@ -4016,6 +4134,14 @@
       "usage": "/labirynt_mapa",
       "description": "Przelacz mapper Labiryntu Rinde",
       "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/leczenie",
+      "pattern": "/^\\/leczenie$/i",
+      "source": "src/client/scripts/remedies.ts",
+      "usage": "/leczenie",
+      "description": "Wyswietl liste wszystkich chorob i zapisanych na nie ziol",
+      "documentedIn": "HERBS.md"
     },
     {
       "name": "/list",
@@ -4553,7 +4679,7 @@
       "pattern": "/^\\/prowadz (.*)$/",
       "source": "src/client/scripts/mapAliases.ts",
       "usage": "/prowadz id",
-      "description": "Rozpocznij prowadzenie innej osoby do wskazanego pokoju",
+      "description": "Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem)",
       "documentedIn": "NAVIGATION.md"
     },
     {
@@ -4987,6 +5113,46 @@
       "source": "src/client/scripts/carriage.ts",
       "usage": "/woz",
       "description": "Przelacz tryb wozu (wlacz/wylacz)",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/wozblok",
+      "pattern": "/^\\/wozblok(?:\\s+(\\S+))?$/",
+      "source": "src/client/scripts/carriageBlocks.ts",
+      "usage": "/wozblok",
+      "description": "Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji)",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/wozbloki",
+      "pattern": "/^\\/wozbloki$/",
+      "source": "src/client/scripts/carriageBlocks.ts",
+      "usage": "/wozbloki",
+      "description": "Pokaz liste nieprzejezdnych lokacji i linie do skopiowania",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/wozbloki-",
+      "pattern": "/^\\/wozbloki-$/",
+      "source": "src/client/scripts/carriageBlocks.ts",
+      "usage": "/wozbloki-",
+      "description": "Wyczysc liste nieprzejezdnych lokacji",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/wozbloki+",
+      "pattern": "/^\\/wozbloki\\+\\s+(.+)$/",
+      "source": "src/client/scripts/carriageBlocks.ts",
+      "usage": "/wozbloki+ <numery>",
+      "description": "Wczytaj liste nieprzejezdnych lokacji",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/wozw",
+      "pattern": "/^\\/wozw$/",
+      "source": "src/client/scripts/carriage.ts",
+      "usage": "/wozw",
+      "description": "Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy",
       "documentedIn": "ALIASES.md"
     },
     {
@@ -5537,6 +5703,54 @@
       "category": "Walka"
     },
     {
+      "id": "enemy.attack",
+      "label": "Atak wroga (ten z beepem)",
+      "category": "Walka",
+      "args": [
+        {
+          "name": "attacker",
+          "label": "Nazwa atakujacego"
+        }
+      ]
+    },
+    {
+      "id": "hp.low",
+      "label": "Niskie zycie",
+      "category": "Postac",
+      "args": [
+        {
+          "name": "text",
+          "label": "Opis kondycji"
+        },
+        {
+          "name": "hp",
+          "label": "Poziom zycia (GMCP)"
+        }
+      ]
+    },
+    {
+      "id": "hp.full",
+      "label": "Pelne zycie",
+      "category": "Postac",
+      "args": [
+        {
+          "name": "text",
+          "label": "Tresc alertu"
+        }
+      ]
+    },
+    {
+      "id": "hp.idleFull",
+      "label": "Pelne zycie (bezczynnosc)",
+      "category": "Postac",
+      "args": [
+        {
+          "name": "text",
+          "label": "Tresc alertu"
+        }
+      ]
+    },
+    {
       "id": "client.connect",
       "label": "Polaczenie",
       "category": "Polaczenie"
@@ -5591,8 +5805,8 @@
         "Okno mapy",
         "Multibindy lokacji"
       ],
-      "tokens": 1043,
-      "content": "# Mapa i nawigacja\n\nKomendy do poruszania sie, mapy i automatycznego chodzenia.\n\n## Podstawowy ruch\n\n| Komenda | Opis |\n|---------|------|\n| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |\n| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |\n| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |\n| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |\n| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |\n| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |\n\n## Automatyczne chodzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |\n| `/stop` | Zatrzymaj automatyczne chodzenie |\n| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |\n| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |\n| `/szybciej` | Zmniejsz opoznienie o 0.5 s |\n| `/wolniej` | Zwieksz opoznienie o 0.5 s |\n| `/walkerw` | Otworz okno walkera |\n\n## Komendy przed/po kroku\n\n| Komenda | Opis |\n|---------|------|\n| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |\n| `/pre_walk-` | Wyczysc komendy pre-walk |\n| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |\n| `/post_walk-` | Wyczysc komendy post-walk |\n\n## Prowadzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju |\n| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |\n| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |\n| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |\n| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |\n\n> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.\n\n## Wyszukiwanie na mapie\n\n| Komenda | Opis |\n|---------|------|\n| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |\n\n## Roza wiatrow\n\n| Komenda | Opis |\n|---------|------|\n| `/roza` | Przelacz roze wiatrow (wl./wyl.) |\n| `/roza 0` | Wylacz roze wiatrow |\n| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |\n| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |\n\n> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja \"Roza wiatrow\").\n\n## Zaznaczanie lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |\n| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |\n\n## Informacje o lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |\n| `/info id` | Wyswietl informacje o lokacji o podanym id |\n\n## Notatki lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/note` | Otworz edytor notatki dla biezacej lokacji |\n\n## Okno mapy\n\n| Komenda | Opis |\n|---------|------|\n| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |\n| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |\n| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |\n\n> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz \"Otworz okno mapy\" aby otworzyc okno na wybranej lokacji.\n\n## Multibindy lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |\n| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |\n| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |\n| `/mbind- numer` | Usun wskazany multibind |\n| `/mbind` | Wyswietl multibindy biezacej lokacji |\n| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |"
+      "tokens": 1331,
+      "content": "# Mapa i nawigacja\n\nKomendy do poruszania sie, mapy i automatycznego chodzenia.\n\n## Podstawowy ruch\n\n| Komenda | Opis |\n|---------|------|\n| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |\n| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |\n| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |\n| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |\n| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |\n| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |\n\n> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).\n\n## Automatyczne chodzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |\n| `/stop` | Zatrzymaj automatyczne chodzenie |\n| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |\n| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |\n| `/szybciej` | Zmniejsz opoznienie o 0.5 s |\n| `/wolniej` | Zwieksz opoznienie o 0.5 s |\n| `/walkerw` | Otworz okno walkera |\n\n## Komendy przed/po kroku\n\n| Komenda | Opis |\n|---------|------|\n| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |\n| `/pre_walk-` | Wyczysc komendy pre-walk |\n| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |\n| `/post_walk-` | Wyczysc komendy post-walk |\n\n## Prowadzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |\n| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |\n| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |\n| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |\n| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |\n\n> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.\n\n> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.\n\n> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja \"Bilety dla druzyny przy wjezdzie wozem\") — wtedy kupowany jest tylko wlasny bilet.\n\n## Wyszukiwanie na mapie\n\n| Komenda | Opis |\n|---------|------|\n| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |\n\n## Roza wiatrow\n\n| Komenda | Opis |\n|---------|------|\n| `/roza` | Przelacz roze wiatrow (wl./wyl.) |\n| `/roza 0` | Wylacz roze wiatrow |\n| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |\n| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |\n\n> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja \"Roza wiatrow\").\n\n## Zaznaczanie lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |\n| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |\n\n## Informacje o lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |\n| `/info id` | Wyswietl informacje o lokacji o podanym id |\n\n## Notatki lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/note` | Otworz edytor notatki dla biezacej lokacji |\n\n## Okno mapy\n\n| Komenda | Opis |\n|---------|------|\n| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |\n| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |\n| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |\n\n> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz \"Otworz okno mapy\" aby otworzyc okno na wybranej lokacji.\n\n## Multibindy lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |\n| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |\n| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |\n| `/mbind- numer` | Usun wskazany multibind |\n| `/mbind` | Wyswietl multibindy biezacej lokacji |\n| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |"
     },
     {
       "id": "COMBAT.md",
@@ -5639,11 +5853,13 @@
       "headings": [
         "Komendy",
         "Wyjmowanie ziol",
+        "Leczenie",
         "Zarzadzanie woreczkami",
+        "Dawanie ziol z okna woreczkow",
         "Ustawienia"
       ],
-      "tokens": 435,
-      "content": "# Ziola\n\nModul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z ziolami i zapisac te dane w pamieci przegladarki.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_buduj` | Przegladaj woreczki i zapisz ich zawartosc |\n| `/woreczki_buduj` | Ocen stan wszystkich woreczkow i zapisz w liczniku |\n| `/ziola_pokaz` | Wyswietl ostatnie podsumowanie ziol (bez listy woreczkow) |\n| `/ziola` | Otworz okno zarzadzania woreczkami ziol |\n| `/ziola2` | Wyswietl alternatywne podsumowanie ziol |\n\n## Wyjmowanie ziol\n\n| Komenda | Opis |\n|---------|------|\n| `/wezz ziolo` | Wyjmij jedna sztuke ziola z woreczkow |\n| `/wezz ziolo ilosc` | Wyjmij wskazana liczbe ziola |\n| `/zi akcja ziolo` | Wyjmij ziolo i od razu wykonaj akcje |\n| `/zi akcja ziolo ilosc` | Wyjmij wskazana liczbe ziola i wykonaj akcje |\n| `/z_akcja ziolo` | Alternatywa dla `/zi` - np. `/z_zjedz deliona` |\n| `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z iloscia - np. `/z_przyloz lawenda 3` |\n\n## Zarzadzanie woreczkami\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_przepakuj from to` | Przepakuj ziola z woreczka `from` do woreczka `to` |\n| `/ziola_daj cel ziolo` | Daj 1 sztuke ziola wskazanemu celowi |\n| `/ziola_daj cel ziolo ilosc` | Daj wskazana ilosc ziola wskazanemu celowi |\n| `/ziola_odloz_woreczek numer` | Odloz woreczek (odbezpiecz, odtrocz, odloz) |\n\n> **Wskazowka:** Cel mozna podac jako skrot (litera/numer z listy obiektow, jak w `/z`, `/zas`) albo jako imie czlonka druzyny.\n\n## Ustawienia\n\nW ustawieniach skryptow mozna zdefiniowac komendy wykonywane przed i po uzyciu ziol. Wiele komend nalezy oddzielic srednikiem (`;`).\n\n> Informacje o zliczonych ziolach sa przechowywane w pamieci przegladarki osobno dla kazdej postaci."
+      "tokens": 681,
+      "content": "# Ziola\n\nModul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z ziolami i zapisac te dane w pamieci przegladarki.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_buduj` | Przegladaj woreczki i zapisz ich zawartosc |\n| `/woreczki_buduj` | Ocen stan wszystkich woreczkow i zapisz w liczniku |\n| `/ziola_pokaz` | Wyswietl ostatnie podsumowanie ziol (bez listy woreczkow) |\n| `/ziola` | Otworz okno zarzadzania woreczkami ziol |\n| `/ziola2` | Wyswietl alternatywne podsumowanie ziol |\n\n## Wyjmowanie ziol\n\n| Komenda | Opis |\n|---------|------|\n| `/wezz ziolo` | Wyjmij jedna sztuke ziola z woreczkow |\n| `/wezz ziolo ilosc` | Wyjmij wskazana liczbe ziola |\n| `/zi akcja ziolo` | Wyjmij ziolo i od razu wykonaj akcje |\n| `/zi akcja ziolo ilosc` | Wyjmij wskazana liczbe ziola i wykonaj akcje |\n| `/z_akcja ziolo` | Alternatywa dla `/zi` - np. `/z_zjedz deliona` |\n| `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z iloscia - np. `/z_przyloz lawenda 3` |\n\n## Leczenie\n\nPrzy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klient wypisuje liste ziol, ktorymi mozna sie wyleczyc. Ziola, ktore masz w woreczkach, sa zielone i klikalne - klikniecie wysyla odpowiednia komende `/zi`.\n\n| Komenda | Opis |\n|---------|------|\n| `/leczenie` | Wyswietl liste wszystkich chorob i zapisanych na nie ziol |\n\n> **Wskazowka:** Dostepnosc ziol jest sprawdzana na podstawie licznika woreczkow, wiec warto najpierw uzyc `/ziola_buduj`.\n\n## Zarzadzanie woreczkami\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_przepakuj from to` | Przepakuj ziola z woreczka `from` do woreczka `to` |\n| `/ziola_daj cel ziolo` | Daj 1 sztuke ziola wskazanemu celowi |\n| `/ziola_daj cel ziolo ilosc` | Daj wskazana ilosc ziola wskazanemu celowi |\n| `/ziola_odloz_woreczek numer` | Odloz woreczek (odbezpiecz, odtrocz, odloz) |\n\n> **Wskazowka:** Cel mozna podac jako skrot (litera/numer z listy obiektow, jak w `/z`, `/zas`) albo jako imie czlonka druzyny.\n\n## Dawanie ziol z okna woreczkow\n\nW oknie `/ziola` przycisk **Daj** wlacza panel przekazywania ziol:\n\n1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; druzyna jest wyswietlana osobno, przycisk odswiezania obok).\n2. Przeciagnij ziola z woreczkow do panelu - shift+klik dzieli stos na pol, jesli chcesz dac tylko czesc.\n3. Klikniecie ziola w panelu odklada je z powrotem do woreczka.\n4. Przycisk **Daj** wyjmuje wszystkie zebrane ziola z woreczkow i przekazuje je jedna komenda `daj`.\n\n## Ustawienia\n\nW ustawieniach skryptow mozna zdefiniowac komendy wykonywane przed i po uzyciu ziol. Wiele komend nalezy oddzielic srednikiem (`;`).\n\n> Informacje o zliczonych ziolach sa przechowywane w pamieci przegladarki osobno dla kazdej postaci."
     },
     {
       "id": "TRACKING.md",
@@ -5713,8 +5929,8 @@
         "Labirynty",
         "Odswiezanie danych"
       ],
-      "tokens": 2299,
-      "content": "# Inne aliasy\n\nPozostale aliasy i funkcje rozszerzenia.\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow\n- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)\n\n### Zakresy ($i)\n\nUzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.\n\n**Przyklad:**\n- Wzorzec: `kok (.+)`\n- Komenda: `rozerwij $i. kokon`\n- Wpisz: `kok 1-7`\n- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`\n\nZakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.\n\n## Asystent AI\n\n| Komenda | Opis |\n|---------|------|\n| `/pomoc` | Otworz panel asystenta AI |\n| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |\n\n> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz \"Zastosuj\". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem \"Ustawienia\" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.\n\n## Komunikacja\n\n| Komenda | Opis |\n|---------|------|\n| `/fake tekst` | Wyswietl podany tekst jak zwykle wiadomosc klienta |\n| `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |\n| `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |\n| `/list` | Otworz edytor pisania listow w kliencie |\n| `/poczta` | Otworz okno poczty z lista listow |\n\n> **Wskazowka:** W oknie czatu przycisk \"Druzyna\" filtruje wiadomosci od czlonkow druzyny.\n\n## Czas\n\n| Komenda | Opis |\n|---------|------|\n| `/czas` | Otworz okno zegara z aktualnym czasem w grze |\n| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |\n| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |\n\n> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij \"Ustaw\".\n\n## Jezyk\n\n| Komenda | Opis |\n|---------|------|\n| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |\n| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |\n\n## Druzyna\n\n| Komenda | Opis |\n|---------|------|\n| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |\n| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |\n| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |\n| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |\n| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |\n| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |\n| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |\n| `/hp -` | Wyczysc cala liste zapamietanych kondycji |\n| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |\n\n> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).\n\n## Przedstawieni\n\n| Komenda | Opis |\n|---------|------|\n| `/przedstawieni` | Wyswietl liste przedstawionych postaci |\n\n## Bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl liste skonfigurowanych bindow |\n\n## Dzwiek\n\n| Komenda | Opis |\n|---------|------|\n| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |\n| `/mute` | Wycisz dzwieki |\n| `/unmute` | Wlacz dzwieki |\n\n## Przyplyw\n\n| Komenda | Opis |\n|---------|------|\n| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |\n\n> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.\n\n## Dobywanie/Opuszczanie\n\n| Komenda | Opis |\n|---------|------|\n| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |\n| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |\n| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |\n| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |\n\n> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji \"Dobywanie/Opuszczanie\". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).\n\n## Kalendarz slonca\n\n| Komenda | Opis |\n|---------|------|\n| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |\n\n## Kolorowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |\n\n> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.\n\n## Lowienie ryb\n\n| Komenda | Opis |\n|---------|------|\n| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |\n\n> **Wskazowka:** Gdy ryba bierze, kliknij przycisk \"Zatnij rybe\" lub uzyj funkcjonalnego bindu (domyslnie `]`).\n\n## Zlom (baza ocenionych przedmiotow)\n\n| Komenda | Opis |\n|---------|------|\n| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |\n| `/zlom tarcze` | Wyswietl zapisane tarcze |\n| `/zlom zbroje` | Wyswietl zapisane zbroje |\n| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |\n| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |\n\n> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna \"Kolor\") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik \"Srebro\" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).\n\n## Oswajanie\n\n| Komenda | Opis |\n|---------|------|\n| `/o_pomoc` | Otworz okno oswajania z pomoca i lista aliasow |\n| `/o_pokaz` | Pokaz liste oswajanych zwierzat (z przyciskiem aktywne/nieaktywne) |\n| `/o_pokaz <zwierze>` | Pokaz historie karmienia i poziomy oswojenia danego zwierzecia |\n| `/o_ostatnio` | Pokaz historie ostatnio karmionego zwierzecia |\n| `/o_historia` | Pokaz historie karmienia wszystkich aktywnych zwierzat |\n| `/o_wylacz <zwierze>` | Oznacz zwierze jako nieaktywne (ukrywa z historii) |\n| `/o_wlacz <zwierze>` | Oznacz zwierze jako aktywne |\n| `/o_przemianuj <stare> na <nowe>` | Zmien nazwe zwierzecia w bazie |\n| `/o_eksport` | Zapisz baze oswajania tej postaci do pliku JSON |\n| `/o_import` | Wczytaj baze z pliku JSON (nadpisuje baze tej postaci) |\n\n> **Wskazowka:** Baza buduje sie automatycznie z komend `oswajaj zwierze ...`. Po oswojeniu wykonaj `ocen zwierze` (po nakarmieniu jest to automatycznie podstawiane pod funkcjonalny bind), aby zapisac poziom oswojenia. Dane sa zapisywane osobno dla kazdej postaci. Po nakarmieniu, po uplywie czasu odnowienia, pojawi sie powiadomienie, ze mozna oswajac ponownie. Okno otworzysz tez z menu kontekstowego (prawy przycisk myszy na oknie gry, pozycja \"Oswajanie\").\n\n> **Widok zwierzecia:** Na gorze wybierasz zwierze z listy; nieaktywne mozna wlaczyc przyciskiem \"Aktywuj\". W tabeli kolumna \"ile\" rozwija (klik) poprzednie wpisy danego pokarmu. Rozne opisy tego samego pokarmu (np. `miesem` i `kawalkiem miesa`) mozesz scalic ikona polaczenia przy pokarmie — wtedy maja wspolny licznik czasu i jedna grupe, a kolejne karmienia automatycznie trafiaja do tej grupy. Polaczenie pokarmow jest globalne (wspolne dla wszystkich postaci); cofniesz je ikona rozlaczenia.\n\n## Woz/bryczka\n\n| Komenda | Opis |\n|---------|------|\n| `/woz` | Przelacz tryb wozu (wlacz/wylacz) |\n\n> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu. Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.\n\n## Odkladanie magii\n\n| Komenda | Opis |\n|---------|------|\n| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |\n\n## Labirynty\n\n| Komenda | Opis |\n|---------|------|\n| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |\n| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |\n| `/raon_mapa` | Przelacz mapper Labiryntu Raon |\n\n## Odswiezanie danych\n\n| Komenda | Opis |\n|---------|------|\n| `/refresh_magics` | Wymus odswiezenie danych magii |\n| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |\n| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |"
+      "tokens": 3492,
+      "content": "# Inne aliasy\n\nPozostale aliasy i funkcje rozszerzenia.\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow\n- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)\n\n### Zakresy ($i)\n\nUzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.\n\n**Przyklad:**\n- Wzorzec: `kok (.+)`\n- Komenda: `rozerwij $i. kokon`\n- Wpisz: `kok 1-7`\n- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`\n\nZakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.\n\n## Asystent AI\n\n| Komenda | Opis |\n|---------|------|\n| `/pomoc` | Otworz panel asystenta AI |\n| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |\n\n> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz \"Zastosuj\". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem \"Ustawienia\" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.\n\n## Komunikacja\n\n| Komenda | Opis |\n|---------|------|\n| `/fake tekst` | Wyswietl podany tekst jak zwykle wiadomosc klienta |\n| `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |\n| `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |\n| `/list` | Otworz edytor pisania listow w kliencie |\n| `/poczta` | Otworz okno poczty z lista listow |\n\n> **Wskazowka:** W oknie czatu przycisk \"Druzyna\" filtruje wiadomosci od czlonkow druzyny.\n\n## Czas\n\n| Komenda | Opis |\n|---------|------|\n| `/czas` | Otworz okno zegara z aktualnym czasem w grze |\n| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |\n| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |\n\n> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij \"Ustaw\".\n\n## Jezyk\n\n| Komenda | Opis |\n|---------|------|\n| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |\n| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |\n\n## Druzyna\n\n| Komenda | Opis |\n|---------|------|\n| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |\n| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |\n| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |\n| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |\n| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |\n| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |\n| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |\n| `/hp -` | Wyczysc cala liste zapamietanych kondycji |\n| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |\n\n> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).\n\n## Przedstawieni\n\n| Komenda | Opis |\n|---------|------|\n| `/przedstawieni` | Wyswietl liste przedstawionych postaci |\n\n## Bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl liste skonfigurowanych bindow |\n\n## Dzwiek\n\n| Komenda | Opis |\n|---------|------|\n| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |\n| `/mute` | Wycisz dzwieki |\n| `/unmute` | Wlacz dzwieki |\n\n## Przyplyw\n\n| Komenda | Opis |\n|---------|------|\n| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |\n\n> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.\n\n## Dobywanie/Opuszczanie\n\n| Komenda | Opis |\n|---------|------|\n| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |\n| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |\n| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |\n| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |\n\n> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji \"Dobywanie/Opuszczanie\". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).\n\n## Kalendarz slonca\n\n| Komenda | Opis |\n|---------|------|\n| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |\n\n## Kolorowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |\n\n> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.\n\n## Lowienie ryb\n\n| Komenda | Opis |\n|---------|------|\n| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |\n\n> **Wskazowka:** Gdy ryba bierze, kliknij przycisk \"Zatnij rybe\" lub uzyj funkcjonalnego bindu (domyslnie `]`).\n\n## Zlom (baza ocenionych przedmiotow)\n\n| Komenda | Opis |\n|---------|------|\n| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |\n| `/zlom tarcze` | Wyswietl zapisane tarcze |\n| `/zlom zbroje` | Wyswietl zapisane zbroje |\n| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |\n| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |\n\n> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna \"Kolor\") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik \"Srebro\" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).\n\n## Oswajanie\n\n| Komenda | Opis |\n|---------|------|\n| `/o_pomoc` | Otworz okno oswajania z pomoca i lista aliasow |\n| `/o_pokaz` | Pokaz liste oswajanych zwierzat (z przyciskiem aktywne/nieaktywne) |\n| `/o_pokaz <zwierze>` | Pokaz historie karmienia i poziomy oswojenia danego zwierzecia |\n| `/o_ostatnio` | Pokaz historie ostatnio karmionego zwierzecia |\n| `/o_historia` | Pokaz historie karmienia wszystkich aktywnych zwierzat |\n| `/o_wylacz <zwierze>` | Oznacz zwierze jako nieaktywne (ukrywa z historii) |\n| `/o_wlacz <zwierze>` | Oznacz zwierze jako aktywne |\n| `/o_przemianuj <stare> na <nowe>` | Zmien nazwe zwierzecia w bazie |\n| `/o_eksport` | Zapisz baze oswajania tej postaci do pliku JSON |\n| `/o_import` | Wczytaj baze z pliku JSON (nadpisuje baze tej postaci) |\n\n> **Wskazowka:** Baza buduje sie automatycznie z komend `oswajaj zwierze ...`. Po oswojeniu wykonaj `ocen zwierze` (po nakarmieniu jest to automatycznie podstawiane pod funkcjonalny bind), aby zapisac poziom oswojenia. Dane sa zapisywane osobno dla kazdej postaci. Po nakarmieniu, po uplywie czasu odnowienia, pojawi sie powiadomienie, ze mozna oswajac ponownie. Okno otworzysz tez z menu kontekstowego (prawy przycisk myszy na oknie gry, pozycja \"Oswajanie\").\n\n> **Widok zwierzecia:** Na gorze wybierasz zwierze z listy; nieaktywne mozna wlaczyc przyciskiem \"Aktywuj\". W tabeli kolumna \"ile\" rozwija (klik) poprzednie wpisy danego pokarmu. Rozne opisy tego samego pokarmu (np. `miesem` i `kawalkiem miesa`) mozesz scalic ikona polaczenia przy pokarmie — wtedy maja wspolny licznik czasu i jedna grupe, a kolejne karmienia automatycznie trafiaja do tej grupy. Polaczenie pokarmow jest globalne (wspolne dla wszystkich postaci); cofniesz je ikona rozlaczenia.\n\n## Woz/bryczka\n\n| Komenda | Opis |\n|---------|------|\n| `/woz` | Przelacz tryb wozu (wlacz/wylacz) |\n| `/wozw` | Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy |\n| `/wozblok` | Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji) |\n| `/wozbloki` | Pokaz liste nieprzejezdnych lokacji i linie do skopiowania |\n| `/wozbloki+ <numery>` | Wczytaj liste nieprzejezdnych lokacji |\n| `/wozbloki-` | Wyczysc liste nieprzejezdnych lokacji |\n\n> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.\n\n> **Wskazowka:** Okno \"Wozy\" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.\n\n> **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.\n\n> **Wskazowka:** Okno rozroznia, czy siedzisz w stojacym pojezdzie, czy jedziesz — znacznik przy nazwie pokazuje `stoisz` albo `jedziesz`, na podstawie komunikatow `... rusza na ...` i `... zatrzymuje sie.` twojego pojazdu.\n\n> **Wskazowka:** W czasie jazdy `zerknij` zatrzymuje pojazd — wysyla `zatrzymaj woz` / `zatrzymaj bryczke` / `zatrzymaj dylizans`. Kiedy pojazd stoi, `zerknij` znowu rozglada sie po lokacji. Tak dziala klawisz `zerknij` (domyslnie Numpad5) i srodkowy przycisk krzyzaka na panelu mobilnym; to samo mozna przypisac dowolnemu przyciskowi mobilnemu lub desktopowemu, wybierajac makro **Zerknij / zatrzymaj pojazd**.\n\n> **Wskazowka:** Po ponownym polaczeniu z gra (\"przywracam polaczenie\" albo \"polaczenie zostalo przywrocone\") gra wysadza cie z pojazdu, wiec klient zapisuje pojazd jako zaparkowany w biezacej lokacji. Jesli przerwa byla na tyle dluga, ze logujesz sie od nowa, pojazd zostaje zaparkowany w ostatniej znanej lokacji. Jesli mapa nie nadazyla, miejsce postoju poprawia sie samo, gdy zobaczysz pojazd w opisie lokacji.\n\n> **Wskazowka:** Lokacje oznaczone przez `/wozblok` sa omijane przy prowadzeniu (`/prowadz`, `/prowadzt`, klikniecie na mapie) tylko wtedy, gdy jedziesz wozem — pieszo nic sie nie zmienia. Jesli cel jest nieprzejezdny (np. wnetrze budynku), trasa dzieli sie na dwa odcinki w roznych kolorach: dojazd wozem i dalsza droga pieszo, a klient wypisuje, gdzie zostawic woz. Wyjscia specjalne skladajace sie z kilku slow (`wejdz na skaly`, `zejdz na dol`, `przecisnij sie przez szczeline`) sa pomijane przy jezdzie automatycznie — to czynnosci, ktorych nie wykonasz siedzac na wozie, wiec nie trzeba ich oznaczac. Kiedy pojazd stanie na koncu drogi (`Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`), klient oznacza wszystkie sasiednie lokacje poza ta, z ktorej przyjechales — ale tylko wtedy, gdy gra wypisala przy opisie lokacji liste wyjsc; bez niej nic nie jest zapamietywane. Klient dopisuje lokacje sam, kiedy gra odmowi przejazdu (`Nie mozna jechac na ...`) — blokowana jest lokacja **za** tym wyjsciem, nie ta, w ktorej stoisz. Lista jest wspolna dla wszystkich postaci i na razie zbierana samodzielnie — `/wozbloki` wypisuje ja w formie gotowej do skopiowania. Oznaczone lokacje mozna pokazac na mapie jako przekreslone kolko — wlacza sie to w menu mapy (\"Nieprzejezdne dla wozu\"), domyslnie jest wylaczone. Znaczniki widac takze wtedy, gdy idziesz pieszo, bo czesto dopiero wtedy widac, ze woz tam nie wjedzie.\n\n> **Wskazowka:** Bindy: kiedy wracasz pieszo do lokacji, w ktorej stoi twoj pojazd, bind zmienia sie na `usiadz na wozie` / `usiadz na bryczce` / `usiadz na dylizansie`. Bind znika, gdy odejdziesz z lokacji. Kiedy prowadzisz trase wozem, na bindzie glownym pojawia sie kolejny krok trasy (a w miejscu, gdzie trzeba zostawic woz — `zsiadz z ...`). Bind pokazuje sie tylko wtedy, gdy woz stoi, i aktualizuje sie, gdy trasa sie zmieni; wylaczysz go opcja \"Bindy trasy wozu\". W ustawieniach (zakladka Zachowanie) mozna wlaczyc opcje, ktora sprawia, ze powtorzenie odrzuconej komendy jazdy (`Nie mozna jechac na ...`) wysyla dwie komendy: zsiadniecie z wozu i przejscie pieszo w tym kierunku. Komunikaty konczace jazde (`Dojechaliscie do rozdrozy.` i `Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`) sa podswietlane na zolto, zeby nie zginely w opisach mijanych lokacji.\n\n## Odkladanie magii\n\n| Komenda | Opis |\n|---------|------|\n| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |\n\n## Labirynty\n\n| Komenda | Opis |\n|---------|------|\n| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |\n| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |\n| `/raon_mapa` | Przelacz mapper Labiryntu Raon |\n| `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |\n\n## Odswiezanie danych\n\n| Komenda | Opis |\n|---------|------|\n| `/refresh_magics` | Wymus odswiezenie danych magii |\n| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |\n| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |"
     },
     {
       "id": "SKRYPTY.md",
@@ -5732,8 +5948,8 @@
         "Typy TypeScript",
         "Wbudowane skrypty"
       ],
-      "tokens": 1931,
-      "content": "# Skrypty i automatyzacja — co mozesz robic\n\nPodsumowanie mozliwosci systemu skryptow, pluginow i automatyzacji dostepnych dla graczy.\n\n---\n\n## Wlasne aliasy\n\nTworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.\n\n- **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)\n- **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy\n- **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji\n- **Nadpisania per postac** — ten sam alias moze wysylac inna komende w zaleznosci od postaci\n- **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem\n\n## Wlasne triggery\n\nReagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.\n\n- **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy\n- **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii\n- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, timery\n- **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:\n  - Zmiana na wielkie litery\n  - Kolorowanie dopasowania\n  - Zamiana tekstu\n  - Otoczenie prefiksem/sufiksem\n  - Odtworzenie dzwieku (domyslny beep lub wlasny plik audio)\n  - Wyciszenie / wlaczenie dzwiekow\n  - Wysylanie komendy do serwera\n  - Wolne lub szybkie miganie tekstu\n  - Pulsowanie (dim z konfigurowalna krzywą animacji)\n  - Ustawienie funkcyjnego bindu\n- **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach\n- **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)\n\n## Bindowanie klawiszy\n\nMapujesz klawisze na akcje — bez odrywania rak od klawiatury.\n\n- **Domyslne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu, i inne\n- **Wlasne bindy** — przypisujesz dowolny klawisz do dowolnej komendy\n- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiaja bindy na czas sesji\n- **Funkcyjne bindy z pluginow** — plugin moze dynamicznie ustawiac co robi dany klawisz\n\n## Edytor skryptow\n\nPiszesz wlasne pluginy w przegladarce, w pelni wyposazonym edytorze.\n\n- **Monaco Editor** — ten sam edytor co w Visual Studio Code, z kolorowaniem skladni i podpowiadaniem\n- **JavaScript i TypeScript** — piszesz w czym chcesz; TypeScript kompiluje sie automatycznie\n- **Podpowiadanie API** — edytor zna cale API pluginow, podpowiada metody i parametry\n- **Snippety** — wpisz `alias`, `trigger`, `eventListener` lub `fBind` i edytor wstawi gotowy szablon\n- **AI asystent** — wbudowany panel AI (OpenAI / Anthropic) pomoze pisac i modyfikowac kod pluginow\n- **Zapis automatyczny** — skompilowany plugin od razu synchronizuje sie z klientem gry\n- **Osobna baza danych** — zrodla TypeScript i skompilowany JS przechowywane osobno, bezpiecznie\n\n## System pluginow\n\nRozszerzasz klienta o wlasne funkcje — lub instalujesz pluginy innych graczy.\n\n### Instalacja\n\n- **Przez UI** — wklej URL i kliknij \"Dodaj\"\n- **Przez link** — otworz URL z parametrem `?add-script=...` i plugin zainstaluje sie automatycznie\n- **Przez edytor** — pisz plugin bezposrednio w wbudowanym edytorze\n- **Import plikow** — wrzuc plik .js/.ts z dysku\n\n### Co plugin moze robic\n\n**Triggery:**\n- Rejestracja triggerow na wzorce regex\n- Triggery jednorazowe (usuwaja sie po pierwszym dopasowaniu)\n- Triggery tokenowe (dopasowuja calé slowa)\n- Modyfikacja tekstu — kolorowanie, dodawanie prefiksu/sufiksu, wstawianie, zamiana, usuwanie\n- Tworzenie klikalnych linkow w tekscie\n- Ukrywanie linii (zwrocenie `null`)\n\n**Aliasy:**\n- Rejestracja wlasnych komend (np. `/dom`, `/tp miasto`)\n- Przechwytywanie grup z regex\n\n**Wysylanie komend:**\n- `api.command.send(\"komenda\")` — wyslij komende do serwera\n- Mozliwosc wysylania wielu komend sekwencyjnie\n\n**Zdarzenia:**\n- Nasluchiwanie zdarzen gry: ruch na mapie, zabicie wroga, dane GMCP, konkretne sciezki GMCP\n- Emitowanie wlasnych zdarzen\n- Odtwarzanie dzwiekow, wyswietlanie powiadomien\n\n**Mapa:**\n- Odczyt aktualnego pokoju (nazwa, koordynaty, wyjscia, area)\n- Ustawianie lokalizacji\n- Cofanie sie do poprzedniego pokoju\n\n**Druzyna:**\n- Lista czlonkow druzyny\n- Lider, ID lidera, numer gracza\n\n**Dane GMCP:**\n- Pelny dostep do danych GMCP (HP, mana, nazwa pokoju, itd.)\n\n**Kolejka ataku:**\n- Dodawanie, usuwanie, czyszczenie kolejki celow\n- Odczyt aktualnej kolejki\n\n**Obiekty na lokacji:**\n- Lista obiektow z numerem, opisem, stanem, skrotem\n\n**Kolorowy tekst:**\n- `AnsiAwareBuffer` — tworzenie bogatego tekstu z kolorami, formatowaniem, linkami\n- Kolory z hex (`#ff0000`) lub RGB\n\n**Przyciski:**\n- Rejestracja wlasnych makr przyciskow (mobilne i desktopowe)\n- Pola konfiguracji: tekst, textarea, numer, checkbox, select\n- Przyciski stanowe (toggle ON/OFF, przelaczanie trybow)\n- Handle do kontroli stanu z poziomu aliasow\n\n**Filtry listy obiektow:**\n- Zmiana koloru, ikony, prefiksu, sufiksu wpisow na liscie obiektow\n- Modyfikacja paska HP\n- Skracanie nazw\n- System priorytetow — filtry composable, wiele pluginow wspolpracuje\n\n**Makra triggerow:**\n- Plugin moze definiowac wlasne typy akcji dla triggerow uzytkownika\n- Pojawiaja sie automatycznie w ustawieniach triggerow\n- Konfiguracja przez pola formularza\n\n### Lifecycle pluginu\n\n- `init(api)` — inicjalizacja, rejestracja wszystkiego\n- `destroy()` — czyszczenie przy wyladowaniu\n- Metadane: nazwa, wersja, autor, opis\n- Kompatybilnosc wsteczna — stare skrypty (legacy) dzialaja bez zmian\n\n### Typy TypeScript\n\n- Pakiet `@arkadia/plugin-types` z pelnym wsparciem IDE\n- Autocomplete i hover documentation w edytorze\n\n## Wbudowane skrypty\n\nKlient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspekt gry:\n\n**Walka:** kolejka ataku, tryby ataku, timer walki, okno walki, zaslanianie, ucieczka, alarm HP, alert braku broni, ogluszenie wroga, zlamana obrona, zaznaczanie celow, ochrona sojusznikow, ostrzezenie o ataku lidera\n\n**Ekwipunek:** menedzer pojemnikow, zbieranie lupow, ciecie, depozyt bankowy, porownywanie przedmiotow (inline i w oknie), wytrzymalosc, stan broni, ocena zbroi/broni/tarczy, kolorowanie monet, kolorowanie broni, sklep\n\n**Nawigacja:** chodzenie, GPS, mapa, tryb ruchu, specjalne wyjscia, skroty lokacji, kompas, przechodzenie bram, autobus/transport, lokalizatory, statki\n\n**Magia:** ladowanie magii, klucze magiczne, zaklecia, odkadanie magii\n\n**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol\n\n**Rzemioslo:** kowalstwo, lowienie ryb, oswajanie zwierzat, wiedza, umiejetnosci, jezyki, nauczyciel jezykow\n\n**Komunikacja:** historia czatu, poczta, nowa wiadomosc, lista przedstawionych, listy\n\n**Sledzenie:** postepy (zabici, zlecenia, staz), kontrakty, dostawy, licznik usprawnien, wyroznienie, profesja\n\n**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, toniety, labirynty (Raon, Rinde)\n\n**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki\n\n**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, wycena kamieni, wycena cen, szyldy gildii\n\n---\n\n> System skryptow i pluginow pozwala graczom automatyzowac, rozszerzac i personalizowac\n> praktycznie kazdy aspekt rozgrywki — od prostych aliasow po pelne pluginy z wlasnym UI,\n> stanami i integracjami.\n>\n> Szczegolowy opis API pluginow znajdziesz w [PLUGINS.md](PLUGINS.md)."
+      "tokens": 2059,
+      "content": "# Skrypty i automatyzacja — co mozesz robic\n\nPodsumowanie mozliwosci systemu skryptow, pluginow i automatyzacji dostepnych dla graczy.\n\n---\n\n## Wlasne aliasy\n\nTworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.\n\n- **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)\n- **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy\n- **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji\n- **Nadpisania per postac** — ten sam alias moze wysylac inna komende w zaleznosci od postaci\n- **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem\n\n## Wlasne triggery\n\nReagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.\n\n- **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy\n- **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii\n- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, timery\n- **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:\n  - Zmiana na wielkie litery\n  - Kolorowanie dopasowania\n  - Zamiana tekstu\n  - Otoczenie prefiksem/sufiksem\n  - Odtworzenie dzwieku (domyslny beep lub wlasny plik audio)\n  - Wyciszenie / wlaczenie dzwiekow\n  - Wysylanie komendy do serwera\n  - Wolne lub szybkie miganie tekstu\n  - Pulsowanie (dim z konfigurowalna krzywą animacji)\n  - Ustawienie funkcyjnego bindu\n- **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach\n- **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)\n\n## Bindowanie klawiszy\n\nMapujesz klawisze na akcje — bez odrywania rak od klawiatury.\n\n- **Domyslne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu, i inne\n- **Wlasne bindy** — przypisujesz dowolny klawisz do dowolnej komendy\n- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiaja bindy na czas sesji\n- **Funkcyjne bindy z pluginow** — plugin moze dynamicznie ustawiac co robi dany klawisz\n\n## Edytor skryptow\n\nPiszesz wlasne pluginy w przegladarce, w pelni wyposazonym edytorze.\n\n- **Monaco Editor** — ten sam edytor co w Visual Studio Code, z kolorowaniem skladni i podpowiadaniem\n- **JavaScript i TypeScript** — piszesz w czym chcesz; TypeScript kompiluje sie automatycznie\n- **Podpowiadanie API** — edytor zna cale API pluginow, podpowiada metody i parametry\n- **Snippety** — wpisz `alias`, `trigger`, `eventListener` lub `fBind` i edytor wstawi gotowy szablon\n- **AI asystent** — wbudowany panel AI (OpenAI / Anthropic) pomoze pisac i modyfikowac kod pluginow\n- **Zapis automatyczny** — skompilowany plugin od razu synchronizuje sie z klientem gry\n- **Osobna baza danych** — zrodla TypeScript i skompilowany JS przechowywane osobno, bezpiecznie\n\n## System pluginow\n\nRozszerzasz klienta o wlasne funkcje — lub instalujesz pluginy innych graczy.\n\n### Instalacja\n\nPanel **Skrypty** ma dwie zakladki: *Zainstalowane* (co masz) i *Katalog* (co mozesz miec).\n\n- **Z katalogu** — zakladka \"Katalog\" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,\n  zajrzyj w opis i historie wersji, a potem kliknij \"Zainstaluj\". Klient zapamietuje konkretna\n  wersje, wiec plugin nie zmieni sie sam pod reka — gdy autor wyda nowsza, na liscie\n  zainstalowanych pojawi sie przycisk \"Aktualizuj\"\n- **Przez link** — otworz URL z parametrem `?add-script=...` i plugin zainstaluje sie automatycznie\n- **Wlasny plugin** — przycisk \"Dodaj plugin\" prowadzi do pozostalych drog: import paczki ZIP,\n  wklejenie kodu, adres URL, wygenerowanie promptu dla AI albo napisanie pluginu w edytorze\n\n### Co plugin moze robic\n\n**Triggery:**\n- Rejestracja triggerow na wzorce regex\n- Triggery jednorazowe (usuwaja sie po pierwszym dopasowaniu)\n- Triggery tokenowe (dopasowuja calé slowa)\n- Modyfikacja tekstu — kolorowanie, dodawanie prefiksu/sufiksu, wstawianie, zamiana, usuwanie\n- Tworzenie klikalnych linkow w tekscie\n- Ukrywanie linii (zwrocenie `null`)\n\n**Aliasy:**\n- Rejestracja wlasnych komend (np. `/dom`, `/tp miasto`)\n- Przechwytywanie grup z regex\n\n**Wysylanie komend:**\n- `api.command.send(\"komenda\")` — wyslij komende do serwera\n- Mozliwosc wysylania wielu komend sekwencyjnie\n\n**Zdarzenia:**\n- Nasluchiwanie zdarzen gry: ruch na mapie, zabicie wroga, dane GMCP, konkretne sciezki GMCP\n- Emitowanie wlasnych zdarzen\n- Odtwarzanie dzwiekow, wyswietlanie powiadomien\n\n**Mapa:**\n- Odczyt aktualnego pokoju (nazwa, koordynaty, wyjscia, area)\n- Ustawianie lokalizacji\n- Cofanie sie do poprzedniego pokoju\n\n**Druzyna:**\n- Lista czlonkow druzyny\n- Lider, ID lidera, numer gracza\n\n**Dane GMCP:**\n- Pelny dostep do danych GMCP (HP, mana, nazwa pokoju, itd.)\n\n**Kolejka ataku:**\n- Dodawanie, usuwanie, czyszczenie kolejki celow\n- Odczyt aktualnej kolejki\n\n**Obiekty na lokacji:**\n- Lista obiektow z numerem, opisem, stanem, skrotem\n\n**Kolorowy tekst:**\n- `AnsiAwareBuffer` — tworzenie bogatego tekstu z kolorami, formatowaniem, linkami\n- Kolory z hex (`#ff0000`) lub RGB\n\n**Przyciski:**\n- Rejestracja wlasnych makr przyciskow (mobilne i desktopowe)\n- Pola konfiguracji: tekst, textarea, numer, checkbox, select\n- Przyciski stanowe (toggle ON/OFF, przelaczanie trybow)\n- Handle do kontroli stanu z poziomu aliasow\n\n**Filtry listy obiektow:**\n- Zmiana koloru, ikony, prefiksu, sufiksu wpisow na liscie obiektow\n- Modyfikacja paska HP\n- Skracanie nazw\n- System priorytetow — filtry composable, wiele pluginow wspolpracuje\n\n**Makra triggerow:**\n- Plugin moze definiowac wlasne typy akcji dla triggerow uzytkownika\n- Pojawiaja sie automatycznie w ustawieniach triggerow\n- Konfiguracja przez pola formularza\n\n### Lifecycle pluginu\n\n- `init(api)` — inicjalizacja, rejestracja wszystkiego\n- `destroy()` — czyszczenie przy wyladowaniu\n- Metadane: nazwa, wersja, autor, opis\n- Kompatybilnosc wsteczna — stare skrypty (legacy) dzialaja bez zmian\n\n### Typy TypeScript\n\n- Pakiet `@arkadia/plugin-types` z pelnym wsparciem IDE\n- Autocomplete i hover documentation w edytorze\n\n## Wbudowane skrypty\n\nKlient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspekt gry:\n\n**Walka:** kolejka ataku, tryby ataku, timer walki, okno walki, zaslanianie, ucieczka, alarm HP, alert braku broni, ogluszenie wroga, zlamana obrona, zaznaczanie celow, ochrona sojusznikow, ostrzezenie o ataku lidera\n\n**Ekwipunek:** menedzer pojemnikow, zbieranie lupow, ciecie, depozyt bankowy, porownywanie przedmiotow (inline i w oknie), wytrzymalosc, stan broni, ocena zbroi/broni/tarczy, kolorowanie monet, kolorowanie broni, sklep\n\n**Nawigacja:** chodzenie, GPS, mapa, tryb ruchu, specjalne wyjscia, skroty lokacji, kompas, przechodzenie bram, autobus/transport, lokalizatory, statki\n\n**Magia:** ladowanie magii, klucze magiczne, zaklecia, odkadanie magii\n\n**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol, leczenie chorob i zatruc\n\n**Rzemioslo:** kowalstwo, lowienie ryb, oswajanie zwierzat, wiedza, umiejetnosci, jezyki, nauczyciel jezykow\n\n**Komunikacja:** historia czatu, poczta, nowa wiadomosc, lista przedstawionych, listy\n\n**Sledzenie:** postepy (zabici, zlecenia, staz), kontrakty, dostawy, licznik usprawnien, wyroznienie, profesja\n\n**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, labirynty (Raon, Rinde, Taragorn)\n\n**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki\n\n**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, kamienna plyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii\n\n---\n\n> System skryptow i pluginow pozwala graczom automatyzowac, rozszerzac i personalizowac\n> praktycznie kazdy aspekt rozgrywki — od prostych aliasow po pelne pluginy z wlasnym UI,\n> stanami i integracjami.\n>\n> Szczegolowy opis API pluginow znajdziesz w [PLUGINS.md](PLUGINS.md)."
     },
     {
       "id": "SYNCHRONIZACJA.md",
@@ -5802,18 +6018,18 @@
     }
   ],
   "gaps": [],
-  "version": "9735340e94199499",
-  "generatedAt": "2026-08-26T20:58:46.756Z",
+  "version": "e5c86f4547b03d0e",
+  "generatedAt": "2026-09-09T17:38:08.077Z",
   "stats": {
-    "settings": 119,
-    "settingsWithLabels": 119,
-    "commands": 220,
-    "commandsWithDescriptions": 220,
-    "events": 13,
+    "settings": 124,
+    "settingsWithLabels": 124,
+    "commands": 226,
+    "commandsWithDescriptions": 226,
+    "events": 17,
     "docs": 12,
-    "leanChars": 40802,
-    "leanTokens": 10201,
-    "fatChars": 206107,
-    "fatTokens": 51527
+    "leanChars": 42379,
+    "leanTokens": 10595,
+    "fatChars": 220375,
+    "fatTokens": 55094
   }
 }

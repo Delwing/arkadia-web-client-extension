@@ -4,8 +4,9 @@ import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
+import { sendPush } from "@modules/push/pushClient";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -15,6 +16,13 @@ export interface UserMacro {
     soundKey?: string;
     label?: string;
     message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
+    /**
+     * push only: send even if another push went out within the rate-limit
+     * window. For alerts the player considers important enough that being
+     * swallowed by an unrelated hp alert a moment earlier is worse than the
+     * extra buzz.
+     */
+    bypassCooldown?: boolean;
     pluginConfig?: Record<string, any>;
     // Dim effect options
     dimStartOpacity?: number;
@@ -38,10 +46,22 @@ export interface UserTrigger {
     macros: UserMacro[];
 }
 
+/** One value an event carries, offered to the user as a `{name}` placeholder. */
+export interface EventArg {
+    name: string;
+    label: string;
+}
+
 export interface SupportedEvent {
     id: string;
     label: string;
     category: string;
+    /**
+     * Values this event's payload carries. Macro text fields may reference them
+     * as `{name}`; see `interpolateEventArgs`. Events without a declared list
+     * simply offer no placeholders rather than offering broken ones.
+     */
+    args?: EventArg[];
 }
 
 export const SUPPORTED_EVENTS: SupportedEvent[] = [
@@ -54,6 +74,36 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'enemy.paralyzed', label: 'Wrog ogluszony', category: 'Walka' },
     { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
     { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
+    {
+        id: 'enemy.attack',
+        label: 'Atak wroga (ten z beepem)',
+        category: 'Walka',
+        args: [{ name: 'attacker', label: 'Nazwa atakujacego' }],
+    },
+
+    // Character condition. These exist so the built-in alerts can be bound to a
+    // `push` macro deliberately — nothing reaches a paired device on its own.
+    {
+        id: 'hp.low',
+        label: 'Niskie zycie',
+        category: 'Postac',
+        args: [
+            { name: 'text', label: 'Opis kondycji' },
+            { name: 'hp', label: 'Poziom zycia (GMCP)' },
+        ],
+    },
+    {
+        id: 'hp.full',
+        label: 'Pelne zycie',
+        category: 'Postac',
+        args: [{ name: 'text', label: 'Tresc alertu' }],
+    },
+    {
+        id: 'hp.idleFull',
+        label: 'Pelne zycie (bezczynnosc)',
+        category: 'Postac',
+        args: [{ name: 'text', label: 'Tresc alertu' }],
+    },
 
     // Connection
     { id: 'client.connect', label: 'Polaczenie', category: 'Polaczenie' },
@@ -148,6 +198,17 @@ function applyMacrosToMatch(
                 client.sendEvent("notify", { text, system: true });
                 break;
             }
+            case 'push': {
+                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                // Unlike the automatic hp alert, this is sent whether or not the
+                // client is on screen: a trigger the player wrote deliberately
+                // should not silently do nothing while they are at the desk.
+                void sendPush(
+                    { title: 'Arkadia', body: text },
+                    { bypassCooldown: macro.bypassCooldown },
+                );
+                break;
+            }
             default:
                 // Handle plugin trigger macros
                 if (macro.type.startsWith('plugin:')) {
@@ -163,11 +224,42 @@ function applyMacrosToMatch(
     });
 }
 
+/**
+ * Replace `{name}` placeholders in a macro's text with values from the event.
+ *
+ * An unknown or absent placeholder is left standing rather than blanked: a
+ * literal `{attacker}` arriving on the phone tells the player their reference
+ * is wrong, where an empty string would just look like the event misfired.
+ *
+ * A payload that is not an object (several events emit a bare string or
+ * boolean) exposes that value as `{value}`.
+ */
+export function interpolateEventArgs(text: string, payload: unknown): string {
+    if (!text || !text.includes('{')) return text;
+
+    const source: Record<string, unknown> =
+        typeof payload === 'object' && payload !== null
+            ? (payload as Record<string, unknown>)
+            : { value: payload };
+
+    return text.replace(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (whole, name: string) => {
+        const value = source[name];
+        return value === undefined || value === null ? whole : String(value);
+    });
+}
+
 function applyEventMacros(
     client: Client,
-    macros: UserMacro[]
+    macros: UserMacro[],
+    payload?: unknown
 ): void {
     macros?.forEach(macro => {
+        // Every user-authored text field on an event macro supports {name}
+        // placeholders drawn from the event payload.
+        const command = macro.command && interpolateEventArgs(macro.command, payload);
+        const label = macro.label && interpolateEventArgs(macro.label, payload);
+        const message = macro.message && interpolateEventArgs(macro.message, payload);
+
         switch (macro.type) {
             case 'beep':
                 client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
@@ -179,20 +271,30 @@ function applyEventMacros(
                 client.SoundManager.unmute();
                 break;
             case 'command':
-                if (macro.command) {
-                    client.sendCommand(macro.command);
+                if (command) {
+                    client.sendCommand(command);
                 }
                 break;
             case 'functionalBind':
-                if (macro.command && macro.label) {
-                    client.FunctionalBind.set(macro.label, () => {
-                        client.sendCommand(macro.command!);
+                if (command && label) {
+                    client.FunctionalBind.set(label, () => {
+                        client.sendCommand(command);
                     });
                 }
                 break;
             case 'notify':
-                if (macro.message) {
-                    client.sendEvent("notify", { text: macro.message, system: true });
+                if (message) {
+                    client.sendEvent("notify", { text: message, system: true });
+                }
+                break;
+            case 'push':
+                // No matched text to fall back on for an event trigger, so a
+                // message is required rather than optional.
+                if (message) {
+                    void sendPush(
+                        { title: 'Arkadia', body: message },
+                        { bypassCooldown: macro.bypassCooldown },
+                    );
                 }
                 break;
             // Note: Plugin macros are not supported for event triggers
@@ -231,7 +333,7 @@ export default function initUserTriggers(client: Client) {
                     if (eventValue !== undefined) {
                         if (String(data) !== eventValue) return;
                     }
-                    applyEventMacros(client, item.macros);
+                    applyEventMacros(client, item.macros, data);
                 };
 
                 client.on(eventName as any, handler);

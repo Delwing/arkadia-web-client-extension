@@ -101,6 +101,14 @@ export interface BehaviorSettings {
     carriageRouteBinds: boolean;
     teamNumberingMode: 'letters' | 'numbers';
     objectContextMenuCommands: string[];
+    /**
+     * Hold back push notifications while the client tab is on screen.
+     *
+     * Off by default: someone who paired a phone generally wants the alert
+     * whether or not a tab happens to be focused — walking to the kitchen does
+     * not hide the tab.
+     */
+    pushOnlyWhenHidden: boolean;
 }
 
 /**

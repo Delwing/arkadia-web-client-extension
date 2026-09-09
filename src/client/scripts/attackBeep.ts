@@ -70,6 +70,10 @@ export default function initAttackBeep(client: Client) {
 
         if (attackerName && shouldBeep(attackerName)) {
             client.sendEvent("sound:category", "attack");
+            // Fires under exactly the same condition as the beep — an attacker
+            // whose guild the player marked hostile — so binding this event in
+            // the trigger editor means what it says on the label.
+            client.sendEvent("enemy.attack", { attacker: attackerName });
         }
 
         const upper = matches?.groups?.upper

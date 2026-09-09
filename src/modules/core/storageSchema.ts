@@ -92,6 +92,14 @@ export interface GlobalStorageSchema {
     last_world_rebirth: number;
     /** Rooms a carriage cannot enter, gathered by the player. Shared across characters. */
     carriage_blocked_rooms: number[];
+    /**
+     * Push account credential minted by the push Worker. See @modules/push.
+     *
+     * Shaped inline rather than imported so this schema stays free of a cycle
+     * back through the storage module. Global, not per character: a phone
+     * receives alerts for whichever character is being played.
+     */
+    pushCredentials: { pushId: string; pushSecret: string };
 }
 
 /**
@@ -189,4 +197,5 @@ export const globalStorageKeys = [
     'custom_sounds',
     'last_world_rebirth',
     'carriage_blocked_rooms',
+    'pushCredentials',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];
