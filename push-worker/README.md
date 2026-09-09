@@ -47,10 +47,13 @@ Two deliberate choices in what the QR encodes:
   redeems it — never in a request line or an access log.
 
 The scanning device claims the code on load and immediately clears the fragment,
-so a refresh cannot retry a burned code and report a confusing failure.
+so a refresh cannot retry a burned code and report a confusing failure. It then
+starts receiving straight away — scanning the QR *is* the decision to receive on
+that device, so asking again afterwards would be a step carrying no information.
 
-One tap remains unavoidable on the phone: browsers require a user gesture for
-`Notification.requestPermission()`, so it cannot be done on page load.
+The browser's permission prompt is the one interaction that cannot be removed,
+since it requires a real user decision. A pairing scan is the best moment to
+spend it: the player just initiated that page load themselves.
 
 ## Why this is not part of `worker/`
 

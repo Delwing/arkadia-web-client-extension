@@ -253,23 +253,41 @@ export async function claimPairing(code: string): Promise<PushCredentials | null
     return credentials;
 }
 
+export type PairingOutcome =
+    /** No pairing code in the URL — the normal case on every other load. */
+    | { status: 'none' }
+    /** There was a code, but it was invalid, expired or already used. */
+    | { status: 'expired' }
+    /** The credential is adopted. Switching on receiving is the next step. */
+    | { status: 'claimed' };
+
 /**
- * Adopt a pairing code sitting in the page fragment, then strip it.
+ * Adopt a pairing code sitting in the page fragment.
  *
- * Returns true when this call actually claimed one. The fragment is cleared
- * either way: the code is single use, so a reload must not retry a burned one.
+ * Deliberately stops short of enabling. The caller should do that immediately —
+ * scanning the QR *is* the decision to receive on this device — but it must be
+ * able to confirm the pairing first: enabling raises the browser's permission
+ * prompt, and `Notification.requestPermission()` does not settle while that
+ * prompt sits unanswered. Awaiting it before saying anything would make an
+ * ignored prompt look exactly like a pairing that silently failed.
+ *
+ * The fragment is cleared either way: the code is single use, so a reload must
+ * not retry a burned one.
  */
-export async function claimPairingFromLocation(): Promise<boolean> {
-    if (typeof window === 'undefined') return false;
+export async function claimPairingFromLocation(): Promise<PairingOutcome> {
+    if (typeof window === 'undefined') return { status: 'none' };
     const match = /[#&]push-pair=([A-Za-z0-9]+)/.exec(window.location.hash);
-    if (!match) return false;
+    if (!match) return { status: 'none' };
 
     window.history.replaceState(
         null,
         '',
         window.location.pathname + window.location.search,
     );
-    return (await claimPairing(match[1]!)) !== null;
+
+    return (await claimPairing(match[1]!)) === null
+        ? { status: 'expired' }
+        : { status: 'claimed' };
 }
 
 function deviceLabel(): string {

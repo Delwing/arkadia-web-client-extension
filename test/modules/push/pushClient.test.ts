@@ -1,5 +1,10 @@
 import { vi } from 'vitest';
-import { isPushEnabled, resetPushCooldown, sendPush } from '@modules/push/pushClient';
+import {
+  claimPairingFromLocation,
+  isPushEnabled,
+  resetPushCooldown,
+  sendPush,
+} from '@modules/push/pushClient';
 import { loadPushCredentials } from '@modules/push/pushCredentials';
 
 vi.mock('@modules/push/pushCredentials', () => ({
@@ -97,6 +102,28 @@ describe('sendPush', () => {
       new Promise(resolve => setTimeout(() => resolve('hung'), 1000)),
     ]);
     expect(settled).toBe('resolved');
+  });
+
+  test('reports an expired code and still strips the fragment', async () => {
+    // The fragment must go even on failure: the code is single use, so a reload
+    // retrying a burned one would report a confusing second failure.
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({ status: 'not_found', message: 'gone' }),
+    } as unknown as Response)));
+    window.location.hash = '#push-pair=DEADBEEF';
+
+    const outcome = await claimPairingFromLocation();
+
+    expect(outcome).toEqual({ status: 'expired' });
+    expect(window.location.hash).toBe('');
+  });
+
+  test('does nothing on a normal load', async () => {
+    window.location.hash = '';
+    expect(await claimPairingFromLocation()).toEqual({ status: 'none' });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('survives the worker being unreachable', async () => {
