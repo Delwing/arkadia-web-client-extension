@@ -16,6 +16,22 @@ import {
 } from './pushCredentials';
 import { vapidPublicKeyBytes } from './vapidKey';
 
+/**
+ * Minimum gap between pushes, across every sender.
+ *
+ * It lives here rather than in any one caller because every path — the hp
+ * alert, a user's trigger macro, a plugin — points at the same phone. A limit
+ * held by one caller only protects against that caller.
+ */
+const PUSH_COOLDOWN_MS = 60_000;
+
+let lastPushAt = 0;
+
+/** Test seam: forget the cooldown. */
+export function resetPushCooldown(): void {
+    lastPushAt = 0;
+}
+
 export interface PushMessage {
     title: string;
     body: string;
@@ -152,11 +168,25 @@ export async function disablePush(): Promise<void> {
     }
 }
 
-/** Fan an alert out to every device on this account. */
+/**
+ * Fan an alert out to every device on this account.
+ *
+ * Rate limited: an AFK player takes damage repeatedly and `hpAlert` fires on
+ * every drop, so without this one fight becomes a phone that buzzes for a
+ * minute straight and a burst the push service would rather rate-limit itself.
+ */
 export async function sendPush(message: PushMessage): Promise<NotifyResult> {
     if (!loadPushCredentials()) {
         return { ok: false, delivered: 0, error: 'no_account' };
     }
+
+    const now = Date.now();
+    if (now - lastPushAt < PUSH_COOLDOWN_MS) {
+        return { ok: false, delivered: 0, error: 'cooldown' };
+    }
+    // Recorded before awaiting, so a burst in one tick cannot all slip through.
+    lastPushAt = now;
+
     const result = await call('/push/notify', message);
     if (!result.ok) {
         return {

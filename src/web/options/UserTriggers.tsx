@@ -301,6 +301,8 @@ function UserTriggers() {
                         return m.label && m.command ? `bind [${m.label}] → ${m.command}` : 'functional bind';
                     case 'notify':
                         return m.message ? `notify ${m.message}` : 'notify';
+                    case 'push':
+                        return m.message ? `push ${m.message}` : 'push';
                     case 'wrap': {
                         const parts: string[] = [];
                         if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);

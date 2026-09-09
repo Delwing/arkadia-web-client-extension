@@ -830,11 +830,11 @@ export function validateAlias(input: Record<string, unknown>): ValidationResult<
 
 const BUILT_IN_MACRO_TYPES: readonly BuiltInMacroType[] = [
     'uppercase', 'color', 'replace', 'beep', 'mute', 'unmute', 'command',
-    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify',
+    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify', 'push',
 ];
 
 /** Macros `applyEventMacros` actually handles; the rest need text context. */
-const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify'];
+const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push'];
 
 const DIM_EASINGS = ['linear', 'ease-in', 'ease-out', 'ease-in-out'];
 

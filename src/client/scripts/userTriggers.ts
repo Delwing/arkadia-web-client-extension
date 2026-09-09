@@ -4,8 +4,9 @@ import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
+import { sendPush } from "@modules/push/pushClient";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -148,6 +149,15 @@ function applyMacrosToMatch(
                 client.sendEvent("notify", { text, system: true });
                 break;
             }
+            case 'push': {
+                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                // Unlike the automatic hp alert, this is sent whether or not the
+                // client is on screen: a trigger the player wrote deliberately
+                // should not silently do nothing while they are at the desk.
+                // The shared rate limit in sendPush still applies.
+                void sendPush({ title: 'Arkadia', body: text });
+                break;
+            }
             default:
                 // Handle plugin trigger macros
                 if (macro.type.startsWith('plugin:')) {
@@ -193,6 +203,13 @@ function applyEventMacros(
             case 'notify':
                 if (macro.message) {
                     client.sendEvent("notify", { text: macro.message, system: true });
+                }
+                break;
+            case 'push':
+                // No matched text to fall back on for an event trigger, so a
+                // message is required rather than optional.
+                if (macro.message) {
+                    void sendPush({ title: 'Arkadia', body: macro.message });
                 }
                 break;
             // Note: Plugin macros are not supported for event triggers

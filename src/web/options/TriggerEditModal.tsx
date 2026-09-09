@@ -9,7 +9,7 @@ import {
 import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent } from './UserTriggers';
 import { SUPPORTED_EVENTS, GMCP_MSG_TYPES } from './UserTriggers';
 
-const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify']);
+const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push']);
 
 const AVAILABLE_FLAGS = [
     { flag: 'i', label: 'Ignoruj wielkosc liter' },
@@ -141,6 +141,7 @@ function MacroEditor({
                     <option value="unmute">Wlacz dzwieki</option>
                     <option value="command">Komenda</option>
                     <option value="notify">Powiadomienie</option>
+                    <option value="push">Powiadomienie na telefon</option>
                     {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
                     {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
                     {!isEventTrigger && <option value="dim">Pulsowanie</option>}
@@ -208,6 +209,26 @@ function MacroEditor({
                         autoCapitalize="off"
                         spellCheck={false}
                     />
+                )}
+                {macro.type === 'push' && (
+                    <>
+                        <Form.Control
+                            className="mt-1"
+                            type="text"
+                            size="sm"
+                            placeholder={isEventTrigger ? 'Tresc powiadomienia' : 'Tresc powiadomienia (puste = dopasowany tekst)'}
+                            value={macro.message || ''}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, message: e.target.value })}
+                            autoCorrect="off"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
+                        />
+                        <Form.Text className="text-muted d-block">
+                            Wysylane na sparowane urzadzenia niezaleznie od tego, czy patrzysz na klienta.
+                            Nie czesciej niz raz na minute. Wymaga sparowania w Ustawieniach interfejsu → Powiadomienia.
+                        </Form.Text>
+                    </>
                 )}
                 {macro.type === 'notify' && (
                     <>

@@ -88,9 +88,10 @@ describe('NotificationManager push fan-out', () => {
     });
   });
 
-  test('throttles a burst down to a single push', async () => {
-    // hpAlert fires on every drop, so one fight would otherwise become dozens
-    // of pushes and a phone that buzzes for a solid minute.
+  test('delegates rate limiting rather than holding its own', async () => {
+    // The cooldown lives in sendPush, because a user's `push` trigger macro
+    // reaches the same phone without passing through here. This class must
+    // therefore not silently swallow repeats of its own.
     (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
     setVisibility('hidden');
 
@@ -98,26 +99,7 @@ describe('NotificationManager push fan-out', () => {
     for (let i = 0; i < 10; i++) mgr.notify('hit ' + i);
     await Promise.resolve();
 
-    expect(mockedSendPush).toHaveBeenCalledTimes(1);
-  });
-
-  test('pushes again once the cooldown has elapsed', async () => {
-    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
-    setVisibility('hidden');
-    const nowSpy = vi.spyOn(Date, 'now');
-
-    const mgr = new NotificationManager();
-    nowSpy.mockReturnValue(1_000_000);
-    mgr.notify('first');
-    nowSpy.mockReturnValue(1_000_000 + 59_000);
-    mgr.notify('too soon');
-    nowSpy.mockReturnValue(1_000_000 + 61_000);
-    mgr.notify('later');
-    await Promise.resolve();
-
-    expect(mockedSendPush).toHaveBeenCalledTimes(2);
-    expect(mockedSendPush.mock.calls[1]![0]).toMatchObject({ body: 'later' });
-    nowSpy.mockRestore();
+    expect(mockedSendPush).toHaveBeenCalledTimes(10);
   });
 
   test('still pushes when this browser cannot show a local notification', async () => {
