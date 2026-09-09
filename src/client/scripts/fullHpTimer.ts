@@ -25,6 +25,9 @@ export default function initFullHpTimer(client: Client) {
             const msg = colorString(plain, SPRING_GREEN);
             client.println(msg);
             client.sendEvent("notify", { text: plain, system: true });
+            // Bindable in the trigger editor, so this can be forwarded to a
+            // phone deliberately. See SUPPORTED_EVENTS in userTriggers.
+            client.sendEvent("hp.full", { text: plain });
             timer = null;
         }, 180000);
     }

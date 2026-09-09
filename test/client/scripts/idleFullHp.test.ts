@@ -28,6 +28,8 @@ describe('idle full hp notification', () => {
     jest.setSystemTime(120000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
     expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pelne zycie', system: true });
+    // Bindable in the trigger editor, so a player can forward it to a phone.
+    expect(client.sendEvent).toHaveBeenCalledWith('hp.idleFull', { text: 'Masz pelne zycie' });
   });
 
   test('does not notify before idle threshold', () => {

@@ -7,6 +7,7 @@
  * Callers get a result object instead.
  */
 
+import { getBehaviorSettings } from '@modules/core/settings';
 import { PUSH_WORKER_URL } from './pushConfig';
 import {
     loadPushCredentials,
@@ -202,10 +203,23 @@ export async function disablePush(): Promise<void> {
  */
 export async function sendPush(
     message: PushMessage,
-    options: { bypassCooldown?: boolean } = {},
+    options: { bypassCooldown?: boolean; ignoreVisibilityGate?: boolean } = {},
 ): Promise<NotifyResult> {
     if (!loadPushCredentials()) {
         return { ok: false, delivered: 0, error: 'no_account' };
+    }
+
+    // Off by default, so this normally sends whether or not the tab is focused.
+    // The gate lives here rather than in any one caller so it covers every push
+    // the client makes, and it is checked before the cooldown so a suppressed
+    // send does not consume the budget.
+    if (
+        !options.ignoreVisibilityGate &&
+        getBehaviorSettings().pushOnlyWhenHidden &&
+        typeof document !== 'undefined' &&
+        document.visibilityState !== 'hidden'
+    ) {
+        return { ok: false, delivered: 0, error: 'tab_visible' };
     }
 
     if (!options.bypassCooldown) {

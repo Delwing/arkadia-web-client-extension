@@ -96,7 +96,13 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
 
     const handleTest = useCallback(async () => {
         setBusy(true);
-        const result = await sendPush({ title: "Arkadia", body: "Testowe powiadomienie." });
+        // Ignores the "only when hidden" gate: the player is by definition
+        // looking at this screen, so honouring it would make the test button
+        // silently do nothing exactly when it is pressed.
+        const result = await sendPush(
+            { title: "Arkadia", body: "Testowe powiadomienie." },
+            { bypassCooldown: true, ignoreVisibilityGate: true },
+        );
         setBusy(false);
         setStatus(
             result.ok
@@ -138,8 +144,11 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
     return (
         <div className="d-flex flex-column gap-2">
             <div className="small text-secondary">
-                Alerty z gry trafiają na sparowane urządzenia niezależnie od tego, czy karta
-                klienta jest aktywna. Kolejne alerty są ograniczone do jednego na minutę.
+                Nic nie jest wysyłane samo z siebie. Żeby dostać alert na telefon, dodaj makro
+                „Powiadomienie na telefon" do triggera lub zdarzenia (Triggery → zdarzenia takie
+                jak Niskie zycie, Pelne zycie czy Atak wroga). Wysyłka działa niezależnie od
+                tego, czy karta klienta jest aktywna, i jest ograniczona do jednego alertu na
+                minutę — chyba że w makrze zaznaczysz „Wysylaj zawsze".
             </div>
 
             <CheckboxRow

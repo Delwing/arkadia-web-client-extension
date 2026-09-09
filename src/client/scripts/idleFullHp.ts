@@ -11,6 +11,7 @@ export default function initIdleFullHp(client: Client) {
         if (typeof hp !== 'number') return;
         if (hp === FULL_HP && prevHp < FULL_HP && idleTimer.isIdle()) {
             client.sendEvent('notify', { text: 'Masz pelne zycie', system: true });
+            client.sendEvent('hp.idleFull', { text: 'Masz pelne zycie' });
         }
         prevHp = hp;
     });

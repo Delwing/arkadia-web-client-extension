@@ -1,22 +1,14 @@
 import { vi } from 'vitest';
 import NotificationManager from '@client/NotificationManager';
 import { sendPush } from '@modules/push/pushClient';
-import { getBehaviorSettings } from '@modules/core/settings';
 
 vi.mock('@modules/push/pushClient', () => ({
   sendPush: vi.fn().mockResolvedValue({ ok: true, delivered: 1 }),
 }));
 
-vi.mock('@modules/core/settings', () => ({
-  getBehaviorSettings: vi.fn(() => ({ pushOnlyWhenHidden: false })),
-}));
 
 const mockedSendPush = vi.mocked(sendPush);
-const mockedSettings = vi.mocked(getBehaviorSettings);
 
-function setOnlyWhenHidden(value: boolean) {
-  mockedSettings.mockReturnValue({ pushOnlyWhenHidden: value } as ReturnType<typeof getBehaviorSettings>);
-}
 
 function setVisibility(state: 'visible' | 'hidden') {
   Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
@@ -25,7 +17,6 @@ function setVisibility(state: 'visible' | 'hidden') {
 beforeEach(() => {
   mockedSendPush.mockClear();
   setVisibility('visible');
-  setOnlyWhenHidden(false);
 });
 
 afterEach(() => {
@@ -72,78 +63,27 @@ describe('NotificationManager', () => {
   });
 });
 
-describe('NotificationManager push fan-out', () => {
-  test('pushes even while the tab is focused, by default', async () => {
-    // A tab left open on a second monitor while its owner is in the kitchen is
-    // still an unwatched client, and page visibility cannot tell the two apart.
+describe('NotificationManager and paired devices', () => {
+  test('never forwards a local notification to paired devices', async () => {
+    // Push is opt-in per alert, bound in the trigger editor. Fanning every
+    // internal notify() out meant a full hp timer or a walk step buzzed a
+    // pocket, which is not what anyone paired a device for.
     (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
-    setVisibility('visible');
 
-    new NotificationManager().notify('Jestes ciezko ranny');
-    await Promise.resolve();
-
-    expect(mockedSendPush).toHaveBeenCalledTimes(1);
-  });
-
-  test('holds back while the tab is focused when the setting is on', async () => {
-    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
-    setOnlyWhenHidden(true);
-    setVisibility('visible');
-
-    new NotificationManager().notify('Jestes ciezko ranny');
+    const mgr = new NotificationManager();
+    mgr.notify('Jestes ciezko ranny');
+    mgr.notify('Masz pelne zycie');
     await Promise.resolve();
 
     expect(mockedSendPush).not.toHaveBeenCalled();
   });
 
-  test('pushes when hidden even with the setting on', async () => {
-    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
-    setOnlyWhenHidden(true);
-    setVisibility('hidden');
+  test('still shows the notification locally', () => {
+    const mockNotification = jest.fn();
+    (global as any).Notification = Object.assign(mockNotification, { permission: 'granted' });
 
     new NotificationManager().notify('Jestes ciezko ranny');
-    await Promise.resolve();
 
-    expect(mockedSendPush).toHaveBeenCalledTimes(1);
-  });
-
-  test('pushes to other devices when the tab is hidden', async () => {
-    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
-    setVisibility('hidden');
-
-    new NotificationManager().notify('Jestes ciezko ranny');
-    await Promise.resolve();
-
-    expect(mockedSendPush).toHaveBeenCalledTimes(1);
-    expect(mockedSendPush).toHaveBeenCalledWith({
-      title: 'Arkadia',
-      body: 'Jestes ciezko ranny',
-    });
-  });
-
-  test('delegates rate limiting rather than holding its own', async () => {
-    // The cooldown lives in sendPush, because a user's `push` trigger macro
-    // reaches the same phone without passing through here. This class must
-    // therefore not silently swallow repeats of its own.
-    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
-    setVisibility('hidden');
-
-    const mgr = new NotificationManager();
-    for (let i = 0; i < 10; i++) mgr.notify('hit ' + i);
-    await Promise.resolve();
-
-    expect(mockedSendPush).toHaveBeenCalledTimes(10);
-  });
-
-  test('still pushes when this browser cannot show a local notification', async () => {
-    // The desktop that sends alerts may itself have denied permission; that
-    // must not stop the phone being told.
-    delete (global as any).Notification;
-    setVisibility('hidden');
-
-    new NotificationManager().notify('Jestes ciezko ranny');
-    await Promise.resolve();
-
-    expect(mockedSendPush).toHaveBeenCalledTimes(1);
+    expect(mockNotification).toHaveBeenCalledWith('Jestes ciezko ranny');
   });
 });

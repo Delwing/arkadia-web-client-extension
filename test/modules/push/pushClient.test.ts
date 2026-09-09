@@ -7,6 +7,11 @@ import {
   sendPush,
 } from '@modules/push/pushClient';
 import { loadPushCredentials } from '@modules/push/pushCredentials';
+import { getBehaviorSettings } from '@modules/core/settings';
+
+vi.mock('@modules/core/settings', () => ({
+  getBehaviorSettings: vi.fn(() => ({ pushOnlyWhenHidden: false })),
+}));
 
 vi.mock('@modules/push/pushCredentials', () => ({
   loadPushCredentials: vi.fn(),
@@ -27,6 +32,9 @@ function okResponse(delivered = 1) {
 
 beforeEach(() => {
   resetPushCooldown();
+  vi.mocked(getBehaviorSettings).mockReturnValue(
+    { pushOnlyWhenHidden: false } as ReturnType<typeof getBehaviorSettings>,
+  );
   mockedLoad.mockReturnValue({ pushId: 'id', pushSecret: 'secret' });
   vi.stubGlobal('fetch', vi.fn(async () => okResponse()));
 });
@@ -89,6 +97,23 @@ describe('sendPush', () => {
     // bypassing one never stamped the clock.
     expect((await sendPush({ title: 'a', body: 'normal' })).ok).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('pushOnlyWhenHidden holds the send back while the tab is focused', async () => {
+    vi.mocked(getBehaviorSettings).mockReturnValue(
+      { pushOnlyWhenHidden: true } as ReturnType<typeof getBehaviorSettings>,
+    );
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+
+    expect(await sendPush({ title: 'a', body: 'b' })).toMatchObject({ error: 'tab_visible' });
+    expect(fetch).not.toHaveBeenCalled();
+
+    // The test button has to work while the player is looking at the settings
+    // screen, which is precisely when the gate would block it.
+    expect((await sendPush({ title: 'a', body: 'b' }, { ignoreVisibilityGate: true })).ok).toBe(true);
+
+    // And it must not have consumed the cooldown on the way to being blocked.
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
   });
 
   test('the limit is shared, not per caller', async () => {

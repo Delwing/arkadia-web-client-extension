@@ -62,6 +62,13 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'enemy.paralyzed', label: 'Wrog ogluszony', category: 'Walka' },
     { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
     { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
+    { id: 'enemy.attack', label: 'Atak wroga (ten z beepem)', category: 'Walka' },
+
+    // Character condition. These exist so the built-in alerts can be bound to a
+    // `push` macro deliberately — nothing reaches a paired device on its own.
+    { id: 'hp.low', label: 'Niskie zycie', category: 'Postac' },
+    { id: 'hp.full', label: 'Pelne zycie', category: 'Postac' },
+    { id: 'hp.idleFull', label: 'Pelne zycie (bezczynnosc)', category: 'Postac' },
 
     // Connection
     { id: 'client.connect', label: 'Polaczenie', category: 'Polaczenie' },

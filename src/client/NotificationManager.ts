@@ -1,6 +1,13 @@
-import { getBehaviorSettings } from '@modules/core/settings';
-import { sendPush } from '@modules/push/pushClient';
-
+/**
+ * Local, on-this-machine notifications.
+ *
+ * Deliberately does NOT forward anything to paired devices. Push is opt-in per
+ * alert: the player binds a `push` macro to the trigger or event they actually
+ * care about (see SUPPORTED_EVENTS in scripts/userTriggers.ts). Fanning every
+ * internal `notify()` out to a phone meant chatty, low-stakes messages — a full
+ * hp timer, a walk step — buzzing a pocket, which is not what anyone paired a
+ * device for.
+ */
 export default class NotificationManager {
     enableNotifications() {
         if (typeof Notification === 'undefined') {
@@ -15,11 +22,6 @@ export default class NotificationManager {
     }
 
     notify(message: string) {
-        this.showLocally(message);
-        void this.pushToOtherDevices(message);
-    }
-
-    private showLocally(message: string) {
         if (typeof Notification === 'undefined') {
             return;
         }
@@ -28,39 +30,12 @@ export default class NotificationManager {
         }
         if ('serviceWorker' in navigator && navigator.serviceWorker) {
             navigator.serviceWorker.ready
-                // Same tag the push handler uses, so a local notification and a
-                // push carrying the same alert collapse into one on a device
-                // that is both looking at the game and subscribed.
+                // Shares the tag the push handler uses, so a local notification
+                // and a pushed one carrying the same alert collapse into one.
                 .then((reg) => reg.showNotification(message, { tag: 'arkadia-alert' }))
                 .catch(() => {});
         } else {
             new Notification(message);
         }
-    }
-
-    /**
-     * Send the alert onward to the player's other devices.
-     *
-     * By default this happens regardless of whether the tab is focused: a tab
-     * left open on a second monitor while its owner is in the kitchen is still
-     * an unwatched client, and page visibility cannot tell the difference.
-     * `pushOnlyWhenHidden` restores the stricter behaviour for anyone who does
-     * not want their phone buzzing while they are plainly at the desk.
-     */
-    private async pushToOtherDevices(message: string) {
-        const onlyWhenHidden = getBehaviorSettings().pushOnlyWhenHidden;
-        if (
-            onlyWhenHidden &&
-            typeof document !== 'undefined' &&
-            document.visibilityState !== 'hidden'
-        ) {
-            return;
-        }
-
-        // Never throws: push is an accessory, and a Worker that is down must
-        // not surface mid-fight. sendPush no-ops when this browser holds no
-        // push account, and applies the shared rate limit — which lives there
-        // because a user's `push` trigger macro reaches the same phone.
-        await sendPush({ title: 'Arkadia', body: message });
     }
 }

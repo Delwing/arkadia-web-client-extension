@@ -66,6 +66,9 @@ export default function initHpAlert(client: Client) {
             const label = `${formatLabel(doubleK)} x2`;
             client.println(createBindMessage(label, '+k', () => client.sendCommand('+k')));
             client.notify(plain);
+            // `hp` here is the local +1 index into the conditions table, not a
+            // game value; report what GMCP actually sent.
+            client.sendEvent('hp.low', { text: plain, hp: state.hp });
         }
         prev = hp;
     });
