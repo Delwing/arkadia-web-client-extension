@@ -36,7 +36,11 @@ function setupDom() {
     const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
     // jsdom's scrollTop has no setter by default; the handler assigns to it
     // (auto-scroll to bottom) regardless of whether a test exercises geometry.
+    // clientHeight is fixed up front (jsdom reports 0) so that a test changing
+    // only scrollTop later reads as a scroll, not as a wrapper resize — the
+    // handler ignores split-view detection on the scroll a resize emits.
     Object.defineProperty(outputWrapper, 'scrollTop', { configurable: true, writable: true, value: 0 });
+    Object.defineProperty(outputWrapper, 'clientHeight', { configurable: true, writable: true, value: 100 });
 
     return {
         outputWrapper,
@@ -164,6 +168,117 @@ describe('setupOutputMessageHandler', () => {
         expect(handler.isSplitView()).toBe(false);
         expect(splitBottom.classList.contains('split-hidden')).toBe(true);
         expect(stickyArea.children.length).toBe(0);
+    });
+
+    test('does not open split view on the scroll event a wrapper resize emits', async () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        for (let i = 1; i <= 5; i++) client.emit(`line ${i}`, 'comm');
+        await new Promise(resolve => setTimeout(resolve, 260));
+
+        // The window shrinks: the wrapper gets shorter, the scrollback rewraps
+        // and grows, so the view is no longer at the bottom and the browser
+        // fires a scroll event for it. The user never scrolled.
+        defineGeometry(outputWrapper, { scrollTop: 0, clientHeight: 60, scrollHeight: 1000 });
+        defineGeometry(splitBottom, { clientHeight: 0 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+
+        expect(handler.isSplitView()).toBe(false);
+        expect(splitBottom.classList.contains('split-hidden')).toBe(true);
+
+        // A genuine scroll at the new size still opens it. (The resize re-pinned
+        // the view to the bottom, so scroll back up first.)
+        await new Promise(resolve => setTimeout(resolve, 260));
+        defineGeometry(outputWrapper, { scrollTop: 0 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+
+        expect(handler.isSplitView()).toBe(true);
+    });
+
+    test('keeps split view open across a wrapper resize while the user is scrolled up', async () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        for (let i = 1; i <= 5; i++) client.emit(`line ${i}`, 'comm');
+        await new Promise(resolve => setTimeout(resolve, 260));
+
+        defineGeometry(outputWrapper, { scrollTop: 0, scrollHeight: 1000 });
+        defineGeometry(splitBottom, { clientHeight: 0 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(true);
+
+        await new Promise(resolve => setTimeout(resolve, 160));
+
+        // Resizing rewraps the scrollback so that the scroll offset now sits at
+        // the bottom — that must not close the split view.
+        defineGeometry(outputWrapper, { scrollTop: 400, clientHeight: 600, scrollHeight: 1000 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+
+        expect(handler.isSplitView()).toBe(true);
+        expect(splitBottom.classList.contains('split-hidden')).toBe(false);
+    });
+
+    test('wheeling down at the bottom closes a split view a resize left stranded', async () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        for (let i = 1; i <= 5; i++) client.emit(`line ${i}`, 'comm');
+        await new Promise(resolve => setTimeout(resolve, 260));
+
+        defineGeometry(outputWrapper, { scrollTop: 0, scrollHeight: 1000 });
+        defineGeometry(splitBottom, { clientHeight: 0 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(true);
+
+        // Growing the wrapper clamps the offset back to the bottom, where the
+        // browser emits no further scroll events — wheeling down is the only
+        // gesture left, so it has to close the split view.
+        defineGeometry(outputWrapper, { scrollTop: 400, clientHeight: 600, scrollHeight: 1000 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(true);
+
+        await new Promise(resolve => setTimeout(resolve, 260));
+        outputWrapper.dispatchEvent(new WheelEvent('wheel', { deltaY: 120 }));
+
+        expect(handler.isSplitView()).toBe(false);
+        expect(splitBottom.classList.contains('split-hidden')).toBe(true);
+    });
+
+    test('a resize that makes the whole scrollback fit closes split view', async () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+
+        for (let i = 1; i <= 5; i++) client.emit(`line ${i}`, 'comm');
+        await new Promise(resolve => setTimeout(resolve, 260));
+
+        defineGeometry(outputWrapper, { scrollTop: 0, scrollHeight: 1000 });
+        defineGeometry(splitBottom, { clientHeight: 0 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(true);
+
+        // Nothing left to scroll: no scroll event could ever close it again.
+        defineGeometry(outputWrapper, { scrollTop: 0, clientHeight: 1000, scrollHeight: 1000 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+
+        expect(handler.isSplitView()).toBe(false);
+        expect(splitBottom.classList.contains('split-hidden')).toBe(true);
     });
 
     test('suppressSplitView blocks split-view (re)detection for the given window', () => {

@@ -302,38 +302,84 @@ export function setupOutputMessageHandler(
         }
     };
 
+    // Both hold off (re)detection briefly after the transition, so the scroll
+    // events the state change itself produces don't immediately flip it back.
+    // Math.max never shortens a longer hold already in effect (a resize's, or a
+    // split-handle drag's open-ended one).
+    const openSplitView = () => {
+        isSplitViewState = true;
+        suppressSplitViewUntil = Math.max(suppressSplitViewUntil, Date.now() + 150);
+        splitBottom.classList.remove('split-hidden');
+        refreshStickyArea();
+    };
+
+    const closeSplitView = () => {
+        isSplitViewState = false;
+        suppressSplitViewUntil = Math.max(suppressSplitViewUntil, Date.now() + 150);
+        splitBottom.classList.add('split-hidden');
+        stickyArea.replaceChildren();
+    };
+
+    // Last acknowledged wrapper size. Width counts as much as height: a narrower
+    // wrapper rewraps every line and grows scrollHeight, which unpins the view
+    // just as surely as a shorter one does.
+    let previousWidth = outputWrapper.clientWidth;
+    let previousHeight = outputWrapper.clientHeight;
+
+    // Resizing is not scrolling. A wrapper resize (window resize, map/footer
+    // toggling) reflows the scrollback and makes the browser emit a `scroll`
+    // event that has nothing to do with the user — it used to read as "scrolled
+    // up" and flip the split view on. Whichever runs first for a given resize,
+    // the scroll handler or the ResizeObserver, calls this: it swallows the
+    // reflow's scroll events and re-pins. Returns whether a resize was handled.
+    const handleWrapperResize = () => {
+        const newWidth = outputWrapper.clientWidth;
+        const newHeight = outputWrapper.clientHeight;
+        if (newWidth === previousWidth && newHeight === previousHeight) return false;
+        previousWidth = newWidth;
+        previousHeight = newHeight;
+        // Math.max keeps a split-handle drag's Infinity hold intact.
+        suppressSplitViewUntil = Math.max(suppressSplitViewUntil, Date.now() + 250);
+        // Split view off means the user wants the bottom, so re-pin
+        // unconditionally: after a rewrap the pre-resize geometry can no longer
+        // tell us whether we *were* at the bottom.
+        if (!isSplitViewState) {
+            requestAnimationFrame(() => {
+                outputWrapper.scrollTop = outputWrapper.scrollHeight;
+            });
+        } else if (outputWrapper.scrollHeight <= outputWrapper.clientHeight) {
+            // The wrapper grew enough to hold the whole scrollback: there is
+            // nothing left to scroll, so no scroll event could ever close the
+            // split view again. Close it here rather than strand the user in a
+            // view that mirrors lines already on screen.
+            closeSplitView();
+        }
+        return true;
+    };
+
     const checkSplitView = () => {
+        if (handleWrapperResize()) return;
         if (Date.now() < suppressSplitViewUntil) return;
         if (isAtBottom()) {
-            if (isSplitViewState) {
-                isSplitViewState = false;
-                suppressSplitViewUntil = Date.now() + 150;
-                splitBottom.classList.add('split-hidden');
-                stickyArea.replaceChildren();
-            }
+            if (isSplitViewState) closeSplitView();
         } else if (!isSplitViewState) {
-            isSplitViewState = true;
-            suppressSplitViewUntil = Date.now() + 150;
-            splitBottom.classList.remove('split-hidden');
-            refreshStickyArea();
+            openSplitView();
         }
     };
     outputWrapper.addEventListener('scroll', checkSplitView);
 
-    // Preemptively open the split view on scroll-up wheel to avoid a 1-frame
-    // jitter: 'wheel' fires before the compositor processes the scroll.
+    // Wheel handling covers the two moments the compositor cannot: opening one
+    // frame before it processes a scroll up (which would otherwise jitter), and
+    // closing when the user wheels down while already at the bottom — there the
+    // browser emits no scroll event at all, which after a resize that clamped
+    // them to the bottom would leave no way out of the split view.
     const onWheel = (e: WheelEvent) => {
-        if (
-            e.deltaY < 0 &&
-            !isSplitViewState &&
-            Date.now() >= suppressSplitViewUntil &&
-            outputWrapper.scrollHeight > outputWrapper.clientHeight &&
-            isAtBottom()
-        ) {
-            isSplitViewState = true;
-            suppressSplitViewUntil = Date.now() + 150;
-            splitBottom.classList.remove('split-hidden');
-            refreshStickyArea();
+        if (Date.now() < suppressSplitViewUntil) return;
+        if (!isAtBottom()) return;
+        if (e.deltaY < 0 && !isSplitViewState && outputWrapper.scrollHeight > outputWrapper.clientHeight) {
+            openSplitView();
+        } else if (e.deltaY > 0 && isSplitViewState) {
+            closeSplitView();
         }
     };
     outputWrapper.addEventListener('wheel', onWheel, {passive: true});
@@ -379,18 +425,8 @@ export function setupOutputMessageHandler(
     // Keep the view pinned to the bottom when the wrapper resizes (map/footer
     // toggling, window resize, multibinds appearing) — unless the user has
     // scrolled up into split view.
-    let previousHeight = outputWrapper.clientHeight;
     const resizeObserver = new ResizeObserver(() => {
-        const newHeight = outputWrapper.clientHeight;
-        if (newHeight === previousHeight) return;
-        const wasAtBottom =
-            outputWrapper.scrollTop + previousHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
-        previousHeight = newHeight;
-        if (!isSplitViewState && wasAtBottom) {
-            requestAnimationFrame(() => {
-                outputWrapper.scrollTop = outputWrapper.scrollHeight;
-            });
-        }
+        handleWrapperResize();
     });
     resizeObserver.observe(outputWrapper);
 
