@@ -24,39 +24,38 @@ export interface ConfirmedSunEvent {
     confirmedAt: number;
 }
 
+/** Calendar shape only - sunrise and sunset come from the grids in `sunModel`. */
 interface MonthDef {
-    sunrise: number;
-    sunset: number;
     length: number;
 }
 
 const MONTHS: Record<string, MonthDef> = {
-    Hexenstag:    { sunrise: 8, sunset: 17, length: 1 },
-    Nachhexen:    { sunrise: 8, sunset: 17, length: 32 },
-    Jahrdrung:    { sunrise: 7, sunset: 18, length: 33 },
-    Mitterfruhl:  { sunrise: 7, sunset: 18, length: 1 },
-    Pflugzeit:    { sunrise: 6, sunset: 19, length: 33 },
-    Sigmarszeit:  { sunrise: 5, sunset: 20, length: 33 },
-    Sommerzeit:   { sunrise: 5, sunset: 21, length: 33 },
-    Sonnenstill:  { sunrise: 5, sunset: 22, length: 1 },
-    Vorgeheim:    { sunrise: 4, sunset: 22, length: 33 },
-    Geheimnistag: { sunrise: 5, sunset: 21, length: 1 },
-    Nachgeheim:   { sunrise: 5, sunset: 21, length: 32 },
-    Erntezeit:    { sunrise: 5, sunset: 20, length: 33 },
-    Mitterherbst: { sunrise: 5, sunset: 20, length: 1 },
-    Brauzeit:     { sunrise: 6, sunset: 19, length: 33 },
-    Kaltezeit:    { sunrise: 6, sunset: 18, length: 33 },
-    Ulrichszeit:  { sunrise: 7, sunset: 17, length: 33 },
-    Mondstill:    { sunrise: 8, sunset: 16, length: 1 },
-    Vorhexen:     { sunrise: 8, sunset: 16, length: 33 },
-    Yule:     { sunrise: 8, sunset: 16, length: 45 },
-    Imbaelk:  { sunrise: 7, sunset: 18, length: 45 },
-    Birke:    { sunrise: 6, sunset: 19, length: 45 },
-    Blathe:   { sunrise: 5, sunset: 21, length: 45 },
-    Feainn:   { sunrise: 4, sunset: 20, length: 45 },
-    Lammas:   { sunrise: 5, sunset: 20, length: 45 },
-    Velen:    { sunrise: 7, sunset: 18, length: 45 },
-    Saovine:  { sunrise: 6, sunset: 17, length: 45 },
+    Hexenstag:    { length: 1 },
+    Nachhexen:    { length: 32 },
+    Jahrdrung:    { length: 33 },
+    Mitterfruhl:  { length: 1 },
+    Pflugzeit:    { length: 33 },
+    Sigmarszeit:  { length: 33 },
+    Sommerzeit:   { length: 33 },
+    Sonnenstill:  { length: 1 },
+    Vorgeheim:    { length: 33 },
+    Geheimnistag: { length: 1 },
+    Nachgeheim:   { length: 32 },
+    Erntezeit:    { length: 33 },
+    Mitterherbst: { length: 1 },
+    Brauzeit:     { length: 33 },
+    Kaltezeit:    { length: 33 },
+    Ulrichszeit:  { length: 33 },
+    Mondstill:    { length: 1 },
+    Vorhexen:     { length: 33 },
+    Yule:     { length: 45 },
+    Imbaelk:  { length: 45 },
+    Birke:    { length: 45 },
+    Blathe:   { length: 45 },
+    Feainn:   { length: 45 },
+    Lammas:   { length: 45 },
+    Velen:    { length: 45 },
+    Saovine:  { length: 45 },
 };
 
 export const MONTHS_ORDER: Record<Domain, string[]> = {

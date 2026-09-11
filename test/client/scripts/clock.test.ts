@@ -316,6 +316,103 @@ describe('ArkadiaTime - Clock System', () => {
         });
     });
 
+    describe('Sun correction uses the observed grids, not the clock reading', () => {
+        // Nachhexen 1 is day 2 of the Empire year; the sunrise grid holds 8 there.
+        const nachhexen = 'Jest w przyblizeniu osma rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.';
+
+        test('a clock running ahead of the flip is pulled back, not pushed an hour on', () => {
+            parse(nachhexen);
+            (clock as any).isDaylight = false;
+
+            // Four real seconds is two game minutes: the clock now reads 8:02 while
+            // the game is still at 7:59. The old round-up turned that into 9:00.
+            mockDate += 4 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+
+            eventBus.emit('gmcp.room.time', { daylight: true });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.hours).toBe(8);
+            expect(snapshot.minutes).toBeLessThan(1);
+            expect(snapshot.precision).toBe(0);
+        });
+
+        test('a clock lagging well behind the flip still lands on the grid hour', () => {
+            parse(nachhexen);
+            (clock as any).isDaylight = false;
+            // Rewind the anchor so the clock reads 7:20 when the sun comes up.
+            (clock as any).init(7, 20, 60, 2);
+
+            eventBus.emit('gmcp.room.time', { daylight: true });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.hours).toBe(8);
+            expect(snapshot.precision).toBe(0);
+        });
+
+        test('reports the drift it corrected', () => {
+            const mismatch = jest.fn();
+            eventBus.on('clock.mismatch', mismatch);
+            parse(nachhexen);
+            (clock as any).isDaylight = false;
+            (clock as any).init(7, 20, 60, 2);
+
+            eventBus.emit('gmcp.room.time', { daylight: true });
+
+            expect(mismatch).toHaveBeenCalledWith(expect.objectContaining({
+                domain: 'Empire',
+                type: 'sunrise',
+                dayOfYear: 2,
+                expectedHour: 8,
+                observedHour: 7
+            }));
+        });
+
+        test('a sunrise seen before the clock has crossed midnight rolls the day', () => {
+            parse(nachhexen);
+            (clock as any).isDaylight = false;
+            // Clock still thinks it is late on day 2; the sunrise belongs to day 3.
+            (clock as any).init(23, 40, 60, 2);
+
+            eventBus.emit('gmcp.room.time', { daylight: true });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.dayOfYear).toBe(3);
+            expect(snapshot.hours).toBe(8);
+            expect(snapshot.precision).toBe(0);
+        });
+
+        test('a sunset seen after the clock has crossed midnight rolls the day back', () => {
+            parse(nachhexen);
+            (clock as any).isDaylight = true;
+            // Sunset on day 2 is 17:00, but the clock has run on past midnight.
+            (clock as any).init(0, 30, 60, 3);
+
+            eventBus.emit('gmcp.room.time', { daylight: false });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.dayOfYear).toBe(2);
+            expect(snapshot.hours).toBe(17);
+            expect(snapshot.precision).toBe(0);
+        });
+
+        test('corrects to the grid hour where the month table disagrees', () => {
+            // Empire day 25 sits in Nachhexen, whose table entry claims sunrise
+            // 8:00, but the fitted grid steps to 7:00 on day 17. Rounding the
+            // clock's 7:30 up landed on the table's wrong hour; the grid does not.
+            parse(nachhexen);
+            (clock as any).isDaylight = false;
+            (clock as any).init(7, 30, 60, 25);
+
+            eventBus.emit('gmcp.room.time', { daylight: true });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.dayOfYear).toBe(25);
+            expect(snapshot.hours).toBe(7);
+            expect(snapshot.precision).toBe(0);
+        });
+    });
+
     describe('Sunrise/Sunset without clock initializes with precision 0', () => {
         test('sunrise transition before first czas sets precision 0', () => {
             // Clock is NOT initialized (no czas yet)
@@ -892,6 +989,37 @@ describe('ArkadiaTime - Clock System', () => {
         });
     });
 
+    describe('Snapshot sun hours come from the grids, not the month table', () => {
+        // Empire day 25 (Nachhexen 24). The month table gives the whole of
+        // Nachhexen a sunrise of 8:00; the fitted grid steps to 7:00 on day 17.
+        const nachhexen24 = (hour: string) =>
+            `Jest w przyblizeniu ${hour} rano, dwudziesty czwarty dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.`;
+
+        test('exposes the grid hour where the table disagrees', () => {
+            parse(nachhexen24('dziesiata'));
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.dayOfYear).toBe(25);
+            expect(snapshot.sunrise).toBe(7);
+            expect(snapshot.sunset).toBe(17);
+        });
+
+        test('daylight follows the grid, so the hour between the two counts as day', () => {
+            // 7:00 is after the real sunrise but before the one the table claims.
+            parse(nachhexen24('siodma'));
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.hours).toBe(7);
+            expect(snapshot.daylight).toBe(true);
+        });
+
+        test('sun hours are plain numbers, not the old numeric strings', () => {
+            parseIshtar('Jest w przyblizeniu dwunasta rano, dwunasty dzien pory Birke wedlug rachuby czasu Starszego Ludu.');
+            const snapshot = display.getSnapshot('Ishtar');
+            expect(typeof snapshot.sunrise).toBe('number');
+            expect(typeof snapshot.sunset).toBe('number');
+        });
+    });
+
+
     // https://github.com/Delwing/arkadia-web-client-extension/issues/1242
     describe('Ishtar festival days and nights', () => {
         const ishtarDay = () => display.getSnapshot("Ishtar")?.dayOfYear;
@@ -957,6 +1085,76 @@ describe('ArkadiaTime - Clock System', () => {
 
             expect(display.getSnapshot("Empire").dayOfYear).toBe(before);
             expect(display.getSnapshot("Empire").dayOfYear).not.toBe(400);
+        });
+    });
+
+    describe('measuredAt - how fresh the reading behind the time is', () => {
+        const line = 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.';
+
+        test('a first reading is stamped with the moment it was taken', () => {
+            parse(line);
+
+            expect(display.getSnapshot('Empire').measuredAt).toBe(mockDate);
+        });
+
+        test('a confirming re-check is fresher evidence, even though the anchor does not move', () => {
+            parse(line);
+            const anchor = (clock as any).startTime;
+
+            mockDate += 10 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+            parse(line);
+
+            const snapshot = display.getSnapshot("Empire");
+            // the clock still extrapolates from the original reading...
+            expect((clock as any).startTime).toBe(anchor);
+            // ...but confirming the hour is what narrowed precision, so the evidence is newer
+            expect(snapshot.precision).toBeLessThan(60);
+            expect(snapshot.measuredAt).toBe(mockDate);
+        });
+
+        test('an observed sunrise stamps the observation, at precision 0', () => {
+            parse('Jest w przyblizeniu osma rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+
+            (clock as any).currentMonth = 'Nachhexen';
+            (clock as any).isDaylight = false;
+            mockDate += 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+
+            eventBus.emit('gmcp.room.time', { daylight: true });
+
+            const snapshot = display.getSnapshot("Empire");
+            expect(snapshot.precision).toBe(0);
+            expect(snapshot.measuredAt).toBe(mockDate);
+        });
+
+        test('survives a reload, so a restored clock is not mistaken for a fresh one', () => {
+            parse(line);
+            const taken = display.getSnapshot("Empire").measuredAt;
+
+            mockDate += 60 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+
+            const restored = new (ArkadiaTime as any)('Empire', client, display);
+            restored.start();
+
+            expect(display.getSnapshot("Empire").measuredAt).toBe(taken);
+            expect(taken).not.toBe(mockDate);
+        });
+
+        test('a state stored before the field existed falls back to its anchor', () => {
+            localStorageMock.setItem('Empire.time', JSON.stringify({
+                start_time: 999999000,
+                start_hour: 6,
+                start_minutes: 0,
+                precision: 60,
+                start_day: 1
+            }));
+
+            const restored = new (ArkadiaTime as any)('Empire', client, display);
+            restored.start();
+
+            expect(display.getSnapshot("Empire").measuredAt).toBe(999999000 * 1000);
         });
     });
 });

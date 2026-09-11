@@ -17,11 +17,6 @@ import {
 
 const POPUP_ID = 'popup:sunCalc';
 
-interface TableHours {
-    sunrise: number | string | '?';
-    sunset: number | string | '?';
-}
-
 function pad(n: number): string {
     return String(n).padStart(2, '0');
 }
@@ -54,13 +49,6 @@ function formatOffset(minutes: number): string {
     return `${sign}${Math.abs(minutes)} min`;
 }
 
-/** clock.ts keeps the hour as a number or a numeric string depending on the domain. */
-function tableHour(value: number | string | '?'): number | null {
-    if (typeof value === 'number') return value;
-    const parsed = parseInt(String(value), 10);
-    return Number.isNaN(parsed) ? null : parsed;
-}
-
 const labelStyle: React.CSSProperties = { color: 'var(--popup-text-subtle)' };
 const sectionStyle: React.CSSProperties = {
     marginBottom: 10,
@@ -86,7 +74,6 @@ const SunCalcPopup: React.FC = () => {
     const { wrapperProps } = usePopup(POPUP_ID, { openEvent: 'sunCalc.popup.open' });
     const [activeTab, setActiveTab] = useState<Domain>('Empire');
     const [anchors, setAnchors] = useState<Partial<Record<Domain, ClockAnchor>>>({});
-    const [tableHours, setTableHours] = useState<Partial<Record<Domain, TableHours>>>({});
     const [, setTick] = useState(0);
     const lastDomainRef = useRef<Domain | null>(null);
 
@@ -105,10 +92,6 @@ const SunCalcPopup: React.FC = () => {
                     minutes: data.minutes,
                     realMs: Date.now(),
                 },
-            }));
-            setTableHours(prev => ({
-                ...prev,
-                [domain]: { sunrise: data.sunrise, sunset: data.sunset },
             }));
         });
     }, [wrapperProps.isOpen]);
@@ -133,7 +116,6 @@ const SunCalcPopup: React.FC = () => {
     }, [wrapperProps.isOpen]);
 
     const anchor = anchors[activeTab];
-    const table = tableHours[activeTab];
 
     // The anchor is a fresh object on every 500ms clock tick, so depending on it
     // would rebuild the forecast twice a second. The in-game time it carries only
@@ -160,11 +142,6 @@ const SunCalcPopup: React.FC = () => {
         const nightHours = nightLengthHours(activeTab, dayOfYear);
         const upcoming = nextSunEvents(anchor);
         const now = Date.now();
-
-        const tableSunrise = table ? tableHour(table.sunrise) : null;
-        const tableSunset = table ? tableHour(table.sunset) : null;
-        const mismatch = (tableSunrise !== null && tableSunrise !== sunrise)
-            || (tableSunset !== null && tableSunset !== sunset);
 
         return (
             <>
@@ -193,12 +170,6 @@ const SunCalcPopup: React.FC = () => {
                         {nightHours} h IG
                         <span style={labelStyle}> = {nightHours * 2} min RL</span>
                     </Row>
-                    {mismatch && (
-                        <div style={{ ...labelStyle, marginTop: 4, fontSize: 11 }}>
-                            Tabela miesiecy w clock.ts podaje {tableSunrise ?? '?'}:00 / {tableSunset ?? '?'}:00
-                            &nbsp;- rozbiezna z obserwacjami.
-                        </div>
-                    )}
                 </div>
 
                 <div style={sectionStyle}>

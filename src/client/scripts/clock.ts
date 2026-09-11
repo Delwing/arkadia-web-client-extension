@@ -3,6 +3,7 @@ import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
 import {characterStorage} from "@modules/core/storage.ts";
 import {gmcp} from "@client/gmcp.ts";
+import {normalizeDay, sunHour, type SunEventType} from "@client/scripts/sunModel.ts";
 
 type Domain = "Empire" | "Ishtar";
 
@@ -81,39 +82,45 @@ const PM: Record<string, (hour: number) => boolean> = {
 };
 
 export interface MonthDefinition {
-    sunrise: number | "?" | string;
-    sunset: number | "?" | string;
     length: number;
     new_moon?: number[];
     alt_name?: string;
 }
 
+/**
+ * Calendar shape only. This table used to carry a sunrise and a sunset hour per
+ * month; both are gone, because the game does not work that way and the figures
+ * were wrong on a large part of the year - Ishtar's were not even self-consistent,
+ * placing the latest sunset two months off the solstice. Sunrise and sunset come
+ * from the fitted grids in `sunModel`, confirmed by the observations `/slonce`
+ * records.
+ */
 export const MONTHS: Record<string, MonthDefinition> = {
-    Hexenstag: {sunrise: 8, sunset: 17, length: 1, alt_name: "Hexensnacht"},
-    Nachhexen: {sunrise: 8, sunset: 17, length: 32},
-    Jahrdrung: {sunrise: 7, sunset: 18, length: 33},
-    Mitterfruhl: {sunrise: 7, sunset: 18, length: 1},
-    Pflugzeit: {sunrise: 6, sunset: 19, length: 33},
-    Sigmarszeit: {sunrise: 5, sunset: 20, length: 33},
-    Sommerzeit: {sunrise: 5, sunset: 21, length: 33},
-    Sonnenstill: {sunrise: 5, sunset: 22, length: 1},
-    Vorgeheim: {sunrise: 4, sunset: 22, length: 33},
-    Nachgeheim: {sunrise: 5, sunset: 21, length: 33},
-    Erntezeit: {sunrise: 5, sunset: 20, length: 33},
-    Mitterherbst: {sunrise: 5, sunset: 20, length: 1},
-    Brauzeit: {sunrise: 6, sunset: 19, length: 33},
-    Kaltezeit: {sunrise: 6, sunset: 18, length: 33},
-    Ulrichszeit: {sunrise: 7, sunset: 17, length: 33},
-    Mondstill: {sunrise: 8, sunset: 16, length: 1},
-    Vorhexen: {sunrise: 8, sunset: 16, length: 33},
-    Yule: {sunrise: "8", sunset: "16", length: 45},
-    Imbaelk: {sunrise: "7", sunset: "18", length: 45},
-    Birke: {sunrise: "6", sunset: "19", length: 45},
-    Blathe: {sunrise: "5", sunset: "21", length: 45},
-    Feainn: {sunrise: "4", sunset: "20", length: 45},
-    Lammas: {sunrise: "5", sunset: "20", length: 45},
-    Velen: {sunrise: "7", sunset: "18", length: 45},
-    Saovine: {sunrise: "6", sunset: "17", length: 45}
+    Hexenstag: { length: 1, alt_name: "Hexensnacht"},
+    Nachhexen: { length: 32},
+    Jahrdrung: { length: 33},
+    Mitterfruhl: { length: 1},
+    Pflugzeit: { length: 33},
+    Sigmarszeit: { length: 33},
+    Sommerzeit: { length: 33},
+    Sonnenstill: { length: 1},
+    Vorgeheim: { length: 33},
+    Nachgeheim: { length: 33},
+    Erntezeit: { length: 33},
+    Mitterherbst: { length: 1},
+    Brauzeit: { length: 33},
+    Kaltezeit: { length: 33},
+    Ulrichszeit: { length: 33},
+    Mondstill: { length: 1},
+    Vorhexen: { length: 33},
+    Yule: { length: 45},
+    Imbaelk: { length: 45},
+    Birke: { length: 45},
+    Blathe: { length: 45},
+    Feainn: { length: 45},
+    Lammas: { length: 45},
+    Velen: { length: 45},
+    Saovine: { length: 45}
 };
 
 export const MONTHS_ORDER: Record<Domain, string[]> = {
@@ -219,6 +226,7 @@ const ONE_HOUR = 120; // seconds
 
 interface StoredState {
     start_time: number | null;
+    measured_at: number | null;
     start_hour: number | null;
     start_minutes: number | null;
     precision: number | null;
@@ -229,8 +237,11 @@ interface ClockSnapshot {
     hours: number;
     minutes: number;
     precision: number;
-    sunrise: number | string | "?";
-    sunset: number | string | "?";
+    /** Epoch ms of the most recent observation constraining the clock; 0 if none. */
+    measuredAt: number;
+    /** Hour of sunrise on this day, from the observed grids in `sunModel`. */
+    sunrise: number;
+    sunset: number;
     dayLabel: string;
     dayOfMonth: number
     dayOfYear: number;
@@ -301,6 +312,13 @@ export class ArkadiaTime {
     private lastHour: number | null = null;
 
     private precision = 0;
+
+    /**
+     * Epoch seconds of the most recent observation that constrained the clock.
+     * Not the same as startTime: confirming the hour narrows precision without
+     * re-anchoring the extrapolation, and that is still fresh evidence.
+     */
+    private measuredAt: number | null = null;
 
     private timers: number[] = [];
 
@@ -382,11 +400,7 @@ export class ArkadiaTime {
     private handleGmcp(daylight: boolean): void {
         if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
             if (this.startTime !== null) {
-                if (daylight) {
-                    this.markObservedSunrise();
-                } else {
-                    this.markObservedSunset();
-                }
+                this.markObservedSunEvent(daylight ? "sunrise" : "sunset");
             } else {
                 this.pendingDaylightTransition = {
                     type: daylight ? "sunrise" : "sunset",
@@ -434,6 +448,7 @@ export class ArkadiaTime {
 
         if (this.precision > 0 && this.lastHourCheck && this.lastHour === intHour) {
             this.precision = this.calculatePrecision(false);
+            this.measuredAt = this.getEpoch();
         }
 
         this.lastHourCheck = this.getEpoch();
@@ -456,17 +471,19 @@ export class ArkadiaTime {
         this.timers.push(window.setInterval(() => this.update(), 500));
     }
 
-    private setup(startTime: number, startHour: number, startMinutes: number, precision: number, startDay: number): void {
+    private setup(startTime: number, startHour: number, startMinutes: number, precision: number, startDay: number, measuredAt: number = startTime): void {
         this.startTime = startTime;
         this.startHour = startHour;
         this.startMinutes = startMinutes;
         this.precision = precision;
         this.startDay = startDay;
+        this.measuredAt = measuredAt;
     }
 
     private save(): void {
         const state: StoredState = {
             start_time: this.startTime,
+            measured_at: this.measuredAt,
             start_hour: this.startHour,
             start_minutes: this.startMinutes,
             precision: this.precision,
@@ -487,7 +504,7 @@ export class ArkadiaTime {
             }
             const state = JSON.parse(raw) as StoredState;
             if (state.start_time !== null && state.start_hour !== null && state.start_minutes !== null && state.start_day !== null && state.precision !== null) {
-                this.setup(state.start_time, state.start_hour, state.start_minutes, state.precision, state.start_day);
+                this.setup(state.start_time, state.start_hour, state.start_minutes, state.precision, state.start_day, state.measured_at ?? state.start_time);
             }
         } catch (error) {
             console.error("Nie udalo sie wczytac stanu zegara", error);
@@ -615,12 +632,9 @@ export class ArkadiaTime {
         return 1 + ((festival - 2 + this.yearLength) % this.yearLength);
     }
 
-    /** Nominal sunrise hour for a day, taken from the month table. */
+    /** Sunrise hour for a day, from the observed grids rather than the month table. */
     private getSunriseHour(dayOfYear: number): number | null {
-        const [, month] = this.getMonthDayFromDay(dayOfYear);
-        const value = MONTHS[month]?.sunrise;
-        const hour = typeof value === "number" ? value : parseInt(String(value), 10);
-        return Number.isNaN(hour) ? null : hour;
+        return sunHour(this.domain, dayOfYear, "sunrise");
     }
 
     private getDayOfYear(day: number, month: string): number | null {
@@ -680,16 +694,8 @@ export class ArkadiaTime {
         }
     }
 
-    private calculateDaylight(hour: number, sunrise: number | string | "?", sunset: number | string | "?"): boolean | undefined {
-        if (sunrise === "?" || sunrise === "" || sunset === "?" || sunset === "") {
-            return undefined;
-        }
-        const sunriseHour = typeof sunrise === "number" ? sunrise : parseInt(sunrise, 10);
-        const sunsetHour = typeof sunset === "number" ? sunset : parseInt(sunset, 10);
-        if (isNaN(sunriseHour) || isNaN(sunsetHour)) {
-            return undefined;
-        }
-        return hour >= sunriseHour && hour < sunsetHour;
+    private calculateDaylight(hour: number, sunrise: number, sunset: number): boolean {
+        return hour >= sunrise && hour < sunset;
     }
 
     private update(): void {
@@ -703,15 +709,18 @@ export class ArkadiaTime {
         const [hours, minutes] = this.getCurrentTime();
         // Calculate current precision based on time elapsed since it was set
         const currentPrecision = this.getCurrentPrecision();
-        const monthDef = this.currentMonth ? MONTHS[this.currentMonth] : undefined;
-        const sunrise = monthDef?.sunrise ?? "?";
-        const sunset = monthDef?.sunset ?? "?";
+        // From the fitted grids, not the month table: sunrise and sunset run on
+        // their own step schedules that do not line up with month boundaries, so a
+        // per-month figure is simply wrong on a good part of the year.
+        const sunrise = sunHour(this.domain, dayOfYear, "sunrise");
+        const sunset = sunHour(this.domain, dayOfYear, "sunset");
         const season = this.calculateSeason(dayOfYear);
         const daylight = this.calculateDaylight(hours, sunrise, sunset);
         this.display.update(this.domain, {
             hours,
             minutes,
             precision: currentPrecision,
+            measuredAt: this.measuredAt === null ? 0 : this.measuredAt * 1000,
             sunrise,
             sunset,
             dayLabel: `${dayOfMonth} ${(this.mainCalendar[this.currentMonth ?? ""] ?? this.currentMonth) ?? ""}`.trim(),
@@ -722,96 +731,67 @@ export class ArkadiaTime {
         });
     }
 
-    private markObservedSunrise(): void {
-        // Use current calculated time as the observed sunrise time
-        const [observedHour, observedMinutes] = this.getCurrentTime();
-        const currentDay = this.getCurrentDayOfYear();
+    /**
+     * A sun transition is the one moment the game hands us an exact time. The hour
+     * it happens at is not guessed from the clock - it is looked up in the observed
+     * grids of `sunModel`, which are fitted against every confirmed observation the
+     * sun tracker has recorded. The old code rounded the clock's own reading up to
+     * the next full hour, so a clock running a single game minute ahead of the flip
+     * (two real seconds of lag is enough) was "corrected" a whole hour forward.
+     *
+     * The day is resolved the same way. A sunset late in the evening or a sunrise
+     * just after midnight straddles the day boundary, so the neighbouring days are
+     * candidates too and the nearest one to the current reading wins - which also
+     * repairs a clock that has not rolled over yet, or has rolled over too early.
+     */
+    private markObservedSunEvent(type: SunEventType): void {
+        const [clockHour, clockMinutes] = this.getCurrentTime();
+        const clockDay = this.getCurrentDayOfYear();
+        const clockPosition = clockDay * 24 + clockHour + clockMinutes / 60;
 
-        // If observed time is not exactly on the hour, round up to next full hour
-        // e.g., 4:59 should become 5:00
-        const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
-
-        // Emit sunrise event for calendar building with BOTH:
-        // - observedHour/observedMinutes: the corrected hour (what clock is set to)
-        // - indicatedHour: the raw observed hour with precision before correction
-        eventBus.emit("clock.sunrise", {
-            domain: this.domain,
-            dayOfYear: currentDay,
-            observedHour: finalHour,
-            observedMinutes: 0,
-            indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
-        });
-
-        // Compare with month table expectations for mismatch detection
-        if (this.currentMonth) {
-            const expectedSunrise = MONTHS[this.currentMonth].sunrise;
-            const expectedHour = typeof expectedSunrise === "number" ? expectedSunrise :
-                               (typeof expectedSunrise === "string" ? parseInt(expectedSunrise, 10) : null);
-
-            if (expectedHour !== null && !isNaN(expectedHour)) {
-                if (finalHour !== expectedHour) {
-                    console.log(`[${this.domain}] Sunrise mismatch on day ${currentDay}: expected ${expectedHour}:00, observed ${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`);
-                    eventBus.emit("clock.mismatch", {
-                        domain: this.domain,
-                        type: "sunrise",
-                        dayOfYear: currentDay,
-                        expectedHour,
-                        observedHour: finalHour,
-                        observedMinutes: 0,
-                        indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
-                    });
-                }
+        let bestDay = clockDay;
+        let bestHour = sunHour(this.domain, clockDay, type);
+        let bestDistance = Infinity;
+        for (const offset of [-1, 0, 1]) {
+            const day = clockDay + offset;
+            const hour = sunHour(this.domain, normalizeDay(this.domain, day), type);
+            const distance = Math.abs(day * 24 + hour - clockPosition);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestDay = day;
+                bestHour = hour;
             }
         }
+        const finalDay = normalizeDay(this.domain, bestDay);
+        const indicatedHour = `${clockHour}:${Math.floor(clockMinutes).toString().padStart(2, "0")}`;
 
-        // Set clock to the rounded hour with precision 0
-        this.init(finalHour, 0, 0, currentDay);
-    }
-
-    private markObservedSunset(): void {
-        // Use current calculated time as the observed sunset time
-        const [observedHour, observedMinutes] = this.getCurrentTime();
-        const currentDay = this.getCurrentDayOfYear();
-
-        // If observed time is not exactly on the hour, round up to next full hour
-        // e.g., 20:59 should become 21:00
-        const finalHour = Math.floor(observedMinutes) > 0 ? observedHour + 1 : observedHour;
-
-        // Emit sunset event for calendar building with BOTH:
-        // - observedHour/observedMinutes: the corrected hour (what clock is set to)
-        // - indicatedHour: the raw observed hour with precision before correction
-        eventBus.emit("clock.sunset", {
+        // The tracker records what the following `czas` reply says, not what we set
+        // here, so the observations that feed the grids stay independent of them.
+        eventBus.emit(type === "sunrise" ? "clock.sunrise" : "clock.sunset", {
             domain: this.domain,
-            dayOfYear: currentDay,
-            observedHour: finalHour,
+            dayOfYear: finalDay,
+            observedHour: bestHour,
             observedMinutes: 0,
-            indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
+            indicatedHour
         });
 
-        // Compare with month table expectations for mismatch detection
-        if (this.currentMonth) {
-            const expectedSunset = MONTHS[this.currentMonth].sunset;
-            const expectedHour = typeof expectedSunset === "number" ? expectedSunset :
-                               (typeof expectedSunset === "string" ? parseInt(expectedSunset, 10) : null);
-
-            if (expectedHour !== null && !isNaN(expectedHour)) {
-                if (finalHour !== expectedHour) {
-                    console.log(`[${this.domain}] Sunset mismatch on day ${currentDay}: expected ${expectedHour}:00, observed ${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`);
-                    eventBus.emit("clock.mismatch", {
-                        domain: this.domain,
-                        type: "sunset",
-                        dayOfYear: currentDay,
-                        expectedHour,
-                        observedHour: finalHour,
-                        observedMinutes: 0,
-                        indicatedHour: `${observedHour}:${Math.floor(observedMinutes).toString().padStart(2, '0')}`
-                    });
-                }
-            }
+        // How far the clock had drifted by the time the sun corrected it. This
+        // comparison used to run against the month table in this file, which the
+        // grids supersede - those tables never matched the game on many days.
+        if (bestHour !== clockHour || finalDay !== clockDay) {
+            console.log(`[${this.domain}] ${type} drift on day ${finalDay}: clock read ${indicatedHour}, corrected to ${bestHour}:00`);
+            eventBus.emit("clock.mismatch", {
+                domain: this.domain,
+                type,
+                dayOfYear: finalDay,
+                expectedHour: bestHour,
+                observedHour: clockHour,
+                observedMinutes: Math.floor(clockMinutes),
+                indicatedHour
+            });
         }
 
-        // Set clock to the rounded hour with precision 0
-        this.init(finalHour, 0, 0, currentDay);
+        this.init(bestHour, 0, 0, finalDay);
     }
 
     public setTime(hour: number, minutes?: number, dayOfYear?: number): void {

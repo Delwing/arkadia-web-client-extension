@@ -14,6 +14,7 @@ import {
     MONTHS,
     type ConfirmedSunEvent,
 } from '@client/scripts/sunTracker';
+import { sunHour } from '@client/scripts/sunModel.ts';
 
 type Domain = "Empire" | "Ishtar";
 
@@ -21,8 +22,14 @@ interface MonthRange {
     month: string;
     startDay: number;
     length: number;
-    sunrise: number;
-    sunset: number;
+    /**
+     * The distinct sunrise/sunset hours the month covers, in order. A month is not
+     * one hour any more: the grids step independently of month boundaries, so most
+     * months span two values and the header shows the span rather than a figure
+     * that would be wrong for half the days under it.
+     */
+    sunrises: number[];
+    sunsets: number[];
 }
 
 type EventIndex = Record<number, { sunrise?: number; sunset?: number }>;
@@ -32,16 +39,23 @@ function getMonthRanges(domain: Domain): MonthRange[] {
     let dayCounter = 1;
     for (const month of MONTHS_ORDER[domain]) {
         const def = MONTHS[month];
+        const days = Array.from({ length: def.length }, (_, i) => dayCounter + i);
+        const uniq = (xs: number[]) => [...new Set(xs)];
         result.push({
             month,
             startDay: dayCounter,
             length: def.length,
-            sunrise: def.sunrise,
-            sunset: def.sunset,
+            sunrises: uniq(days.map(d => sunHour(domain, d, 'sunrise'))),
+            sunsets: uniq(days.map(d => sunHour(domain, d, 'sunset'))),
         });
         dayCounter += def.length;
     }
     return result;
+}
+
+/** "6" for a month on one step, "8-7" for one the grid steps through. */
+function spanLabel(hours: number[]): string {
+    return hours.length === 1 ? `${hours[0]}` : `${hours[0]}-${hours[hours.length - 1]}`;
 }
 
 function indexEvents(events: ConfirmedSunEvent[]): EventIndex {
@@ -57,8 +71,8 @@ interface ClockState {
     domain: Domain;
     hours: number;
     minutes: number;
-    sunrise: number | string | "?";
-    sunset: number | string | "?";
+    sunrise: number;
+    sunset: number;
     dayOfYear?: number;
 }
 
@@ -73,9 +87,8 @@ function formatRealtime(realSeconds: number): string {
 }
 
 function getNextSunEvent(clock: ClockState): string | null {
-    const sr = typeof clock.sunrise === 'number' ? clock.sunrise : (typeof clock.sunrise === 'string' ? parseInt(clock.sunrise, 10) : null);
-    const ss = typeof clock.sunset === 'number' ? clock.sunset : (typeof clock.sunset === 'string' ? parseInt(clock.sunset, 10) : null);
-    if (sr === null || ss === null || isNaN(sr) || isNaN(ss)) return null;
+    const sr = clock.sunrise;
+    const ss = clock.sunset;
 
     let mudMinutesLeft: number;
     let icon: string;
@@ -479,7 +492,7 @@ const SunTrackerPopup: React.FC = () => {
                             }}>
                                 <span style={{ color: 'var(--popup-text-strong)' }}>{mr.month}</span>
                                 <span style={{ color: 'var(--popup-text-dim)', fontSize: 11 }}>
-                                    {`${mr.length}d  \u2600${mr.sunrise}  \u263E${mr.sunset}`}
+                                    {`${mr.length}d  \u2600${spanLabel(mr.sunrises)}  \u263E${spanLabel(mr.sunsets)}`}
                                 </span>
                             </div>
                             <div style={{
@@ -526,14 +539,19 @@ const SunTrackerPopup: React.FC = () => {
                                             <div style={{ color: 'var(--popup-text-dim)', fontSize: 9 }}>{dayNum}</div>
                                             {hasAny && (
                                                 <div style={{ fontSize: 10 }}>
+                                                    {/* Red means the observation contradicts the grid for that
+                                                        day - the one thing worth looking at on this calendar.
+                                                        It used to be checked against a per-month figure that
+                                                        was simply wrong on much of the year, so days came up
+                                                        red for disagreeing with bad data. */}
                                                     {hasSunrise && (
-                                                        <span style={{ color: dayData!.sunrise === mr.sunrise ? 'var(--popup-data-gold)' : 'var(--popup-data-tomato)' }}>
+                                                        <span style={{ color: dayData!.sunrise === sunHour(activeTab, dayOfYear, 'sunrise') ? 'var(--popup-data-gold)' : 'var(--popup-data-tomato)' }}>
                                                             {`\u2600${dayData!.sunrise}`}
                                                         </span>
                                                     )}
                                                     {hasSunrise && hasSunset && ' '}
                                                     {hasSunset && (
-                                                        <span style={{ color: dayData!.sunset === mr.sunset ? 'var(--popup-data-blue)' : 'var(--popup-data-tomato)' }}>
+                                                        <span style={{ color: dayData!.sunset === sunHour(activeTab, dayOfYear, 'sunset') ? 'var(--popup-data-blue)' : 'var(--popup-data-tomato)' }}>
                                                             {`\u263E${dayData!.sunset}`}
                                                         </span>
                                                     )}
@@ -690,10 +708,10 @@ const SunTrackerPopup: React.FC = () => {
                 ), document.body)}
                 {hoverDay && activeClock && (() => {
                     const dayData = eventIndex[hoverDay.dayOfYear];
-                    const mr = monthRanges.find(m => hoverDay.dayOfYear >= m.startDay && hoverDay.dayOfYear < m.startDay + m.length);
-                    if (!mr) return null;
-                    const srHour = dayData?.sunrise ?? mr.sunrise;
-                    const ssHour = dayData?.sunset ?? mr.sunset;
+                    // A confirmed observation wins; otherwise fall back to what the
+                    // grid predicts for that exact day, not a per-month figure.
+                    const srHour = dayData?.sunrise ?? sunHour(activeTab, hoverDay.dayOfYear, 'sunrise');
+                    const ssHour = dayData?.sunset ?? sunHour(activeTab, hoverDay.dayOfYear, 'sunset');
                     const srTime = predictRealTime(activeClock, hoverDay.dayOfYear, srHour, yearLength);
                     const ssTime = predictRealTime(activeClock, hoverDay.dayOfYear, ssHour, yearLength);
                     if (!srTime && !ssTime) return null;

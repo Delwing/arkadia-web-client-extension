@@ -9,8 +9,8 @@ type ClockData = {
     hours: number;
     minutes: number;
     precision: number;
-    sunrise: number | string | "?";
-    sunset: number | string | "?";
+    sunrise: number;
+    sunset: number;
     dayLabel: string;
     dayOfMonth: number;
     dayOfYear: number;
@@ -33,15 +33,8 @@ function formatTime(hours: number, minutes: number): string {
     return `${h}:${m}`;
 }
 
-function formatSunTime(value: number | string | "?"): string {
-    if (value === "?" || value === "") {
-        return "?";
-    }
-    const num = typeof value === "number" ? value : parseInt(value, 10);
-    if (isNaN(num)) {
-        return "?";
-    }
-    return `${num.toString().padStart(2, '0')}:00`;
+function formatSunTime(hour: number): string {
+    return `${hour.toString().padStart(2, '0')}:00`;
 }
 
 function getDayOfYear(domain: "Empire" | "Ishtar", month: string, dayOfMonth: number): number {

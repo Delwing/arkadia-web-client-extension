@@ -80,9 +80,29 @@ type ClockUpdatePayload = {
     domain: "Empire" | "Ishtar";
     hours: number;
     minutes: number;
+    /**
+     * Uncertainty of the emitted time, in game minutes: the real time lies within
+     * +/- this many minutes of it. 60 means only the hour is known, 0 means exact -
+     * an observed sunrise or sunset pins the clock to the minute.
+     */
     precision: number;
-    sunrise: number | string | "?";
-    sunset: number | string | "?";
+    /**
+     * Real-clock epoch (ms) of the most recent observation that constrained this
+     * clock - not when the event fired. The clock ticks twice a second, so every
+     * update is equally recent; what differs is the age of the evidence behind it.
+     * Consumers merging readings from several characters take the fresher one only
+     * when its precision is at least as good.
+     *
+     * 0 before the clock has seen any reading at all.
+     */
+    measuredAt: number;
+    /**
+     * Hour of sunrise and sunset on this day, from the fitted grids in `sunModel`.
+     * Not the month tables in `clock.ts` - the two schedules step independently of
+     * month boundaries, so a per-month figure is wrong on a good part of the year.
+     */
+    sunrise: number;
+    sunset: number;
     dayLabel: string;
     dayOfMonth: number;
     dayOfYear: number;
