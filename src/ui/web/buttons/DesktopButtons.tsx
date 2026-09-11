@@ -10,6 +10,7 @@ import {
 } from '@web/desktopButtonSettings';
 import type { DesktopButtonSetting, ListGrowDirection, ListPosition } from '@web/buttonSettings';
 import { executeMacro, updateMoveModeLabel, type MacroExecutorCallbacks } from '@web/scripts/buttonMacroExecutor';
+import { isTouchPointerType } from '@shared/dom/pointerEnvironment.ts';
 import { useClientEvent } from '../hooks';
 
 const LONG_PRESS_DURATION = 1000; // ms for drag activation
@@ -49,6 +50,35 @@ export default function DesktopButtons({ client }: { client: Client }) {
     settingsRef.current = settings;
     const activeListButtonIdRef = useRef(activeListButtonId);
     activeListButtonIdRef.current = activeListButtonId;
+
+    // `pointerType` of the press currently in flight. `pointerdown` always
+    // precedes the (possibly synthesised) `mousedown`, so the mousedown handlers
+    // can tell a real click from a finger tap — see `keepFocusOnMouseDown`.
+    const pointerTypeRef = useRef('');
+    const notePointerType = useCallback((e: React.PointerEvent) => {
+        pointerTypeRef.current = e.pointerType || '';
+    }, []);
+
+    /**
+     * Keep the keyboard focus where it already is — normally the command input.
+     * The container is portalled to `document.body`, so it sits outside the
+     * `#content-area` pointerup handler that otherwise puts focus back on the
+     * command line, and a mousedown on a button moves focus off it: on
+     * Windows/Linux the button itself takes focus, while Chrome on macOS treats
+     * buttons as not mouse-focusable and clears the focus entirely. Suppressing
+     * the default focus action of the mousedown avoids both. Drag/hold still
+     * work — they run off document-level mousemove/mouseup — and the click event
+     * is unaffected.
+     *
+     * Touch is deliberately left alone: there the command input holding focus is
+     * what summons the on-screen keyboard over half the screen, which is why the
+     * rest of the UI (the `#content-area` click-to-focus, the output context
+     * menu) skips its focus handling on touch too.
+     */
+    const keepFocusOnMouseDown = useCallback((e: React.MouseEvent) => {
+        if (isTouchPointerType(pointerTypeRef.current)) return;
+        e.preventDefault();
+    }, []);
 
     // Drag state.
     const dragState = useRef<{
@@ -372,21 +402,12 @@ export default function DesktopButtons({ client }: { client: Client }) {
 
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>, btnSettings: DesktopButtonSetting) => {
         if (e.button !== 0) return;
-        // Keep the keyboard focus where it already is — normally the command
-        // input. The container is portalled to `document.body`, so it sits
-        // outside the `#content-area` pointerup handler that otherwise puts
-        // focus back on the command line, and a mousedown on a button moves
-        // focus off it: on Windows/Linux the button itself takes focus, while
-        // Chrome on macOS treats buttons as not mouse-focusable and clears the
-        // focus entirely. Suppressing the default focus action of the mousedown
-        // avoids both. Drag/hold still work — they run off document-level
-        // mousemove/mouseup — and the click event is unaffected.
-        e.preventDefault();
+        keepFocusOnMouseDown(e);
         const btn = e.currentTarget;
         armHoldDetection(btnSettings, btn, e.clientX, e.clientY);
         if (settingsRef.current.locked) return;
         startLongPress(e.clientX, e.clientY, btn, btnSettings.id);
-    }, [armHoldDetection, startLongPress]);
+    }, [armHoldDetection, keepFocusOnMouseDown, startLongPress]);
 
     const handleTouchStart = useCallback((e: React.TouchEvent<HTMLButtonElement>, btnSettings: DesktopButtonSetting) => {
         if (e.touches.length !== 1) return;
@@ -442,7 +463,8 @@ export default function DesktopButtons({ client }: { client: Client }) {
                     type="button"
                     className="desktop-button-list-item"
                     style={listItemStyle(btnSettings)}
-                    onMouseDown={(e) => e.preventDefault()}
+                    onPointerDown={notePointerType}
+                    onMouseDown={keepFocusOnMouseDown}
                     onClick={(e) => {
                         e.stopPropagation();
                         client.sendCommand(c.cmd);
@@ -466,7 +488,8 @@ export default function DesktopButtons({ client }: { client: Client }) {
                 type="button"
                 className="desktop-button-list-item"
                 style={listItemStyle(btnSettings)}
-                onMouseDown={(e) => e.preventDefault()}
+                onPointerDown={notePointerType}
+                onMouseDown={keepFocusOnMouseDown}
                 onClick={(e) => {
                     e.stopPropagation();
                     client.sendCommand(`/${spec.prefix} ${v}`);
@@ -510,6 +533,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
                             } as CSSVarStyle}
                             data-move-mode-label={btnSettings.macroType === 'moveMode' ? (btnSettings.label || '') : undefined}
                             onClick={(e) => handleClick(e, btnSettings)}
+                            onPointerDown={notePointerType}
                             onMouseDown={(e) => handleMouseDown(e, btnSettings)}
                             onTouchStart={(e) => handleTouchStart(e, btnSettings)}
                             onContextMenu={(e) => e.preventDefault()}

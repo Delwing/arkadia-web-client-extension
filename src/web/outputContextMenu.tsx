@@ -35,14 +35,8 @@ import {
     setOutputTimestampVisibility,
 } from '@shared/dom/outputMessageHandler';
 import { copyOutputAsImage, saveOutputAsHtml } from './copyOutputAsImage';
+import { isMobileLikeViewport } from '@shared/dom/pointerEnvironment.ts';
 import { showContextMenu, type ContextMenuEntry } from './contextMenu';
-
-function isLikelyTouchDevice(): boolean {
-    return (
-        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
-        navigator.maxTouchPoints > 0
-    );
-}
 
 function iconLabel(Icon: LucideIcon, text: string): ReactNode {
     return (
@@ -77,8 +71,7 @@ export function setupOutputContextMenu(
 ): () => void {
     const handler = (event: MouseEvent) => {
         if (event.defaultPrevented) return;
-        const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
-        if (isMobileLike) return;
+        if (isMobileLikeViewport()) return;
         const target = event.target as HTMLElement | null;
         if (target && target.closest('a, [data-output-clickable]')) return;
         event.preventDefault();

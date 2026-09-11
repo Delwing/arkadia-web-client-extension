@@ -65,6 +65,7 @@ import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
+import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
 import {CommandInputController} from "./commandInput/CommandInputController";
 import {attachVoiceInput, type VoiceInputHandle} from "./voice/voiceInput";
 import {harvestOutputLines} from "./commandInput/outputWords";
@@ -113,13 +114,6 @@ function updateWakeLockButton() {
     if (wakeLockButton) {
         wakeLockButton.textContent = wakeLockEnabled ? 'NoSleep ON' : 'NoSleep OFF';
     }
-}
-
-function isLikelyTouchDevice() {
-    return (
-        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
-        navigator.maxTouchPoints > 0
-    );
 }
 
 // Function to prevent tab sleep
@@ -855,8 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const focusCommandInputOnConnect = () => {
         if (!messageInput) return;
-        const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
-        if (isMobileLike) return;
+        if (isMobileLikeViewport()) return;
         if (document.hidden) return;
         messageInput.focus();
     };
@@ -904,9 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.PointerEvent) {
             contentArea.addEventListener('pointerup', (event: PointerEvent) => {
                 if (event.button !== 0) return;
-                const pointerType = event.pointerType || '';
-                const isTouchPointer = pointerType === 'touch' || (pointerType === '' && isLikelyTouchDevice());
-                if (isTouchPointer) return;
+                if (isTouchPointerType(event.pointerType)) return;
                 focusMessageInput(event.target);
             });
         } else {
@@ -1484,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dismissBtn = document.getElementById('layout-suggestion-dismiss');
 
         if (suggestionEl && enableBtn && dismissBtn) {
-            const isMobileLike = window.innerWidth < 768 || isLikelyTouchDevice();
+            const isMobileLike = isMobileLikeViewport();
             const layoutState = loadLayoutState();
             const dismissed = localStorage.getItem('layoutManagerSuggestionDismissed') === '1';
 
