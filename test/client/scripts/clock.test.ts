@@ -891,4 +891,72 @@ describe('ArkadiaTime - Clock System', () => {
             expect(snapshot.daylight).toBe(true);
         });
     });
+
+    // https://github.com/Delwing/arkadia-web-client-extension/issues/1242
+    describe('Ishtar festival days and nights', () => {
+        const ishtarDay = () => display.getSnapshot("Ishtar")?.dayOfYear;
+
+        test('a regular day still parses', () => {
+            parseIshtar('Jest w przyblizeniu dwunasta rano, dwunasty dzien pory Birke wedlug rachuby czasu Starszego Ludu.');
+            expect(ishtarDay()).toBe(102); // Birke starts on day 91
+        });
+
+        test('the festival day resolves to day one of its month', () => {
+            parseIshtar('Jest w przyblizeniu dziesiata rano, Birke - Ekwinokcjum Wiosenne wedlug rachuby czasu Starszego Ludu.');
+            expect(ishtarDay()).toBe(91);
+        });
+
+        test('a festival not named after its month still resolves', () => {
+            // Blathe's festival is Belleteyn; looking it up as a month found nothing
+            // and the old code silently returned the whole year, 360
+            parseIshtar('Jest w przyblizeniu dziesiata w nocy, Belleteyn - Dzien Rozkwitu wedlug rachuby czasu Starszego Ludu.');
+            expect(ishtarDay()).toBe(136);
+        });
+
+        test('Midaete resolves to the solstice, not the end of the year', () => {
+            parseIshtar('Jest w przyblizeniu szosta rano, Midaete - Solstycjum Letnie wedlug rachuby czasu Starszego Ludu.');
+            expect(ishtarDay()).toBe(181);
+        });
+
+        test('the festival day keeps its name after sunset', () => {
+            // Belleteyn at 22:00 is past sunset yet still the day form
+            parseIshtar('Jest w przyblizeniu dziesiata w nocy, Belleteyn - Dzien Rozkwitu wedlug rachuby czasu Starszego Ludu.');
+            expect(display.getSnapshot("Ishtar").hours).toBe(22);
+            expect(ishtarDay()).toBe(136);
+        });
+
+        test('a festival night in the small hours is the festival day itself', () => {
+            // 02:00 is before sunrise on Imbaelk (07:00), so we are already there
+            parseIshtar('Jest w przyblizeniu druga w nocy, noc Imbaelk wedlug rachuby czasu Starszego Ludu.');
+            expect(display.getSnapshot("Ishtar").hours).toBe(2);
+            expect(ishtarDay()).toBe(46);
+        });
+
+        test('a festival night in the evening is still the day before', () => {
+            // "noc Birke" at 22:00 is the evening before Birke, so day 90
+            parseIshtar('Jest w przyblizeniu dziesiata w nocy, noc Birke wedlug rachuby czasu Starszego Ludu.');
+            expect(display.getSnapshot("Ishtar").hours).toBe(22);
+            expect(ishtarDay()).toBe(90);
+        });
+
+        test('a festival night wraps to the end of the year', () => {
+            // Yule is day 1, so its night opens on day 360
+            parseIshtar('Jest w przyblizeniu dziesiata w nocy, noc Yule wedlug rachuby czasu Starszego Ludu.');
+            expect(ishtarDay()).toBe(360);
+        });
+    });
+
+    describe('unknown day names leave the clock alone', () => {
+        test('Geheimnisnacht no longer drags the clock to the last day of the year', () => {
+            // it moves from year to year, so there is no fixed day to map it to;
+            // the old code fell through and returned 400
+            parse('Jest w przyblizeniu szosta rano, 15 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
+            const before = display.getSnapshot("Empire").dayOfYear;
+
+            parse('Jest w przyblizeniu druga w nocy, noc Geheimnisnacht wedlug Kalendarza Imperialnego.');
+
+            expect(display.getSnapshot("Empire").dayOfYear).toBe(before);
+            expect(display.getSnapshot("Empire").dayOfYear).not.toBe(400);
+        });
+    });
 });

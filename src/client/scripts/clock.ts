@@ -142,17 +142,51 @@ export const MONTHS_ORDER: Record<Domain, string[]> = {
 const PATTERNS: Record<Domain, RegExp[]> = {
     Empire: [
         new RegExp(
-            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*?, ((?:dzien|noc) (?<holiday>\\w+)|(?<day>[\\w ]+?) dzien miesiaca (?<month>\\w+)) wedlug Kalendarza Imperialnego\\."
+            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*?, ((?<prefix>dzien|noc) (?<holiday>\\w+)|(?<day>[\\w ]+?) dzien miesiaca (?<month>\\w+)) wedlug Kalendarza Imperialnego\\."
         )
     ],
     Ishtar: [
-        // Matches both formats:
-        // "Jest w przyblizeniu X w nocy, pierwszy dzien pory Imbaelk wedlug rachuby czasu Starszego Ludu."
-        // "Jest w przyblizeniu X w nocy, Imbaelk - Dzien Kielkowania wedlug rachuby czasu Starszego Ludu."
+        // Three formats:
+        // "..., pierwszy dzien pory Imbaelk wedlug rachuby czasu Starszego Ludu."   regular day
+        // "..., Imbaelk - Dzien Kielkowania wedlug rachuby czasu Starszego Ludu."   festival day
+        // "..., noc Imbaelk wedlug rachuby czasu Starszego Ludu."                   festival night
+        // The description after the dash is ignored - the name is enough, so the
+        // festivals whose description we have never seen still parse.
         new RegExp(
-            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*, (?:(?<day>[\\w ]+?) dzien pory )?(?<month>\\w+)(?: -[^.]+)? wedlug rachuby czasu Starszego Ludu\\."
+            "^Jest w przyblizeniu (?<hour>\\w+)(?: (?:|w|po|przed|nad|poznym)\\s*(?<daytime>dzien|nocy|poludniu|poludniem|poludnie|rano|ranem|wieczorem))?.*, (?:(?<prefix>noc) (?<holiday>\\w+)|(?<holiday2>\\w+) -[^.]+|(?<day>[\\w ]+?) dzien pory (?<month>\\w+)) wedlug rachuby czasu Starszego Ludu\\."
         )
     ]
+};
+
+/**
+ * Days that announce themselves as a named festival rather than as "N dzien pory
+ * X". Each Ishtar festival sits on day 1 of its month, and two of the eight are
+ * not named after that month: Blathe's festival is Belleteyn and Feainn's is
+ * Midaete, so no amount of month lookup will find them.
+ *
+ * Empire's Geheimnisnacht is deliberately absent. That night moves from year to
+ * year, so there is no fixed day to map it to - better to resolve nothing and
+ * leave the clock alone than to invent a day.
+ */
+const FESTIVAL_DAYS: Record<Domain, Record<string, number>> = {
+    Empire: {
+        Hexenstag: 1,
+        Hexensnacht: 1,
+        Mitterfruhl: 67,
+        Sonnenstill: 167,
+        Mitterherbst: 267,
+        Mondstill: 367,
+    },
+    Ishtar: {
+        Yule: 1,
+        Imbaelk: 46,
+        Birke: 91,
+        Belleteyn: 136,
+        Midaete: 181,
+        Lammas: 226,
+        Velen: 271,
+        Saovine: 316,
+    },
 };
 
 const YEAR_LENGTH: Record<Domain, number> = {
@@ -318,8 +352,7 @@ export class ArkadiaTime {
         this.patterns.forEach((pattern) => {
             const trigger = this.client.Triggers.registerTrigger(pattern, (line, matches) => {
                 const groups = matches?.groups ?? {};
-                const month = groups.month && groups.month !== "" ? groups.month : groups.holiday ?? "";
-                this.checkHour(groups.hour ?? "", groups.daytime ?? "", groups.day ?? "", month);
+                this.checkHour(groups.hour ?? "", groups.daytime ?? "", groups);
                 this.update()
                 return line;
             });
@@ -364,14 +397,25 @@ export class ArkadiaTime {
         this.isDaylight = daylight;
     }
 
-    private checkHour(stringHour: string, expression: string, stringDayOfMonth: string, month: string): void {
+    private checkHour(
+        stringHour: string,
+        expression: string,
+        groups: Record<string, string | undefined>
+    ): void {
         this.display.setActiveDomain(this.domain);
         const daylight = gmcp?.room?.time?.daylight
         if (daylight !== undefined) {
             this.isDaylight = Boolean(daylight)
         }
         const intHour = this.calculateHour(stringHour, expression);
-        const startDay = this.getDayOfYear(this.getDayFromString(stringDayOfMonth), month);
+        // the hour has to be known first: a festival night straddles midnight, so
+        // which day of the year it is depends on what time it is
+        const startDay = this.resolveDayOfYear(groups, intHour);
+        if (startDay === null) {
+            // an unrecognised day name - leave the clock as it was rather than
+            // accepting a wrong day
+            return;
+        }
 
         if (this.startTime === null || this.startHour === null || this.startMinutes === null || !this.startDay) {
             const pending = this.consumePendingTransition();
@@ -527,7 +571,59 @@ export class ArkadiaTime {
         return DESCRIPTIVE_MONTH[stringDayOfMonth] ?? 1;
     }
 
-    private getDayOfYear(day: number, month: string): number {
+    /**
+     * Day of the year for a parsed time line, or null when the name means nothing
+     * to us. Returning null matters: the old code fell out of the month loop with
+     * the accumulated total, so an unknown festival silently became the last day
+     * of the year and dragged the whole clock with it.
+     */
+    private resolveDayOfYear(
+        groups: Record<string, string | undefined>,
+        intHour: number
+    ): number | null {
+        const holiday = groups.holiday || groups.holiday2;
+        if (holiday) {
+            return groups.prefix === "noc"
+                ? this.resolveFestivalNight(holiday, intHour)
+                : this.resolveFestivalDay(holiday);
+        }
+        if (groups.month) {
+            return this.getDayOfYear(this.getDayFromString(groups.day ?? ""), groups.month);
+        }
+        return null;
+    }
+
+    /** The festival day itself, which runs from its sunrise through to midnight. */
+    private resolveFestivalDay(name: string): number | null {
+        return FESTIVAL_DAYS[this.domain][name] ?? this.getDayOfYear(1, name);
+    }
+
+    /**
+     * "noc X" is the night *before* festival X: it opens at sunset on the previous
+     * day and closes at sunrise on the festival itself, so it spans midnight and
+     * covers parts of two days. The hour says which of them we are in.
+     */
+    private resolveFestivalNight(name: string, intHour: number): number | null {
+        const festival = FESTIVAL_DAYS[this.domain][name] ?? this.getDayOfYear(1, name);
+        if (festival === null) {
+            return null;
+        }
+        const sunrise = this.getSunriseHour(festival);
+        if (sunrise !== null && intHour < sunrise) {
+            return festival;
+        }
+        return 1 + ((festival - 2 + this.yearLength) % this.yearLength);
+    }
+
+    /** Nominal sunrise hour for a day, taken from the month table. */
+    private getSunriseHour(dayOfYear: number): number | null {
+        const [, month] = this.getMonthDayFromDay(dayOfYear);
+        const value = MONTHS[month]?.sunrise;
+        const hour = typeof value === "number" ? value : parseInt(String(value), 10);
+        return Number.isNaN(hour) ? null : hour;
+    }
+
+    private getDayOfYear(day: number, month: string): number | null {
         let dayOfYear = 0;
         for (const monthName of this.monthsOrder) {
             const monthProperties = MONTHS[monthName];
@@ -538,7 +634,7 @@ export class ArkadiaTime {
                 return dayOfYear;
             }
         }
-        return dayOfYear;
+        return null;
     }
 
     private getCurrentDayOfYear(): number {
