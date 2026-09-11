@@ -448,8 +448,19 @@ export class ArkadiaTime {
 
         if (this.precision > 0 && this.lastHourCheck && this.lastHour === intHour) {
             this.precision = this.calculatePrecision(false);
-            this.measuredAt = this.getEpoch();
         }
+
+        // Every parsed time line is evidence, including one that merely agrees
+        // with the extrapolation - it re-confirms the hour as of now. Only
+        // re-anchoring and narrowing the precision used to stamp this, so a clock
+        // that was already right went on reporting the age of a far older
+        // reading, and anything extrapolating from that stamp ran the time
+        // forward a second time.
+        this.measuredAt = this.getEpoch();
+        // `init` persists when it re-anchors, but a line that only confirms the
+        // clock never goes through it, and both the stamp above and a narrowed
+        // precision would be lost on reload.
+        this.save();
 
         this.lastHourCheck = this.getEpoch();
         this.lastHour = intHour;

@@ -1142,6 +1142,49 @@ describe('ArkadiaTime - Clock System', () => {
             expect(taken).not.toBe(mockDate);
         });
 
+        test('a czas that merely agrees still counts as a fresh reading', () => {
+            // The case that broke an external panel: the clock is already right, so
+            // nothing re-anchors and nothing narrows, and the stamp used to stay
+            // pinned to the original reading. A consumer advancing a report from
+            // that stamp re-adds the whole gap - at 30 in-game minutes per real
+            // minute, a quarter-hour of staleness is most of an in-game day.
+            parse(line);
+
+            // far enough that the hour has moved on, so the precision-narrowing
+            // branch cannot be what refreshes the stamp
+            mockDate += 17 * 60 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+            const [hourNow] = (clock as any).getCurrentTime();
+            expect(hourNow).not.toBe(6);
+
+            // a reading that agrees with where the clock already is
+            const agreeing = `Jest w przyblizeniu ${['polnoc', 'pierwsza', 'druga', 'trzecia', 'czwarta', 'piata', 'szosta', 'siodma', 'osma', 'dziewiata', 'dziesiata', 'jedenasta'][hourNow % 12]} ${hourNow < 12 ? 'rano' : 'wieczorem'}, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.`;
+            const anchorBefore = (clock as any).startTime;
+            parse(agreeing);
+
+            expect((clock as any).startTime).toBe(anchorBefore); // nothing re-anchored
+            expect(display.getSnapshot('Empire').measuredAt).toBe(mockDate);
+        });
+
+        test('a confirming reading is persisted, so a reload does not resurrect the old stamp', () => {
+            parse(line);
+            const first = display.getSnapshot('Empire').measuredAt;
+
+            mockDate += 10 * 1000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockDate);
+            parse(line);
+            const confirmed = display.getSnapshot('Empire').measuredAt;
+            // guard the guard: if confirming never moved the stamp, reloading it
+            // unchanged would prove nothing
+            expect(confirmed).toBe(mockDate);
+            expect(confirmed).not.toBe(first);
+
+            const restored = new (ArkadiaTime as any)('Empire', client, display);
+            restored.start();
+
+            expect(display.getSnapshot('Empire').measuredAt).toBe(confirmed);
+        });
+
         test('a state stored before the field existed falls back to its anchor', () => {
             localStorageMock.setItem('Empire.time', JSON.stringify({
                 start_time: 999999000,

@@ -93,6 +93,14 @@ type ClockUpdatePayload = {
      * Consumers merging readings from several characters take the fresher one only
      * when its precision is at least as good.
      *
+     * NOT an extrapolation anchor. `hours`/`minutes` are already the in-game time
+     * as of this event, so anything carrying a reading forward measures from when
+     * the reading was taken, never from here. Advancing from `measuredAt` re-adds
+     * the gap between the last observation and now, and since an in-game hour is
+     * 120 real seconds, every stale real minute throws the result off by half an
+     * in-game day. Use this only to judge how good a reading is, never where it
+     * sits in time.
+     *
      * 0 before the clock has seen any reading at all.
      */
     measuredAt: number;
