@@ -30,6 +30,8 @@ import RoomInfoPopup from '../RoomInfoPopup';
 import SkrotyPopup from '../SkrotyPopup';
 import StatPopup from '../StatPopup';
 import SunTrackerPopup from '../SunTrackerPopup';
+import SunCalcPopup from '../SunCalcPopup';
+import CalendarPopup from '../CalendarPopup';
 import TransportRoutePopup from '../TransportRoutePopup';
 import TransportTimesDebugPopup from '../TransportTimesDebugPopup';
 import TripPlannerPopup from '../TripPlannerPopup';
@@ -97,6 +99,8 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:loot', Component: LootPopup },
     { id: 'popup:profession', Component: ProfessionPopup },
     { id: 'popup:sunTracker', Component: SunTrackerPopup },
+    { id: 'popup:sunCalc', Component: SunCalcPopup },
+    { id: 'popup:calendar', Component: CalendarPopup },
     { id: 'popup:transport-route', Component: TransportRoutePopup },
     { id: 'popup:transport-times-debug', Component: TransportTimesDebugPopup },
     { id: 'popup:zlom', Component: ZlomPopup },

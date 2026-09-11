@@ -82,6 +82,8 @@ export type BuiltInPopupType =
   | 'packageReceiver'
   | 'profession'
   | 'sunTracker'
+  | 'sunCalc'
+  | 'calendar'
   | 'transport-route'
   | 'transport-times-debug'
   | 'zlom'

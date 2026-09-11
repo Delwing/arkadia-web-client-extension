@@ -414,6 +414,8 @@ export interface KnownEvents {
     "profession.updated": void;
     "sunTracker.popup.open": { domain?: "Empire" | "Ishtar" } | void;
     "sunTracker.updated": { domain: "Empire" | "Ishtar" } | void;
+    "sunCalc.popup.open": void;
+    "calendar.popup.open": void;
     // Firebase real-time sync listener events
     "firebase.sync.metadata": FirebaseSyncMetadataPayload;
     "firebase.sync.applied": { categories: SyncCategory[] };

@@ -124,6 +124,8 @@ import {emitFakeLine} from "./scripts/fakeLine";
 import initKillTracker from "@client/killTracker.ts";
 import {initClock} from "@client/scripts/clock.ts";
 import initSunTracker from "@client/scripts/sunTracker.ts";
+import initSunCalc from "@client/scripts/sunCalc.ts";
+import initCalendar from "@client/scripts/calendar.ts";
 import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
@@ -351,6 +353,8 @@ export function registerScripts(client: Client) {
     initInlineCompassRose(client, aliases)
     initClock(client)
     initSunTracker(client)
+    initSunCalc(client, aliases)
+    initCalendar(client, aliases)
     initWyroznienieOptions(client)
     initContracts(client, aliases)
     initFishing(client, aliases)
