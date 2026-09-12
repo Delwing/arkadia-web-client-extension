@@ -8,6 +8,7 @@ import {
   updatePopup,
 } from '../popupRegistry';
 import { windowManager } from '../WindowManager';
+import { clearClosedPopupState } from '../utils/layoutStorage';
 
 interface UseDockablePopupOptions {
   popupId: string;
@@ -220,14 +221,7 @@ export function useDockablePopup({
   useEffect(() => {
     if (isOpen) return;
     if (isManagedByLayout && !isPinnedRef.current) {
-      windowManager.updatePopupDockState(popupId, {
-        persistOpen: false,
-        isDocked: false,
-      });
-      // Purge the window hint too — otherwise its preserved `docked` field
-      // makes shouldPopupAutoOpen return true on next page load and the
-      // popup we just closed reappears.
-      windowManager.purgeWindowHint(popupId);
+      clearClosedPopupState(popupId);
     }
   }, [isOpen, isManagedByLayout, popupId]);
 

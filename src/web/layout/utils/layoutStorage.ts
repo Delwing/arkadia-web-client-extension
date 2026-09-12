@@ -606,6 +606,21 @@ export function getPopupFloatingState(
   }
 }
 
+/**
+ * Wipe the persisted "reopen me on load" traces of a popup the user closed:
+ * the popupPanels dock flags and the window geometry hint, whose preserved
+ * `docked` field would otherwise make shouldPopupAutoOpen true next load.
+ * Must run AFTER windowManager.close(), which re-derives those flags from the
+ * window it is closing.
+ */
+export function clearClosedPopupState(popupId: string): void {
+  windowManager.updatePopupDockState(popupId, {
+    persistOpen: false,
+    isDocked: false,
+  });
+  windowManager.purgeWindowHint(popupId);
+}
+
 export function getPinnedPopupsByPrefix(prefix: string): string[] {
   try {
     const stored = getCachedLayoutState();

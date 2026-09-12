@@ -7,7 +7,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { openMapContextMenu } from '@modules/core/contextMenus';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
-import { getPinnedPopupsByPrefix, getPopupLockedState, getPopupPinnedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting } from './layout/utils/layoutStorage';
+import { clearClosedPopupState, getPinnedPopupsByPrefix, getPopupLockedState, getPopupPinnedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting } from './layout/utils/layoutStorage';
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
 import { TransportHopsOverlay, type TransportHopMarker } from './transportHopsOverlay';
@@ -1120,9 +1120,23 @@ const StaticMapPopupManager: React.FC = () => {
         };
     }, []);
 
+    // Closing a static map removes its instance, so the window unmounts instead
+    // of re-rendering with isOpen=false — useDockablePopup's own closed-popup
+    // purge never runs. Do it here, but only once the child has actually
+    // unmounted: its cleanup calls windowManager.close(), which re-derives the
+    // dock flags we are about to clear.
+    const pendingPurgeRef = useRef<string[]>([]);
     const handleClose = useCallback((id: string) => {
+        pendingPurgeRef.current.push(`${STATIC_MAP_POPUP_PREFIX}${id}`);
         setInstances(prev => prev.filter(inst => inst.id !== id));
     }, []);
+
+    useEffect(() => {
+        if (pendingPurgeRef.current.length === 0) return;
+        const ids = pendingPurgeRef.current;
+        pendingPurgeRef.current = [];
+        ids.forEach(clearClosedPopupState);
+    });
 
     return (
         <>
