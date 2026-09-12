@@ -224,6 +224,20 @@ const MAIN_CALENDAR: Record<Domain, Record<string, string>> = {
 
 const ONE_HOUR = 120; // seconds
 
+/** What `room.info` calls each domain. Anything else names no domain at all. */
+const DOMAIN_BY_GMCP_NAME: Record<string, Domain> = {
+    Imperium: "Empire",
+    Ishtar: "Ishtar"
+};
+
+/**
+ * How far from the sun's own hour an observed daylight flip may land before we
+ * refuse to believe the sun caused it, in game minutes. A healthy clock is never
+ * further out than the game's own "w przyblizeniu" line leaves it - 60 game
+ * minutes at worst - plus a little for the flip reaching us after it happened.
+ */
+const SUN_EVENT_TOLERANCE = 90;
+
 interface StoredState {
     start_time: number | null;
     measured_at: number | null;
@@ -252,18 +266,46 @@ interface ClockSnapshot {
 class ClockDisplay {
     public activeDomain?: Domain;
 
+    /**
+     * The domain the game has actually placed us in this session, as opposed to
+     * the one the UI is showing.
+     *
+     * `activeDomain` is a display choice and nothing more: it is restored from
+     * the character's storage and set by every parsed time line, so it outlives a
+     * relog and can name a domain this session has never entered. Gating evidence
+     * about the sky on it let an Ishtar character's daylight drive the Empire
+     * clock - and a daylight flip sets the clock exactly, so the whole domain's
+     * pooled time went with it. This is set only where the game says where we are.
+     */
+    private observedDomain?: Domain;
+
     private snapshots: Partial<Record<Domain, ClockSnapshot>> = {};
 
     constructor() {
         eventBus.on("gmcp.room.info", (payload) => {
-            if (payload?.map?.domain) {
-                if (payload.map.domain === "Imperium") {
-                    this.setActiveDomain("Empire");
-                } else if (payload.map.domain === "Ishtar") {
-                    this.setActiveDomain("Ishtar");
-                }
+            const domain = DOMAIN_BY_GMCP_NAME[String(payload?.map?.domain ?? "")];
+            // Plenty of rooms carry no domain - a ship at sea, a good few starting
+            // locations. Not being told is not the same as having moved, so the
+            // last thing we were told stands.
+            if (domain) {
+                this.observeDomain(domain);
             }
         })
+    }
+
+    /** Where the game has just said we are. Also what the UI should be showing. */
+    public observeDomain(domain: Domain): void {
+        this.observedDomain = domain;
+        this.setActiveDomain(domain);
+    }
+
+    public getObservedDomain(): Domain | undefined {
+        return this.observedDomain;
+    }
+
+    /** The session is over: where we were says nothing about where we will be. */
+    public clearObservedDomain(): void {
+        this.observedDomain = undefined;
     }
 
     public update(domain: Domain, data: ClockSnapshot): void {
@@ -384,10 +426,6 @@ export class ArkadiaTime {
         this.triggers.push(guessTrigger);
 
         eventBus.on("gmcp.room.time", (payload) => {
-            if (this.display.activeDomain !== this.domain) {
-                return;
-            }
-
             const daylight = payload.daylight ?? payload?.time?.daylight;
             if (daylight === undefined) {
                 return;
@@ -397,7 +435,28 @@ export class ArkadiaTime {
         })
     }
 
+    /**
+     * A change in the sky is the one moment the game hands us an exact time - but
+     * only if it really was the sky changing, in our own domain, while we were
+     * watching. Each of those has failed in the wild, and each fails quietly,
+     * because the result is a clock that is confidently wrong rather than vague:
+     *
+     *  - it has to be our sky. `room.time` never says which domain it was
+     *    measured in, so the domain has to come from somewhere that does.
+     *  - it has to be a flip we watched happen, not the first reading of a new
+     *    session held against one taken hours ago - see `endSession`.
+     *  - it has to land near the hour the sun actually does it - see
+     *    `markObservedSunEvent`.
+     */
     private handleGmcp(daylight: boolean): void {
+        if (this.display.getObservedDomain() !== this.domain) {
+            // Another domain's sky, or one we cannot place. Keeping it as our
+            // baseline would leave the next reading taken in our own domain
+            // looking like a transition.
+            this.isDaylight = undefined;
+            this.pendingDaylightTransition = undefined;
+            return;
+        }
         if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
             if (this.startTime !== null) {
                 this.markObservedSunEvent(daylight ? "sunrise" : "sunset");
@@ -416,7 +475,9 @@ export class ArkadiaTime {
         expression: string,
         groups: Record<string, string | undefined>
     ): void {
-        this.display.setActiveDomain(this.domain);
+        // The line names its own calendar, so having parsed one is proof of where
+        // we are - firmer than `room.info`, which many rooms send without a domain.
+        this.display.observeDomain(this.domain);
         const daylight = gmcp?.room?.time?.daylight
         if (daylight !== undefined) {
             this.isDaylight = Boolean(daylight)
@@ -753,7 +814,11 @@ export class ArkadiaTime {
      * The day is resolved the same way. A sunset late in the evening or a sunrise
      * just after midnight straddles the day boundary, so the neighbouring days are
      * candidates too and the nearest one to the current reading wins - which also
-     * repairs a clock that has not rolled over yet, or has rolled over too early.
+     * repairs a clock that has rolled over a little early, or not quite yet.
+     *
+     * Only a little, though. A flip further from the sun's own hour than a clock
+     * can honestly be is refused outright below, so the day no longer swings on
+     * one, and a clock hours out is left for the next `czas` to put right.
      */
     private markObservedSunEvent(type: SunEventType): void {
         const [clockHour, clockMinutes] = this.getCurrentTime();
@@ -775,6 +840,23 @@ export class ArkadiaTime {
         }
         const finalDay = normalizeDay(this.domain, bestDay);
         const indicatedHour = `${clockHour}:${Math.floor(clockMinutes).toString().padStart(2, "0")}`;
+
+        // A flip that lands nowhere near the hour the sun does it was not the sun.
+        // The clock cannot drift on its own - it is arithmetic over the wall clock
+        // - so the only honest error it carries is the hour the game's own "w
+        // przyblizeniu" line leaves, and anything further out means the flip
+        // itself is not what it appears: a ship crossing into the other domain
+        // while `room.info` still names this one, or a reading held against one
+        // from a session that ended hours ago. Anchoring on it would plant a
+        // confidently exact clock several hours from the truth, and `precision: 0`
+        // then carries that error further than any vaguer reading ever could.
+        if (bestDistance * 60 > SUN_EVENT_TOLERANCE) {
+            console.log(
+                `[${this.domain}] ignoring ${type}: clock read ${indicatedHour}, ` +
+                `nearest ${type} is ${bestHour}:00 on day ${finalDay}`
+            );
+            return;
+        }
 
         // The tracker records what the following `czas` reply says, not what we set
         // here, so the observations that feed the grids stay independent of them.
@@ -805,6 +887,19 @@ export class ArkadiaTime {
         this.init(bestHour, 0, 0, finalDay);
     }
 
+    /**
+     * The connection is gone, or we are on another character. What the sky was
+     * doing then says nothing about what it is doing now: a whole day and night
+     * pass every 48 real minutes, so the first reading after a break is a fresh
+     * observation and not the far side of a transition. Left standing, it
+     * announced a sunrise on roughly every other login - and that sunrise set the
+     * clock exactly, to the wrong time.
+     */
+    public endSession(): void {
+        this.isDaylight = undefined;
+        this.pendingDaylightTransition = undefined;
+    }
+
     public setTime(hour: number, minutes?: number, dayOfYear?: number): void {
         const day = dayOfYear ?? this.startDay ?? 1;
         this.init(hour, minutes ?? 0, 0, day);
@@ -833,6 +928,13 @@ export class ClockManager {
         this.display.restoreActiveDomain();
         this.empireClock.start();
         this.ishtarClock.start();
+    }
+
+    /** Forget everything this session observed, keeping what it worked out. */
+    public endSession(): void {
+        this.display.clearObservedDomain();
+        this.empireClock.endSession();
+        this.ishtarClock.endSession();
     }
 
     public getClocks(): { empire: ArkadiaTime; ishtar: ArkadiaTime } {
@@ -908,6 +1010,11 @@ export function initClock(client: Client): ClockManager {
     eventBus.on("clock.setTime", (payload: { domain: "Empire" | "Ishtar"; hour: number; minutes?: number; dayOfYear?: number }) => {
         manager.setTime(payload.domain, payload.hour, payload.minutes, payload.dayOfYear);
     });
+
+    // A relog is a new session even when the socket never dropped, and the socket
+    // dropping is one even when the character does not change - so both.
+    client.on("reset", () => manager.endSession());
+    client.on("client.disconnect", () => manager.endSession());
 
     // Restore active domain when character info arrives (after login)
     client.on('gmcp.char.info', (info) => {

@@ -28,6 +28,7 @@ class FakeClient {
 // Mock ClockDisplay
 class ClockDisplay {
     public activeDomain?: "Empire" | "Ishtar";
+    private observedDomain?: "Empire" | "Ishtar";
     private snapshots: Partial<Record<"Empire" | "Ishtar", any>> = {};
 
     public update(domain: "Empire" | "Ishtar", data: any): void {
@@ -45,6 +46,19 @@ class ClockDisplay {
             this.activeDomain = domain;
             eventBus.emit("clock.domain.active", { domain });
         }
+    }
+
+    public observeDomain(domain: "Empire" | "Ishtar"): void {
+        this.observedDomain = domain;
+        this.setActiveDomain(domain);
+    }
+
+    public getObservedDomain(): "Empire" | "Ishtar" | undefined {
+        return this.observedDomain;
+    }
+
+    public clearObservedDomain(): void {
+        this.observedDomain = undefined;
     }
 }
 
@@ -368,32 +382,35 @@ describe('ArkadiaTime - Clock System', () => {
             }));
         });
 
-        test('a sunrise seen before the clock has crossed midnight rolls the day', () => {
+        test('a sunrise hours away from the clock is not the sun, and is ignored', () => {
             parse(nachhexen);
             (clock as any).isDaylight = false;
-            // Clock still thinks it is late on day 2; the sunrise belongs to day 3.
+            // The clock reads 23:40 on day 2 and the nearest sunrise is 08:00 on
+            // day 3. Eight hours apart is not drift - the clock is arithmetic over
+            // the wall clock and cannot drift - so the flip is something other
+            // than the sun, and believing it would anchor the clock exactly wrong.
             (clock as any).init(23, 40, 60, 2);
 
             eventBus.emit('gmcp.room.time', { daylight: true });
 
             const snapshot = display.getSnapshot('Empire');
-            expect(snapshot.dayOfYear).toBe(3);
-            expect(snapshot.hours).toBe(8);
-            expect(snapshot.precision).toBe(0);
+            expect(snapshot.dayOfYear).toBe(2);
+            expect(snapshot.hours).toBe(23);
+            expect(snapshot.precision).toBe(60);
         });
 
-        test('a sunset seen after the clock has crossed midnight rolls the day back', () => {
+        test('a sunset hours away from the clock is ignored too', () => {
             parse(nachhexen);
             (clock as any).isDaylight = true;
-            // Sunset on day 2 is 17:00, but the clock has run on past midnight.
+            // Sunset on day 2 is 17:00 and the clock has run on past midnight.
             (clock as any).init(0, 30, 60, 3);
 
             eventBus.emit('gmcp.room.time', { daylight: false });
 
             const snapshot = display.getSnapshot('Empire');
-            expect(snapshot.dayOfYear).toBe(2);
-            expect(snapshot.hours).toBe(17);
-            expect(snapshot.precision).toBe(0);
+            expect(snapshot.dayOfYear).toBe(3);
+            expect(snapshot.hours).toBe(0);
+            expect(snapshot.precision).toBe(60);
         });
 
         test('corrects to the grid hour where the month table disagrees', () => {
@@ -413,13 +430,65 @@ describe('ArkadiaTime - Clock System', () => {
         });
     });
 
+    describe('A daylight flip has to be ours, and one we watched happen', () => {
+        // Both readings sit either side of the day 25 sunset at 17:00, close
+        // enough that the flip would be believed if it were allowed through at
+        // all. What stops it is where it came from, not how far off it is.
+        const atSunset = () => {
+            parse('Jest w przyblizeniu osma rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+            (clock as any).init(16, 45, 60, 25);
+            eventBus.emit('gmcp.room.time', { daylight: true });
+        };
+
+        test('the first reading of a new session seeds, it never flips', () => {
+            atSunset();
+
+            clock.endSession();
+
+            // A new session opens in the dark. Held against the reading from the
+            // last one this looked like a sunset and set the clock exactly - which
+            // is why a sunrise announced itself on roughly every other login.
+            eventBus.emit('gmcp.room.time', { daylight: false });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.hours).toBe(16);
+            expect(snapshot.minutes).toBe(45);
+            expect(snapshot.precision).toBe(60);
+        });
+
+        test('daylight measured in another domain never reaches this clock', () => {
+            atSunset();
+
+            // Relogged into a character in Ishtar: `room.time` still says nothing
+            // about where it was measured, but we now know it was not here.
+            display.observeDomain('Ishtar');
+            eventBus.emit('gmcp.room.time', { daylight: false });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.hours).toBe(16);
+            expect(snapshot.minutes).toBe(45);
+            expect(snapshot.precision).toBe(60);
+        });
+
+        test('a flip we did watch, in our own domain, still anchors the clock', () => {
+            atSunset();
+
+            eventBus.emit('gmcp.room.time', { daylight: false });
+
+            const snapshot = display.getSnapshot('Empire');
+            expect(snapshot.hours).toBe(17);
+            expect(snapshot.precision).toBe(0);
+        });
+    });
+
     describe('Sunrise/Sunset without clock initializes with precision 0', () => {
         test('sunrise transition before first czas sets precision 0', () => {
             // Clock is NOT initialized (no czas yet)
             expect(display.getSnapshot("Empire")).toBeUndefined();
 
-            // Set active domain so GMCP events are processed
-            display.setActiveDomain("Empire");
+            // Attribute the daylight readings below to Empire; without that they
+            // describe a domain we cannot place, and are not evidence of anything.
+            display.observeDomain("Empire");
 
             // First GMCP event establishes isDaylight baseline
             (clock as any).handleGmcp(false); // night
@@ -441,7 +510,7 @@ describe('ArkadiaTime - Clock System', () => {
         });
 
         test('sunset transition before first czas sets precision 0', () => {
-            display.setActiveDomain("Empire");
+            display.observeDomain("Empire");
 
             // Establish daylight baseline
             (clock as any).handleGmcp(true); // day
@@ -460,7 +529,7 @@ describe('ArkadiaTime - Clock System', () => {
         });
 
         test('emits clock.sunrise event on czas after pending sunrise', () => {
-            display.setActiveDomain("Empire");
+            display.observeDomain("Empire");
 
             const sunriseHandler = jest.fn();
             eventBus.on("clock.sunrise", sunriseHandler);

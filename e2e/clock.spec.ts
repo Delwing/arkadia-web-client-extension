@@ -180,9 +180,10 @@ test.describe('Clock System', () => {
         await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
         await expect(clockDisplay).toContainText('06:00');
 
-        // Switch to Ishtar domain
-        await pushText(page, 'Jest w przyblizeniu szosta rano, pierwszy dzien pory Yule wedlug rachuby czasu Starszego Ludu.');
-        await expect(clockDisplay).toContainText('06:00');
+        // Switch to Ishtar domain. Yule 1 has its sunrise at 08:00, and a flip
+        // has to land near the hour the sun actually does it to be believed.
+        await pushText(page, 'Jest w przyblizeniu osma rano, pierwszy dzien pory Yule wedlug rachuby czasu Starszego Ludu.');
+        await expect(clockDisplay).toContainText('08:00');
 
         // Ishtar sunrise event (need to change daylight state)
         await pushGmcp(page, 'room.time', { daylight: false });
