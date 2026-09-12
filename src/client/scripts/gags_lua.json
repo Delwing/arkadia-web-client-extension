@@ -9644,7 +9644,11 @@
                     "type": 1
                   },
                   {
-                    "pattern": "(\\w+(?: \\w+){0,4}?) unosi swoja .+? i szybko przesuwa sie w (twoja strone|strone .+?), bezskutecznie probujac skryc sie za (nia|nim|toba) przed atakami .*\\.$",
+                    "pattern": "(\\w+(?: \\w+){0,4}?) (?:unosi swoja .+? i )?szybko przesuwa sie w (twoja strone|strone .+?), bezskutecznie probujac skryc sie za (nia|nim|toba) przed atakami .*\\.$",
+                    "type": 1
+                  },
+                  {
+                    "pattern": "(\\w+(?: \\w+){0,4}?) (?:unosi swoja .+? i )?szybko przesuwa sie w (twoja strone|strone .+?), bezskutecznie probujac uciec przed (twoimi|.+?) ciosami\\.$",
                     "type": 1
                   }
                 ],
