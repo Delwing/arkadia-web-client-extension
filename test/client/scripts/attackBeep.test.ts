@@ -81,6 +81,24 @@ describe('attack beep triggers', () => {
     expect(result.text).toContain('RZUCA SIE DO WALKI Z TOBA');
   });
 
+  test('beeps and uppercases on the battle cry attack line', () => {
+    const line = "Przy ogluszajacym akompaniamencie okrzyku bojowego 'Za Morra!' Intia rzuca sie na ciebie, wiazac cie walka.";
+    const result = parse(line);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toBe('attack');
+    expect(result.text).toContain('RZUCA SIE NA CIEBIE');
+  });
+
+  test('beeps on the weapon-raising and primal-rage attack lines', () => {
+    expect(parse('Intia z determinacja i pewnoscia siebie unosi swoja bron i naciera na ciebie!').text)
+      .toContain('NACIERA NA CIEBIE');
+    expect(parse('Eamon z pierwotna wsciekloscia rzuca sie na ciebie, rozpoczynajac walke!').text)
+      .toContain('RZUCA SIE NA CIEBIE');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
+    expect(beepCalls).toHaveLength(2);
+  });
+
   test('does not beep on plain phrase trigger', () => {
     const result = parse('atakuje cie!');
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
