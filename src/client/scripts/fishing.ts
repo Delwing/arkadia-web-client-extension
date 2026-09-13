@@ -280,9 +280,14 @@ export default function initFishing(client: Client, aliases: { pattern: RegExp; 
     });
 
     // Listen for popup commands
-    eventBus.on("fishing.cast", (payload: { bait: BaitType }) => {
+    eventBus.on("fishing.cast", async (payload: { bait: BaitType }) => {
         const bait = payload?.bait || 'kulke';
-        client.sendCommand(`zawies ${bait} na wedce;zarzuc wedke`);
+        // Worms are kept in a box, so take one out before baiting the hook.
+        if (bait === 'robaka') {
+            await client.sendCommand("wez robaka z pudelka");
+        }
+        await client.sendCommand(`zawies ${bait} na wedce`);
+        await client.sendCommand("zarzuc wedke");
     });
 
     eventBus.on("fishing.pull", () => {
