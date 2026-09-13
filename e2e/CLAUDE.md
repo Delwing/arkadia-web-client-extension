@@ -163,14 +163,46 @@ yarn test:e2e                                    # Run all e2e tests
 yarn test:e2e e2e/some-feature.spec.ts           # Run a single spec
 yarn test:e2e -- --headed                        # Show browser window
 yarn test:e2e -- --debug                         # Debug mode (step through)
-yarn test:e2e -- --shard=1/8                     # Run one CI shard locally
+yarn test:e2e -- --shard=1/12                    # Run one CI shard locally
 yarn test:e2e -- --grep "feature description"    # Filter by test name
 ```
 
 ## CI Notes
 
-- Tests run across **8 parallel shards** in CI
+- Tests run across **12 parallel shards** in CI, **2 workers** each
 - **2 retries** on failure in CI, 0 locally
 - Traces are collected on first retry for debugging
 - Screenshots are captured only on failure
-- Global timeout: 10 minutes
+- Per-test timeout: 30 seconds; per-assertion: 10 seconds; global: 20 minutes
+- Tests that pass only on a retry are listed under "Flaky e2e tests" in the run summary
+
+## Timing Budget
+
+GitHub's runners have 4 vCPUs, so a worker there gets a fraction of the CPU a
+laptop gives it. A test that takes 6s locally can take three times that in CI.
+Two rules follow:
+
+- **Don't tighten the per-test timeout to "what it takes locally."** The deadline
+  exists to catch a hang, not to enforce a speed limit. A timeout only costs time
+  on a test that is already failing.
+- **Keep helper timeouts under the test timeout.** A helper that waits longer than
+  the test budget can never report its own failure — the test dies first and you
+  get "Target page, context or browser has been closed" instead of "the map never
+  rendered." Boot steps in `mocks.ts` share a single `BOOT_STEP_TIMEOUT`.
+
+## Waiting Without Sleeping
+
+`page.waitForTimeout(n)` is a bet that the machine is fast enough. It is the right
+tool in exactly one case: asserting that something did **not** happen (a suppressed
+scroll, a long-press that must not fire early). Everywhere else, wait for the state
+you actually want:
+
+- Debounced writes to layout storage: `waitForLayoutSaved(page)` — it watches the
+  stored value and returns once it stops changing, so a slow runner just waits longer.
+- Anything rendered: `expect(locator)` auto-retries; `expect.poll` for derived values.
+
+Don't reach for a blanket `* { transition: none; animation: none }` init script. The
+fixture kills modal transitions specifically because nothing depends on them, but
+`MobileCommandRadial` gates a `display:none` on `transitionend` and `pipeStatus`
+lands its smoke on `animationiteration` — switching animations off globally would
+stall both and trade one flake for two.

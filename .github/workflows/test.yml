@@ -150,8 +150,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        shardTotal: [12]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -242,6 +242,30 @@ jobs:
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+      # Retries turn a flake into a green check, so flakes only ever show up as a
+      # rerun nobody looks at. Name them in the run summary instead, otherwise the
+      # same handful of tests keeps costing a rerun with nobody tracking which.
+      - name: Report flaky e2e tests
+        if: steps.download-blob-reports.outcome == 'success'
+        continue-on-error: true
+        run: |
+          npx playwright merge-reports --reporter=json ./all-blob-reports > merged-e2e.json
+          node -e '
+            const report = JSON.parse(require("fs").readFileSync("merged-e2e.json", "utf8"));
+            const flaky = [];
+            const walk = (suite, file) => {
+              for (const child of suite.suites ?? []) walk(child, file ?? suite.file);
+              for (const spec of suite.specs ?? [])
+                for (const test of spec.tests ?? [])
+                  if (test.status === "flaky")
+                    flaky.push(`${file ?? suite.file} > ${spec.title} (${test.results.length} attempts)`);
+            };
+            for (const suite of report.suites ?? []) walk(suite, suite.file);
+            const summary = flaky.length
+              ? ["## Flaky e2e tests", "", "These passed only on a retry:", "", ...flaky.map(l => `- ${l}`)]
+              : ["## Flaky e2e tests", "", "None — every test passed on its first attempt."];
+            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join("\n") + "\n");
+          '
       - name: Download e2e JUnit reports
         continue-on-error: true
         uses: actions/download-artifact@v7

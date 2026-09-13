@@ -2,6 +2,7 @@ import { expect, test } from './support/fixtures';
 import {
     ensureGameSocket,
     waitForCommandInput,
+    waitForLayoutSaved,
     waitForMapReady,
 } from './support/mocks';
 import type { Page } from '@playwright/test';
@@ -101,7 +102,7 @@ async function closeStaticMap(page: Page, docked = false): Promise<void> {
 
 async function reload(page: Page): Promise<void> {
     // Let the debounced layout save flush before navigating away.
-    await page.waitForTimeout(600);
+    await waitForLayoutSaved(page);
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);

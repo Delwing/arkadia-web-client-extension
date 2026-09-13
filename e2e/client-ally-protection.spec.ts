@@ -167,7 +167,6 @@ async function gotoAndWaitForPeopleDB(page: Page): Promise<void> {
 }
 
 test.describe('Ally protection system', () => {
-    test.describe.configure({ timeout: 20000 });
     test.beforeEach(async ({page}) => {
         // Navigate and wait for the people DB to load end-to-end
         await gotoAndWaitForPeopleDB(page);
