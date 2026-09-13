@@ -217,7 +217,7 @@ const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
 const PEOPLE_DB_ROUTE = '**/arkadia-people.delwing.workers.dev/download';
 const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
 const WIEDZA_API_ROUTE = '**/admin-ajax.php?action=wiedza_data';
-const MAGICS_DATA_ROUTE = '**/magics_data.json';
+const MAGICS_DATA_ROUTE = '**/magics_data_v3.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
 const GITHUB_DEPLOYMENTS_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-web-client-extension/deployments?environment=github-pages';
 
@@ -381,7 +381,7 @@ export async function mockWiedzaDownload(
 
 export async function mockMagicsDownload(
     context: BrowserContext,
-    data: {magics: Record<string, {regexps?: string[]}>} = DEFAULT_MAGICS_DATA,
+    data: {magics: Record<string, unknown>} = DEFAULT_MAGICS_DATA,
 ): Promise<void> {
     await context.route(MAGICS_DATA_ROUTE, async (route) => {
         await route.fulfill({

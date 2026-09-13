@@ -3,6 +3,7 @@ import {createColorFormat} from "@modules/core/Colors";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
+import {getMagicForms, getSingleMagicForm} from "@modules/data/magicForms";
 import {getKnowledgeStore, KnowledgeBookEntry, KnowledgeBookCategoryProgress, DEFAULT_KNOWLEDGE_CHARACTER_KEY} from "@modules/data/dataStores/knowledgeStore";
 import { getUiPort } from "@client/ports";
 import { getDativeCategoryName } from "../knowledgeCategories";
@@ -570,8 +571,8 @@ function isFavoriteMagic(itemName: string): boolean {
 
     // Check both favorite magic keys and favorite magic types
     for (const [magicKey, magic] of Object.entries(magicsData.magics)) {
-        if (magic && Array.isArray(magic.regexps)) {
-            const matches = magic.regexps.some(pattern => {
+        if (magic) {
+            const matches = getMagicForms(magic).some(pattern => {
                 const regex = new RegExp("(^|\\s)" + pattern, "i");
                 return regex.test(itemName);
             });
@@ -632,9 +633,13 @@ async function loadMagicAndKeysFilter(client: Client) {
                 if (magicRegexp(item.name)) {
                     buffer.color([0, item.name.length], createColorFormat(magicsColor));
                     if (plugLinks) {
+                        // A stack is listed in the plural ("trzy lsniace plomieniste
+                        // tarcze"); "wybierz" wants the singular biernik so the click
+                        // takes one item out, not the whole stack.
+                        const target = getSingleMagicForm(magicsData, item.name) ?? item.name;
                         buffer.createLink([0, item.name.length], {
-                            onClick: () => client.sendCommand(`wybierz ${item.name}`),
-                            title: `Kliknij aby wybrać: ${item.name}`
+                            onClick: () => client.sendCommand(`wybierz ${target}`),
+                            title: `Kliknij aby wybrać: ${target}`
                         });
                     }
                 }

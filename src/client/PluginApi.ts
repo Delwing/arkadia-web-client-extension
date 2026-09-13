@@ -1541,10 +1541,38 @@ export interface PrettyContainersApi {
 }
 
 /**
+ * Grammatical case of a magic item form; `mnoga_` prefixes the plural.
+ */
+export type MagicCase =
+  | 'mianownik'
+  | 'dopelniacz'
+  | 'celownik'
+  | 'biernik'
+  | 'narzednik'
+  | 'miejscownik'
+  | 'mnoga_mianownik'
+  | 'mnoga_dopelniacz'
+  | 'mnoga_celownik'
+  | 'mnoga_biernik'
+  | 'mnoga_narzednik'
+  | 'mnoga_miejscownik';
+
+/**
+ * Forms of one item per case. A case holds a list because variants of the same
+ * item share it - "otwarta"/"zamknieta" containers and alternate phrasings.
+ */
+export type MagicForms = Partial<Record<MagicCase, string[]>>;
+
+/**
  * Single magic item entry
  */
 export interface MagicEntry {
   type: string[];
+  /** Declined forms grouped by case (magics data v3). */
+  odmiana?: MagicForms;
+  /** Forms that fit no case - irregular phrases and typos kept for matching. */
+  dodatkowe_regexps?: string[];
+  /** Every form in one flat list (magics data v2, still read from a stale cache). */
   regexps?: string[];
 }
 
@@ -1552,6 +1580,7 @@ export interface MagicEntry {
  * Raw magics data structure
  */
 export interface MagicsFile {
+  version?: number;
   magics: Record<string, MagicEntry>;
 }
 
@@ -1588,7 +1617,8 @@ export interface MagicsApi {
    * const rawData = await api.magics.getRawData();
    * if (rawData) {
    *   for (const [name, magic] of Object.entries(rawData.magics)) {
-   *     console.log(`${name}: types=${magic.type.join(',')}, patterns=${magic.regexps?.length || 0}`);
+   *     const biernik = magic.odmiana?.biernik?.[0];
+   *     console.log(`${name}: types=${magic.type.join(',')}, biernik=${biernik}`);
    *   }
    * }
    * ```
