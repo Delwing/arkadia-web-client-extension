@@ -1,7 +1,15 @@
 {
+  "version": 3,
   "magics": {
     "ancient-blade": {
-      "regexps": ["magiczny miecz"]
+      "type": ["miecz"],
+      "odmiana": {
+        "mianownik": ["magiczny miecz"],
+        "dopelniacz": ["magicznego miecza"],
+        "biernik": ["magiczny miecz"],
+        "mnoga_mianownik": ["magiczne miecze"],
+        "mnoga_biernik": ["magiczne miecze"]
+      }
     }
   }
 }

@@ -34,4 +34,36 @@ describe('magics', () => {
         const expected2 = colorTokenInLine(titleBuffer, pattern, MAGICS_COLOR);
         expect(result2.text).toBe(expected2.text);
     });
+
+    test('registers a trigger per declined form of v3 data', async () => {
+        (global as any).fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({
+                version: 3,
+                magics: {
+                    'magiczny miecz': {
+                        type: ['miecz'],
+                        odmiana: {
+                            mianownik: ['magiczny miecz'],
+                            biernik: ['magiczny miecz'],
+                            mnoga_mianownik: ['magiczne miecze'],
+                        },
+                    },
+                },
+            }),
+        });
+        // A fresh store singleton, so it binds the fetch above, with the cache of
+        // the previous test dropped.
+        jest.resetModules();
+        const { getMagicsStore } = await import('@modules/data/dataStores/magicsStore');
+        await getMagicsStore().clear();
+        const { default: init } = await import('@client/scripts/magics');
+
+        const client = { Triggers: { registerTokenTrigger: jest.fn() } } as any;
+        await init(client);
+
+        // The homograph mianownik/biernik is registered once.
+        const patterns = client.Triggers.registerTokenTrigger.mock.calls.map((call: any[]) => call[0]);
+        expect(patterns).toEqual(['magiczny miecz', 'magiczne miecze']);
+    });
 });

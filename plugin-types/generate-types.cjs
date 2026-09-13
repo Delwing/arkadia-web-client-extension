@@ -119,6 +119,8 @@ function shouldExport(node) {
         name === 'ContainerType' ||
         name === 'ContainerForms' ||
         // Magics data types
+        name === 'MagicCase' ||
+        name === 'MagicForms' ||
         name === 'MagicEntry' ||
         name === 'MagicsFile' ||
         name === 'MagicKeysData') {
