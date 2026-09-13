@@ -62,7 +62,7 @@ const AILMENTS: Record<string, Ailment> = {
     "CHOROBA ZAKAZNA": {
         pattern: "chorobe zakazna",
         remedies: [
-            {herb: "bez", action: "wetrzyj", description: "wetrzyj bez"},
+            {herb: "bez", action: "przezuj", description: "przezuj bez"},
             {herb: "krzyzownica", action: "przezuj", description: "przezuj krzyzownice"},
             {herb: "siezygron", action: "rozgryz", description: "rozgryz siezygron"}
         ]

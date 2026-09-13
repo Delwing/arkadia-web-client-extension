@@ -62,6 +62,16 @@ describe('remedies', () => {
     ]);
   });
 
+  test('elderberry is chewed, not rubbed in, against an infectious disease', () => {
+    const { feed, printed, sent } = setup({ bez: 1 });
+    feed('Cierpisz na chorobe zakazna.');
+    expect(printed).toHaveLength(1);
+    expect(printed[0].text).toContain('przezuj bez');
+    expect(printed[0].text).not.toContain('wetrzyj bez');
+    clickLink(printed[0], 'przezuj bez');
+    expect(sent).toEqual(['/zi przezuj bez']);
+  });
+
   test('ailments without remedies print nothing', () => {
     const { feed, printed } = setup();
     feed('Jestes zatruty jadem wija.');
