@@ -4,6 +4,7 @@ import {
   MAGICS_URL,
   MagicsFile,
 } from '@modules/data/dataStores/magicsStore';
+import { getMagicForms } from '@modules/data/magicForms';
 
 export { MAGICS_URL };
 export type { MagicsFile };
@@ -14,8 +15,8 @@ function extractMagics(data: MagicsFile | undefined): string[] {
   }
   const magics: string[] = [];
   for (const value of Object.values(data.magics)) {
-    if (value && Array.isArray(value.regexps)) {
-      magics.push(...value.regexps);
+    if (value) {
+      magics.push(...getMagicForms(value));
     }
   }
   return magics;
@@ -86,8 +87,8 @@ export function getMagicTypesForItem(data: MagicsFile | undefined, itemName: str
   }
   const types: string[] = [];
   for (const [, magic] of Object.entries(data.magics)) {
-    if (magic && Array.isArray(magic.regexps)) {
-      const matches = magic.regexps.some(pattern => {
+    if (magic) {
+      const matches = getMagicForms(magic).some(pattern => {
         const regex = new RegExp("(^|\\s)" + pattern, "i");
         return regex.test(itemName);
       });

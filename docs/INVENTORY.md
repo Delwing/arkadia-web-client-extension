@@ -68,6 +68,8 @@ Menedzer pojemnikow pozwala przypisac wybrane torby, plecaki i inne pojemniki do
 | `/ubrania`                | Ocen stan ubran |
 | `/ocenkamienie`           | Oblicz laczna wartosc kamieni |
 
+> **Wskazowka:** Na liscie z `/przejrzyj` magiczne przedmioty i klucze sa klikalne - klikniecie wysyla `wybierz`. Przy magiach klient zamienia nazwe na forme pojedyncza w bierniku, wiec z kilku takich samych przedmiotow wyjmowany jest tylko jeden (np. klikniecie "trzy lsniace plomieniste tarcze" wysle `wybierz lsniaca plomienista tarcze`).
+
 ## Lampa
 
 | Komenda | Opis |
