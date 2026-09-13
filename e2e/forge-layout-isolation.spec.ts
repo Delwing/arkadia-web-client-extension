@@ -1,5 +1,5 @@
 import { test, expect } from './support/fixtures';
-import { waitForCommandInput } from './support/mocks';
+import { waitForCommandInput, waitForLayoutSaved } from './support/mocks';
 import type { Page } from '@playwright/test';
 
 /**
@@ -19,7 +19,7 @@ async function openForge(page: Page): Promise<void> {
     // forge itself runs in layout mode.
     await expect(page.locator('body')).toHaveClass(/layout-manager-enabled/);
     // Let the debounced layout save (300ms) land before reading storage.
-    await page.waitForTimeout(600);
+    await waitForLayoutSaved(page);
 }
 
 function readLayoutState(page: Page) {

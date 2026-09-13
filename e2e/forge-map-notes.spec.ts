@@ -52,9 +52,6 @@ async function seedNote(page: Page, roomId: number, note: string | null): Promis
 }
 
 test.describe('forge location notes', () => {
-    // Forge boots the client AND the map renderer before any of this is reachable.
-    test.describe.configure({ timeout: 30000 });
-
     test.beforeEach(async ({ page }) => {
         await page.goto('/forge-ui/');
         // Disconnected, the login gate covers the HUD; dismiss it to reach the map.

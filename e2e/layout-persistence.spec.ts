@@ -91,7 +91,6 @@ test.describe('Layout persistence', () => {
     });
 
     test('disabling layout manager persists after page reload', async ({page}) => {
-        test.setTimeout(30000);
         // First enable, then disable layout manager
         await enableLayoutManager(page);
         await disableLayoutManager(page);
@@ -116,7 +115,6 @@ test.describe('Layout persistence', () => {
     });
 
     test('object list panel toggle state persists', async ({page}) => {
-        test.setTimeout(30000);
         // Enable layout manager first
         await enableLayoutManager(page);
 

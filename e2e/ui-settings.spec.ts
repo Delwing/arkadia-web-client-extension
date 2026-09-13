@@ -42,7 +42,6 @@ test.beforeEach(async ({context}) => {
 
 test.describe('UI settings', () => {
     test('apply changes across all controls', async ({page}) => {
-        test.setTimeout(30000);
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);

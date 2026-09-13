@@ -83,7 +83,7 @@ yarn preview      # Preview production build
 ## CI Pipeline
 
 CI runs on **ubuntu-latest** with **Node 24** and `yarn install --frozen-lockfile`.
-Your code must pass: `yarn build` + `yarn test` + `yarn test:e2e` (8 Playwright shards).
+Your code must pass: `yarn build` + `yarn test` + `yarn test:e2e` (12 Playwright shards).
 The helper app builds with **Go 1.24** for Windows/macOS/Linux.
 On master, plugin types are built (`yarn build:types`) and everything deploys to GitHub Pages.
 
@@ -110,7 +110,7 @@ E2E tests use Playwright with Chromium. See `e2e/CLAUDE.md` for full documentati
 ```bash
 yarn test:e2e                              # All tests (needs 10+ min)
 yarn test:e2e e2e/some-feature.spec.ts     # Single spec file
-yarn test:e2e -- --shard=1/8               # Run one CI shard
+yarn test:e2e -- --shard=1/12              # Run one CI shard
 ```
 
 **Environment variable:** Set `PLAYWRIGHT_BROWSERS_PATH` if browsers are installed in a non-default location (e.g., `/opt/pw-browsers`).

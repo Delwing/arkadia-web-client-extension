@@ -440,6 +440,27 @@ export async function mockGithubDeployments(
     });
 }
 
+/**
+ * Budget for a single boot step (map render, socket handshake, ...). Boot runs
+ * three of these back to back, so each has to stay well under the test timeout
+ * or its own failure message gets swallowed by a bare "Test timeout exceeded".
+ */
+const BOOT_STEP_TIMEOUT = 10000;
+
+/**
+ * Re-throw a helper's timeout with a sentence saying what never happened.
+ * Without it a stalled boot surfaces as "Target page, context or browser has
+ * been closed" pointing at a line inside this file, which names no cause.
+ */
+async function withContext<T>(what: string, run: () => Promise<T>): Promise<T> {
+    try {
+        return await run();
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`${what} (${detail})`);
+    }
+}
+
 export async function waitForCommandInput(page: Page): Promise<void> {
     const overlay = page.locator('#auth-overlay');
     if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
@@ -465,17 +486,46 @@ export async function waitForCommandInput(page: Page): Promise<void> {
 }
 
 export async function waitForMapReady(page: Page): Promise<void> {
-    await page.waitForFunction(() => {
-        const mapElement = document.querySelector('#map');
-        if (!mapElement) return false;
+    await withContext('map never rendered a sized Konva canvas', () =>
+        page.waitForFunction(() => {
+            const mapElement = document.querySelector('#map');
+            if (!mapElement) return false;
 
-        // Konva creates multiple canvases, check if any have content
-        const canvases = mapElement.querySelectorAll<HTMLCanvasElement>('canvas');
-        if (canvases.length === 0) return false;
+            // Konva creates multiple canvases, check if any have content
+            const canvases = mapElement.querySelectorAll<HTMLCanvasElement>('canvas');
+            if (canvases.length === 0) return false;
 
-        // Check that at least one canvas has non-zero dimensions
-        return Array.from(canvases).some(canvas => canvas.width > 0 && canvas.height > 0);
-    }, {timeout: 10000});
+            // Check that at least one canvas has non-zero dimensions
+            return Array.from(canvases).some(canvas => canvas.width > 0 && canvas.height > 0);
+        }, {timeout: BOOT_STEP_TIMEOUT})
+    );
+}
+
+/**
+ * Block until the debounced layout write has actually landed in storage.
+ *
+ * Layout changes are persisted 300ms after the last one, so navigating away too
+ * early loses them. Sleeping "long enough" is what a busy CI runner breaks: the
+ * timer fires late and the reload reads stale state. Instead watch the stored
+ * value and return once it has stopped changing, which self-adjusts to however
+ * slow the machine is.
+ */
+export async function waitForLayoutSaved(page: Page): Promise<void> {
+    await withContext('layout state never settled in storage', () =>
+        page.waitForFunction(
+            (quietMs) => {
+                const scope: any = window;
+                const current = window.localStorage.getItem('layoutManagerState') ?? '';
+                if (scope.__layoutWatch?.value !== current) {
+                    scope.__layoutWatch = {value: current, since: Date.now()};
+                    return false;
+                }
+                return Date.now() - scope.__layoutWatch.since >= quietMs;
+            },
+            600,
+            {timeout: BOOT_STEP_TIMEOUT, polling: 100}
+        )
+    );
 }
 
 export async function pushGmcp(page: Page, path: string, payload: unknown): Promise<void> {
@@ -489,9 +539,11 @@ const OUTPUT_PRIME_PADDING = `${Array.from({ length: 40 }, () => '.').join('\n')
 
 export async function ensureGameSocket(page: Page): Promise<void> {
     // Wait for mock WebSocket to be installed
-    await page.waitForFunction(
-        () => typeof (window as any).__mockSockets !== 'undefined',
-        {timeout: 10000}
+    await withContext('mock WebSocket was never installed on the page', () =>
+        page.waitForFunction(
+            () => typeof (window as any).__mockSockets !== 'undefined',
+            {timeout: BOOT_STEP_TIMEOUT}
+        )
     );
 
     // Check if already connected
@@ -523,12 +575,14 @@ export async function ensureGameSocket(page: Page): Promise<void> {
     }
 
     // Wait for socket connection with explicit timeout
-    await page.waitForFunction(
-        () => {
-            const sockets: any[] = (window as any).__mockSockets ?? [];
-            return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
-        },
-        {timeout: 5000}
+    await withContext('client never opened a socket to arkadia.rpg.pl', () =>
+        page.waitForFunction(
+            () => {
+                const sockets: any[] = (window as any).__mockSockets ?? [];
+                return sockets.some((socket) => typeof socket?.url === 'string' && socket.url.includes('arkadia.rpg.pl'));
+            },
+            {timeout: BOOT_STEP_TIMEOUT}
+        )
     );
 
     await page.evaluate(() => {

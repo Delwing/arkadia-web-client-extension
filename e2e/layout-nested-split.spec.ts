@@ -1,5 +1,5 @@
 import { expect, test } from './support/fixtures';
-import { ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput } from './support/mocks';
+import { ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput, waitForLayoutSaved } from './support/mocks';
 import type { Page } from '@playwright/test';
 
 async function login(page: Page): Promise<void> {
@@ -78,7 +78,7 @@ test.describe('Nested dock splits', () => {
     await expect(page.locator('.dock-area-right .layout-leaf--placeholder')).toHaveCount(1);
 
     // Wait for the debounced layout save, then reload — nesting must persist.
-    await page.waitForTimeout(500);
+    await waitForLayoutSaved(page);
     await page.goto('/');
     await waitForCommandInput(page);
     await ensureGameSocket(page);
