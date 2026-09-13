@@ -122,7 +122,10 @@ export function LayoutProvider({
     setSnapshotVersion(v => v + 1);
     const unsub = windowManager.subscribe(() => {
       setSnapshotVersion(v => v + 1);
-      saveLayoutStateDebounced(windowManager.serialize());
+      // Serialize inside the getter, not here: the save lands 300ms later, and
+      // a snapshot taken now would overwrite any panel setting the user toggles
+      // in between (see saveLayoutStateDebounced).
+      saveLayoutStateDebounced(() => windowManager.serialize());
     });
     return unsub;
   }, []);

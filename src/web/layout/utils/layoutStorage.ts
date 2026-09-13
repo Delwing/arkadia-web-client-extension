@@ -419,12 +419,32 @@ export function saveLayoutState(state: LayoutState): void {
 }
 
 let saveTimeout: number | null = null;
+let pendingState: (() => LayoutState) | null = null;
 
-export function saveLayoutStateDebounced(state: LayoutState, delay = 300): void {
+/**
+ * Persist the layout once changes stop arriving.
+ *
+ * Takes a getter and calls it when the timer fires, rather than accepting an
+ * already-serialized snapshot. A snapshot would freeze the layout as it looked
+ * when the save was *scheduled*, and anything written synchronously during the
+ * delay would be erased when that stale copy landed 300ms later.
+ *
+ * That is not hypothetical: `setBuiltInPanelSetting` and `setPopupSetting`
+ * write straight to storage and then patch the live WindowManager copy so the
+ * next serialize() keeps the value. A snapshot taken before the patch cannot
+ * see it -- those helpers replace the panel's state object, so the old
+ * reference the snapshot holds is never touched -- and they deliberately skip
+ * notify(), so the queued timer is never rescheduled either. Toggling a panel
+ * setting within 300ms of any other layout change therefore lost it silently.
+ */
+export function saveLayoutStateDebounced(getState: () => LayoutState, delay = 300): void {
+  pendingState = getState;
   if (saveTimeout !== null) clearTimeout(saveTimeout);
   saveTimeout = window.setTimeout(() => {
-    saveLayoutState(state);
+    const get = pendingState;
     saveTimeout = null;
+    pendingState = null;
+    if (get) saveLayoutState(get());
   }, delay);
 }
 

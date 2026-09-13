@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { windowManager } from '@web/layout/WindowManager';
 import {
   getBuiltInPanelSetting,
@@ -12,6 +12,7 @@ import {
   loadLayoutState,
   loadPersistedLayoutState,
   saveLayoutState,
+  saveLayoutStateDebounced,
   invalidateLayoutCache,
   setLayoutOverrides,
   isLayoutModeForced,
@@ -48,6 +49,48 @@ describe('built-in panel settings persistence', () => {
 
     invalidateLayoutCache();
     expect(getBuiltInPanelSetting('map', 'labelVisible', true)).toBe(false);
+  });
+});
+
+describe('a debounced save already in flight when a setting is toggled', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // The layout settles shortly after boot and queues a debounced save. The user
+  // toggles a panel setting before that timer fires. The toggle writes straight
+  // to storage and patches the live manager, but deliberately does not notify(),
+  // so the queued timer is neither cancelled nor rescheduled -- it still fires,
+  // and whatever it writes is what survives a reload.
+  it('does not let the queued save erase a built-in setting toggled meanwhile', () => {
+    saveLayoutStateDebounced(() => windowManager.serialize());
+
+    vi.advanceTimersByTime(150);
+    setBuiltInPanelSetting('objectList', 'showCoverTimer', true);
+
+    vi.advanceTimersByTime(300);
+
+    invalidateLayoutCache();
+    expect(getBuiltInPanelSetting('objectList', 'showCoverTimer', false)).toBe(true);
+  });
+
+  it('does not let the queued save erase a popup setting toggled meanwhile', () => {
+    saveLayoutStateDebounced(() => windowManager.serialize());
+
+    vi.advanceTimersByTime(150);
+    setPopupSetting('popup:chat', 'showTeamOnly', true);
+
+    vi.advanceTimersByTime(300);
+
+    invalidateLayoutCache();
+    expect(getPopupSetting('popup:chat', 'showTeamOnly', false)).toBe(true);
   });
 });
 
