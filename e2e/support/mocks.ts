@@ -478,11 +478,15 @@ export async function waitForCommandInput(page: Page): Promise<void> {
         }
     }
 
-    await page.locator('#message-input').waitFor({state: 'visible'});
-    await page.waitForFunction(() => {
-        const element = document.querySelector<HTMLInputElement>('#message-input');
-        return Boolean(element && !element.disabled);
-    });
+    await withContext('command input never appeared', () =>
+        page.locator('#message-input').waitFor({state: 'visible', timeout: BOOT_STEP_TIMEOUT})
+    );
+    await withContext('command input stayed disabled', () =>
+        page.waitForFunction(() => {
+            const element = document.querySelector<HTMLInputElement>('#message-input');
+            return Boolean(element && !element.disabled);
+        }, {timeout: BOOT_STEP_TIMEOUT})
+    );
 }
 
 export async function waitForMapReady(page: Page): Promise<void> {
