@@ -565,6 +565,8 @@ body::after {
   gap: 5px;
   min-height: 21px;              /* reserve one pill-row so binds never shift the plate */
   padding: 0 2px;
+  -webkit-user-select: none;
+  user-select: none;
 }
 /* the shared MultiBindStrip's placeholder (src/ui/web/footer) */
 .multi-bind-empty {
@@ -617,6 +619,8 @@ body::after {
   gap: 5px;
   min-height: 21px;             /* fajka alone keeps this filled; reserves the row */
   padding: 0 2px;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .chip {
   display: inline-flex;

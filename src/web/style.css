@@ -1210,6 +1210,8 @@ h1 {
 #multi-binds {
   display: none;
   gap: 1vw;
+  -webkit-user-select: none;
+  user-select: none;
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.8rem;
@@ -1298,6 +1300,7 @@ h1 {
   border-top: 0.1vh solid var(--footer-border);
   color: var(--footer-text);
   position: relative;
+  -webkit-user-select: none;
   user-select: none;
 }
 
