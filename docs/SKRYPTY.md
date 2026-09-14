@@ -169,7 +169,7 @@ Klient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspek
 
 **Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, labirynty (Raon, Rinde, Taragorn)
 
-**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki
+**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, podswietlanie kurczacych sie kamieni wprawionych w sprzet, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki
 
 **Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, kamienna plyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii
 

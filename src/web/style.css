@@ -3897,6 +3897,23 @@ body.layout-manager-enabled #notification-center {
   animation: ansi-rapid-blink 1s infinite;
 }
 
+/* Znikajacy kamien wprawiony w sprzet (src/client/scripts/wprawionyKamien.ts):
+   krotkie mrugniecie, ktore samo sie konczy — linia zostaje czytelna w
+   scrollbacku, w przeciwienstwie do nieskonczonych animacji ANSI powyzej. */
+@keyframes gem-vanish-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.gem-vanish-blink {
+  animation: gem-vanish-blink 0.4s ease-in-out 3;
+}
+
 /* Dim animation with customizable properties via CSS variables */
 @keyframes ansi-dim {
   0% {
