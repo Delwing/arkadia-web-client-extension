@@ -67,6 +67,7 @@ import initPipe from './scripts/pipe'
 import initHpAlert from './scripts/hpAlert'
 import initNoWeaponAlert from './scripts/noWeaponAlert'
 import initMagikZnika from './scripts/magikZnika'
+import initWprawionyKamien from './scripts/wprawionyKamien'
 import initSeasonPrint from './scripts/seasonPrint'
 import initWorldRebirth from './scripts/worldRebirth'
 import initDajeCiHighlight from './scripts/dajeCiHighlight'
@@ -324,6 +325,7 @@ export function registerScripts(client: Client) {
     initNoWeaponAlert(client)
     initNewMail(client)
     initMagikZnika(client)
+    initWprawionyKamien(client)
     initSeasonPrint(client)
     initWorldRebirth(client)
     initDajeCiHighlight(client)
