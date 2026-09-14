@@ -11,9 +11,17 @@ export default function initPausers(client: Client) {
     let editing = false;
     let active = false;
 
-    client.on('gmcp.char.info', (info) => {
-        if (info?.object_num !== undefined) {
-            playerId = String(info.object_num);
+    // Losing the body we were reading in has to lift the pause with it: the
+    // 'editing: false' that would have ended it arrives under the new id, which
+    // the check below would never look at, and the mapper would stay paused.
+    client.on('player.objectNum', (num) => {
+        playerId = num === undefined ? undefined : String(num);
+        paralyzed = false;
+        editing = false;
+        if (active) {
+            active = false;
+            client.Map.setPaused(false);
+            client.sendEvent('pauserEnd');
         }
     });
 

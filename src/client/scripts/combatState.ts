@@ -8,13 +8,8 @@ import Client from "../Client";
 export default function initCombatState(client: Client) {
     let playerNum: number | undefined;
 
-    client.on('gmcp.char.info', info => {
-        const newPlayerNum = typeof info?.object_num !== 'undefined'
-            ? info.object_num
-            : undefined;
-        if (newPlayerNum !== playerNum) {
-            playerNum = newPlayerNum;
-        }
+    client.on('player.objectNum', num => {
+        playerNum = num;
     });
 
     client.on('gmcp.objects.data', (detail) => {

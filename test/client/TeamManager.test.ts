@@ -28,7 +28,7 @@ describe('TeamManager', () => {
   beforeEach(() => {
     client = new FakeClient();
     manager = new TeamManager((client as unknown) as any);
-    client.sendEvent('gmcp.char.info', { object_num: 99 });
+    client.sendEvent('player.objectNum', 99);
   });
 
   test('adds member from gmcp objects', () => {

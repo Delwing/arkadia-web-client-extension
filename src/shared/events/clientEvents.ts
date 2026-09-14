@@ -243,6 +243,11 @@ export interface KnownEvents {
     "teamPanelStatus": { teamSize: number; missing: string[] };
     "isTeamLeader": boolean;
     "reset": void;
+    /**
+     * Which object in the room is us, or undefined while that is unknown - after a
+     * disconnect, or between a body swap and working the new id out. See PlayerIdentity.
+     */
+    "player.objectNum": number | undefined;
     "refreshPositionWhenAble": void;
     "knowledgeReport": unknown | null;
     "knowledgeReport.popup.open": void;

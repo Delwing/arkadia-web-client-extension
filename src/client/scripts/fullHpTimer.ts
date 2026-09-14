@@ -58,10 +58,10 @@ export default function initFullHpTimer(client: Client) {
         previousHp = hp;
     });
 
-    client.on("gmcp.char.info", (info) => {
-        if (info && typeof info.object_num !== "undefined") {
-            playerNum = info.object_num;
-        }
+    client.on("player.objectNum", (num) => {
+        playerNum = num;
+        // The timer counted down for a body we are no longer in.
+        clearTimer();
     });
 
     client.on("gmcp.objects.data", (data) => {

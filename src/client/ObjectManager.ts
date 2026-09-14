@@ -20,6 +20,7 @@ export default class ObjectManager {
     private nums: number[] = [];
     private data: Map<number, ObjectData> = new Map();
     private playerNum?: number;
+    private charName?: string;
     private teamShortcutHistory: Map<string, string> = new Map();
     private nextTeamShortcutIndex = 0;
 
@@ -33,6 +34,10 @@ export default class ObjectManager {
         });
         this.client.on('gmcp.char.info', detail => {
             this.handleCharInfo(detail);
+        });
+        this.client.on('player.objectNum', num => {
+            this.playerNum = num;
+            this.applyPlayerDesc();
         });
         this.client.on('gmcp.char.state', detail => {
             this.handleCharState(detail);
@@ -62,13 +67,22 @@ export default class ObjectManager {
     }
 
     private handleCharInfo(detail: GmcpCharInfo) {
-        if (detail && typeof detail.object_num !== 'undefined') {
-            this.playerNum = detail.object_num;
-            const data = this.getOrCreateData(this.playerNum);
-            if (detail.name) {
-                data.desc = toTitleCase(detail.name);
-            }
+        if (detail?.name) {
+            this.charName = detail.name;
+            this.applyPlayerDesc();
         }
+    }
+
+    /**
+     * Label whichever object we are with our own name. Split out because the id and
+     * the name arrive on different events, in no guaranteed order - and the id can
+     * move mid-session when a transformation rebuilds the body.
+     */
+    private applyPlayerDesc() {
+        if (this.playerNum === undefined || !this.charName) {
+            return;
+        }
+        this.getOrCreateData(this.playerNum).desc = toTitleCase(this.charName);
     }
 
     private handleCharState(detail: GmcpCharState) {

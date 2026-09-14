@@ -168,7 +168,7 @@ describe('move mode default bind', () => {
     expect(client.moveMode).toBe(2);
     client.sendEvent.mockClear();
 
-    client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 5 } }));
+    client.dispatchEvent(new CustomEvent('player.objectNum', { detail: 5 }));
     client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '5': { attack_num: false } } }));
     expect(client.moveMode).toBe(2);
 
@@ -189,7 +189,7 @@ describe('move mode default bind', () => {
     mobileButton.title = 'Tryb ruchu przemknij z druzyna';
     client.moveModeButton = mobileButton;
     client.moveMode = 2;
-    client.dispatchEvent(new CustomEvent('gmcp.char.info', { detail: { object_num: 7 } }));
+    client.dispatchEvent(new CustomEvent('player.objectNum', { detail: 7 }));
 
     client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '7': { attack_num: true } } }));
 
