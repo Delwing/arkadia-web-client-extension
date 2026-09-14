@@ -24,12 +24,23 @@ describe('wprawiony kamien', () => {
     expect(segments.some(seg => seg.state?.foreground)).toBe(true);
   });
 
-  test('highlights a gem vanishing in a flash of light', () => {
+  test('gives a vanishing gem its own colour and a short blink', () => {
     const line = 'Wprawiona w asymetryczny wulkaniczny mlot czarna perla znika w blysku swiatla.';
     const result = parse(line);
     expect(result?.text).toBe(`\n${line}\n`);
-    const segments = result?.getSegments() ?? [];
-    expect(segments.some(seg => seg.state?.foreground)).toBe(true);
+    const segment = (result?.getSegments() ?? []).find(seg => seg.text.includes('znika'));
+    expect(segment?.state?.cssClass).toBe('gem-vanish-blink');
+    expect(segment?.state?.foreground).toEqual({ space: 'hex', color: '#ff8c00' });
+  });
+
+  test('shrinking and vanishing use different colours', () => {
+    const shrink = parse('Wprawiony w mlot ortoklaz wyraznie sie skurczyl.');
+    const vanish = parse('Wprawiona w mlot czarna perla znika w blysku swiatla.');
+    const colourOf = (buffer: AnsiAwareBuffer | null) =>
+      (buffer?.getSegments() ?? []).find(seg => seg.state?.foreground)?.state?.foreground;
+    expect(colourOf(shrink)).toEqual({ space: 'hex', color: '#ffff00' });
+    expect(colourOf(shrink)).not.toEqual(colourOf(vanish));
+    expect((shrink?.getSegments() ?? []).every(seg => !seg.state?.cssClass)).toBe(true);
   });
 
   test('handles neuter and feminine forms of the shrink message', () => {
