@@ -40,10 +40,8 @@ export default class TeamManager {
         this.client.on('gmcp.objects.nums', detail => {
             this.handleObjectsNums(detail);
         });
-        this.client.on('gmcp.char.info', info => {
-            if (info?.object_num !== undefined) {
-                this.playerNum = info.object_num;
-            }
+        this.client.on('player.objectNum', num => {
+            this.playerNum = num;
         });
         this.client.on('gmcp.room.info', detail => {
             this.handleRoomInfo(detail);

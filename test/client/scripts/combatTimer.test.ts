@@ -37,7 +37,7 @@ describe("combat timer", () => {
     expect(client.sendEvent).toHaveBeenLastCalledWith("combatTimer", null);
     client.sendEvent.mockClear();
 
-    client.dispatchEvent(new CustomEvent("gmcp.char.info", { detail: { object_num: 7 } }));
+    client.dispatchEvent(new CustomEvent("player.objectNum", { detail: 7 }));
     client.sendEvent.mockClear();
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "7": { attack_num: 1 } } }),
@@ -71,7 +71,7 @@ describe("combat timer", () => {
     initCombatTimer((client as unknown) as any);
     client.sendEvent.mockClear();
 
-    client.dispatchEvent(new CustomEvent("gmcp.char.info", { detail: { object_num: 13 } }));
+    client.dispatchEvent(new CustomEvent("player.objectNum", { detail: 13 }));
     client.sendEvent.mockClear();
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "13": { attack_num: false } } }),
@@ -97,7 +97,7 @@ describe("combat timer", () => {
     client.sendEvent.mockClear();
 
     // Setup: player enters combat
-    client.dispatchEvent(new CustomEvent("gmcp.char.info", { detail: { object_num: 5 } }));
+    client.dispatchEvent(new CustomEvent("player.objectNum", { detail: 5 }));
     client.dispatchEvent(
       new CustomEvent("gmcp.objects.data", { detail: { "5": { attack_num: 10 } } }),
     );

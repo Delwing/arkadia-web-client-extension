@@ -78,9 +78,13 @@ export default function initCommandPreserveCaseMode(client: Client) {
         }
     });
 
-    client.on('gmcp.char.info', (info) => {
-        if (typeof info?.object_num !== 'undefined') {
-            playerNum = info.object_num;
+    client.on('player.objectNum', (num) => {
+        playerNum = num;
+        // Same trap as the pauser: the 'editing: false' that closes the editor
+        // would come back under an id this script is no longer watching.
+        if (gmcpEditingActive) {
+            gmcpEditingActive = false;
+            exitMode();
         }
     });
 

@@ -29,6 +29,9 @@ export function getChatHistory(): ChatEntry[] {
 }
 
 export default function initChatHistory(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
+    /** The character the in-memory history belongs to; see loadFromStorage. */
+    let loadedCharacter: string | null = null;
+
     function formatTimestamp(date: Date) {
         return date.toLocaleTimeString("pl-PL", {
             hour: "2-digit",
@@ -105,6 +108,14 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     }
 
     function persistHistory() {
+        // Never write one character's messages into another character's scope. On a
+        // switch the scope moves first (setCharacter, from the same Char.Info),
+        // 'reset' then empties what belongs to the character being left, and only
+        // afterwards is the arriving one loaded - so an unguarded write here would
+        // destroy the history it is about to read.
+        if (loadedCharacter !== null && loadedCharacter !== characterStorage.getCharacter()) {
+            return;
+        }
         characterStorage.set(STORAGE_KEY, serializeHistory());
     }
 
@@ -114,7 +125,21 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         eventBus.emit("chat.cleared");
     }
 
+    /**
+     * Take over the history of whichever character the scope now names. Does nothing
+     * when that is already the character in memory: Char.Info is re-sent within a
+     * session - przeobrazenie and the appearance scrolls do it - and what is in memory
+     * is then newer than the copy in storage, which is only written on reset and on
+     * unload. What it must not do is leave the previous character's messages standing
+     * when the new one has none of its own.
+     */
     function loadFromStorage() {
+        const character = characterStorage.getCharacter();
+        if (character === loadedCharacter) {
+            return;
+        }
+        loadedCharacter = character;
+        chatHistory = [];
         const stored = characterStorage.get(STORAGE_KEY);
         if (stored) {
             loadHistory(stored);

@@ -26,7 +26,27 @@ describe('Pausers', () => {
   beforeEach(() => {
     client = new FakeClient();
     initPausers((client as unknown) as any);
-    client.sendEvent('gmcp.char.info', { object_num: '1' });
+    client.sendEvent('player.objectNum', 1);
+  });
+
+  // przeobrazenie swaps the body mid-read: the 'editing: false' that would have
+  // ended the pause arrives under an id this script was not watching, so the pause
+  // has to lift when the id moves or the mapper stays stuck until relog.
+  test('lifts the pause when the player object changes', () => {
+    const ended: boolean[] = [];
+    client.on('pauserEnd', () => { ended.push(true); });
+
+    client.sendEvent('gmcp.objects.data', { '1': { editing: true } });
+    expect(client.Map.paused).toBe(true);
+
+    client.sendEvent('player.objectNum', undefined);
+    expect(client.Map.paused).toBe(false);
+    expect(ended).toHaveLength(1);
+
+    // ...and the new body starts from a clean slate.
+    client.sendEvent('player.objectNum', 2);
+    client.sendEvent('gmcp.objects.data', { '2': { editing: false } });
+    expect(client.Map.paused).toBe(false);
   });
 
   test('pauses and resumes based on paralyzed state', () => {

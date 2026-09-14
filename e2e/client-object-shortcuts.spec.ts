@@ -4,8 +4,10 @@ import {
     getLastOutgoingCommand,
     GMCP_PATHS,
     pushGmcp,
+    pushText,
     submitCommand,
     waitForCommandInput,
+    waitForOutputContaining,
 } from './support/mocks';
 
 /**
@@ -130,6 +132,40 @@ test.describe('@shortcut command expansion', () => {
                 timeout: 5000,
             })
             .toBe('porownaj ob_501 z ob_502');
+    });
+
+    // A scroll or przeobrazenie rebuilds the character in place and gives it a new
+    // object id, without the server necessarily saying so over Char.Info. The old id
+    // simply leaves the room and an unfamiliar one takes its place, which is enough
+    // to work out which one we became.
+    test('@ follows the player through a change of appearance', async ({page}) => {
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'Hero', object_num: 700});
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
+            '700': {desc: 'Hero'},
+            '701': {desc: 'Goblin', attack_num: 1},
+        });
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [700, 701]);
+
+        await page.evaluate(() => (window as any).__resetCommandLog?.());
+        await submitCommand(page, 'obejrzyj @@');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {timeout: 5000})
+            .toBe('obejrzyj ob_700');
+
+        await pushText(page, 'Twoja twarz oblewa wpierw fala goraca, a pozniej niezwyklego chlodu. Wszystko to po chwili jednak mija. Czujesz jednak, ze cos sie zmienilo...');
+        await waitForOutputContaining(page, 'cos sie zmienilo');
+
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {'799': {desc: 'Ktos obcy'}});
+        await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [799, 701]);
+
+        await page.evaluate(() => (window as any).__resetCommandLog?.());
+        await submitCommand(page, 'obejrzyj @@');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {
+                message: '@ should point at the body the player was rebuilt into',
+                timeout: 5000,
+            })
+            .toBe('obejrzyj ob_799');
     });
 
     test('shortcut matching is case-insensitive (@a expands same as @A)', async ({page}) => {

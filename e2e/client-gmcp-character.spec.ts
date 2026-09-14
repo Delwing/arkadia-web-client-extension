@@ -55,7 +55,30 @@ test.describe('GMCP char.info character handlers', () => {
         expect(await page.evaluate(() => localStorage.getItem('currentCharacter'))).toBe('SecondChar');
     });
 
-    test('object_num change triggers reset — chat history is cleared', async ({page}) => {
+    test('a new object_num explained by przeobrazenie is a new body, not a reset', async ({page}) => {
+        // przeobrazenie and the appearance scrolls rebuild the character in place,
+        // handing out a fresh object id without the session changing. Wiping the
+        // session there would cost the chat history, the counters and the rest.
+        // An unexplained new object_num still resets - that one is a death.
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'MorphChar', object_num: 400});
+        await waitForCharacter(page, 'MorphChar');
+
+        await pushText(page, 'Ktos mowi: Wciaz pamietam!');
+        await waitForOutputContaining(page, 'Wciaz pamietam');
+
+        await pushText(page, 'Twoja twarz oblewa wpierw fala goraca, a pozniej niezwyklego chlodu. Wszystko to po chwili jednak mija. Czujesz jednak, ze cos sie zmienilo...');
+        await waitForOutputContaining(page, 'cos sie zmienilo');
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'MorphChar', object_num: 401});
+        await page.waitForTimeout(300);
+
+        await submitCommand(page, '/chat');
+        await waitForOutputContaining(page, 'Wciaz pamietam');
+
+        const output = await getRecentOutput(page, 10);
+        expect(output).not.toContain('Brak zapisanych wiadomosci czatu.');
+    });
+
+    test('object_num change across a reconnect triggers reset — chat history is cleared', async ({page}) => {
         // Login with initial object_num 100
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ResetChar', object_num: 100});
         await waitForCharacter(page, 'ResetChar');
@@ -73,7 +96,11 @@ test.describe('GMCP char.info character handlers', () => {
         expect(outputWithHistory).not.toContain('Brak zapisanych wiadomosci czatu.');
         expect(outputWithHistory).toContain('Witaj w swiecie');
 
-        // Push char.info again with the SAME name but a DIFFERENT object_num — this triggers reset
+        // Log in again: a fresh page and socket, then the new object_num the
+        // server hands out for the new body.
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'ResetChar', object_num: 200});
         // Wait for reset to process - object_num change is still ResetChar
         await page.waitForTimeout(300);

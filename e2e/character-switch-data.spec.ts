@@ -551,6 +551,41 @@ test.describe('Chat history character switch', () => {
         expect(charBChat, 'ChatCharB should have no stored chat history').toBeNull();
     });
 
+    // A switch of character scopes storage to the arriving one before 'reset' empties
+    // what belonged to the one being left, and the arriving history is only read after
+    // that - so the clearing must not be written out, or it lands on the wrong character.
+    test('switching back to a character keeps the chat history it had stored', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'KeepCharA', object_num: 80021});
+        await waitForCharacter(page, 'KeepCharA');
+        await pushText(page, 'Ktos mowi Wiadomosc dla KeepCharA', {type: 'comm'});
+        await waitForOutputContaining(page, 'Wiadomosc dla KeepCharA');
+        await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
+        await page.waitForFunction(() => localStorage.getItem('KeepCharA:chat_history') !== null);
+
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'KeepCharB', object_num: 80022});
+        await waitForCharacter(page, 'KeepCharB');
+        await pushText(page, 'Ktos mowi Wiadomosc dla KeepCharB', {type: 'comm'});
+        await waitForOutputContaining(page, 'Wiadomosc dla KeepCharB');
+        await page.evaluate(() => window.dispatchEvent(new Event('beforeunload')));
+
+        // Back to A, on the new object it was handed at its own next login - so the
+        // switch counts as a new life and fires the reset that used to do the damage.
+        await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'KeepCharA', object_num: 80023});
+        await waitForCharacter(page, 'KeepCharA');
+
+        await submitCommand(page, '/chat');
+        await waitForOutputContaining(page, 'Wiadomosc dla KeepCharA');
+
+        expect(
+            await page.evaluate(() => localStorage.getItem('KeepCharA:chat_history')),
+            'KeepCharA stored history should have survived the switch'
+        ).toContain('KeepCharA');
+    });
+
     test('chat history restores from storage after reload and switch back', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

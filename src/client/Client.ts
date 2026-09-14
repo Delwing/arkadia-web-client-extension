@@ -8,6 +8,7 @@ import CommandProcessor from "./CommandProcessor";
 import type { CommandHookCallback } from "./CommandProcessor";
 import type { AliasList } from "./AliasList";
 import {FunctionalBindManager, LINE_START_EVENT,} from "./scripts/functionalBind";
+import PlayerIdentity from "./PlayerIdentity";
 import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener, gmcp} from "./gmcp";
@@ -89,6 +90,12 @@ export default class Client {
         carriageBlocks: () => (this.carriageMode ? getBlockedRooms() : null),
         transportDefs: getTransportDefs,
     });
+    /**
+     * Owns "which object are we", including the mid-session body swaps that
+     * przeobrazenie and the appearance scrolls cause. Constructed ahead of the
+     * managers below so it has settled the id before they are told about it.
+     */
+    public PlayerIdentity = new PlayerIdentity(this);
     public TeamManager = new TeamManager(this);
     public ObjectManager = new ObjectManager(this);
     public AttackController = createAttackController(this);
@@ -169,23 +176,6 @@ export default class Client {
         onRenderSettingsChange((render) => {
             if (render.xtermPalette === 'arkadia' || render.xtermPalette === 'proper') {
                 setXtermPalette(render.xtermPalette);
-            }
-        });
-
-        this.on('gmcp.char.info', (info) => {
-            if (info?.name) {
-                characterStorage.setCharacter(info.name);
-            }
-            if (typeof info?.object_num !== 'undefined') {
-                const newNum = String(info.object_num);
-                const stored = characterStorage.get('object_num');
-                if (typeof stored !== 'undefined' && String(stored) !== newNum) {
-                    this.sendEvent('reset');
-                }
-                characterStorage.set('object_num', newNum);
-            }
-            if (info?.gender) {
-                characterStorage.set('gender', info.gender);
             }
         });
 

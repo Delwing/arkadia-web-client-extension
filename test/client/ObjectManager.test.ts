@@ -87,7 +87,8 @@ describe('ObjectManager', () => {
   });
 
   test('includes player from char info and state', () => {
-    client.sendEvent('gmcp.char.info', { object_num: 99, name: 'Hero' });
+    client.sendEvent('gmcp.char.info', { name: 'Hero' });
+    client.sendEvent('player.objectNum', 99);
     client.sendEvent('gmcp.char.state', { hp: 50 });
     client.sendEvent('gmcp.objects.nums', []);
     const objects = manager.getObjectsOnLocation();
@@ -105,7 +106,8 @@ describe('ObjectManager', () => {
   });
 
   test('normalizes player name to title case', () => {
-    client.sendEvent('gmcp.char.info', { object_num: 1, name: 'hERO NAME' });
+    client.sendEvent('gmcp.char.info', { name: 'hERO NAME' });
+    client.sendEvent('player.objectNum', 1);
    client.sendEvent('gmcp.char.state', { hp: 10 });
    client.sendEvent('gmcp.objects.nums', []);
     const objects = manager.getObjectsOnLocation();
@@ -140,7 +142,8 @@ describe('ObjectManager', () => {
   });
 
   test('sorts player, team, and rest with shortcuts', () => {
-    client.sendEvent('gmcp.char.info', { object_num: 100, name: 'Player' });
+    client.sendEvent('gmcp.char.info', { name: 'Player' });
+    client.sendEvent('player.objectNum', 100);
     client.sendEvent('gmcp.char.state', { hp: 30 });
     client.sendEvent('gmcp.objects.data', {
       '1': { desc: 'Goblin', hp: 10 },
@@ -239,7 +242,8 @@ describe('ObjectManager', () => {
   });
 
   test('sorts team members by shortcut regardless of order', () => {
-    client.sendEvent('gmcp.char.info', { object_num: 100, name: 'Player' });
+    client.sendEvent('gmcp.char.info', { name: 'Player' });
+    client.sendEvent('player.objectNum', 100);
     client.sendEvent('gmcp.char.state', { hp: 30 });
     client.sendEvent('gmcp.objects.data', {
       '2': { desc: 'Ally1', hp: 40, team: true },
@@ -274,7 +278,8 @@ describe('ObjectManager', () => {
     });
 
     test('numbers team members sequentially followed by enemies', () => {
-      client.sendEvent('gmcp.char.info', { object_num: 100, name: 'Player' });
+      client.sendEvent('gmcp.char.info', { name: 'Player' });
+      client.sendEvent('player.objectNum', 100);
       client.sendEvent('gmcp.char.state', { hp: 30 });
       client.sendEvent('gmcp.objects.data', {
         '1': { desc: 'Goblin', hp: 10, attack_num: true },
@@ -311,7 +316,8 @@ describe('ObjectManager', () => {
     });
 
     test('non-combat objects continue sequence when not in combat', () => {
-      client.sendEvent('gmcp.char.info', { object_num: 100, name: 'Player' });
+      client.sendEvent('gmcp.char.info', { name: 'Player' });
+      client.sendEvent('player.objectNum', 100);
       client.sendEvent('gmcp.objects.data', {
         '2': { desc: 'Ally', hp: 40, team: true },
         '3': { desc: 'Rock' },
@@ -326,7 +332,8 @@ describe('ObjectManager', () => {
     });
 
     test('team only (no enemies) numbers correctly', () => {
-      client.sendEvent('gmcp.char.info', { object_num: 100, name: 'Player' });
+      client.sendEvent('gmcp.char.info', { name: 'Player' });
+      client.sendEvent('player.objectNum', 100);
       client.sendEvent('gmcp.objects.data', {
         '2': { desc: 'Ally1', hp: 40, team: true },
         '3': { desc: 'Ally2', hp: 50, team: true },

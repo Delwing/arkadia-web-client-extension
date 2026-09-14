@@ -59,7 +59,7 @@ describe('commandPreserveCaseMode', () => {
   });
 
   test('toggles preserve case mode with gmcp editing events', () => {
-    client.emit('gmcp.char.info', { object_num: 42 });
+    client.emit('player.objectNum', 42);
     client.emit('gmcp.objects.data', { 42: { editing: true } });
     expect(normalizeCommand('Look Around')).toBe('Look Around');
 
