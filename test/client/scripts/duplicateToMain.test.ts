@@ -126,8 +126,9 @@ describe('duplicate to main window', () => {
   test('regaining sight is copied to the main window', () => {
     parse('Powoli odzyskujesz wzrok.', 'combat.avatar');
 
+    expect(client.sendEvent).toHaveBeenCalledWith('stunEnd');
     expect(client.print).toHaveBeenCalledTimes(1);
-    expect(client.print.mock.calls[0][0].text).toContain('Powoli odzyskujesz wzrok.');
+    expect(client.print.mock.calls[0][0].text).toContain('KONIEC OSLEPIENIA');
   });
 
   test('somebody else going blind is not copied', () => {

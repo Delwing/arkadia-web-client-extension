@@ -337,15 +337,13 @@ export default function initSpells(client: Client) {
     // Magiczne oslepienie koniec - on me
     client.Triggers.registerTrigger(
         "Powoli odzyskujesz wzrok.",
-        (line) => {
+        () => {
+            client.sendEvent("stunEnd" as any);
+
             const result = new AnsiAwareBuffer();
-            result.append("\n", COLOR_WHITE);
-            result.append("[", COLOR_WHITE);
-            result.append(" OK ", COLOR_GREEN);
-            result.append("]", COLOR_WHITE);
-            result.append(" ");
-            result.appendBuffer(line);
-            result.append("\n");
+            result.append("\n\n");
+            result.append("[   OSLEPIENIE   ] ----- KONIEC OSLEPIENIA -----", COLOR_GREEN);
+            result.append("\n\n");
             return result;
         },
         tag
