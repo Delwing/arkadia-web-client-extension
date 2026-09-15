@@ -77,6 +77,38 @@ describe('duplicate to main window', () => {
     expect(client.print.mock.calls[0][0].text).toContain('[    BRON    ]');
   });
 
+  test('being stunned is redirected and copied to the main window', () => {
+    const result = parse('Powoli osuwasz sie na ziemie.', 'combat.avatar');
+
+    expect(client.sendEvent).toHaveBeenCalledWith('stunStart');
+    expect(result).toBeNull();
+    expect(getCombatHistory()).toHaveLength(1);
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toContain('JESTES OGLUSZONY');
+  });
+
+  test('coming out of a stun is copied to the main window', () => {
+    parse('Powoli dochodzisz do siebie.', 'combat.avatar');
+
+    expect(client.sendEvent).toHaveBeenCalledWith('stunEnd');
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toContain('KONIEC OGLUCHA');
+  });
+
+  test('somebody else being stunned is not copied', () => {
+    setCombatRedirectSetting('combat.others', true);
+
+    const result = parse(
+      'Niespodziewanie kamienny golem wyciaga reke i uderza w glowe Orka.',
+      'combat.others',
+    );
+
+    expect(result).toBeNull();
+    expect(client.print).not.toHaveBeenCalled();
+
+    setCombatRedirectSetting('combat.others', false);
+  });
+
   test('the copy is independent of the deleted original', () => {
     parse('Ork zwinnym ruchem wytraca ci miecz.', 'combat.avatar');
 

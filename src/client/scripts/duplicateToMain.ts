@@ -36,6 +36,16 @@ const DEFAULT_RULES: DuplicateToMainRule[] = [
         tag: "weapon-knock-off",
         match: /\[\s+(?:BRON|MOZESZ DOBYWAC)\s+\]/,
     },
+    {
+        // Being stunned and coming back out of it. Emitted by the
+        // `color_ogluchy` Lua gags and by the magic-storm trigger in
+        // `spells.ts`; all of them label the line `[   OGLUCH   ]`. The
+        // padded brackets are what tells the banner apart from the
+        // `[OGLUCH] ` prefix the same gags put on somebody else being
+        // stunned, which stays in the combat window.
+        tag: "stun",
+        match: /\[\s+OGLUCH\s+\]/,
+    },
 ];
 
 let rules: DuplicateToMainRule[] = [...DEFAULT_RULES];
