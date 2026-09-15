@@ -123,6 +123,11 @@ body.layout-locked .docked-panel__header,
 body.layout-locked .tab-group-tab {
   cursor: default;
 }
+/* The close button is gone, so its reserved right padding would push tab
+   titles off-centre — even the padding back out. */
+body.layout-locked .tab-group-tab--closable {
+  padding-right: 12px;
+}
 
 /* Layout Manager Root - must use display:contents to not interfere with grid */
 #layout-manager-root {
@@ -1419,7 +1424,9 @@ body.layout-manager-enabled .compass-rose-box {
   align-items: center;
   gap: 2px;
   height: 28px;
-  padding: 0 6px 0 12px;
+  /* Even padding by default — tabs with no close button (map, object list)
+   * would otherwise look shifted. */
+  padding: 0 12px;
   cursor: grab;
   user-select: none;
   flex-shrink: 0;
@@ -1434,6 +1441,9 @@ body.layout-manager-enabled .compass-rose-box {
   border-bottom: 2px solid var(--layout-accent, #589aff);
 }
 .tab-group-tab--locked { cursor: default; }
+/* The close button brings its own box, so trim the right padding to keep the
+ * title visually centred in the tab. */
+.tab-group-tab--closable { padding-right: 6px; }
 
 .tab-group-tab-title {
   font-family: var(--font-ui), sans-serif;

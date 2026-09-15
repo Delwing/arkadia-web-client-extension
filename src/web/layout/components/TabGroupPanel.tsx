@@ -98,7 +98,7 @@ function TabItem({ panel, isActive, manager, onDragStateChange }: TabItemProps) 
     <div
       className={`tab-group-tab${isActive ? ' tab-group-tab--active' : ''}${
         chrome.isLocked ? ' tab-group-tab--locked' : ''
-      }`}
+      }${chrome.closable ? ' tab-group-tab--closable' : ''}`}
       onPointerDown={handlePointerDown}
     >
       <span className="tab-group-tab-title">{chrome.title}</span>
