@@ -17,8 +17,8 @@ import { globalStorage } from "@modules/core/storage";
  * top, chips below - each scrolling sideways instead of wrapping. Nothing is
  * hidden and nothing is reordered; the footer simply stops resizing itself.
  * This module owns the one piece of that which is not CSS: the expander that
- * unfolds both rails into a full, wrapped panel when the player wants to see
- * everything at once.
+ * unfolds the rails - and the location-bind row above them - into full, wrapped
+ * panels when the player wants to see everything at once.
  */
 
 /**
@@ -48,23 +48,25 @@ const COLLAPSE_TITLE = 'Zwin stopke';
  * half the screen on the next connect.
  */
 export function setupMobileFooter(): () => void {
-    const charState = document.getElementById('char-state');
     const button = document.getElementById('footer-expand');
-    if (!charState || !button) return () => {};
+    if (!document.getElementById('char-state') || !button) return () => {};
 
+    // The flag rides on <body>, not on the footer: the location-bind row unfolds
+    // with it and is the footer's sibling, which no CSS selector can reach from
+    // inside it.
     const setExpanded = (expanded: boolean) => {
-        charState.dataset.footerExpanded = expanded ? '1' : '0';
+        document.body.dataset.footerExpanded = expanded ? '1' : '0';
         button.setAttribute('title', expanded ? COLLAPSE_TITLE : EXPAND_TITLE);
     };
 
     setExpanded(false);
 
-    const onClick = () => setExpanded(charState.dataset.footerExpanded !== '1');
+    const onClick = () => setExpanded(document.body.dataset.footerExpanded !== '1');
     button.addEventListener('click', onClick);
 
     // Rotating a phone into landscape (or resizing a desktop window past the
-    // breakpoint) leaves the desktop footer with a stale expanded flag, which
-    // the desktop CSS ignores but which would come back on the next rotation.
+    // breakpoint) leaves a stale expanded flag behind, which the desktop CSS
+    // ignores but which would come back on the next rotation.
     const media = typeof window.matchMedia === 'function' ? window.matchMedia(MOBILE_FOOTER_QUERY) : null;
     const onMediaChange = () => {
         if (!media?.matches) setExpanded(false);

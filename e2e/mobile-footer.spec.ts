@@ -128,13 +128,13 @@ test.describe('Mobile footer', () => {
         await expect(expander, 'the expander belongs to the phone footer').toBeVisible();
         await expander.click();
 
-        await expect(page.locator('#char-state')).toHaveAttribute('data-footer-expanded', '1');
+        await expect(page.locator('body')).toHaveAttribute('data-footer-expanded', '1');
         expect(await footerHeight(page), 'unfolding shows more, so the footer grows').toBeGreaterThan(collapsed);
         const vitals = await railOverflow(page, '#char-state-vitals');
         expect(vitals.scrollWidth, 'unfolded, nothing is left off the side').toBeLessThanOrEqual(vitals.clientWidth);
 
         await expander.click();
-        await expect(page.locator('#char-state')).toHaveAttribute('data-footer-expanded', '0');
+        await expect(page.locator('body')).toHaveAttribute('data-footer-expanded', '0');
         expect(await footerHeight(page), 'folding back restores the dock').toBe(collapsed);
     });
 

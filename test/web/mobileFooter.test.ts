@@ -12,7 +12,7 @@ describe("mobile footer expander", () => {
     let matches: boolean;
     let teardown: () => void = () => {};
 
-    const charState = () => document.getElementById("char-state")!;
+    const expanded = () => document.body.dataset.footerExpanded;
     const button = () => document.getElementById("footer-expand")!;
 
     beforeEach(() => {
@@ -42,14 +42,14 @@ describe("mobile footer expander", () => {
 
     test("starts collapsed and toggles on each click", () => {
         teardown = setupMobileFooter();
-        expect(charState().dataset.footerExpanded).toBe("0");
+        expect(expanded()).toBe("0");
 
         button().click();
-        expect(charState().dataset.footerExpanded).toBe("1");
+        expect(expanded()).toBe("1");
         expect(button().getAttribute("title")).toBe("Zwin stopke");
 
         button().click();
-        expect(charState().dataset.footerExpanded).toBe("0");
+        expect(expanded()).toBe("0");
         expect(button().getAttribute("title")).toBe("Rozwin stopke");
     });
 
@@ -58,11 +58,11 @@ describe("mobile footer expander", () => {
     test("folds itself away once the viewport is no longer phone-width", () => {
         teardown = setupMobileFooter();
         button().click();
-        expect(charState().dataset.footerExpanded).toBe("1");
+        expect(expanded()).toBe("1");
 
         matches = false;
         listeners.forEach((listener) => listener());
-        expect(charState().dataset.footerExpanded).toBe("0");
+        expect(expanded()).toBe("0");
     });
 
     test("stops listening once torn down", () => {
@@ -70,7 +70,7 @@ describe("mobile footer expander", () => {
         stop();
 
         button().click();
-        expect(charState().dataset.footerExpanded).toBe("0");
+        expect(expanded()).toBe("0");
         expect(listeners).toHaveLength(0);
     });
 

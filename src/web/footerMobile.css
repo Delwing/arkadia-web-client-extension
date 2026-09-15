@@ -220,7 +220,7 @@
     transition: transform 0.15s ease;
   }
 
-  body[data-mobile-footer="1"] #char-state[data-footer-expanded="1"] > #footer-expand {
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state > #footer-expand {
     transform: rotate(180deg);
   }
 
@@ -238,8 +238,8 @@
   /* Unfolded, both rails wrap and a long chip is allowed to run onto a second
      line, so a warning that was clipped in the dock can be read in full. The
      panel is capped and scrolls vertically rather than taking the screen. */
-  body[data-mobile-footer="1"] #char-state[data-footer-expanded="1"] #char-state-vitals,
-  body[data-mobile-footer="1"] #char-state[data-footer-expanded="1"] #footer-chips {
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state-vitals,
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-chips {
     flex-wrap: wrap;
     overflow-x: hidden;
     overflow-y: auto;
@@ -252,14 +252,14 @@
 
   /* The bars container is one item of the vitals rail, so it has to be given
      the rail's width before its own wrapping can do anything. */
-  body[data-mobile-footer="1"] #char-state[data-footer-expanded="1"] #char-state-bars {
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state-bars {
     flex: 1 1 100%;
     flex-wrap: wrap;
     min-width: 0;
   }
 
-  body[data-mobile-footer="1"] #char-state[data-footer-expanded="1"] #footer-chips > span:not(#plugin-footer-components),
-  body[data-mobile-footer="1"] #char-state[data-footer-expanded="1"] #footer-chips .footer-plugin-item {
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-chips > span:not(#plugin-footer-components),
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-chips .footer-plugin-item {
     max-width: 100%;
     overflow: visible;
     white-space: normal;
@@ -277,11 +277,31 @@
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
   }
 
   body[data-mobile-footer="1"] #multi-binds .multi-bind {
     flex: 0 0 auto;
     max-width: 70vw;
     overflow: hidden;
+  }
+
+  /* The expander unfolds the binds too - they are the row a player acts on, so
+     "show me everything" that stopped at the footer would be the wrong half. */
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #multi-binds.active {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 22vh;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #multi-binds .multi-bind {
+    max-width: 100%;
+    overflow: visible;
+    white-space: normal;
+    text-align: left;
   }
 }
