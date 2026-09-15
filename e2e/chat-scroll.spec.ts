@@ -114,7 +114,11 @@ test.describe('Chat popup scroll', () => {
         }
         await waitForChatMessages(page, 20);
 
-        // Scroll up manually
+        // Scroll up manually. Every appended message holds off scroll detection
+        // for 250ms (the shared anti-flicker debounce the main output uses), so
+        // the scroll has to land after that window — a wheel gesture, which the
+        // debounce deliberately does not apply to, would not have to wait.
+        await page.waitForTimeout(300);
         await messagesContainer.evaluate((el) => {
             el.scrollTop = 0;
         });
@@ -129,6 +133,34 @@ test.describe('Chat popup scroll', () => {
         // Verify it did NOT scroll to bottom (user scrolled up)
         const scrollTop = await messagesContainer.evaluate((el) => el.scrollTop);
         expect(scrollTop, 'should stay at top when user scrolled up').toBeLessThan(50);
+    });
+
+    test('scrolling up opens the split pane with the newest lines', async ({page}) => {
+        await prepareClient(page);
+        await openChatPopup(page);
+
+        const messagesContainer = page.locator('.chat-popup__messages');
+        await expect(messagesContainer).toBeVisible();
+
+        for (let i = 1; i <= 20; i++) {
+            await sendChatMessage(page, `Message ${i}`);
+        }
+        await waitForChatMessages(page, 20);
+
+        // Past the append debounce (see the scroll-up test above).
+        await page.waitForTimeout(300);
+        await messagesContainer.evaluate((el) => {
+            el.scrollTop = 0;
+        });
+
+        const pane = page.locator('.chat-popup .popup-split-bottom');
+        await expect(pane).toBeVisible();
+        await expect(pane).toContainText('Message 20');
+
+        // The newest line keeps arriving in the pane while the scrollback stays put.
+        await sendChatMessage(page, 'Message while scrolled up');
+        await expect(pane).toContainText('Message while scrolled up');
+        expect(await messagesContainer.evaluate((el) => el.scrollTop)).toBeLessThan(50);
     });
 
     test('resumes auto-scroll when user scrolls back to bottom', async ({page}) => {

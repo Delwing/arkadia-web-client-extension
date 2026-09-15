@@ -8,6 +8,13 @@ import { getChatHistory, ChatEntry } from '../client/scripts/chatHistory';
 
 const POPUP_ID = 'popup:chat';
 const DISPLAY_LIMIT = 100;
+// While the user is scrolled up reading, dropping the oldest entries would
+// shift the lines they are reading — so the cap is raised (never removed) until
+// they come back to the bottom, as the main output pauses its trim in split view.
+const SPLIT_VIEW_LIMIT = 500;
+// Newest lines mirrored into the sticky pane; the pane clips what does not fit.
+const SPLIT_VIEW_LINES = 40;
+const DEFAULT_SPLIT_HEIGHT = 120;
 
 interface ChatHeaderMenuProps {
     noWrap: boolean;
@@ -126,13 +133,18 @@ const ChatPopup: React.FC = () => {
     const [noWrap, setNoWrap] = usePopupSetting(POPUP_ID, 'noWrap', false);
     const [showTimestamp, setShowTimestamp] = usePopupSetting(POPUP_ID, 'showTimestamp', true);
 
+    // Read by the (memoized) update transform, which must not re-subscribe
+    // whenever the split view opens or closes.
+    const splitViewRef = useRef(false);
+
     // Data management with automatic event subscription
     const { data: messages } = usePopupData<ChatEntry[]>(isOpen, {
         getInitialData: useCallback(() => [...getChatHistory()], []),
         updateEvent: 'chat.newMessage',
         transformUpdate: useCallback((entry: ChatEntry) => (prev: ChatEntry[]) => {
             const updated = [...prev, entry];
-            return updated.length > DISPLAY_LIMIT ? updated.slice(-DISPLAY_LIMIT) : updated;
+            const limit = splitViewRef.current ? SPLIT_VIEW_LIMIT : DISPLAY_LIMIT;
+            return updated.length > limit ? updated.slice(-limit) : updated;
         }, []),
         clearEvent: 'chat.cleared',
         clearedValue: [],
@@ -143,10 +155,30 @@ const ChatPopup: React.FC = () => {
         ? messages.filter(m => m.isTeamMember)
         : messages;
 
-    // Auto-scroll behavior
-    const { containerRef, handleScroll } = useAutoScroll({
+    // Auto-scroll, plus the split view that keeps the newest lines in sight
+    // while the scrollback is being read — the same engine the main output runs on.
+    const [splitHeight, setSplitHeight] = usePopupSetting(POPUP_ID, 'splitHeight', DEFAULT_SPLIT_HEIGHT);
+    const { containerRef, isSplitView, splitPaneRef, splitHandleProps } = useAutoScroll({
         deps: [displayedMessages],
+        splitHeight,
+        onSplitResize: setSplitHeight,
     });
+    splitViewRef.current = isSplitView;
+
+    const renderEntry = (entry: ChatEntry, index: number) => (
+        <div
+            key={`${entry.timestamp}-${index}`}
+            className={`chat-popup__message${entry.isTeamMember ? ' chat-popup__message--team' : ''}`}
+        >
+            {showTimestamp && (
+                <span className="chat-popup__timestamp">[{entry.timestamp}]</span>
+            )}
+            <span
+                className="chat-popup__text"
+                dangerouslySetInnerHTML={{ __html: entry.buffer.toHtml() }}
+            />
+        </div>
+    );
 
     // Toggle buttons in header
     const headerActions = (
@@ -184,7 +216,6 @@ const ChatPopup: React.FC = () => {
             <div
                 className={`chat-popup__messages${noWrap ? ' chat-popup__messages--no-wrap' : ''}`}
                 ref={containerRef}
-                onScroll={handleScroll}
             >
                 {displayedMessages.length === 0 ? (
                     <div className="chat-popup__empty">
@@ -193,20 +224,19 @@ const ChatPopup: React.FC = () => {
                             : 'Brak zapisanych wiadomosci czatu.'}
                     </div>
                 ) : (
-                    displayedMessages.map((entry, index) => (
-                        <div
-                            key={`${entry.timestamp}-${index}`}
-                            className={`chat-popup__message${entry.isTeamMember ? ' chat-popup__message--team' : ''}`}
-                        >
-                            {showTimestamp && (
-                                <span className="chat-popup__timestamp">[{entry.timestamp}]</span>
-                            )}
-                            <span
-                                className="chat-popup__text"
-                                dangerouslySetInnerHTML={{ __html: entry.buffer.toHtml() }}
-                            />
+                    displayedMessages.map(renderEntry)
+                )}
+                {isSplitView && (
+                    <div
+                        className="popup-split-bottom"
+                        ref={splitPaneRef}
+                        style={{ height: splitHeight }}
+                    >
+                        <div className="popup-split-handle" {...splitHandleProps} />
+                        <div className="popup-split-sticky">
+                            {displayedMessages.slice(-SPLIT_VIEW_LINES).map(renderEntry)}
                         </div>
-                    ))
+                    </div>
                 )}
             </div>
         </DockablePopupWrapper>

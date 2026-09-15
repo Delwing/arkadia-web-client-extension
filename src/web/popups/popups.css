@@ -285,10 +285,65 @@
 .combat-popup__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem;
+  /* No bottom padding: the split pane has to be able to cover the bottom edge
+     (see .popup-split-bottom). */
+  padding: 0.5rem 0.5rem 0;
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
+}
+
+/* ── popup split view ──────────────────────────────────────────────────────
+   The popup counterpart of the main output's #split-bottom: while the user is
+   scrolled up, a sticky pane keeps the newest lines pinned to the bottom, so a
+   fight stays readable while its scrollback is being read. Generic on purpose —
+   any popup scrollback driven by useAutoScroll can render one.
+
+   The gutter has to match the scroller's side padding, which the pane bleeds
+   over so no scrollback shows through beside it. It cannot do the same at the
+   bottom: a sticky box is clamped to its containing block — the scroller's
+   CONTENT box — so any bottom padding on the scroller stays uncovered and the
+   scrollback scrolls through that strip. The scroller therefore carries no
+   bottom padding (`.combat-popup__messages`), exactly as the main output's
+   wrapper doesn't. */
+.popup-split-bottom {
+  --popup-split-gutter: 0.5rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  max-height: 70%;
+  overflow: hidden;
+  background-color: var(--popup-bg);
+  margin: 0 calc(-1 * var(--popup-split-gutter));
+  padding: 0 var(--popup-split-gutter);
+}
+
+.popup-split-handle {
+  height: 2px;
+  margin: 0 calc(-1 * var(--popup-split-gutter));
+  background-color: var(--popup-border);
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  z-index: 2;
+}
+
+.popup-split-handle:hover,
+.popup-split-handle:active {
+  background-color: var(--popup-accent);
+}
+
+/* Bottom-anchored, so the newest line sits at the bottom edge and anything that
+   does not fit is clipped off the top by the pane's overflow. */
+.popup-split-sticky {
+  position: absolute;
+  bottom: 0;
+  left: var(--popup-split-gutter);
+  right: var(--popup-split-gutter);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--popup-bg);
 }
 
 .combat-popup__message {
@@ -1304,7 +1359,9 @@
 .chat-popup__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem;
+  /* No bottom padding: the split pane has to be able to cover the bottom edge
+     (see .popup-split-bottom). */
+  padding: 0.5rem 0.5rem 0;
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;

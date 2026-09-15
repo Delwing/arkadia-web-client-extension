@@ -76,7 +76,7 @@ export default function AssistantPopup() {
         onOpen: handleOpenEvent,
     });
 
-    const { containerRef, handleScroll } = useAutoScroll({ deps: [messages] });
+    const { containerRef } = useAutoScroll({ deps: [messages] });
 
     const ask = useCallback((question: string) => {
         const trimmed = question.trim();
@@ -219,7 +219,7 @@ export default function AssistantPopup() {
             bodyClassName="assistant-popup-body"
             headerActions={headerActions}
         >
-            <div className="assistant-popup__messages" ref={containerRef} onScroll={handleScroll}>
+            <div className="assistant-popup__messages" ref={containerRef}>
                 {messages.length === 0 && (
                     <div className="assistant-popup__empty">{WELCOME}</div>
                 )}
