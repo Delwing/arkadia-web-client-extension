@@ -40,6 +40,20 @@ export interface FooterItem {
   node?: HTMLElement;
 }
 
+/**
+ * Where a configured item's order lands: in a band above "start" (0) and below
+ * "end" (1000), so an item the config has never heard of - a plugin component
+ * nobody has moved yet - still sits before or after the configured ones as it
+ * asked.
+ *
+ * The whole footer is laid out in this one space. The stock UI puts the same
+ * band on its own chip elements (see `applyFooterComponents`), because there
+ * the built-ins are plain DOM and only the plugin items come from this registry
+ * - the two have to agree, or a plugin component could never be dragged past a
+ * built-in chip.
+ */
+export const CONFIG_ORDER_BASE = 100;
+
 const items = new Map<string, FooterItem>();
 const listeners = new Set<() => void>();
 
@@ -71,10 +85,7 @@ function recompute(): void {
   const visible: FooterItem[] = [];
   for (const item of items.values()) {
     const cfg = config.get(item.id);
-    // Config order sits in a band above "start" (0) and below "end" (1000), so
-    // an item the config has never heard of - a plugin component nobody has
-    // moved yet - still lands before or after the configured ones as it asked.
-    const placed = cfg ? { ...item, order: 100 + cfg.order } : item;
+    const placed = cfg ? { ...item, order: CONFIG_ORDER_BASE + cfg.order } : item;
     all.push(placed);
     if (cfg && !cfg.visible) continue; // switched off by the user
     visible.push(placed);

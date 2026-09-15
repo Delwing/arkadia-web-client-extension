@@ -1309,6 +1309,13 @@ h1 {
   display: none;
 }
 
+/* The slot is a grouping element only: its items carry their own flex order and
+   have to sit in the same flex context as the stock chips, or nothing the footer
+   settings say about a plugin's position relative to a chip can be honoured. */
+#plugin-footer-components {
+  display: contents;
+}
+
 #char-state > span[data-footer-hidden="1"],
 #char-state > div[data-footer-hidden="1"] {
   display: none !important;

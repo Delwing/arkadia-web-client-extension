@@ -74,6 +74,24 @@ async function openFooterSettings(page: Page) {
 /** The plugin's own span, wherever the footer put it. */
 const chip = (page: Page) => page.locator('.plugin-footer-component', {hasText: CHIP_TEXT});
 
+/** The flex item the plugin component is laid out as, and the last stock chip. */
+const PLUGIN_ITEM = '#char-state .footer-plugin-item';
+const LAST_CHIP = '#connection-status';
+
+/**
+ * Where the footer actually puts something. #char-state is a flex row, so a
+ * position is the computed `order` of a flex item - the stock chips are elements
+ * in that row, and the plugin component sits in a `display: contents` slot so
+ * that it is one too.
+ */
+async function footerOrder(page: Page, selector: string): Promise<number> {
+    return page.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) throw new Error(`no footer element for ${sel}`);
+        return Number(window.getComputedStyle(el).order);
+    }, selector);
+}
+
 test.beforeEach(async ({context}) => {
     await installEmbeddedMock(context);
 });
@@ -114,5 +132,46 @@ test.describe('plugin footer components in the footer settings', () => {
         await modalAgain.locator('#ui-settings-save').click();
         await expect(modalAgain).not.toBeVisible();
         await expect(chip(page), 'switching it back on should restore the chip').toBeVisible();
+    });
+
+    test('can be reordered past a built-in chip', async ({page}) => {
+        await page.goto('/');
+        await ensureGameSocket(page);
+        await waitForCommandInput(page);
+
+        await loadPlugin(page);
+        await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
+
+        // Registered as 'end', so it starts behind every built-in chip.
+        expect(await footerOrder(page, PLUGIN_ITEM), 'an unmoved "end" component sits last')
+            .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
+
+        const modal = await openFooterSettings(page);
+        const rows = modal.locator('#ui-footer-components-settings').locator('.d-flex.align-items-center');
+        const row = rows.filter({hasText: PLUGIN_NAME});
+        const lastBuiltIn = await rows.count() - 2;
+
+        // Move the plugin's row one place up, over the last built-in chip. The
+        // keyboard sensor lifts on Space and moves on the arrows; each step only
+        // reaches the drop once React has rendered it, so wait for what the step
+        // does - the lifted row is dimmed, and moving it shifts it up the list.
+        await row.locator('[role="button"]').first().focus();
+        await page.keyboard.press('Space');
+        await expect(row, 'Space should lift the row').toHaveCSS('opacity', '0.5');
+        await page.keyboard.press('ArrowUp');
+        await expect
+            .poll(() => row.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m42),
+                {message: 'ArrowUp should shift the lifted row upwards'})
+            .toBeLessThan(0);
+        await page.keyboard.press('Space');
+        await expect(rows.nth(lastBuiltIn), 'dropping it should reorder the list')
+            .toContainText(PLUGIN_NAME);
+
+        await modal.locator('#ui-settings-save').click();
+        await expect(modal).not.toBeVisible();
+
+        expect(await footerOrder(page, PLUGIN_ITEM), 'moving it up should move it in the footer')
+            .toBeLessThan(await footerOrder(page, LAST_CHIP));
+        await expect(chip(page), 'and it should still be shown').toBeVisible();
     });
 });

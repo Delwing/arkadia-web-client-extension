@@ -12,6 +12,7 @@ import {
     type UiSettings
 } from "./defaultUiSettings";
 import {globalStorage} from "@modules/core/storage";
+import {CONFIG_ORDER_BASE} from "@modules/core/footerRegistry";
 import {getEmbeddedMap} from "./embedRegistry";
 import {
     setShellSettings,
@@ -239,7 +240,12 @@ function applyFooterComponents(footerComponents: FooterComponentConfig[]) {
         if (!STOCK_CHIP_ID.test(config.id)) continue;
         const element = charState.querySelector(`#${config.id}`) as HTMLElement | null;
         if (element) {
-            element.style.order = String(config.order);
+            // Same band the registry places configured items in, so a chip and a
+            // plugin component next to each other in the settings list end up
+            // next to each other in the footer. Everything #char-state holds
+            // that the config says nothing about - the char state text, the bars
+            // - keeps flex order 0 and stays in front.
+            element.style.order = String(CONFIG_ORDER_BASE + config.order);
             element.dataset.footerHidden = config.visible ? '0' : '1';
         }
     }
