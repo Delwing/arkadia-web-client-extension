@@ -89,6 +89,8 @@ export interface MapSettings {
     emojiLabels: boolean;
 }
 
+export type MultibindKeyHints = 'auto' | 'always' | 'never';
+
 /** Movement / command / team behaviour the client and scripts act on. */
 export interface BehaviorSettings {
     explorationMode: boolean;
@@ -143,6 +145,12 @@ export interface ChromeSettings extends DeviceViewSettings {
      */
     mobileFooterCompact: boolean;
     keepMultibindsVisible: boolean;
+    /**
+     * Whether the location-bind pills lead with their keyboard shortcut.
+     * 'auto' shows them only where a physical keyboard can be found (see
+     * @shared/dom/hardwareKeyboard); 'always' / 'never' settle it by hand.
+     */
+    multibindKeyHints: MultibindKeyHints;
     splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;

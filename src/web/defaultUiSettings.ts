@@ -55,6 +55,7 @@ export const defaultChromeSettings: ChromeSettings = {
     footerComponents: defaultFooterComponents,
     mobileFooterCompact: true,
     keepMultibindsVisible: false,
+    multibindKeyHints: 'auto',
     objectListBackgroundColor: '#000000',
     objectListBackgroundAlpha: 0.4,
     alwaysVisibleBars: [],

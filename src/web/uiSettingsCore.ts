@@ -549,6 +549,9 @@ export function load(): UiSettings {
             const mobileFooterCompact = typeof parsed.mobileFooterCompact === 'boolean'
                 ? parsed.mobileFooterCompact
                 : defaultUiSettings.mobileFooterCompact;
+            const multibindKeyHints = parsed.multibindKeyHints === 'always' || parsed.multibindKeyHints === 'never'
+                ? parsed.multibindKeyHints
+                : defaultUiSettings.multibindKeyHints;
             const drinkableAsFunctionalBind = typeof parsed.drinkableAsFunctionalBind === 'boolean'
                 ? parsed.drinkableAsFunctionalBind
                 : defaultUiSettings.drinkableAsFunctionalBind;
@@ -632,6 +635,7 @@ export function load(): UiSettings {
                 footerComponents,
                 keepMultibindsVisible,
                 mobileFooterCompact,
+                multibindKeyHints,
                 drinkableAsFunctionalBind,
                 gateAsFunctionalBind,
                 dismountOnRefusedRide,

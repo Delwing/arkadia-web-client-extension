@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, submitCommand, waitForCommandInput} from './support/mocks';
 
 /**
  * The phone footer (src/web/mobileFooter.ts + footerMobile.css).
@@ -14,6 +14,10 @@ import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
  */
 
 const PHONE = {width: 390, height: 844};
+
+const MENU_BUTTON = '#menu-button';
+const UI_SETTINGS_BUTTON = '#ui-settings-button';
+const UI_SETTINGS_MODAL = '#ui-settings-modal';
 
 /** A quiet character: a couple of stats worth showing, nothing else. */
 const CALM_STATE = {hp: 5, mana: 6, fatigue: 3, improve: 5};
@@ -40,9 +44,9 @@ async function railOverflow(page: Page, selector: string) {
 }
 
 async function openFooterSettings(page: Page) {
-    await page.click('#menu-button');
-    await page.click('#ui-settings-button');
-    const modal = page.locator('#ui-settings-modal');
+    await page.click(MENU_BUTTON);
+    await page.click(UI_SETTINGS_BUTTON);
+    const modal = page.locator(UI_SETTINGS_MODAL);
     await expect(modal, 'should open UI settings modal').toBeVisible();
     await modal.getByRole('button', {name: 'Stopka', exact: true}).click();
     return modal;
@@ -175,5 +179,62 @@ test.describe('Footer on a wide screen', () => {
         // flex item of the footer row, which is what its configured order acts on.
         const display = await page.evaluate(() => getComputedStyle(document.getElementById('footer-chips')!).display);
         expect(display).toBe('contents');
+    });
+});
+
+/**
+ * The bind pills lead with "[ALT+1]", which is worth its width to a player who
+ * can press it and clutter to one who cannot. The hints follow a guess at
+ * whether a keyboard is attached (@shared/dom/hardwareKeyboard), which on a
+ * touch-only device starts at "no" and is revised by the first keystroke no
+ * on-screen keyboard could have sent.
+ */
+test.describe('Bind shortcut hints without a keyboard', () => {
+    test.use({viewport: PHONE, hasTouch: true, isMobile: true});
+
+    /**
+     * Opens the client the way a finger would. `waitForCommandInput` dismisses
+     * the login overlay with Escape, which is itself proof of a keyboard - on a
+     * phone that panel is closed by tapping its cross.
+     */
+    async function openByTouch(page: Page) {
+        await page.goto('/');
+        const close = page.locator('#auth-close');
+        if (await close.isVisible()) await close.click();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+    }
+
+    test('are dropped on a touch-only device and return once a key proves one', async ({page}) => {
+        await openByTouch(page);
+
+        await submitCommand(page, '/mbind 1 zerknij');
+        const bind = page.locator('#multi-binds .multi-bind').first();
+        await expect(bind, 'the bind itself is still there').toContainText('zerknij');
+        await expect(bind.locator('.multi-bind-key'), 'with no shortcut to press, no hint').toHaveCount(0);
+
+        // Alt is both how a bind is fired and proof that a keyboard is present.
+        await page.keyboard.press('Alt');
+        await expect(bind.locator('.multi-bind-key'), 'the hint is worth its width now').toHaveText('[ALT+1]');
+    });
+
+    test('can be forced on from the settings', async ({page}) => {
+        await openByTouch(page);
+
+        await submitCommand(page, '/mbind 1 zerknij');
+        const hint = page.locator('#multi-binds .multi-bind').first().locator('.multi-bind-key');
+        await expect(hint).toHaveCount(0);
+
+        await page.click(MENU_BUTTON);
+        await page.click(UI_SETTINGS_BUTTON);
+        const modal = page.locator(UI_SETTINGS_MODAL);
+        await expect(modal).toBeVisible();
+        // The bind-row settings live beside "Zawsze pokazuj pasek multibindow"
+        // on the tab the modal opens on.
+        await modal.locator('#ui-multibind-key-hints').selectOption('always');
+        await modal.locator('#ui-settings-save').click();
+        await expect(modal).not.toBeVisible();
+
+        await expect(hint).toHaveText('[ALT+1]');
     });
 });

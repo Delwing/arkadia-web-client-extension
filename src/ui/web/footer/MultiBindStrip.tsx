@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
-import { useClientEvent } from "../hooks";
+import { useClientEvent, useHardwareKeyboard } from "../hooks";
 
 interface DisplayMultibind {
   index: number;
@@ -11,6 +11,12 @@ interface DisplayMultibind {
 
 function getInitialKeepVisible(): boolean {
   return globalStorage.get("uiSettings")?.keepMultibindsVisible === true;
+}
+
+/** 'auto' (default) | 'always' | 'never' - see `multibindKeyHints`. */
+function getKeyHintMode(): string {
+  const mode = globalStorage.get("uiSettings")?.multibindKeyHints;
+  return mode === "always" || mode === "never" ? mode : "auto";
 }
 
 /**
@@ -29,6 +35,13 @@ function getInitialKeepVisible(): boolean {
  *  - The forge HUD wraps it in its own always-present band and passes
  *    `alwaysVisible`, so the row keeps a stable height (showing the placeholder
  *    when a room has no binds) and never shifts the plate.
+ *
+ * Each pill leads with its shortcut ("[ALT+1]"), which on a phone is a hint the
+ * player cannot act on, eating the width the action text needs. So the hints are
+ * dropped where no keyboard can be found (see @shared/dom/hardwareKeyboard - a
+ * phone with a Bluetooth keyboard keeps them, and gets them back the moment it
+ * proves itself), and `uiSettings.multibindKeyHints` overrides that guess either
+ * way.
  */
 export default function MultiBindStrip({
   alwaysVisible = false,
@@ -39,6 +52,9 @@ export default function MultiBindStrip({
 }) {
   const [binds, setBinds] = useState<DisplayMultibind[]>([]);
   const [keepVisible, setKeepVisible] = useState(getInitialKeepVisible);
+  const [keyHintMode, setKeyHintMode] = useState(getKeyHintMode);
+  const hardwareKeyboard = useHardwareKeyboard();
+  const showKeys = keyHintMode === "auto" ? hardwareKeyboard : keyHintMode === "always";
 
   useClientEvent<{ list?: DisplayMultibind[] }>("multibinds", (payload) => {
     setBinds(Array.isArray(payload?.list) ? payload.list : []);
@@ -48,6 +64,7 @@ export default function MultiBindStrip({
     if (typeof settings?.keepMultibindsVisible === "boolean") {
       setKeepVisible(settings.keepMultibindsVisible);
     }
+    setKeyHintMode(getKeyHintMode());
   }), []);
 
   const kept = keepVisible || alwaysVisible;
@@ -93,7 +110,7 @@ export default function MultiBindStrip({
                 if (action) eventBus.emit("sendCommand", { command: bind.action });
               }}
             >
-              <span className="multi-bind-key">[{bind.label}]</span>
+              {showKeys && <span className="multi-bind-key">[{bind.label}]</span>}
               <span className="multi-bind-action">{bind.action}</span>
             </button>
           );
