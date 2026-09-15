@@ -93,6 +93,28 @@ test.describe('Mobile footer', () => {
         expect(vitals.scrollHeight, 'vitals rail should stay one line high').toBeLessThanOrEqual(vitals.clientHeight + 1);
     });
 
+    // A chip is a pill, and pills of different heights in one row read as a
+    // mistake. The pipe is an icon and several chips carry a bigger glyph than
+    // their neighbours' text, so this is only true while the pill's line box is
+    // a fixed length rather than a multiplier of each chip's own font.
+    test('gives every chip in the rail the same height', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, 'char.state', CALM_STATE);
+        await pushGmcp(page, 'mail.state', {unreceived: true, unsent: true});
+        await expect(page.locator('#mail-status')).toBeVisible();
+
+        const chips = await page.evaluate(() => Array.from(document.getElementById('footer-chips')!.children)
+            .filter((el) => el.id !== 'plugin-footer-components' && getComputedStyle(el).display !== 'none')
+            .map((el) => ({id: el.id, height: Math.round(el.getBoundingClientRect().height)})));
+
+        expect(chips.length, 'several chips should be showing').toBeGreaterThanOrEqual(4);
+        const heights = new Set(chips.map((chip) => chip.height));
+        expect(heights.size, `chips differ in height: ${JSON.stringify(chips)}`).toBe(1);
+    });
+
     test('the expander unfolds both rails and folds them back', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

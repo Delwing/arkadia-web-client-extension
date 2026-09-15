@@ -120,6 +120,12 @@
      never move the game output. */
   body[data-mobile-footer="1"] #char-state-vitals,
   body[data-mobile-footer="1"] #footer-chips {
+    /* The line box every chip is built on. A LENGTH rather than a number on
+       purpose: a number inherits as a number, so a chip whose inner span sets a
+       bigger font (the mail envelope, an emoji) got a taller line box and a
+       taller pill than its neighbours. A length inherits as itself, so every
+       chip - and the pipe's icon, sized to match - comes out the same height. */
+    --footer-chip-line: 1.15rem;
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
@@ -180,11 +186,19 @@
     background-color: var(--footer-control-bg);
     white-space: nowrap;
     text-overflow: ellipsis;
-    line-height: 1.3;
+    line-height: var(--footer-chip-line);
   }
 
-  /* The pipe's smoke drifts out of its box on purpose. */
+  /* The pipe is a fixed-size icon rather than text, so it is the one chip whose
+     height has to be set to the shared line by hand (its width follows, keeping
+     the drawing's proportions). Its smoke drifts out of the box on purpose. */
   body[data-mobile-footer="1"] #footer-chips > #pipe-status {
+    /* Sized like a line of chip text rather than like a pill, so the shared
+       padding and border land on top of it exactly as they do on a text chip -
+       that is what makes the pipe the same height as its neighbours. */
+    box-sizing: content-box;
+    width: calc(var(--footer-chip-line) * 2.08);
+    height: var(--footer-chip-line);
     overflow: visible;
   }
 
