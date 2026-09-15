@@ -16,6 +16,10 @@ const COLORS = [
     createColorFormat("#87ceeb"),
 ];
 
+const MODS_MINUS = createColorFormat("#ff6b6b");
+const MODS_PLUS = createColorFormat("#5fd75f");
+const MODS_NEUTRAL = createColorFormat("#aaaaaa");
+
 const skillsDesc: Record<string, number> = {
     ledwo: 1,
     troche: 2,
@@ -29,15 +33,34 @@ const skillsDesc: Record<string, number> = {
     mistrzowsko: 10,
 };
 
-/** Every `nazwa: poziom` pair on a line — a row may carry two columns. */
-function skillPairs(line: string): { name: string; level: string }[] {
-    const pairs = line.match(/[^:]+:\s+\S+/g) ?? [];
-    const out: { name: string; level: string }[] = [];
-    for (const pair of pairs) {
-        const m = pair.match(/([^:]+):\s+(\S+)/);
-        if (m) out.push({ name: m[1].trim(), level: m[2].trim() });
-    }
-    return out;
+interface Skill {
+    name: string;
+    level: string;
+    /** Situational modifiers the game appends, normalised to `(-teren)`; empty when none. */
+    mods: string;
+}
+
+/**
+ * Every `nazwa: poziom` entry on a line — a row may carry two columns, and an entry may be
+ * trailed by parenthesised modifiers (`skradanie sie: ledwo ( -teren )`). Skill names hold
+ * no parentheses, which is what lets one column's modifiers be told apart from the name of
+ * the next.
+ */
+const SKILL_ENTRY = /([^:()]+):[ \t]+(\S+)((?:[ \t]*\([^)]*\))*)/g;
+
+function skillPairs(line: string): Skill[] {
+    return [...line.matchAll(SKILL_ENTRY)].map((m) => ({
+        name: m[1].trim(),
+        level: m[2].trim(),
+        mods: normaliseMods(m[3]),
+    }));
+}
+
+/** `  ( -teren )  ( +noc )` -> `(-teren) (+noc)`. */
+function normaliseMods(mods: string): string {
+    return (mods.match(/\([^)]*\)/g) ?? [])
+        .map((mod) => `(${mod.slice(1, -1).trim().replace(/\s+/g, " ")})`)
+        .join(" ");
 }
 
 /**
@@ -53,6 +76,18 @@ function isSkillRow(line: string): boolean {
 
 function pad(str: string, len: number) {
     return str + " ".repeat(Math.max(0, len - str.length));
+}
+
+/**
+ * Modifiers read as a penalty or a bonus, so they are coloured by sign; a group that mixes
+ * the two, or carries neither, stays neutral rather than claiming something it cannot tell.
+ */
+function modsColor(mods: string): FormatStateSnapshot {
+    const minus = mods.includes("-");
+    const plus = mods.includes("+");
+    if (minus && !plus) return MODS_MINUS;
+    if (plus && !minus) return MODS_PLUS;
+    return MODS_NEUTRAL;
 }
 
 function colorLevel(level: string, maxLevel: number): AnsiAwareBuffer {
@@ -82,10 +117,17 @@ export default function initSkills(
         }
     }
 
+    /**
+     * `padMods` fills the modifier field out to the table's widest one, so that a left
+     * column keeps the right one aligned. The rightmost column leaves it off — nothing
+     * follows it, and padding there would only trail whitespace across the screen.
+     */
     function formatSkill(
-        { name, level }: { name: string; level: string },
+        { name, level, mods }: Skill,
         maxName: number,
         maxLevel: number,
+        maxMods: number,
+        padMods: boolean,
         originalFormatting?: FormatStateSnapshot
     ): AnsiAwareBuffer {
         const n = pad(`${name}:`, maxName + 1);
@@ -93,6 +135,15 @@ export default function initSkills(
         const result = new AnsiAwareBuffer(n, originalFormatting);
         result.append(" ", originalFormatting);
         result.appendBuffer(l);
+        if (maxMods && (mods || padMods)) {
+            result.append(" ", originalFormatting);
+            if (mods) {
+                result.appendBuffer(colorString(mods, modsColor(mods)));
+            }
+            if (padMods) {
+                result.append(" ".repeat(maxMods - mods.length), originalFormatting);
+            }
+        }
         return result;
     }
 
@@ -116,15 +167,16 @@ export default function initSkills(
 
         const maxName = Math.max(...skills.map((s) => s.name.length));
         const maxLevel = Math.max(...skills.map((s) => s.level.length));
+        const maxMods = Math.max(...skills.map((s) => s.mods.length));
         const table = new AnsiAwareBuffer();
         for (let i = 0; i < skills.length; i += 2) {
             if (i > 0) {
                 table.append("\n", originalFormatting);
             }
-            const col1 = formatSkill(skills[i], maxName, maxLevel, originalFormatting);
+            const col1 = formatSkill(skills[i], maxName, maxLevel, maxMods, false, originalFormatting);
             if (i + 1 < skills.length) {
-                const col2 = formatSkill(skills[i + 1], maxName, maxLevel, originalFormatting);
-                const combined = col1.clone();
+                const col2 = formatSkill(skills[i + 1], maxName, maxLevel, maxMods, false, originalFormatting);
+                const combined = formatSkill(skills[i], maxName, maxLevel, maxMods, true, originalFormatting);
                 combined.append("  ", originalFormatting);
                 combined.appendBuffer(col2);
                 if (

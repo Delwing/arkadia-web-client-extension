@@ -65,7 +65,7 @@ Liczniki zabitych, postepow, stazu i zlecen.
 
 | Komenda | Opis |
 |---------|------|
-| `um` | Wyswietl zestawienie umiejetnosci w tabeli z kolorowymi poziomami |
+| `um` | Wyswietl zestawienie umiejetnosci w tabeli z kolorowymi poziomami i modyfikatorami (np. `(-teren)`) |
 | `jezyki` | Wyswietl umiejetnosci jezykowe w tabeli z kolorowymi poziomami |
 | `jezyki maksymalne` | Wyswietl umiejetnosci jezykowe z maksymalnymi wartosciami |
 

@@ -56,6 +56,88 @@ describe('skills alias', () => {
     });
   });
 
+describe('skill modifiers', () => {
+    function start(contentWidth = 120) {
+      jest.useFakeTimers();
+      const client = new FakeClient();
+      client.contentWidth = contentWidth;
+      const aliases: { pattern: RegExp; callback: () => void }[] = [];
+      initSkills((client as unknown) as any, aliases);
+      (aliases[0].callback as any)();
+      return client;
+    }
+
+    test('a modifier is shown next to the skill it belongs to', () => {
+      const client = start();
+      const raw = [
+        'skradanie sie:          ledwo           ( -teren )',
+        'zielarstwo:             troche',
+      ].join('\n');
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      const printed = (out?.text || '').split('\n');
+      expect(printed.length).toBe(1);
+      expect(printed[0]).toMatch(
+        /skradanie sie:\s+ledwo\s+\[1\/10]\s+\(-teren\)\s+zielarstwo:\s+troche\s+\[2\/10]/
+      );
+      expect(printed[0]).not.toMatch(/\s$/);
+    });
+
+    test("a modifier is not swallowed into the next column's skill name", () => {
+      const client = start();
+      const raw =
+        'skradanie sie:          ledwo           ( -teren )    ukrywanie sie:          ledwo           ( -teren )';
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      const printed = (out?.text || '').split('\n');
+      expect(printed.length).toBe(1);
+      expect(printed[0]).toMatch(
+        /^skradanie sie:\s+ledwo\s+\[1\/10]\s+\(-teren\)\s+ukrywanie sie:\s+ledwo\s+\[1\/10]\s+\(-teren\)$/
+      );
+    });
+
+    test('several modifiers on one skill all survive', () => {
+      const client = start();
+      const raw = 'skradanie sie:          ledwo           ( -teren ) ( +noc )';
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      expect(out?.text).toMatch(/skradanie sie:\s+ledwo\s+\[1\/10]\s+\(-teren\) \(\+noc\)$/);
+    });
+
+    test('unmodified skills stay aligned with modified ones', () => {
+      const client = start();
+      const raw = [
+        'skradanie sie:          ledwo           ( -teren )',
+        'ukrywanie sie:          ledwo',
+        'zielarstwo:             troche',
+        'palenie:                ledwo',
+      ].join('\n');
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      const printed = (out?.text || '').split('\n');
+      expect(printed.length).toBe(2);
+      // The modifier field is reserved on every row, so the second column starts in the
+      // same place whether or not the first column carried a modifier.
+      expect(printed[0].indexOf('ukrywanie sie:')).toBe(printed[1].indexOf('palenie:'));
+    });
+
+    test('a narrow screen still splits the columns onto separate lines', () => {
+      const client = start(40);
+      const raw = [
+        'skradanie sie:          ledwo           ( -teren )',
+        'ukrywanie sie:          ledwo           ( -teren )',
+      ].join('\n');
+      const out = client.Triggers.parseMultiline(new AnsiAwareBuffer(raw), '');
+
+      const printed = (out?.text || '').split('\n');
+      expect(printed.length).toBe(2);
+      printed.forEach((l) => {
+        expect(l.length).toBeLessThanOrEqual(40);
+        expect(l).toMatch(/\(-teren\)$/);
+      });
+    });
+});
+
 describe('um table sharing a frame with unrelated output', () => {
     const TABLE = [
       'akrobatyka:             troche',
