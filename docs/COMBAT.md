@@ -97,3 +97,5 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | Komenda | Opis |
 |---------|------|
 | `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |
+
+> **Wskazowka:** przewiniecie loga w gore dzieli okno walki na dwie czesci — na dole zostaje przyklejony podglad najnowszych linii, wiec walka leci dalej, a przewijany log stoi w miejscu. Powrot na sam dol zamyka podglad. Wysokosc dolnej czesci zmienia sie przeciaganiem paska miedzy nimi. Tak samo dziala okno glowne.
