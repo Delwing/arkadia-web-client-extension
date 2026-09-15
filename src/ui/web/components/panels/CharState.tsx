@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import {useClientEvent, useLocalStorage} from "../../hooks";
+import {useClientEvent, useLocalStorage, useMediaQuery} from "../../hooks";
 import { COLOR_BAR_CLASS, COLOR_TEXT, getColorLevel } from "@web/colors";
 import {UiSettings} from "@web/uiSettings.ts";
 import {globalStorage} from "@modules/core/storage";
 import {getMapSettings, onMapSettingsChange} from "@modules/core/settings";
+import {MOBILE_FOOTER_QUERY, isCompactFooterEnabled} from "@web/mobileFooter.ts";
 
 export interface CharStateData {
   hp: number;
@@ -86,6 +87,14 @@ const DEFAULT_CONFIG: Record<keyof CharStateData, CharStateConfig> = {
  * This component uses React Portals to render into the existing DOM structure:
  * - Text mode (0, 1, 2) renders to #char-state-text
  * - Bars mode (3) renders to #char-state-bars
+ *
+ * A phone-width viewport overrides the mode with a fourth, compact rendering
+ * (also into #char-state-bars): a label, the numbers, and a hairline meter under
+ * them, sized so several fit across a phone. The text modes were built for a
+ * footer line that is wide enough to hold "HP: [5/6] MANA: [7/8] ..." in one go,
+ * which a phone never is - there the same information came out as two or three
+ * wrapped lines of monospace that moved every time a stat changed. See
+ * @web/mobileFooter for the rest of the mobile footer.
  */
 export const CharState: React.FC = () => {
   const [state, setState] = useState<Partial<CharStateData>>({});
@@ -94,6 +103,13 @@ export const CharState: React.FC = () => {
   const [mode, setMode] = useState(() => {
     return uiSettings.footerMode || 0;
   });
+  const [compactEnabled, setCompactEnabled] = useState(isCompactFooterEnabled);
+  const narrow = useMediaQuery(MOBILE_FOOTER_QUERY);
+  // The compact meters replace whichever text/bar mode is configured, rather
+  // than being a fifth option in the picker: the choice between them is about
+  // how wide the footer line is, which is not something to ask the player about
+  // once per device.
+  const compact = narrow && compactEnabled;
   const [useEmoji, setUseEmoji] = useState(() => {
     return getMapSettings().emojiLabels;
   });
@@ -148,6 +164,7 @@ export const CharState: React.FC = () => {
       if (detail && Array.isArray(detail.barOrder) && detail.barOrder.length > 0) {
         setBarOrderState(detail.barOrder);
       }
+      setCompactEnabled(isCompactFooterEnabled());
     });
     const unsubscribeMap = onMapSettingsChange((map) => {
       setUseEmoji(map.emojiLabels);
@@ -156,9 +173,11 @@ export const CharState: React.FC = () => {
   }, []);
 
   // Control visibility of text/bars containers based on mode
+  const barsMode = compact || mode === 3;
+
   useEffect(() => {
     if (textContainer && barsContainer) {
-      if (mode === 3) {
+      if (barsMode) {
         textContainer.style.display = "none";
         barsContainer.style.display = "flex";
       } else {
@@ -166,7 +185,7 @@ export const CharState: React.FC = () => {
         barsContainer.style.display = "none";
       }
     }
-  }, [mode, textContainer, barsContainer]);
+  }, [barsMode, textContainer, barsContainer]);
 
   const alwaysVisibleBars: string[] = alwaysVisibleBarsState;
   const defaultOrder = Object.keys(DEFAULT_CONFIG) as (keyof CharStateData)[];
@@ -247,6 +266,38 @@ export const CharState: React.FC = () => {
     );
   };
 
+  // Render the compact phone meters: label, numbers, and a hairline track under
+  // both. Keeps the `.char-state-bar` class so anything that counts stat bars
+  // (CSS, tests) still sees them, with a modifier for the mobile skin.
+  const renderCompactBars = () => {
+    if (!barsContainer) return null;
+
+    return createPortal(
+        <>
+          {visibleEntries.map((key) => {
+            const { value, maxValue, ratio, label, colorLevel, highlight } = getStatData(key);
+            const colorClass = COLOR_BAR_CLASS[colorLevel];
+
+            return (
+                <div key={key} className="char-state-bar char-state-bar--mini" title={key}>
+                  <span className={`char-state-mini-label${highlight ? " char-state-mini-label--alert" : ""}`}>
+                    {label}
+                  </span>
+                  <span className="char-state-mini-value">{value}/{maxValue}</span>
+                  <span className="char-state-mini-track">
+                    <span
+                        className={`char-state-mini-fill ${colorClass}`}
+                        style={{ width: `${Math.floor(ratio * 100)}%` }}
+                    />
+                  </span>
+                </div>
+            );
+          })}
+        </>,
+        barsContainer
+    );
+  };
+
   // Render text mode (modes 0, 1, 2)
   const renderText = () => {
     if (!textContainer) return null;
@@ -284,6 +335,7 @@ export const CharState: React.FC = () => {
     );
   };
 
+  if (compact) return <>{renderCompactBars()}</>;
   return <>{mode === 3 ? renderBars() : renderText()}</>;
 };
 

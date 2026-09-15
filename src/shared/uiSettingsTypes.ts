@@ -135,6 +135,13 @@ export interface ChromeSettings extends DeviceViewSettings {
     mapPosition: MapPosition;
     footerMode: number;
     footerComponents: FooterComponentConfig[];
+    /**
+     * The phone footer: two fixed-height scrolling rails plus compact stat
+     * meters, instead of the desktop footer's one wrapping row. On by default;
+     * off restores the old layout on narrow screens. Desktop is unaffected
+     * either way. See src/web/mobileFooter.ts.
+     */
+    mobileFooterCompact: boolean;
     keepMultibindsVisible: boolean;
     splitViewHeight?: number;
     showCombatTimer?: boolean;

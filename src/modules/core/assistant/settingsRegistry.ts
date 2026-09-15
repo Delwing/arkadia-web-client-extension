@@ -162,6 +162,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     },
     footerMode: { type: 'number', min: 0, max: 3, integer: true },
     footerComponents: { type: 'complex' },
+    mobileFooterCompact: { type: 'boolean', label: 'Kompaktowa stopka na telefonie' },
     keepMultibindsVisible: { type: 'boolean' },
     splitViewHeight: { type: 'number', min: 0, max: 100, optional: true },
     showCombatTimer: { type: 'boolean', optional: true },

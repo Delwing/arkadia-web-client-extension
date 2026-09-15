@@ -53,6 +53,7 @@ export const defaultChromeSettings: ChromeSettings = {
     mapPosition: 'top-overlay',
     footerMode: 0,
     footerComponents: defaultFooterComponents,
+    mobileFooterCompact: true,
     keepMultibindsVisible: false,
     objectListBackgroundColor: '#000000',
     objectListBackgroundAlpha: 0.4,

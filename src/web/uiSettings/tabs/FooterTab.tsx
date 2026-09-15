@@ -20,6 +20,18 @@ function FooterTab({ draft, update }: FooterTabProps) {
                     <option value="3">Pasek graficzny</option>
                 </SelectField>
                 <CheckboxRow id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
+                <CheckboxRow
+                    id="ui-mobile-footer-compact"
+                    label="Kompaktowa stopka na telefonie"
+                    checked={draft.mobileFooterCompact}
+                    onChange={(v) => update({ mobileFooterCompact: v })}
+                />
+                <div className="form-text mt-0">
+                    Na waskim ekranie stopka jest podzielona na dwa przewijane paski o stalej
+                    wysokosci (stan postaci i plakietki), a stan postaci pokazywany jest w postaci
+                    kompaktowych miernikow zamiast trybu wybranego powyzej. Przycisk po prawej
+                    stronie stopki rozwija oba paski.
+                </div>
                 <div>
                     <label className="form-label mb-1">Kolejnosc i widocznosc paskow</label>
                     <div id="ui-bar-order-settings">

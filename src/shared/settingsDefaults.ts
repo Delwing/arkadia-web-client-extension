@@ -126,7 +126,7 @@ export const deviceViewSettingsKeys = [
 export const chromeSettingsKeys = [
     'contentFontSize', 'mapScale', 'outputMaxElements',
     'objectsFontSize', 'buttonSize', 'showButtons', 'showVoiceButton', 'mapHeight', 'mapPosition',
-    'footerMode', 'footerComponents', 'keepMultibindsVisible', 'splitViewHeight',
+    'footerMode', 'footerComponents', 'mobileFooterCompact', 'keepMultibindsVisible', 'splitViewHeight',
     'showCombatTimer', 'showTransportLabel', 'objectListBackgroundColor',
     'objectListBackgroundAlpha', 'alwaysVisibleBars', 'barOrder',
 ] as const satisfies readonly (keyof ChromeSettings)[];

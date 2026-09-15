@@ -302,6 +302,12 @@ export function apply(settings: UiSettings) {
         charState.style.fontSize = settings.contentFontSize + 'rem';
         charState.setAttribute('data-footer-mode', String(settings.footerMode));
     }
+    if (document.body) {
+        // Gates the whole phone-footer stylesheet (footerMobile.css). It rides
+        // on <body> rather than on #char-state because the location-bind row
+        // above the footer is reshaped by the same setting and is not inside it.
+        document.body.dataset.mobileFooter = settings.mobileFooterCompact ? '1' : '0';
+    }
     const objectsList = document.getElementById('objects-list');
     if (objectsList) {
         objectsList.style.fontSize = settings.contentFontSize + 'rem';
@@ -540,6 +546,9 @@ export function load(): UiSettings {
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
+            const mobileFooterCompact = typeof parsed.mobileFooterCompact === 'boolean'
+                ? parsed.mobileFooterCompact
+                : defaultUiSettings.mobileFooterCompact;
             const drinkableAsFunctionalBind = typeof parsed.drinkableAsFunctionalBind === 'boolean'
                 ? parsed.drinkableAsFunctionalBind
                 : defaultUiSettings.drinkableAsFunctionalBind;
@@ -622,6 +631,7 @@ export function load(): UiSettings {
                 objectContextMenuCommands,
                 footerComponents,
                 keepMultibindsVisible,
+                mobileFooterCompact,
                 drinkableAsFunctionalBind,
                 gateAsFunctionalBind,
                 dismountOnRefusedRide,
