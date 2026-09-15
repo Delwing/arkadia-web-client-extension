@@ -46,6 +46,16 @@ const DEFAULT_RULES: DuplicateToMainRule[] = [
         tag: "stun",
         match: /\[\s+OGLUCH\s+\]/,
     },
+    {
+        // Magic blindness, from `spells.ts`. Unlike the stun above this one
+        // cannot key off its label: your own banner reads
+        // `[   OSLEPIENIE   ]` while somebody else going blind is prefixed
+        // `[ OSLEPIENIE ]`, and only the padding tells them apart. Matching
+        // the banner text is the plainer rule. Coming back out of it carries
+        // just a generic `[ OK ]`, so it is matched on the line itself.
+        tag: "blindness",
+        match: /----- JESTES OSLEPIONY -----|Powoli odzyskujesz wzrok\./,
+    },
 ];
 
 let rules: DuplicateToMainRule[] = [...DEFAULT_RULES];

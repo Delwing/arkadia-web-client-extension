@@ -3,6 +3,7 @@ import initCombatWindow, {
     setCombatRedirectSetting,
 } from '@client/scripts/combatWindow';
 import registerLuaGagTriggers from '@client/scripts/luaGags';
+import initSpells from '@client/scripts/spells';
 import {
     registerDuplicateToMain,
     resetDuplicateToMainRules,
@@ -33,6 +34,7 @@ describe('duplicate to main window', () => {
   beforeEach(() => {
     client = new FakeClient();
     registerLuaGagTriggers((client as unknown) as any);
+    initSpells((client as unknown) as any);
     initCombatWindow((client as unknown) as any);
     parse = (line: string, type: string) =>
       Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
@@ -109,6 +111,38 @@ describe('duplicate to main window', () => {
     setCombatRedirectSetting('combat.others', false);
   });
 
+  test('being blinded is redirected and copied to the main window', () => {
+    const result = parse(
+      'Swiat powoli zaczyna rozmywac sie, zastepowany przez nieprzenikniona ciemnosc. Tracisz wzrok.',
+      'combat.avatar',
+    );
+
+    expect(result).toBeNull();
+    expect(getCombatHistory()).toHaveLength(1);
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toContain('JESTES OSLEPIONY');
+  });
+
+  test('regaining sight is copied to the main window', () => {
+    parse('Powoli odzyskujesz wzrok.', 'combat.avatar');
+
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toContain('Powoli odzyskujesz wzrok.');
+  });
+
+  test('somebody else going blind is not copied', () => {
+    setCombatRedirectSetting('combat.others', true);
+
+    const result = parse(
+      'Ork rozglada sie pustym spojrzeniem, tak jakby stracil wzrok.',
+      'combat.others',
+    );
+
+    expect(result).toBeNull();
+    expect(client.print).not.toHaveBeenCalled();
+
+    setCombatRedirectSetting('combat.others', false);
+  });
   test('the copy is independent of the deleted original', () => {
     parse('Ork zwinnym ruchem wytraca ci miecz.', 'combat.avatar');
 
