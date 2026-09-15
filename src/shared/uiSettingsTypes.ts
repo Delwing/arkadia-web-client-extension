@@ -89,6 +89,8 @@ export interface MapSettings {
     emojiLabels: boolean;
 }
 
+export type MobileFooterExpandSetting = 'toggle' | 'expanded' | 'collapsed';
+
 export type MultibindKeyHints = 'auto' | 'always' | 'never';
 
 /** Movement / command / team behaviour the client and scripts act on. */
@@ -144,6 +146,11 @@ export interface ChromeSettings extends DeviceViewSettings {
      * either way. See src/web/mobileFooter.ts.
      */
     mobileFooterCompact: boolean;
+    /**
+     * How that footer folds: 'toggle' rests folded with the expander offered,
+     * 'expanded' / 'collapsed' pin it open or shut and drop the expander.
+     */
+    mobileFooterExpand: MobileFooterExpandSetting;
     keepMultibindsVisible: boolean;
     /**
      * Whether the location-bind pills lead with their keyboard shortcut.

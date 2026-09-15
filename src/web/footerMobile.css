@@ -203,7 +203,9 @@
   }
 
   /* -- the expander ------------------------------------------------------ */
-  body[data-mobile-footer="1"] #char-state > #footer-expand {
+  /* Only offered while the fold is the player's to make: pinned open or pinned
+     shut (`mobileFooterExpand`), there is nothing for the button to do. */
+  body[data-mobile-footer="1"][data-footer-expand="toggle"] #char-state > #footer-expand {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -224,12 +226,12 @@
     transform: rotate(180deg);
   }
 
-  body[data-mobile-footer="1"] #char-state > #footer-expand:active {
+  body[data-mobile-footer="1"][data-footer-expand="toggle"] #char-state > #footer-expand:active {
     background-color: var(--footer-control-hover-bg);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    body[data-mobile-footer="1"] #char-state > #footer-expand {
+    body[data-mobile-footer="1"][data-footer-expand="toggle"] #char-state > #footer-expand {
       transition: none;
     }
   }

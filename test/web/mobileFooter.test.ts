@@ -1,4 +1,4 @@
-import { setupMobileFooter, isCompactFooterEnabled, MOBILE_FOOTER_QUERY } from "@web/mobileFooter";
+import { setupMobileFooter, isCompactFooterEnabled, getFooterExpandMode, MOBILE_FOOTER_QUERY } from "@web/mobileFooter";
 import { globalStorage } from "@modules/core/storage";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -38,6 +38,7 @@ describe("mobile footer expander", () => {
         teardown();
         teardown = () => {};
         document.body.innerHTML = "";
+        globalStorage.remove("uiSettings");
     });
 
     test("starts collapsed and toggles on each click", () => {
@@ -74,6 +75,35 @@ describe("mobile footer expander", () => {
         expect(listeners).toHaveLength(0);
     });
 
+    // A player who wants the footer open (or shut) every time says so with
+    // `mobileFooterExpand`, and then the expander is neither shown nor obeyed.
+    test("starts unfolded when the footer is pinned open", () => {
+        globalStorage.set("uiSettings", { mobileFooterExpand: "expanded" } as never);
+        teardown = setupMobileFooter();
+        expect(expanded()).toBe("1");
+
+        button().click();
+        expect(expanded()).toBe("1");
+    });
+
+    test("stays folded when the footer is pinned shut", () => {
+        globalStorage.set("uiSettings", { mobileFooterExpand: "collapsed" } as never);
+        teardown = setupMobileFooter();
+        expect(expanded()).toBe("0");
+
+        button().click();
+        expect(expanded()).toBe("0");
+    });
+
+    test("a pinned mode takes over an expansion already on screen", () => {
+        teardown = setupMobileFooter();
+        button().click();
+        expect(expanded()).toBe("1");
+
+        globalStorage.set("uiSettings", { mobileFooterExpand: "collapsed" } as never);
+        expect(expanded()).toBe("0");
+    });
+
     test("is a no-op without a footer to expand", () => {
         document.body.innerHTML = "";
         expect(() => setupMobileFooter()()).not.toThrow();
@@ -95,6 +125,16 @@ describe("compact footer setting", () => {
 
     // footerMobile.css carries the same condition on its @media block; a change
     // to one without the other splits the compact meters from their rails.
+    test("folds by toggle unless pinned", () => {
+        expect(getFooterExpandMode()).toBe("toggle");
+        globalStorage.set("uiSettings", { mobileFooterExpand: "expanded" } as never);
+        expect(getFooterExpandMode()).toBe("expanded");
+        globalStorage.set("uiSettings", { mobileFooterExpand: "collapsed" } as never);
+        expect(getFooterExpandMode()).toBe("collapsed");
+        globalStorage.set("uiSettings", { mobileFooterExpand: "nonsense" } as never);
+        expect(getFooterExpandMode()).toBe("toggle");
+    });
+
     test("uses the same breakpoint the stylesheet does", () => {
         const css = readFileSync(resolve(__dirname, "../../src/web/footerMobile.css"), "utf8");
         expect(css).toContain(`@media ${MOBILE_FOOTER_QUERY} {`);

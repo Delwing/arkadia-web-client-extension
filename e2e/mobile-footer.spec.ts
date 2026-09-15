@@ -142,6 +142,36 @@ test.describe('Mobile footer', () => {
         expect(await footerHeight(page), 'folding back restores the dock').toBe(collapsed);
     });
 
+    // Someone who never wants to fold it (or never wants it folded) says so once,
+    // and the expander goes away with the choice.
+    test('can be pinned open or shut, which takes the expander away', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, 'char.state', BUSY_STATE);
+        await expect(page.locator('.char-state-bar--mini')).toHaveCount(11);
+        const folded = await footerHeight(page);
+
+        const modal = await openFooterSettings(page);
+        await modal.locator('#ui-mobile-footer-expand').selectOption('expanded');
+        await modal.locator('#ui-settings-save').click();
+        await expect(modal).not.toBeVisible();
+
+        await expect(page.locator('#footer-expand'), 'nothing left to press').toBeHidden();
+        expect(await footerHeight(page), 'pinned open, the footer shows everything').toBeGreaterThan(folded);
+        const vitals = await railOverflow(page, '#char-state-vitals');
+        expect(vitals.scrollWidth, 'pinned open, nothing is off the side').toBeLessThanOrEqual(vitals.clientWidth);
+
+        const back = await openFooterSettings(page);
+        await back.locator('#ui-mobile-footer-expand').selectOption('collapsed');
+        await back.locator('#ui-settings-save').click();
+        await expect(back).not.toBeVisible();
+
+        await expect(page.locator('#footer-expand'), 'still nothing to press').toBeHidden();
+        expect(await footerHeight(page), 'pinned shut, the dock is back').toBe(folded);
+    });
+
     test('can be switched off, which restores the wide-screen footer', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

@@ -34,9 +34,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <title>Arkadia</title>
 </head>
-<!-- data-mobile-footer defaults to the compact phone footer so it is there from
-     the first paint; uiSettingsCore.apply() rewrites it if the player opted out. -->
-<body data-map-position="top-overlay" data-mobile-footer="1">
+<!-- data-mobile-footer / data-footer-expand default to the compact phone footer
+     with its expander, so both are there from the first paint;
+     uiSettingsCore.apply() rewrites them from the player's settings. -->
+<body data-map-position="top-overlay" data-mobile-footer="1" data-footer-expand="toggle">
 <div id="main-container">
     <div id="content-area">
         <div id="layout-manager-root"></div>

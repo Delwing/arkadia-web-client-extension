@@ -26,11 +26,23 @@ function FooterTab({ draft, update }: FooterTabProps) {
                     checked={draft.mobileFooterCompact}
                     onChange={(v) => update({ mobileFooterCompact: v })}
                 />
+                <SelectField
+                    id="ui-mobile-footer-expand"
+                    label="Rozwijanie stopki na telefonie"
+                    value={draft.mobileFooterExpand}
+                    disabled={!draft.mobileFooterCompact}
+                    onChange={(v) => update({ mobileFooterExpand: v as UiSettings['mobileFooterExpand'] })}
+                >
+                    <option value="toggle">Zwinieta, z przyciskiem</option>
+                    <option value="expanded">Zawsze rozwinieta</option>
+                    <option value="collapsed">Zawsze zwinieta</option>
+                </SelectField>
                 <div className="form-text mt-0">
                     Na waskim ekranie stopka jest podzielona na dwa przewijane paski o stalej
                     wysokosci (stan postaci i plakietki), a stan postaci pokazywany jest w postaci
                     kompaktowych miernikow zamiast trybu wybranego powyzej. Przycisk po prawej
-                    stronie stopki rozwija oba paski.
+                    stronie stopki rozwija oba paski - a jesli stopka ma byc zawsze rozwinieta
+                    albo zawsze zwinieta, przycisku nie ma wcale.
                 </div>
                 <div>
                     <label className="form-label mb-1">Kolejnosc i widocznosc paskow</label>

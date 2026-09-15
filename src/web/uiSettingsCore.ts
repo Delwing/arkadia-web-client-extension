@@ -307,6 +307,9 @@ export function apply(settings: UiSettings) {
         // on <body> rather than on #char-state because the location-bind row
         // above the footer is reshaped by the same setting and is not inside it.
         document.body.dataset.mobileFooter = settings.mobileFooterCompact ? '1' : '0';
+        // Whether the expander is offered at all; the fold itself is written by
+        // setupMobileFooter, which owns `data-footer-expanded`.
+        document.body.dataset.footerExpand = settings.mobileFooterExpand;
     }
     const objectsList = document.getElementById('objects-list');
     if (objectsList) {
@@ -549,6 +552,9 @@ export function load(): UiSettings {
             const mobileFooterCompact = typeof parsed.mobileFooterCompact === 'boolean'
                 ? parsed.mobileFooterCompact
                 : defaultUiSettings.mobileFooterCompact;
+            const mobileFooterExpand = parsed.mobileFooterExpand === 'expanded' || parsed.mobileFooterExpand === 'collapsed'
+                ? parsed.mobileFooterExpand
+                : defaultUiSettings.mobileFooterExpand;
             const multibindKeyHints = parsed.multibindKeyHints === 'always' || parsed.multibindKeyHints === 'never'
                 ? parsed.multibindKeyHints
                 : defaultUiSettings.multibindKeyHints;
@@ -635,6 +641,7 @@ export function load(): UiSettings {
                 footerComponents,
                 keepMultibindsVisible,
                 mobileFooterCompact,
+                mobileFooterExpand,
                 multibindKeyHints,
                 drinkableAsFunctionalBind,
                 gateAsFunctionalBind,

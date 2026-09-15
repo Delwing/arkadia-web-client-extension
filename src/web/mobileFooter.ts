@@ -37,15 +37,30 @@ export function isCompactFooterEnabled(): boolean {
     return settings?.mobileFooterCompact !== false;
 }
 
+/**
+ * How the footer folds: `toggle` (the default - it rests folded and the player
+ * unfolds it), or pinned open / pinned shut, which also takes the expander away
+ * since there would be nothing for it to do.
+ */
+export type MobileFooterExpand = 'toggle' | 'expanded' | 'collapsed';
+
+/** The configured folding mode, defaulting to the togglable dock. */
+export function getFooterExpandMode(): MobileFooterExpand {
+    const mode = (globalStorage.get('uiSettings') as { mobileFooterExpand?: string } | null)?.mobileFooterExpand;
+    return mode === 'expanded' || mode === 'collapsed' ? mode : 'toggle';
+}
+
 const EXPAND_TITLE = 'Rozwin stopke';
 const COLLAPSE_TITLE = 'Zwin stopke';
 
 /**
  * Wires the footer expander. Returns a teardown function.
  *
- * Expansion is deliberately not persisted: the collapsed dock is the resting
- * state, and an expanded footer left over from a previous session would eat
- * half the screen on the next connect.
+ * In `toggle` mode the expansion is deliberately not persisted: the folded dock
+ * is the resting state, and an expanded footer left over from a previous session
+ * would eat half the screen on the next connect. Someone who wants it open every
+ * time says so with the setting instead, which is also the only thing that
+ * survives a reload.
  */
 export function setupMobileFooter(): () => void {
     const button = document.getElementById('footer-expand');
@@ -59,22 +74,38 @@ export function setupMobileFooter(): () => void {
         button.setAttribute('title', expanded ? COLLAPSE_TITLE : EXPAND_TITLE);
     };
 
-    setExpanded(false);
+    // A pinned mode owns the flag outright, so a leftover expansion cannot
+    // survive the player pinning the footer shut.
+    const applyMode = () => {
+        const mode = getFooterExpandMode();
+        if (mode !== 'toggle') setExpanded(mode === 'expanded');
+        return mode;
+    };
 
-    const onClick = () => setExpanded(document.body.dataset.footerExpanded !== '1');
+    setExpanded(getFooterExpandMode() === 'expanded');
+
+    const onClick = () => {
+        // The expander is hidden outside `toggle` mode; ignoring the click keeps
+        // that true even if something else reaches the button.
+        if (getFooterExpandMode() !== 'toggle') return;
+        setExpanded(document.body.dataset.footerExpanded !== '1');
+    };
     button.addEventListener('click', onClick);
+
+    const unsubscribeSettings = globalStorage.onChange('uiSettings', () => { applyMode(); });
 
     // Rotating a phone into landscape (or resizing a desktop window past the
     // breakpoint) leaves a stale expanded flag behind, which the desktop CSS
     // ignores but which would come back on the next rotation.
     const media = typeof window.matchMedia === 'function' ? window.matchMedia(MOBILE_FOOTER_QUERY) : null;
     const onMediaChange = () => {
-        if (!media?.matches) setExpanded(false);
+        if (!media?.matches && getFooterExpandMode() === 'toggle') setExpanded(false);
     };
     media?.addEventListener('change', onMediaChange);
 
     return () => {
         button.removeEventListener('click', onClick);
         media?.removeEventListener('change', onMediaChange);
+        unsubscribeSettings();
     };
 }
