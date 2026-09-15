@@ -88,6 +88,11 @@ export function validateFooterComponents(parsed: unknown): FooterComponentConfig
         return defaultFooterComponents.map(c => ({ ...c }));
     }
     const validIds = new Set(defaultFooterComponents.map(c => c.id));
+    // Plugin-registered components are configurable too, and their ids cannot be
+    // known in advance - a plugin may not even be loaded when this runs. The
+    // prefix is what `pluginFooterRegistry` registers them under, and it is
+    // still a whitelist: anything else is rejected as before.
+    const isValidId = (id: string) => validIds.has(id) || id.startsWith('plugin:');
     const seenIds = new Set<string>();
     const result: FooterComponentConfig[] = [];
     for (const item of parsed) {
@@ -95,7 +100,7 @@ export function validateFooterComponents(parsed: unknown): FooterComponentConfig
             item &&
             typeof item === 'object' &&
             typeof (item as any).id === 'string' &&
-            validIds.has((item as any).id) &&
+            isValidId((item as any).id) &&
             !seenIds.has((item as any).id)
         ) {
             const id = (item as any).id as string;
@@ -220,10 +225,18 @@ export function resolveOutputFontFamily(selection: UiFontSelection, customFontFa
     }
 }
 
+/** Ids that are also real DOM ids of stock chips, and safe inside a selector. */
+const STOCK_CHIP_ID = /^[A-Za-z0-9_-]+$/;
+
 function applyFooterComponents(footerComponents: FooterComponentConfig[]) {
     const charState = document.getElementById('char-state');
     if (!charState) return;
     for (const config of footerComponents) {
+        // Only the stock chips are elements under #char-state. A plugin's
+        // component is rendered by PluginFooterItems from the common registry,
+        // which applies this same config itself - and its id (`plugin:<url>:x`)
+        // is not a valid selector, so asking for it here throws.
+        if (!STOCK_CHIP_ID.test(config.id)) continue;
         const element = charState.querySelector(`#${config.id}`) as HTMLElement | null;
         if (element) {
             element.style.order = String(config.order);

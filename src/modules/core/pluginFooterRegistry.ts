@@ -20,6 +20,18 @@ import {
   unregisterFooterItem,
 } from "./footerRegistry";
 
+/**
+ * Who owns a footer component, for the settings panel's label. Passed in rather
+ * than parsed back out of the registry id: a pluginId is usually the plugin's
+ * URL, so `plugin:https://example.com/x.js:chip` has colons everywhere and
+ * nothing can be recovered from it by splitting.
+ */
+export interface FooterComponentOwner {
+  pluginId: string;
+  /** The id the plugin chose, without the `plugin:<pluginId>:` prefix. */
+  localId: string;
+}
+
 export type FooterContent = string | Node | ReactElement;
 
 export interface FooterComponentRecord {
@@ -31,9 +43,65 @@ export interface FooterComponentRecord {
 interface InternalRecord {
   element: HTMLSpanElement;
   reactRoot: Root | null;
+  /** Which plugin owns it, and what it called itself - for the settings panel's label. */
+  pluginId: string;
+  localId: string;
+  position: "start" | "end" | number;
 }
 
 const records = new Map<string, InternalRecord>();
+
+/**
+ * Plugin display names, learned late. A plugin registers its footer component
+ * during `init()`, which runs before the manager knows what the plugin is
+ * called, so the name arrives afterwards via `updateFooterComponentPluginName`
+ * - the same shape `pluginButtonMacroRegistry` uses for the same reason.
+ */
+const pluginNames = new Map<string, string>();
+
+/**
+ * What the footer settings panel calls this component. The plugin's name where
+ * we have it, falling back to the id the plugin chose; a plugin with more than
+ * one component gets the local id alongside the name, so its two rows are
+ * distinguishable.
+ */
+function labelFor(record: InternalRecord): string {
+  const name = pluginNames.get(record.pluginId);
+  if (!name) return record.localId;
+  let othersFromSamePlugin = false;
+  for (const other of records.values()) {
+    if (other !== record && other.pluginId === record.pluginId) {
+      othersFromSamePlugin = true;
+      break;
+    }
+  }
+  return othersFromSamePlugin ? `${name}: ${record.localId}` : name;
+}
+
+/** Re-register one plugin's items so the common registry picks up their labels. */
+function refreshPlugin(pluginId: string): void {
+  for (const [id, record] of records) {
+    if (record.pluginId !== pluginId) continue;
+    registerFooterItem({
+      id,
+      order: positionToOrder(record.position),
+      source: "plugin",
+      label: labelFor(record),
+      node: record.element,
+    });
+  }
+}
+
+/**
+ * Tell the registry what a plugin is called, so its footer components can be
+ * listed under a readable name. Safe to call repeatedly and before or after the
+ * components themselves are registered.
+ */
+export function updateFooterComponentPluginName(pluginId: string, pluginName: string): void {
+  if (pluginNames.get(pluginId) === pluginName) return;
+  pluginNames.set(pluginId, pluginName);
+  refreshPlugin(pluginId);
+}
 
 function getContentType(content: FooterContent): "html" | "node" | "react" {
   if (typeof content === "string") return "html";
@@ -79,14 +147,16 @@ function positionToOrder(position: "start" | "end" | number): number {
 
 /**
  * Register a footer component.
- * @param id - Unique component ID
+ * @param id - Unique component ID, as `plugin:<pluginId>:<local id>`
  * @param content - HTML string, DOM node, or React element
  * @param position - Position in the footer ('start', 'end', or numeric order)
+ * @param owner - Which plugin this belongs to, for the footer settings label
  */
 export function registerFooterComponent(
   id: string,
   content: FooterContent,
-  position: "start" | "end" | number = "end"
+  position: "start" | "end" | number = "end",
+  owner?: FooterComponentOwner
 ): FooterComponentRecord {
   // Replace an existing component with the same id.
   unregisterFooterComponent(id);
@@ -96,9 +166,12 @@ export function registerFooterComponent(
   element.dataset.pluginFooterId = id;
 
   const reactRoot = renderContent(element, content, null);
-  records.set(id, { element, reactRoot });
+  const pluginId = owner?.pluginId ?? id;
+  records.set(id, { element, reactRoot, pluginId, localId: owner?.localId ?? id, position });
 
-  registerFooterItem({ id, order: positionToOrder(position), node: element });
+  // The whole plugin, not just this component: gaining a second one changes
+  // what the first should be called.
+  refreshPlugin(pluginId);
 
   return { id, element };
 }
@@ -137,4 +210,6 @@ export function unregisterFooterComponent(id: string): void {
   if (record.reactRoot) record.reactRoot.unmount();
   records.delete(id);
   unregisterFooterItem(id);
+  // Down to one component, the survivor goes back to the plain plugin name.
+  refreshPlugin(record.pluginId);
 }

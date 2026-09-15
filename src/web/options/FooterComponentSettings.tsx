@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { Form } from "react-bootstrap";
 import {
     DndContext,
@@ -17,29 +17,13 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { getAllFooterItems, subscribeFooterItems } from "@modules/core/footerRegistry";
+import { domId, merge, toConfig, type FooterRow } from "./footerComponentRows";
 import type { FooterComponentConfig } from "../defaultUiSettings";
 
-const DISPLAY_NAMES: Record<string, string> = {
-    'clock-display': 'Zegar',
-    'transport-timer': 'Timer transportu',
-    'lamp-timer': 'Timer lampy',
-    'pipe-status': 'Fajka',
-    'break-item-warning': 'Ostrzezenie o uszkodzeniu',
-    'mail-status': 'Status poczty',
-    'package-status': 'Status paczki',
-    'weapon-state': 'Stan broni',
-    'attack-mode': 'Tryb ataku',
-    'release-guard-timer': 'Timer zasloniecia',
-    'zask-timer': 'Timer zaskoczenia',
-    'order-timer': 'Timer rozkazu',
-    'combat-timer': 'Timer walki (30s)',
-    'world-destruction-timer': 'Timer apokalipsy',
-    'team-panel': 'Panel druzyny',
-    'connection-status': 'Ping i zegar proxy',
-};
 
 interface SortableItemProps {
-    item: FooterComponentConfig;
+    item: FooterRow;
     onToggle: (id: string) => void;
 }
 
@@ -51,7 +35,7 @@ function SortableItem({ item, onToggle }: SortableItemProps) {
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: item.id });
+    } = useSortable({ id: domId(item.id) });
 
     const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
@@ -76,13 +60,18 @@ function SortableItem({ item, onToggle }: SortableItemProps) {
             </span>
             <Form.Check
                 type="switch"
-                id={`fc-${item.id}`}
+                id={`fc-${domId(item.id)}`}
                 checked={item.visible}
                 onChange={() => onToggle(item.id)}
             />
             <span className={item.visible ? '' : 'text-muted'} style={{ fontSize: '0.85rem' }}>
-                {DISPLAY_NAMES[item.id] || item.id}
+                {item.label}
             </span>
+            {item.fromPlugin && (
+                <span className="badge bg-secondary ms-auto" style={{ fontSize: '0.65rem' }}>
+                    plugin
+                </span>
+            )}
         </div>
     );
 }
@@ -93,30 +82,36 @@ interface FooterComponentSettingsProps {
 }
 
 function FooterComponentSettings({ components, onChange }: FooterComponentSettingsProps) {
-    const [items, setItems] = useState<FooterComponentConfig[]>(() =>
-        [...components].sort((a, b) => a.order - b.order)
-    );
+    // The live registry, so components registered by plugins can be listed and
+    // ordered alongside the built-in chips. Plugins come and go while the panel
+    // is open - one being loaded should add a row, not require a reload.
+    const registered = useSyncExternalStore(subscribeFooterItems, getAllFooterItems, getAllFooterItems);
+
+    const rows = useMemo(() => merge(components, registered), [components, registered]);
+
+    const [items, setItems] = useState<FooterRow[]>(rows);
 
     useEffect(() => {
-        setItems([...components].sort((a, b) => a.order - b.order));
-    }, [components]);
+        setItems(rows);
+    }, [rows]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const commit = useCallback((updated: FooterComponentConfig[]) => {
+    const commit = useCallback((updated: FooterRow[]) => {
         const normalized = updated.map((c, i) => ({ ...c, order: i }));
         setItems(normalized);
-        onChange(normalized);
-    }, [onChange]);
+        onChange(toConfig(normalized, components));
+    }, [onChange, components]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            const oldIndex = items.findIndex(c => c.id === active.id);
-            const newIndex = items.findIndex(c => c.id === over.id);
+            const oldIndex = items.findIndex(c => domId(c.id) === active.id);
+            const newIndex = items.findIndex(c => domId(c.id) === over.id);
+            if (oldIndex < 0 || newIndex < 0) return;
             commit(arrayMove(items, oldIndex, newIndex));
         }
     };
@@ -127,7 +122,7 @@ function FooterComponentSettings({ components, onChange }: FooterComponentSettin
 
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={items.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={items.map(c => domId(c.id))} strategy={verticalListSortingStrategy}>
                 <div className="d-flex flex-column gap-1">
                     {items.map(item => (
                         <SortableItem key={item.id} item={item} onToggle={toggleVisibility} />

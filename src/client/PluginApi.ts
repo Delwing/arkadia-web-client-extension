@@ -45,6 +45,7 @@ import {
   registerFooterComponent,
   unregisterFooterComponent,
   updateFooterComponent,
+  updateFooterComponentPluginName,
   setFooterComponentVisible,
   type FooterContent
 } from "@modules/core/pluginFooterRegistry";
@@ -2699,6 +2700,8 @@ export class PluginApiImpl implements PluginApi {
     updateTriggerMacroPluginName(this.pluginId, name);
     // Update any location notes that were registered during init
     updatePluginNotesName(this.pluginId, name);
+    // And any footer components, which the settings panel lists by plugin name
+    updateFooterComponentPluginName(this.pluginId, name);
   }
 
   /**
@@ -3780,8 +3783,14 @@ export class PluginApiImpl implements PluginApi {
     const fullId = `plugin:${this.pluginId}:${id}`;
 
     // Register the component - registry handles element creation and content rendering
-    const record = registerFooterComponent(fullId, content, position);
+    const record = registerFooterComponent(fullId, content, position, {
+      pluginId: this.pluginId,
+      localId: id
+    });
     this.footerComponentIds.add(fullId);
+    // Usually a no-op: a plugin registers its footer component during init(),
+    // before the manager has told us its name, and setPluginName follows up.
+    if (this._pluginName) updateFooterComponentPluginName(this.pluginId, this._pluginName);
 
     return {
       get element(): HTMLSpanElement {

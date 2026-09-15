@@ -22,11 +22,18 @@ export interface FooterItem {
   /** Fallback sort key when the user config doesn't order this item. */
   order: number;
   /**
-   * "builtin" items obey `uiSettings.footerComponents` (hidden when the config
-   * says so, ordered by the config). Anything else (plugins) is always shown,
-   * ordered by its own `order`.
+   * Every item obeys `uiSettings.footerComponents` once the config mentions it:
+   * hidden when the config says so, ordered by the config. An item the config
+   * has never heard of keeps its own `order`, which is how a plugin component
+   * stays where it asked to be until somebody moves it in the settings panel.
    */
   source?: "builtin" | "plugin";
+  /**
+   * Human-readable name for the footer settings panel. Built-in chips are named
+   * there and leave this empty; plugin components carry their plugin's name,
+   * because `plugin:towarzysz-a1b2:towarzysz` is not something to show anyone.
+   */
+  label?: string;
   /** React content (built-in chips). Mutually exclusive with `node`. */
   render?: () => ReactNode;
   /** Raw DOM content the host adopts (plugin components). */
@@ -36,9 +43,12 @@ export interface FooterItem {
 const items = new Map<string, FooterItem>();
 const listeners = new Set<() => void>();
 
-// Cached sorted snapshot so a React store's getSnapshot is referentially stable
-// between mutations (a fresh array each call would loop-render).
+// Cached sorted snapshots so a React store's getSnapshot is referentially stable
+// between mutations (a fresh array each call would loop-render). Two of them:
+// what the footer renders, and everything registered - the settings panel lists
+// the hidden ones too, or there would be no way to switch one back on.
 let snapshot: FooterItem[] = [];
+let allSnapshot: FooterItem[] = [];
 
 /** The user's per-id footer config from uiSettings: visibility + order. */
 function readConfig(): Map<string, { visible: boolean; order: number }> {
@@ -56,19 +66,21 @@ function readConfig(): Map<string, { visible: boolean; order: number }> {
 
 function recompute(): void {
   const config = readConfig();
-  const out: FooterItem[] = [];
+  const byOrder = (a: FooterItem, b: FooterItem) => a.order - b.order;
+  const all: FooterItem[] = [];
+  const visible: FooterItem[] = [];
   for (const item of items.values()) {
-    if (item.source === "builtin") {
-      const cfg = config.get(item.id);
-      if (cfg && !cfg.visible) continue; // hidden by the user's footer config
-      // Config order sits in a band above plugin "start" (0) and below "end"
-      // (1000), so a plugin can still be placed before/after/among the built-ins.
-      out.push({ ...item, order: cfg ? 100 + cfg.order : item.order });
-    } else {
-      out.push(item);
-    }
+    const cfg = config.get(item.id);
+    // Config order sits in a band above "start" (0) and below "end" (1000), so
+    // an item the config has never heard of - a plugin component nobody has
+    // moved yet - still lands before or after the configured ones as it asked.
+    const placed = cfg ? { ...item, order: 100 + cfg.order } : item;
+    all.push(placed);
+    if (cfg && !cfg.visible) continue; // switched off by the user
+    visible.push(placed);
   }
-  snapshot = out.sort((a, b) => a.order - b.order);
+  snapshot = visible.sort(byOrder);
+  allSnapshot = all.sort(byOrder);
 }
 
 function emit(): void {
@@ -96,6 +108,15 @@ export function unregisterFooterItem(id: string): void {
  */
 export function getFooterItems(): FooterItem[] {
   return snapshot;
+}
+
+/**
+ * Every registered item, ordered the same way but with the switched-off ones
+ * kept in. For the footer settings panel, which has to list what it is offering
+ * to switch back on. Stable reference until the next change.
+ */
+export function getAllFooterItems(): FooterItem[] {
+  return allSnapshot;
 }
 
 /** Subscribe to registry changes; returns an unsubscribe function. */

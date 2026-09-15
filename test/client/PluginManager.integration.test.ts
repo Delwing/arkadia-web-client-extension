@@ -47,6 +47,7 @@ vi.mock('@modules/core/pluginFooterRegistry', () => ({
   registerFooterComponent: jest.fn(),
   unregisterFooterComponent: jest.fn(),
   updateFooterComponent: jest.fn(),
+  updateFooterComponentPluginName: jest.fn(),
   setFooterComponentVisible: jest.fn(),
 }));
 
