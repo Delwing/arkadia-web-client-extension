@@ -66,8 +66,8 @@ const VEHICLE_NOUNS: Record<string, string> = {
 /** Genitive of each vehicle type, for "zsiadz z ...". */
 const VEHICLE_GENITIVE: Record<string, string> = {woz: 'wozu', bryczka: 'bryczki', dylizans: 'dylizansu'};
 
-/** Re-boarding command per vehicle type - you sit ON a wagon or a bryczka, but IN a dylizans. */
-const VEHICLE_SEAT_COMMAND: Record<string, string> = {woz: 'usiadz na wozie', bryczka: 'usiadz na bryczce', dylizans: 'usiadz w dylizansie'};
+/** Re-boarding command per vehicle type - you sit ON a wagon, but IN a bryczka or a dylizans. */
+const VEHICLE_SEAT_COMMAND: Record<string, string> = {woz: 'usiadz na wozie', bryczka: 'usiadz w bryczce', dylizans: 'usiadz w dylizansie'};
 
 /** Grammatical gender of each vehicle type - only bryczka is feminine. */
 const VEHICLE_GENDER: Record<string, 'm' | 'f'> = {woz: 'm', bryczka: 'f', dylizans: 'm'};

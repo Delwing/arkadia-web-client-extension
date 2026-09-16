@@ -392,6 +392,20 @@ describe('carriage bookkeeping', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('usiadz w dylizansie');
   });
 
+  test('re-boarding a bryczka is "usiadz w", not "usiadz na"', () => {
+    // "usiadz na bryczce" only ever earned the game's "Gdzie chcesz usiasc? W eleganckiej
+    // drewnianej bryczce?" - you sit in one, the same as a dylizans.
+    parse('Siadasz w eleganckiej drewnianej bryczce.');
+    client.Map.currentRoom = { id: 1234 };
+    parse('Zsiadasz z eleganckiej drewnianej bryczki.');
+
+    parse('Elegancka drewniana bryczka.', 'room.contents.object');
+    expect(client.bindSlot.printable).toBe('usiadz w bryczce');
+
+    client.lastBindCallback!();
+    expect(client.sendCommand).toHaveBeenCalledWith('usiadz w bryczce');
+  });
+
   test('finds the carriage in a room description that lists several things', () => {
     parse('Siadasz na nieduzym jednokonnym wozie.');
     client.Map.currentRoom = { id: 1234 };
