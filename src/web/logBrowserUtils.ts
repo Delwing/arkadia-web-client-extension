@@ -302,22 +302,6 @@ export function flattenLogGroups(groups: ParsedLogGroup[]): FlatLogLine[] {
   return flat;
 }
 
-export async function openDb(): Promise<IDBDatabase | null> {
-  return new Promise((resolve) => {
-    try {
-      const request = indexedDB.open("ArkadiaMessagesDB");
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => {
-        console.error("[Logs] Failed to open IndexedDB:", request.error);
-        resolve(null);
-      };
-    } catch (error) {
-      console.error("[Logs] Error opening IndexedDB:", error);
-      resolve(null);
-    }
-  });
-}
-
 export async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
   return new Promise(resolve => {
     let tx: IDBTransaction;

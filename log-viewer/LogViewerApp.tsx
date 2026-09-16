@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
-  openDb,
   formatSessionLabel,
   getSessionYear,
   getSessionData,
@@ -11,6 +10,7 @@ import {
   type FlatLogLine,
 } from "../src/web/logBrowserUtils";
 import { LogLine } from "../src/web/LogBrowser";
+import { LogsDatabase } from "../src/web/logsDatabase";
 
 export default function LogViewerApp() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
@@ -22,7 +22,7 @@ export default function LogViewerApp() {
   const [matchCount, setMatchCount] = useState<number | null>(null);
   const [currentMatchIdx, setCurrentMatchIdx] = useState(-1);
 
-  const dbRef = useRef<IDBDatabase | null>(null);
+  const [logsDb] = useState(() => new LogsDatabase());
   const parentRef = useRef<HTMLDivElement>(null);
   const matchIndicesRef = useRef<number[]>([]);
 
@@ -38,8 +38,7 @@ export default function LogViewerApp() {
     (async () => {
       setIsLoading(true);
       try {
-        dbRef.current = await openDb();
-        const db = dbRef.current;
+        const db = await logsDb.get();
         if (!db) return;
 
         const available: SessionInfo[] = [];
@@ -76,16 +75,18 @@ export default function LogViewerApp() {
         setIsLoading(false);
       }
     })();
-  }, []);
+  }, [logsDb]);
 
   // Load session data when session changes
   useEffect(() => {
-    if (!currentSession || !dbRef.current) return;
+    if (!currentSession) return;
 
     (async () => {
       setIsLoading(true);
       try {
-        const groups = await getSessionData(dbRef.current!, currentSession);
+        const db = await logsDb.get();
+        if (!db) return;
+        const groups = await getSessionData(db, currentSession);
         const flat = flattenLogGroups(groups);
         setFlatLines(flat);
         setHighlightedIndices(new Set());
@@ -103,7 +104,7 @@ export default function LogViewerApp() {
         setIsLoading(false);
       }
     })();
-  }, [currentSession]);
+  }, [currentSession, logsDb]);
 
   const runSearch = useCallback(() => {
     const { regex } = parseSearchQuery(searchQuery);

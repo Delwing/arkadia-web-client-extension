@@ -3,6 +3,7 @@ import { globalStorage } from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import type { CombatEntry } from "@client/scripts/combatWindow";
+import { openLogsDb, releaseOnUpgrade, upgradeLogsDb } from "./logsDatabase";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
@@ -35,36 +36,18 @@ globalStorage.onChange('loggingEnabled', (newValue) => {
 });
 
 async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ArkadiaMessagesDB');
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(storeName)) {
-        db.createObjectStore(storeName, { autoIncrement: true });
-      }
-    };
-
-    request.onsuccess = () => {
-      const db = request.result;
-      if (db.objectStoreNames.contains(storeName)) {
-        resolve(db);
-      } else {
-        const newVersion = db.version + 1;
-        db.close();
-        const upgradeRequest = indexedDB.open('ArkadiaMessagesDB', newVersion);
-        upgradeRequest.onupgradeneeded = () => {
-          upgradeRequest.result.createObjectStore(storeName, { autoIncrement: true });
-        };
-        upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
-        upgradeRequest.onerror = () => reject(upgradeRequest.error);
-      }
-    };
-
-    request.onerror = () => reject(request.error);
+  const existing = await openLogsDb();
+  if (existing?.objectStoreNames.contains(storeName)) return existing;
+  existing?.close();
+  return upgradeLogsDb(db => {
+    if (!db.objectStoreNames.contains(storeName)) {
+      db.createObjectStore(storeName, { autoIncrement: true });
+    }
   });
 }
 
-async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number) {
+/** False when the connection was closed under us (released for an upgrade), so the caller reopens and retries. */
+async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number): Promise<boolean> {
   try {
     const tx = db.transaction(storeName, 'readwrite');
     await new Promise<void>((resolve, reject) => {
@@ -74,8 +57,10 @@ async function save(db: IDBDatabase, text: string, type?: string, timestamp?: nu
       req.onerror = () => reject(req.error);
     });
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'InvalidStateError') return false;
     console.error('Failed to log message', err);
   }
+  return true;
 }
 
 interface SessionClient {
@@ -84,9 +69,10 @@ interface SessionClient {
 
 export default async function initSessionLogger(client: SessionClient) {
   let db: IDBDatabase | null = null;
+  let opening: Promise<IDBDatabase | null> | null = null;
   let closeTimeout: number | null = null;
 
-  async function ensureDb(): Promise<IDBDatabase | null> {
+  function ensureDb(): Promise<IDBDatabase | null> {
     // Clear any pending close timeout
     if (closeTimeout !== null) {
       clearTimeout(closeTimeout);
@@ -95,16 +81,39 @@ export default async function initSessionLogger(client: SessionClient) {
 
     // If db is already open, return it
     if (db) {
-      return db;
+      return Promise.resolve(db);
     }
 
-    // Open the database
-    try {
-      db = await openOrCreateStore(storeName);
-      return db;
-    } catch (err) {
-      console.error('Failed to open log database', err);
-      return null;
+    // Lines arrive in bursts; they must share one open, or every line but the
+    // last leaks a connection that then blocks other tabs' upgrades for good.
+    opening ??= openOrCreateStore(storeName)
+      .then(opened => {
+        db = opened;
+        releaseOnUpgrade(opened, () => {
+          if (db === opened) db = null;
+        });
+        return opened;
+      })
+      .catch(err => {
+        console.error('Failed to open log database', err);
+        return null;
+      })
+      .finally(() => {
+        opening = null;
+      });
+    return opening;
+  }
+
+  async function write(text: string, type?: string, timestamp?: number) {
+    // A second attempt covers the connection being released for another
+    // tab's upgrade between opening it and writing.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const currentDb = await ensureDb();
+      if (!currentDb) return;
+      if (await save(currentDb, text, type, timestamp)) {
+        scheduleClose();
+        return;
+      }
     }
   }
 
@@ -138,11 +147,7 @@ export default async function initSessionLogger(client: SessionClient) {
         htmlText = "";
       }
 
-      const currentDb = await ensureDb();
-      if (currentDb) {
-        await save(currentDb, htmlText.replace(CLICK_TAG_REG, ''), type, timestamp);
-        scheduleClose();
-      }
+      await write(htmlText.replace(CLICK_TAG_REG, ''), type, timestamp);
     }
   });
 
@@ -153,10 +158,6 @@ export default async function initSessionLogger(client: SessionClient) {
     if (!loggingEnabled) return;
     if (entry.type === 'separator') return;
     const htmlText = entry.buffer.toHtml();
-    const currentDb = await ensureDb();
-    if (currentDb) {
-      await save(currentDb, htmlText.replace(CLICK_TAG_REG, ''), entry.type);
-      scheduleClose();
-    }
+    await write(htmlText.replace(CLICK_TAG_REG, ''), entry.type);
   });
 }

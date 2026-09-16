@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type RefObject, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type MouseEvent as ReactMouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { globalStorage } from "@modules/core/storage";
 import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
@@ -21,10 +21,10 @@ import {
   parseSearchQuery,
   normalizeFlags,
   flattenLogGroups,
-  openDb,
   getRawSessionData,
   getSessionData,
 } from "./logBrowserUtils";
+import { LogsDatabase } from "./logsDatabase";
 import { downloadLogAsImage } from "./logToImage";
 
 // --- Downloaded status persistence via separate IndexedDB ---
@@ -157,12 +157,12 @@ function collectInlineStyles(): string {
 }
 
 function LogManager({
-  dbRef,
+  logsDb,
   sessions,
   onSessionsChanged,
   onViewSession,
 }: {
-  dbRef: RefObject<IDBDatabase | null>;
+  logsDb: LogsDatabase;
   sessions: SessionInfo[];
   onSessionsChanged: () => void;
   onViewSession: (name: string) => void;
@@ -192,8 +192,8 @@ function LogManager({
     let cancelled = false;
 
     async function load() {
-      const db = dbRef.current;
-      if (!db) return;
+      const db = await logsDb.get();
+      if (!db || cancelled) return;
 
       const map = new Map<string, SessionSummary>();
       for (const s of sessions) {
@@ -212,7 +212,7 @@ function LogManager({
 
     load();
     return () => { cancelled = true; };
-  }, [sessions, dbRef]);
+  }, [sessions, logsDb]);
 
   // Clear selection when sessions change
   useEffect(() => {
@@ -325,45 +325,30 @@ function LogManager({
     const names = sessions.filter(s => selected.has(s.name)).map(s => s.name);
     if (names.length === 0) return;
 
-    const db = dbRef.current;
-    if (!db) return;
-
     setIsDeleting(true);
     try {
-      const currentVersion = db.version;
-      db.close();
-      dbRef.current = null;
-
-      dbRef.current = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open("ArkadiaMessagesDB", currentVersion + 1);
-        req.onupgradeneeded = () => {
-          const upgradeDb = req.result;
-          for (const name of names) {
-            if (upgradeDb.objectStoreNames.contains(name)) {
-              upgradeDb.deleteObjectStore(name);
-            }
+      await logsDb.upgrade(upgradeDb => {
+        for (const name of names) {
+          if (upgradeDb.objectStoreNames.contains(name)) {
+            upgradeDb.deleteObjectStore(name);
           }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        }
       });
 
       setSelected(new Set());
       onSessionsChanged();
     } catch (error) {
       console.error("[LogManager] Delete failed:", error);
-      // Try to re-open the database
-      dbRef.current = await openDb();
     } finally {
       setIsDeleting(false);
     }
-  }, [sessions, selected, dbRef, onSessionsChanged]);
+  }, [sessions, selected, logsDb, onSessionsChanged]);
 
   const handleJsonExport = useCallback(async () => {
     const names = sessions.filter(s => selected.has(s.name)).map(s => s.name);
     if (names.length === 0) return;
 
-    const db = dbRef.current;
+    const db = await logsDb.get();
     if (!db) return;
 
     setIsJsonExporting(true);
@@ -388,10 +373,10 @@ function LogManager({
     } finally {
       setIsJsonExporting(false);
     }
-  }, [sessions, selected, dbRef]);
+  }, [sessions, selected, logsDb]);
 
   const handleImport = useCallback(async (file: File) => {
-    const db = dbRef.current;
+    const db = await logsDb.get();
     if (!db) return;
 
     setIsImporting(true);
@@ -431,23 +416,13 @@ function LogManager({
         return;
       }
 
-      // Close current DB, upgrade to create new object stores
-      const currentVersion = db.version;
-      db.close();
-      dbRef.current = null;
-
-      const newDb = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open("ArkadiaMessagesDB", currentVersion + 1);
-        req.onupgradeneeded = () => {
-          const upgradeDb = req.result;
-          for (const name of toImport) {
-            if (!upgradeDb.objectStoreNames.contains(name)) {
-              upgradeDb.createObjectStore(name, { autoIncrement: true });
-            }
+      // Upgrade to create the new object stores
+      const newDb = await logsDb.upgrade(upgradeDb => {
+        for (const name of toImport) {
+          if (!upgradeDb.objectStoreNames.contains(name)) {
+            upgradeDb.createObjectStore(name, { autoIncrement: true });
           }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        }
       });
 
       // Insert entries into new object stores
@@ -465,21 +440,17 @@ function LogManager({
         });
       }
 
-      dbRef.current = newDb;
       alert(`Zaimportowano ${toImport.length} sesji, pominieto ${skipped} duplikatow.`);
       onSessionsChanged();
     } catch (error) {
       console.error("[LogManager] Import failed:", error);
-      if (!dbRef.current) {
-        dbRef.current = await openDb();
-      }
     } finally {
       setIsImporting(false);
       if (importInputRef.current) {
         importInputRef.current.value = "";
       }
     }
-  }, [dbRef, onSessionsChanged]);
+  }, [logsDb, onSessionsChanged]);
 
   return (
     <div className="d-flex flex-column gap-2">
@@ -775,7 +746,7 @@ export function LogBrowser() {
   const [fileSaveEnabled, setFileSaveEnabled] = useState(isFileSaveActive());
   const [fileSaveDirName, setFileSaveDirName] = useState(getDirectoryName());
 
-  const dbRef = useRef<IDBDatabase | null>(null);
+  const [logsDb] = useState(() => new LogsDatabase());
   const exportWorkerRef = useRef<Worker | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const searchRequestIdRef = useRef(0);
@@ -890,10 +861,7 @@ export function LogBrowser() {
   const reloadSessions = useCallback(async () => {
     setIsLoading(true);
     try {
-      if (!dbRef.current) {
-        dbRef.current = await openDb();
-      }
-      const db = dbRef.current;
+      const db = await logsDb.get();
       if (!db) {
         setSearchMessage("Nie udalo sie otworzyc bazy danych.");
         return;
@@ -934,13 +902,14 @@ export function LogBrowser() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [logsDb]);
 
-  // Load sessions when modal opens
+  // Load sessions when modal opens; let go of the database once it closes
   useEffect(() => {
     if (!isOpen) return;
     reloadSessions();
-  }, [isOpen, reloadSessions]);
+    return () => logsDb.release();
+  }, [isOpen, reloadSessions, logsDb]);
 
   // Reset the timeline window whenever the selected session changes
   useEffect(() => {
@@ -993,12 +962,14 @@ export function LogBrowser() {
 
   // Load session data when current session changes or modal opens
   useEffect(() => {
-    if (!isOpen || !currentSession || !dbRef.current) return;
+    if (!isOpen || !currentSession) return;
 
     const loadSession = async () => {
       setIsLoading(true);
       try {
-        const groups = await getSessionData(dbRef.current!, currentSession);
+        const db = await logsDb.get();
+        if (!db) return;
+        const groups = await getSessionData(db, currentSession);
         const flat = flattenLogGroups(groups);
         setFlatLines(flat);
         // Scroll to bottom after loading (unless we have a pending scroll target)
@@ -1016,7 +987,7 @@ export function LogBrowser() {
     };
 
     loadSession();
-  }, [isOpen, currentSession]);
+  }, [isOpen, currentSession, logsDb]);
 
   // Handle pending scroll target after session loads
   useEffect(() => {
@@ -1130,7 +1101,7 @@ export function LogBrowser() {
       }
     } else {
       // Search all sessions via IndexedDB
-      const db = dbRef.current;
+      const db = await logsDb.get();
       if (!db) return;
 
       for (let i = 0; i < sessions.length; i++) {
@@ -1226,7 +1197,7 @@ export function LogBrowser() {
         setCurrentSession(firstResult.sessionName);
       }
     }
-  }, [searchQuery, sessions, currentSession, searchCurrentOnly, flatLines]);
+  }, [searchQuery, sessions, currentSession, searchCurrentOnly, flatLines, logsDb]);
 
   // Handle result click
   const handleResultClick = useCallback((globalIndex: number) => {
@@ -1260,9 +1231,11 @@ export function LogBrowser() {
 
   // Download
   const handleDownload = useCallback(async () => {
-    if (!currentSession || !dbRef.current) return;
+    if (!currentSession) return;
+    const db = await logsDb.get();
+    if (!db) return;
 
-    const tx = dbRef.current.transaction(currentSession, "readonly");
+    const tx = db.transaction(currentSession, "readonly");
     const req = tx.objectStore(currentSession).getAll();
     req.onsuccess = () => {
       const allLogs = req.result as LogEntry[];
@@ -1293,7 +1266,7 @@ export function LogBrowser() {
       a.click();
       URL.revokeObjectURL(url);
     };
-  }, [currentSession, rangeFilter]);
+  }, [currentSession, rangeFilter, logsDb]);
 
   // Download all logs as ZIP
   const handleDownloadAll = useCallback(() => {
@@ -1383,26 +1356,15 @@ export function LogBrowser() {
   // Delete current session
   const [isDeleting, setIsDeleting] = useState(false);
   const handleDeleteCurrent = useCallback(async () => {
-    if (!currentSession || !dbRef.current || isDeleting) return;
+    if (!currentSession || isDeleting) return;
     if (!confirm("Czy na pewno chcesz usunac ten log?")) return;
 
     setIsDeleting(true);
     try {
-      const db = dbRef.current;
-      const currentVersion = db.version;
-      db.close();
-      dbRef.current = null;
-
-      dbRef.current = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open("ArkadiaMessagesDB", currentVersion + 1);
-        req.onupgradeneeded = () => {
-          const upgradeDb = req.result;
-          if (upgradeDb.objectStoreNames.contains(currentSession)) {
-            upgradeDb.deleteObjectStore(currentSession);
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+      await logsDb.upgrade(upgradeDb => {
+        if (upgradeDb.objectStoreNames.contains(currentSession)) {
+          upgradeDb.deleteObjectStore(currentSession);
+        }
       });
 
       setFlatLines([]);
@@ -1410,11 +1372,10 @@ export function LogBrowser() {
       reloadSessions();
     } catch (error) {
       console.error("[Logs] Delete failed:", error);
-      dbRef.current = await openDb();
     } finally {
       setIsDeleting(false);
     }
-  }, [currentSession, isDeleting, reloadSessions]);
+  }, [currentSession, isDeleting, reloadSessions, logsDb]);
 
   // Re-run search when the toggle changes and there's an active search
   const prevSearchCurrentOnlyRef = useRef(searchCurrentOnly);
@@ -1738,7 +1699,7 @@ export function LogBrowser() {
 
       {activeTab === "manage" && (
         <LogManager
-          dbRef={dbRef}
+          logsDb={logsDb}
           sessions={sessions}
           onSessionsChanged={reloadSessions}
           onViewSession={(name) => { setCurrentSession(name); setActiveTab("logs"); }}
