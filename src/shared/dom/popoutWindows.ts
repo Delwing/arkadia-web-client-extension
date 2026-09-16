@@ -10,6 +10,21 @@
  */
 const popoutWindows = new Set<Window>();
 
+/** The popout entry page, relative to the opening document. */
+let popoutEntry = 'popup/index.html';
+
+/**
+ * Points a UI served from a sub-directory (forge-ui/) at the shared popout
+ * entry. The page is UI-agnostic: it mirrors whatever styles the opener has.
+ */
+export function setPopoutEntry(path: string): void {
+    popoutEntry = path;
+}
+
+export function getPopoutEntry(): string {
+    return popoutEntry;
+}
+
 export function registerPopoutWindow(win: Window): void {
   popoutWindows.add(win);
 }

@@ -4,18 +4,16 @@ import type { WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { usePanelChrome } from './PanelHeader';
 import {
+  getPopoutEntry,
   registerPopoutWindow,
   unregisterPopoutWindow,
 } from '@shared/dom/popoutWindows.ts';
+import { mirrorDocumentStyles } from '@shared/dom/mirrorDocumentStyles.ts';
 
 interface PopoutWindowLayerProps {
   windows: WindowRecord[];
   manager: WindowManager;
 }
-
-/** Path to the dedicated popout entry (popup/index.html). Opened relative to
- *  the current document so it works under any deploy base. */
-const POPOUT_ENTRY = 'popup/index.html';
 
 /**
  * Renders each popped-out window into its own browser window. The popup's
@@ -27,8 +25,9 @@ const POPOUT_ENTRY = 'popup/index.html';
  * exactly where it was — floating, docked, tabbed, or split.
  *
  * The external window navigates to a real same-origin entry (popup/index.html)
- * so it loads the full app stylesheet bundle natively; we only mirror the
- * opener's theme classes (which select the active theme) onto it.
+ * that carries no CSS of its own. It mirrors the opener's <head> styles and
+ * theme attributes and keeps them in sync (see mirrorDocumentStyles), so it
+ * matches whichever UI opened it, including styles added at runtime.
  */
 export function PopoutWindowLayer({ windows, manager }: PopoutWindowLayerProps) {
   return (
@@ -46,23 +45,6 @@ function rescuePortalTarget(manager: WindowManager, id: string): void {
   const target = manager.getPortalTarget(id);
   if (target && target.ownerDocument !== document) {
     document.body.appendChild(target);
-  }
-}
-
-/** Mirror the opener's theme onto the popout document. The active theme is
- *  selected by a class on <html>/<body> (plus a few data-* attributes); the
- *  CSS itself is loaded by the popout entry. */
-function applyPopoutChrome(ext: Window, title: string): void {
-  const doc = ext.document;
-  doc.title = title ? `${title} — Arkadia` : 'Arkadia';
-  doc.documentElement.className = document.documentElement.className;
-  // Preserve the entry's own body classes (e.g. nothing important) but add the
-  // opener's theme/layout classes so CSS variables resolve.
-  doc.body.className = document.body.className;
-  for (const attr of Array.from(document.body.attributes)) {
-    if (attr.name.startsWith('data-')) {
-      doc.body.setAttribute(attr.name, attr.value);
-    }
   }
 }
 
@@ -85,7 +67,7 @@ function PopoutWindow({
     const top = window.screenY + Math.max(0, Math.round((window.outerHeight - height) / 3));
     const features = `popup=yes,width=${width},height=${height},left=${left},top=${top}`;
 
-    const ext = window.open(POPOUT_ENTRY, `arkadia-popout-${id}`, features);
+    const ext = window.open(getPopoutEntry(), `arkadia-popout-${id}`, features);
     if (!ext) {
       // Popup blocked — fall back to the in-app shell.
       manager.setPoppedOut(id, false);
@@ -96,6 +78,7 @@ function PopoutWindow({
 
     let cancelled = false;
     let pollTimer = 0;
+    let disposeStyles: (() => void) | null = null;
 
     // The external window is going away (OS close, refresh, etc.). Rescue the
     // live portal target before its document dies, then restore the panel.
@@ -107,10 +90,18 @@ function PopoutWindow({
     const closeOnOpenerUnload = () => ext.close();
 
     const onReady = () => {
-      applyPopoutChrome(ext, w.title);
+      const doc = ext.document;
+      doc.title = w.title ? `${w.title} — Arkadia` : 'Arkadia';
+      const styles = mirrorDocumentStyles(document, doc);
+      disposeStyles = styles.dispose;
       ext.addEventListener('pagehide', handleUnload);
       window.addEventListener('pagehide', closeOnOpenerUnload);
-      setMountNode(ext.document.getElementById('popout-root'));
+      // Move the panel in only once its stylesheets have loaded, so it never
+      // flashes unstyled. The opener has already cached them, so this is quick.
+      void styles.ready.then(() => {
+        if (cancelled || ext.closed) return;
+        setMountNode(doc.getElementById('popout-root'));
+      });
     };
 
     // The window navigates to the entry asynchronously — wait until its
@@ -129,6 +120,7 @@ function PopoutWindow({
     return () => {
       cancelled = true;
       if (pollTimer) window.clearTimeout(pollTimer);
+      disposeStyles?.();
       ext.removeEventListener('pagehide', handleUnload);
       window.removeEventListener('pagehide', closeOnOpenerUnload);
       unregisterPopoutWindow(ext);

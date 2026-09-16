@@ -41,6 +41,7 @@ import {
     setLayoutOverrides,
 } from '@web/layout/utils/layoutStorage';
 import { setObjectListChrome } from '@web/layout/builtInChrome';
+import { setPopoutEntry } from '@shared/dom/popoutWindows';
 import { createClient } from './client/bootstrap';
 import { ClientProvider } from './client/ClientContext';
 import App from './components/App';
@@ -62,6 +63,10 @@ setRailSpanSupported(true);
 // default is process-local — the stock UI keeps titling it "Kondycje" and
 // defaulting to the "Lista" flavor.
 setObjectListChrome({ title: 'W poblizu', defaultViewMode: 'nearby' });
+
+// Forge is served from forge-ui/, but the popout entry lives at the deploy root.
+// It mirrors the opener's styles, so the same page serves both UIs.
+setPopoutEntry('../popup/index.html');
 
 // Force layout mode on so the dock grid activates, keep the built-in
 // objectList slot enabled (forge renders the forged "W poblizu" panel into it),

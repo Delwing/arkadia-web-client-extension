@@ -1,27 +1,17 @@
 /**
- * Stylesheet-only entry for popped-out panels.
+ * Entry for popped-out panels.
  *
  * A popped-out panel opens this page with window.open(); the MAIN client's
- * React tree then portals the panel's content into #popout-root. This module
- * exists purely so the popout document loads the full app stylesheet bundle
- * through a real, same-origin navigation — injecting the opener's styles into
- * an about:blank window proved unreliable across browsers (cloned/linked
- * stylesheets never fetched). Keep this free of app bootstrap logic: no
- * sockets, no client, just the styles.
+ * React tree then portals the panel's content into #popout-root. The page is
+ * deliberately empty: it carries no CSS of its own and mirrors the opener's
+ * <head> styles and theme attributes instead (see
+ * src/shared/dom/mirrorDocumentStyles.ts), so it matches whichever UI opened
+ * it - stock or forge - including styles added at runtime (custom theme,
+ * fonts, plugins).
  *
- * The set below mirrors the global CSS imported by src/web/main.ts. If a new
- * global stylesheet is added there, add it here too.
+ * It must still be a real same-origin page rather than about:blank: cloned
+ * <link> stylesheets did not reliably load in an about:blank window. Keep this
+ * free of app bootstrap logic and of CSS imports - an imported stylesheet would
+ * be applied twice, and in a different cascade position than in the opener.
  */
-import 'bootswatch/dist/darkly/bootstrap.min.css';
-import '@web/style.css';
-import '@web/themes/fantasy.css';
-import '@web/themes/forest.css';
-import '@web/themes/icy.css';
-import '@web/themes/gray.css';
-import '@web/themes/dark-neutral.css';
-import '@web/themes/light-parchment.css';
-import '@web/themes/light-silver.css';
-import '@web/layout/layout.css';
-// Popup body styles (chat, assistant, ...). Without this a detached panel keeps
-// its chrome but loses every popup-specific rule.
-import '@web/popups/popups.css';
+export {};
