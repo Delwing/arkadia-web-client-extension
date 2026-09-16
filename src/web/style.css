@@ -2368,7 +2368,10 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   min-width: 8vmin;
   }
 
-  button {
+  /* Not inside a popped-out window: that is a narrow desktop window, not a
+     phone, and 8vmin of its viewport blows every panel button up. :where()
+     keeps the specificity of a bare `button`, so phone overrides still win. */
+  button:where(:not(.popout-root *)) {
   min-height: 8vmin; /* Minimum touch target size */
   min-width: 8vmin;
   }

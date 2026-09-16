@@ -132,6 +132,43 @@ test.describe('Popout windows', () => {
             .toBeVisible({timeout: 5000});
     });
 
+    test('popped-out window mirrors the opener\'s styles, including ones added later', async ({page, context}) => {
+        const popup = await openLootPopup(page);
+        const panelFont = await popup.evaluate(el => getComputedStyle(el).fontFamily);
+
+        const [popout] = await Promise.all([
+            context.waitForEvent('page'),
+            popup.locator('.panel-button--popout').first().click(),
+        ]);
+        const content = popout.locator('.loot-popup__content');
+        await expect(content, 'content should render in the popped-out window').toBeVisible({timeout: 5000});
+
+        // The bundled stylesheets reached the popout: same font as in the main window.
+        expect(await popout.locator('.loot-popup').evaluate(el => getComputedStyle(el).fontFamily)).toBe(panelFont);
+
+        // A stylesheet added to the opener at runtime (theme, plugin) follows.
+        await page.evaluate(() => {
+            const style = document.createElement('style');
+            style.textContent = '.loot-popup__content { outline: 3px solid rgb(1, 2, 3); }';
+            document.head.appendChild(style);
+        });
+        await expect
+            .poll(() => content.evaluate(el => getComputedStyle(el).outlineColor), {timeout: 3000})
+            .toBe('rgb(1, 2, 3)');
+
+        // A popout is narrower than the mobile breakpoint, but it is not a phone:
+        // buttons must not pick up the mobile 8vmin touch-target minimum.
+        const button = await popout.evaluate(() => {
+            const probe = document.createElement('button');
+            document.querySelector('.popout-root .loot-popup')!.appendChild(probe);
+            const {minHeight} = getComputedStyle(probe);
+            probe.remove();
+            return {minHeight, width: window.innerWidth};
+        });
+        expect(button.width, 'popout should be narrower than the mobile breakpoint').toBeLessThanOrEqual(768);
+        expect(button.minHeight).not.toMatch(/^[1-9]/);
+    });
+
     test('map screenshot works from a popped-out window (clipboard targets the focused window)', async ({page, context}) => {
         test.setTimeout(40000);
         await context.grantPermissions(['clipboard-read', 'clipboard-write']);
