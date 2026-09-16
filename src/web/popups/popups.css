@@ -8472,3 +8472,139 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── enemy resistances ───────────────────────────────────────────────── */
+
+.enemy-res-popup .postepy2-header {
+  gap: 0.75rem;
+}
+
+.enemy-res-filter {
+  max-width: 20rem;
+}
+
+.enemy-res-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--popup-text-medium);
+  white-space: nowrap;
+}
+
+.enemy-res-content {
+  flex: 1;
+  overflow: auto;
+  padding: 0.25rem 0.5rem;
+}
+
+.enemy-res-table thead th.enemy-res-group {
+  text-align: center;
+  border-left: 1px solid var(--popup-border);
+}
+
+.enemy-res-table thead tr:nth-child(2) th {
+  top: 1.6rem;
+}
+
+.enemy-res-table thead th.enemy-res-name-head {
+  vertical-align: bottom;
+}
+
+.enemy-res-table thead th.enemy-res-type {
+  cursor: pointer;
+  vertical-align: bottom;
+  padding: 0.25rem 0.1rem;
+  text-align: center;
+}
+
+.enemy-res-type span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.enemy-res-table thead th.enemy-res-type:hover,
+.enemy-res-table thead th.enemy-res-type--sorted {
+  color: var(--popup-data-yellow);
+}
+
+.enemy-res-cell {
+  text-align: center;
+  font-weight: 600;
+  min-width: 1.6rem;
+  padding: 0.2rem 0.15rem;
+}
+
+.enemy-res-cell--odporny,
+.enemy-res-mark--odporny {
+  color: var(--popup-danger);
+  background-color: var(--popup-danger-bg);
+}
+
+.enemy-res-cell--wrazliwy,
+.enemy-res-mark--wrazliwy {
+  color: var(--popup-success);
+  background-color: var(--popup-success-bg);
+}
+
+.enemy-res-mark {
+  display: inline-block;
+  min-width: 1.1rem;
+  text-align: center;
+  font-weight: 600;
+  border-radius: 0.2rem;
+  margin-left: 0.35rem;
+}
+
+.enemy-res-view {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.enemy-res-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.enemy-res-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.enemy-res-line__name {
+  flex: 0 0 auto;
+  min-width: 7rem;
+  font-weight: 600;
+  color: var(--popup-text-bright);
+}
+
+.enemy-res-line__chips {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  gap: 0.25rem;
+}
+
+.enemy-res-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.35rem;
+  border-radius: 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.35rem;
+  white-space: nowrap;
+}
+
+.enemy-res-chip--odporny {
+  color: var(--popup-danger);
+  background-color: var(--popup-danger-bg);
+}
+
+.enemy-res-chip--wrazliwy {
+  color: var(--popup-success);
+  background-color: var(--popup-success-bg);
+}

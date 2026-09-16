@@ -388,6 +388,7 @@ export interface KnownEvents {
     "zlom.updated": void;
     "zlom.snapshotReplaced": void;
     "zlom.popup.open": void;
+    "enemyResistances.popup.open": void;
     "oswajanie.updated": void;
     "oswajanie.popup.open": { view?: "animals" | "history" | "help"; animal?: string };
     "zabici.updated": unknown;

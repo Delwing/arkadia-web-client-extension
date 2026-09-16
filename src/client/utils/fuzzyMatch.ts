@@ -60,3 +60,25 @@ export function fuzzyMatch(a: string, b: string, threshold = 0.6): boolean {
 
     return true;
 }
+/**
+ * Average best per-word fuzzy score of the shorter word list against the longer
+ * one. Tolerates Polish declension ("wielkiego trolla" vs "wielki troll").
+ * Returns 0..1.
+ */
+export function wordListMatchScore(a: string, b: string): number {
+    const aWords = a.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const bWords = b.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+
+    if (aWords.length === 0 || bWords.length === 0) return 0;
+
+    const [shorter, longer] = aWords.length <= bWords.length
+        ? [aWords, bWords]
+        : [bWords, aWords];
+
+    let totalScore = 0;
+    for (const word of shorter) {
+        totalScore += Math.max(...longer.map(other => fuzzyMatchScore(word, other)));
+    }
+
+    return totalScore / shorter.length;
+}

@@ -149,6 +149,17 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 
 > **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna "Kolor") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik "Srebro" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).
 
+## Odpornosci przeciwnikow
+
+| Alias | Opis |
+|-------|------|
+| `/odpornosci` | Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen) |
+| `/odpornosci <fraza>` | Wypisz w oknie gry przeciwnikow, ktorych nazwa zawiera fraze (np. `/odpornosci kikimora`) |
+| `/odpornosci-usun <nazwa>` | Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`) |
+| `/odpornosci-reset` | Wyczysc cala baze odpornosci |
+
+> **Wskazowka:** Baza zapisuje sie sama z wynikow `ocen <przeciwnik>` — wystarczy linia "Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest on odporny/wrazliwy na ...". Nazwa w mianowniku brana jest z linii porownania ("... niz wielka krwiozercza kikimora."); gdy jej brak, przeciwnik jest dopasowywany do obiektow na lokacji. Przymiotniki sa pomijane — "wielka krwiozercza kikimora" i "mala kikimora" to jeden wpis `kikimora` (nazwy dwuczlonowe, np. `zywiolak ognia`, `troll jaskiniowy`, zostaja w calosci). Postaci z imieniem (gracze, nazwani NPC) nie sa zapisywane. Jesli linii z odpornosciami nie da sie odczytac albo nie wiadomo, ktorego przeciwnika dotyczy, pod linia pojawia sie pomaranczowy komunikat - klikniecie kopiuje oryginalna linie do schowka, zeby mozna ja bylo zglosic. Przelacznik Tabela/Lista zmienia widok: lista pokazuje dla kazdego przeciwnika wrazliwosci i odpornosci jako ikonki. W oknie `W` (zielone) oznacza wrazliwosc, `O` (czerwone) odpornosc; klikniecie naglowka kolumny sortuje najpierw przeciwnikow wrazliwych na dany rodzaj obrazen. Okno otworzysz tez z menu kontekstowego (pozycja "Odpornosci").
+
 ## Oswajanie
 
 | Komenda | Opis |

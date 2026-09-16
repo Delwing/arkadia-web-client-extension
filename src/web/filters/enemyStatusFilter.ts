@@ -1,6 +1,6 @@
 import Client from "@client/Client";
 import {objectListFilters} from "../objectListFilters";
-import {fuzzyMatchScore} from "@client/utils/fuzzyMatch";
+import {wordListMatchScore} from "@client/utils/fuzzyMatch";
 
 const MIN_FUZZY_THRESHOLD = 0.7;
 const MIN_BEST_MATCH_THRESHOLD = 0.5;
@@ -47,31 +47,12 @@ function cleanupInactiveStatus(name: string, status: EnemyStatus) {
     }
 }
 
-function calculateWordListScore(a: string, b: string): number {
-    const aWords = a.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    const bWords = b.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-
-    if (aWords.length === 0 || bWords.length === 0) return 0;
-
-    const [shorter, longer] = aWords.length <= bWords.length
-        ? [aWords, bWords]
-        : [bWords, aWords];
-
-    let totalScore = 0;
-    for (const word of shorter) {
-        const bestMatch = Math.max(...longer.map(other => fuzzyMatchScore(word, other)));
-        totalScore += bestMatch;
-    }
-
-    return totalScore / shorter.length;
-}
-
 function findMatchingEnemy(eventName: string): string | null {
     let bestMatch: string | null = null;
     let bestScore = MIN_FUZZY_THRESHOLD;
 
     for (const name of enemyStatusMap.keys()) {
-        const score = calculateWordListScore(name, eventName);
+        const score = wordListMatchScore(name, eventName);
         if (score > bestScore) {
             bestScore = score;
             bestMatch = name;
@@ -98,7 +79,7 @@ function updateBestMatches(objects: Map<number, { desc?: string }>) {
         for (const [name, status] of enemyStatusMap.entries()) {
             if (!status.paralyzed && !status.brokenDefense) continue;
 
-            const score = calculateWordListScore(desc, name);
+            const score = wordListMatchScore(desc, name);
             if (score > MIN_BEST_MATCH_THRESHOLD && score > status.bestMatchScore) {
                 status.bestMatchScore = score;
                 status.bestMatchObjectNum = num;

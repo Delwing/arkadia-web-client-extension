@@ -20,6 +20,7 @@ import {
     Calendar,
     Wrench,
     Shield,
+    ShieldHalf,
     PawPrint,
     Dumbbell,
     Caravan,
@@ -223,6 +224,11 @@ export function setupOutputContextMenu(
             {
                 label: iconLabel(Shield, 'Zlom'),
                 action: () => eventBus.emit('zlom.popup.open'),
+                opensWindow: true,
+            },
+            {
+                label: iconLabel(ShieldHalf, 'Odpornosci'),
+                action: () => eventBus.emit('enemyResistances.popup.open'),
                 opensWindow: true,
             },
             {

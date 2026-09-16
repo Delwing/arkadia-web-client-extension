@@ -11,6 +11,7 @@ import CombatStatusPopup from '../CombatStatusPopup';
 import ContractsPopup from '../ContractsPopup';
 import DataSourcesPopup from '../DataSourcesPopup';
 import DepositsPopup from '../DepositsPopup';
+import EnemyResistancesPopup from '../EnemyResistancesPopup';
 import FishingPopup from '../FishingPopup';
 import HerbManager from '../herbs/HerbManager';
 import HerbTextWindow from '../herbs/HerbTextWindow';
@@ -104,6 +105,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:transport-route', Component: TransportRoutePopup },
     { id: 'popup:transport-times-debug', Component: TransportTimesDebugPopup },
     { id: 'popup:zlom', Component: ZlomPopup },
+    { id: 'popup:enemyResistances', Component: EnemyResistancesPopup },
     { id: 'popup:stat', Component: StatPopup },
     { id: 'popup:oswajanie', Component: OswajaniePopup },
     { id: 'popup:dataSources', Component: DataSourcesPopup },

@@ -160,6 +160,7 @@ import initBagno from './scripts/bagno'
 import initWrak from './scripts/wrak'
 import initLastSeen from './scripts/lastSeen'
 import initZlom from './scripts/zlom'
+import initEnemyResistances from './scripts/enemyResistances'
 import initBilety from './scripts/bilety'
 
 // Global reference to PluginManager
@@ -340,6 +341,7 @@ export function registerScripts(client: Client) {
     initUserAliases(client, aliases)
     initUserTriggers(client)
     initZlom(client, aliases)
+    initEnemyResistances(client, aliases)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)
