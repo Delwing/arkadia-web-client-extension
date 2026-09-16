@@ -53,7 +53,7 @@
       "collectGems | Kamienie | P4 | boolean | true",
       "collectGold | Zlote monety | P4 | boolean | true",
       "collectMode | Tryb zbierania | P4 | enum: 1|2|3|4 | 1",
-      "collectOverrides | Wyjątki zbierania dla wrogów | P4 | CollectOverride[] | [{\"enemy\":\"troll\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bykocentaur\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"ghoul\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"grzyboczlek\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bagiennik\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zjawa\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"potepieniec\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wietrzyca\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wiwerna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wyverna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"harpia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"krasnozwierz\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bestia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ziemi\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak wody\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak powietrza\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ognia\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]}]",
+      "collectOverrides | Wyjątki zbierania dla wrogów | P4 | CollectOverride[] | [{\"enemy\":\"troll\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bykocentaur\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"ghoul\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"grzyboczlek\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bagiennik\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zjawa\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"potepieniec\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wietrzyca\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"amfisbena\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wiwerna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wyverna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"harpia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"krasnozwierz\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bestia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ziemi\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak wody\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak powietrza\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ognia\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]}]",
       "collectSilver | Srebrne monety | P4 | boolean | true",
       "collectTiming | Kiedy zbierac | P4 | enum: 1|2|3 | 1",
       "compassBackExits | Powrót na czerwono | P5 | boolean | false",
@@ -1244,6 +1244,14 @@
         },
         {
           "enemy": "wietrzyca",
+          "collectCopper": false,
+          "collectSilver": false,
+          "collectGold": false,
+          "collectGems": true,
+          "collectExtra": []
+        },
+        {
+          "enemy": "amfisbena",
           "collectCopper": false,
           "collectSilver": false,
           "collectGold": false,
@@ -6138,8 +6146,8 @@
     }
   ],
   "gaps": [],
-  "version": "27ddb15d087f3e70",
-  "generatedAt": "2026-09-16T18:00:35.889Z",
+  "version": "fdc2a9f04dbea2f3",
+  "generatedAt": "2026-09-16T18:52:07.446Z",
   "stats": {
     "settings": 127,
     "settingsWithLabels": 127,
@@ -6147,9 +6155,9 @@
     "commandsWithDescriptions": 226,
     "events": 17,
     "docs": 12,
-    "leanChars": 43124,
-    "leanTokens": 10781,
-    "fatChars": 226352,
-    "fatTokens": 56588
+    "leanChars": 43261,
+    "leanTokens": 10816,
+    "fatChars": 226612,
+    "fatTokens": 56653
   }
 }
