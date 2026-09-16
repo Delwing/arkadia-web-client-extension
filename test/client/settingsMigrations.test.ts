@@ -27,12 +27,13 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings(oldSettings);
 
             expect(migrated).toBe(true);
-            // The whole registry runs, so v12 also grants troll/bykocentaur coins and appends potepieniec.
+            // The whole registry runs, so v12 also grants troll/bykocentaur coins and appends potepieniec, v14 wietrzyca.
             expect(settings.collectOverrides).toEqual([
                 { enemy: 'troll', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'bykocentaur', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'ghoul', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
                 { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -50,6 +51,7 @@ describe('settingsMigrations', () => {
                 { enemy: 'troll', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'custom enemy', collectCopper: true, collectSilver: true, collectGold: true, collectGems: false, collectExtra: ['sword'] },
                 { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -61,9 +63,10 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings(oldSettings);
 
             expect(migrated).toBe(true);
-            // v12 seeds the potepieniec override even when the list starts out empty.
+            // v12 and v14 seed the potepieniec and wietrzyca overrides even when the list starts out empty.
             expect(settings.collectOverrides).toEqual([
                 { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -327,7 +330,8 @@ describe('settingsMigrations', () => {
 
             const { settings } = migrateSettings({ collectOverrides: [custom] });
 
-            expect(settings.collectOverrides).toEqual([custom]);
+            expect(settings.collectOverrides?.[0]).toEqual(custom);
+            expect(settings.collectOverrides?.filter(o => o.enemy === 'potepieniec')).toHaveLength(1);
         });
 
         it('is idempotent when applied twice', () => {
@@ -366,6 +370,25 @@ describe('settingsMigrations', () => {
             const { settings } = migrateSettings({ collectOverrides: [tuned] });
 
             expect(settings.collectOverrides?.[0]).toEqual(tuned);
+        });
+    });
+
+    describe('migration v14: wietrzyca override', () => {
+        it('appends the wietrzyca gems override', () => {
+            const { settings } = migrateSettings({ collectOverrides: [] }, 13);
+
+            expect(settings.collectOverrides).toEqual([
+                { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+            ]);
+        });
+
+        it('keeps an existing wietrzyca override untouched', () => {
+            const custom = { enemy: 'wietrzyca', collectCopper: true, collectSilver: false, collectGold: false, collectGems: false, collectExtra: [] };
+
+            const { settings, migrated } = migrateSettings({ collectOverrides: [custom] }, 13);
+
+            expect(migrated).toBe(true);
+            expect(settings.collectOverrides).toEqual([custom]);
         });
     });
 

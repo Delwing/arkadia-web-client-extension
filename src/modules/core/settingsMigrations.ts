@@ -67,15 +67,26 @@ function grantCoinsToStockOverrides(overrides: CollectOverride[], enemies: strin
     return { overrides: updated, changed };
 }
 
-// Enemy whose stock gems-only override was added after the defaults shipped.
-const potepieniecOverride: CollectOverride = {
-    enemy: 'potepieniec',
-    collectCopper: false,
-    collectSilver: false,
-    collectGold: false,
-    collectGems: true,
-    collectExtra: [],
-};
+// A stock gems-only override row, for enemies added after the defaults shipped.
+function gemsOnlyOverride(enemy: string): CollectOverride {
+    return {
+        enemy,
+        collectCopper: false,
+        collectSilver: false,
+        collectGold: false,
+        collectGems: true,
+        collectExtra: [],
+    };
+}
+
+// Appends the row unless the player already has one for that enemy. Returns whether it was added.
+function appendStockOverride(overrides: CollectOverride[], row: CollectOverride): boolean {
+    if (overrides.some(override => override.enemy.toLowerCase() === row.enemy)) {
+        return false;
+    }
+    overrides.push(row);
+    return true;
+}
 
 /**
  * Bring the stock collectOverrides in line with the current loot tables: trolls and
@@ -92,12 +103,21 @@ function migrateCollectOverrideLoot(settings: Partial<Settings>): Partial<Settin
     const overrides = granted.overrides;
     let changed = granted.changed;
 
-    if (!overrides.some(override => override.enemy.toLowerCase() === potepieniecOverride.enemy)) {
-        overrides.push({ ...potepieniecOverride });
+    if (appendStockOverride(overrides, gemsOnlyOverride('potepieniec'))) {
         changed = true;
     }
 
     return changed ? { ...settings, collectOverrides: overrides } : settings;
+}
+
+function migrateWietrzycaOverride(settings: Partial<Settings>): Partial<Settings> {
+    if (!settings.collectOverrides) {
+        return settings;
+    }
+    const overrides = [...settings.collectOverrides];
+    return appendStockOverride(overrides, gemsOnlyOverride('wietrzyca'))
+        ? { ...settings, collectOverrides: overrides }
+        : settings;
 }
 
 /**
@@ -204,6 +224,11 @@ const migrations: Migration[] = [
         version: 13,
         description: 'Collect silver and gold from the four elementals (picked up off the floor, they are bodiless)',
         migrate: migrateElementalCoins,
+    },
+    {
+        version: 14,
+        description: 'Add the wietrzyca gems override',
+        migrate: migrateWietrzycaOverride,
     },
 ];
 
