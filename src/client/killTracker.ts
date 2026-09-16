@@ -20,9 +20,11 @@ const bodyLessTypes = [
     'zmora'
 ]
 
-function isBodiless(desc: string) {
-    const type = desc.split(' ').splice(0, 2).join(" ")
-    return bodyLessTypes.includes(type)
+// Descs lead with adjectives ("wielki ognisty zywiolak ognia"), so the type is looked up
+// as a run of whole words anywhere in the desc rather than at its start.
+export function isBodiless(desc: string) {
+    const words = ` ${desc.toLowerCase().trim().split(/\s+/).join(' ')} `
+    return bodyLessTypes.some(type => words.includes(` ${type} `))
 }
 
 

@@ -48,8 +48,24 @@ function migrateAccusativeToNominative(settings: Partial<Settings>): Partial<Set
     return { ...settings, collectOverrides: migratedOverrides };
 }
 
-// Enemies that started dropping coins on top of gems; the stock override kept only gems.
-const coinDroppingEnemies = ['troll', 'bykocentaur'];
+/**
+ * Grant silver and gold on the given enemies' collectOverrides rows, touching only rows
+ * that still carry the old stock shape (gems only, nothing else) so a player who tuned
+ * them keeps their choices.
+ */
+function grantCoinsToStockOverrides(overrides: CollectOverride[], enemies: string[]): { overrides: CollectOverride[]; changed: boolean } {
+    let changed = false;
+    const updated = overrides.map(override => {
+        const isStockGemsOnly = !override.collectCopper && !override.collectSilver
+            && !override.collectGold && override.collectGems;
+        if (enemies.includes(override.enemy.toLowerCase()) && isStockGemsOnly) {
+            changed = true;
+            return { ...override, collectSilver: true, collectGold: true };
+        }
+        return override;
+    });
+    return { overrides: updated, changed };
+}
 
 // Enemy whose stock gems-only override was added after the defaults shipped.
 const potepieniecOverride: CollectOverride = {
@@ -72,22 +88,32 @@ function migrateCollectOverrideLoot(settings: Partial<Settings>): Partial<Settin
         return settings;
     }
 
-    let changed = false;
-    const overrides: CollectOverride[] = settings.collectOverrides.map(override => {
-        const isStockGemsOnly = !override.collectCopper && !override.collectSilver
-            && !override.collectGold && override.collectGems;
-        if (coinDroppingEnemies.includes(override.enemy.toLowerCase()) && isStockGemsOnly) {
-            changed = true;
-            return { ...override, collectSilver: true, collectGold: true };
-        }
-        return override;
-    });
+    const granted = grantCoinsToStockOverrides(settings.collectOverrides, ['troll', 'bykocentaur']);
+    const overrides = granted.overrides;
+    let changed = granted.changed;
 
     if (!overrides.some(override => override.enemy.toLowerCase() === potepieniecOverride.enemy)) {
         overrides.push({ ...potepieniecOverride });
         changed = true;
     }
 
+    return changed ? { ...settings, collectOverrides: overrides } : settings;
+}
+
+/**
+ * Elementals drop silver and gold alongside gems. They are bodiless, so the loot lands on
+ * the floor - the collector picks it up there for any bodiless enemy with an override.
+ */
+function migrateElementalCoins(settings: Partial<Settings>): Partial<Settings> {
+    if (!settings.collectOverrides) {
+        return settings;
+    }
+    const { overrides, changed } = grantCoinsToStockOverrides(settings.collectOverrides, [
+        'zywiolak ziemi',
+        'zywiolak wody',
+        'zywiolak powietrza',
+        'zywiolak ognia',
+    ]);
     return changed ? { ...settings, collectOverrides: overrides } : settings;
 }
 
@@ -173,6 +199,11 @@ const migrations: Migration[] = [
         version: 12,
         description: 'Collect silver and gold from trolls and bykocentaurs, and add the potepieniec gems override',
         migrate: migrateCollectOverrideLoot,
+    },
+    {
+        version: 13,
+        description: 'Collect silver and gold from the four elementals (picked up off the floor, they are bodiless)',
+        migrate: migrateElementalCoins,
     },
 ];
 

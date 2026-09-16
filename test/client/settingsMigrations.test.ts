@@ -344,6 +344,31 @@ describe('settingsMigrations', () => {
         });
     });
 
+    describe('migration v13: elemental coins', () => {
+        const elementals = ['zywiolak ziemi', 'zywiolak wody', 'zywiolak powietrza', 'zywiolak ognia'];
+        const gemsOnly = (enemy: string) => ({
+            enemy, collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] as string[],
+        });
+
+        it('grants silver and gold on all four stock elemental overrides', () => {
+            const { settings } = migrateSettings({ collectOverrides: elementals.map(gemsOnly) });
+
+            for (const enemy of elementals) {
+                expect(settings.collectOverrides).toContainEqual(
+                    { enemy, collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
+                );
+            }
+        });
+
+        it('leaves elemental rows the player already tuned', () => {
+            const tuned = { enemy: 'zywiolak ognia', collectCopper: true, collectSilver: false, collectGold: false, collectGems: false, collectExtra: [] };
+
+            const { settings } = migrateSettings({ collectOverrides: [tuned] });
+
+            expect(settings.collectOverrides?.[0]).toEqual(tuned);
+        });
+    });
+
     describe('runAllSettingsMigrations', () => {
         it('migrates settings in localStorage', () => {
             const oldSettings = {
