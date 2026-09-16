@@ -181,6 +181,8 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 
 > **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.
 
+> **Wskazowka:** Tryb wozu wlacza sie tylko wtedy, gdy to ty powozisz — czyli kiedy jedziesz sam albo prowadzisz druzyne. Jako pasazer (jestes w druzynie, ale nie ty ja prowadzisz) masz strzalki i klawisz `zerknij` bez zmian, bo i tak nie mozesz kierowac pojazdem; pojazd jest za to normalnie zapisywany w oknie `/wozw` i na mapie, a bind `usiadz ...` dalej sie pokazuje. Jesli przejmiesz prowadzenie druzyny w trakcie jazdy, tryb wozu wlaczy sie sam (i wylaczy, gdy oddasz prowadzenie). Alias `/woz` ma pierwszenstwo przed tym sprawdzeniem — mozesz nim wlaczyc tryb wozu takze jako pasazer.
+
 > **Wskazowka:** Okno "Wozy" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.
 
 > **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.

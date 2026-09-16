@@ -169,9 +169,12 @@ export default function initCarriage(
      * While the carriage is rolling the numpad "zerknij" key halts it instead - looking around is
      * not what you reach for mid-ride. Published on the client so the direction binds can pick it
      * up without knowing anything about carriages.
+     *
+     * Only for whoever holds the reins: a passenger pulling the wagon up under the driver is not
+     * what that key is for.
      */
     const publishStopCommand = () => {
-        const noun = moving && currentKey ? VEHICLE_ACCUSATIVE[nounOf(currentKey)] : undefined;
+        const noun = client.carriageMode && moving && currentKey ? VEHICLE_ACCUSATIVE[nounOf(currentKey)] : undefined;
         client.carriageStopCommand = noun ? `zatrzymaj ${noun}` : null;
     };
 
@@ -242,7 +245,38 @@ export default function initCarriage(
         if (client.carriageMode === enabled) return;
         client.carriageMode = enabled;
         client.sendEvent('carriageModeChanged', enabled);
+        publishStopCommand();
+        offerRouteBind();
     };
+
+    /** True while we believe we are sitting on a carriage, whoever happens to be driving it. */
+    let aboard = false;
+
+    /** Set by /woz, which outranks the check below until the mode is switched off again. */
+    let forced = false;
+
+    /**
+     * Only one person drives, and it is not the passengers. In a team that is the leader; riding
+     * alone it is always you.
+     *
+     * Without this a passenger's arrows go out as "jedz na ..." - orders the game will not take
+     * from them - and the whole ride happens with the movement keys pointed at nothing. The team
+     * state lives on the client, so this is re-read rather than remembered.
+     */
+    const mayDrive = () => !client.TeamManager?.isInAnyTeam?.() || !!client.TeamManager?.isLeader?.();
+
+    /** Settle the mode from everything that decides it. Every path that boards or lands goes here. */
+    const applyCarriageMode = () => setCarriageMode(forced || (aboard && mayDrive()));
+
+    /** Aboard, and driving if we are allowed to. */
+    const setAboard = (value: boolean) => {
+        aboard = value;
+        if (!value) forced = false;
+        applyCarriageMode();
+    };
+
+    // Taking over the reins mid-ride hands the controls over, and being demoted takes them back.
+    client.on('teamChange', () => applyCarriageMode());
 
     const lease = (description: string, rent: string, deposit: string) => {
         const key = carriageKey(description);
@@ -311,7 +345,7 @@ export default function initCarriage(
     const groundedInPlace = () => {
         if (!currentKey) return;
         park();
-        setCarriageMode(false);
+        setAboard(false);
     };
 
     /**
@@ -329,7 +363,7 @@ export default function initCarriage(
         const key = currentKey;
         currentKey = null;
         stopMoving();
-        setCarriageMode(false);
+        setAboard(false);
 
         const all = load();
         if (!all[key]) return;
@@ -381,11 +415,11 @@ export default function initCarriage(
     };
 
     const enable = (line: AnsiAwareBuffer) => {
-        setCarriageMode(true);
+        setAboard(true);
         return line;
     };
     const disable = (line: AnsiAwareBuffer) => {
-        setCarriageMode(false);
+        setAboard(false);
         return line;
     };
 
@@ -411,7 +445,7 @@ export default function initCarriage(
     client.Triggers.registerTrigger(/^(.+) (woz|bryczka|dylizans) rusza na .+\.$/, (line, matches) => {
         if (ridingKey(matches)) {
             // Rolling is proof we are aboard, so this doubles as a re-arm after a reload.
-            setCarriageMode(true);
+            setAboard(true);
             setMoving(true);
         }
         return line;
@@ -435,7 +469,7 @@ export default function initCarriage(
     client.Triggers.registerTrigger(
         /^(?:Dojechaliscie do rozdrozy|Nie ma tu zadnej drogi, ktora mozna by dalej jechac)\.$/,
         line => {
-            setCarriageMode(true);
+            setAboard(true);
             return line.color([0, line.length], RIDE_HALTED_COLOR);
         },
         "carriageMode",
@@ -489,7 +523,11 @@ export default function initCarriage(
     list.push({
         pattern: /^\/woz$/,
         callback: () => {
-            setCarriageMode(!client.carriageMode);
+            // A hand on the switch outranks the leader check: the team state can be stale, or the
+            // reins can change hands without a word from the game.
+            forced = !client.carriageMode;
+            aboard = forced;
+            applyCarriageMode();
             client.println(`Tryb wozu: ${client.carriageMode ? "wlaczony" : "wylaczony"}`);
         },
     });
@@ -621,7 +659,7 @@ export default function initCarriage(
         // before the game's "Zsiadasz" line comes back, so leaving it to that trigger would record
         // the room we are heading to rather than the one we are leaving the wagon in.
         park();
-        setCarriageMode(false);
+        setAboard(false);
         return `zsiadz z ${noun};${walk}`;
     });
 
@@ -640,7 +678,7 @@ export default function initCarriage(
         clearOwnBind();
         routeBindActive = false;
         stopMoving();
-        setCarriageMode(false);
+        setAboard(false);
 
         eventBus.emit('carriages.updated', {carriages: entries()});
         publishMarkers();

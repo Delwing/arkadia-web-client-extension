@@ -27,6 +27,17 @@ class FakeClient {
     clearCategory: () => { this.bindSlot.printable = null; },
   };
   lastBindCallback?: () => void;
+  /** Riding alone by default, which is how every test that says nothing about a team reads. */
+  team = { inTeam: false, leader: false };
+  TeamManager = {
+    isInAnyTeam: () => this.team.inTeam,
+    isLeader: () => this.team.leader,
+  };
+  /** Change the team standing the way the real one does - through a teamChange event. */
+  setTeam(inTeam: boolean, leader: boolean) {
+    this.team = { inTeam, leader };
+    this.sendEvent('teamChange');
+  }
   sendEvent = jest.fn((type: string, payload?: any) => {
     this.emitter.emit(type, payload);
   });
@@ -151,6 +162,125 @@ describe('carriage mode triggers', () => {
       parse(line);
       expect(client.carriageMode).toBe(true);
     }
+  });
+});
+
+describe('only the driver gets the controls', () => {
+  let client: FakeClient;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
+
+  beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
+    client = new FakeClient();
+    initCarriage((client as unknown) as any);
+    parse = (line: string, type = '') => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
+  });
+
+  test('a passenger boards without taking the controls', () => {
+    client.setTeam(true, false);
+    parse('Siadasz w malej bryczce.');
+    // Aboard and bookkept as such - but the arrows keep walking.
+    expect(client.carriageMode).toBe(false);
+    expect(client.moveModeButton.disabled).toBe(false);
+    expect(characterStorage.get('carriages')).toMatchObject({ 'mal bryczka': { driving: true } });
+  });
+
+  test('a passenger is tracked like anyone else', () => {
+    client.setTeam(true, false);
+    parse('Siadasz w malej bryczce.');
+    client.Map.currentRoom = { id: 1234 };
+    parse('Zsiadasz z malej bryczki.');
+
+    // The ride is still bookkept: the wheel goes on the map and the seat is offered back.
+    expect(client.lastEvent('mapParkedCarriages')).toEqual([{ roomId: 1234, label: 'bryczka' }]);
+    parse('Mala bryczka.', 'room.contents.object');
+    expect(client.bindSlot.printable).toBe('usiadz w bryczce');
+  });
+
+  test('the team leader drives', () => {
+    client.setTeam(true, true);
+    parse('Siadasz w malej bryczce.');
+    expect(client.carriageMode).toBe(true);
+  });
+
+  test('a passenger does not get the numpad stop command', () => {
+    client.setTeam(true, false);
+    parse('Siadasz w malej bryczce.');
+    parse('Mala bryczka rusza na zachod.');
+    expect(client.carriageStopCommand).toBeNull();
+
+    // The same line while driving is what does put it there, so the check above is not vacuous.
+    client.setTeam(true, true);
+    expect(client.carriageStopCommand).toBe('zatrzymaj bryczke');
+  });
+
+  test('none of the re-arm lines hand a passenger the controls', () => {
+    client.setTeam(true, false);
+    for (const line of [
+      'Przeciez woz juz jedzie.',
+      'Dojechaliscie do rozdrozy.',
+      'Nie ma tu zadnej drogi, ktora mozna by dalej jechac.',
+      'Poza toba na malej bryczce siedzi Vesper.',
+    ]) {
+      parse(line);
+      expect(client.carriageMode).toBe(false);
+    }
+  });
+
+  test('taking over the reins mid-ride hands the controls over, and losing them takes them back', () => {
+    client.setTeam(true, false);
+    parse('Siadasz w malej bryczce.');
+    expect(client.carriageMode).toBe(false);
+
+    client.setTeam(true, true);
+    expect(client.carriageMode).toBe(true);
+    expect(client.sendEvent).toHaveBeenCalledWith('carriageModeChanged', true);
+
+    client.setTeam(true, false);
+    expect(client.carriageMode).toBe(false);
+
+    // Disbanding leaves you riding alone, which is always your own wagon.
+    client.setTeam(false, false);
+    expect(client.carriageMode).toBe(true);
+  });
+
+  test('the team standing does not resurrect the mode once you are on the ground', () => {
+    client.setTeam(true, true);
+    parse('Siadasz w malej bryczce.');
+    parse('Zsiadasz z malej bryczki.');
+    expect(client.carriageMode).toBe(false);
+
+    client.setTeam(false, false);
+    expect(client.carriageMode).toBe(false);
+  });
+
+  test('/woz overrides the check for a passenger', () => {
+    client.setTeam(true, false);
+    parse('Siadasz w malej bryczce.');
+    expect(client.carriageMode).toBe(false);
+
+    client.aliases.find(a => a.pattern.test('/woz'))!.callback();
+    expect(client.carriageMode).toBe(true);
+
+    // And the override survives the next word on the team, rather than being undone by it.
+    client.setTeam(true, false);
+    expect(client.carriageMode).toBe(true);
+
+    client.aliases.find(a => a.pattern.test('/woz'))!.callback();
+    expect(client.carriageMode).toBe(false);
+  });
+
+  test('dismounting drops a forced mode, so the next boarding is judged afresh', () => {
+    client.setTeam(true, false);
+    parse('Siadasz w malej bryczce.');
+    client.aliases.find(a => a.pattern.test('/woz'))!.callback();
+    expect(client.carriageMode).toBe(true);
+
+    parse('Zsiadasz z malej bryczki.');
+    expect(client.carriageMode).toBe(false);
+    parse('Siadasz w malej bryczce.');
+    expect(client.carriageMode).toBe(false);
   });
 });
 
