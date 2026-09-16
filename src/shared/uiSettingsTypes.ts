@@ -89,6 +89,10 @@ export interface MapSettings {
     emojiLabels: boolean;
 }
 
+export type MobileFooterExpandSetting = 'toggle' | 'expanded' | 'collapsed';
+
+export type MultibindKeyHints = 'auto' | 'always' | 'never';
+
 /** Movement / command / team behaviour the client and scripts act on. */
 export interface BehaviorSettings {
     explorationMode: boolean;
@@ -135,7 +139,25 @@ export interface ChromeSettings extends DeviceViewSettings {
     mapPosition: MapPosition;
     footerMode: number;
     footerComponents: FooterComponentConfig[];
+    /**
+     * The phone footer: two fixed-height scrolling rails plus compact stat
+     * meters, instead of the desktop footer's one wrapping row. On by default;
+     * off restores the old layout on narrow screens. Desktop is unaffected
+     * either way. See src/web/mobileFooter.ts.
+     */
+    mobileFooterCompact: boolean;
+    /**
+     * How that footer folds: 'toggle' rests folded with the expander offered,
+     * 'expanded' / 'collapsed' pin it open or shut and drop the expander.
+     */
+    mobileFooterExpand: MobileFooterExpandSetting;
     keepMultibindsVisible: boolean;
+    /**
+     * Whether the location-bind pills lead with their keyboard shortcut.
+     * 'auto' shows them only where a physical keyboard can be found (see
+     * @shared/dom/hardwareKeyboard); 'always' / 'never' settle it by hand.
+     */
+    multibindKeyHints: MultibindKeyHints;
     splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;

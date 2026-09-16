@@ -11,3 +11,4 @@ export {
 } from './outputMessageHandler';
 export type {BuildMessageNode, OutputMessageHandler} from './outputMessageHandler';
 export {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from './pointerEnvironment';
+export {hasHardwareKeyboard, subscribeHardwareKeyboard, resetHardwareKeyboardDetection} from './hardwareKeyboard';

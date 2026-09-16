@@ -162,7 +162,18 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     },
     footerMode: { type: 'number', min: 0, max: 3, integer: true },
     footerComponents: { type: 'complex' },
+    mobileFooterCompact: { type: 'boolean', label: 'Kompaktowa stopka na telefonie' },
+    mobileFooterExpand: {
+        type: 'enum',
+        enumValues: ['toggle', 'expanded', 'collapsed'],
+        label: 'Rozwijanie stopki na telefonie',
+    },
     keepMultibindsVisible: { type: 'boolean' },
+    multibindKeyHints: {
+        type: 'enum',
+        enumValues: ['auto', 'always', 'never'],
+        label: 'Skroty na paskach bindow',
+    },
     splitViewHeight: { type: 'number', min: 0, max: 100, optional: true },
     showCombatTimer: { type: 'boolean', optional: true },
     showTransportLabel: { type: 'boolean', optional: true },

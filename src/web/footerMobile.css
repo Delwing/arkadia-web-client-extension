@@ -1,0 +1,309 @@
+/* ==========================================================================
+   Phone footer.
+
+   The desktop footer is one wrapping flex row holding everything at once: the
+   character stats, every chip the player has switched on, and whatever a plugin
+   registered. Its content is dynamic on both axes - which chips exist depends on
+   what is happening in the game, and the number of stat bars changes with the
+   character's condition - so on a phone-wide screen that row wrapped onto two,
+   three or four lines and changed height several times a minute, shoving the
+   game output up and down.
+
+   The phone layout keeps every one of those elements and their configured
+   order, and only changes how they are carried: two rails of fixed height -
+   stats above, chips below - each scrolling sideways instead of wrapping, with
+   an expander that unfolds both into a full wrapped panel on demand. The footer
+   then has one height while collapsed and one while expanded, and nothing the
+   game does changes it.
+
+   Everything here is scoped to `body[data-mobile-footer="1"]` (the
+   `mobileFooterCompact` setting), so the old wrapping footer is one checkbox
+   away. See src/web/mobileFooter.ts for the expander itself.
+   ========================================================================== */
+
+/* -- compact stat meters --------------------------------------------------
+   Rendered by CharState in place of the text/bar modes whenever the compact
+   footer is live (see that component). Label and numbers on one line with a
+   hairline meter under them: the same information as a desktop stat bar in
+   about a third of the width, and a fixed size whatever the numbers are. */
+.char-state-bar--mini {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "label value"
+    "track track";
+  align-items: baseline;
+  gap: 0 0.25rem;
+  flex: 0 0 auto;
+  padding: 0.1rem 0.4rem 0.2rem;
+  border: 1px solid var(--footer-control-border);
+  border-radius: 0.45rem;
+  background-color: var(--footer-control-bg);
+  line-height: 1.1;
+}
+
+.char-state-mini-label {
+  grid-area: label;
+  font-size: 0.68rem;
+  color: var(--footer-text-dim);
+}
+
+/* A stat sitting at the opposite extreme from its resting value - the same
+   "tomato" alarm the desktop bars use. */
+.char-state-mini-label--alert {
+  color: tomato;
+}
+
+.char-state-mini-value {
+  grid-area: value;
+  font-size: 0.72rem;
+  color: var(--footer-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.char-state-mini-track {
+  grid-area: track;
+  height: 3px;
+  margin-top: 0.15rem;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+/* Colour comes from the shared bg-success / bg-warning / bg-danger classes, so
+   a meter and a desktop bar read the same at a glance. */
+.char-state-mini-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char-state-mini-fill {
+    transition: none;
+  }
+}
+
+/* The condition is duplicated in MOBILE_FOOTER_QUERY (src/web/mobileFooter.ts),
+   which is what CharState switches its rendering on - keep the two in step. The
+   second half catches a phone held in landscape: wide enough for the desktop
+   rules, but with even less height to spare than in portrait. */
+@media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
+  /* -- the dock ---------------------------------------------------------- */
+  body[data-mobile-footer="1"] #char-state {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.15rem 0.3rem;
+    padding: 0.25rem 0.4rem;
+  }
+
+  body[data-mobile-footer="1"] #char-state > #char-state-vitals {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  body[data-mobile-footer="1"] #char-state > #footer-chips {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  body[data-mobile-footer="1"] #char-state > #footer-expand {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  /* -- the two rails ----------------------------------------------------- */
+  /* `min-height` is what actually stops the footer jumping: a rail keeps its
+     line even while it holds nothing, so chips and stat meters coming and going
+     never move the game output. */
+  body[data-mobile-footer="1"] #char-state-vitals,
+  body[data-mobile-footer="1"] #footer-chips {
+    /* The line box every chip is built on. A LENGTH rather than a number on
+       purpose: a number inherits as a number, so a chip whose inner span sets a
+       bigger font (the mail envelope, an emoji) got a taller line box and a
+       taller pill than its neighbours. A length inherits as itself, so every
+       chip - and the pipe's icon, sized to match - comes out the same height. */
+    --footer-chip-line: 1.15rem;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+    min-height: 1.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* The scrollbars are hidden, so the last item on a rail that holds more than
+       fits fades out at the edge instead of being cut off - the only hint that
+       there is more sideways. A rail whose content stops short of the edge has
+       nothing under the fade, so this costs those nothing. */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+  }
+
+  body[data-mobile-footer="1"] #char-state-vitals::-webkit-scrollbar,
+  body[data-mobile-footer="1"] #footer-chips::-webkit-scrollbar,
+  body[data-mobile-footer="1"] #multi-binds::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* The stat meters are laid out by the bars container, which is itself one
+     item of the scrolling vitals rail. */
+  body[data-mobile-footer="1"] #char-state-bars {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+  }
+
+  body[data-mobile-footer="1"] #char-state-text,
+  body[data-mobile-footer="1"] #state-info {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* -- chips as pills ---------------------------------------------------- */
+  /* Every chip reads as one object rather than a run of text the eye has to
+     split. Deliberately no `display` here: a stock chip is gated by its own
+     `display: none` / `.green`-style rules, and forcing one would light up every
+     idle chip as an empty pill. Inside a flex rail each shown chip is a flex
+     item whatever its display value, which is all the pill needs.
+     `#plugin-footer-components` is skipped: it is a `display: contents` slot,
+     and its plugin items are the pills. */
+  body[data-mobile-footer="1"] #footer-chips > span:not(#plugin-footer-components),
+  body[data-mobile-footer="1"] #footer-chips .footer-plugin-item {
+    flex: 0 0 auto;
+    max-width: 70vw;
+    overflow: hidden;
+    /* A chip is a tap target as often as it is a readout, so it is padded to a
+       finger rather than to the text. */
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--footer-control-border);
+    border-radius: 999px;
+    background-color: var(--footer-control-bg);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: var(--footer-chip-line);
+  }
+
+  /* The pipe is a fixed-size icon rather than text, so it is the one chip whose
+     height has to be set to the shared line by hand (its width follows, keeping
+     the drawing's proportions). Its smoke drifts out of the box on purpose. */
+  body[data-mobile-footer="1"] #footer-chips > #pipe-status {
+    /* Sized like a line of chip text rather than like a pill, so the shared
+       padding and border land on top of it exactly as they do on a text chip -
+       that is what makes the pipe the same height as its neighbours. */
+    box-sizing: content-box;
+    width: calc(var(--footer-chip-line) * 2.08);
+    height: var(--footer-chip-line);
+    overflow: visible;
+  }
+
+  /* -- the expander ------------------------------------------------------ */
+  /* Only offered while the fold is the player's to make: pinned open or pinned
+     shut (`mobileFooterExpand`), there is nothing for the button to do. */
+  body[data-mobile-footer="1"][data-footer-expand="toggle"] #char-state > #footer-expand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    border: 1px solid var(--footer-control-border);
+    border-radius: 0.5rem;
+    background-color: var(--footer-control-bg);
+    color: var(--footer-text);
+    font-size: 0.8rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+  }
+
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state > #footer-expand {
+    transform: rotate(180deg);
+  }
+
+  body[data-mobile-footer="1"][data-footer-expand="toggle"] #char-state > #footer-expand:active {
+    background-color: var(--footer-control-hover-bg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body[data-mobile-footer="1"][data-footer-expand="toggle"] #char-state > #footer-expand {
+      transition: none;
+    }
+  }
+
+  /* -- expanded ---------------------------------------------------------- */
+  /* Unfolded, both rails wrap and a long chip is allowed to run onto a second
+     line, so a warning that was clipped in the dock can be read in full. The
+     panel is capped and scrolls vertically rather than taking the screen. */
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state-vitals,
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-chips {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 30vh;
+    /* Nothing runs off the side once it wraps, so the edge fade would only be
+       dimming the last chip of every row. */
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  /* The bars container is one item of the vitals rail, so it has to be given
+     the rail's width before its own wrapping can do anything. */
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state-bars {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-chips > span:not(#plugin-footer-components),
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-chips .footer-plugin-item {
+    max-width: 100%;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  /* -- location binds ---------------------------------------------------- */
+  /* Same treatment, same reason: the bind row above the footer is as dynamic as
+     the footer itself, and used to wrap to three lines in a busy room. */
+  body[data-mobile-footer="1"] #multi-binds.active {
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+    padding: 0.25rem 0.4rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+  }
+
+  body[data-mobile-footer="1"] #multi-binds .multi-bind {
+    flex: 0 0 auto;
+    max-width: 70vw;
+    overflow: hidden;
+  }
+
+  /* The expander unfolds the binds too - they are the row a player acts on, so
+     "show me everything" that stopped at the footer would be the wrong half. */
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #multi-binds.active {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 22vh;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  body[data-mobile-footer="1"][data-footer-expanded="1"] #multi-binds .multi-bind {
+    max-width: 100%;
+    overflow: visible;
+    white-space: normal;
+    text-align: left;
+  }
+}

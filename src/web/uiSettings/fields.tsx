@@ -27,13 +27,13 @@ export function CheckboxRow({ id, label, checked, onChange, disabled, className 
     );
 }
 
-export function SelectField({ id, label, value, onChange, children }: {
-    id: string; label?: ReactNode; value: string; onChange: (value: string) => void; children: ReactNode;
+export function SelectField({ id, label, value, onChange, disabled, children }: {
+    id: string; label?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; children: ReactNode;
 }) {
     return (
         <div>
             {label && <label className="form-label" htmlFor={id}>{label}</label>}
-            <select id={id} className="form-select" value={value} onChange={(e) => onChange(e.target.value)}>
+            <select id={id} className="form-select" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
                 {children}
             </select>
         </div>

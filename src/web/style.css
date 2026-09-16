@@ -1304,8 +1304,27 @@ h1 {
   user-select: none;
 }
 
-#char-state > span:empty,
-#char-state > div:empty {
+/* The two rails the footer is built from. On a desktop they are grouping
+   elements only: `display: contents` keeps every chip a direct flex item of
+   #char-state, so a chip's own flex `order` (written by the footer settings)
+   still places it against the other chips and against plugin components. The
+   phone layout (footerMobile.css) turns them into two real, separately
+   scrolling rows. */
+#char-state-vitals,
+#footer-chips {
+  display: contents;
+}
+
+/* There is nothing to unfold in a footer that never ran out of room. */
+#footer-expand {
+  display: none;
+}
+
+/* A chip with nothing to say renders empty; the rails are transparent to this,
+   so the same rule reaches into them. */
+#char-state > :is(span, div):empty,
+#char-state-vitals > :is(span, div):empty,
+#footer-chips > :is(span, div):empty {
   display: none;
 }
 
@@ -1316,8 +1335,7 @@ h1 {
   display: contents;
 }
 
-#char-state > span[data-footer-hidden="1"],
-#char-state > div[data-footer-hidden="1"] {
+#char-state [data-footer-hidden="1"] {
   display: none !important;
 }
 

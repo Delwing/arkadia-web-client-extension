@@ -22,6 +22,7 @@ import initPipeStatus from "./pipeStatus";
 import {Dropdown, Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
+import {setupMobileFooter} from "./mobileFooter.ts";
 import FightTitle, {suppressTitleUpdates} from "./FightTitle";
 import HpTitle from "./HpTitle";
 import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
@@ -1504,6 +1505,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mount React components
     mountMigratedComponents();
+    // Phone footer: the expander that unfolds its two scrolling rails. The rest
+    // of that layout is CSS (footerMobile.css) plus CharState's compact meters.
+    setupMobileFooter();
     const fightTitle = new FightTitle();
     new HpTitle(fightTitle);
     new ObjectList(client);
