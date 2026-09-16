@@ -244,8 +244,9 @@ export interface KnownEvents {
     "isTeamLeader": boolean;
     "reset": void;
     /**
-     * Which object in the room is us, or undefined while that is unknown - after a
-     * disconnect, or between a body swap and working the new id out. See PlayerIdentity.
+     * Which object in the room is us, or undefined while that is unknown - before the
+     * first Char.Info of a session, or between a body swap and working the new id out.
+     * A disconnect does not clear it; see PlayerIdentity.
      */
     "player.objectNum": number | undefined;
     "refreshPositionWhenAble": void;

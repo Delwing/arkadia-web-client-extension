@@ -28,6 +28,12 @@ import type {GmcpCharInfo} from "@shared/events";
  *
  * {@link sessionNum} therefore moves for a new life but not for a new body, and
  * {@link num} follows whichever body we are wearing right now.
+ *
+ * A third case moves nothing but still has to be handled: the session proxy can hand
+ * a session back that this client was already in, after a dropped socket or a page
+ * reload. Char.Info is sent when a session opens, not when a client reattaches to one,
+ * so a resume brings no announcement of who we are - and reading the reattach as a
+ * login would fire `reset` at the next change of body. See {@link handleResume}.
  */
 
 /**
@@ -82,6 +88,12 @@ export default class PlayerIdentity {
     /** The id a mid-session change is waiting to be judged on; see settleNewBody. */
     private pending?: number;
     /**
+     * The id storage says this life was opened with, taken up again after a resume
+     * brought us back into a session we can no longer be told about. Held as a
+     * candidate rather than adopted outright; see adoptStoredNum.
+     */
+    private resumeCandidate?: number;
+    /**
      * Whether a connection has been opened since the last Char.Info. Starts true
      * so the first Char.Info of a page load counts as a session start, as it did
      * before any of this existed.
@@ -96,13 +108,23 @@ export default class PlayerIdentity {
         this.client.on('client.connect', () => {
             this.connectedSinceCharInfo = true;
         });
+        this.client.on('proxy.session', info => {
+            if (info?.resumed && !info.upstreamClosed) {
+                this.handleResume();
+            }
+        });
         this.client.on('client.disconnect', () => {
-            this.session = undefined;
-            this.preTransform = undefined;
-            this.awaiting = undefined;
-            // A verdict still in flight belongs to a session that has ended.
+            // The id deliberately survives the gap. A dropped socket is not a dropped
+            // character: the proxy resumes the same telnet session, and Char.Info is
+            // only pushed when one is opened, so forgetting who we are here left us
+            // unidentified for the rest of the evening after any blink of the network
+            // - our own object listed among the strangers, with an attack shortcut on
+            // it. Nothing is lost by keeping it: a genuine relogin, as this character
+            // or another, arrives with a Char.Info that starts a new life regardless.
+            //
+            // Only the verdict in flight goes, since the frame it would be judged on
+            // may never finish arriving.
             this.pending = undefined;
-            this.setNum(undefined);
         });
 
         // Guarded because a couple of unit tests stub Triggers down to line parsing.
@@ -133,6 +155,56 @@ export default class PlayerIdentity {
             this.handleBodyChanged(this.preTransform ?? this.session);
             return line;
         }, tag);
+    }
+
+    /**
+     * The proxy handed back the telnet session we were already in, so nothing about
+     * this attach is a login - whatever the socket underneath it did.
+     *
+     * Two things follow. A Char.Info arriving later in such a session can only be a
+     * change of body, and must not be read as a new life and fire `reset`; the flag
+     * that would have said so is cleared here. And a resume brings no Char.Info of its
+     * own - the game sends one when a session opens, not when a client reattaches to
+     * one - so after a page reload there is nothing at all to tell us who we are, and
+     * the id has to be recovered from storage instead.
+     *
+     * The control frame opens every attach, ahead of the replay behind it, so this
+     * always lands before any of the output it applies to.
+     */
+    private handleResume() {
+        this.connectedSinceCharInfo = false;
+        if (this.current === undefined) {
+            this.adoptStoredNum();
+        }
+    }
+
+    /**
+     * Take back the id this life was opened with, which `startNewLife` wrote down and
+     * a resumed session has not invalidated. Offered to the room rather than adopted
+     * on the spot, because a session resumed mid-transformation is wearing a different
+     * object: our own id is always among the room's, so a candidate that is not there
+     * is not the body we are in. One that never turns up leaves us unidentified, which
+     * is where we would have been anyway - and if it was a transformation, the id comes
+     * back when the effect lapses and is adopted then.
+     */
+    private adoptStoredNum() {
+        const stored = Number(characterStorage.get('object_num'));
+        if (!Number.isInteger(stored) || stored <= 0) {
+            return;
+        }
+        // The session id is what storage holds whatever body we turn out to be in.
+        this.session = stored;
+        this.resumeCandidate = stored;
+        this.confirmResume(this.lastNums);
+    }
+
+    private confirmResume(nums: number[]) {
+        if (this.resumeCandidate === undefined || !nums.includes(this.resumeCandidate)) {
+            return;
+        }
+        const num = this.resumeCandidate;
+        this.resumeCandidate = undefined;
+        this.setNum(num);
     }
 
     private handleCharInfo(info: GmcpCharInfo) {
@@ -169,6 +241,7 @@ export default class PlayerIdentity {
         }
         // The server placed us; nothing left to guess.
         this.awaiting = undefined;
+        this.resumeCandidate = undefined;
         this.setNum(num);
     }
 
@@ -209,6 +282,7 @@ export default class PlayerIdentity {
         const list = Array.isArray(nums) ? [...nums] : [];
         this.previousNums = this.lastNums;
         this.lastNums = list;
+        this.confirmResume(list);
         if (this.awaiting) {
             this.tryReidentify(list);
         }

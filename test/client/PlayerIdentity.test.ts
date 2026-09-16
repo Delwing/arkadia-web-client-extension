@@ -185,11 +185,136 @@ describe('PlayerIdentity', () => {
     });
   });
 
-  test('forgets who we are on disconnect', () => {
+  // The proxy resumes the telnet session a dropped socket was attached to, and
+  // Char.Info is only pushed when one is opened - so there is nothing to restore the
+  // id from afterwards. Forgetting it here left the player listed among the strangers
+  // in the room, with a numbered attack shortcut on their own object.
+  test('keeps the id across a dropped socket, since the session resumes', () => {
     login(101);
     client.sendEvent('client.disconnect');
-    expect(identity.num).toBeUndefined();
-    expect(identity.sessionNum).toBeUndefined();
+    expect(identity.num).toBe(101);
+    expect(identity.sessionNum).toBe(101);
+
+    client.sendEvent('client.connect');
+    client.sendEvent('gmcp.objects.nums', [101, 204]);
+    expect(identity.num).toBe(101);
+    expect(nums).toEqual([101]);
+    expect(resets).toBe(0);
+  });
+
+  // The proxy hands back a session this client was already in. Char.Info is sent when
+  // a session opens, not when a client reattaches to one, so nothing in what follows
+  // announces who we are - and nothing in it is a login either.
+  describe('when the proxy resumes the session', () => {
+    const resume = () => {
+      client.sendEvent('client.connect');
+      client.sendEvent('proxy.session', { type: 'session', resumed: true });
+    };
+
+    test('a change of body afterwards is not read as a new life', async () => {
+      login(101);
+      client.sendEvent('client.disconnect');
+      resume();
+
+      client.line(TRANSFORM_LINE);
+      client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 512 });
+      await settle();
+
+      expect(identity.num).toBe(512);
+      expect(identity.sessionNum).toBe(101);
+      expect(characterStorage.get('object_num')).toBe('101');
+      // Reading the reattach as a login wiped the chat history and the combat stats.
+      expect(resets).toBe(0);
+    });
+
+    test('a death afterwards is still a death', async () => {
+      login(101);
+      client.sendEvent('client.disconnect');
+      resume();
+
+      client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 512 });
+      await settle();
+
+      expect(identity.sessionNum).toBe(512);
+      expect(resets).toBe(1);
+    });
+
+    // A page reload leaves nothing in memory to keep, so the id storage wrote down
+    // when this life opened is taken back up instead. Reloading means a client that
+    // has never seen a Char.Info, which is what the fresh instance stands in for.
+    describe('after a page reload', () => {
+      let reloaded: PlayerIdentity;
+      let reloadedClient: FakeClient;
+      let reloadResets: number;
+
+      beforeEach(() => {
+        characterStorage.set('object_num', '101');
+        reloadedClient = new FakeClient();
+        reloaded = new PlayerIdentity(reloadedClient as any);
+        reloadResets = 0;
+        reloadedClient.on('reset', () => { reloadResets++; });
+        reloadedClient.sendEvent('client.connect');
+      });
+
+      test('recovers the id from storage once the room confirms it', () => {
+        reloadedClient.sendEvent('proxy.session', { type: 'session', resumed: true });
+        expect(reloaded.num).toBeUndefined();
+
+        reloadedClient.sendEvent('gmcp.objects.nums', [101, 204]);
+        expect(reloaded.num).toBe(101);
+        expect(reloaded.sessionNum).toBe(101);
+        expect(reloadResets).toBe(0);
+      });
+
+      // Resumed mid-przeobrazenie: storage holds the id of the body we are not
+      // wearing, and our own object is always among the room's - so it stays a
+      // candidate rather than being adopted.
+      test('does not adopt a stored id the room does not have', () => {
+        reloadedClient.sendEvent('proxy.session', { type: 'session', resumed: true });
+        reloadedClient.sendEvent('gmcp.objects.nums', [512, 204]);
+        expect(reloaded.num).toBeUndefined();
+
+        // It comes back when the effect lapses, and is adopted then.
+        reloadedClient.sendEvent('gmcp.objects.nums', [101, 204]);
+        expect(reloaded.num).toBe(101);
+      });
+
+      test('leaves an attach that is not a resume alone', () => {
+        reloadedClient.sendEvent('gmcp.objects.nums', [101, 204]);
+        expect(reloaded.num).toBeUndefined();
+
+        reloadedClient.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 333 });
+        expect(reloaded.num).toBe(333);
+        expect(reloaded.sessionNum).toBe(333);
+        expect(reloadResets).toBe(1);
+      });
+
+      // The game ended the session while nobody was attached; what the proxy is
+      // handing over is its parting words, not a world to stand in.
+      test('does not resume into a session the game has closed', () => {
+        reloadedClient.sendEvent('proxy.session', {
+          type: 'session', resumed: true, upstreamClosed: true,
+        });
+        reloadedClient.sendEvent('gmcp.objects.nums', [101, 204]);
+        expect(reloaded.num).toBeUndefined();
+
+        // And the next Char.Info is the login it looks like.
+        reloadedClient.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 333 });
+        expect(reloaded.sessionNum).toBe(333);
+        expect(reloadResets).toBe(1);
+      });
+    });
+  });
+
+  test('a reconnect that really is a new login still starts a new life', () => {
+    login(101);
+    client.sendEvent('client.disconnect');
+    login(333);
+
+    expect(identity.num).toBe(333);
+    expect(identity.sessionNum).toBe(333);
+    expect(characterStorage.get('object_num')).toBe('333');
+    expect(resets).toBe(1);
   });
 
   test('a reconnect with a new id is a new session', () => {

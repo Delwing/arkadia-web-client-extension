@@ -1,4 +1,5 @@
 import ObjectManager from '@client/ObjectManager';
+import PlayerIdentity from '@client/PlayerIdentity';
 import { EventEmitter } from 'events';
 import { globalStorage } from '@modules/core/storage';
 
@@ -344,6 +345,54 @@ describe('ObjectManager', () => {
         { num: 100, shortcut: '@', __category: 'player' },
         { num: 2, desc: 'Ally1', shortcut: '1', __category: 'team' },
         { num: 3, desc: 'Ally2', shortcut: '2', __category: 'team' },
+      ]);
+    });
+  });
+
+  // Driven through the real PlayerIdentity rather than a hand-fed player.objectNum,
+  // because the symptom was in how the two meet: with the id forgotten, the player's
+  // own object stopped being lifted out of the room and was listed among the others -
+  // as a numbered enemy, or, in a team, under a team letter.
+  describe('with the id coming from PlayerIdentity', () => {
+    let identityClient: FakeClient;
+    let identityManager: ObjectManager;
+
+    const room = () => {
+      identityClient.sendEvent('gmcp.objects.data', {
+        '100': { desc: 'Player', hp: 30, team: true, team_leader: true },
+        '2': { desc: 'Ally', hp: 40, team: true },
+        '1': { desc: 'Goblin', hp: 10, attack_num: true },
+      });
+      identityClient.sendEvent('gmcp.objects.nums', [100, 2, 1]);
+      return identityManager.getObjectsOnLocation();
+    };
+
+    beforeEach(() => {
+      identityClient = new FakeClient();
+      new PlayerIdentity((identityClient as unknown) as any);
+      identityManager = new ObjectManager((identityClient as unknown) as any);
+      identityClient.sendEvent('client.connect');
+      identityClient.sendEvent('gmcp.char.info', { name: 'Player', object_num: 100 });
+    });
+
+    test('marks our own object with @', () => {
+      expect(room()).toMatchObject([
+        { num: 100, desc: 'Player', shortcut: '@', __category: 'player' },
+        { num: 2, desc: 'Ally', shortcut: 'A', __category: 'team' },
+        { num: 1, desc: 'Goblin', shortcut: '1', __category: 'rest' },
+      ]);
+    });
+
+    // The proxy resumes the same telnet session, so no second Char.Info ever arrives
+    // to tell us who we are again.
+    test('still marks it with @ after the socket dropped and came back', () => {
+      identityClient.sendEvent('client.disconnect');
+      identityClient.sendEvent('client.connect');
+
+      expect(room()).toMatchObject([
+        { num: 100, desc: 'Player', shortcut: '@', __category: 'player' },
+        { num: 2, desc: 'Ally', shortcut: 'A', __category: 'team' },
+        { num: 1, desc: 'Goblin', shortcut: '1', __category: 'rest' },
       ]);
     });
   });
