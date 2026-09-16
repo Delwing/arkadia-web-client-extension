@@ -27,10 +27,12 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings(oldSettings);
 
             expect(migrated).toBe(true);
+            // The whole registry runs, so v12 also grants troll/bykocentaur coins and appends potepieniec.
             expect(settings.collectOverrides).toEqual([
-                { enemy: 'troll', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
-                { enemy: 'bykocentaur', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'troll', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
+                { enemy: 'bykocentaur', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'ghoul', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -45,8 +47,9 @@ describe('settingsMigrations', () => {
             const { settings } = migrateSettings(oldSettings);
 
             expect(settings.collectOverrides).toEqual([
-                { enemy: 'troll', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'troll', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'custom enemy', collectCopper: true, collectSilver: true, collectGold: true, collectGems: false, collectExtra: ['sword'] },
+                { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -58,7 +61,10 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings(oldSettings);
 
             expect(migrated).toBe(true);
-            expect(settings.collectOverrides).toEqual([]);
+            // v12 seeds the potepieniec override even when the list starts out empty.
+            expect(settings.collectOverrides).toEqual([
+                { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+            ]);
         });
 
         it('handles missing collectOverrides', () => {
@@ -285,6 +291,56 @@ describe('settingsMigrations', () => {
             const raw = JSON.stringify({ buttons: [{ id: 'b1', macroType: 'command', command: 'zerknij' }] });
             const migrated = JSON.parse(migrateImportedValue('desktopButtonSettings', raw));
             expect(migrated.buttons[0].macroType).toBe('zerknij');
+        });
+    });
+
+    describe('migration v12: collect override loot tables', () => {
+        const gemsOnly = (enemy: string) => ({
+            enemy, collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] as string[],
+        });
+
+        it('grants silver and gold on the stock troll and bykocentaur overrides', () => {
+            const { settings } = migrateSettings({ collectOverrides: [gemsOnly('troll'), gemsOnly('bykocentaur')] });
+
+            expect(settings.collectOverrides?.slice(0, 2)).toEqual([
+                { enemy: 'troll', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
+                { enemy: 'bykocentaur', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
+            ]);
+        });
+
+        it('leaves troll and bykocentaur rows the player already tuned', () => {
+            const tuned = { enemy: 'troll', collectCopper: true, collectSilver: false, collectGold: false, collectGems: false, collectExtra: ['maczuga'] };
+
+            const { settings } = migrateSettings({ collectOverrides: [tuned] });
+
+            expect(settings.collectOverrides?.[0]).toEqual(tuned);
+        });
+
+        it('appends the potepieniec gems override', () => {
+            const { settings } = migrateSettings({ collectOverrides: [gemsOnly('ghoul')] });
+
+            expect(settings.collectOverrides).toContainEqual(gemsOnly('potepieniec'));
+        });
+
+        it('keeps an existing potepieniec override untouched', () => {
+            const custom = { enemy: 'potepieniec', collectCopper: true, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] };
+
+            const { settings } = migrateSettings({ collectOverrides: [custom] });
+
+            expect(settings.collectOverrides).toEqual([custom]);
+        });
+
+        it('is idempotent when applied twice', () => {
+            const { settings: once } = migrateSettings({ collectOverrides: [gemsOnly('troll')] });
+            const { settings: twice } = migrateSettings(once, 0);
+
+            expect(twice.collectOverrides).toEqual(once.collectOverrides);
+        });
+
+        it('ignores settings without collectOverrides', () => {
+            const { settings } = migrateSettings({ collectMode: 1 });
+
+            expect(settings.collectOverrides).toBeUndefined();
         });
     });
 

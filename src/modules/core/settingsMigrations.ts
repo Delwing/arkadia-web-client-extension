@@ -48,6 +48,49 @@ function migrateAccusativeToNominative(settings: Partial<Settings>): Partial<Set
     return { ...settings, collectOverrides: migratedOverrides };
 }
 
+// Enemies that started dropping coins on top of gems; the stock override kept only gems.
+const coinDroppingEnemies = ['troll', 'bykocentaur'];
+
+// Enemy whose stock gems-only override was added after the defaults shipped.
+const potepieniecOverride: CollectOverride = {
+    enemy: 'potepieniec',
+    collectCopper: false,
+    collectSilver: false,
+    collectGold: false,
+    collectGems: true,
+    collectExtra: [],
+};
+
+/**
+ * Bring the stock collectOverrides in line with the current loot tables: trolls and
+ * bykocentaurs now drop silver and gold, and potepieniec drops gems. Only entries that
+ * still carry the old stock shape (gems only, nothing else) are touched, so a player who
+ * tuned those rows themselves keeps their choices.
+ */
+function migrateCollectOverrideLoot(settings: Partial<Settings>): Partial<Settings> {
+    if (!settings.collectOverrides) {
+        return settings;
+    }
+
+    let changed = false;
+    const overrides: CollectOverride[] = settings.collectOverrides.map(override => {
+        const isStockGemsOnly = !override.collectCopper && !override.collectSilver
+            && !override.collectGold && override.collectGems;
+        if (coinDroppingEnemies.includes(override.enemy.toLowerCase()) && isStockGemsOnly) {
+            changed = true;
+            return { ...override, collectSilver: true, collectGold: true };
+        }
+        return override;
+    });
+
+    if (!overrides.some(override => override.enemy.toLowerCase() === potepieniecOverride.enemy)) {
+        overrides.push({ ...potepieniecOverride });
+        changed = true;
+    }
+
+    return changed ? { ...settings, collectOverrides: overrides } : settings;
+}
+
 const migrations: Migration[] = [
     {
         version: 1,
@@ -125,6 +168,11 @@ const migrations: Migration[] = [
         version: 11,
         description: 'Convert "zerknij" command buttons to the zerknij macro (handled by migrateZerknijButtonMacro)',
         migrate: settings => settings, // No-op for core Settings; actual migration is below
+    },
+    {
+        version: 12,
+        description: 'Collect silver and gold from trolls and bykocentaurs, and add the potepieniec gems override',
+        migrate: migrateCollectOverrideLoot,
     },
 ];
 
