@@ -27,13 +27,14 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings(oldSettings);
 
             expect(migrated).toBe(true);
-            // The whole registry runs, so v12 also grants troll/bykocentaur coins and appends potepieniec, v14 wietrzyca.
+            // The whole registry runs, so v12 also grants troll/bykocentaur coins and appends potepieniec, v14 wietrzyca, v15 amfisbena.
             expect(settings.collectOverrides).toEqual([
                 { enemy: 'troll', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'bykocentaur', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
                 { enemy: 'ghoul', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
                 { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
                 { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'amfisbena', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -52,6 +53,7 @@ describe('settingsMigrations', () => {
                 { enemy: 'custom enemy', collectCopper: true, collectSilver: true, collectGold: true, collectGems: false, collectExtra: ['sword'] },
                 { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
                 { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'amfisbena', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -63,10 +65,11 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings(oldSettings);
 
             expect(migrated).toBe(true);
-            // v12 and v14 seed the potepieniec and wietrzyca overrides even when the list starts out empty.
+            // v12, v14 and v15 seed the potepieniec, wietrzyca and amfisbena overrides even when the list starts out empty.
             expect(settings.collectOverrides).toEqual([
                 { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
                 { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+                { enemy: 'amfisbena', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
             ]);
         });
 
@@ -377,9 +380,9 @@ describe('settingsMigrations', () => {
         it('appends the wietrzyca gems override', () => {
             const { settings } = migrateSettings({ collectOverrides: [] }, 13);
 
-            expect(settings.collectOverrides).toEqual([
-                { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
-            ]);
+            expect(settings.collectOverrides).toContainEqual(
+                { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] }
+            );
         });
 
         it('keeps an existing wietrzyca override untouched', () => {
@@ -388,6 +391,25 @@ describe('settingsMigrations', () => {
             const { settings, migrated } = migrateSettings({ collectOverrides: [custom] }, 13);
 
             expect(migrated).toBe(true);
+            expect(settings.collectOverrides?.[0]).toEqual(custom);
+            expect(settings.collectOverrides?.filter(o => o.enemy === 'wietrzyca')).toHaveLength(1);
+        });
+    });
+
+    describe('migration v15: amfisbena override', () => {
+        it('appends the amfisbena gems override', () => {
+            const { settings } = migrateSettings({ collectOverrides: [] }, 14);
+
+            expect(settings.collectOverrides).toEqual([
+                { enemy: 'amfisbena', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+            ]);
+        });
+
+        it('keeps an existing amfisbena override untouched', () => {
+            const custom = { enemy: 'amfisbena', collectCopper: true, collectSilver: true, collectGold: true, collectGems: false, collectExtra: [] };
+
+            const { settings } = migrateSettings({ collectOverrides: [custom] }, 14);
+
             expect(settings.collectOverrides).toEqual([custom]);
         });
     });

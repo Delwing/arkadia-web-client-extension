@@ -110,14 +110,17 @@ function migrateCollectOverrideLoot(settings: Partial<Settings>): Partial<Settin
     return changed ? { ...settings, collectOverrides: overrides } : settings;
 }
 
-function migrateWietrzycaOverride(settings: Partial<Settings>): Partial<Settings> {
-    if (!settings.collectOverrides) {
-        return settings;
-    }
-    const overrides = [...settings.collectOverrides];
-    return appendStockOverride(overrides, gemsOnlyOverride('wietrzyca'))
-        ? { ...settings, collectOverrides: overrides }
-        : settings;
+// Migration that appends a stock gems-only override for one enemy added after the defaults shipped.
+function addGemsOnlyOverride(enemy: string): Migration['migrate'] {
+    return settings => {
+        if (!settings.collectOverrides) {
+            return settings;
+        }
+        const overrides = [...settings.collectOverrides];
+        return appendStockOverride(overrides, gemsOnlyOverride(enemy))
+            ? { ...settings, collectOverrides: overrides }
+            : settings;
+    };
 }
 
 /**
@@ -228,7 +231,12 @@ const migrations: Migration[] = [
     {
         version: 14,
         description: 'Add the wietrzyca gems override',
-        migrate: migrateWietrzycaOverride,
+        migrate: addGemsOnlyOverride('wietrzyca'),
+    },
+    {
+        version: 15,
+        description: 'Add the amfisbena gems override',
+        migrate: addGemsOnlyOverride('amfisbena'),
     },
 ];
 

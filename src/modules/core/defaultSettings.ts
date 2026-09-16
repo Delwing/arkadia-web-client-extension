@@ -102,6 +102,7 @@ export const defaultSettings: Settings = {
         { enemy: 'zjawa', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
         { enemy: 'potepieniec', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
         { enemy: 'wietrzyca', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
+        { enemy: 'amfisbena', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
         { enemy: 'wiwerna', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
         { enemy: 'wyverna', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
         { enemy: 'harpia', collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] },
