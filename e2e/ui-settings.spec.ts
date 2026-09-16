@@ -7,33 +7,18 @@ import {
     resetEmbeddedCalls,
     waitForCommandInput,
 } from './support/mocks';
+import {goToSettingsPage, openSettings, SETTINGS_SAVE, type SettingsCategory} from './support/settings';
 
 const MENU_BUTTON = '#menu-button';
 const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
 
-async function openUiSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    // Wait for any in-progress hide animation to complete before opening
-    await page.waitForFunction(() => {
-        const el = document.getElementById('ui-settings-modal');
-        return !el || window.getComputedStyle(el).display === 'none';
-    });
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
-    return modal;
+/** "Interfejs" opens the settings dialog on its UI group (the Wygląd page). */
+async function openUiSettings(page: Page, category: SettingsCategory = 'ui-appearance') {
+    return openSettings(page, category);
 }
 
-async function selectTab(modal: ReturnType<Page['locator']>, name: string) {
-    await modal.getByRole('button', {name, exact: true}).click();
+async function selectPage(modal: ReturnType<Page['locator']>, category: SettingsCategory) {
+    await goToSettingsPage(modal.page(), category);
 }
 
 test.beforeEach(async ({context}) => {
@@ -63,8 +48,8 @@ test.describe('UI settings', () => {
             }
         }
 
-        // Mapa tab
-        await selectTab(modal, 'Mapa');
+        // Mapa page
+        await selectPage(modal, 'ui-map');
         await ensureUnchecked('#ui-transparent-labels');
         await modal.locator('#ui-label-render-mode').selectOption('image');
         await modal.locator('#ui-map-scale').fill('0.5');
@@ -74,22 +59,26 @@ test.describe('UI settings', () => {
         await ensureUnchecked('#ui-instant-move');
         await ensureUnchecked('#ui-highlight-current-room');
 
-        // Ogólne tab
-        await selectTab(modal, 'Ogólne');
+        // Wygląd page
+        await selectPage(modal, 'ui-appearance');
         await modal.locator('#ui-content-font').fill('1.5');
         await modal.locator('#ui-objects-font').fill('1.25');
         await modal.locator('#ui-output-background').fill('#123456');
         await modal.locator('#ui-xterm-palette').selectOption('proper');
         await modal.locator('#ui-font-family').selectOption('cascadia-mono');
+
+        // Inne page
+        await selectPage(modal, 'ui-other');
         await ensureUnchecked('#ui-show-buttons');
         await ensureUnchecked('#ui-haptic-feedback');
-
-        // fight-title icon and clear-input now live on the Ogólne tab
         await ensureUnchecked('#ui-fight-title-icon');
+
+        // Komendy page
+        await selectPage(modal, 'ui-commands');
         await ensureChecked('#ui-clear-input');
 
-        // Stopka tab
-        await selectTab(modal, 'Stopka');
+        // Stopka page
+        await selectPage(modal, 'ui-footer');
         await modal.locator('#ui-footer-mode').selectOption('2');
         await ensureChecked('#ui-emoji-labels');
 
@@ -105,8 +94,8 @@ test.describe('UI settings', () => {
             await combatSwitch.uncheck();
         }
 
-        await modal.locator('#ui-settings-save').click();
-        await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+        await modal.locator(SETTINGS_SAVE).click();
+        await expect(modal, 'should close settings modal after saving').not.toBeVisible();
 
         await page.waitForFunction(() => {
             try {
@@ -237,12 +226,12 @@ test.describe('UI settings', () => {
         await ensureGameSocket(page);
 
         const modal = await openUiSettings(page);
-        await selectTab(modal, 'Mapa');
+        await selectPage(modal, 'ui-map');
         await modal.locator('#ui-map-position').selectOption('bottom');
-        await selectTab(modal, 'Ogólne');
+        await selectPage(modal, 'ui-appearance');
         await modal.locator('#ui-output-background').fill('#123456');
-        await modal.locator('#ui-settings-save').click();
-        await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+        await modal.locator(SETTINGS_SAVE).click();
+        await expect(modal, 'should close settings modal after saving').not.toBeVisible();
 
         await page.waitForFunction(() => document.body.dataset.mapPosition === 'bottom');
         await page.waitForFunction(() => {
@@ -276,12 +265,12 @@ test.describe('UI settings', () => {
         ).toBe('rgb(18, 52, 86)');
 
         const reloadedModal = await openUiSettings(page);
-        await selectTab(reloadedModal, 'Mapa');
+        await selectPage(reloadedModal, 'ui-map');
         await expect(
             reloadedModal.locator('#ui-map-position'),
             'should show persisted map position in UI settings',
         ).toHaveValue('bottom');
-        await selectTab(reloadedModal, 'Ogólne');
+        await selectPage(reloadedModal, 'ui-appearance');
         await expect(
             reloadedModal.locator('#ui-output-background'),
             'should show persisted output background color in UI settings',
@@ -298,13 +287,13 @@ test.describe('UI settings', () => {
         await expect(mobileButtons, 'mobile buttons should be visible by default').toBeVisible();
 
         // Uncheck "show buttons" and save
-        const modal = await openUiSettings(page);
+        const modal = await openUiSettings(page, 'ui-other');
         const showButtonsCheckbox = modal.locator('#ui-show-buttons');
         if (await showButtonsCheckbox.isChecked()) {
             await showButtonsCheckbox.uncheck();
         }
-        await modal.locator('#ui-settings-save').click();
-        await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+        await modal.locator(SETTINGS_SAVE).click();
+        await expect(modal, 'should close settings modal after saving').not.toBeVisible();
 
         // Buttons should be hidden now
         await expect(mobileButtons, 'mobile buttons should be hidden after unchecking').not.toBeVisible();
@@ -321,7 +310,7 @@ test.describe('UI settings', () => {
         ).not.toBeVisible();
 
         // The checkbox should still be unchecked
-        const reloadedModal = await openUiSettings(page);
+        const reloadedModal = await openUiSettings(page, 'ui-other');
         await expect(
             reloadedModal.locator('#ui-show-buttons'),
             'show buttons checkbox should remain unchecked after reload',
@@ -329,7 +318,7 @@ test.describe('UI settings', () => {
     });
 
     // The sound manager is a sub-dialog opened from inside the Bootstrap-driven
-    // #ui-settings-modal. Rendering it as a portaled react-bootstrap <Modal> made
+    // #settings-modal. Rendering it as a portaled react-bootstrap <Modal> made
     // Bootstrap's FocusTrap and react-overlays' enforceFocus bounce focus between
     // the two dialogs thousands of times a second, which pegged the CPU until the
     // page stopped responding. It also swallowed Escape into the host window and
@@ -348,8 +337,7 @@ test.describe('UI settings', () => {
             }, true);
         });
 
-        const modal = await openUiSettings(page);
-        await selectTab(modal, 'Dźwięk');
+        const modal = await openUiSettings(page, 'ui-sound');
         await modal.locator('#ui-manage-sounds-button').click();
 
         const soundManager = modal.locator('.modal.show', {hasText: 'Zarządzaj dźwiękami'});
@@ -365,11 +353,11 @@ test.describe('UI settings', () => {
         // The settings window underneath stays usable
         await soundManager.locator('.btn-close').click();
         await expect(soundManager, 'sound manager should close').toBeHidden();
-        await selectTab(modal, 'Mapa');
+        await selectPage(modal, 'ui-map');
         await expect(modal.locator('#ui-map-render-scale-container, [id^="ui-map"]').first()).toBeVisible();
 
         // Escape belongs to the sub-dialog, not to the settings window behind it.
-        await selectTab(modal, 'Dźwięk');
+        await selectPage(modal, 'ui-sound');
         await modal.locator('#ui-manage-sounds-button').click();
         await expect(soundManager).toBeVisible();
         await page.keyboard.press('Escape');
@@ -378,7 +366,7 @@ test.describe('UI settings', () => {
 
         // Closing the settings window must not leave an overlay behind that
         // swallows every click.
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'settings window should close').not.toBeVisible();
         await expect(page.locator('.modal-backdrop'), 'no stray backdrop').toHaveCount(0);
         await page.click(MENU_BUTTON);

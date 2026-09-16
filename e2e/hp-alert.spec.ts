@@ -1,26 +1,19 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, GMCP_PATHS, pushGmcp, waitForCommandInput} from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
-const MENU_BUTTON = '#menu-button';
-const OPTIONS_BUTTON = '#options-button';
-const OPTIONS_MODAL = '#options-modal';
 const LOW_HP_ALERT_SELECT = '#lowHpAlert';
 
 async function openOptionsModal(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(OPTIONS_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should open options modal').toBeVisible();
-    return modal;
+    return openSettings(page, 'character-general');
 }
 
 async function setLowHpAlert(page: Page, level: number) {
     const modal = await openOptionsModal(page);
     await modal.locator(LOW_HP_ALERT_SELECT).selectOption(String(level));
     // Save settings by clicking the "Zapisz" button
-    await modal.locator('#options-save').click();
-    await expect(modal, 'should close options modal after saving').not.toBeVisible();
+    await saveSettings(page);
 }
 
 // Login to enable settings (settings are locked until char.info is received)

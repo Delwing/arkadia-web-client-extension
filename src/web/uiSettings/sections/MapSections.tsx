@@ -6,7 +6,7 @@ import MapPreviewCanvas from "../MapPreviewCanvas";
 // Highlights take their colour per-call at runtime; use a representative sample for the preview.
 const HIGHLIGHT_PREVIEW_COLOR = '#ffcc00';
 
-interface MapTabProps {
+interface MapSectionsProps {
     draft: UiSettings;
     update: (patch: Partial<UiSettings>) => void;
     mapVersion: string;
@@ -15,7 +15,7 @@ interface MapTabProps {
     explorationStats: string;
 }
 
-function MapTab({ draft, update, mapVersion, refreshing, onRefreshMap, explorationStats }: MapTabProps) {
+function MapSections({ draft, update, mapVersion, refreshing, onRefreshMap, explorationStats }: MapSectionsProps) {
     const refreshBadge = (
         <button type="button" id="ui-map-refresh-btn" className="ui-map-version-badge" title="Kliknij, aby odświeżyć dane mapy" disabled={refreshing} onClick={onRefreshMap}>
             <span className="ui-map-refresh-icon">{'↻'}</span>
@@ -26,9 +26,9 @@ function MapTab({ draft, update, mapVersion, refreshing, onRefreshMap, explorati
     return (
         <>
             <SettingsSection title="Mapa" headerExtra={refreshBadge}>
-                <NumberField id="ui-map-scale" label="Powiększenie mapy" value={draft.mapScale} step={0.05} min={0.05} onChange={(n) => update({ mapScale: n })} />
-                <NumberField id="ui-map-height" label="Wysokość mapy (vh)" value={draft.mapHeight} step={1} onChange={(n) => update({ mapHeight: n })} />
-                <SelectField id="ui-map-position" label="Położenie mapy" value={draft.mapPosition} onChange={(v) => update({ mapPosition: v as UiSettings['mapPosition'] })}>
+                <NumberField id="ui-map-scale" label="Powiększenie mapy" settingKey="mapScale" value={draft.mapScale} step={0.05} min={0.05} onChange={(n) => update({ mapScale: n })} />
+                <NumberField id="ui-map-height" label="Wysokość mapy (vh)" settingKey="mapHeight" value={draft.mapHeight} step={1} onChange={(n) => update({ mapHeight: n })} />
+                <SelectField id="ui-map-position" label="Położenie mapy" settingKey="mapPosition" value={draft.mapPosition} onChange={(v) => update({ mapPosition: v as UiSettings['mapPosition'] })}>
                     <option value="top-overlay">Góra (nakładka)</option>
                     <option value="bottom-overlay">Dół (nakładka)</option>
                     <option value="right-overlay">Prawa (nakładka)</option>
@@ -139,4 +139,4 @@ function MapTab({ draft, update, mapVersion, refreshing, onRefreshMap, explorati
     );
 }
 
-export default MapTab;
+export default MapSections;

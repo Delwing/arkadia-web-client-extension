@@ -3,6 +3,7 @@ import type Client from '@client/Client';
 import MenuModal from './MenuModal';
 import { holdPortaledModalScope } from './portaledModalScope';
 import { getHelperConnection } from '../../client/bootstrap';
+import { CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, type SettingsCategoryKey } from '@web/settings/categories.ts';
 
 // The stock settings panels are lazy-loaded to keep their weight out of forge's
 // initial bundle: together they're ~140 kB gzip of JS (Skrypty alone is ~40 kB,
@@ -24,8 +25,9 @@ import { getHelperConnection } from '../../client/bootstrap';
 // resolved (no "Ładowanie…" flash), while the heavy `?worker` deps still never
 // touch the startup path.
 const load = {
-    options: () => import('@web/options/CharacterSettings'),
-    ui: () => import('@web/uiSettings/UiSettings'),
+    // 'options' and 'ui' are the same dialog, opened on different pages.
+    options: () => import('@web/settings/SettingsDialog'),
+    ui: () => import('@web/settings/SettingsDialog'),
     'export-import': () => import('@web/options/ExportImport'),
     characters: () => import('@web/options/CharacterManagementModal'),
     binds: () => import('@web/options/Binds'),
@@ -42,8 +44,7 @@ const load = {
     docs: () => import('@web/docs'),
 } satisfies Record<string, () => Promise<unknown>>;
 
-const CharacterSettings = lazy(load.options);
-const UiSettings = lazy(load.ui);
+const SettingsDialog = lazy(load.options);
 const ExportImport = lazy(load['export-import']);
 const CharacterManagement = lazy(load.characters);
 const Binds = lazy(load.binds);
@@ -113,8 +114,8 @@ interface MenuModalHostProps {
 }
 
 const TITLES: Record<ModalKey, string> = {
-    options: 'Opcje',
-    ui: 'Ustawienia UI',
+    options: 'Ustawienia',
+    ui: 'Ustawienia',
     'export-import': 'Eksport i import ustawień',
     characters: 'Zarządzanie postaciami',
     binds: 'Bindowanie',
@@ -146,9 +147,9 @@ const TITLES: Record<ModalKey, string> = {
 const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'export-import', 'radial', 'scripts']);
 
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
-    // The two dense settings panels flow their sections into a 2–3 column
-    // masonry (see .ui-settings-layout in stock-settings.css); give them the
-    // wide shell so all three columns fit, matching stock's wide settings modal.
+    // The settings dialog puts a sidebar next to a 2–3 column masonry of
+    // sections (see settingsDialog.css); give it the wide shell, matching
+    // stock's wide settings modal.
     options: 'xl',
     ui: 'xl',
     // Skrypty is two tabs over a fixed toolbar: an installed list plus a
@@ -168,18 +169,11 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
  * (header included) without these dispatching before the shell exists.
  */
 function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
-    // The general-settings panel selects its first tab on this.
+    // SettingsDialog hooks the Bootstrap show/hidden lifecycle of `#settings-modal`
+    // to refresh its drafts on open and restore live-previewed values on dismiss.
     useEffect(() => {
-        if (modalKey === 'options') {
-            window.dispatchEvent(new Event('show-general-settings'));
-        }
-    }, [modalKey]);
-
-    // UiSettings hooks the Bootstrap show/hidden lifecycle of `#ui-settings-modal`
-    // to refresh its draft on open and restore live-previewed values on dismiss.
-    useEffect(() => {
-        if (modalKey !== 'ui') return;
-        const el = document.getElementById('ui-settings-modal');
+        if (!SETTINGS_KEYS.has(modalKey)) return;
+        const el = document.getElementById(SETTINGS_MODAL_ID);
         el?.dispatchEvent(new Event('show.bs.modal'));
         return () => {
             el?.dispatchEvent(new Event('hidden.bs.modal'));
@@ -188,6 +182,12 @@ function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
 
     return null;
 }
+
+const SETTINGS_KEYS: ReadonlySet<ModalKey> = new Set(['options', 'ui']);
+const SETTINGS_START: Partial<Record<ModalKey, SettingsCategoryKey>> = {
+    options: 'character-general',
+    ui: 'ui-appearance',
+};
 
 /** Docs render imperatively (plain DOM) into a container; loaded on demand so
  *  the heavy markdown bundle stays out of forge's initial chunk. */
@@ -244,24 +244,14 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
     const size = SIZE[modalKey] ?? 'lg';
     const fill = FILL_MODALS.has(modalKey);
 
-    // Footer Save buttons — only the two panels that carry one in the stock UI.
+    // Footer Save buttons — only the panels that carry one in the stock UI.
     let footer: ReactNode = null;
-    if (modalKey === 'options') {
+    if (SETTINGS_KEYS.has(modalKey)) {
         footer = (
             <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => window.dispatchEvent(new Event('save-options'))}
-            >
-                Zapisz
-            </button>
-        );
-    } else if (modalKey === 'ui') {
-        footer = (
-            <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => window.dispatchEvent(new Event('save-ui-settings'))}
+                onClick={() => window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT))}
             >
                 Zapisz
             </button>
@@ -287,11 +277,11 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
         );
     }
 
-    // The options panel offers export/import + character shortcuts in its header.
-    // Stock hides Opcje for Eksport/Import (a replace) but stacks Postacie on top
+    // The settings dialog offers export/import + character shortcuts in its header.
+    // Stock hides it for Eksport/Import (a replace) but stacks Postacie on top
     // at a higher z-index (a push) — mirror both here.
     let headerExtras: ReactNode = null;
-    if (modalKey === 'options') {
+    if (SETTINGS_KEYS.has(modalKey)) {
         headerExtras = (
             <>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => replaceKey('export-import')}>
@@ -309,11 +299,10 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
     let body: ReactNode;
     switch (modalKey) {
         case 'options':
-            body = <CharacterSettings />;
-            break;
         case 'ui':
             body = (
-                <UiSettings
+                <SettingsDialog
+                    initialCategory={SETTINGS_START[modalKey]}
                     soundManager={client.SoundManager}
                     onEnableNotifications={() => client.enableNotifications()}
                 />
@@ -381,7 +370,7 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
                 fill={fill}
                 onClose={onClose}
                 closeOnEsc={isTop}
-                dialogId={modalKey === 'ui' ? 'ui-settings-modal' : undefined}
+                dialogId={SETTINGS_KEYS.has(modalKey) ? SETTINGS_MODAL_ID : undefined}
                 headerExtras={headerExtras}
                 footer={footer}
             >
@@ -405,12 +394,12 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
         const toExport = () => pushKey('export-import');
         const toChars = () => pushKey('characters');
         window.addEventListener('close-options', close);
-        window.addEventListener('close-ui-settings', close);
+        window.addEventListener(CLOSE_SETTINGS_EVENT, close);
         window.addEventListener('show-export-import', toExport);
         window.addEventListener('show-character-management', toChars);
         return () => {
             window.removeEventListener('close-options', close);
-            window.removeEventListener('close-ui-settings', close);
+            window.removeEventListener(CLOSE_SETTINGS_EVENT, close);
             window.removeEventListener('show-export-import', toExport);
             window.removeEventListener('show-character-management', toChars);
         };

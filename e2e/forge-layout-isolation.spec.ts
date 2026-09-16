@@ -73,6 +73,7 @@ test.describe('forge/stock layout isolation', () => {
         await page.locator('.forge-menu__button').click();
         await page.locator('.forge-menu__list').getByRole('button', { name: 'Interfejs' }).click();
         const modal = page.locator('.forge-menu-modal');
+        await modal.locator('.settings-dialog__nav-item[data-settings-category="ui-windows"]').click();
         await expect(modal.getByRole('heading', { name: 'Menedżer Okien' })).toBeVisible();
         // The checkboxes would be inert here (overrides don't persist), so the
         // section only offers the layout reset.

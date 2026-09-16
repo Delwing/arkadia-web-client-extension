@@ -1,30 +1,12 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushText, waitForCommandInput, waitForOutputContaining} from './support/mocks';
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 
-const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
-const SAVE_BUTTON = '#ui-settings-save';
+const SAVE_BUTTON = SETTINGS_SAVE;
 
 async function openUiSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    // Wait for any in-progress hide animation to complete before opening
-    await page.waitForFunction(() => {
-        const el = document.getElementById('ui-settings-modal');
-        return !el || window.getComputedStyle(el).display === 'none';
-    });
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
-    return modal;
+    return openSettings(page, 'ui-appearance');
 }
 
 async function setPalette(page: Page, palette: 'arkadia' | 'proper') {

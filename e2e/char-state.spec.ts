@@ -1,27 +1,19 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
-const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
 const FOOTER_MODE_SELECT = '#ui-footer-mode';
 const EMOJI_LABELS_CHECKBOX = '#ui-emoji-labels';
 
 async function openUiSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    await modal.getByRole('button', {name: 'Stopka', exact: true}).click();
-    return modal;
+    return openSettings(page, 'ui-footer');
 }
 
 async function setFooterMode(page: Page, mode: number) {
     const modal = await openUiSettings(page);
     await modal.locator(FOOTER_MODE_SELECT).selectOption(String(mode));
-    await modal.locator('#ui-settings-save').click();
-    await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+    await saveSettings(page);
 }
 
 async function setEmojiLabels(page: Page, enabled: boolean) {
@@ -38,8 +30,7 @@ async function setEmojiLabels(page: Page, enabled: boolean) {
         }
     }
 
-    await modal.locator('#ui-settings-save').click();
-    await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+    await saveSettings(page);
 }
 
 test.describe('Character state', () => {

@@ -7,24 +7,14 @@ import {
     GMCP_PATHS,
     waitForCommandInput,
 } from './support/mocks';
+import {goToSettingsPage, openSettings, saveSettings, type SettingsCategory} from './support/settings';
 
-const MENU_BUTTON = '#menu-button';
-const OPTIONS_BUTTON = '#options-button';
-const OPTIONS_MODAL = '#options-modal';
-const OPTIONS_SAVE_BUTTON = '#options-save';
-
-async function openOptions(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(OPTIONS_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should open options modal').toBeVisible();
-    return modal;
+async function openOptions(page: Page, category: SettingsCategory = 'character-general') {
+    return openSettings(page, category);
 }
 
 async function saveOptions(page: Page) {
-    await page.click(OPTIONS_SAVE_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should close options modal after saving').not.toBeVisible();
+    await saveSettings(page);
 }
 
 async function getStoredSettings(page: Page, character: string) {
@@ -53,12 +43,13 @@ test.describe('Character settings', () => {
         const shortenExitsCheckbox = modal.locator('#shortenExits');
         await shortenExitsCheckbox.check();
 
-        // Find collect mode select by ID
-        const collectModeSelect = modal.locator('#collectMode');
-        await collectModeSelect.selectOption('3'); // leader mode
-
         const lowHpAlertSelect = modal.locator('#lowHpAlert');
         await lowHpAlertSelect.selectOption('5');
+
+        // Collect mode lives on the Przedmioty page
+        await goToSettingsPage(page, 'character-items');
+        const collectModeSelect = modal.locator('#collectMode');
+        await collectModeSelect.selectOption('3'); // leader mode
 
         await saveOptions(page);
 
@@ -87,9 +78,11 @@ test.describe('Character settings', () => {
         const packageHelperCheckbox = modal.locator('#packageHelper');
         await packageHelperCheckbox.uncheck();
 
+        await goToSettingsPage(page, 'character-items');
         const prettyContainersCheckbox = modal.locator('#prettyContainers');
         await prettyContainersCheckbox.uncheck();
 
+        await goToSettingsPage(page, 'character-general');
         // Find language select by text content (it contains language options like 'potoczna', 'bretonski')
         // Use first() to get the main language select (not the alias one)
         const languageSelect = modal.locator('select').filter({hasText: 'potoczna'}).first();
@@ -126,13 +119,14 @@ test.describe('Character settings', () => {
             'packageHelper checkbox should be unchecked'
         ).not.toBeChecked();
         await expect(
-            reloadedModal.locator('#prettyContainers'),
-            'prettyContainers checkbox should be unchecked'
-        ).not.toBeChecked();
-        await expect(
             reloadedModal.locator('select').filter({hasText: 'potoczna'}).first(),
             'language select should show bretonski'
         ).toHaveValue('bretonski');
+        await goToSettingsPage(page, 'character-items');
+        await expect(
+            reloadedModal.locator('#prettyContainers'),
+            'prettyContainers checkbox should be unchecked'
+        ).not.toBeChecked();
     });
 
     test('settings change on character switch via gmcp.char.info', async ({page}) => {
@@ -149,8 +143,9 @@ test.describe('Character settings', () => {
         // Set settings for FirstChar
         let modal = await openOptions(page);
         await modal.locator('#shortenExits').check();
-        await modal.locator('#collectMode').selectOption('2'); // own loot
         await modal.locator('#lowHpAlert').selectOption('3');
+        await goToSettingsPage(page, 'character-items');
+        await modal.locator('#collectMode').selectOption('2'); // own loot
         await saveOptions(page);
 
         // Verify settings for FirstChar
@@ -209,19 +204,15 @@ test.describe('Character settings', () => {
         // Open options and verify UI shows SecondChar's settings
         modal = await openOptions(page);
 
-        // Wait for the alert to show the character name (formatted with first letter uppercase, rest lowercase)
-        const characterAlert = modal.locator('.alert-info');
-        await expect(characterAlert).toContainText('Secondchar');
+        // Wait for the page's scope chip to show the character name (formatted with first letter uppercase, rest lowercase)
+        const characterChip = modal.locator('.settings-page:not([hidden]) .settings-scope-chip--character');
+        await expect(characterChip).toContainText('Secondchar');
 
         // Verify the UI reflects SecondChar's settings
         await expect(
             modal.locator('#shortenExits'),
             'shortenExits checkbox should be unchecked for SecondChar'
         ).not.toBeChecked();
-        await expect(
-            modal.locator('#collectMode'),
-            'collectMode select should show 4 for SecondChar'
-        ).toHaveValue('4');
         await expect(
             modal.locator('#lowHpAlert'),
             'lowHpAlert input should show 7 for SecondChar'
@@ -230,10 +221,14 @@ test.describe('Character settings', () => {
             modal.locator('select').filter({hasText: 'potoczna'}).first(),
             'language select should show estalijski for SecondChar'
         ).toHaveValue('estalijski');
+        await goToSettingsPage(page, 'character-items');
+        await expect(
+            modal.locator('#collectMode'),
+            'collectMode select should show 4 for SecondChar'
+        ).toHaveValue('4');
 
         // Close modal by clicking save (no changes made, so it just closes)
-        await modal.locator('#options-save').click();
-        await expect(modal, 'should close options modal after save').not.toBeVisible();
+        await saveOptions(page);
 
         // Switch back to FirstChar
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'FirstChar'});
@@ -245,21 +240,22 @@ test.describe('Character settings', () => {
         // Verify settings switched back to FirstChar (formatted with first letter uppercase, rest lowercase)
         modal = await openOptions(page);
         await expect(
-            modal.locator('.alert-info'),
-            'should show Firstchar in alert'
+            modal.locator('.settings-page:not([hidden]) .settings-scope-chip--character'),
+            'should show Firstchar in the scope chip'
         ).toContainText('Firstchar');
         await expect(
             modal.locator('#shortenExits'),
             'shortenExits should be checked for FirstChar'
         ).toBeChecked();
         await expect(
-            modal.locator('#collectMode'),
-            'collectMode should be 2 for FirstChar'
-        ).toHaveValue('2');
-        await expect(
             modal.locator('#lowHpAlert'),
             'lowHpAlert should be 3 for FirstChar'
         ).toHaveValue('3');
+        await goToSettingsPage(page, 'character-items');
+        await expect(
+            modal.locator('#collectMode'),
+            'collectMode should be 2 for FirstChar'
+        ).toHaveValue('2');
     });
 
     test('compassBackExits setting persists after reload', async ({page}) => {
@@ -334,7 +330,7 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'DobHero';
         });
 
-        const modal = await openOptions(page);
+        const modal = await openOptions(page, 'character-combat');
         await modal.locator('label:has-text("Komenda /dob 1:")').locator('..').locator('input').fill('dobadz miecz');
         await modal.locator('label:has-text("Komenda /dob 2:")').locator('..').locator('input').fill('dobadz tarcze');
         await modal.locator('label:has-text("Komenda /dob 3:")').locator('..').locator('input').fill('dobadz sztylet');
@@ -352,7 +348,7 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'DobHero';
         });
 
-        const reloadedModal = await openOptions(page);
+        const reloadedModal = await openOptions(page, 'character-combat');
         await expect(
             reloadedModal.locator('label:has-text("Komenda /dob 1:")').locator('..').locator('input'),
             'dobCommand1 should persist after reload'
@@ -377,7 +373,7 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'OpHero';
         });
 
-        const modal = await openOptions(page);
+        const modal = await openOptions(page, 'character-combat');
         await modal.locator('label:has-text("Komenda /op 1:")').locator('..').locator('input').fill('opusc miecz');
         await modal.locator('label:has-text("Komenda /op 2:")').locator('..').locator('input').fill('opusc tarcze');
         await modal.locator('label:has-text("Komenda /op 3:")').locator('..').locator('input').fill('opusc sztylet');
@@ -395,7 +391,7 @@ test.describe('Character settings', () => {
             return localStorage.getItem('currentCharacter') === 'OpHero';
         });
 
-        const reloadedModal = await openOptions(page);
+        const reloadedModal = await openOptions(page, 'character-combat');
         await expect(
             reloadedModal.locator('label:has-text("Komenda /op 1:")').locator('..').locator('input'),
             'opCommand1 should persist after reload'
@@ -422,8 +418,9 @@ test.describe('Character settings', () => {
 
         // Set settings for AliceChar
         let modal = await openOptions(page);
-        await modal.locator('#containerColumns').fill('3');
         await modal.locator('#letterLineWidth').fill('80');
+        await goToSettingsPage(page, 'character-items');
+        await modal.locator('#containerColumns').fill('3');
         await saveOptions(page);
 
         const aliceSettings = await getStoredSettings(page, 'AliceChar');
@@ -439,8 +436,9 @@ test.describe('Character settings', () => {
 
         // Set different settings for BobChar
         modal = await openOptions(page);
-        await modal.locator('#containerColumns').fill('4');
         await modal.locator('#letterLineWidth').fill('60');
+        await goToSettingsPage(page, 'character-items');
+        await modal.locator('#containerColumns').fill('4');
         await saveOptions(page);
 
         const bobSettings = await getStoredSettings(page, 'BobChar');
@@ -461,12 +459,13 @@ test.describe('Character settings', () => {
 
         modal = await openOptions(page);
         await expect(
-            modal.locator('#containerColumns'),
-            'AliceChar containerColumns should be 3 in UI'
-        ).toHaveValue('3');
-        await expect(
             modal.locator('#letterLineWidth'),
             'AliceChar letterLineWidth should be 80 in UI'
         ).toHaveValue('80');
+        await goToSettingsPage(page, 'character-items');
+        await expect(
+            modal.locator('#containerColumns'),
+            'AliceChar containerColumns should be 3 in UI'
+        ).toHaveValue('3');
     });
 });

@@ -1,38 +1,61 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { chromeSettingsKeys } from "@shared/settingsDefaults.ts";
+import type { UiSettings } from "../uiSettingsCore";
 
-export function SettingsSection({ title, headerExtra, children }: { title: string; headerExtra?: ReactNode; children: ReactNode }) {
+/** Keys persisted in the device-scoped `uiSettings` entry; every other UI slice is shared. */
+const DEVICE_SETTING_KEYS: ReadonlySet<string> = new Set(chromeSettingsKeys);
+
+/**
+ * Marks a UI setting kept on this device only. Most of the Interfejs pages sync
+ * across devices, so the ones that do not are flagged where they are edited.
+ * Renders nothing for a shared key, so passing `settingKey` is always safe.
+ */
+export function DeviceOnlyBadge({ settingKey }: { settingKey?: keyof UiSettings }) {
+    if (!settingKey || !DEVICE_SETTING_KEYS.has(settingKey)) return null;
     return (
-        <section className="ui-settings-section">
+        <span className="settings-scope-badge ms-2" title="Zapisywane tylko na tym urządzeniu, bez synchronizacji z innymi">
+            to urządzenie
+        </span>
+    );
+}
+
+/**
+ * One card on a settings page. `full` spans every masonry column, for content
+ * that needs the width (tile grids, tables).
+ */
+export function SettingsSection({ title, headerExtra, full, settingKey, children }: { title: string; headerExtra?: ReactNode; full?: boolean; settingKey?: keyof UiSettings; children: ReactNode }) {
+    return (
+        <section className={`ui-settings-section${full ? " ui-settings-section--full" : ""}`}>
             {headerExtra ? (
                 <div className="ui-settings-section-header">
-                    <h6 className="ui-settings-section-title">{title}</h6>
+                    <h6 className="ui-settings-section-title">{title}<DeviceOnlyBadge settingKey={settingKey} /></h6>
                     {headerExtra}
                 </div>
             ) : (
-                <h6 className="ui-settings-section-title">{title}</h6>
+                <h6 className="ui-settings-section-title">{title}<DeviceOnlyBadge settingKey={settingKey} /></h6>
             )}
             <div className="ui-settings-stack">{children}</div>
         </section>
     );
 }
 
-export function CheckboxRow({ id, label, checked, onChange, disabled, className }: {
-    id: string; label: ReactNode; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string;
+export function CheckboxRow({ id, label, checked, onChange, disabled, className, settingKey }: {
+    id: string; label: ReactNode; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string; settingKey?: keyof UiSettings;
 }) {
     return (
         <div className={`form-check${className ? ' ' + className : ''}`}>
             <input id={id} type="checkbox" className="form-check-input" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-            <label className="form-check-label" htmlFor={id}>{label}</label>
+            <label className="form-check-label" htmlFor={id}>{label}<DeviceOnlyBadge settingKey={settingKey} /></label>
         </div>
     );
 }
 
-export function SelectField({ id, label, value, onChange, disabled, children }: {
-    id: string; label?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; children: ReactNode;
+export function SelectField({ id, label, value, onChange, disabled, settingKey, children }: {
+    id: string; label?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; settingKey?: keyof UiSettings; children: ReactNode;
 }) {
     return (
         <div>
-            {label && <label className="form-label" htmlFor={id}>{label}</label>}
+            {label && <label className="form-label" htmlFor={id}>{label}<DeviceOnlyBadge settingKey={settingKey} /></label>}
             <select id={id} className="form-select" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
                 {children}
             </select>
@@ -44,14 +67,14 @@ export function SelectField({ id, label, value, onChange, disabled, children }: 
  * Number input that tolerates intermediate empty/invalid text while editing,
  * only emitting finite numbers upstream.
  */
-export function NumberField({ id, label, value, step, min, onChange }: {
-    id: string; label: ReactNode; value: number; step?: number | string; min?: number | string; onChange: (value: number) => void;
+export function NumberField({ id, label, value, step, min, settingKey, onChange }: {
+    id: string; label: ReactNode; value: number; step?: number | string; min?: number | string; settingKey?: keyof UiSettings; onChange: (value: number) => void;
 }) {
     const [text, setText] = useState(String(value));
     useEffect(() => { setText(String(value)); }, [value]);
     return (
         <div>
-            <label className="form-label" htmlFor={id}>{label}</label>
+            <label className="form-label" htmlFor={id}>{label}<DeviceOnlyBadge settingKey={settingKey} /></label>
             <input
                 id={id}
                 type="number"

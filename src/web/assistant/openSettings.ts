@@ -1,12 +1,11 @@
 /**
- * Ask the host UI to open the settings panel holding a given setting.
+ * Ask the host UI to open the settings page holding a given setting.
  *
- * `src/web` has two hosts — the stock UI (Bootstrap modals created in
+ * `src/web` has two hosts — the stock UI (a Bootstrap modal created in
  * `main.ts`) and forge (its own modal host) — and neither exposes its modal
- * instances as an import. The established seam for reaching them is a window
- * event, which `CharacterSettings.tsx` already uses for tab switching
- * (`show-general-settings`, `show-guild-settings`). This follows that pattern
- * rather than inventing a second mechanism.
+ * instance as an import. The established seam for reaching them is a window
+ * event, the same way the menu picks the dialog's opening page
+ * (`SHOW_SETTINGS_EVENT`). The dialog itself switches to the named page.
  *
  * A host that does not implement the event simply does nothing, and the card
  * still shows the navigation path as text — so the button degrades to a no-op
@@ -15,7 +14,7 @@
 
 export const OPEN_SETTINGS_EVENT = 'assistant:open-settings';
 
-/** Which dialog holds a key, decided by its storage prefix. */
+/** Which sidebar group holds a key, decided by its storage prefix. */
 export type SettingsSurface = 'character' | 'ui';
 
 export interface OpenSettingsDetail {
@@ -23,31 +22,29 @@ export interface OpenSettingsDetail {
     settingKey: string;
     surface: SettingsSurface;
     /**
-     * The tab's own label, e.g. "Stopka" — not a tab id.
+     * The page's own label, e.g. "Stopka" — not a category key.
      *
-     * Both dialogs define their tabs with Polish labels next to the ids, and the
-     * ids are private to each component. Passing the label lets each host map it
-     * with its own list, instead of this module holding a copy of both tables
-     * that would silently rot when a tab is renamed.
+     * The label is what the knowledge base's navigation paths carry; the dialog
+     * maps it back through its category list, so renaming a page is one edit.
      */
     tabLabel?: string;
 }
 
 /**
- * The tab segment of a navigation path.
+ * The page segment of a navigation path.
  *
- * Paths are uniformly `Menu (⋮) → <dialog> → <tab> → <section>`, in both
- * dialogs, so the tab is always the third segment.
+ * Paths are uniformly `Menu (⋮) → Ustawienia → <group> → <page> → <section>`,
+ * so the page is always the fourth segment.
  */
 export function tabLabelOf(uiLocation: string | undefined): string | undefined {
     if (!uiLocation) return undefined;
     const parts = uiLocation.split('→').map(part => part.trim()).filter(Boolean);
-    return parts[2];
+    return parts[3];
 }
 
 /**
- * UI-scoped slices live in the "Interfejs" dialog; everything else is a
- * character setting in the "Opcje" dialog. Derived from the storage key the
+ * UI-scoped slices live in the "Interfejs" group; everything else is a
+ * character setting in the "Postać" group. Derived from the storage key the
  * proposal carries, so it needs no per-setting table to maintain.
  */
 export function surfaceFor(settingKey: string): SettingsSurface {

@@ -16,10 +16,10 @@ import type { KnowledgeBundle } from '@shared/assistant/knowledgeBundle.ts';
 
 const bundle = bundleJson as unknown as KnowledgeBundle;
 
-/** Verbatim from a live Gemini answer that produced no card. */
+/** A live Gemini answer that produced no card (path updated to the merged dialog). */
 const FOOTER_ANSWER =
     'Widoczność pasków w stopce (takich jak HP, mana, zmęczenie czy obciążenie) ' +
-    'zmienisz w menu interfejsu. Przejdź do Menu (⋮) → Interfejs (Ustawienia UI) → ' +
+    'zmienisz w menu interfejsu. Przejdź do Menu (⋮) → Ustawienia → Interfejs → ' +
     'Stopka → Elementy stopki. Tam możesz włączać, wyłączać i zmieniać kolejność ' +
     'poszczególnych pasków oraz elementów.';
 
@@ -57,7 +57,7 @@ describe('detectPanelHint', () => {
         expect(detectPanelHint('', bundle)).toBeNull();
     });
 
-    it('declines paths that are not one of the two settings dialogs', () => {
+    it('declines paths outside the settings dialog', () => {
         // The catalog also points at places the open-settings event does not
         // reach — the buttons dialog, the output window's right-click menu.
         // Offering to open those would open the wrong dialog, which is worse
@@ -70,7 +70,7 @@ describe('detectPanelHint', () => {
 
     it('finds a character-settings panel too, not just interface ones', () => {
         const hint = detectPanelHint(
-            'Ustawisz to w Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów.',
+            'Ustawisz to w Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów.',
             bundle,
         );
         expect(hint).not.toBeNull();

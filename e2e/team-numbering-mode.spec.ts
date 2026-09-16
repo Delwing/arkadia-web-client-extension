@@ -1,23 +1,15 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, GMCP_PATHS, pushGmcp, submitCommand, waitForCommandInput} from './support/mocks';
-
-const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
+import {openSettings, saveSettings} from './support/settings';
 
 async function openUiSettings(page: import('@playwright/test').Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal).toBeVisible();
-    return modal;
+    return openSettings(page, 'ui-windows');
 }
 
 async function setTeamNumberingMode(page: import('@playwright/test').Page, mode: 'letters' | 'numbers') {
     const modal = await openUiSettings(page);
     await modal.locator('#ui-team-numbering-mode').selectOption(mode);
-    await modal.locator('#ui-settings-save').click();
-    await expect(modal).not.toBeVisible();
+    await saveSettings(page);
 }
 
 async function setupObjectsScene(page: import('@playwright/test').Page) {

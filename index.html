@@ -144,22 +144,22 @@
     <button id="recording-button" class="btn btn-danger btn-sm" style="position:absolute;top:0.5rem;right:0.5rem;z-index:1012;display:none;">Zatrzymaj i zapisz</button>
 
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
-    <div id="options-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable h-100">
+    <div id="settings-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-md-down h-100">
             <div class="modal-content h-100">
                 <div class="modal-header">
-                    <h5 class="modal-title">Opcje</h5>
+                    <h5 class="modal-title">Ustawienia</h5>
                     <div class="d-flex align-items-center gap-2 ms-auto">
-                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="options-export-import-btn">Eksport/Import</button>
-                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="options-characters-btn">Postacie</button>
+                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="settings-export-import-btn">Eksport/Import</button>
+                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="settings-characters-btn">Postacie</button>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                 </div>
                 <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
-                    <div id="options" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
+                    <div id="settings-root" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="options-save">Zapisz</button>
+                    <button type="button" class="btn btn-primary" id="settings-save">Zapisz</button>
                 </div>
             </div>
         </div>
@@ -420,23 +420,6 @@
             </div>
         </div>
         <div id="commit-info"></div>
-    </div>
-
-    <div id="ui-settings-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable h-100">
-            <div class="modal-content h-100">
-                <div class="modal-header">
-                    <h5 class="modal-title">Ustawienia UI</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
-                    <div id="ui-settings-root" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="ui-settings-save">Zapisz</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div id="mobile-buttons-modal" class="modal fade" tabindex="-1">

@@ -9,18 +9,12 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
     const [enemySelected, setEnemySelected] = useState<string[]>([]);
     const [allySelected, setAllySelected] = useState<string[]>([]);
     const [colors, setColors] = useState<Record<string, string | undefined>>({});
-    const [locked, setLocked] = useState(!characterStorage.getCharacter());
     const defaultColors = useMemo(() => {
         const map: Record<string, string> = {};
         guilds.forEach(g => {
             map[g] = '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
         });
         return map;
-    }, []);
-
-    useEffect(() => {
-        const update = () => setLocked(!characterStorage.getCharacter());
-        return characterStorage.onCharacterChange(update);
     }, []);
 
     useEffect(() => {
@@ -96,25 +90,21 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
     }, [registerSave, selected, enemySelected, allySelected, colors]);
 
     return (
-        <div className="p-2 h-100">
-            <fieldset disabled={locked} className="p-0 border-0 m-0">
-                <div className="character-settings-layout">
-                    <GuildSection
-                        selected={selected}
-                        enemySelected={enemySelected}
-                        allySelected={allySelected}
-                        colors={colors}
-                        defaultColors={defaultColors}
-                        onChange={onChange}
-                        onEnemyChange={onEnemyChange}
-                        onAllyChange={onAllyChange}
-                        onColorChange={onColorChange}
-                        onChangeAll={onChangeAll}
-                        onChangeAllEnemy={onChangeAllEnemy}
-                    />
-                </div>
-            </fieldset>
-        </div>
+        <>
+            <GuildSection
+                selected={selected}
+                enemySelected={enemySelected}
+                allySelected={allySelected}
+                colors={colors}
+                defaultColors={defaultColors}
+                onChange={onChange}
+                onEnemyChange={onEnemyChange}
+                onAllyChange={onAllyChange}
+                onColorChange={onColorChange}
+                onChangeAll={onChangeAll}
+                onChangeAllEnemy={onChangeAllEnemy}
+            />
+        </>
     );
 }
 

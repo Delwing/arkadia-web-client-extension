@@ -46,24 +46,46 @@ test.describe('forge menu', () => {
         await expect(modal).toHaveCount(0);
     });
 
-    test('ui settings tabs isolate their panels', async ({ page }) => {
-        // Regression: the tabbed settings panels hide inactive tabs with the
-        // Bootstrap `.d-none` utility, which only existed in the (conditionally
-        // loaded) stock global CSS — so opened cold, every tab's content used
+    test('Ustawienia and Interfejs open the same settings dialog on their own page', async ({ page }) => {
+        const modal = page.locator('.forge-menu-modal');
+        const visiblePage = modal.locator('.settings-page:not([hidden])');
+
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Ustawienia' }).click();
+        await expect(modal).toBeVisible();
+        await expect(modal.locator('.panel__title')).toHaveText('Ustawienia');
+        await expect(visiblePage).toHaveAttribute('data-settings-category', 'character-general');
+        await page.keyboard.press('Escape');
+        await expect(modal).toHaveCount(0);
+
+        await page.locator('.forge-menu__button').click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Interfejs' }).click();
+        await expect(modal).toBeVisible();
+        await expect(modal.locator('.panel__title')).toHaveText('Ustawienia');
+        await expect(visiblePage).toHaveAttribute('data-settings-category', 'ui-appearance');
+    });
+
+    test('settings pages isolate their panels', async ({ page }) => {
+        // Regression: the settings panels hide inactive content with
+        // `[hidden]` / `.d-none`, which only existed in the (conditionally
+        // loaded) stock global CSS — so opened cold, every panel's content used
         // to stack at once. forge's scoped Bootstrap subset now defines it.
         await page.locator('.forge-menu__button').click();
         await page.locator('.forge-menu__list').getByRole('button', { name: 'Interfejs' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
-        // Ogólne is the default tab: its content shows, the Mapa tab's is hidden.
-        const general = modal.getByRole('heading', { name: 'Menedżer Okien' });
+        // Wygląd is the default page: neither the Okna nor the Mapa page shows.
+        const windows = modal.getByRole('heading', { name: 'Menedżer Okien' });
         const mapMarker = modal.getByRole('heading', { name: 'Marker gracza' });
-        await expect(general).toBeVisible();
+        await expect(windows).toBeHidden();
         await expect(mapMarker).toBeHidden();
-        // Switching tabs swaps which panel is visible.
-        await modal.getByRole('button', { name: 'Mapa', exact: true }).click();
+        // Switching pages swaps which panel is visible.
+        await modal.locator('.settings-dialog__nav-item[data-settings-category="ui-windows"]').click();
+        await expect(windows).toBeVisible();
+        await expect(mapMarker).toBeHidden();
+        await modal.locator('.settings-dialog__nav-item[data-settings-category="ui-map"]').click();
         await expect(mapMarker).toBeVisible();
-        await expect(general).toBeHidden();
+        await expect(windows).toBeHidden();
     });
 
     test('opens the documentation with content', async ({ page }) => {
@@ -160,7 +182,7 @@ test.describe('forge menu', () => {
     });
 
     test('opening UI settings does not repaint the forge output', async ({ page }) => {
-        // The Interfejs (UiSettings) modal live-previews the *stock* shell: its
+        // The Interfejs (settings dialog) modal live-previews the *stock* shell: its
         // apply() writes an inline background onto the shared output elements.
         // forge keeps its log transparent over the panel texture, so opening the
         // modal must not paint a flat stock background over the output (it used

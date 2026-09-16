@@ -11,6 +11,7 @@ import {
     waitForCharacter,
     waitForCommandInput,
 } from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 import type {Page} from '@playwright/test';
 
 // ---------------------------------------------------------------------------
@@ -133,16 +134,12 @@ test.describe('Client keydown handler', () => {
             await waitForCharacter(page, 'CustomAttacker');
 
             // Open Settings and change attack command from "zabij" to "napadnij"
-            await page.click('#menu-button');
-            await page.click('#options-button');
-            const modal = page.locator('#options-modal');
-            await expect(modal).toBeVisible();
+            const modal = await openSettings(page, 'character-combat');
 
             const attackInput = modal.locator('input[placeholder="zabij"]');
             await attackInput.clear();
             await attackInput.fill('napadnij');
-            await page.click('#options-save');
-            await expect(modal).not.toBeVisible();
+            await saveSettings(page);
 
             // Register enemy with attack_target: true
             await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {

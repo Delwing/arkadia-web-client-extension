@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, installEmbeddedMock, waitForCommandInput} from './support/mocks';
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 
 /**
  * A plugin's footer component used to be invisible to Interfejs -> Stopka: it
@@ -12,8 +13,6 @@ import {ensureGameSocket, installEmbeddedMock, waitForCommandInput} from './supp
 const MENU_BUTTON = '#menu-button';
 const SCRIPTS_BUTTON = '#scripts-button';
 const SCRIPTS_MODAL = '#scripts-modal';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
 const PLUGIN_URL = 'https://example.com/footer-chip-plugin.js';
 const PLUGIN_NAME = 'Chip Test';
 const CHIP_TEXT = 'CHIP-OK';
@@ -52,21 +51,7 @@ async function loadPlugin(page: Page): Promise<void> {
 }
 
 async function openFooterSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.waitForFunction(() => {
-        const el = document.getElementById('ui-settings-modal');
-        return !el || window.getComputedStyle(el).display === 'none';
-    });
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
-    await modal.getByRole('button', {name: 'Stopka', exact: true}).click();
+    const modal = await openSettings(page, 'ui-footer');
     await modal.locator('#ui-footer-components-settings').waitFor({state: 'visible'});
     return modal;
 }
@@ -118,7 +103,7 @@ test.describe('plugin footer components in the footer settings', () => {
         const toggle = row.locator('.form-check-input');
         await expect(toggle, 'plugin chip starts visible').toBeChecked();
         await toggle.uncheck();
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
         await expect(chip(page), 'switching it off should hide the chip').toHaveCount(0);
 
@@ -129,7 +114,7 @@ test.describe('plugin footer components in the footer settings', () => {
             .locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
         await expect(rowAgain, 'a hidden plugin is still offered in the list').toHaveCount(1);
         await rowAgain.locator('.form-check-input').check();
-        await modalAgain.locator('#ui-settings-save').click();
+        await modalAgain.locator(SETTINGS_SAVE).click();
         await expect(modalAgain).not.toBeVisible();
         await expect(chip(page), 'switching it back on should restore the chip').toBeVisible();
     });
@@ -167,7 +152,7 @@ test.describe('plugin footer components in the footer settings', () => {
         await expect(rows.nth(lastBuiltIn), 'dropping it should reorder the list')
             .toContainText(PLUGIN_NAME);
 
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
         expect(await footerOrder(page, PLUGIN_ITEM), 'moving it up should move it in the footer')

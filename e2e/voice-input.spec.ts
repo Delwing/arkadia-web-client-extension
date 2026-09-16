@@ -7,6 +7,7 @@ import {
     waitForCommandInput,
     waitForOutputContaining,
 } from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
 /**
  * Chromium has no scriptable microphone, so the Web Speech API is stubbed the
@@ -242,24 +243,9 @@ test.describe('hands-free voice input', () => {
     });
 });
 
-/** Open the UI settings modal, the way `ui-settings.spec.ts` does. */
+/** Open the settings dialog on the Komendy page, where the mic-button switch lives. */
 async function openUiSettings(page: Page) {
-    // Wait out any in-progress hide animation, or the open is swallowed.
-    await page.waitForFunction(() => {
-        const el = document.getElementById('ui-settings-modal');
-        return !el || window.getComputedStyle(el).display === 'none';
-    });
-    await page.click('#menu-button');
-    await page.click('#ui-settings-button');
-    const modal = page.locator('#ui-settings-modal');
-    await expect(modal).toBeVisible();
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
-    return modal;
+    return openSettings(page, 'ui-commands');
 }
 
 /** Flip the mic-button setting and save. */
@@ -271,8 +257,7 @@ async function setVoiceButtonEnabled(page: Page, enabled: boolean): Promise<void
     } else {
         await checkbox.uncheck();
     }
-    await modal.locator('#ui-settings-save').click();
-    await expect(modal).not.toBeVisible();
+    await saveSettings(page);
 }
 
 test.describe('the microphone button can be switched off', () => {

@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushGmcp, submitCommand, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 
 async function login(page: Page): Promise<void> {
     await page.goto('/');
@@ -11,29 +12,14 @@ async function login(page: Page): Promise<void> {
 }
 
 async function openUiSettingsModal(page: Page): Promise<void> {
-    // Serialize with any in-progress close animation from a prior modal cycle
-    await page.waitForFunction(() => {
-        const el = document.getElementById('ui-settings-modal');
-        return !el || window.getComputedStyle(el).display === 'none';
-    });
-    await page.click('#menu-button');
-    // Wait for the dropdown to actually open before clicking an item inside it
-    await page.waitForSelector('#menu-button + .dropdown-menu.show', {timeout: 5000});
-    await page.click('#ui-settings-button');
-    await page.waitForSelector('#ui-settings-modal.show', {timeout: 5000});
-    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
+    // The layout manager controls live on the Okna page
+    await openSettings(page, 'ui-windows');
 }
 
 async function closeUiSettingsModal(page: Page): Promise<void> {
     // Click the save button to close the modal and persist changes
-    await page.click('#ui-settings-save');
-    await page.waitForSelector('#ui-settings-modal.show', {state: 'hidden', timeout: 5000});
+    await page.click(SETTINGS_SAVE);
+    await page.waitForSelector('#settings-modal.show', {state: 'hidden', timeout: 5000});
 }
 
 async function enableLayoutManager(page: Page): Promise<void> {

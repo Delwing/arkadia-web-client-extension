@@ -7,24 +7,14 @@ import {
     GMCP_PATHS,
     waitForCommandInput,
 } from './support/mocks';
-
-const MENU_BUTTON = '#menu-button';
-const OPTIONS_BUTTON = '#options-button';
-const OPTIONS_MODAL = '#options-modal';
-const OPTIONS_SAVE_BUTTON = '#options-save';
+import {openSettings, saveSettings} from './support/settings';
 
 async function openOptions(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(OPTIONS_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should open options modal').toBeVisible();
-    return modal;
+    return openSettings(page, 'character-combat');
 }
 
 async function saveOptions(page: Page) {
-    await page.click(OPTIONS_SAVE_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should close options modal after saving').not.toBeVisible();
+    await saveSettings(page);
 }
 
 async function getStoredSettings(page: Page, character: string) {

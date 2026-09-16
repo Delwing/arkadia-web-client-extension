@@ -1,0 +1,244 @@
+/*
+ * Settings dialog shell: sidebar + search + pages. Every selector is namespaced
+ * under .settings-* so the sheet is safe to load in both the stock UI and forge;
+ * colours come from the --popup-* variables both hosts define.
+ *
+ * Layout switches on the dialog's own width (container queries), not the
+ * viewport, so a narrow forge shell or popout gets the phone layout too.
+ */
+
+.settings-dialog-host {
+  container: settings-dialog / inline-size;
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-dialog {
+  display: grid;
+  grid-template-columns: 12.5rem minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "search pages"
+    "nav pages";
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-dialog__search {
+  grid-area: search;
+  padding: 0.75rem 0.75rem 0.5rem;
+  border-right: 1px solid var(--popup-border);
+}
+
+.settings-dialog__nav {
+  grid-area: nav;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 0.5rem 0.75rem;
+  border-right: 1px solid var(--popup-border);
+}
+
+.settings-dialog__nav-group + .settings-dialog__nav-group {
+  margin-top: 0.75rem;
+}
+
+.settings-dialog__nav-group-label {
+  padding: 0.35rem 0.5rem 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--popup-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-dialog__nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.settings-dialog__nav-item:hover {
+  background: var(--popup-control-hover-bg);
+}
+
+.settings-dialog__nav-item--active {
+  background: var(--popup-control-bg);
+  color: var(--popup-text-bright);
+  box-shadow: inset 3px 0 0 var(--popup-accent);
+}
+
+.settings-dialog__dirty {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--popup-accent);
+}
+
+.settings-dialog__select {
+  grid-area: select;
+  display: none;
+}
+
+.settings-dialog__pages {
+  container: settings-pages / inline-size;
+  grid-area: pages;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+}
+
+.settings-page[hidden],
+.settings-page [data-settings-search-miss] {
+  display: none !important;
+}
+
+.settings-dialog--searching .settings-page:not([hidden]) ~ .settings-page:not([hidden]) {
+  margin-top: 1.5rem;
+}
+
+.settings-page__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-page__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.settings-page__group {
+  font-weight: 500;
+  color: var(--popup-text-dim);
+}
+
+.settings-scope-chip {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--popup-border);
+  border-radius: 1rem;
+  font-size: 0.72rem;
+  color: var(--popup-text-dim);
+  white-space: nowrap;
+}
+
+.settings-scope-chip--character {
+  border-color: var(--popup-accent);
+  color: var(--popup-text-bright);
+}
+
+.settings-scope-badge {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border: 1px dashed var(--popup-border);
+  border-radius: 1rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--popup-text-dim);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.settings-page__fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A grid rather than a masonry, so cards sharing a row stretch to the tallest
+   one. Spacing comes from the gap; the cards' own margins (stock style.css and
+   forge's _stock-settings.scss) are for the flowing layouts elsewhere. */
+.settings-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.settings-page__layout > section.ui-settings-section,
+.settings-page__layout > section.character-settings-section {
+  margin: 0;
+}
+
+.settings-page__layout > section.ui-settings-section--full,
+.settings-page__layout > section.character-settings-section--full {
+  grid-column: 1 / -1;
+}
+
+@container settings-pages (min-width: 44rem) {
+  .settings-page__layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container settings-pages (min-width: 70rem) {
+  .settings-page__layout {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.settings-dialog__empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--popup-text-dim);
+}
+
+::highlight(settings-search) {
+  background-color: rgba(255, 196, 0, 0.45);
+  color: inherit;
+}
+
+@container settings-dialog (max-width: 40rem) {
+  .settings-dialog {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "search"
+      "select"
+      "pages";
+  }
+
+  .settings-dialog__nav {
+    display: none;
+  }
+
+  .settings-dialog__search {
+    padding: 0.5rem 0.75rem 0.25rem;
+    border-right: 0;
+  }
+
+  .settings-dialog__select {
+    display: block;
+    width: auto;
+    margin: 0.25rem 0.75rem 0.5rem;
+  }
+
+  /* 16px keeps iOS from zooming the page when the field takes focus. */
+  .settings-dialog__search .form-control,
+  .settings-dialog__select {
+    font-size: 16px;
+    min-height: 2.5rem;
+  }
+
+  .settings-dialog__pages {
+    padding: 0.5rem 0.75rem;
+  }
+}

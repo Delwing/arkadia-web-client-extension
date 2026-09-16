@@ -1,6 +1,7 @@
 import { expect, test } from './support/fixtures';
 import { ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput, waitForLayoutSaved } from './support/mocks';
 import type { Page } from '@playwright/test';
+import { openSettings, SETTINGS_SAVE } from './support/settings';
 
 async function login(page: Page): Promise<void> {
   await page.goto('/');
@@ -11,25 +12,12 @@ async function login(page: Page): Promise<void> {
 }
 
 async function openUiSettingsModal(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const el = document.getElementById('ui-settings-modal');
-    return !el || window.getComputedStyle(el).display === 'none';
-  });
-  await page.click('#menu-button');
-  await page.waitForSelector('#menu-button + .dropdown-menu.show', { timeout: 5000 });
-  await page.click('#ui-settings-button');
-  await page.waitForSelector('#ui-settings-modal.show', { timeout: 5000 });
-  await page.waitForFunction(() => {
-    const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-    if (!d) return false;
-    const t = window.getComputedStyle(d).transform;
-    return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-  });
+  await openSettings(page, 'ui-windows');
 }
 
 async function closeUiSettingsModal(page: Page): Promise<void> {
-  await page.click('#ui-settings-save');
-  await page.waitForSelector('#ui-settings-modal.show', { state: 'hidden', timeout: 5000 });
+  await page.click(SETTINGS_SAVE);
+  await page.waitForSelector('#settings-modal.show', { state: 'hidden', timeout: 5000 });
 }
 
 async function enableLayoutManager(page: Page): Promise<void> {

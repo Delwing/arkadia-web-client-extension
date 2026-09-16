@@ -12,16 +12,13 @@ import {
     waitForMapReady,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
+import {openSettings, saveSettings} from './support/settings';
 
 async function enableLayoutManager(page: Page): Promise<void> {
-    await page.click('#menu-button');
-    await page.waitForSelector('#menu-button + .dropdown-menu.show', {timeout: 5000});
-    await page.click('#ui-settings-button');
-    await page.waitForSelector('#ui-settings-modal.show', {timeout: 5000});
+    await openSettings(page, 'ui-windows');
     const layoutToggle = page.locator('#ui-layout-manager-enabled');
     if (!(await layoutToggle.isChecked())) await layoutToggle.click();
-    await page.click('#ui-settings-save');
-    await page.waitForSelector('#ui-settings-modal.show', {state: 'hidden', timeout: 5000});
+    await saveSettings(page);
     await page.waitForFunction(() => document.body.classList.contains('layout-manager-enabled'));
 }
 

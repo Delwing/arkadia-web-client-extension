@@ -12,7 +12,7 @@ interface ManageSoundsModalProps {
 }
 
 /**
- * Opened from the sound tab of `#ui-settings-modal`, so it uses the shared
+ * Opened from the sound page of `#settings-modal`, so it uses the shared
  * inline `SubDialog` rather than a portaled react-bootstrap `<Modal>` — see
  * `@web/SubDialog` for why.
  */

@@ -173,10 +173,9 @@
 }
 /* Modal widths mirror stock's Bootstrap dialog sizes (500 / 800), and the wide
    settings shell tracks stock's responsive settings-modal width so its 2–3
-   column masonry has room at each breakpoint (stock widens #ui-settings-modal /
-   #options-modal to min(960px,90vw) >=768 and min(1400px,90vw) >=1400). Matching
-   the width here is what lets the stock column-count breakpoints fit without a
-   horizontal scrollbar. */
+   column masonry has room at each breakpoint (stock widens #settings-modal).
+   The settings page columns follow their own container width, so a narrower
+   shell just gets fewer columns. */
 .forge-menu-modal--md { max-width: 500px; }
 .forge-menu-modal--lg { max-width: 800px; }
 .forge-menu-modal--xl { max-width: min(1140px, 96vw); }

@@ -12,14 +12,14 @@ import { createPortal } from 'react-dom';
  * palette.
  *
  * Closing: the backdrop, the header "×", and Esc all call `onClose`. Several
- * option components dispatch `close-options` / `close-ui-settings` on save/cancel
+ * option components dispatch `close-options` / `close-settings` on save/cancel
  * (the same contract the stock modals honour) — the host listens for those and
  * calls `onClose`, so this component stays presentational.
  */
 interface MenuModalProps {
     title: string;
     onClose: () => void;
-    /** id set on the dialog element — some components (UiSettings) look their
+    /** id set on the dialog element — some components (SettingsDialog) look their
      *  modal up by id to hook its show/hide lifecycle. */
     dialogId?: string;
     /** Sizing hint mapped to a max-width in menu.css. */

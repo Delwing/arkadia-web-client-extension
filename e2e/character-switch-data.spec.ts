@@ -11,6 +11,7 @@ import {
     waitForCommandInput,
     waitForOutputContaining,
 } from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
 async function simulateHerbBagScan(
     page: import('@playwright/test').Page,
@@ -309,10 +310,7 @@ test.describe('Character switch clears per-character data', () => {
         expect(charBSettings, 'CollectCharB should have no stored settings').toBeNull();
 
         // Open options modal and verify that collect coin checkboxes show defaults (all true)
-        await page.click('#menu-button');
-        await page.click('#options-button');
-        const optionsModal = page.locator('#options-modal');
-        await expect(optionsModal, 'should open options modal').toBeVisible();
+        const optionsModal = await openSettings(page, 'character-items');
 
         await expect(
             optionsModal.locator('#collectCopper'),
@@ -335,10 +333,7 @@ test.describe('Character switch clears per-character data', () => {
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CollectCharA', object_num: 70012});
         await waitForCharacter(page, 'CollectCharA');
 
-        await page.click('#menu-button');
-        await page.click('#options-button');
-        const optionsModalA = page.locator('#options-modal');
-        await expect(optionsModalA, 'should open options modal for CharA').toBeVisible();
+        const optionsModalA = await openSettings(page, 'character-items');
 
         await expect(
             optionsModalA.locator('#collectCopper'),
@@ -715,17 +710,12 @@ test.describe('Lua gags colors character switch', () => {
         await waitForCharacter(page, 'GagColorA');
 
         // Open Walka tab and change a color
-        await page.click('#menu-button');
-        await page.click('#options-button');
-        const modal = page.locator('#options-modal');
-        await expect(modal).toBeVisible();
-        await modal.locator('button:has-text("Walka")').click();
+        const modal = await openSettings(page, 'character-combat');
         await modal.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
 
         const colorInput = modal.locator('input[type="color"]#luaGag-moje_ciosy');
         await colorInput.fill('#ff0000');
-        await page.click('#options-save');
-        await expect(modal).not.toBeVisible();
+        await saveSettings(page);
 
         // Verify storage
         const charAColors = await page.evaluate(() => {
@@ -745,11 +735,7 @@ test.describe('Lua gags colors character switch', () => {
         expect(charBColors, 'GagColorB should have no lua gags colors').toBeNull();
 
         // Open Walka tab for GagColorB — color should be default
-        await page.click('#menu-button');
-        await page.click('#options-button');
-        const modal2 = page.locator('#options-modal');
-        await expect(modal2).toBeVisible();
-        await modal2.locator('button:has-text("Walka")').click();
+        const modal2 = await openSettings(page, 'character-combat');
         await modal2.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
 
         const colorInputB = modal2.locator('input[type="color"]#luaGag-moje_ciosy');

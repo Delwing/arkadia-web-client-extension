@@ -6,6 +6,7 @@ import {
     pushText,
     waitForCommandInput,
 } from './support/mocks';
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 
 const PERSON_NAME = 'Aldous';
 const PERSON_DESCRIPTION = 'wysoki wojownik';
@@ -20,14 +21,7 @@ async function prepareClient(page: Page): Promise<void> {
 }
 
 async function openGuildSettings(page: Page) {
-    await page.click('#menu-button');
-    await page.click('#options-button');
-
-    const optionsModal = page.locator('#options-modal');
-    await expect(optionsModal, 'should open options modal from menu').toBeVisible();
-
-    const guildTab = optionsModal.locator('button', {hasText: 'Gildie'});
-    await guildTab.click();
+    const optionsModal = await openSettings(page, 'character-guilds');
 
     const guildToggle = optionsModal.locator('#guild-CKN');
     await expect(guildToggle, 'should allow enabling guild highlight').toBeEnabled();
@@ -94,7 +88,7 @@ test.describe('People highlights', () => {
         await optionsModal.locator('#guild-CKN').check();
         await optionsModal.locator('#guild-color-enabled-CKN').check();
         await optionsModal.locator('#guild-color-CKN').fill('#00ff00');
-        await optionsModal.locator('#options-save').click();
+        await optionsModal.locator(SETTINGS_SAVE).click();
         await expect(optionsModal, 'should close options modal after enabling highlights').not.toBeVisible();
 
         const allyDescription = await pushAndWaitForHighlight(
@@ -107,7 +101,7 @@ test.describe('People highlights', () => {
 
         const optionsModalSecond = await openGuildSettings(page);
         await optionsModalSecond.locator('#guild-color-CKN').fill('#0000ff');
-        await optionsModalSecond.locator('#options-save').click();
+        await optionsModalSecond.locator(SETTINGS_SAVE).click();
         await expect(optionsModalSecond, 'should close options modal after updating highlight color').not.toBeVisible();
 
         const updatedDescription = await pushAndWaitForHighlight(
@@ -127,7 +121,7 @@ test.describe('People highlights', () => {
         if (await colorToggle.isChecked()) {
             await colorToggle.uncheck();
         }
-        await optionsModalFinal.locator('#options-save').click();
+        await optionsModalFinal.locator(SETTINGS_SAVE).click();
         await expect(optionsModalFinal, 'should close options modal after disabling highlights').not.toBeVisible();
 
         const neutralDescription = await pushAndWaitForNoHighlight(
@@ -145,7 +139,7 @@ test.describe('People highlights', () => {
         await optionsModal.locator('#enemy-guild-CKN').check();
         const guildColorToggle = optionsModal.locator('#guild-color-enabled-CKN');
         await expect(guildColorToggle, 'should prevent manual color selection for enemy highlight').toBeDisabled();
-        await optionsModal.locator('#options-save').click();
+        await optionsModal.locator(SETTINGS_SAVE).click();
         await expect(optionsModal, 'should close options modal after configuring enemy highlight').not.toBeVisible();
 
         const enemyDescription = await pushAndWaitForHighlight(
@@ -158,7 +152,7 @@ test.describe('People highlights', () => {
 
         const optionsModalSecond = await openGuildSettings(page);
         await optionsModalSecond.locator('#enemy-guild-CKN').uncheck();
-        await optionsModalSecond.locator('#options-save').click();
+        await optionsModalSecond.locator(SETTINGS_SAVE).click();
         await expect(optionsModalSecond, 'should close options modal after disabling enemy highlight').not.toBeVisible();
 
         const neutralDescription = await pushAndWaitForNoHighlight(

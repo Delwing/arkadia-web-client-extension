@@ -13,7 +13,7 @@ import {
     setResumeNoticeEnabled,
     shouldReattachAfterClose,
 } from "./proxySession.ts";
-import {OPEN_SETTINGS_EVENT, type OpenSettingsDetail} from "./assistant/openSettings.ts";
+import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
@@ -29,7 +29,7 @@ import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
-import UiSettings from "./uiSettings/UiSettings";
+import SettingsDialog from "./settings/SettingsDialog";
 import {
     getRenderSettings,
     getMapSettings,
@@ -53,7 +53,7 @@ import Binds from "./options/Binds.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
-import CharacterSettings from "./options/CharacterSettings.tsx"
+import {CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory} from "./settings/categories.ts";
 import ExportImport from "./options/ExportImport.tsx"
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
@@ -792,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
     const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
     const exportImportButton = document.getElementById('export-import-button') as HTMLButtonElement | null;
-    const optionsSave = document.getElementById('options-save') as HTMLButtonElement | null;
+    const settingsSave = document.getElementById('settings-save') as HTMLButtonElement | null;
     const disconnectButton = document.getElementById('disconnect-button') as HTMLButtonElement | null;
     const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
     const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
@@ -812,10 +812,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateWakeLockButton();
 
     // Initialize Bootstrap modal
-    const optionsModalElement = document.getElementById('options-modal');
-    const optionsModal = optionsModalElement ? new Modal(optionsModalElement) : null;
-    const uiSettingsModalElement = document.getElementById('ui-settings-modal');
-    const uiSettingsModal = uiSettingsModalElement ? new Modal(uiSettingsModalElement) : null;
+    const settingsModalElement = document.getElementById('settings-modal');
+    const settingsModal = settingsModalElement ? new Modal(settingsModalElement) : null;
     const exportImportModalElement = document.getElementById('export-import-modal');
     const exportImportModal = exportImportModalElement ? new Modal(exportImportModalElement) : null;
     const characterManagementModalElement = document.getElementById('character-management-modal');
@@ -997,8 +995,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('close-options', () => {
         (document.activeElement as HTMLElement)?.blur?.();
-        if (optionsModal) {
-            optionsModal.hide();
+        if (settingsModal) {
+            settingsModal.hide();
         }
         if (exportImportModal) {
             exportImportModal.hide();
@@ -1044,29 +1042,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Header buttons in options modal
-    const optionsExportImportBtn = document.getElementById('options-export-import-btn');
-    const optionsCharactersBtn = document.getElementById('options-characters-btn');
+    // Header buttons in the settings modal
+    const settingsExportImportBtn = document.getElementById('settings-export-import-btn');
+    const settingsCharactersBtn = document.getElementById('settings-characters-btn');
 
-    if (optionsExportImportBtn) {
-        optionsExportImportBtn.addEventListener('click', () => {
+    if (settingsExportImportBtn) {
+        settingsExportImportBtn.addEventListener('click', () => {
             (document.activeElement as HTMLElement)?.blur?.();
-            optionsModal?.hide();
+            settingsModal?.hide();
             setTimeout(() => window.dispatchEvent(new Event('show-export-import')), 150);
         });
     }
 
-    if (optionsCharactersBtn) {
-        optionsCharactersBtn.addEventListener('click', () => {
+    if (settingsCharactersBtn) {
+        settingsCharactersBtn.addEventListener('click', () => {
             window.dispatchEvent(new Event('show-character-management'));
         });
     }
 
-    // Add event listener to options button
-    if (optionsButton && optionsModal) {
+    // "Ustawienia" and "Interfejs" open the same settings dialog, each on its own group.
+    if (optionsButton && settingsModal) {
         optionsButton.addEventListener('click', () => {
-            window.dispatchEvent(new Event('show-general-settings'));
-            optionsModal.show();
+            requestSettingsCategory('character-general');
+            settingsModal.show();
         });
     }
 
@@ -1076,52 +1074,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (optionsSave) {
-        optionsSave.addEventListener('click', () => {
-            window.dispatchEvent(new Event('save-options'));
+    if (settingsSave) {
+        settingsSave.addEventListener('click', () => {
+            window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT));
         });
     }
 
-    // UI settings ("Ustawienia UI") modal — React component in #ui-settings-root.
     const uiSettingsButton = document.getElementById('ui-settings-button') as HTMLButtonElement | null;
-    if (uiSettingsButton && uiSettingsModal) {
+    if (uiSettingsButton && settingsModal) {
         uiSettingsButton.addEventListener('click', () => {
-            uiSettingsModal.show();
+            requestSettingsCategory('ui-appearance');
+            settingsModal.show();
         });
     }
-    const uiSettingsSave = document.getElementById('ui-settings-save') as HTMLButtonElement | null;
-    if (uiSettingsSave) {
-        uiSettingsSave.addEventListener('click', () => {
-            window.dispatchEvent(new Event('save-ui-settings'));
-        });
-    }
-    window.addEventListener('close-ui-settings', () => {
+    window.addEventListener(CLOSE_SETTINGS_EVENT, () => {
         (document.activeElement as HTMLElement)?.blur?.();
-        uiSettingsModal?.hide();
+        settingsModal?.hide();
     });
 
     /**
      * The assistant asking for the panel that holds a setting it may not change
-     * itself (drag-and-drop editors, nested config). The modal instances live in
-     * this scope and are not importable, so the panel reaches them by event —
-     * the same seam `show-general-settings` already uses.
+     * itself (drag-and-drop editors, nested config). The modal instance lives in
+     * this scope and is not importable, so the panel reaches it by event.
      *
      * Only the dialog is opened, never the setting itself: these are exactly the
-     * settings a human is supposed to edit by hand.
+     * settings a human is supposed to edit by hand. SettingsDialog handles the
+     * same event and switches to the page named in it.
      */
-    window.addEventListener(OPEN_SETTINGS_EVENT, event => {
-        const detail = (event as CustomEvent<OpenSettingsDetail>).detail;
-        if (detail?.surface === 'ui') {
-            uiSettingsModal?.show();
-            return;
-        }
-        // Reset to General only when no tab was named. CharacterSettings handles
-        // the same event and switches to the named tab; dispatching this as well
-        // would race it, with the winner decided by listener registration order.
-        if (!detail?.tabLabel) {
-            window.dispatchEvent(new Event('show-general-settings'));
-        }
-        optionsModal?.show();
+    window.addEventListener(OPEN_SETTINGS_EVENT, () => {
+        settingsModal?.show();
     });
 
     if (bindsButton && bindsModal) {
@@ -1530,9 +1511,9 @@ document.addEventListener('DOMContentLoaded', () => {
         suppressTitle: suppressTitleUpdates,
     }));
 
-    const uiSettingsRoot = document.getElementById('ui-settings-root');
-    if (uiSettingsRoot) {
-        createRoot(uiSettingsRoot).render(createElement(UiSettings, {
+    const settingsRoot = document.getElementById('settings-root');
+    if (settingsRoot) {
+        createRoot(settingsRoot).render(createElement(SettingsDialog, {
             soundManager: client.SoundManager,
             onEnableNotifications: () => client.enableNotifications(),
         }));
@@ -1547,11 +1528,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
             }
         });
-    }
-
-    const rootElement = document.getElementById('options');
-    if (rootElement) {
-        createRoot(rootElement).render(createElement(CharacterSettings));
     }
 
     const exportImportRoot = document.getElementById('export-import-root');

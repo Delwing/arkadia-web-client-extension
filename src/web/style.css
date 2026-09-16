@@ -3225,7 +3225,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   font-weight: 500;
 }
 
-#options-modal .modal-dialog,
 #docs-modal .modal-dialog,
 #debug-modal .modal-dialog,
 #aliases-modal .modal-dialog {
@@ -3234,35 +3233,27 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 }
 
 
-.ui-settings-layout,
-.character-settings-layout {
-  display: block;
-}
-
+/* Settings dialog: the shell itself (sidebar, search, page columns) lives in
+   src/web/settings/settingsDialog.css; this only sizes the Bootstrap modal. */
 @media (min-width: 768px) {
-  .ui-settings-layout,
-  .character-settings-layout {
-    column-count: 2;
-    column-gap: 1rem;
-  }
-
-  #ui-settings-modal .modal-dialog,
-  #options-modal .modal-dialog {
-    width: min(960px, 90vw);
+  #settings-modal .modal-dialog {
+    width: min(1100px, 92vw);
     max-width: none;
+    margin-top: 5vh;
+    margin-bottom: 5vh;
   }
 }
 
 @media (min-width: 1400px) {
-  .ui-settings-layout,
-  .character-settings-layout {
-    column-count: 3;
-  }
-
-  #ui-settings-modal .modal-dialog,
-  #options-modal .modal-dialog {
+  #settings-modal .modal-dialog {
     width: min(1400px, 90vw);
-    max-width: none;
+  }
+}
+
+/* Full screen on phones (modal-fullscreen-md-down); lift the global 85% cap. */
+@media (max-width: 767.98px) {
+  #settings-modal .modal-dialog {
+    max-height: none;
   }
 }
 

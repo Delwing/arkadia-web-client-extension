@@ -10,29 +10,14 @@ import {
     waitForOutputContaining,
     getRecentOutput,
 } from './support/mocks';
-
-const MENU_BUTTON = '#menu-button';
-const OPTIONS_BUTTON = '#options-button';
-const OPTIONS_MODAL = '#options-modal';
-const OPTIONS_SAVE_BUTTON = '#options-save';
-const WALKA_TAB_BUTTON = 'button:has-text("Walka")';
+import {openSettings, saveSettings} from './support/settings';
 
 const LUA_GAGS_STORAGE_KEY = 'lua_gags_delete_lines';
 const LUA_GAGS_COLORS_STORAGE_KEY = 'lua_gags_colors';
 const LUA_GAGS_WALKA_CONFIG_STORAGE_KEY = 'lua_gags_walka_config';
 
-async function openOptions(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(OPTIONS_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should open options modal').toBeVisible();
-    return modal;
-}
-
 async function openLuaGagsTab(page: Page) {
-    const modal = await openOptions(page);
-    // Click on "Walka" tab button
-    await modal.locator(WALKA_TAB_BUTTON).click();
+    const modal = await openSettings(page, 'character-combat');
     // Wait for the lua gags section to be visible
     await modal.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
     return modal;
@@ -62,9 +47,7 @@ function getGagResetButton(modal: Locator, gagType: string) {
 }
 
 async function saveOptions(page: Page) {
-    await page.click(OPTIONS_SAVE_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal, 'should close options modal after saving').not.toBeVisible();
+    await saveSettings(page);
 }
 
 async function getStoredLuaGagsDeleteLines(page: Page) {

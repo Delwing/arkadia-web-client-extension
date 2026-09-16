@@ -12,18 +12,15 @@ import {
     waitForCharacter,
     waitForOutputContaining,
 } from './support/mocks';
+import {openSettings, SETTINGS_MODAL} from './support/settings';
 
 async function openOptions(page: Page) {
-    await page.click('#menu-button');
-    await page.click('#options-button');
-    const modal = page.locator('#options-modal');
-    await expect(modal, 'should open options modal').toBeVisible();
-    return modal;
+    return openSettings(page, 'character-combat');
 }
 
 async function closeOptions(page: Page) {
-    await page.locator('#options-modal .btn-close').first().click();
-    await expect(page.locator('#options-modal'), 'options modal should close').not.toBeVisible();
+    await page.locator(`${SETTINGS_MODAL} .btn-close`).first().click();
+    await expect(page.locator(SETTINGS_MODAL), 'settings modal should close').not.toBeVisible();
 }
 
 test.describe('GMCP char.info character handlers', () => {

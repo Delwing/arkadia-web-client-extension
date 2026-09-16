@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, submitCommand, waitForCommandInput} from './support/mocks';
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 
 /**
  * The phone footer (src/web/mobileFooter.ts + footerMobile.css).
@@ -14,10 +15,6 @@ import {ensureGameSocket, pushGmcp, submitCommand, waitForCommandInput} from './
  */
 
 const PHONE = {width: 390, height: 844};
-
-const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_SETTINGS_MODAL = '#ui-settings-modal';
 
 /** A quiet character: a couple of stats worth showing, nothing else. */
 const CALM_STATE = {hp: 5, mana: 6, fatigue: 3, improve: 5};
@@ -43,13 +40,9 @@ async function railOverflow(page: Page, selector: string) {
     }, selector);
 }
 
+/** On a phone the dialog swaps its sidebar for a page select, which the helper uses. */
 async function openFooterSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_SETTINGS_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    await modal.getByRole('button', {name: 'Stopka', exact: true}).click();
-    return modal;
+    return openSettings(page, 'ui-footer');
 }
 
 test.describe('Mobile footer', () => {
@@ -155,7 +148,7 @@ test.describe('Mobile footer', () => {
 
         const modal = await openFooterSettings(page);
         await modal.locator('#ui-mobile-footer-expand').selectOption('expanded');
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
         await expect(page.locator('#footer-expand'), 'nothing left to press').toBeHidden();
@@ -165,7 +158,7 @@ test.describe('Mobile footer', () => {
 
         const back = await openFooterSettings(page);
         await back.locator('#ui-mobile-footer-expand').selectOption('collapsed');
-        await back.locator('#ui-settings-save').click();
+        await back.locator(SETTINGS_SAVE).click();
         await expect(back).not.toBeVisible();
 
         await expect(page.locator('#footer-expand'), 'still nothing to press').toBeHidden();
@@ -182,7 +175,7 @@ test.describe('Mobile footer', () => {
 
         const modal = await openFooterSettings(page);
         await modal.locator('#ui-mobile-footer-compact').uncheck();
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
         await expect(page.locator('.char-state-bar--mini'), 'no compact meters once switched off').toHaveCount(0);
@@ -255,14 +248,11 @@ test.describe('Bind shortcut hints without a keyboard', () => {
         const hint = page.locator('#multi-binds .multi-bind').first().locator('.multi-bind-key');
         await expect(hint).toHaveCount(0);
 
-        await page.click(MENU_BUTTON);
-        await page.click(UI_SETTINGS_BUTTON);
-        const modal = page.locator(UI_SETTINGS_MODAL);
-        await expect(modal).toBeVisible();
         // The bind-row settings live beside "Zawsze pokazuj pasek multibindow"
-        // on the tab the modal opens on.
+        // on the Komendy page.
+        const modal = await openSettings(page, 'ui-commands');
         await modal.locator('#ui-multibind-key-hints').selectOption('always');
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
         await expect(hint).toHaveText('[ALT+1]');

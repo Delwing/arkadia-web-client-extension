@@ -1,11 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
-
-const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
-const SAVE_BUTTON = '#ui-settings-save';
+import {openSettings, saveSettings} from './support/settings';
 
 // IDs used by the BarOrderSettings React component (no 'ui-' prefix)
 const AVB_ALL = '#avb-all';
@@ -27,20 +23,15 @@ const ALL_AVB_IDS = [
 ];
 
 async function openUiSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    await modal.getByRole('button', {name: 'Stopka', exact: true}).click();
+    const modal = await openSettings(page, 'ui-footer');
     // Wait for the bar-order React component to mount
     await modal.locator('#ui-bar-order-settings').waitFor({state: 'visible'});
     await modal.locator(AVB_ALL).waitFor({state: 'visible'});
     return modal;
 }
 
-async function saveAndClose(_page: Page, modal: ReturnType<Page['locator']>) {
-    await modal.locator(SAVE_BUTTON).click();
-    await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
+async function saveAndClose(page: Page, _modal: ReturnType<Page['locator']>) {
+    await saveSettings(page);
 }
 
 // Push a char.state GMCP packet and wait briefly for the DOM to update.

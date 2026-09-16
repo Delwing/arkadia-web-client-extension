@@ -3,95 +3,95 @@
   "settings": {
     "character.settings.guilds": {
       "label": "Moje gildie",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie",
       "note": "Lista gildii, do ktorych nalezy postac. Zapisywana z zakladki Gildie."
     },
     "character.settings.enemyGuilds": {
       "label": "Gildie wrogie",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie",
       "note": "Czlonkowie tych gildii sa traktowani jako wrogowie (kolorowanie, bindy wrogow)."
     },
     "character.settings.allyGuilds": {
       "label": "Gildie sojusznicze",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie"
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie"
     },
     "character.settings.guildColors": {
       "label": "Kolory gildii",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Gildie",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie",
       "note": "Mapa nazwaGildii -> kolor hex uzywany przy kolorowaniu postaci."
     },
     "character.settings.enemyBindsKeepUnchanged": {
       "label": "Nie zmieniaj przypisanych wrogow",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
       "control": "checkbox"
     },
     "character.settings.enemyBindsShowMode": {
       "label": "Wyświetlanie bindów wrogów",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
       "control": "select"
     },
     "character.settings.enemyBindsEnabledSlots": {
       "label": "Włączone sloty bindów wrogów (F1-F3)",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Bindy wrogów",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
       "control": "list",
       "note": "Trzy wartosci logiczne, po jednej na slot F1-F3, np. [true, false, true]. Dlugosc musi wynosic dokladnie 3."
     },
     "character.settings.favoriteMagicTypes": {
       "label": "Ulubione magiki",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki"
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki"
     },
     "character.settings.favoriteMagicKeys": {
       "label": "Ulubione klucze magiczne",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki"
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki"
     },
     "character.settings.magicsColor": {
       "label": "Kolor magików",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki → Kolory",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki → Kolory",
       "control": "color"
     },
     "character.settings.magicKeysColor": {
       "label": "Kolor kluczy magicznych",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Magiki → Kolory",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki → Kolory",
       "control": "color"
     },
     "character.settings.shortExitsPrefix": {
       "label": "Przedrostek skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
       "control": "text",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     "character.settings.shortExitsColor": {
       "label": "Kolor skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
       "control": "color",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     "character.settings.shortExitsSeparator": {
       "label": "Separator skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
       "control": "text",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     "character.settings.shortExitsBackgroundColor": {
       "label": "Kolor tła skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Wyjścia",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
       "control": "color",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`. Wartosc 'transparent' wylacza tlo."
     },
     "character.settings.collectOverrides": {
       "label": "Wyjątki zbierania dla wrogów",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów",
       "control": "complex",
       "note": "Edytowane w podoknie 'Wyjatki'. Kazdy wpis nadpisuje ustawienia zbierania dla jednego typu przeciwnika."
     },
     "character.settings.languageAliases": {
       "label": "Aliasy języków",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Język",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Język",
       "control": "complex"
     },
     "character.settings.collectExtra": {
       "label": "Dodatkowe przedmioty do zbierania",
-      "uiLocation": "Menu (⋮) → Ustawienia (Opcje) → Ogólne → Zbieranie przedmiotów",
+      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów",
       "control": "list"
     },
     "character.settings.zlomSilver": {
@@ -119,26 +119,26 @@
     },
     "ui.uiSettings.showCombatTimer": {
       "label": "Pokazuj licznik walki",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki"
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki"
     },
     "ui.uiSettings.showTransportLabel": {
       "label": "Pokazuj etykietę transportu",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki"
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki"
     },
     "ui.uiSettings.footerComponents": {
       "label": "Elementy stopki",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki",
       "control": "complex",
       "note": "Kolejnosc i widocznosc kafelkow stopki; przeciaganie na liscie."
     },
     "ui.uiSettings.barOrder": {
       "label": "Kolejność pasków stanu",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Stan postaci",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci",
       "control": "complex"
     },
     "ui.uiSettings.alwaysVisibleBars": {
       "label": "Zawsze widoczne paski stanu",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Stan postaci",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci",
       "control": "complex"
     },
     "ui.uiSettings.showButtons": {
@@ -147,24 +147,24 @@
     },
     "ui.renderSettings.soundCategories": {
       "label": "Dźwięki kategorii",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Dźwięk",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
       "control": "complex",
       "note": "Mapa kategoria -> klucz dzwieku. null = kategoria wyciszona, brak klucza = domyslny beep."
     },
     "ui.renderSettings.customBeepSoundKey": {
       "label": "Własny dźwięk beep",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Dźwięk",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
       "control": "select"
     },
     "ui.renderSettings.customThemeColor": {
       "label": "Kolor własnego motywu",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Wygląd",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd",
       "control": "color",
       "note": "Uzywane tylko gdy colorTheme = 'custom-dark'."
     },
     "ui.behaviorSettings.objectContextMenuCommands": {
       "label": "Komendy menu kontekstowego obiektów",
-      "uiLocation": "Menu (⋮) → Interfejs (Ustawienia UI) → Ogólne → Okno wyjścia i lista obiektów",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów",
       "control": "list"
     },
     "ui.shellSettings.hapticFeedback": {
@@ -173,7 +173,7 @@
     },
     "ui.behaviorSettings.pushOnlyWhenHidden": {
       "label": "Wysylaj powiadomienia push tylko gdy karta jest ukryta",
-      "uiLocation": "Menu (⋮) → Ustawienia interfejsu → Powiadomienia",
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
       "control": "checkbox",
       "note": "Domyslnie wylaczone, czyli powiadomienia na sparowane urzadzenia sa wysylane niezaleznie od tego, czy karta klienta jest aktywna. Wlaczenie wstrzymuje je, gdy gracz patrzy na klienta."
     }

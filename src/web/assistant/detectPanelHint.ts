@@ -12,7 +12,7 @@
  * So the trigger is the answer text, not the proposal list. The bundle gives the
  * model navigation paths like
  *
- *   Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki
+ *   Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki
  *
  * and the model quotes them back nearly verbatim, because that is what it was
  * given. Matching the answer against the same catalog needs nothing from the
@@ -49,14 +49,15 @@ function normalize(text: string): string {
 /**
  * Whether the button could actually take the user there.
  *
- * Only the two settings dialogs are wired to the open-settings event. A handful
+ * Only the settings dialog is wired to the open-settings event. A handful
  * of catalog entries point somewhere else entirely — `Menu (⋮) → Przyciski`, or
  * the output window's right-click menu — and offering "Otworz ustawienia" for
  * those would open the wrong dialog, which is worse than offering nothing. The
  * card's text still names the real place.
  */
 function isNavigable(uiLocation: string): boolean {
-    return uiLocation.includes('Ustawienia (Opcje)') || uiLocation.includes('Interfejs');
+    const parts = uiLocation.split('→').map(part => part.trim());
+    return parts[1] === 'Ustawienia' && parts.length > 3;
 }
 
 /** The most specific tail of a path, e.g. "Stopka → Elementy stopki". */

@@ -74,6 +74,7 @@ function ObjectContextMenuEditor({ commands, onChange }: ObjectContextMenuEditor
                 </span>
             ))}
             <span
+                data-settings-ignore
                 className={isTyping
                     ? 'badge bg-secondary d-inline-flex align-items-center context-menu-input-wrapper'
                     : 'context-menu-input-wrapper d-inline-flex align-items-center'}

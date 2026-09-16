@@ -7,6 +7,7 @@ import {
     submitCommand,
     waitForCommandInput,
 } from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
 async function prepareClient(page: Page): Promise<void> {
     await page.goto('/');
@@ -23,18 +24,14 @@ async function openChatPopup(page: Page): Promise<void> {
 }
 
 async function enableLayoutManager(page: Page): Promise<void> {
-    await page.click('#menu-button');
-    await page.click('#ui-settings-button');
-    const modal = page.locator('#ui-settings-modal');
-    await expect(modal).toBeVisible();
+    const modal = await openSettings(page, 'ui-windows');
 
     const layoutToggle = modal.locator('#ui-layout-manager-enabled');
     if (!(await layoutToggle.isChecked())) {
         await layoutToggle.check();
     }
 
-    await modal.locator('#ui-settings-save').click();
-    await expect(modal).not.toBeVisible();
+    await saveSettings(page);
 
     // Wait for layout manager to be enabled
     await page.waitForFunction(() => document.body.classList.contains('layout-manager-enabled'));

@@ -5,7 +5,7 @@ import { useEffect, type ReactNode } from "react";
  *
  * Panels under `src/web/options` and `src/web/uiSettings` are mounted inside
  * stock's Bootstrap-driven modals (`#scripts-modal`, `#binds-modal`,
- * `#export-import-modal`, `#ui-settings-modal`) and, under forge, inside
+ * `#export-import-modal`, `#settings-modal`) and, under forge, inside
  * `.forge-menu-modal`. A react-bootstrap `<Modal>` cannot be used for their
  * sub-dialogs: it portals to `document.body`, and the two focus managers then
  * fight over the portaled node — Bootstrap's FocusTrap pulls focus back into

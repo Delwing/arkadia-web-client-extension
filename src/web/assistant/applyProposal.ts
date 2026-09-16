@@ -76,7 +76,7 @@ function applySettingChange(proposal: SettingChangeProposal): ApplyResult {
 
     if (descriptor.scope === 'settings') {
         // Read-modify-write of the whole blob is mandatory: TypedStorage.set
-        // replaces the value. Mirrors CharacterSettings.tsx.
+        // replaces the value. Mirrors useCharacterSettingsPages.tsx.
         const current = characterStorage.get('settings') ?? ({} as Settings);
         characterStorage.set('settings', {
             ...current,

@@ -110,7 +110,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
         },
     });
 
-    const optionsModal = page.locator('#options-modal');
+    const optionsModal = page.locator('#settings-modal');
     await page.click('#menu-button');
     await page.click('#options-button');
     await expect(optionsModal, 'should open options modal').toBeVisible();
@@ -119,7 +119,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
     await expect(packageHelperToggle, 'should enable package helper by default').toBeChecked();
     await packageHelperToggle.uncheck();
 
-    await optionsModal.locator('#options-save').click();
+    await optionsModal.locator('#settings-save').click();
     await expect(optionsModal, 'should close options modal after saving').not.toBeVisible();
 
     await pushText(page, BOARD_TEXT);
@@ -183,7 +183,7 @@ test('Package helper works after being disabled and re-enabled', async ({page}) 
     });
 
     // Disable package helper
-    const optionsModal = page.locator('#options-modal');
+    const optionsModal = page.locator('#settings-modal');
     await page.click('#menu-button');
     await page.click('#options-button');
     await expect(optionsModal, 'should open options modal').toBeVisible();
@@ -191,7 +191,7 @@ test('Package helper works after being disabled and re-enabled', async ({page}) 
     const packageHelperToggle = optionsModal.locator('#packageHelper');
     await expect(packageHelperToggle, 'should be enabled by default').toBeChecked();
     await packageHelperToggle.uncheck();
-    await optionsModal.locator('#options-save').click();
+    await optionsModal.locator('#settings-save').click();
     await expect(optionsModal, 'should close modal after disabling').not.toBeVisible();
 
     // Verify disabled — push board text, no annotations
@@ -211,7 +211,7 @@ test('Package helper works after being disabled and re-enabled', async ({page}) 
 
     await expect(packageHelperToggle, 'should be unchecked after disabling').not.toBeChecked();
     await packageHelperToggle.check();
-    await optionsModal.locator('#options-save').click();
+    await optionsModal.locator('#settings-save').click();
     await expect(optionsModal, 'should close modal after re-enabling').not.toBeVisible();
 
     // Push board text again — should show annotations now
@@ -249,13 +249,13 @@ test('Package helper stays disabled after page reload', async ({page}) => {
     });
 
     // Disable package helper
-    const optionsModal = page.locator('#options-modal');
+    const optionsModal = page.locator('#settings-modal');
     await page.click('#menu-button');
     await page.click('#options-button');
     await expect(optionsModal, 'should open options modal').toBeVisible();
 
     await optionsModal.locator('#packageHelper').uncheck();
-    await optionsModal.locator('#options-save').click();
+    await optionsModal.locator('#settings-save').click();
     await expect(optionsModal, 'should close modal after disabling').not.toBeVisible();
 
     // Reload the page

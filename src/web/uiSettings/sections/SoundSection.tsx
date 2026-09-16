@@ -3,8 +3,9 @@ import type { SoundCategory } from "@shared/events/clientEvents.ts";
 import { saveCustomSounds, type CustomSound } from "@modules/core/customSounds";
 import type { UiSettings } from "../../uiSettingsCore";
 import { ALL_SOUND_CATEGORIES } from "../../uiSettingsCore";
+import { SettingsSection } from "../fields";
 
-interface SoundTabProps {
+interface SoundSectionProps {
     draft: UiSettings;
     update: (patch: Partial<UiSettings>) => void;
     customSounds: CustomSound[];
@@ -34,7 +35,7 @@ const CATEGORY_HINTS: Partial<Record<SoundCategory, string>> = {
 
 type UploadTarget = { type: 'beep' } | { type: 'category'; cat: SoundCategory };
 
-function SoundTab({ draft, update, customSounds, onCustomSoundsChange, previewKey, onManage }: SoundTabProps) {
+function SoundSection({ draft, update, customSounds, onCustomSoundsChange, previewKey, onManage }: SoundSectionProps) {
     const fileRef = useRef<HTMLInputElement>(null);
     const pendingTarget = useRef<UploadTarget | null>(null);
 
@@ -116,7 +117,7 @@ function SoundTab({ draft, update, customSounds, onCustomSoundsChange, previewKe
     };
 
     return (
-        <>
+        <SettingsSection title="Dźwięki" full>
             <div>
                 <label className="form-label" htmlFor="ui-custom-beep-sound">Własny dźwięk beep</label>
                 <select id="ui-custom-beep-sound" className="form-select" value={draft.customBeepSoundKey || ''} onChange={(e) => onBeepSelect(e.target.value)}>
@@ -161,8 +162,8 @@ function SoundTab({ draft, update, customSounds, onCustomSoundsChange, previewKe
             </div>
             <input ref={fileRef} id="ui-sound-category-file" type="file" accept="audio/*" style={{ display: 'none' }} onChange={onFileChange} />
             <button type="button" className="btn btn-secondary btn-sm align-self-start" id="ui-manage-sounds-button" onClick={onManage}>Zarządzaj dźwiękami</button>
-        </>
+        </SettingsSection>
     );
 }
 
-export default SoundTab;
+export default SoundSection;

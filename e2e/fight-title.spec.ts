@@ -1,17 +1,10 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
-
-const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
-const UI_MODAL = '#ui-settings-modal';
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 
 async function openUiSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(UI_SETTINGS_BUTTON);
-    const modal = page.locator(UI_MODAL);
-    await expect(modal, 'should open UI settings modal').toBeVisible();
-    return modal;
+    return openSettings(page, 'ui-other');
 }
 
 test.describe('Fight title icon', () => {
@@ -80,7 +73,7 @@ test.describe('Fight title icon', () => {
         if (await checkbox.isChecked()) {
             await checkbox.uncheck();
         }
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
 
         // Get the base title without prefix
@@ -112,7 +105,7 @@ test.describe('Fight title icon', () => {
         if (await checkbox.isChecked()) {
             await checkbox.uncheck();
         }
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'should close UI settings modal').not.toBeVisible();
 
         // Enter combat while setting is disabled
@@ -124,7 +117,7 @@ test.describe('Fight title icon', () => {
         modal = await openUiSettings(page);
         checkbox = modal.locator('#ui-fight-title-icon');
         await checkbox.check();
-        await modal.locator('#ui-settings-save').click();
+        await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'should close UI settings modal after saving').not.toBeVisible();
 
         // Title should now show combat icon since we're still in combat

@@ -1,0 +1,158 @@
+import {expect, test} from './support/fixtures';
+import type {Page} from '@playwright/test';
+import {ensureGameSocket, waitForCommandInput} from './support/mocks';
+import {
+    goToSettingsPage,
+    openSettings,
+    SETTINGS_MODAL,
+    waitForSettingsModalClosed,
+    waitForSettingsModalShown,
+} from './support/settings';
+
+/**
+ * The single settings dialog: character ("Ustawienia") and UI ("Interfejs")
+ * settings share one Bootstrap modal with a page sidebar, a search box and one
+ * Save button.
+ */
+
+const settingsPage = (page: Page, category: string) =>
+    page.locator(`${SETTINGS_MODAL} .settings-page[data-settings-category="${category}"]`);
+
+const navItem = (page: Page, category: string) =>
+    page.locator(`${SETTINGS_MODAL} .settings-dialog__nav-item[data-settings-category="${category}"]`);
+
+async function boot(page: Page) {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+}
+
+async function closeWithoutSaving(page: Page) {
+    await page.locator(`${SETTINGS_MODAL} .btn-close`).click();
+    await expect(page.locator(SETTINGS_MODAL), 'settings modal should close').not.toBeVisible();
+    await waitForSettingsModalClosed(page);
+}
+
+test.describe('Settings dialog', () => {
+    test('both menu items open the same dialog on their own page', async ({page}) => {
+        await boot(page);
+        const modal = page.locator(SETTINGS_MODAL);
+
+        await page.click('#menu-button');
+        await page.click('#options-button');
+        await waitForSettingsModalShown(page);
+        await expect(page.locator('.modal.show'), 'only one settings modal is open').toHaveCount(1);
+        await expect(modal.locator('.modal-title')).toHaveText('Ustawienia');
+        await expect(settingsPage(page, 'character-general'), 'Ustawienia opens on Postac > Ogolne').toBeVisible();
+        await expect(navItem(page, 'character-general')).toHaveClass(/settings-dialog__nav-item--active/);
+        await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
+        await closeWithoutSaving(page);
+
+        await page.click('#menu-button');
+        await page.click('#ui-settings-button');
+        await waitForSettingsModalShown(page);
+        await expect(page.locator('.modal.show'), 'only one settings modal is open').toHaveCount(1);
+        await expect(modal.locator('.modal-title')).toHaveText('Ustawienia');
+        await expect(settingsPage(page, 'ui-appearance'), 'Interfejs opens on Interfejs > Wyglad').toBeVisible();
+        await expect(navItem(page, 'ui-appearance')).toHaveClass(/settings-dialog__nav-item--active/);
+        await expect(settingsPage(page, 'character-general')).toBeHidden();
+
+        // Both groups are reachable from the one sidebar.
+        await goToSettingsPage(page, 'character-combat');
+        await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
+    });
+
+    test('search shows matching sections across pages and Escape clears it', async ({page}) => {
+        await boot(page);
+        const modal = await openSettings(page, 'ui-appearance');
+        const search = modal.locator('#settings-search');
+
+        await search.fill('kolor tla');
+
+        await expect(settingsPage(page, 'ui-appearance'), 'Wyglad has a matching section').toBeVisible();
+        await expect(settingsPage(page, 'ui-map'), 'Mapa has a matching section').toBeVisible();
+        await expect(modal.locator('#ui-output-background')).toBeVisible();
+        await expect(modal.locator('#ui-map-background-color')).toBeVisible();
+        // Only the matching section of a page is shown, not the whole page.
+        await expect(modal.locator('#ui-map-scale'), 'non-matching Mapa section is hidden').toBeHidden();
+        // Pages without a match are hidden.
+        await expect(settingsPage(page, 'ui-commands')).toBeHidden();
+        await expect(settingsPage(page, 'ui-footer')).toBeHidden();
+        await expect(settingsPage(page, 'character-combat')).toBeHidden();
+
+        await search.press('Escape');
+        await expect(search, 'Escape clears the query').toHaveValue('');
+        await expect(modal, 'Escape in a non-empty search does not close the dialog').toHaveClass(/\bshow\b/);
+        await expect(modal).toBeVisible();
+        await expect(settingsPage(page, 'ui-appearance'), 'back on the page that was open').toBeVisible();
+        await expect(settingsPage(page, 'ui-map')).toBeHidden();
+        await expect(modal.locator('#ui-map-scale')).toBeHidden();
+    });
+
+    test('marks a page with a list edit, and clears it when the list is back as it was', async ({page}) => {
+        await boot(page);
+        const modal = await openSettings(page, 'ui-windows');
+        const dot = navItem(page, 'ui-windows').locator('.settings-dialog__dirty');
+        const input = modal.locator('#ui-object-context-menu-input');
+
+        await input.fill('obejrzyj');
+        await expect(dot, 'typing into the add field is not a change yet').toHaveCount(0);
+        await input.press('Enter');
+        const badge = modal.locator('.context-menu-badge', {hasText: 'obejrzyj'});
+        await expect(badge).toBeVisible();
+        await expect(dot, 'adding a command is a change').toBeVisible();
+
+        await badge.click();
+        await expect(badge).toHaveCount(0);
+        await expect(dot, 'removing it again leaves nothing unsaved').toHaveCount(0);
+    });
+
+    test('marks pages with unsaved changes until the dialog is reopened', async ({page}) => {
+        await boot(page);
+        let modal = await openSettings(page, 'ui-other');
+        const checkbox = modal.locator('#ui-haptic-feedback');
+        const initiallyChecked = await checkbox.isChecked();
+        const dot = navItem(page, 'ui-other').locator('.settings-dialog__dirty');
+
+        await expect(dot).toHaveCount(0);
+        await checkbox.setChecked(!initiallyChecked);
+        await expect(dot, 'toggling a checkbox marks the page as unsaved').toBeVisible();
+        await expect(navItem(page, 'ui-appearance').locator('.settings-dialog__dirty')).toHaveCount(0);
+
+        await checkbox.setChecked(initiallyChecked);
+        await expect(dot, 'setting the value back clears the marker').toHaveCount(0);
+
+        await checkbox.setChecked(!initiallyChecked);
+        await expect(dot).toBeVisible();
+
+        await closeWithoutSaving(page);
+
+        modal = await openSettings(page, 'ui-other');
+        await expect(dot, 'reopening drops the unsaved marker').toHaveCount(0);
+        await expect(
+            modal.locator('#ui-haptic-feedback'),
+            'closing without saving discards the change',
+        ).toBeChecked({checked: initiallyChecked});
+    });
+});
+
+test.describe('Settings dialog on a phone', () => {
+    test.use({viewport: {width: 390, height: 844}});
+
+    test('swaps the sidebar for a page select', async ({page}) => {
+        await boot(page);
+        await page.click('#menu-button');
+        await page.click('#ui-settings-button');
+        await waitForSettingsModalShown(page);
+        const modal = page.locator(SETTINGS_MODAL);
+
+        const select = modal.locator('#settings-category-select');
+        await expect(select, 'narrow dialog shows the page select').toBeVisible();
+        await expect(modal.locator('.settings-dialog__nav'), 'and hides the sidebar').toBeHidden();
+        await expect(select).toHaveValue('ui-appearance');
+
+        await select.selectOption('ui-map');
+        await expect(settingsPage(page, 'ui-map')).toBeVisible();
+        await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
+    });
+});

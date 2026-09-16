@@ -1,23 +1,14 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, primeCharInfo, pushText, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
-
-const MENU_BUTTON = '#menu-button';
-const OPTIONS_BUTTON = '#options-button';
-const OPTIONS_MODAL = '#options-modal';
-const OPTIONS_SAVE_BUTTON = '#options-save';
+import {openSettings, saveSettings} from './support/settings';
 
 async function openOptions(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(OPTIONS_BUTTON);
-    const modal = page.locator(OPTIONS_MODAL);
-    await expect(modal).toBeVisible();
-    return modal;
+    return openSettings(page, 'character-magics');
 }
 
 async function saveOptions(page: Page) {
-    await page.click(OPTIONS_SAVE_BUTTON);
-    await expect(page.locator(OPTIONS_MODAL)).not.toBeVisible();
+    await saveSettings(page);
 }
 
 test.describe('Magic and key highlights', () => {
@@ -63,7 +54,6 @@ test.describe('Magic and key highlights', () => {
         await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'ColorHero');
 
         const modal = await openOptions(page);
-        await modal.getByRole('button', {name: 'Magiki'}).click();
         await modal.locator('#magics-color').evaluate((el: HTMLInputElement) => {
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
             nativeInputValueSetter.call(el, '#ff0000');
@@ -89,7 +79,6 @@ test.describe('Magic and key highlights', () => {
         await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'KeyColorHero');
 
         const modal = await openOptions(page);
-        await modal.getByRole('button', {name: 'Magiki'}).click();
         await modal.locator('#magic-keys-color').evaluate((el: HTMLInputElement) => {
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
             nativeInputValueSetter.call(el, '#0000ff');

@@ -6,6 +6,7 @@ import {
     waitForMapReady,
 } from './support/mocks';
 import type { Page } from '@playwright/test';
+import { openSettings, saveSettings } from './support/settings';
 
 const STATIC_MAP = '.static-map-popup';
 const FLOATING_MAP = `.floating-panel--popup${STATIC_MAP}`;
@@ -19,28 +20,14 @@ async function boot(page: Page): Promise<void> {
 }
 
 async function openUiSettingsModal(page: Page): Promise<void> {
-    await page.waitForFunction(() => {
-        const el = document.getElementById('ui-settings-modal');
-        return !el || window.getComputedStyle(el).display === 'none';
-    });
-    await page.click('#menu-button');
-    await page.waitForSelector('#menu-button + .dropdown-menu.show', { timeout: 5000 });
-    await page.click('#ui-settings-button');
-    await page.waitForSelector('#ui-settings-modal.show', { timeout: 5000 });
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#ui-settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
+    await openSettings(page, 'ui-windows');
 }
 
 async function enableLayoutManager(page: Page): Promise<void> {
     await openUiSettingsModal(page);
     const toggle = page.locator('#ui-layout-manager-enabled');
     if (!(await toggle.isChecked())) await toggle.click();
-    await page.click('#ui-settings-save');
-    await page.waitForSelector('#ui-settings-modal.show', { state: 'hidden', timeout: 5000 });
+    await saveSettings(page);
     await page.waitForFunction(() => document.body.classList.contains('layout-manager-enabled'));
 }
 

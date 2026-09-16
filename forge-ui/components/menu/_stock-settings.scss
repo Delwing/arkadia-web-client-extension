@@ -11,32 +11,14 @@
 //  that floatingPopup.css already defines on `.forge-menu-modal`, so no colours
 //  are hard-coded here — the copy stays faithful to stock and recolours for free.
 //
-//  The only omissions vs stock are the `#ui-settings-modal .modal-dialog` /
-//  `#options-modal .modal-dialog` width rules: forge sizes the shell itself via
-//  `.forge-menu-modal--xl` (menu.css), so those id rules don't apply here.
+//  The only omission vs stock is the `#settings-modal .modal-dialog` sizing:
+//  forge sizes the shell itself via `.forge-menu-modal--xl` (menu.css). The
+//  dialog shell (sidebar, search, page columns) is not copied either — it ships
+//  as settingsDialog.css with the component and is namespaced, so both hosts
+//  load it as-is.
 //  (`@keyframes spin`, referenced by the map version badge, lives at the top
 //  level of forge-modal-bootstrap.scss — keyframes can't be nested in a rule.)
 // ============================================================
-
-.ui-settings-layout,
-.character-settings-layout {
-    display: block;
-}
-
-@media (min-width: 768px) {
-    .ui-settings-layout,
-    .character-settings-layout {
-        column-count: 2;
-        column-gap: 1rem;
-    }
-}
-
-@media (min-width: 1400px) {
-    .ui-settings-layout,
-    .character-settings-layout {
-        column-count: 3;
-    }
-}
 
 .ui-settings-section,
 .character-settings-section {

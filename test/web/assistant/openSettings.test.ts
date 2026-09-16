@@ -8,10 +8,10 @@
  * model had found the right setting and said the right thing in prose, and the
  * line gave the user nothing to do about it.
  *
- * They now render a card with a button that opens the owning dialog. Two things
- * have to hold for that button to go anywhere, and both are checked here:
+ * They now render a card with a button that opens the settings dialog. Two
+ * things have to hold for that button to go anywhere, and both are checked here:
  * the settings key has to survive validation failure, and it has to route to the
- * right one of the two settings dialogs.
+ * right group and page of the dialog.
  */
 
 import { describe, expect, it, vi, afterEach } from 'vitest';
@@ -23,6 +23,7 @@ import {
     tabLabelOf,
     type OpenSettingsDetail,
 } from '@web/assistant/openSettings.ts';
+import { SETTINGS_GROUP_LABELS, settingsCategoryByLabel } from '@web/settings/categories.ts';
 import bundleJson from '../../../public/assistant-kb.json';
 import type { KnowledgeBundle } from '@shared/assistant/knowledgeBundle.ts';
 import { validateProposal } from '@modules/core/assistant/proposalValidator.ts';
@@ -90,56 +91,48 @@ describe('surfaceFor', () => {
 });
 
 describe('tabLabelOf', () => {
-    it('takes the tab from a navigation path', () => {
-        // Opening the dialog was not enough — it landed on whatever tab it was
-        // last on. The path names the tab, and both dialogs put it third.
-        expect(tabLabelOf('Menu (⋮) → Interfejs (Ustawienia UI) → Stopka → Elementy stopki'))
+    it('takes the page from a navigation path', () => {
+        // Opening the dialog was not enough — it landed on whatever page it was
+        // last on. The path names the page, always as the fourth segment.
+        expect(tabLabelOf('Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki'))
             .toBe('Stopka');
-        expect(tabLabelOf('Menu (⋮) → Ustawienia (Opcje) → Ogolne → Walka'))
-            .toBe('Ogolne');
+        expect(tabLabelOf('Menu (⋮) → Ustawienia → Postać → Ogólne → Język'))
+            .toBe('Ogólne');
     });
 
-    it('is undefined for a path with no tab segment', () => {
+    it('is undefined for a path with no page segment', () => {
         expect(tabLabelOf(undefined)).toBeUndefined();
-        expect(tabLabelOf('Menu (⋮) → Interfejs (Ustawienia UI)')).toBeUndefined();
+        expect(tabLabelOf('Menu (⋮) → Ustawienia → Interfejs')).toBeUndefined();
     });
 
-    it('agrees with the tab labels the character options dialog renders', () => {
-        // Same check as the UI one below: a path naming a tab the dialog does not
-        // have would open on the wrong tab, silently.
-        const RENDERED_CHARACTER_TABS = ['Ogólne', 'Gildie', 'Walka', 'Bindy wrogów', 'Magiki'];
-        const tabs = new Set(
-            bundleSettings
-                .filter(s => s.uiLocation?.includes('Ustawienia (Opcje)'))
-                .map(s => tabLabelOf(s.uiLocation))
-                .filter((label): label is string => Boolean(label)),
-        );
-        expect(tabs.size).toBeGreaterThan(0);
-        for (const label of tabs) {
-            expect(RENDERED_CHARACTER_TABS, `path names tab "${label}"`).toContain(label);
+    it('resolves a section that shares its name with a page to the parent page', () => {
+        // "Walka" is both a page and a section on it; "Inne" likewise. Taking the
+        // fourth segment keeps the section name from being read as the page.
+        expect(tabLabelOf('Menu (⋮) → Ustawienia → Postać → Walka → Walka')).toBe('Walka');
+        expect(tabLabelOf('Menu (⋮) → Ustawienia → Interfejs → Inne → Inne')).toBe('Inne');
+    });
+
+    it('agrees with the pages the settings dialog renders, in the right group', () => {
+        // The dialog looks the label up in its category list. A path naming a
+        // page it does not have, or one from the other group, would open the
+        // dialog on the wrong page with no error.
+        const paths = bundleSettings
+            .map(s => s.uiLocation)
+            .filter((loc): loc is string => Boolean(loc?.startsWith('Menu (⋮) → Ustawienia →')));
+        expect(paths.length).toBeGreaterThan(40);
+        for (const loc of paths) {
+            const page = settingsCategoryByLabel(tabLabelOf(loc));
+            expect(page, `path "${loc}" names no page`).toBeDefined();
+            const group = loc.split('→').map(part => part.trim())[2];
+            expect(SETTINGS_GROUP_LABELS[page!.group], `path "${loc}"`).toBe(group);
         }
     });
 
-    it('resolves a section that shares its name with a tab to the parent tab', () => {
-        // "Walka" is both a tab and a section inside Ogolne. Taking the third
-        // segment is what keeps `Ogolne -> Walka` off the Walka tab.
-        expect(tabLabelOf('Menu (⋮) → Ustawienia (Opcje) → Ogólne → Walka')).toBe('Ogólne');
-    });
-
-    it('agrees with the tab labels the UI settings dialog actually renders', () => {
-        // The dialog maps this label to its own private tab id. If a path ever
-        // named a tab the dialog does not have, the button would open the dialog
-        // on the wrong tab with no error.
-        const RENDERED_UI_TABS = ['Ogólne', 'Stopka', 'Mapa', 'Dźwięk'];
-        const uiTabs = new Set(
-            bundleSettings
-                .filter(s => s.uiLocation?.includes('Interfejs'))
-                .map(s => tabLabelOf(s.uiLocation))
-                .filter((label): label is string => Boolean(label)),
-        );
-        for (const label of uiTabs) {
-            expect(RENDERED_UI_TABS, `path names tab "${label}"`).toContain(label);
-        }
+    it('covers both groups', () => {
+        const groups = new Set(bundleSettings
+            .map(s => settingsCategoryByLabel(tabLabelOf(s.uiLocation))?.group)
+            .filter(Boolean));
+        expect([...groups].sort()).toEqual(['character', 'ui']);
     });
 });
 

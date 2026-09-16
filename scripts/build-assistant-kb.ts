@@ -28,6 +28,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
+import { SETTINGS_CATEGORIES, SETTINGS_GROUP_LABELS, type SettingsCategoryKey } from '../src/web/settings/categories.ts';
 import { KB_FORMAT_VERSION, PROPOSAL_KINDS, estimateTokens, projectFat, projectLean, settingProposalKey } from '../src/shared/assistant/knowledgeBundle.ts';
 import type {
     CommandEntry,
@@ -732,57 +733,72 @@ function refineControl(base: SettingControl, el: JsxElementLike): SettingControl
 // ---------------------------------------------------------------------------
 
 interface PanelSpec {
-    /** Tab key inside the container component. */
-    tab: string;
-    /** Human path prefix, e.g. `Ustawienia → Opcje → Ogólne`. */
-    label: string;
-    /** Files rendering that tab, relative to the repo root. */
+    /** Page key in `SETTINGS_CATEGORIES` (src/web/settings/categories.ts). */
+    category: SettingsCategoryKey;
+    /** Files rendering that page, relative to the repo root. */
     files: string[];
+    /**
+     * Top-level section titles taken from those files, for files whose sections
+     * are spread over several pages. Omitted: every control in the files.
+     */
+    sections?: string[];
 }
 
 const MENU = 'Menu (⋮)';
+const SETTINGS_DIALOG = 'Ustawienia';
 
-const CHARACTER_CONTAINER = 'src/web/options/CharacterSettings.tsx';
-const UI_CONTAINER = 'src/web/uiSettings/UiSettings.tsx';
+const CATEGORIES_FILE = 'src/web/settings/categories.ts';
+const GENERAL_FORM = 'src/web/options/Settings.tsx';
 
-const CHARACTER_PANELS: PanelSpec[] = [
-    { tab: 'general', label: 'Ogólne', files: ['src/web/options/Settings.tsx'] },
-    { tab: 'guild', label: 'Gildie', files: ['src/web/options/GuildsSettings.tsx'] },
-    { tab: 'luaGags', label: 'Walka', files: ['src/web/options/LuaGagsSettings.tsx'] },
-    { tab: 'enemyBinds', label: 'Bindy wrogów', files: ['src/web/options/EnemyBindsSettings.tsx'] },
-    { tab: 'magiki', label: 'Magiki', files: ['src/web/options/MagikiSettings.tsx'] },
+const SETTINGS_PANELS: PanelSpec[] = [
+    { category: 'character-general', files: [GENERAL_FORM], sections: ['Wyjścia', 'Pozostałe opcje', 'Język'] },
+    { category: 'character-items', files: [GENERAL_FORM], sections: ['Pojemniki', 'Zbieranie przedmiotów', 'Zioła', 'Wycinanie/Wyrywanie'] },
+    {
+        category: 'character-combat',
+        files: [GENERAL_FORM, 'src/web/options/EnemyBindsSettings.tsx', 'src/web/options/LuaGagsSettings.tsx'],
+        sections: ['Walka', 'Dobywanie/Opuszczanie', 'Bindy wrogów (F1-F3)', 'Prefiksy', 'Ustawienia walki'],
+    },
+    { category: 'character-guilds', files: ['src/web/options/GuildsSettings.tsx'] },
+    { category: 'character-magics', files: ['src/web/options/MagikiSettings.tsx'] },
+    { category: 'ui-appearance', files: ['src/web/uiSettings/sections/AppearanceSection.tsx'] },
+    { category: 'ui-windows', files: ['src/web/uiSettings/sections/WindowsSections.tsx'] },
+    { category: 'ui-commands', files: ['src/web/uiSettings/sections/CommandsSection.tsx'] },
+    { category: 'ui-footer', files: ['src/web/uiSettings/sections/FooterSections.tsx'] },
+    { category: 'ui-map', files: ['src/web/uiSettings/sections/MapSections.tsx'] },
+    { category: 'ui-sound', files: ['src/web/uiSettings/sections/NotificationsSection.tsx', 'src/web/uiSettings/sections/SoundSection.tsx'] },
+    { category: 'ui-other', files: ['src/web/uiSettings/sections/OtherSections.tsx'] },
 ];
 
-const UI_PANELS: PanelSpec[] = [
-    { tab: 'general', label: 'Ogólne', files: ['src/web/uiSettings/tabs/GeneralTab.tsx', 'src/web/uiSettings/tabs/BehaviourTab.tsx'] },
-    { tab: 'footer', label: 'Stopka', files: ['src/web/uiSettings/tabs/FooterTab.tsx'] },
-    { tab: 'map', label: 'Mapa', files: ['src/web/uiSettings/tabs/MapTab.tsx'] },
-    { tab: 'sound', label: 'Dźwięk', files: ['src/web/uiSettings/tabs/SoundTab.tsx'] },
-];
-
-/** Read `type Tab = "a" | "b"` out of a container so a new tab breaks the build. */
-function containerTabKeys(file: string): string[] {
+/** Read `type SettingsCategoryKey = "a" | "b"` so a new page breaks the build. */
+function declaredCategoryKeys(file: string): string[] {
     const sf = parse(path.join(ROOT, file));
     for (const stmt of sf.statements) {
-        if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === 'Tab') {
+        if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === 'SettingsCategoryKey') {
             const members = unionLiterals(stmt.type);
             if (members) return members.map(String);
         }
     }
-    return fail(`could not read \`type Tab\` from ${file}`);
+    return fail(`could not read \`type SettingsCategoryKey\` from ${file}`);
 }
 
-function assertPanelMap(container: string, panels: PanelSpec[]): void {
-    const declared = containerTabKeys(container).slice().sort();
-    const mapped = panels.map(p => p.tab).slice().sort();
+function assertPanelMap(panels: PanelSpec[]): void {
+    const declared = declaredCategoryKeys(CATEGORIES_FILE).slice().sort();
+    const mapped = panels.map(p => p.category).slice().sort();
     if (declared.join('|') !== mapped.join('|')) {
-        fail(`tab list in ${container} is [${declared}] but the panel map has [${mapped}] — update CHARACTER_PANELS/UI_PANELS`);
+        fail(`settings pages in ${CATEGORIES_FILE} are [${declared}] but SETTINGS_PANELS has [${mapped}] — update SETTINGS_PANELS`);
     }
     for (const p of panels) {
         for (const f of p.files) {
             if (!fs.existsSync(path.join(ROOT, f))) fail(`panel file ${f} no longer exists`);
         }
     }
+}
+
+/** `Menu (⋮) → Ustawienia → <group> → <page>`, the path the sidebar shows. */
+function pagePath(category: SettingsCategoryKey): string {
+    const page = SETTINGS_CATEGORIES.find(c => c.key === category);
+    if (!page) return fail(`unknown settings page ${category}`);
+    return [MENU, SETTINGS_DIALOG, SETTINGS_GROUP_LABELS[page.group], page.label].join(' → ');
 }
 
 // ---------------------------------------------------------------------------
@@ -856,32 +872,44 @@ function loadOverrides(): Overrides {
 }
 
 function buildSettings(overrides: Overrides): { entries: SettingEntry[]; panelLines: string[]; gaps: string[] } {
-    assertPanelMap(CHARACTER_CONTAINER, CHARACTER_PANELS);
-    assertPanelMap(UI_CONTAINER, UI_PANELS);
+    assertPanelMap(SETTINGS_PANELS);
 
     // --- UI controls, keyed by settings key -> first control that writes it.
     const controls = new Map<string, UiControl>();
     const panelLines: string[] = [];
+    // Sections of section-filtered files that no page claims: a renamed or new
+    // section would otherwise drop out of the catalog without a trace. (Sections
+    // whose controls are not recoverable from JSX never show up here, which is
+    // why a claimed section is not required to yield controls.)
+    const unclaimed = new Map<string, Set<string>>();
 
-    const runPanels = (rootLabel: string, panels: PanelSpec[]) => {
-        for (const panel of panels) {
-            const base = `${rootLabel} → ${panel.label}`;
-            const sections = new Set<string>();
-            let count = 0;
-            for (const file of panel.files) {
-                for (const c of extractPanel(path.join(ROOT, file), base)) {
-                    count++;
-                    sections.add(c.location);
-                    if (!controls.has(c.key)) controls.set(c.key, c);
+    for (const panel of SETTINGS_PANELS) {
+        const base = pagePath(panel.category);
+        const wanted = panel.sections ? new Set(panel.sections) : undefined;
+        const sections = new Set<string>();
+        let count = 0;
+        for (const file of panel.files) {
+            for (const c of extractPanel(path.join(ROOT, file), base)) {
+                const section = c.location.slice(base.length + 3).split(' → ')[0] ?? '';
+                if (wanted) {
+                    if (!unclaimed.has(file)) unclaimed.set(file, new Set());
+                    unclaimed.get(file)!.add(section);
+                    if (!wanted.has(section)) continue;
                 }
+                count++;
+                sections.add(c.location);
+                if (!controls.has(c.key)) controls.set(c.key, c);
             }
-            const sectionList = [...sections].map(s => s.slice(base.length + 3)).filter(Boolean);
-            panelLines.push(`${base} — ${count} ustawien${sectionList.length ? `; sekcje: ${sectionList.join(', ')}` : ''}`);
         }
-    };
+        const sectionList = [...sections].map(s => s.slice(base.length + 3)).filter(Boolean);
+        panelLines.push(`${base} — ${count} ustawien${sectionList.length ? `; sekcje: ${sectionList.join(', ')}` : ''}`);
+    }
 
-    runPanels(`${MENU} → Ustawienia (Opcje)`, CHARACTER_PANELS);
-    runPanels(`${MENU} → Interfejs (Ustawienia UI)`, UI_PANELS);
+    const claimed = new Set(SETTINGS_PANELS.flatMap(p => p.sections ?? []));
+    for (const [file, sections] of unclaimed) {
+        const orphans = [...sections].filter(s => !claimed.has(s));
+        if (orphans.length > 0) fail(`sections [${orphans}] of ${file} are not assigned to any settings page`);
+    }
 
     if (controls.size < 40) {
         fail(`only ${controls.size} settings controls recovered from the JSX panels — extraction is broken`);
