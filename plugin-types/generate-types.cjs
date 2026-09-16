@@ -909,7 +909,18 @@ export interface StorageEventPayload {
  * Multibind list event payload
  */
 export interface MultibindList {
-  list: { index: number; action: string; label: string }[];
+  list: {
+    index: number;
+    action: string;
+    /** Key label, e.g. "ALT+1". */
+    label: string;
+    /** Display name of a temporary bind - shown instead of the action when set. */
+    name?: string;
+    /** Slot filled by a temporary (plugin) bind rather than a saved one. */
+    temporary?: boolean;
+    /** Slot a temporary bind asked to highlight. */
+    highlight?: boolean;
+  }[];
 }
 
 /**

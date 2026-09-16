@@ -169,6 +169,7 @@ vi.mock('@modules/data/peopleLoader', () => ({
 
 import { PluginManager } from '@client/PluginManager';
 import { PluginApiImpl } from '@client/PluginApi';
+import { temporaryMultibinds } from '@client/scripts/temporaryMultibinds';
 import type Client from '@client/Client';
 import type { Plugin, PluginInfo } from '@shared/types/Plugin';
 import eventBus from '@modules/core/eventBus';
@@ -463,6 +464,38 @@ describe('PluginManager integration — plugin lifecycle', () => {
       await pluginManager.unloadPlugin(PLUGIN_URL);
 
       expect(removeAllPluginNotes).toHaveBeenCalledWith(PLUGIN_URL);
+    });
+
+    it('removes temporary multibinds added by the plugin when it is unloaded', async () => {
+      temporaryMultibinds.clear();
+      const otherApi = new PluginApiImpl(mockClient, 'other-plugin');
+      const otherHandle = otherApi.multibinds.addTemporary({ action: 'inna komenda' });
+
+      let removedEarly: { remove(): void } | undefined;
+      const plugin: Plugin = {
+        init: jest.fn().mockImplementation(async (api: PluginApiImpl) => {
+          api.multibinds.addTemporary({ action: 'otworz skrzynie', highlight: true });
+          api.multibinds.addTemporary({ action: 'zabij straznika', roomId: 5 });
+          removedEarly = api.multibinds.addTemporary({ action: 'usuniety' });
+          return makePluginInfo();
+        }),
+        destroy: jest.fn(),
+      };
+
+      jest.spyOn(pluginManager as any, 'loadAsModule').mockResolvedValue(plugin);
+      await pluginManager.loadPlugin(PLUGIN_URL);
+      removedEarly!.remove();
+
+      expect(temporaryMultibinds.list().map(e => e.action)).toEqual([
+        'inna komenda', 'otworz skrzynie', 'zabij straznika',
+      ]);
+
+      await pluginManager.unloadPlugin(PLUGIN_URL);
+
+      // Only the other plugin's bind survives
+      expect(temporaryMultibinds.list().map(e => e.action)).toEqual(['inna komenda']);
+      otherHandle.remove();
+      expect(temporaryMultibinds.list()).toEqual([]);
     });
   });
 

@@ -9,6 +9,7 @@ import { globalStorage } from "@modules/core/storage";
 import { type Bind, bindMatches } from "@modules/core/keymapTypes";
 import MapHelper from "@shared/map/MapHelper";
 import { getGateBindString, isGateRoom } from "./gateBind";
+import { resolveMultibindSlots, temporaryMultibinds } from "./temporaryMultibinds";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -18,7 +19,14 @@ const MAX_BINDS = 4;
 interface DisplayMultibind {
     index: number;
     action: string;
+    /** Key label, e.g. "ALT+1". */
     label: string;
+    /** Display name of a temporary bind (shown on the bar instead of the action). */
+    name?: string;
+    /** Slot filled by a temporary (plugin) bind, not a saved one. */
+    temporary?: boolean;
+    /** Slot a temporary bind asked to draw attention to. */
+    highlight?: boolean;
 }
 
 function isValidIndex(index: number) {
@@ -149,6 +157,28 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         }));
     }
 
+    /** Saved binds of the room merged with the temporary binds that apply to it. */
+    function resolveSlots(roomId: number | null) {
+        const saved = roomId === null ? undefined : data.get(roomId);
+        return resolveMultibindSlots(saved, roomId, temporaryMultibinds.list(), MAX_BINDS);
+    }
+
+    function toBarDisplay(roomId: number | null): DisplayMultibind[] {
+        return Array.from(resolveSlots(roomId).entries())
+            .sort(([a], [b]) => a - b)
+            .map(([index, slot]) => {
+                const entry: DisplayMultibind = {
+                    index,
+                    action: slot.action,
+                    label: getMultibindLabel(index),
+                };
+                if (slot.name) entry.name = slot.name;
+                if (slot.temporary) entry.temporary = true;
+                if (slot.highlight) entry.highlight = true;
+                return entry;
+            });
+    }
+
     let onTransport = false;
     client.on('transport.onBoard', (v) => {
         onTransport = v;
@@ -156,7 +186,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     });
 
     function sendUpdate(roomId: number | null) {
-        let payload = roomId === null ? [] : toDisplay(roomId);
+        let payload = toBarDisplay(roomId);
 
         const currentRoom = client.Map.currentRoom as any;
         const room = roomId !== null && currentRoom?.id === roomId ? currentRoom : null;
@@ -298,20 +328,13 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         display(roomId);
     }
 
-    function run(roomId: number, index: number) {
-        const action = data.get(roomId)?.get(index);
+    function runCurrent(index: number) {
+        // Saved binds of the current room plus any temporary binds in their slots
+        const action = resolveSlots(getRoomId()).get(index)?.action;
         if (!action) {
             return;
         }
         client.sendCommand(action);
-    }
-
-    function runCurrent(index: number) {
-        const roomId = getRoomId();
-        if (roomId === null) {
-            return;
-        }
-        run(roomId, index);
     }
 
     function applyStored(list: StoredMultibindRecord[]) {
@@ -336,6 +359,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     });
 
     subscribeMultibinds(applyStored);
+    temporaryMultibinds.subscribe(() => sendUpdate(getRoomId()));
 
     window.addEventListener('keydown', (ev) => {
         if (ev.repeat) {

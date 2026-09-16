@@ -1266,6 +1266,18 @@ h1 {
   opacity: 0.6;
 }
 
+/* Temporary binds (plugins, api.multibinds.addTemporary) are never saved - a
+   dashed border tells them apart from the room's own binds. */
+#multi-binds .multi-bind.multi-bind--temporary {
+  border-style: dashed;
+}
+
+/* A plugin asked to draw attention to this slot. */
+#multi-binds .multi-bind.multi-bind--highlight {
+  border-color: var(--footer-input-focus-border);
+  box-shadow: inset 0 0 0 1px var(--footer-input-focus-border);
+}
+
 #multi-binds .multi-bind-key {
   font-weight: 700;
   color: var(--footer-text-strong);

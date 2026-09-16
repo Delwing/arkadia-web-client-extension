@@ -7,6 +7,10 @@ interface DisplayMultibind {
   index: number;
   action: string;
   label: string;
+  /** Display name of a temporary (plugin) bind, shown instead of the action. */
+  name?: string;
+  temporary?: boolean;
+  highlight?: boolean;
 }
 
 function getInitialKeepVisible(): boolean {
@@ -99,19 +103,23 @@ export default function MultiBindStrip({
               : bind.index === 7
                 ? " multi-bind--gate"
                 : "";
+          // Temporary binds (plugins, api.multibinds.addTemporary) read apart from
+          // saved ones; a highlighted slot gets a visible border.
+          const flags = `${bind.temporary ? " multi-bind--temporary" : ""}${bind.highlight ? " multi-bind--highlight" : ""}`;
+          const name = bind.name?.trim();
           return (
             <button
               key={bind.index}
               type="button"
-              className={`multi-bind${kind}`}
-              title={bind.action}
+              className={`multi-bind${kind}${flags}`}
+              title={name ? `${name}: ${bind.action}` : bind.action}
               disabled={!action}
               onClick={() => {
                 if (action) eventBus.emit("sendCommand", { command: bind.action });
               }}
             >
               {showKeys && <span className="multi-bind-key">[{bind.label}]</span>}
-              <span className="multi-bind-action">{bind.action}</span>
+              <span className="multi-bind-action">{name || bind.action}</span>
             </button>
           );
         })}

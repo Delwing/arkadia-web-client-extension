@@ -9,6 +9,10 @@ interface DisplayMultibind {
   index: number;
   action: string;
   label: string;
+  /** Display name of a temporary (plugin) bind, shown instead of the action. */
+  name?: string;
+  temporary?: boolean;
+  highlight?: boolean;
 }
 
 export default class MultiBinds {
@@ -39,8 +43,11 @@ export default class MultiBinds {
       .forEach((bind) => {
         const wrapper = document.createElement("button");
         wrapper.className = "multi-bind";
+        if (bind.temporary) wrapper.classList.add("multi-bind--temporary");
+        if (bind.highlight) wrapper.classList.add("multi-bind--highlight");
         wrapper.type = "button";
-        wrapper.title = bind.action;
+        const name = bind.name?.trim();
+        wrapper.title = name ? `${name}: ${bind.action}` : bind.action;
 
         const keySpan = document.createElement("span");
         keySpan.className = "multi-bind-key";
@@ -48,7 +55,7 @@ export default class MultiBinds {
 
         const actionSpan = document.createElement("span");
         actionSpan.className = "multi-bind-action";
-        actionSpan.textContent = bind.action;
+        actionSpan.textContent = name || bind.action;
 
         const { action } = bind;
         if (action.trim()) {

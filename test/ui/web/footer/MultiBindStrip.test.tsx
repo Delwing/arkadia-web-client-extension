@@ -94,3 +94,40 @@ describe("MultiBindStrip key hints", () => {
     expect(keys()[0].textContent).toBe("[ALT+1]");
   });
 });
+
+/**
+ * Temporary binds (api.multibinds.addTemporary) carry `temporary`, `highlight`
+ * and an optional `name` shown in place of the action.
+ */
+describe("MultiBindStrip temporary binds", () => {
+  let container: HTMLElement;
+  let root: Root;
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  test("marks temporary and highlighted pills and shows the name", () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root.render(<MultiBindStrip />));
+    act(() => {
+      eventBus.emit("multibinds", {list: [
+        {index: 1, action: "zerknij", label: "ALT+1", highlight: true},
+        {index: 2, action: "otworz skrzynie", label: "ALT+2", name: "Skrzynia", temporary: true},
+      ]});
+    });
+
+    const pills = container.querySelectorAll<HTMLButtonElement>(".multi-bind");
+    expect(pills[0].classList.contains("multi-bind--highlight")).toBe(true);
+    expect(pills[0].classList.contains("multi-bind--temporary")).toBe(false);
+    expect(pills[0].querySelector(".multi-bind-action")?.textContent).toBe("zerknij");
+
+    expect(pills[1].classList.contains("multi-bind--temporary")).toBe(true);
+    expect(pills[1].classList.contains("multi-bind--highlight")).toBe(false);
+    expect(pills[1].querySelector(".multi-bind-action")?.textContent).toBe("Skrzynia");
+    expect(pills[1].title).toBe("Skrzynia: otworz skrzynie");
+  });
+});

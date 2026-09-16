@@ -555,6 +555,31 @@ api.bind.clear();
 const label = api.bind.getLabel();
 ```
 
+#### `api.multibinds` - Tymczasowe Multibindy
+
+Dodaje komendy na pasek multibindów (ALT+1..4) na czas, gdy są potrzebne - np. na bieżący krok listy kontrolnej. Tymczasowe multibindy żyją tylko w pamięci: nie są zapisywane, nie są synchronizowane i nie zmieniają bindów lokacji utworzonych przez `/mbind`. Po wyładowaniu pluginu znikają automatycznie.
+
+```typescript
+const handle = api.multibinds.addTemporary({
+  action: "otworz skrzynie",   // komenda wysyłana po naciśnięciu klawisza
+  label: "Skrzynia",           // opcjonalnie: nazwa na pasku zamiast komendy
+  roomId: 12345,               // opcjonalnie: tylko w tej lokacji (bez roomId - wszędzie)
+  highlight: true,             // opcjonalnie: wyróżniona ramka na pasku
+});
+
+// Zmiana komendy / nazwy / wyróżnienia - pasek odświeża się od razu
+handle.update({ action: "wez wszystko ze skrzyni", label: "Łup", highlight: false });
+
+// Usunięcie (można wywołać wielokrotnie)
+handle.remove();
+```
+
+Przydział slotów (liczony przy każdym odświeżeniu, w kolejności dodania):
+- jeśli zapisany bind lokacji ma tę samą komendę, jest używany zamiast nowego slotu (i dostaje wyróżnienie, gdy `highlight: true`); to samo dotyczy wcześniejszego tymczasowego binda z tą samą komendą,
+- w przeciwnym razie zajmowany jest najniższy wolny slot 1..4; gdy wszystkie są zajęte, bind nie jest pokazywany, a jego klawisz nic nie robi.
+
+Na pasku tymczasowe bindy mają przerywaną ramkę, a wyróżnione - ramkę w kolorze akcentu. W zdarzeniu `multibinds` wpisy mają dodatkowe pola `temporary`, `highlight` i `name` (nazwa z `label`; pole `label` wpisu to nadal etykieta klawisza).
+
 #### `api.objectListFilters` - Dostosowywanie Listy Obiektów
 
 System filtrów pozwala na pełną customizację wyglądu wpisów na liście obiektów - można zmieniać kolory, dodawać ikony, modyfikować tekst i wiele więcej. Filtry są composable - wiele filtrów może działać razem, budując na swoich modyfikacjach.

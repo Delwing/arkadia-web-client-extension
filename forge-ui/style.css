@@ -610,6 +610,11 @@ body::after {
 .multi-bind--drink .multi-bind-key { color: #79b3d6; }
 .multi-bind--gate { border-color: #5a3323; }
 .multi-bind--gate .multi-bind-key { color: #d9855a; }
+/* temporary binds (plugins) are never saved: dashed border; a highlighted slot
+   burns bronze so the step at hand stands out */
+.multi-bind--temporary { border-style: dashed; }
+.multi-bind--highlight,
+.multi-bind--highlight:hover { border-color: var(--bronze); box-shadow: inset 0 0 0 1px var(--bronze-dim), 0 0 6px rgba(184,150,90,.35); }
 
 /* ---- footer status-chip band -------------------------------------------- */
 .footer-strip {
