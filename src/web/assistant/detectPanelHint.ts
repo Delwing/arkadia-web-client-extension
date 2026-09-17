@@ -50,7 +50,7 @@ function normalize(text: string): string {
  * Whether the button could actually take the user there.
  *
  * Only the settings dialog is wired to the open-settings event. A handful
- * of catalog entries point somewhere else entirely — `Menu (⋮) → Przyciski`, or
+ * of catalog entries point somewhere else entirely — `Menu (⋮) → Menu kołowe`, or
  * the output window's right-click menu — and offering "Otworz ustawienia" for
  * those would open the wrong dialog, which is worse than offering nothing. The
  * card's text still names the real place.

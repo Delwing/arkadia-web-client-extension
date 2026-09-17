@@ -54,15 +54,14 @@ import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
 import {CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory} from "./settings/categories.ts";
+import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
 import ExportImport from "./options/ExportImport.tsx"
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
 import LocationNotes from "./options/LocationNotes.tsx"
 import LocationNoteEditor from "./LocationNoteEditor.tsx"
-import ButtonsSettings from "./options/ButtonsSettings.tsx"
 import HelperSettings from "./options/HelperSettings.tsx"
-import MobileRadialCommands from "./options/MobileRadialCommands.tsx"
 import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
@@ -834,10 +833,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationNotesModal = locationNotesModalElement ? new Modal(locationNotesModalElement) : null;
     const helperModalElement = document.getElementById('helper-modal');
     const helperModal = helperModalElement ? new Modal(helperModalElement) : null;
-    const mobileButtonsModalElement = document.getElementById('mobile-buttons-modal');
-    const mobileButtonsModal = mobileButtonsModalElement ? new Modal(mobileButtonsModalElement) : null;
-    const mobileRadialModalElement = document.getElementById('mobile-radial-modal');
-    const mobileRadialModal = mobileRadialModalElement ? new Modal(mobileRadialModalElement) : null;
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
@@ -1022,12 +1017,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (locationNotesModal) {
             locationNotesModal.hide();
         }
-        if (mobileButtonsModal) {
-            mobileButtonsModal.hide();
-        }
-        if (mobileRadialModal) {
-            mobileRadialModal.hide();
-        }
     });
 
     window.addEventListener('show-export-import', () => {
@@ -1200,15 +1189,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (mobileButtonsButton && mobileButtonsModal) {
+    if (mobileButtonsButton && settingsModal) {
         mobileButtonsButton.addEventListener('click', () => {
-            mobileButtonsModal.show();
+            requestSettingsCategory(buttonsSettingsCategory());
+            settingsModal.show();
         });
     }
 
-    if (mobileRadialButton && mobileRadialModal) {
+    if (mobileRadialButton && settingsModal) {
         mobileRadialButton.addEventListener('click', () => {
-            mobileRadialModal.show();
+            requestSettingsCategory('ui-radial');
+            settingsModal.show();
         });
     }
 
@@ -1578,16 +1569,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationNoteEditorRoot = document.getElementById('location-note-editor-root');
     if (locationNoteEditorRoot) {
         createRoot(locationNoteEditorRoot).render(createElement(LocationNoteEditor));
-    }
-
-    const mobileButtonsRoot = document.getElementById('mobile-buttons-options');
-    if (mobileButtonsRoot) {
-        createRoot(mobileButtonsRoot).render(createElement(ButtonsSettings));
-    }
-
-    const mobileRadialRoot = document.getElementById('mobile-radial-options');
-    if (mobileRadialRoot) {
-        createRoot(mobileRadialRoot).render(createElement(MobileRadialCommands));
     }
 
     const helperRoot = document.getElementById('helper-options');

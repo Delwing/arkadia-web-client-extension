@@ -1,18 +1,10 @@
 import { expect, test } from './support/fixtures';
 import { ensureGameSocket, waitForCommandInput } from './support/mocks';
 import { Page, Locator } from '@playwright/test';
+import { openButtonsSettings, SETTINGS_SAVE } from './support/settings';
 
-const MENU_BUTTON = '#menu-button';
-const MOBILE_BUTTONS_BUTTON = '#mobile-buttons-button';
-const MOBILE_BUTTONS_MODAL = '#mobile-buttons-modal';
-const MOBILE_BUTTONS_SAVE = '#mobile-buttons-save';
-
-async function openMobileButtonsSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(MOBILE_BUTTONS_BUTTON);
-    const modal = page.locator(MOBILE_BUTTONS_MODAL);
-    await expect(modal, 'should open mobile buttons settings modal').toBeVisible();
-    return modal;
+function openMobileButtonsSettings(page: Page) {
+    return openButtonsSettings(page, 'ui-mobile-buttons');
 }
 
 function getSizeGapSection(modal: Locator) {
@@ -68,7 +60,7 @@ test.describe('Mobile buttons sizing and gap', () => {
         expect(newSize, 'button width should be 50px after slider change').toBe('50px');
 
         // Save and close
-        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await page.locator(SETTINGS_SAVE).click();
         await expect(modal, 'modal should close after save').not.toBeVisible();
 
         // Verify actual buttons have the new size
@@ -107,7 +99,7 @@ test.describe('Mobile buttons sizing and gap', () => {
         expect(newGap, 'gap should be 15px after slider change').toBe('15px');
 
         // Save and close
-        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await page.locator(SETTINGS_SAVE).click();
         await expect(modal, 'modal should close after save').not.toBeVisible();
 
         // Verify actual buttons container has the new gap
@@ -133,7 +125,7 @@ test.describe('Mobile buttons sizing and gap', () => {
         await gapSlider.fill('5');
 
         // Save and close
-        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await page.locator(SETTINGS_SAVE).click();
         await expect(modal, 'modal should close after save').not.toBeVisible();
 
         // Reload the page

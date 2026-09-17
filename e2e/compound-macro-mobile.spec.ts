@@ -6,18 +6,10 @@ import {
     waitForCommandInput,
 } from './support/mocks';
 import { Page } from '@playwright/test';
+import { openButtonsSettings, SETTINGS_SAVE } from './support/settings';
 
-const MENU_BUTTON = '#menu-button';
-const MOBILE_BUTTONS_BUTTON = '#mobile-buttons-button';
-const MOBILE_BUTTONS_MODAL = '#mobile-buttons-modal';
-const MOBILE_BUTTONS_SAVE = '#mobile-buttons-save';
-
-async function openMobileButtonsSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(MOBILE_BUTTONS_BUTTON);
-    const modal = page.locator(MOBILE_BUTTONS_MODAL);
-    await expect(modal).toBeVisible();
-    return modal;
+function openMobileButtonsSettings(page: Page) {
+    return openButtonsSettings(page, 'ui-mobile-buttons');
 }
 
 test.describe('Mobile buttons compound macro', () => {
@@ -95,7 +87,7 @@ test.describe('Mobile buttons compound macro', () => {
         // Close config panel and save
         const closeButton = configPanel.locator('.btn-close');
         await closeButton.click();
-        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });
 
         // Verify button label
@@ -214,7 +206,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         const closeButton = configPanel.locator('.btn-close');
         await closeButton.click();
-        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });
 
         // Reload and verify

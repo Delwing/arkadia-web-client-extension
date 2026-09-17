@@ -7,6 +7,8 @@
  * there is no second list of labels to keep in step with the JSX.
  */
 
+import { SETTINGS_VALUE_ATTR } from "./SettingsValue";
+
 const HIGHLIGHT_NAME = "settings-search";
 const MISS_ATTR = "data-settings-search-miss";
 
@@ -53,9 +55,14 @@ function sectionText(section: HTMLElement): string {
     const parts: string[] = [];
     const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (node.nodeValue) parts.push(node.nodeValue);
+        if (node.nodeValue && !isStoredValue(node)) parts.push(node.nodeValue);
     }
     return parts.join(" ");
+}
+
+/** A serialized editor value (see SettingsValue), not text the user reads. */
+function isStoredValue(node: Node): boolean {
+    return !!node.parentElement?.closest(`[${SETTINGS_VALUE_ATTR}]`);
 }
 
 export interface PageSearchInput {
@@ -115,7 +122,7 @@ export function highlightTerms(pages: readonly PageSearchInput[], terms: readonl
             if (section.hasAttribute(MISS_ATTR)) continue;
             const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT);
             for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-                if (node.parentElement?.closest("option, script, style")) continue;
+                if (node.parentElement?.closest("option, script, style") || isStoredValue(node)) continue;
                 const folded = foldText(node.nodeValue ?? "");
                 for (const term of terms) {
                     for (let at = folded.indexOf(term); at !== -1; at = folded.indexOf(term, at + term.length)) {

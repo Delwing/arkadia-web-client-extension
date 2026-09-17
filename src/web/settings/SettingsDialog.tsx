@@ -1,4 +1,22 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+    Backpack,
+    ChartPie,
+    Ellipsis,
+    Map as MapIcon,
+    MousePointerClick,
+    Palette,
+    PanelBottom,
+    PanelsTopLeft,
+    Shield,
+    SlidersHorizontal,
+    Smartphone,
+    SquareTerminal,
+    Swords,
+    Volume2,
+    WandSparkles,
+    type LucideIcon,
+} from "lucide-react";
 import { useCharacterSettingsPages } from "@web/options/useCharacterSettingsPages.tsx";
 import { useUiSettingsPages, type UiSettingsPagesProps } from "@web/uiSettings/useUiSettingsPages.tsx";
 import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
@@ -20,6 +38,30 @@ import { pageSignature } from "./settingsDirty";
 import "./settingsDialog.css";
 
 const GROUPS: readonly SettingsGroup[] = ["character", "ui"];
+
+// Kept here rather than in categories.ts, which the assistant-KB build reads in Node.
+const CATEGORY_ICONS: Record<SettingsCategoryKey, LucideIcon> = {
+    "character-general": SlidersHorizontal,
+    "character-items": Backpack,
+    "character-combat": Swords,
+    "character-guilds": Shield,
+    "character-magics": WandSparkles,
+    "ui-appearance": Palette,
+    "ui-windows": PanelsTopLeft,
+    "ui-commands": SquareTerminal,
+    "ui-buttons": MousePointerClick,
+    "ui-mobile-buttons": Smartphone,
+    "ui-radial": ChartPie,
+    "ui-footer": PanelBottom,
+    "ui-map": MapIcon,
+    "ui-sound": Volume2,
+    "ui-other": Ellipsis,
+};
+
+function NavIcon({ category }: { category: SettingsCategoryKey }) {
+    const Icon = CATEGORY_ICONS[category];
+    return <Icon className="settings-dialog__nav-icon" size={16} strokeWidth={1.75} />;
+}
 
 function capitalize(name: string): string {
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -268,7 +310,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                     data-settings-category={c.key}
                                     onClick={() => navigate(c.key)}
                                 >
-                                    <span>{c.label}</span>
+                                    <span className="settings-dialog__nav-label">
+                                        <NavIcon category={c.key} />
+                                        <span>{c.label}</span>
+                                    </span>
                                     {dirty.has(c.key) && <span className="settings-dialog__dirty" title="Niezapisane zmiany" />}
                                 </button>
                             ))}

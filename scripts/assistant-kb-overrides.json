@@ -142,8 +142,7 @@
       "control": "complex"
     },
     "ui.uiSettings.showButtons": {
-      "label": "Pokazuj przyciski",
-      "uiLocation": "Menu (⋮) → Przyciski"
+      "label": "Pokazuj przyciski"
     },
     "ui.renderSettings.soundCategories": {
       "label": "Dźwięki kategorii",

@@ -48,17 +48,21 @@ disabled until a character is selected. Covers: compass/exits, containers,
 coin/item collecting (with per-enemy overrides), combat commands, herbs,
 `/dob` + `/op` slots, default language and language-switch aliases.
 
-## Change interface / appearance / sound
-Path: `⋮` → `Interfejs`.
+## Change interface / appearance / sound / buttons
+Path: `⋮` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`
+group).
 
-Global — shared across characters on this device. Sections: `Wygląd` (fonts,
-colors, theme), `Stan postaci`, `Elementy stopki`, `Mapa`, `Przyciski mobilne`,
-`Dźwięk`, `Inne`, `Menedżer Okien`.
+Global — shared across characters on this device. Pages: `Wygląd` (fonts,
+colors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,
+`Przyciski` (on-screen buttons), `Przyciski mobilne` (mobile button grid),
+`Menu kołowe` (mobile radial menu), `Stopka`, `Mapa`, `Dźwięk i powiadomienia`,
+`Inne`. One `Zapisz` saves every page.
 
 ## Other menu entries worth knowing
 - `Bindowanie` — keyboard binds
-- `Przyciski` — mobile button grid configuration
-- `Menu kołowe` — mobile radial menu
+- `Przyciski` — opens `Ustawienia` on the `Przyciski` page (`Przyciski mobilne`
+  on a phone)
+- `Menu kołowe` — opens `Ustawienia` on the `Menu kołowe` page
 - `Skrypty` — user scripts / plugins
 - `Skróty` — text shortcuts
 - `Notatki lokacji` — per-room notes
@@ -78,9 +82,9 @@ takes four clicks.
 
 How:
 1. `⋮` → `Interfejs`.
-2. Section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick
+2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick
    `Kondycje` to also dock the condition list.
-3. Section `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`
+3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`
    (they only help on touch devices).
 4. Press `Zapisz`.
 

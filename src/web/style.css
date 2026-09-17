@@ -2417,15 +2417,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   gap: 10px;
 }
 
-#mobile-buttons-modal .modal-body {
-  position: relative;
-  overflow: visible;
-}
-
-#mobile-buttons-modal .modal-dialog-scrollable .modal-body {
-  overflow: visible;
-}
-
 /* Mobile button config popup - enhanced styling */
 .mobile-button-config {
   position: fixed;

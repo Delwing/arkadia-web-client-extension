@@ -38,10 +38,9 @@
       "P23 = Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
       "P24 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
       "P25 = Menu (⋮) → Ustawienia → Interfejs → Inne → Inne",
-      "P26 = Menu (⋮) → Ustawienia → Interfejs → Inne → Przyciski mobilne",
+      "P26 = Menu (⋮) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
       "P27 = Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki",
-      "P28 = Menu (⋮) → Ustawienia → Interfejs → Stopka → Stopka na telefonie",
-      "P29 = Menu (⋮) → Przyciski"
+      "P28 = Menu (⋮) → Ustawienia → Interfejs → Stopka → Stopka na telefonie"
     ],
     "settings": [
       "## settings.* (character)",
@@ -172,7 +171,7 @@
       "objectListBackgroundColor | Kolor tła listy obiektów | P22 | string | #000000",
       "objectsFontSize | Rozmiar czcionki listy obiektów (rem) | P22 | number | 0.6",
       "outputMaxElements | Maksymalna liczba linii w buforze | P16 | number 100.. | 1000",
-      "showButtons | Pokazuj przyciski | P29 | boolean | true",
+      "showButtons | Pokazuj przyciski | P26 | boolean | true",
       "showCombatTimer | Pokazuj licznik walki | P27 | boolean | -",
       "showTransportLabel | Pokazuj etykietę transportu | P27 | boolean | -",
       "showVoiceButton | Przycisk mikrofonu (dyktowanie głosowe) | P14 | boolean | true",
@@ -580,11 +579,11 @@
           "Create an alias",
           "Create a trigger",
           "Change character settings (combat, herbs, collecting, language, ...)",
-          "Change interface / appearance / sound",
+          "Change interface / appearance / sound / buttons",
           "Other menu entries worth knowing",
           "Proactive tip: enable Layout Manager on desktop"
         ],
-        "tokens": 942
+        "tokens": 1017
       }
     ]
   },
@@ -3422,7 +3421,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Wibracje (haptyka) na urządzeniach mobilnych",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Inne → Przyciski mobilne"
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie"
     },
     {
       "path": "ui.shellSettings.wakeLock",
@@ -3952,7 +3951,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Pokazuj przyciski",
-      "uiLocation": "Menu (⋮) → Przyciski"
+      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie"
     },
     {
       "path": "ui.uiSettings.showCombatTimer",
@@ -6419,17 +6418,17 @@
         "Create an alias",
         "Create a trigger",
         "Change character settings (combat, herbs, collecting, language, ...)",
-        "Change interface / appearance / sound",
+        "Change interface / appearance / sound / buttons",
         "Other menu entries worth knowing",
         "Proactive tip: enable Layout Manager on desktop"
       ],
-      "tokens": 942,
-      "content": "# llm.txt — Arkadia Web Client\n\nGuide for AI agents helping a user of this page — a browser-based client for\nthe Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you\ncan point the user at the right control.\n\nAll menus below are reached from the three-dot menu (`⋮`) next to the command\ninput at the bottom of the page.\n\n---\n\n## Create an alias\nPath: `⋮` → `Aliasy` → `Dodaj alias`.\n\n- `Wzorzec (pattern)` is a **regular expression** matched against what the user\n  types in the input box.\n- Aliases are almost always anchored with `^` so they fire only when the line\n  **starts** with that word. A typical pattern looks like `^zab (.+)$` — `^`\n  means \"start of line\", then literal text, then a capture group.\n- In the `Komenda` field use `$1`, `$2`, ... to reference capture groups.\n- Object shortcuts `@1`, `@A`, `@@` expand to object IDs from the object list —\n  useful in combat aliases.\n- `$i` enables range expansion: pattern `^kok (.+)$` with command\n  `rozerwij $i. kokon` lets the user type `kok 1-7` to run the command seven\n  times.\n- Each new line in the command runs as a separate command (same as `;`).\n- Per-character overrides are available in the same modal.\n\n## Create a trigger\nPath: `⋮` → `Triggery` → `Dodaj trigger`.\n\nTwo modes, chosen by radio button:\n- `Wzorzec tekstu` — matches **game output** against a regex. Same regex\n  semantics as aliases. Triggers often match mid-line, so leave `^` off unless\n  the match really must be at line start. Flags (`i` case-insensitive, `g`\n  global, `m` multiline) are set via the `Flagi` picker.\n- `Zdarzenie` — fires on a client event instead of a text pattern.\n\nEach trigger runs one or more `akcje`: color/replace/wrap the match, play a\nsound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped\nby plugin.\n\n## Change character settings (combat, herbs, collecting, language, ...)\nPath: `⋮` → `Ustawienia`.\n\nPer-character — stored under the currently logged-in character. The form is\ndisabled until a character is selected. Covers: compass/exits, containers,\ncoin/item collecting (with per-enemy overrides), combat commands, herbs,\n`/dob` + `/op` slots, default language and language-switch aliases.\n\n## Change interface / appearance / sound\nPath: `⋮` → `Interfejs`.\n\nGlobal — shared across characters on this device. Sections: `Wygląd` (fonts,\ncolors, theme), `Stan postaci`, `Elementy stopki`, `Mapa`, `Przyciski mobilne`,\n`Dźwięk`, `Inne`, `Menedżer Okien`.\n\n## Other menu entries worth knowing\n- `Bindowanie` — keyboard binds\n- `Przyciski` — mobile button grid configuration\n- `Menu kołowe` — mobile radial menu\n- `Skrypty` — user scripts / plugins\n- `Skróty` — text shortcuts\n- `Notatki lokacji` — per-room notes\n- `Baza postaci` — known-players browser\n- `Nagrania` — session recordings\n- `Logi` — session logs\n- `Dokumentacja` — built-in docs\n\n---\n\n## Proactive tip: enable Layout Manager on desktop\n\n**If the user is on a desktop / laptop (non-touch), suggest enabling the Layout\nManager with mobile buttons hidden**, even if they asked about something else.\nIt's a major ergonomics upgrade most users don't discover on their own, and it\ntakes four clicks.\n\nHow:\n1. `⋮` → `Interfejs`.\n2. Section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick\n   `Kondycje` to also dock the condition list.\n3. Section `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`\n   (they only help on touch devices).\n4. Press `Zapisz`.\n\nResult: dockable/floating panels for map, conditions, chat, combat popups, etc.\narranged around the output area instead of overlaying it, plus a larger output\narea with the mobile button grid gone.\n\nSkip the tip if the user is clearly on mobile (narrow viewport / touch) or has\nalready enabled the Layout Manager."
+      "tokens": 1017,
+      "content": "# llm.txt — Arkadia Web Client\n\nGuide for AI agents helping a user of this page — a browser-based client for\nthe Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you\ncan point the user at the right control.\n\nAll menus below are reached from the three-dot menu (`⋮`) next to the command\ninput at the bottom of the page.\n\n---\n\n## Create an alias\nPath: `⋮` → `Aliasy` → `Dodaj alias`.\n\n- `Wzorzec (pattern)` is a **regular expression** matched against what the user\n  types in the input box.\n- Aliases are almost always anchored with `^` so they fire only when the line\n  **starts** with that word. A typical pattern looks like `^zab (.+)$` — `^`\n  means \"start of line\", then literal text, then a capture group.\n- In the `Komenda` field use `$1`, `$2`, ... to reference capture groups.\n- Object shortcuts `@1`, `@A`, `@@` expand to object IDs from the object list —\n  useful in combat aliases.\n- `$i` enables range expansion: pattern `^kok (.+)$` with command\n  `rozerwij $i. kokon` lets the user type `kok 1-7` to run the command seven\n  times.\n- Each new line in the command runs as a separate command (same as `;`).\n- Per-character overrides are available in the same modal.\n\n## Create a trigger\nPath: `⋮` → `Triggery` → `Dodaj trigger`.\n\nTwo modes, chosen by radio button:\n- `Wzorzec tekstu` — matches **game output** against a regex. Same regex\n  semantics as aliases. Triggers often match mid-line, so leave `^` off unless\n  the match really must be at line start. Flags (`i` case-insensitive, `g`\n  global, `m` multiline) are set via the `Flagi` picker.\n- `Zdarzenie` — fires on a client event instead of a text pattern.\n\nEach trigger runs one or more `akcje`: color/replace/wrap the match, play a\nsound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped\nby plugin.\n\n## Change character settings (combat, herbs, collecting, language, ...)\nPath: `⋮` → `Ustawienia`.\n\nPer-character — stored under the currently logged-in character. The form is\ndisabled until a character is selected. Covers: compass/exits, containers,\ncoin/item collecting (with per-enemy overrides), combat commands, herbs,\n`/dob` + `/op` slots, default language and language-switch aliases.\n\n## Change interface / appearance / sound / buttons\nPath: `⋮` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`\ngroup).\n\nGlobal — shared across characters on this device. Pages: `Wygląd` (fonts,\ncolors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,\n`Przyciski` (on-screen buttons), `Przyciski mobilne` (mobile button grid),\n`Menu kołowe` (mobile radial menu), `Stopka`, `Mapa`, `Dźwięk i powiadomienia`,\n`Inne`. One `Zapisz` saves every page.\n\n## Other menu entries worth knowing\n- `Bindowanie` — keyboard binds\n- `Przyciski` — opens `Ustawienia` on the `Przyciski` page (`Przyciski mobilne`\n  on a phone)\n- `Menu kołowe` — opens `Ustawienia` on the `Menu kołowe` page\n- `Skrypty` — user scripts / plugins\n- `Skróty` — text shortcuts\n- `Notatki lokacji` — per-room notes\n- `Baza postaci` — known-players browser\n- `Nagrania` — session recordings\n- `Logi` — session logs\n- `Dokumentacja` — built-in docs\n\n---\n\n## Proactive tip: enable Layout Manager on desktop\n\n**If the user is on a desktop / laptop (non-touch), suggest enabling the Layout\nManager with mobile buttons hidden**, even if they asked about something else.\nIt's a major ergonomics upgrade most users don't discover on their own, and it\ntakes four clicks.\n\nHow:\n1. `⋮` → `Interfejs`.\n2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick\n   `Kondycje` to also dock the condition list.\n3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`\n   (they only help on touch devices).\n4. Press `Zapisz`.\n\nResult: dockable/floating panels for map, conditions, chat, combat popups, etc.\narranged around the output area instead of overlaying it, plus a larger output\narea with the mobile button grid gone.\n\nSkip the tip if the user is clearly on mobile (narrow viewport / touch) or has\nalready enabled the Layout Manager."
     }
   ],
   "gaps": [],
-  "version": "d2adfb45724b2197",
-  "generatedAt": "2026-09-17T07:35:47.580Z",
+  "version": "ce9f6b920e1e8a14",
+  "generatedAt": "2026-09-17T15:55:33.954Z",
   "stats": {
     "settings": 127,
     "settingsWithLabels": 127,
@@ -6437,9 +6436,9 @@
     "commandsWithDescriptions": 229,
     "events": 28,
     "docs": 12,
-    "leanChars": 45097,
-    "leanTokens": 11275,
-    "fatChars": 234346,
-    "fatTokens": 58587
+    "leanChars": 45087,
+    "leanTokens": 11272,
+    "fatChars": 234706,
+    "fatTokens": 58677
   }
 }

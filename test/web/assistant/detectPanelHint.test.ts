@@ -62,7 +62,7 @@ describe('detectPanelHint', () => {
         // reach — the buttons dialog, the output window's right-click menu.
         // Offering to open those would open the wrong dialog, which is worse
         // than offering nothing; the card's text still names the real place.
-        expect(detectPanelHint('Znajdziesz to w Menu (⋮) → Przyciski.', bundle)).toBeNull();
+        expect(detectPanelHint('Znajdziesz to w Menu (⋮) → Menu kołowe.', bundle)).toBeNull();
         expect(
             detectPanelHint('Uzyj Menu kontekstowe (prawy przycisk myszy) w oknie wyjscia.', bundle),
         ).toBeNull();

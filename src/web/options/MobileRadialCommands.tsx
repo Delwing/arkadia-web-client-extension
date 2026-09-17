@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import {
     DndContext,
@@ -21,13 +21,10 @@ import {
     loadSettings,
     saveSettings,
     applySettings,
-    Settings,
     RadialCommandSetting,
+    RadialSettings,
 } from "../mobileButtonSettings";
 import { getTeamState } from "@modules/core/teamStateProvider";
-
-const ADD_BUTTON_ID = "mobile-radial-add";
-const SAVE_BUTTON_ID = "mobile-radial-save";
 
 function createRadialId() {
     const globalCrypto = typeof crypto !== "undefined" ? crypto : undefined;
@@ -191,9 +188,34 @@ function SortableRadialItem({ cmd, disabled, onUpdate, onRemove }: SortableRadia
     );
 }
 
-function MobileRadialCommands() {
-    const [settings, setSettings] = useState<Settings | null>(null);
-    const radialEnabled = settings?.radial?.enabled !== false;
+function normalizeRadial(radial: RadialSettings): RadialSettings {
+    const commands = (radial.commands || []).reduce<RadialCommandSetting[]>((acc, cmd) => {
+        const command = (cmd.command || "").trim();
+        if (!command) {
+            return acc;
+        }
+        const label = (cmd.label || "").trim();
+        acc.push({
+            ...cmd,
+            id: cmd.id || createRadialId(),
+            label: label || command,
+            command,
+        });
+        return acc;
+    }, []);
+    return { ...radial, enabled: radial.enabled !== false, commands };
+}
+
+/**
+ * The "Menu kołowe" settings page. Edits stay local until the settings dialog's
+ * Save runs the callback given to `registerSave`; the dialog remounts the
+ * editor on open, which is how unsaved edits are dropped.
+ */
+function MobileRadialCommands({ registerSave }: { registerSave: (save: () => void) => void }) {
+    const [stored] = useState(() => JSON.stringify(loadSettings().radial));
+    const [radial, setRadial] = useState<RadialSettings>(() => JSON.parse(stored));
+    const radialEnabled = radial.enabled !== false;
+    const commands = radial.commands || [];
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -201,147 +223,42 @@ function MobileRadialCommands() {
     );
 
     useEffect(() => {
-        setSettings(loadSettings());
-    }, []);
-
-    const addRadialCommand = useCallback(() => {
-        setSettings(prev => {
-            if (!prev) {
-                return prev;
-            }
-            const commands = prev.radial?.commands || [];
-            return {
-                ...prev,
-                radial: {
-                    ...prev.radial,
-                    commands: [...commands, { id: createRadialId(), label: "", command: "" }],
-                },
-            };
+        registerSave(() => {
+            // Untouched: leave storage (and the live menu) alone.
+            if (JSON.stringify(radial) === stored) return;
+            // The rest of this entry belongs to "Przyciski mobilne", saved alongside.
+            const next = { ...loadSettings(), radial: normalizeRadial(radial) };
+            saveSettings(next);
+            const { isInAnyTeam, isLeader } = getTeamState();
+            applySettings(next, isInAnyTeam, isLeader);
         });
-    }, []);
+    }, [registerSave, radial, stored]);
 
-    const save = useCallback(() => {
-        if (!settings) {
-            return;
-        }
-        const enabled = settings.radial?.enabled !== false;
-        const normalizedCommands = (settings.radial?.commands || []).reduce<RadialCommandSetting[]>((acc, cmd) => {
-            const command = (cmd.command || "").trim();
-            if (!command) {
-                return acc;
-            }
-            const label = (cmd.label || "").trim();
-            acc.push({
-                ...cmd,
-                id: cmd.id || createRadialId(),
-                label: label || command,
-                command,
-            });
-            return acc;
-        }, []);
-        const normalizedSettings: Settings = {
-            ...settings,
-            radial: {
-                ...settings.radial,
-                enabled,
-                commands: normalizedCommands,
-            },
-        };
-        setSettings(normalizedSettings);
-        saveSettings(normalizedSettings);
-        const { isInAnyTeam, isLeader } = getTeamState();
-        applySettings(normalizedSettings, isInAnyTeam, isLeader);
-        window.dispatchEvent(new Event("close-options"));
-    }, [settings]);
+    function updateCommands(update: (commands: RadialCommandSetting[]) => RadialCommandSetting[]) {
+        setRadial(prev => ({ ...prev, commands: update(prev.commands || []) }));
+    }
 
-    // Wire up footer buttons
-    useEffect(() => {
-        const addBtn = document.getElementById(ADD_BUTTON_ID);
-        const saveBtn = document.getElementById(SAVE_BUTTON_ID);
-
-        if (addBtn) {
-            addBtn.onclick = addRadialCommand;
-            (addBtn as HTMLButtonElement).disabled = !radialEnabled;
-        }
-        if (saveBtn) {
-            saveBtn.onclick = save;
-            (saveBtn as HTMLButtonElement).disabled = !settings;
-        }
-
-        return () => {
-            if (addBtn) addBtn.onclick = null;
-            if (saveBtn) saveBtn.onclick = null;
-        };
-    }, [addRadialCommand, save, radialEnabled, settings]);
-
-    function setRadialEnabled(enabled: boolean) {
-        setSettings(prev => {
-            if (!prev) {
-                return prev;
-            }
-            return {
-                ...prev,
-                radial: {
-                    ...prev.radial,
-                    enabled,
-                },
-            };
-        });
+    function addRadialCommand() {
+        updateCommands(list => [...list, { id: createRadialId(), label: "", command: "" }]);
     }
 
     function updateRadialCommand(id: string, field: "label" | "command", value: string) {
-        setSettings(prev => {
-            if (!prev) {
-                return prev;
-            }
-            const commands = prev.radial?.commands || [];
-            return {
-                ...prev,
-                radial: {
-                    ...prev.radial,
-                    commands: commands.map(cmd => (cmd.id === id ? { ...cmd, [field]: value } : cmd)),
-                },
-            };
-        });
+        updateCommands(list => list.map(cmd => (cmd.id === id ? { ...cmd, [field]: value } : cmd)));
     }
 
     function removeRadialCommand(id: string) {
-        setSettings(prev => {
-            if (!prev) {
-                return prev;
-            }
-            const commands = prev.radial?.commands || [];
-            return {
-                ...prev,
-                radial: {
-                    ...prev.radial,
-                    commands: commands.filter(cmd => cmd.id !== id),
-                },
-            };
-        });
+        updateCommands(list => list.filter(cmd => cmd.id !== id));
     }
 
     function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
-        if (over && active.id !== over.id) {
-            setSettings(prev => {
-                if (!prev) return prev;
-                const commands = [...(prev.radial?.commands || [])];
-                const oldIndex = commands.findIndex(cmd => cmd.id === active.id);
-                const newIndex = commands.findIndex(cmd => cmd.id === over.id);
-                if (oldIndex === -1 || newIndex === -1) return prev;
-                return {
-                    ...prev,
-                    radial: {
-                        ...prev.radial,
-                        commands: arrayMove(commands, oldIndex, newIndex),
-                    },
-                };
-            });
-        }
+        if (!over || active.id === over.id) return;
+        updateCommands(list => {
+            const oldIndex = list.findIndex(cmd => cmd.id === active.id);
+            const newIndex = list.findIndex(cmd => cmd.id === over.id);
+            return oldIndex === -1 || newIndex === -1 ? list : arrayMove(list, oldIndex, newIndex);
+        });
     }
-
-    const commands = settings?.radial?.commands || [];
 
     return (
         <div className="w-100 d-flex flex-column gap-3">
@@ -351,7 +268,7 @@ function MobileRadialCommands() {
                     id="mobile-radial-enabled"
                     label="Włącz menu kołowe"
                     checked={radialEnabled}
-                    onChange={event => setRadialEnabled(event.target.checked)}
+                    onChange={event => setRadial(prev => ({ ...prev, enabled: event.target.checked }))}
                 />
                 {!radialEnabled && (
                     <p className="text-muted small mb-0">
@@ -385,6 +302,11 @@ function MobileRadialCommands() {
                         </div>
                     </SortableContext>
                 </DndContext>
+            </div>
+            <div>
+                <Button id="mobile-radial-add" size="sm" variant="secondary" disabled={!radialEnabled} onClick={addRadialCommand}>
+                    Dodaj komendę
+                </Button>
             </div>
         </div>
     );

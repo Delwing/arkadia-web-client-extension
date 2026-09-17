@@ -16,6 +16,10 @@ import NotificationsSection from "./sections/NotificationsSection";
 import SoundSection from "./sections/SoundSection";
 import { MobileButtonsSection, OtherSection } from "./sections/OtherSections";
 import ManageSoundsModal from "./ManageSoundsModal";
+import { SettingsSection } from "./fields";
+import DesktopButtons from "../options/DesktopButtons";
+import MobileButtons from "../options/MobileButtons";
+import MobileRadialCommands from "../options/MobileRadialCommands";
 
 type UiCategoryKey = Extract<SettingsCategoryKey, `ui-${string}`>;
 
@@ -74,6 +78,16 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
     const [refreshing, setRefreshing] = useState(false);
     const [explorationStats, setExplorationStats] = useState("");
     const [showManageSounds, setShowManageSounds] = useState(false);
+
+    // The button editors keep their own drafts (separate storage entries);
+    // remounting them is how a reopened dialog drops their unsaved edits.
+    const [buttonsGeneration, setButtonsGeneration] = useState(0);
+    const buttonSaves = useRef({ desktop: () => {}, mobile: () => {}, radial: () => {} });
+    const registerButtonSave = useRef({
+        desktop: (fn: () => void) => { buttonSaves.current.desktop = fn; },
+        mobile: (fn: () => void) => { buttonSaves.current.mobile = fn; },
+        radial: (fn: () => void) => { buttonSaves.current.radial = fn; },
+    }).current;
 
     const update = useCallback((patch: Partial<UiSettingsType>) => setDraft(prev => ({ ...prev, ...patch })), []);
 
@@ -155,6 +169,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         const ls = loadLayoutState();
         setLayoutEnabled(ls.enabled);
         setLayoutObjectList(ls.enabledPanels.objectList);
+        setButtonsGeneration(g => g + 1);
         refreshExplorationStats();
         void updateMapVersion();
     }, []);
@@ -168,6 +183,11 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         save(normalized);
         savedRef.current = normalized;
         setDraft(normalized);
+        buttonSaves.current.desktop();
+        // Mobile buttons and the radial menu share a storage entry; each merges
+        // its part into what is stored, so saving both keeps both.
+        buttonSaves.current.mobile();
+        buttonSaves.current.radial();
     }, []);
 
     const commitCustomDark = (color: string) => {
@@ -227,6 +247,24 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
             </>
         ),
         "ui-commands": <CommandsSection draft={draft} update={update} />,
+        "ui-buttons": (
+            <SettingsSection title="Przyciski na ekranie" full>
+                <DesktopButtons key={buttonsGeneration} registerSave={registerButtonSave.desktop} />
+            </SettingsSection>
+        ),
+        "ui-mobile-buttons": (
+            <>
+                <MobileButtonsSection draft={draft} update={update} />
+                <SettingsSection title="Układ przycisków" full>
+                    <MobileButtons key={buttonsGeneration} registerSave={registerButtonSave.mobile} />
+                </SettingsSection>
+            </>
+        ),
+        "ui-radial": (
+            <SettingsSection title="Konfiguracja" full>
+                <MobileRadialCommands key={buttonsGeneration} registerSave={registerButtonSave.radial} />
+            </SettingsSection>
+        ),
         "ui-footer": <FooterSections draft={draft} update={update} />,
         "ui-map": (
             <MapSections
@@ -247,12 +285,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
                 />
             </>
         ),
-        "ui-other": (
-            <>
-                <MobileButtonsSection draft={draft} update={update} />
-                <OtherSection draft={draft} update={update} />
-            </>
-        ),
+        "ui-other": <OtherSection draft={draft} update={update} />,
     };
 
     const extras = (

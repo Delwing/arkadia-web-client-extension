@@ -1,18 +1,10 @@
 import { expect, test } from './support/fixtures';
 import { ensureGameSocket, getLastOutgoingCommand, waitForCommandInput } from './support/mocks';
 import {Page} from "@playwright/test";
+import {openButtonsSettings, SETTINGS_SAVE} from "./support/settings";
 
-const MENU_BUTTON = '#menu-button';
-const MOBILE_BUTTONS_BUTTON = '#mobile-buttons-button';
-const MOBILE_BUTTONS_MODAL = '#mobile-buttons-modal';
-const MOBILE_BUTTONS_SAVE = '#mobile-buttons-save';
-
-async function openMobileButtonsSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(MOBILE_BUTTONS_BUTTON);
-    const modal = page.locator(MOBILE_BUTTONS_MODAL);
-    await expect(modal, 'should open mobile buttons settings modal').toBeVisible();
-    return modal;
+function openMobileButtonsSettings(page: Page) {
+    return openButtonsSettings(page, 'ui-mobile-buttons');
 }
 
 
@@ -30,13 +22,9 @@ test.describe('Mobile buttons color and command configuration', () => {
         const modal = await openMobileButtonsSettings(page);
         await expect(modal, 'mobile buttons modal should be visible').toBeVisible();
 
-        // Check that the modal body container is visible
-        const modalBody = modal.locator('.modal-body');
-        await expect(modalBody, 'modal body should be visible').toBeVisible();
-
-        // Check that the mobile-buttons-options container exists
-        const optionsContainer = page.locator('#mobile-buttons-options');
-        await expect(optionsContainer, 'mobile buttons options container should be visible').toBeVisible();
+        // The dialog opens on the mobile buttons page
+        const buttonsPage = modal.locator('.settings-page[data-settings-category="ui-mobile-buttons"]');
+        await expect(buttonsPage, 'mobile buttons page should be visible').toBeVisible();
 
         // Get the current visible preview grid (solo mode by default)
         const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
@@ -109,7 +97,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 
         // Save the configuration
-        const saveButton = page.locator(MOBILE_BUTTONS_SAVE);
+        const saveButton = page.locator(SETTINGS_SAVE);
         await expect(saveButton, 'save button should be visible').toBeVisible();
         await saveButton.click();
 
@@ -314,7 +302,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 
         // Save and close modal
-        await page.locator(MOBILE_BUTTONS_SAVE).click();
+        await page.locator(SETTINGS_SAVE).click();
         await expect(modal, 'modal should close after save').not.toBeVisible();
 
         // Now click the actual button in the mobile buttons container

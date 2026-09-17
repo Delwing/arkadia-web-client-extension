@@ -69,6 +69,22 @@
   text-align: left;
 }
 
+.settings-dialog__nav-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.settings-dialog__nav-icon {
+  flex-shrink: 0;
+  color: var(--popup-text-dim);
+}
+
+.settings-dialog__nav-item--active .settings-dialog__nav-icon {
+  color: var(--popup-accent);
+}
+
 .settings-dialog__nav-item:hover {
   background: var(--popup-control-hover-bg);
 }

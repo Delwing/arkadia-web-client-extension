@@ -8,7 +8,7 @@ interface OtherSectionsProps {
 
 export function MobileButtonsSection({ draft, update }: OtherSectionsProps) {
     return (
-        <SettingsSection title="Przyciski mobilne">
+        <SettingsSection title="Wyświetlanie">
             <CheckboxRow id="ui-show-buttons" settingKey="showButtons" label="Pokaż przyciski na ekranie" checked={draft.showButtons} onChange={(v) => update({ showButtons: v })} />
             <CheckboxRow id="ui-haptic-feedback" label="Wibracje przycisków mobilnych" checked={draft.hapticFeedback} onChange={(v) => update({ hapticFeedback: v })} />
         </SettingsSection>

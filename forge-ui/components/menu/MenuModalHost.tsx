@@ -4,6 +4,7 @@ import MenuModal from './MenuModal';
 import { holdPortaledModalScope } from './portaledModalScope';
 import { getHelperConnection } from '../../client/bootstrap';
 import { CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, type SettingsCategoryKey } from '@web/settings/categories.ts';
+import { buttonsSettingsCategory } from '@web/settings/buttonsCategory.ts';
 
 // The stock settings panels are lazy-loaded to keep their weight out of forge's
 // initial bundle: together they're ~140 kB gzip of JS (Skrypty alone is ~40 kB,
@@ -25,9 +26,10 @@ import { CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, type Sett
 // resolved (no "Ładowanie…" flash), while the heavy `?worker` deps still never
 // touch the startup path.
 const load = {
-    // 'options' and 'ui' are the same dialog, opened on different pages.
+    // 'options', 'ui', 'buttons' and 'radial' are the same dialog, opened on different pages.
     options: () => import('@web/settings/SettingsDialog'),
     ui: () => import('@web/settings/SettingsDialog'),
+    buttons: () => import('@web/settings/SettingsDialog'),
     'export-import': () => import('@web/options/ExportImport'),
     characters: () => import('@web/options/CharacterManagementModal'),
     binds: () => import('@web/options/Binds'),
@@ -37,8 +39,7 @@ const load = {
     recordings: () => import('@web/options/Recordings'),
     shortcuts: () => import('@web/options/Shortcuts'),
     'location-notes': () => import('@web/options/LocationNotes'),
-    buttons: () => import('@web/options/ButtonsSettings'),
-    radial: () => import('@web/options/MobileRadialCommands'),
+    radial: () => import('@web/settings/SettingsDialog'),
     helper: () => import('@web/options/HelperSettings'),
     logs: () => import('@web/LogBrowser'),
     docs: () => import('@web/docs'),
@@ -54,8 +55,6 @@ const UserTriggers = lazy(load.triggers);
 const Recordings = lazy(load.recordings);
 const Shortcuts = lazy(load.shortcuts);
 const LocationNotes = lazy(load['location-notes']);
-const ButtonsSettings = lazy(load.buttons);
-const MobileRadialCommands = lazy(load.radial);
 const HelperSettings = lazy(load.helper);
 const LogBrowser = lazy(() => load.logs().then((m) => ({ default: m.LogBrowser })));
 
@@ -125,8 +124,8 @@ const TITLES: Record<ModalKey, string> = {
     recordings: 'Nagrania',
     shortcuts: 'Skróty',
     'location-notes': 'Notatki lokacji',
-    buttons: 'Przyciski',
-    radial: 'Menu kołowe',
+    buttons: 'Ustawienia',
+    radial: 'Ustawienia',
     helper: 'Arkadia Helper',
     logs: 'Logi',
     docs: 'Dokumentacja',
@@ -144,7 +143,7 @@ const TITLES: Record<ModalKey, string> = {
  * dialogs these components were authored against, which carry `h-100`). Flowing
  * panels stay content-sized so short ones don't stretch into a tall empty box.
  */
-const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'export-import', 'radial', 'scripts']);
+const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'buttons', 'export-import', 'radial', 'scripts']);
 
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // The settings dialog puts a sidebar next to a 2–3 column masonry of
@@ -152,6 +151,8 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // stock's wide settings modal.
     options: 'xl',
     ui: 'xl',
+    buttons: 'xl',
+    radial: 'xl',
     // Skrypty is two tabs over a fixed toolbar: an installed list plus a
     // catalogue grid that wants at least three columns to read as a catalogue.
     scripts: 'xl',
@@ -183,10 +184,12 @@ function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
     return null;
 }
 
-const SETTINGS_KEYS: ReadonlySet<ModalKey> = new Set(['options', 'ui']);
-const SETTINGS_START: Partial<Record<ModalKey, SettingsCategoryKey>> = {
-    options: 'character-general',
-    ui: 'ui-appearance',
+const SETTINGS_KEYS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'buttons', 'radial']);
+const SETTINGS_START: Partial<Record<ModalKey, () => SettingsCategoryKey>> = {
+    options: () => 'character-general',
+    ui: () => 'ui-appearance',
+    buttons: buttonsSettingsCategory,
+    radial: () => 'ui-radial',
 };
 
 /** Docs render imperatively (plain DOM) into a container; loaded on demand so
@@ -300,9 +303,11 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
     switch (modalKey) {
         case 'options':
         case 'ui':
+        case 'buttons':
+        case 'radial':
             body = (
                 <SettingsDialog
-                    initialCategory={SETTINGS_START[modalKey]}
+                    initialCategory={SETTINGS_START[modalKey]?.()}
                     soundManager={client.SoundManager}
                     onEnableNotifications={() => client.enableNotifications()}
                 />
@@ -334,12 +339,6 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
             break;
         case 'location-notes':
             body = <LocationNotes />;
-            break;
-        case 'buttons':
-            body = <ButtonsSettings />;
-            break;
-        case 'radial':
-            body = <MobileRadialCommands />;
             break;
         case 'helper': {
             const helper = getHelperConnection();

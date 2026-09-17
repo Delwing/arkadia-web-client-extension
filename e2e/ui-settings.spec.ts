@@ -67,10 +67,13 @@ test.describe('UI settings', () => {
         await modal.locator('#ui-xterm-palette').selectOption('proper');
         await modal.locator('#ui-font-family').selectOption('cascadia-mono');
 
-        // Inne page
-        await selectPage(modal, 'ui-other');
+        // Przyciski mobilne page
+        await selectPage(modal, 'ui-mobile-buttons');
         await ensureUnchecked('#ui-show-buttons');
         await ensureUnchecked('#ui-haptic-feedback');
+
+        // Inne page
+        await selectPage(modal, 'ui-other');
         await ensureUnchecked('#ui-fight-title-icon');
 
         // Komendy page
@@ -287,7 +290,7 @@ test.describe('UI settings', () => {
         await expect(mobileButtons, 'mobile buttons should be visible by default').toBeVisible();
 
         // Uncheck "show buttons" and save
-        const modal = await openUiSettings(page, 'ui-other');
+        const modal = await openUiSettings(page, 'ui-mobile-buttons');
         const showButtonsCheckbox = modal.locator('#ui-show-buttons');
         if (await showButtonsCheckbox.isChecked()) {
             await showButtonsCheckbox.uncheck();
@@ -310,7 +313,7 @@ test.describe('UI settings', () => {
         ).not.toBeVisible();
 
         // The checkbox should still be unchecked
-        const reloadedModal = await openUiSettings(page, 'ui-other');
+        const reloadedModal = await openUiSettings(page, 'ui-mobile-buttons');
         await expect(
             reloadedModal.locator('#ui-show-buttons'),
             'show buttons checkbox should remain unchecked after reload',

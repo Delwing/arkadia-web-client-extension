@@ -766,7 +766,10 @@ const SETTINGS_PANELS: PanelSpec[] = [
     { category: 'ui-footer', files: ['src/web/uiSettings/sections/FooterSections.tsx'] },
     { category: 'ui-map', files: ['src/web/uiSettings/sections/MapSections.tsx'] },
     { category: 'ui-sound', files: ['src/web/uiSettings/sections/NotificationsSection.tsx', 'src/web/uiSettings/sections/SoundSection.tsx'] },
-    { category: 'ui-other', files: ['src/web/uiSettings/sections/OtherSections.tsx'] },
+    { category: 'ui-buttons', files: ['src/web/options/DesktopButtons.tsx'] },
+    { category: 'ui-mobile-buttons', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Wyświetlanie'] },
+    { category: 'ui-radial', files: ['src/web/options/MobileRadialCommands.tsx'] },
+    { category: 'ui-other', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Inne'] },
 ];
 
 /** Read `type SettingsCategoryKey = "a" | "b"` so a new page breaks the build. */

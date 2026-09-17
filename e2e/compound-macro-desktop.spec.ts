@@ -5,23 +5,7 @@ import {
     resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
-import { Page } from '@playwright/test';
-
-const MENU_BUTTON = '#menu-button';
-const MOBILE_BUTTONS_BUTTON = '#mobile-buttons-button';
-const MOBILE_BUTTONS_MODAL = '#mobile-buttons-modal';
-
-async function openButtonsSettings(page: Page) {
-    await page.click(MENU_BUTTON);
-    await page.click(MOBILE_BUTTONS_BUTTON);
-    const modal = page.locator(MOBILE_BUTTONS_MODAL);
-    await expect(modal).toBeVisible();
-    return modal;
-}
-
-async function switchToDesktopTab(page: Page) {
-    await page.getByRole('button', { name: 'Przyciski', exact: true }).click();
-}
+import { openButtonsSettings, saveSettings } from './support/settings';
 
 test.describe('Desktop buttons compound macro', () => {
     test.beforeEach(async ({ page }) => {
@@ -33,8 +17,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await openButtonsSettings(page);
-        await switchToDesktopTab(page);
+        await openButtonsSettings(page, 'ui-buttons');
 
         // Add a new desktop button
         await page.getByText('+ Dodaj przycisk').click();
@@ -53,8 +36,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await openButtonsSettings(page);
-        await switchToDesktopTab(page);
+        await openButtonsSettings(page, 'ui-buttons');
 
         // Add a new desktop button
         await page.getByText('+ Dodaj przycisk').click();
@@ -86,7 +68,7 @@ test.describe('Desktop buttons compound macro', () => {
         await stepContainers.nth(1).locator('textarea').fill('wyjmij topor');
 
         // Save
-        await page.locator('#desktop-buttons-save').click();
+        await saveSettings(page);
     });
 
     test('desktop compound macro button sends all step commands', async ({ page }) => {
@@ -242,8 +224,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await openButtonsSettings(page);
-        await switchToDesktopTab(page);
+        await openButtonsSettings(page, 'ui-buttons');
 
         await page.getByText('+ Dodaj przycisk').click();
 

@@ -18,6 +18,9 @@ export type SettingsCategory =
     | 'ui-appearance'
     | 'ui-windows'
     | 'ui-commands'
+    | 'ui-buttons'
+    | 'ui-mobile-buttons'
+    | 'ui-radial'
     | 'ui-footer'
     | 'ui-map'
     | 'ui-sound'
@@ -51,6 +54,21 @@ export async function openSettings(page: Page, category: SettingsCategory = 'cha
     await waitForSettingsModalClosed(page);
     await page.click('#menu-button');
     await page.click(category.startsWith('ui-') ? '#ui-settings-button' : '#options-button');
+    const modal = page.locator(SETTINGS_MODAL);
+    await expect(modal, 'should open settings modal').toBeVisible();
+    await waitForSettingsModalShown(page);
+    await goToSettingsPage(page, category);
+    return modal;
+}
+
+/**
+ * Opens the settings dialog through the menu's "Przyciski" item, which lands on
+ * one of the two buttons pages depending on the device, then shows `category`.
+ */
+export async function openButtonsSettings(page: Page, category: 'ui-buttons' | 'ui-mobile-buttons'): Promise<Locator> {
+    await waitForSettingsModalClosed(page);
+    await page.click('#menu-button');
+    await page.click('#mobile-buttons-button');
     const modal = page.locator(SETTINGS_MODAL);
     await expect(modal, 'should open settings modal').toBeVisible();
     await waitForSettingsModalShown(page);

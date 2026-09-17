@@ -3,7 +3,9 @@ import type {Page} from '@playwright/test';
 import {ensureGameSocket, waitForCommandInput} from './support/mocks';
 import {
     goToSettingsPage,
+    openButtonsSettings,
     openSettings,
+    saveSettings,
     SETTINGS_MODAL,
     waitForSettingsModalClosed,
     waitForSettingsModalShown,
@@ -110,10 +112,10 @@ test.describe('Settings dialog', () => {
 
     test('marks pages with unsaved changes until the dialog is reopened', async ({page}) => {
         await boot(page);
-        let modal = await openSettings(page, 'ui-other');
+        let modal = await openSettings(page, 'ui-mobile-buttons');
         const checkbox = modal.locator('#ui-haptic-feedback');
         const initiallyChecked = await checkbox.isChecked();
-        const dot = navItem(page, 'ui-other').locator('.settings-dialog__dirty');
+        const dot = navItem(page, 'ui-mobile-buttons').locator('.settings-dialog__dirty');
 
         await expect(dot).toHaveCount(0);
         await checkbox.setChecked(!initiallyChecked);
@@ -128,12 +130,86 @@ test.describe('Settings dialog', () => {
 
         await closeWithoutSaving(page);
 
-        modal = await openSettings(page, 'ui-other');
+        modal = await openSettings(page, 'ui-mobile-buttons');
         await expect(dot, 'reopening drops the unsaved marker').toHaveCount(0);
         await expect(
             modal.locator('#ui-haptic-feedback'),
             'closing without saving discards the change',
         ).toBeChecked({checked: initiallyChecked});
+    });
+
+    test('button editors are pages saved by the dialog', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 900});
+        await boot(page);
+        const liveButton = page.locator('.desktop-buttons-container .desktop-button', {hasText: 'Zapisany'});
+
+        await page.click('#menu-button');
+        await page.click('#mobile-buttons-button');
+        await waitForSettingsModalShown(page);
+        await expect(settingsPage(page, 'ui-buttons'), '"Przyciski" opens the buttons page on a desktop').toBeVisible();
+
+        const desktopDot = navItem(page, 'ui-buttons').locator('.settings-dialog__dirty');
+        await settingsPage(page, 'ui-buttons').getByRole('button', {name: '+ Dodaj przycisk'}).click();
+        await settingsPage(page, 'ui-buttons').locator('input[type="text"]').first().fill('Zapisany');
+        await expect(desktopDot, 'adding a button marks the page').toBeVisible();
+
+        await goToSettingsPage(page, 'ui-mobile-buttons');
+        const mobileDot = navItem(page, 'ui-mobile-buttons').locator('.settings-dialog__dirty');
+        await settingsPage(page, 'ui-mobile-buttons').locator('#mobile-buttons-preview-solo [data-button-id="button-1"]').click();
+        const config = page.locator('.mobile-button-config');
+        await config.locator('input[type="color"]').first().fill('#ff0000');
+        await config.locator('.btn-close').click();
+        await expect(config).toHaveCount(0);
+        await expect(mobileDot, 'a change made in the closed config popup still counts').toBeVisible();
+
+        await closeWithoutSaving(page);
+        await expect(liveButton, 'closing without saving adds no button').toHaveCount(0);
+
+        const modal = await openButtonsSettings(page, 'ui-buttons');
+        await expect(desktopDot, 'reopening drops the unsaved marker').toHaveCount(0);
+        await expect(modal.getByText('Brak przycisków.', {exact: false}), 'the unsaved button is gone').toBeVisible();
+
+        await settingsPage(page, 'ui-buttons').getByRole('button', {name: '+ Dodaj przycisk'}).click();
+        await settingsPage(page, 'ui-buttons').locator('input[type="text"]').first().fill('Zapisany');
+        await saveSettings(page);
+        await expect(liveButton, 'saving shows the new button').toBeVisible();
+    });
+
+    test('radial menu and mobile buttons, sharing one stored entry, both save', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 900});
+        await boot(page);
+
+        await page.click('#menu-button');
+        await page.click('#mobile-radial-button');
+        await waitForSettingsModalShown(page);
+        const radialPage = settingsPage(page, 'ui-radial');
+        await expect(radialPage, '"Menu kołowe" opens its page').toBeVisible();
+
+        await radialPage.locator('#mobile-radial-add').click();
+        await radialPage.locator('input[placeholder="Tekst komendy"]').last().fill('zerknij');
+        await expect(navItem(page, 'ui-radial').locator('.settings-dialog__dirty')).toBeVisible();
+
+        await goToSettingsPage(page, 'ui-mobile-buttons');
+        await settingsPage(page, 'ui-mobile-buttons').locator('#mobile-buttons-preview-solo [data-button-id="button-1"]').click();
+        const config = page.locator('.mobile-button-config');
+        await config.locator('.mobile-button-label').fill('Wspolny');
+        await config.locator('.btn-close').click();
+
+        await saveSettings(page);
+        await expect(
+            page.locator('#mobile-direction-buttons #button-1'),
+            'the mobile button change is saved',
+        ).toHaveText('Wspolny');
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await openSettings(page, 'ui-radial');
+        await expect(
+            settingsPage(page, 'ui-radial').locator('input[placeholder="Tekst komendy"]').last(),
+            'the radial command survived the mobile buttons save',
+        ).toHaveValue('zerknij');
+        await expect(page.locator('#mobile-direction-buttons #button-1')).toHaveText('Wspolny');
     });
 });
 

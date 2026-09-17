@@ -6,8 +6,6 @@ import {
     defaultBackground,
     defaultButtonGap,
     defaultButtonSize,
-    defaultCols,
-    defaultOrder,
     defaultSettings,
     loadSettings,
     saveSettings,
@@ -27,6 +25,7 @@ import ButtonGrid, {Mode} from "./ButtonGrid";
 import MacroSelect from "./MacroSelect";
 import MacroConfigEditor from "./MacroConfigEditor";
 import HoldConfig from "./HoldConfig";
+import { SettingsValue } from "@web/settings/SettingsValue.tsx";
 
 const emptySetting: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
@@ -75,21 +74,40 @@ function rgbaFromHexAlpha(hex: string, alpha: number) {
 
 type SettingsMap = Record<string, MobileButtonSetting>;
 
+const CONFIG_WIDTH = 380;
+const CONFIG_MIN_HEIGHT = 360;
+const VIEWPORT_MARGIN = 8;
+
+/**
+ * Viewport coordinates for the desktop config popup: under the clicked button,
+ * but moved up and left as far as needed to keep a usable popup on screen —
+ * a button low on a scrolled settings page would otherwise open it below the
+ * window's bottom edge.
+ */
+function configPosition(anchor: DOMRect) {
+    const { innerWidth, innerHeight } = window;
+    const tallest = innerHeight * 0.7;
+    const top = Math.max(VIEWPORT_MARGIN, Math.min(
+        anchor.bottom + 4,
+        innerHeight - VIEWPORT_MARGIN - Math.min(CONFIG_MIN_HEIGHT, tallest),
+    ));
+    const left = Math.max(VIEWPORT_MARGIN, Math.min(anchor.left, innerWidth - VIEWPORT_MARGIN - CONFIG_WIDTH));
+    return { left, top, maxHeight: Math.min(tallest, innerHeight - VIEWPORT_MARGIN - top) };
+}
+
 const modes: Mode[] = ['solo', 'team', 'leader'];
 
-function MobileButtons() {
-    const [settings, setSettings] = useState<Settings>({
-        solo: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
-        team: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
-        leader: { buttons: {}, order: [...defaultOrder], cols: defaultCols, background: defaultBackground },
-        locked: false,
-        radial: { enabled: true, commands: [] },
-        buttonSize: defaultButtonSize,
-        buttonGap: defaultButtonGap,
-    });
+/**
+ * The "Przyciski mobilne" settings page. Edits stay local until the settings
+ * dialog's Save runs the callback given to `registerSave`; the dialog remounts
+ * the editor on open, which is how unsaved edits are dropped.
+ */
+function MobileButtons({ registerSave }: { registerSave: (save: () => void) => void }) {
+    const [stored] = useState(() => JSON.stringify(loadSettings()));
+    const [settings, setSettings] = useState<Settings>(() => JSON.parse(stored));
     const [syncDirs, setSyncDirs] = useState(true);
     const [active, setActive] = useState<{ set: Mode; id: string } | null>(null);
-    const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+    const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number }>({ left: 0, top: 0, maxHeight: 0 });
     const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
     const [view, setView] = useState<Mode>('solo');
     const [isMobile, setIsMobile] = useState(false);
@@ -105,7 +123,18 @@ function MobileButtons() {
     const [copyFrom, setCopyFrom] = useState<Mode>('solo');
 
     useEffect(() => {
-        setSettings(loadSettings());
+        registerSave(() => {
+            // Untouched: leave storage (and the live buttons) alone.
+            if (JSON.stringify(settings) === stored) return;
+            // The radial menu shares this entry but is edited in "Menu kołowe".
+            const next = { ...settings, radial: loadSettings().radial };
+            saveSettings(next);
+            const { isInAnyTeam, isLeader } = getTeamState();
+            applySettings(next, isInAnyTeam, isLeader);
+        });
+    }, [registerSave, settings, stored]);
+
+    useEffect(() => {
         setPluginMacros(getRegisteredButtonMacros());
 
         const handleMacrosChanged = () => {
@@ -210,9 +239,7 @@ function MobileButtons() {
     }
 
     function openConfig(setName: Mode, id: string, ev: React.MouseEvent<HTMLButtonElement>) {
-        const rect = ev.currentTarget.getBoundingClientRect();
-        // Use viewport coordinates for fixed positioning
-        setPos({ left: rect.left, top: rect.bottom + 4 });
+        setPos(configPosition(ev.currentTarget.getBoundingClientRect()));
         setActive({ set: setName, id });
         setConfigOpen(true);
         const cfg = settings[setName].buttons[id] || defaultSettings[id] || emptySetting;
@@ -327,412 +354,407 @@ function MobileButtons() {
         setSettings(prev => ({ ...prev, [to]: JSON.parse(JSON.stringify(prev[from])) }));
     }
 
-    function save() {
-        saveSettings(settings);
-        const { isInAnyTeam, isLeader } = getTeamState();
-        applySettings(settings, isInAnyTeam, isLeader);
-        window.dispatchEvent(new Event('close-options'));
-    }
-
     const activeCfg = active ? (settings[active.set].buttons[active.id] || defaultSettings[active.id] || emptySetting) : null;
     const currentBackground = settings[view].background || defaultBackground;
     const { hex: backgroundHex, alpha: backgroundAlpha } = parseBackgroundColor(currentBackground);
 
     return (
-        <div onClick={close} className="w-100 position-relative">
-            <div className="mobile-buttons-top-row">
-                <div className="mobile-buttons-mode-toggle">
-                    <Button
-                        size="sm"
-                        variant={view === 'solo' ? 'primary' : 'secondary'}
-                        onClick={() => changeView('solo')}
-                    >
-                        Bez druzyny
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant={view === 'team' ? 'primary' : 'secondary'}
-                        onClick={() => changeView('team')}
-                    >
-                        W druzynie
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant={view === 'leader' ? 'primary' : 'secondary'}
-                        onClick={() => changeView('leader')}
-                    >
-                        Prowadzacy
-                    </Button>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                    <Button size="sm" variant="outline-secondary" onClick={resetPosition}>
-                        Resetuj pozycje
-                    </Button>
-                    <Form.Check
-                        id="mobile-buttons-lock"
-                        type="switch"
-                        className="user-select-none"
-                        label="Zablokuj"
-                        checked={settings.locked}
-                        onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
-                    />
-                </div>
-            </div>
-
-            {/* Button size and gap section */}
-            <div
-                className="mobile-buttons-background-section"
-                onClick={ev => ev.stopPropagation()}
-                onMouseDown={ev => ev.stopPropagation()}
-                onTouchStart={ev => ev.stopPropagation()}
-            >
-                <Form.Label>Rozmiar przycisku</Form.Label>
-                <div className="mobile-buttons-background-controls">
-                    <Form.Range
-                        className="flex-grow-1"
-                        min={20}
-                        max={80}
-                        value={settings.buttonSize ?? defaultButtonSize}
-                        onChange={e => setSettings(prev => ({ ...prev, buttonSize: Number(e.target.value) }))}
-                    />
-                    <span className="mobile-buttons-background-alpha-value">{settings.buttonSize ?? defaultButtonSize}px</span>
-                    <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        data-testid="reset-button-size"
-                        onClick={() => setSettings(prev => ({ ...prev, buttonSize: defaultButtonSize }))}
-                    >
-                        ↺
-                    </Button>
-                </div>
-                <Form.Label className="mt-2">Odstep</Form.Label>
-                <div className="mobile-buttons-background-controls">
-                    <Form.Range
-                        className="flex-grow-1"
-                        min={0}
-                        max={20}
-                        value={settings.buttonGap ?? defaultButtonGap}
-                        onChange={e => setSettings(prev => ({ ...prev, buttonGap: Number(e.target.value) }))}
-                    />
-                    <span className="mobile-buttons-background-alpha-value">{settings.buttonGap ?? defaultButtonGap}px</span>
-                    <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        data-testid="reset-button-gap"
-                        onClick={() => setSettings(prev => ({ ...prev, buttonGap: defaultButtonGap }))}
-                    >
-                        ↺
-                    </Button>
-                </div>
-            </div>
-
-            {/* Button grid with spatial controls */}
-            <div className="d-flex flex-column align-items-center mb-3">
-                <div className="d-flex gap-1 mb-2">
-                    <Button size="sm" variant="outline-secondary" onClick={() => addRow('top')} title="Dodaj wiersz">+</Button>
-                    <Button size="sm" variant="outline-secondary" onClick={() => removeRow('top')} title="Usun wiersz">-</Button>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                    <div className="d-flex flex-column gap-1">
-                        <Button size="sm" variant="outline-secondary" onClick={() => addCol('left')} title="Dodaj kolumne">+</Button>
-                        <Button size="sm" variant="outline-secondary" onClick={() => removeCol('left')} title="Usun kolumne">-</Button>
+        <>
+            <SettingsValue value={settings} />
+            <div onClick={close} className="w-100 position-relative" data-settings-ignore>
+                <div className="mobile-buttons-top-row">
+                    <div className="mobile-buttons-mode-toggle">
+                        <Button
+                            size="sm"
+                            variant={view === 'solo' ? 'primary' : 'secondary'}
+                            onClick={() => changeView('solo')}
+                        >
+                            Bez druzyny
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant={view === 'team' ? 'primary' : 'secondary'}
+                            onClick={() => changeView('team')}
+                        >
+                            W druzynie
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant={view === 'leader' ? 'primary' : 'secondary'}
+                            onClick={() => changeView('leader')}
+                        >
+                            Prowadzacy
+                        </Button>
                     </div>
-                    <div>
-                        {modes.map(mode => (
-                            <ButtonGrid
-                                key={mode}
-                                mode={mode}
-                                view={view}
-                                settings={settings}
-                                notEditable={notEditable}
-                                emptySetting={emptySetting}
-                                openConfig={openConfig}
-                                gridRef={refs[mode]}
-                                activeButtonId={active?.id}
-                            />
-                        ))}
-                    </div>
-                    <div className="d-flex flex-column gap-1">
-                        <Button size="sm" variant="outline-secondary" onClick={() => addCol('right')} title="Dodaj kolumne">+</Button>
-                        <Button size="sm" variant="outline-secondary" onClick={() => removeCol('right')} title="Usun kolumne">-</Button>
+                    <div className="d-flex align-items-center gap-2">
+                        <Button size="sm" variant="outline-secondary" onClick={resetPosition}>
+                            Resetuj pozycje
+                        </Button>
+                        <Form.Check
+                            id="mobile-buttons-lock"
+                            type="switch"
+                            className="user-select-none"
+                            label="Zablokuj"
+                            checked={settings.locked}
+                            onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
+                        />
                     </div>
                 </div>
-                <div className="d-flex gap-1 mt-2">
-                    <Button size="sm" variant="outline-secondary" onClick={() => addRow('bottom')} title="Dodaj wiersz">+</Button>
-                    <Button size="sm" variant="outline-secondary" onClick={() => removeRow('bottom')} title="Usun wiersz">-</Button>
-                </div>
-            </div>
 
-            {/* Background picker section */}
-            <div
-                className="mobile-buttons-background-section"
-                onClick={ev => ev.stopPropagation()}
-                onMouseDown={ev => ev.stopPropagation()}
-                onTouchStart={ev => ev.stopPropagation()}
-            >
-                <Form.Label>Kolor tla</Form.Label>
-                <div className="mobile-buttons-background-controls">
-                    <Form.Control
-                        type="color"
-                        className="mobile-buttons-background-color"
-                        value={backgroundHex}
-                        onChange={e => {
-                            const hex = e.target.value;
-                            setSettings(prev => {
-                                const bg = prev[view].background || defaultBackground;
-                                const { alpha } = parseBackgroundColor(bg);
-                                return {
-                                    ...prev,
-                                    [view]: {
-                                        ...prev[view],
-                                        background: rgbaFromHexAlpha(hex, alpha),
-                                    },
-                                };
-                            });
-                        }}
-                    />
-                    <div className="mobile-buttons-background-alpha">
+                {/* Button size and gap section */}
+                <div
+                    className="mobile-buttons-background-section"
+                    onClick={ev => ev.stopPropagation()}
+                    onMouseDown={ev => ev.stopPropagation()}
+                    onTouchStart={ev => ev.stopPropagation()}
+                >
+                    <Form.Label>Rozmiar przycisku</Form.Label>
+                    <div className="mobile-buttons-background-controls">
+                        <Form.Range
+                            className="flex-grow-1"
+                            min={20}
+                            max={80}
+                            value={settings.buttonSize ?? defaultButtonSize}
+                            onChange={e => setSettings(prev => ({ ...prev, buttonSize: Number(e.target.value) }))}
+                        />
+                        <span className="mobile-buttons-background-alpha-value">{settings.buttonSize ?? defaultButtonSize}px</span>
+                        <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            data-testid="reset-button-size"
+                            onClick={() => setSettings(prev => ({ ...prev, buttonSize: defaultButtonSize }))}
+                        >
+                            ↺
+                        </Button>
+                    </div>
+                    <Form.Label className="mt-2">Odstep</Form.Label>
+                    <div className="mobile-buttons-background-controls">
                         <Form.Range
                             className="flex-grow-1"
                             min={0}
-                            max={100}
-                            value={Math.round(backgroundAlpha * 100)}
+                            max={20}
+                            value={settings.buttonGap ?? defaultButtonGap}
+                            onChange={e => setSettings(prev => ({ ...prev, buttonGap: Number(e.target.value) }))}
+                        />
+                        <span className="mobile-buttons-background-alpha-value">{settings.buttonGap ?? defaultButtonGap}px</span>
+                        <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            data-testid="reset-button-gap"
+                            onClick={() => setSettings(prev => ({ ...prev, buttonGap: defaultButtonGap }))}
+                        >
+                            ↺
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Button grid with spatial controls */}
+                <div className="d-flex flex-column align-items-center mb-3">
+                    <div className="d-flex gap-1 mb-2">
+                        <Button size="sm" variant="outline-secondary" onClick={() => addRow('top')} title="Dodaj wiersz">+</Button>
+                        <Button size="sm" variant="outline-secondary" onClick={() => removeRow('top')} title="Usun wiersz">-</Button>
+                    </div>
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="d-flex flex-column gap-1">
+                            <Button size="sm" variant="outline-secondary" onClick={() => addCol('left')} title="Dodaj kolumne">+</Button>
+                            <Button size="sm" variant="outline-secondary" onClick={() => removeCol('left')} title="Usun kolumne">-</Button>
+                        </div>
+                        <div>
+                            {modes.map(mode => (
+                                <ButtonGrid
+                                    key={mode}
+                                    mode={mode}
+                                    view={view}
+                                    settings={settings}
+                                    notEditable={notEditable}
+                                    emptySetting={emptySetting}
+                                    openConfig={openConfig}
+                                    gridRef={refs[mode]}
+                                    activeButtonId={active?.id}
+                                />
+                            ))}
+                        </div>
+                        <div className="d-flex flex-column gap-1">
+                            <Button size="sm" variant="outline-secondary" onClick={() => addCol('right')} title="Dodaj kolumne">+</Button>
+                            <Button size="sm" variant="outline-secondary" onClick={() => removeCol('right')} title="Usun kolumne">-</Button>
+                        </div>
+                    </div>
+                    <div className="d-flex gap-1 mt-2">
+                        <Button size="sm" variant="outline-secondary" onClick={() => addRow('bottom')} title="Dodaj wiersz">+</Button>
+                        <Button size="sm" variant="outline-secondary" onClick={() => removeRow('bottom')} title="Usun wiersz">-</Button>
+                    </div>
+                </div>
+
+                {/* Background picker section */}
+                <div
+                    className="mobile-buttons-background-section"
+                    onClick={ev => ev.stopPropagation()}
+                    onMouseDown={ev => ev.stopPropagation()}
+                    onTouchStart={ev => ev.stopPropagation()}
+                >
+                    <Form.Label>Kolor tla</Form.Label>
+                    <div className="mobile-buttons-background-controls">
+                        <Form.Control
+                            type="color"
+                            className="mobile-buttons-background-color"
+                            value={backgroundHex}
                             onChange={e => {
-                                const alphaValue = Number(e.target.value) / 100;
+                                const hex = e.target.value;
                                 setSettings(prev => {
                                     const bg = prev[view].background || defaultBackground;
-                                    const { hex } = parseBackgroundColor(bg);
+                                    const { alpha } = parseBackgroundColor(bg);
                                     return {
                                         ...prev,
                                         [view]: {
                                             ...prev[view],
-                                            background: rgbaFromHexAlpha(hex, alphaValue),
+                                            background: rgbaFromHexAlpha(hex, alpha),
                                         },
                                     };
                                 });
                             }}
                         />
-                        <span className="mobile-buttons-background-alpha-value">{Math.round(backgroundAlpha * 100)}%</span>
-                    </div>
-                    <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        onClick={() => {
-                            setSettings(prev => ({
-                                ...prev,
-                                [view]: { ...prev[view], background: defaultBackground },
-                            }));
-                        }}
-                    >
-                        ↺
-                    </Button>
-                </div>
-            </div>
-            {/* Mobile backdrop */}
-            {active && (
-                <div
-                    className={`mobile-button-config-backdrop ${configOpen ? 'open' : ''}`}
-                    onClick={close}
-                />
-            )}
-            {active && activeCfg && (
-                <div
-                    className={`mobile-button-config ${configOpen ? 'open' : ''}`}
-                    style={isMobile ? undefined : { left: pos.left, top: pos.top }}
-                    onClick={ev => ev.stopPropagation()}
-                >
-                    {/* Header */}
-                    <div className="mobile-button-config-header">
-                        <h6 className="mobile-button-config-header-title">Konfiguracja przycisku</h6>
-                        <button type="button" className="btn-close" onClick={close} />
-                    </div>
-
-                    {/* Body */}
-                    <div className="mobile-button-config-body">
-                        {/* Basic settings section */}
-                        <div className="mobile-button-config-section">
-                            <div className="mobile-button-config-section-title">Podstawowe</div>
-                            <div className="mobile-button-config-row">
-                                <Form.Label>Makro</Form.Label>
-                                <MacroSelect
-                                    value={activeCfg.macroType}
-                                    onChange={val => {
-                                        if (val === 'empty') {
-                                            makeBlank(active!.set, active!.id);
-                                        } else {
-                                            update(active!.set, active!.id, 'macroType', val);
-                                            if (val !== 'compound') {
-                                                update(active!.set, active!.id, 'steps', undefined);
-                                            }
-                                        }
-                                    }}
-                                    pluginMacros={pluginMacros}
-                                    showUnavailableWarning
-                                    className="mobile-button-macro"
-                                />
-                            </div>
-                            {!isButtonMacroAvailable(activeCfg.macroType) && (
-                                <Form.Text className="text-warning">
-                                    Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
-                                </Form.Text>
-                            )}
-                            {activeCfg.macroType !== 'empty' && (
-                                <div className="mobile-button-config-row">
-                                    <Form.Label>Etykieta</Form.Label>
-                                    <Form.Control
-                                        size="sm"
-                                        className="mobile-button-label"
-                                        type="text"
-                                        value={activeCfg.label}
-                                        onChange={e => update(active!.set, active!.id, 'label', e.target.value)}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Macro-specific options via shared component */}
-                        {activeCfg.macroType !== 'empty' && (
-                            <MacroConfigEditor
-                                config={activeCfg}
-                                onChange={updates => {
-                                    const setName = active!.set;
-                                    const id = active!.id;
-                                    Object.entries(updates).forEach(([key, value]) => {
-                                        update(setName, id, key as keyof MobileButtonSetting, value);
+                        <div className="mobile-buttons-background-alpha">
+                            <Form.Range
+                                className="flex-grow-1"
+                                min={0}
+                                max={100}
+                                value={Math.round(backgroundAlpha * 100)}
+                                onChange={e => {
+                                    const alphaValue = Number(e.target.value) / 100;
+                                    setSettings(prev => {
+                                        const bg = prev[view].background || defaultBackground;
+                                        const { hex } = parseBackgroundColor(bg);
+                                        return {
+                                            ...prev,
+                                            [view]: {
+                                                ...prev[view],
+                                                background: rgbaFromHexAlpha(hex, alphaValue),
+                                            },
+                                        };
                                     });
                                 }}
-                                pluginMacros={pluginMacros}
-                                buttonColor={activeCfg.color}
                             />
-                        )}
+                            <span className="mobile-buttons-background-alpha-value">{Math.round(backgroundAlpha * 100)}%</span>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            onClick={() => {
+                                setSettings(prev => ({
+                                    ...prev,
+                                    [view]: { ...prev[view], background: defaultBackground },
+                                }));
+                            }}
+                        >
+                            ↺
+                        </Button>
+                    </div>
+                </div>
+                {/* Mobile backdrop */}
+                {active && (
+                    <div
+                        className={`mobile-button-config-backdrop ${configOpen ? 'open' : ''}`}
+                        onClick={close}
+                    />
+                )}
+                {active && activeCfg && (
+                    <div
+                        className={`mobile-button-config ${configOpen ? 'open' : ''}`}
+                        style={isMobile ? undefined : pos}
+                        onClick={ev => ev.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="mobile-button-config-header">
+                            <h6 className="mobile-button-config-header-title">Konfiguracja przycisku</h6>
+                            <button type="button" className="btn-close" onClick={close} />
+                        </div>
 
-                        {/* Appearance section */}
-                        {activeCfg.macroType !== 'empty' && (
+                        {/* Body */}
+                        <div className="mobile-button-config-body">
+                            {/* Basic settings section */}
                             <div className="mobile-button-config-section">
-                                <div className="mobile-button-config-section-title">Wyglad</div>
-                                <div className="mobile-button-color-row">
-                                    <Form.Label>Kolor</Form.Label>
-                                    <Form.Control
-                                        size="sm"
-                                        type="color"
-                                        value={activeCfg.color}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            if (syncDirs && activeCfg.macroType === 'kierunek') {
-                                                updateAllDirections('color', val);
+                                <div className="mobile-button-config-section-title">Podstawowe</div>
+                                <div className="mobile-button-config-row">
+                                    <Form.Label>Makro</Form.Label>
+                                    <MacroSelect
+                                        value={activeCfg.macroType}
+                                        onChange={val => {
+                                            if (val === 'empty') {
+                                                makeBlank(active!.set, active!.id);
                                             } else {
-                                                update(active!.set, active!.id, 'color', val);
+                                                update(active!.set, active!.id, 'macroType', val);
+                                                if (val !== 'compound') {
+                                                    update(active!.set, active!.id, 'steps', undefined);
+                                                }
                                             }
                                         }}
+                                        pluginMacros={pluginMacros}
+                                        showUnavailableWarning
+                                        className="mobile-button-macro"
                                     />
-                                    <Button size="sm" variant="outline-secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
                                 </div>
-                                <div className="mobile-button-color-row">
-                                    <Form.Label>Kolor czcionki</Form.Label>
-                                    <Form.Control
-                                        size="sm"
-                                        type="color"
-                                        value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            if (syncDirs && activeCfg.macroType === 'kierunek') {
-                                                updateAllDirections('fontColor', val);
-                                            } else {
-                                                update(active!.set, active!.id, 'fontColor', val);
-                                            }
-                                        }}
-                                    />
-                                    <Button size="sm" variant="outline-secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
-                                </div>
-                                {activeCfg.macroType === 'kierunek' && (
+                                {!isButtonMacroAvailable(activeCfg.macroType) && (
+                                    <Form.Text className="text-warning">
+                                        Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
+                                    </Form.Text>
+                                )}
+                                {activeCfg.macroType !== 'empty' && (
+                                    <div className="mobile-button-config-row">
+                                        <Form.Label>Etykieta</Form.Label>
+                                        <Form.Control
+                                            size="sm"
+                                            className="mobile-button-label"
+                                            type="text"
+                                            value={activeCfg.label}
+                                            onChange={e => update(active!.set, active!.id, 'label', e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Macro-specific options via shared component */}
+                            {activeCfg.macroType !== 'empty' && (
+                                <MacroConfigEditor
+                                    config={activeCfg}
+                                    onChange={updates => {
+                                        const setName = active!.set;
+                                        const id = active!.id;
+                                        Object.entries(updates).forEach(([key, value]) => {
+                                            update(setName, id, key as keyof MobileButtonSetting, value);
+                                        });
+                                    }}
+                                    pluginMacros={pluginMacros}
+                                    buttonColor={activeCfg.color}
+                                />
+                            )}
+
+                            {/* Appearance section */}
+                            {activeCfg.macroType !== 'empty' && (
+                                <div className="mobile-button-config-section">
+                                    <div className="mobile-button-config-section-title">Wyglad</div>
                                     <div className="mobile-button-color-row">
-                                        <Form.Label>Kolor aktywny</Form.Label>
+                                        <Form.Label>Kolor</Form.Label>
                                         <Form.Control
                                             size="sm"
                                             type="color"
-                                            value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
+                                            value={activeCfg.color}
                                             onChange={e => {
                                                 const val = e.target.value;
-                                                if (syncDirs) {
-                                                    updateAllDirections('activeColor', val);
+                                                if (syncDirs && activeCfg.macroType === 'kierunek') {
+                                                    updateAllDirections('color', val);
                                                 } else {
-                                                    update(active!.set, active!.id, 'activeColor', val);
+                                                    update(active!.set, active!.id, 'color', val);
                                                 }
                                             }}
                                         />
-                                        <Button size="sm" variant="outline-secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
+                                        <Button size="sm" variant="outline-secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
                                     </div>
-                                )}
-                                {activeCfg.macroType === 'kierunek' && (
-                                    <Form.Check
-                                        type="checkbox"
-                                        label="Synchronizuj kolory kierunkow"
-                                        checked={syncDirs}
-                                        onChange={e => setSyncDirs(e.target.checked)}
-                                    />
-                                )}
-                            </div>
-                        )}
-
-                        {activeCfg.macroType === "specialExit" && (
-                            <div className="mobile-button-config-section">
-                                <div className="mobile-button-config-section-title">Opcje</div>
-                                <Form.Check
-                                    type="checkbox"
-                                    label="Synchronizuj z kierunkami"
-                                    checked={activeCfg.syncWithDirections || false}
-                                    onChange={e => update(active!.set, active!.id, "syncWithDirections", e.target.checked)}
-                                />
-                                {!activeCfg.syncWithDirections && (
                                     <div className="mobile-button-color-row">
-                                        <Form.Label>Kolor aktywny</Form.Label>
+                                        <Form.Label>Kolor czcionki</Form.Label>
                                         <Form.Control
                                             size="sm"
                                             type="color"
-                                            value={activeCfg.activeColor || '#2fa7c5'}
-                                            onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
+                                            value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                if (syncDirs && activeCfg.macroType === 'kierunek') {
+                                                    updateAllDirections('fontColor', val);
+                                                } else {
+                                                    update(active!.set, active!.id, 'fontColor', val);
+                                                }
+                                            }}
                                         />
-                                        <Button size="sm" variant="outline-secondary" onClick={() => update(active!.set, active!.id, 'activeColor', '#2fa7c5')}>↺</Button>
+                                        <Button size="sm" variant="outline-secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
                                     </div>
-                                )}
-                            </div>
-                        )}
+                                    {activeCfg.macroType === 'kierunek' && (
+                                        <div className="mobile-button-color-row">
+                                            <Form.Label>Kolor aktywny</Form.Label>
+                                            <Form.Control
+                                                size="sm"
+                                                type="color"
+                                                value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    if (syncDirs) {
+                                                        updateAllDirections('activeColor', val);
+                                                    } else {
+                                                        update(active!.set, active!.id, 'activeColor', val);
+                                                    }
+                                                }}
+                                            />
+                                            <Button size="sm" variant="outline-secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
+                                        </div>
+                                    )}
+                                    {activeCfg.macroType === 'kierunek' && (
+                                        <Form.Check
+                                            type="checkbox"
+                                            label="Synchronizuj kolory kierunkow"
+                                            checked={syncDirs}
+                                            onChange={e => setSyncDirs(e.target.checked)}
+                                        />
+                                    )}
+                                </div>
+                            )}
 
-                        {/* Hold action configuration */}
-                        {activeCfg.macroType !== 'empty' && (
-                            <HoldConfig
-                                holdEnabled={activeCfg.holdEnabled || false}
-                                hold={activeCfg.hold}
-                                onToggle={enabled => update(active!.set, active!.id, 'holdEnabled', enabled)}
-                                onChangeHold={hold => update(active!.set, active!.id, 'hold', hold)}
-                                pluginMacros={pluginMacros}
-                                locked={settings.locked}
-                                idSuffix={active!.id}
-                            />
-                        )}
+                            {activeCfg.macroType === "specialExit" && (
+                                <div className="mobile-button-config-section">
+                                    <div className="mobile-button-config-section-title">Opcje</div>
+                                    <Form.Check
+                                        type="checkbox"
+                                        label="Synchronizuj z kierunkami"
+                                        checked={activeCfg.syncWithDirections || false}
+                                        onChange={e => update(active!.set, active!.id, "syncWithDirections", e.target.checked)}
+                                    />
+                                    {!activeCfg.syncWithDirections && (
+                                        <div className="mobile-button-color-row">
+                                            <Form.Label>Kolor aktywny</Form.Label>
+                                            <Form.Control
+                                                size="sm"
+                                                type="color"
+                                                value={activeCfg.activeColor || '#2fa7c5'}
+                                                onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
+                                            />
+                                            <Button size="sm" variant="outline-secondary" onClick={() => update(active!.set, active!.id, 'activeColor', '#2fa7c5')}>↺</Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Hold action configuration */}
+                            {activeCfg.macroType !== 'empty' && (
+                                <HoldConfig
+                                    holdEnabled={activeCfg.holdEnabled || false}
+                                    hold={activeCfg.hold}
+                                    onToggle={enabled => update(active!.set, active!.id, 'holdEnabled', enabled)}
+                                    onChangeHold={hold => update(active!.set, active!.id, 'hold', hold)}
+                                    pluginMacros={pluginMacros}
+                                    locked={settings.locked}
+                                    idSuffix={active!.id}
+                                />
+                            )}
+                        </div>
                     </div>
+                )}
+                <div className="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <Button size="sm" variant="outline-secondary" onClick={() => restoreDefaults(view)}>
+                        Domyslne
+                    </Button>
+                    <Form.Select
+                        size="sm"
+                        value={copyFrom}
+                        onChange={e => setCopyFrom(e.target.value as Mode)}
+                        style={{ width: 'auto', minWidth: '120px' }}
+                    >
+                        <option value="solo">Bez druzyny</option>
+                        <option value="team">W druzynie</option>
+                        <option value="leader">Prowadzacy</option>
+                    </Form.Select>
+                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                        Kopiuj
+                    </Button>
                 </div>
-            )}
-            <div className="d-flex flex-wrap align-items-center gap-2 mt-2">
-                <Button size="sm" variant="outline-secondary" onClick={() => restoreDefaults(view)}>
-                    Domyslne
-                </Button>
-                <Form.Select
-                    size="sm"
-                    value={copyFrom}
-                    onChange={e => setCopyFrom(e.target.value as Mode)}
-                    style={{ width: 'auto', minWidth: '120px' }}
-                >
-                    <option value="solo">Bez druzyny</option>
-                    <option value="team">W druzynie</option>
-                    <option value="leader">Prowadzacy</option>
-                </Form.Select>
-                <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
-                    Kopiuj
-                </Button>
-                <Button id="mobile-buttons-save" size="sm" variant="primary" className="ms-auto" onClick={save}>Zapisz</Button>
             </div>
-        </div>
+        </>
     );
 }
 
