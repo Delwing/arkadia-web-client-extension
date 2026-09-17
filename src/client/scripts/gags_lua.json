@@ -8792,6 +8792,10 @@
                       {
                         "pattern": "jednak udaje ci sie (?:sparowac ten cios|zablokowac ten atak)",
                         "type": 1
+                      },
+                      {
+                        "pattern": "lecz ty odpychasz (?:go|ja) .+? tarcza\\.$",
+                        "type": 1
                       }
                     ],
                     "script": "trigger_func_skrypty_ui_gags_color_color_moje_parowanie_ja_tarcza_paruje()"
@@ -8935,6 +8939,10 @@
                       },
                       {
                         "pattern": "nadstawia .+?, zbijajac uderzenie",
+                        "type": 1
+                      },
+                      {
+                        "pattern": "lecz (?:ten|ta) odpycha (?:go|ja) .+? tarcza\\.$",
                         "type": 1
                       }
                     ],
@@ -9395,6 +9403,10 @@
                 "patterns": [
                   {
                     "pattern": "^Nagle (?<attacker>\\w+(?: \\w+){0,4}) wykonuje zamaszysty cios (?<weapon>.+?), ktory (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|niemal smiertelnie rani|smiertelnie rani) (?<target>.+?) w (?<where>.*)\\.$",
+                    "type": 1
+                  },
+                  {
+                    "pattern": "^(?:Nagle )?(?<attacker>\\w+(?: \\w+){0,4}) wzbija sie w powietrze i(?<weapon>.+?) (?<damage>ledwo muska|lekko rani|bardzo ciezko rani|powaznie rani|rani|masakruje|niemal smiertelnie rani|smiertelnie rani) (?<target>.+?) w (?<where>.*)\\.$",
                     "type": 1
                   }
                 ],

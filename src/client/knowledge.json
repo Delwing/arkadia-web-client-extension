@@ -3186,10 +3186,10 @@
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Doswiadczyles magicznego paralizu calego ciala",
-    "id": null,
-    "Domena": "?",
-    "lokalizacja": "?",
-    "note": "?"
+    "id": 27011,
+    "Domena": "Imperium",
+    "lokalizacja": "Zamek Drachenfels",
+    "note": "Finalna Bitwa z Konstantem"
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3491,17 +3491,17 @@
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Doswiadczyles magicznego spowolnienia ruchow",
     "id": null,
-    "Domena": "?",
-    "lokalizacja": "?",
-    "note": "?"
+    "Domena": "Imperium",
+    "lokalizacja": "Zamek Drachenfels + Skarbiec:Nekromanta Markus",
+    "note": "Podczas finalowej walki w zamku drachenfels lub finalowej walki z nekromanta markusem jest szansa ze w jej trakcie czar zostanie rzucony."
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Widziales jak ktos uwolnil moc aury energii, zalewajac wszystko fala wyladowan",
     "id": null,
-    "Domena": "?",
-    "lokalizacja": "?",
-    "note": "?"
+    "Domena": "Ishtar/Imperium",
+    "lokalizacja": "Wszedzie",
+    "note": "Czar rzucany ze zwoju przez gracza. Zwoj aury energii + zwoj wyladowan"
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
@@ -3526,6 +3526,14 @@
     "Domena": "?",
     "lokalizacja": "?",
     "note": ""
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Doswiadczyles efektow czaru ochrony przed smiercia",
+    "id": null,
+    "Domena": "Ishtar/Imperium",
+    "lokalizacja": "Wszedzie",
+    "note": "Czar rzucany ze zwoju przez gracza."
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
@@ -4653,7 +4661,7 @@
     "id": null,
     "Domena": "?",
     "lokalizacja": "?",
-    "note": "?"
+    "note": "Czar ten moze znalezc sie w lasce druidki/moze wiedzm mrocznych elfow. Czar w lasce jest losowy."
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
