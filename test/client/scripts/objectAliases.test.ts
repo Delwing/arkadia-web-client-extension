@@ -31,6 +31,7 @@ class FakeClient {
   TeamManager = {
     getAttackTargetId: jest.fn(() => undefined),
     getDefenseTargetId: jest.fn(() => undefined),
+    getAvatarAttackTargetId: jest.fn((): number | undefined => undefined),
     getAccumulatedObjectsData: jest.fn(() => new Map()),
     isLeader: jest.fn(() => true),
   };
@@ -310,6 +311,19 @@ describe('object aliases', () => {
     breakDefense();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_21');
+  });
+
+  test('/prze alias falls back to current fight target when no attack target', () => {
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(17);
+    breakDefense();
+    expect(client.sendCommand).toHaveBeenCalledTimes(2);
+    expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_17');
+  });
+
+  test('/prze alias does nothing without any target', () => {
+    breakDefense();
+    expect(client.sendCommand).not.toHaveBeenCalled();
   });
 
   test('/prze alias breaks defense of given shortcut', () => {

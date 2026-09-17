@@ -20,7 +20,7 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |
 | `/x id` | Zaskocz obiekt o podanym id |
 | `/x` | Zaskocz cel oznaczony jako cel ataku |
-| `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |
+| `/prze [id]` | Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika |
 | `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |
 | `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |
 

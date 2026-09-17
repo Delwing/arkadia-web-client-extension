@@ -60,16 +60,24 @@ export default function initObjectAliases(
 
     function breakDefenseTarget(short?: string) {
         let id: number | undefined;
+        let alreadyFighting = false;
         if (short) {
             const obj = findByShortcut(short);
             id = obj?.num;
         } else {
             id = client.TeamManager.getAttackTargetId();
+            if (!id) {
+                // No marked target - fall back to whoever we are fighting now.
+                id = client.TeamManager.getAvatarAttackTargetId();
+                alreadyFighting = true;
+            }
         }
         if (id) {
             client.sendCommand("przestan kryc sie za zaslona");
             client.sendCommand(`przelam obrone ob_${id}`);
-            attackById(id);
+            if (!alreadyFighting) {
+                attackById(id);
+            }
         }
     }
 
