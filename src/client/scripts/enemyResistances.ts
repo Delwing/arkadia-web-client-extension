@@ -10,6 +10,7 @@ import {
     upsertEnemyResistance,
     removeEnemyResistance,
     clearEnemyResistanceStore,
+    groupEnemyResistances,
     enemyKind,
     type EnemyResistanceEntry,
     type ResistanceKind,
@@ -34,7 +35,8 @@ const STEM_KIND: Record<string, ResistanceKind> = {
 };
 const STEM = "(?:odporn|niewrazliw|wrazliw|podatn)\\w*";
 const CLAUSE_SPLIT = new RegExp(` oraz (?=(?:\\w+ )*?${STEM} na )`);
-const CLAUSE = /^(?:(.+?) )?(odporn|niewrazliw|wrazliw|podatn)\w* na (.+)$/;
+/** The leading qualifier ("wyjatkowo") is fixed boilerplate - matched, then dropped. */
+const CLAUSE = /^(?:.+? )?(odporn|niewrazliw|wrazliw|podatn)\w* na (.+)$/;
 
 /**
  * Parses the part after "podpowiadaja ci, ze jest on", e.g.
@@ -46,11 +48,10 @@ export function parseResistanceTraits(text: string): ResistanceTrait[] | null {
     for (const clause of text.split(CLAUSE_SPLIT)) {
         const m = clause.trim().match(CLAUSE);
         if (!m) return null;
-        const kind = STEM_KIND[m[2]];
-        const degree = (m[1] ?? "").trim();
-        for (const target of m[3].split(/, | i /)) {
+        const kind = STEM_KIND[m[1]];
+        for (const target of m[2].split(/, | i /)) {
             const t = target.trim();
-            if (t) traits.push({ kind, degree, target: t });
+            if (t) traits.push({ kind, target: t });
         }
     }
     return traits.length > 0 ? traits : null;
@@ -101,21 +102,17 @@ interface PendingEval {
 }
 
 function formatTraits(traits: ResistanceTrait[]): AnsiAwareBuffer {
-    const groups = new Map<string, { kind: ResistanceKind; degree: string; targets: string[] }>();
+    const groups = new Map<ResistanceKind, string[]>();
     for (const t of traits) {
-        const key = `${t.kind}|${t.degree}`;
-        const group = groups.get(key) ?? { kind: t.kind, degree: t.degree, targets: [] };
-        group.targets.push(t.target);
-        groups.set(key, group);
+        groups.set(t.kind, [...(groups.get(t.kind) ?? []), t.target]);
     }
     const out = new AnsiAwareBuffer();
     let first = true;
-    for (const g of groups.values()) {
+    for (const [kind, targets] of groups) {
         if (!first) out.append("; ", {});
         first = false;
-        const label = [g.degree, g.kind].filter(Boolean).join(" ");
-        const color = g.kind === "odporny" ? RESIST_COLOR : VULNERABLE_COLOR;
-        out.appendBuffer(colorString(`${label} na ${g.targets.join(", ")}`, color));
+        const color = kind === "odporny" ? RESIST_COLOR : VULNERABLE_COLOR;
+        out.appendBuffer(colorString(`${kind} na ${targets.join(", ")}`, color));
     }
     return out;
 }
@@ -202,11 +199,15 @@ export default function initEnemyResistances(
             // Capitalized nominative means a player or a named NPC, not a mob kind.
             if (/^[A-Z]/.test(resolved)) return line;
             const name = enemyKind(resolved);
+            const room = client.Map?.currentRoom;
+            const areaId = room?.area ?? null;
             const entry: EnemyResistanceEntry = {
                 name,
                 traits,
                 raw: phrase,
-                roomId: client.Map?.currentRoom?.id ?? null,
+                roomId: room?.id ?? null,
+                areaId,
+                areaName: areaId != null ? client.Map?.getAreaName?.(String(areaId)) ?? null : null,
                 updatedAt: Date.now(),
             };
             void updateEnemyResistanceSnapshot(s => ({
@@ -225,18 +226,21 @@ export default function initEnemyResistances(
                 eventBus.emit("enemyResistances.popup.open");
                 return;
             }
-            const entries = getEnemyResistanceSnapshot().entries
-                .filter(e => e.name.includes(enemyKind(phrase)))
-                .sort((a, b) => a.name.localeCompare(b.name));
-            if (entries.length === 0) {
+            const groups = groupEnemyResistances(getEnemyResistanceSnapshot().entries)
+                .filter(g => g.name.includes(enemyKind(phrase)));
+            if (groups.length === 0) {
                 client.println(`Brak zapisanych odpornosci dla "${phrase}".`);
                 return;
             }
             const out = new AnsiAwareBuffer();
-            out.append(`--- odpornosci (${entries.length}) ---\n`, { bold: true });
-            for (const e of entries) {
-                out.append(`${e.name}: `, { bold: true });
-                out.appendBuffer(formatTraits(e.traits));
+            out.append(`--- odpornosci (${groups.length}) ---\n`, { bold: true });
+            for (const g of groups) {
+                out.append(`${g.name}: `, { bold: true });
+                out.appendBuffer(formatTraits(g.traits));
+                if (g.areaLabel) out.append(` [${g.areaLabel}]`, { italic: true });
+                if (g.hasUnknownArea) {
+                    out.appendBuffer(colorString(" (bez obszaru)", WARNING_COLOR));
+                }
                 out.append("\n", {});
             }
             client.println(out);

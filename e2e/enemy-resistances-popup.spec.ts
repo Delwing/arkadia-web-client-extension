@@ -48,6 +48,12 @@ test.describe('Enemy resistances popup', () => {
         const kikimora = rows.filter({hasText: 'kikimora'});
         await expect(kikimora.locator('.enemy-res-cell--odporny')).toHaveCount(2);
 
+        // The area comes from the live map position, so no row is flagged as area-less.
+        await expect(rows.locator('.enemy-res-warn')).toHaveCount(0);
+        const nameCell = kikimora.locator('td').first();
+        await expect(nameCell).not.toHaveAttribute('title', /nieznany obszar/);
+        await expect(nameCell).toHaveAttribute('title', /lokacja \d+/);
+
         // Sorting by fire puts the fire-vulnerable formit first.
         await popup.locator('th.enemy-res-type', {hasText: 'ogien'}).click();
         await expect(rows.first()).toContainText('formit');

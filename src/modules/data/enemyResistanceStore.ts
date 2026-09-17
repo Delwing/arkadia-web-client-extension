@@ -9,8 +9,6 @@ export type ResistanceKind = 'odporny' | 'wrazliwy';
 
 export interface ResistanceTrait {
     kind: ResistanceKind;
-    /** Qualifier as written by the game, e.g. "wyjatkowo"; empty when absent. */
-    degree: string;
     /** Damage source in the accusative, as written by the game, e.g. "magie zycia". */
     target: string;
 }
@@ -22,6 +20,10 @@ export interface EnemyResistanceEntry {
     /** Original trait phrase ("wyjatkowo odporny na ...") kept for re-parsing. */
     raw: string;
     roomId: number | null;
+    /** Map area the evaluation happened in; the same kind can differ between areas. */
+    areaId: number | null;
+    /** Area name as known when captured, so entries read without the map loaded. */
+    areaName: string | null;
     updatedAt: number;
 }
 
@@ -106,10 +108,29 @@ let cache: EnemyResistanceSnapshot = emptySnapshot();
 let loaded = false;
 let loadingPromise: Promise<void> | null = null;
 const listeners = new Set<(snap: EnemyResistanceSnapshot) => void>();
+/** Set by normalizeEntry when the loaded record needed rewriting to the current shape. */
+let migrated = false;
+
+/**
+ * Brings a stored entry to the current shape: entries written before areas were
+ * tracked carry none, and older ones carry a per-trait `degree` that turned out to
+ * be fixed boilerplate. Returns the entry unchanged when it is already current.
+ */
+function normalizeEntry(e: EnemyResistanceEntry): EnemyResistanceEntry {
+    const staleDegree = e.traits.some(t => 'degree' in t);
+    if (!staleDegree && e.areaId !== undefined && e.areaName !== undefined) return e;
+    migrated = true;
+    return {
+        ...e,
+        traits: staleDegree ? e.traits.map(t => ({ kind: t.kind, target: t.target })) : e.traits,
+        areaId: e.areaId ?? null,
+        areaName: e.areaName ?? null,
+    };
+}
 
 function normalize(raw: unknown): EnemyResistanceSnapshot {
     const s = (raw ?? {}) as Partial<EnemyResistanceSnapshot>;
-    return { entries: Array.isArray(s.entries) ? s.entries : [] };
+    return { entries: Array.isArray(s.entries) ? s.entries.map(normalizeEntry) : [] };
 }
 
 function notify(): void {
@@ -121,7 +142,10 @@ export function ensureEnemyResistancesLoaded(): Promise<void> {
     if (loadingPromise) return loadingPromise;
     loadingPromise = (async () => {
         try {
+            migrated = false;
             cache = normalize(await getFromIndexedDB<EnemyResistanceSnapshot>(CONFIG));
+            // Write the migrated shape back, so the old fields go away for good.
+            if (migrated) await persist();
         } catch {
             cache = emptySnapshot();
         }
@@ -203,16 +227,98 @@ export function updateEnemyResistanceSnapshot(
     return run();
 }
 
-/** Replace-by-name upsert: the latest evaluation of a kind wins. */
+/**
+ * Identity of an entry: one kind per area, since resistances can differ between areas.
+ * "|" is a safe separator - a kind is lowercase words and an area is a number.
+ */
+function entryKey(e: { name: string; areaId: number | null }): string {
+    return `${e.name}|${e.areaId ?? ''}`;
+}
+
+/** Replace-by-name-and-area upsert: the latest evaluation in an area wins. */
 export function upsertEnemyResistance(
     list: EnemyResistanceEntry[],
     entry: EnemyResistanceEntry,
 ): EnemyResistanceEntry[] {
-    const idx = list.findIndex(e => e.name === entry.name);
+    const key = entryKey(entry);
+    const idx = list.findIndex(e => entryKey(e) === key);
     if (idx < 0) return [...list, entry];
     const next = list.slice();
     next[idx] = entry;
     return next;
+}
+
+/** Canonical form of a trait list, so entries can be compared across areas. */
+export function resistanceSignature(traits: ResistanceTrait[]): string {
+    return traits
+        .map(t => `${t.kind}|${t.target}`.toLowerCase())
+        .sort()
+        .join(';');
+}
+
+export function areaLabelOf(entry: EnemyResistanceEntry): string {
+    if (entry.areaName) return entry.areaName;
+    if (entry.areaId != null) return `obszar #${entry.areaId}`;
+    return 'nieznany obszar';
+}
+
+export interface EnemyResistanceGroup {
+    /** Stable identity for list keys and removals. */
+    key: string;
+    name: string;
+    traits: ResistanceTrait[];
+    /** Every area this exact set of resistances was captured in. */
+    entries: EnemyResistanceEntry[];
+    /** Areas, joined - set only when the same kind differs between areas. */
+    areaLabel: string | null;
+    /** True when some entry has no area, so it cannot be told apart from another area's. */
+    hasUnknownArea: boolean;
+    updatedAt: number;
+}
+
+/**
+ * Folds entries of one kind that agree on resistances into a single row, whatever
+ * area they came from. Only a kind whose resistances actually differ between areas
+ * is split, and only those rows carry an area label.
+ */
+export function groupEnemyResistances(entries: EnemyResistanceEntry[]): EnemyResistanceGroup[] {
+    const byName = new Map<string, Map<string, EnemyResistanceEntry[]>>();
+    for (const entry of entries) {
+        const bySignature = byName.get(entry.name) ?? new Map<string, EnemyResistanceEntry[]>();
+        const signature = resistanceSignature(entry.traits);
+        bySignature.set(signature, [...(bySignature.get(signature) ?? []), entry]);
+        byName.set(entry.name, bySignature);
+    }
+    const groups: EnemyResistanceGroup[] = [];
+    for (const [name, bySignature] of byName) {
+        const split = bySignature.size > 1;
+        for (const [signature, group] of bySignature) {
+            const newest = group.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a));
+            const areas = [...new Set(group.map(areaLabelOf))].sort((a, b) => a.localeCompare(b));
+            groups.push({
+                key: `${name}|${signature}`,
+                name,
+                traits: newest.traits,
+                entries: group,
+                areaLabel: split ? areas.join(', ') : null,
+                hasUnknownArea: group.some(e => e.areaId == null),
+                updatedAt: newest.updatedAt,
+            });
+        }
+    }
+    return groups.sort((a, b) =>
+        a.name.localeCompare(b.name) || (a.areaLabel ?? '').localeCompare(b.areaLabel ?? ''));
+}
+
+/** Removes just the areas folded into one row, leaving other areas of the kind alone. */
+export function removeEnemyResistanceGroup(group: EnemyResistanceGroup): Promise<boolean> {
+    const keys = new Set(group.entries.map(entryKey));
+    let removed = false;
+    return updateEnemyResistanceSnapshot(s => {
+        const entries = s.entries.filter(e => !keys.has(entryKey(e)));
+        removed = entries.length !== s.entries.length;
+        return { entries };
+    }).then(() => removed);
 }
 
 export function removeEnemyResistance(name: string): Promise<boolean> {
