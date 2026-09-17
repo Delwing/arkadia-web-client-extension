@@ -237,6 +237,9 @@
       "/ocen — Ocen swoje bronie i zbroje, wypisujac ich stan",
       "/ocenkamienie — Oblicz laczna wartosc kamieni",
       "/odloz_magie (/odloz_magie [pojemnik]) — Skanuj inwentarz i ustaw bind odkładania magicznych przedmiotow",
+      "/odpornosci — Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen)",
+      "/odpornosci-reset — Wyczysc cala baze odpornosci",
+      "/odpornosci-usun (/odpornosci-usun <nazwa>) — Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`)",
       "/op — Wykonaj komendy opuszczania ze slotow 1 i 2",
       "/opoz (/opoz sekundy) — Ustaw domyslne opoznienie krokow",
       "/ostatnio — Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny)",
@@ -390,7 +393,18 @@
       "client.disconnect — Rozlaczenie (Polaczenie)",
       "zaskTimer — Timer zaskoczenia (Timery)",
       "coverTimer — Timer oslony (Timery)",
-      "transportTimer — Timer transportu (Timery)"
+      "transportTimer — Timer transportu (Timery)",
+      "gmcp.char.state — Char.State — stan postaci (GMCP)",
+      "gmcp.char.info — Char.Info — informacje o postaci (GMCP)",
+      "gmcp.char.options — Char.Options — opcje postaci (GMCP)",
+      "gmcp.char.options.info — Char.Options.Info — dozwolone wartosci opcji (GMCP)",
+      "gmcp.char.colors — Char.Colors — kolory (GMCP)",
+      "gmcp.room.info — Room.Info — lokacja (GMCP)",
+      "gmcp.room.time — Room.Time — pora dnia (GMCP)",
+      "gmcp.mail.state — Mail.State — poczta (GMCP)",
+      "gmcp.objects.nums — Objects.Nums — obiekty wokol (GMCP)",
+      "gmcp.objects.data — Objects.Data — dane obiektow (GMCP)",
+      "gmcp.core.ping — Core.Ping — odpowiedz na ping (GMCP)"
     ],
     "docs": [
       {
@@ -519,13 +533,14 @@
           "Kolorowanie",
           "Lowienie ryb",
           "Zlom (baza ocenionych przedmiotow)",
+          "Odpornosci przeciwnikow",
           "Oswajanie",
           "Woz/bryczka",
           "Odkladanie magii",
           "Labirynty",
           "Odswiezanie danych"
         ],
-        "tokens": 3681
+        "tokens": 4071
       },
       {
         "id": "SKRYPTY.md",
@@ -642,7 +657,7 @@
     "trigger": {
       "name": "UserTrigger",
       "description": "Trigger uzytkownika. Przechowywany w localStorage pod kluczem `triggers` jako tablica UserTrigger[]. Dwa rodzaje: wzorcowy (dopasowuje tekst z gry) i zdarzeniowy (reaguje na zdarzenie klienta).",
-      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    macros: UserMacro[];\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n    /**\r\n     * When the event actually fires, shown under the picker in the editor.\r\n     *\r\n     * Worth writing wherever the label alone leaves it ambiguous — several of\r\n     * these fire on a delay, or only when some other setting is enabled, and a\r\n     * label has no room to say so. Omitted where the label is self-evident.\r\n     */\r\n    description?: string;\r\n    /**\r\n     * Values this event's payload carries. Macro text fields may reference them\r\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\r\n     * simply offer no placeholders rather than offering broken ones.\r\n     */\r\n    args?: EventArg[];\r\n}",
+      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    /** Event triggers only: every condition must hold for the macros to run. */\r\n    conditions?: TriggerCondition[];\r\n    macros: UserMacro[];\r\n}\n\nexport type ConditionOperator = 'eq' | 'neq' | 'like' | 'notLike' | 'gt' | 'gte' | 'lt' | 'lte';\n\nexport interface TriggerCondition {\r\n    arg: string;\r\n    op: ConditionOperator;\r\n    value: string;\r\n}\n\nexport interface EventArg {\r\n    name: string;\r\n    label: string;\r\n    /** Decides which condition operators the editor offers for this arg. */\r\n    type?: EventArgType;\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n    /**\r\n     * When the event actually fires, shown under the picker in the editor.\r\n     *\r\n     * Worth writing wherever the label alone leaves it ambiguous — several of\r\n     * these fire on a delay, or only when some other setting is enabled, and a\r\n     * label has no room to say so. Omitted where the label is self-evident.\r\n     */\r\n    description?: string;\r\n    /**\r\n     * Values this event's payload carries. Macro text fields may reference them\r\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\r\n     * simply offer no placeholders rather than offering broken ones.\r\n     */\r\n    args?: EventArg[];\r\n}",
       "fields": [
         {
           "name": "type",
@@ -660,7 +675,7 @@
           "name": "event",
           "type": "string",
           "required": false,
-          "note": "Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: kill, enemyKilled, allEnemiesKilled, combatState:true, combatState:false, enemy.paralyzed, enemy.paralyzed.end, enemy.broken_defense, enemy.attack, hp.low, hp.full, hp.idleFull, client.connect, client.disconnect, zaskTimer, coverTimer, transportTimer."
+          "note": "Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: kill, enemyKilled, allEnemiesKilled, combatState:true, combatState:false, enemy.paralyzed, enemy.paralyzed.end, enemy.broken_defense, enemy.attack, hp.low, hp.full, hp.idleFull, client.connect, client.disconnect, zaskTimer, coverTimer, transportTimer, gmcp.char.state, gmcp.char.info, gmcp.char.options, gmcp.char.options.info, gmcp.char.colors, gmcp.room.info, gmcp.room.time, gmcp.mail.state, gmcp.objects.nums, gmcp.objects.data, gmcp.core.ping."
         },
         {
           "name": "flags",
@@ -675,6 +690,12 @@
           "note": "Ogranicza trigger do konkretnego typu wiadomosci GMCP."
         },
         {
+          "name": "conditions",
+          "type": "TriggerCondition[]",
+          "required": false,
+          "note": "Tylko triggery zdarzeniowe. Lista warunkow { arg, op, value } — wszystkie musza byc spelnione. `arg` to nazwa pola z `args` zdarzenia — zdarzenia bez `args` nie obsluguja warunkow. `op`: eq/neq (liczbowo, gdy obie strony sa liczbami, inaczej tekstowo bez wielkosci liter), like/notLike (regex bez wielkosci liter), gt/gte/lt/lte (tylko liczby). `value` zawsze jako tekst. Brak pola w zdarzeniu = warunek niespelniony."
+        },
+        {
           "name": "macros",
           "type": "UserMacro[]",
           "required": true,
@@ -682,6 +703,26 @@
         }
       ],
       "examples": [
+        {
+          "description": "Zdarzeniowy z warunkiem: powiadom, gdy zycie z GMCP Char.State spadnie do 2 lub mniej.",
+          "value": {
+            "type": "event",
+            "event": "gmcp.char.state",
+            "conditions": [
+              {
+                "arg": "hp",
+                "op": "lte",
+                "value": "2"
+              }
+            ],
+            "macros": [
+              {
+                "type": "notify",
+                "message": "Zycie: {hp}"
+              }
+            ]
+          }
+        },
         {
           "description": "Podswietl na czerwono kazda wzmianke o trollu i zagraj dzwiek.",
           "value": {
@@ -4532,6 +4573,30 @@
       "documentedIn": "INVENTORY.md"
     },
     {
+      "name": "/odpornosci",
+      "pattern": "/^\\/odpornosci(?:\\s+(.+))?$/",
+      "source": "src/client/scripts/enemyResistances.ts",
+      "usage": "/odpornosci",
+      "description": "Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen)",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/odpornosci-reset",
+      "pattern": "/^\\/odpornosci-reset$/",
+      "source": "src/client/scripts/enemyResistances.ts",
+      "usage": "/odpornosci-reset",
+      "description": "Wyczysc cala baze odpornosci",
+      "documentedIn": "ALIASES.md"
+    },
+    {
+      "name": "/odpornosci-usun",
+      "pattern": "/^\\/odpornosci-usun\\s+(.+)$/",
+      "source": "src/client/scripts/enemyResistances.ts",
+      "usage": "/odpornosci-usun <nazwa>",
+      "description": "Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`)",
+      "documentedIn": "ALIASES.md"
+    },
+    {
       "name": "/op",
       "pattern": "/^\\/op ([1-3])$/",
       "source": "src/client/scripts/dobOp.ts",
@@ -5834,7 +5899,8 @@
       "args": [
         {
           "name": "attacker",
-          "label": "Nazwa atakujacego"
+          "label": "Nazwa atakujacego",
+          "type": "string"
         }
       ]
     },
@@ -5846,11 +5912,13 @@
       "args": [
         {
           "name": "text",
-          "label": "Opis kondycji"
+          "label": "Opis kondycji",
+          "type": "string"
         },
         {
           "name": "hp",
-          "label": "Poziom zycia (GMCP)"
+          "label": "Poziom zycia (GMCP)",
+          "type": "number"
         }
       ]
     },
@@ -5862,7 +5930,8 @@
       "args": [
         {
           "name": "text",
-          "label": "Tresc alertu"
+          "label": "Tresc alertu",
+          "type": "string"
         }
       ]
     },
@@ -5874,7 +5943,8 @@
       "args": [
         {
           "name": "text",
-          "label": "Tresc alertu"
+          "label": "Tresc alertu",
+          "type": "string"
         }
       ]
     },
@@ -5902,6 +5972,217 @@
       "id": "transportTimer",
       "label": "Timer transportu",
       "category": "Timery"
+    },
+    {
+      "id": "gmcp.char.state",
+      "label": "Char.State — stan postaci",
+      "category": "GMCP",
+      "description": "Przy kazdej zmianie stanu postaci (zycie, zmeczenie, mana, obciazenie...). Przychodzi bardzo czesto.",
+      "args": [
+        {
+          "name": "hp",
+          "label": "Zycie",
+          "type": "number"
+        },
+        {
+          "name": "mana",
+          "label": "Mana",
+          "type": "number"
+        },
+        {
+          "name": "fatigue",
+          "label": "Zmeczenie",
+          "type": "number"
+        },
+        {
+          "name": "improve",
+          "label": "Postepy",
+          "type": "number"
+        },
+        {
+          "name": "form",
+          "label": "Forma",
+          "type": "number"
+        },
+        {
+          "name": "intox",
+          "label": "Upojenie",
+          "type": "number"
+        },
+        {
+          "name": "headache",
+          "label": "Kac",
+          "type": "number"
+        },
+        {
+          "name": "stuffed",
+          "label": "Najedzenie",
+          "type": "number"
+        },
+        {
+          "name": "soaked",
+          "label": "Napojenie",
+          "type": "number"
+        },
+        {
+          "name": "encumbrance",
+          "label": "Obciazenie",
+          "type": "number"
+        },
+        {
+          "name": "panic",
+          "label": "Panika",
+          "type": "number"
+        },
+        {
+          "name": "state",
+          "label": "Stan",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "gmcp.char.info",
+      "label": "Char.Info — informacje o postaci",
+      "category": "GMCP",
+      "description": "Po zalogowaniu i przy zmianie danych postaci.",
+      "args": [
+        {
+          "name": "name",
+          "label": "Imie",
+          "type": "string"
+        },
+        {
+          "name": "race",
+          "label": "Rasa",
+          "type": "string"
+        },
+        {
+          "name": "gender",
+          "label": "Plec",
+          "type": "string"
+        },
+        {
+          "name": "guild_occ",
+          "label": "Gildia zawodowa",
+          "type": "string"
+        },
+        {
+          "name": "guild_lay",
+          "label": "Gildia laicka",
+          "type": "string"
+        },
+        {
+          "name": "guild_race",
+          "label": "Gildia rasowa",
+          "type": "string"
+        },
+        {
+          "name": "guild_rel",
+          "label": "Gildia religijna",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "gmcp.char.options",
+      "label": "Char.Options — opcje postaci",
+      "category": "GMCP",
+      "description": "Po zalogowaniu i przy zmianie opcji. Serwer moze wyslac tylko zmieniona opcje."
+    },
+    {
+      "id": "gmcp.char.options.info",
+      "label": "Char.Options.Info — dozwolone wartosci opcji",
+      "category": "GMCP"
+    },
+    {
+      "id": "gmcp.char.colors",
+      "label": "Char.Colors — kolory",
+      "category": "GMCP"
+    },
+    {
+      "id": "gmcp.room.info",
+      "label": "Room.Info — lokacja",
+      "category": "GMCP",
+      "description": "Przy kazdym wejsciu na lokacje.",
+      "args": [
+        {
+          "name": "num",
+          "label": "Numer lokacji",
+          "type": "number"
+        },
+        {
+          "name": "id",
+          "label": "Identyfikator lokacji",
+          "type": "number"
+        },
+        {
+          "name": "hash",
+          "label": "Hash lokacji",
+          "type": "string"
+        },
+        {
+          "name": "exits",
+          "label": "Wyjscia",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "gmcp.room.time",
+      "label": "Room.Time — pora dnia",
+      "category": "GMCP",
+      "args": [
+        {
+          "name": "daylight",
+          "label": "Dzien",
+          "type": "boolean"
+        },
+        {
+          "name": "season",
+          "label": "Pora roku",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "id": "gmcp.mail.state",
+      "label": "Mail.State — poczta",
+      "category": "GMCP",
+      "args": [
+        {
+          "name": "unread",
+          "label": "Nieprzeczytane",
+          "type": "boolean"
+        },
+        {
+          "name": "unreceived",
+          "label": "Nieodebrane",
+          "type": "boolean"
+        },
+        {
+          "name": "unsent",
+          "label": "Niewyslane",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "gmcp.objects.nums",
+      "label": "Objects.Nums — obiekty wokol",
+      "category": "GMCP",
+      "description": "Przy kazdej zmianie listy obiektow na lokacji."
+    },
+    {
+      "id": "gmcp.objects.data",
+      "label": "Objects.Data — dane obiektow",
+      "category": "GMCP",
+      "description": "Przy kazdej zmianie stanu obiektow wokol (np. w trakcie walki). Przychodzi bardzo czesto."
+    },
+    {
+      "id": "gmcp.core.ping",
+      "label": "Core.Ping — odpowiedz na ping",
+      "category": "GMCP"
     }
   ],
   "docs": [
@@ -6051,14 +6332,15 @@
         "Kolorowanie",
         "Lowienie ryb",
         "Zlom (baza ocenionych przedmiotow)",
+        "Odpornosci przeciwnikow",
         "Oswajanie",
         "Woz/bryczka",
         "Odkladanie magii",
         "Labirynty",
         "Odswiezanie danych"
       ],
-      "tokens": 3681,
-      "content": "# Inne aliasy\n\nPozostale aliasy i funkcje rozszerzenia.\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow\n- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)\n\n### Zakresy ($i)\n\nUzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.\n\n**Przyklad:**\n- Wzorzec: `kok (.+)`\n- Komenda: `rozerwij $i. kokon`\n- Wpisz: `kok 1-7`\n- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`\n\nZakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.\n\n## Asystent AI\n\n| Komenda | Opis |\n|---------|------|\n| `/pomoc` | Otworz panel asystenta AI |\n| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |\n\n> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz \"Zastosuj\". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem \"Ustawienia\" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.\n\n## Komunikacja\n\n| Komenda | Opis |\n|---------|------|\n| `/fake tekst` | Wyswietl podany tekst jak zwykle wiadomosc klienta |\n| `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |\n| `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |\n| `/list` | Otworz edytor pisania listow w kliencie |\n| `/poczta` | Otworz okno poczty z lista listow |\n\n> **Wskazowka:** W oknie czatu przycisk \"Druzyna\" filtruje wiadomosci od czlonkow druzyny. Przewiniecie historii w gore dzieli okno na dwie czesci — na dole zostaje przyklejony podglad najnowszych wiadomosci, tak samo jak w oknie glownym i w oknie walki.\n\n## Czas\n\n| Komenda | Opis |\n|---------|------|\n| `/czas` | Otworz okno zegara z aktualnym czasem w grze |\n| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |\n| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |\n\n> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij \"Ustaw\".\n\n## Jezyk\n\n| Komenda | Opis |\n|---------|------|\n| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |\n| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |\n\n## Druzyna\n\n| Komenda | Opis |\n|---------|------|\n| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |\n| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |\n| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |\n| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |\n| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |\n| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |\n| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |\n| `/hp -` | Wyczysc cala liste zapamietanych kondycji |\n| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |\n\n> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).\n\n## Przedstawieni\n\n| Komenda | Opis |\n|---------|------|\n| `/przedstawieni` | Wyswietl liste przedstawionych postaci |\n\n## Bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl liste skonfigurowanych bindow |\n\n## Dzwiek\n\n| Komenda | Opis |\n|---------|------|\n| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |\n| `/mute` | Wycisz dzwieki |\n| `/unmute` | Wlacz dzwieki |\n\n## Przyplyw\n\n| Komenda | Opis |\n|---------|------|\n| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |\n\n> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.\n\n## Dobywanie/Opuszczanie\n\n| Komenda | Opis |\n|---------|------|\n| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |\n| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |\n| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |\n| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |\n\n> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji \"Dobywanie/Opuszczanie\". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).\n\n## Kalendarz slonca\n\n| Komenda | Opis |\n|---------|------|\n| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |\n\n## Kolorowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |\n\n> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.\n\n## Lowienie ryb\n\n| Komenda | Opis |\n|---------|------|\n| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |\n\n> **Wskazowka:** Gdy ryba bierze, kliknij przycisk \"Zatnij rybe\" lub uzyj funkcjonalnego bindu (domyslnie `]`).\n\n## Zlom (baza ocenionych przedmiotow)\n\n| Komenda | Opis |\n|---------|------|\n| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |\n| `/zlom tarcze` | Wyswietl zapisane tarcze |\n| `/zlom zbroje` | Wyswietl zapisane zbroje |\n| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |\n| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |\n\n> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna \"Kolor\") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik \"Srebro\" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).\n\n## Oswajanie\n\n| Komenda | Opis |\n|---------|------|\n| `/o_pomoc` | Otworz okno oswajania z pomoca i lista aliasow |\n| `/o_pokaz` | Pokaz liste oswajanych zwierzat (z przyciskiem aktywne/nieaktywne) |\n| `/o_pokaz <zwierze>` | Pokaz historie karmienia i poziomy oswojenia danego zwierzecia |\n| `/o_ostatnio` | Pokaz historie ostatnio karmionego zwierzecia |\n| `/o_historia` | Pokaz historie karmienia wszystkich aktywnych zwierzat |\n| `/o_wylacz <zwierze>` | Oznacz zwierze jako nieaktywne (ukrywa z historii) |\n| `/o_wlacz <zwierze>` | Oznacz zwierze jako aktywne |\n| `/o_przemianuj <stare> na <nowe>` | Zmien nazwe zwierzecia w bazie |\n| `/o_eksport` | Zapisz baze oswajania tej postaci do pliku JSON |\n| `/o_import` | Wczytaj baze z pliku JSON (nadpisuje baze tej postaci) |\n\n> **Wskazowka:** Baza buduje sie automatycznie z komend `oswajaj zwierze ...`. Po oswojeniu wykonaj `ocen zwierze` (po nakarmieniu jest to automatycznie podstawiane pod funkcjonalny bind), aby zapisac poziom oswojenia. Dane sa zapisywane osobno dla kazdej postaci. Po nakarmieniu, po uplywie czasu odnowienia, pojawi sie powiadomienie, ze mozna oswajac ponownie. Okno otworzysz tez z menu kontekstowego (prawy przycisk myszy na oknie gry, pozycja \"Oswajanie\").\n\n> **Widok zwierzecia:** Na gorze wybierasz zwierze z listy; nieaktywne mozna wlaczyc przyciskiem \"Aktywuj\". W tabeli kolumna \"ile\" rozwija (klik) poprzednie wpisy danego pokarmu. Rozne opisy tego samego pokarmu (np. `miesem` i `kawalkiem miesa`) mozesz scalic ikona polaczenia przy pokarmie — wtedy maja wspolny licznik czasu i jedna grupe, a kolejne karmienia automatycznie trafiaja do tej grupy. Polaczenie pokarmow jest globalne (wspolne dla wszystkich postaci); cofniesz je ikona rozlaczenia.\n\n## Woz/bryczka\n\n| Komenda | Opis |\n|---------|------|\n| `/woz` | Przelacz tryb wozu (wlacz/wylacz) |\n| `/wozw` | Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy |\n| `/wozblok` | Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji) |\n| `/wozbloki` | Pokaz liste nieprzejezdnych lokacji i linie do skopiowania |\n| `/wozbloki+ <numery>` | Wczytaj liste nieprzejezdnych lokacji |\n| `/wozbloki-` | Wyczysc liste nieprzejezdnych lokacji |\n\n> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.\n\n> **Wskazowka:** Tryb wozu wlacza sie tylko wtedy, gdy to ty powozisz — czyli kiedy jedziesz sam albo prowadzisz druzyne. Jako pasazer (jestes w druzynie, ale nie ty ja prowadzisz) masz strzalki i klawisz `zerknij` bez zmian, bo i tak nie mozesz kierowac pojazdem; pojazd jest za to normalnie zapisywany w oknie `/wozw` i na mapie, a bind `usiadz ...` dalej sie pokazuje. Jesli przejmiesz prowadzenie druzyny w trakcie jazdy, tryb wozu wlaczy sie sam (i wylaczy, gdy oddasz prowadzenie). Alias `/woz` ma pierwszenstwo przed tym sprawdzeniem — mozesz nim wlaczyc tryb wozu takze jako pasazer.\n\n> **Wskazowka:** Okno \"Wozy\" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.\n\n> **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.\n\n> **Wskazowka:** Okno rozroznia, czy siedzisz w stojacym pojezdzie, czy jedziesz — znacznik przy nazwie pokazuje `stoisz` albo `jedziesz`, na podstawie komunikatow `... rusza na ...` i `... zatrzymuje sie.` twojego pojazdu.\n\n> **Wskazowka:** W czasie jazdy `zerknij` zatrzymuje pojazd — wysyla `zatrzymaj woz` / `zatrzymaj bryczke` / `zatrzymaj dylizans`. Kiedy pojazd stoi, `zerknij` znowu rozglada sie po lokacji. Tak dziala klawisz `zerknij` (domyslnie Numpad5) i srodkowy przycisk krzyzaka na panelu mobilnym; to samo mozna przypisac dowolnemu przyciskowi mobilnemu lub desktopowemu, wybierajac makro **Zerknij / zatrzymaj pojazd**.\n\n> **Wskazowka:** Po ponownym polaczeniu z gra (\"przywracam polaczenie\" albo \"polaczenie zostalo przywrocone\") gra wysadza cie z pojazdu, wiec klient zapisuje pojazd jako zaparkowany w biezacej lokacji. Jesli przerwa byla na tyle dluga, ze logujesz sie od nowa, pojazd zostaje zaparkowany w ostatniej znanej lokacji. Jesli mapa nie nadazyla, miejsce postoju poprawia sie samo, gdy zobaczysz pojazd w opisie lokacji.\n\n> **Wskazowka:** Lokacje oznaczone przez `/wozblok` sa omijane przy prowadzeniu (`/prowadz`, `/prowadzt`, klikniecie na mapie) tylko wtedy, gdy jedziesz wozem — pieszo nic sie nie zmienia. Jesli cel jest nieprzejezdny (np. wnetrze budynku), trasa dzieli sie na dwa odcinki w roznych kolorach: dojazd wozem i dalsza droga pieszo, a klient wypisuje, gdzie zostawic woz. Wyjscia specjalne skladajace sie z kilku slow (`wejdz na skaly`, `zejdz na dol`, `przecisnij sie przez szczeline`) sa pomijane przy jezdzie automatycznie — to czynnosci, ktorych nie wykonasz siedzac na wozie, wiec nie trzeba ich oznaczac. Kiedy pojazd stanie na koncu drogi (`Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`), klient oznacza wszystkie sasiednie lokacje poza ta, z ktorej przyjechales — ale tylko wtedy, gdy gra wypisala przy opisie lokacji liste wyjsc; bez niej nic nie jest zapamietywane. Klient dopisuje lokacje sam, kiedy gra odmowi przejazdu (`Nie mozna jechac na ...`) — blokowana jest lokacja **za** tym wyjsciem, nie ta, w ktorej stoisz. Lista jest wspolna dla wszystkich postaci i na razie zbierana samodzielnie — `/wozbloki` wypisuje ja w formie gotowej do skopiowania. Oznaczone lokacje mozna pokazac na mapie jako przekreslone kolko — wlacza sie to w menu mapy (\"Nieprzejezdne dla wozu\"), domyslnie jest wylaczone. Znaczniki widac takze wtedy, gdy idziesz pieszo, bo czesto dopiero wtedy widac, ze woz tam nie wjedzie.\n\n> **Wskazowka:** Bindy: kiedy wracasz pieszo do lokacji, w ktorej stoi twoj pojazd, bind zmienia sie na `usiadz na wozie` / `usiadz w bryczce` / `usiadz w dylizansie`. Bind znika, gdy odejdziesz z lokacji. Kiedy prowadzisz trase wozem, na bindzie glownym pojawia sie kolejny krok trasy (a w miejscu, gdzie trzeba zostawic woz — `zsiadz z ...`). Bind pokazuje sie tylko wtedy, gdy woz stoi, i aktualizuje sie, gdy trasa sie zmieni; wylaczysz go opcja \"Bindy trasy wozu\". W ustawieniach (Interfejs → Komendy) mozna wlaczyc opcje, ktora sprawia, ze powtorzenie odrzuconej komendy jazdy (`Nie mozna jechac na ...`) wysyla dwie komendy: zsiadniecie z wozu i przejscie pieszo w tym kierunku. Komunikaty konczace jazde (`Dojechaliscie do rozdrozy.` i `Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`) sa podswietlane na zolto, zeby nie zginely w opisach mijanych lokacji.\n\n## Odkladanie magii\n\n| Komenda | Opis |\n|---------|------|\n| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |\n\n## Labirynty\n\n| Komenda | Opis |\n|---------|------|\n| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |\n| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |\n| `/raon_mapa` | Przelacz mapper Labiryntu Raon |\n| `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |\n\n## Odswiezanie danych\n\n| Komenda | Opis |\n|---------|------|\n| `/refresh_magics` | Wymus odswiezenie danych magii |\n| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |\n| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |"
+      "tokens": 4071,
+      "content": "# Inne aliasy\n\nPozostale aliasy i funkcje rozszerzenia.\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow\n- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)\n\n### Zakresy ($i)\n\nUzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.\n\n**Przyklad:**\n- Wzorzec: `kok (.+)`\n- Komenda: `rozerwij $i. kokon`\n- Wpisz: `kok 1-7`\n- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`\n\nZakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.\n\n## Asystent AI\n\n| Komenda | Opis |\n|---------|------|\n| `/pomoc` | Otworz panel asystenta AI |\n| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |\n\n> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz \"Zastosuj\". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem \"Ustawienia\" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.\n\n## Komunikacja\n\n| Komenda | Opis |\n|---------|------|\n| `/fake tekst` | Wyswietl podany tekst jak zwykle wiadomosc klienta |\n| `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |\n| `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |\n| `/list` | Otworz edytor pisania listow w kliencie |\n| `/poczta` | Otworz okno poczty z lista listow |\n\n> **Wskazowka:** W oknie czatu przycisk \"Druzyna\" filtruje wiadomosci od czlonkow druzyny. Przewiniecie historii w gore dzieli okno na dwie czesci — na dole zostaje przyklejony podglad najnowszych wiadomosci, tak samo jak w oknie glownym i w oknie walki.\n\n## Czas\n\n| Komenda | Opis |\n|---------|------|\n| `/czas` | Otworz okno zegara z aktualnym czasem w grze |\n| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |\n| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |\n\n> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij \"Ustaw\".\n\n## Jezyk\n\n| Komenda | Opis |\n|---------|------|\n| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |\n| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |\n\n## Druzyna\n\n| Komenda | Opis |\n|---------|------|\n| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |\n| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |\n| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |\n| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |\n| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |\n| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |\n| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |\n| `/hp -` | Wyczysc cala liste zapamietanych kondycji |\n| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |\n\n> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).\n\n## Przedstawieni\n\n| Komenda | Opis |\n|---------|------|\n| `/przedstawieni` | Wyswietl liste przedstawionych postaci |\n\n## Bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl liste skonfigurowanych bindow |\n\n## Dzwiek\n\n| Komenda | Opis |\n|---------|------|\n| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |\n| `/mute` | Wycisz dzwieki |\n| `/unmute` | Wlacz dzwieki |\n\n## Przyplyw\n\n| Komenda | Opis |\n|---------|------|\n| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |\n\n> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.\n\n## Dobywanie/Opuszczanie\n\n| Komenda | Opis |\n|---------|------|\n| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |\n| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |\n| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |\n| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |\n\n> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji \"Dobywanie/Opuszczanie\". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).\n\n## Kalendarz slonca\n\n| Komenda | Opis |\n|---------|------|\n| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |\n\n## Kolorowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |\n\n> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.\n\n## Lowienie ryb\n\n| Komenda | Opis |\n|---------|------|\n| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |\n\n> **Wskazowka:** Gdy ryba bierze, kliknij przycisk \"Zatnij rybe\" lub uzyj funkcjonalnego bindu (domyslnie `]`).\n\n## Zlom (baza ocenionych przedmiotow)\n\n| Komenda | Opis |\n|---------|------|\n| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |\n| `/zlom tarcze` | Wyswietl zapisane tarcze |\n| `/zlom zbroje` | Wyswietl zapisane zbroje |\n| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |\n| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |\n\n> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna \"Kolor\") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik \"Srebro\" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).\n\n## Odpornosci przeciwnikow\n\n| Alias | Opis |\n|-------|------|\n| `/odpornosci` | Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen) |\n| `/odpornosci <fraza>` | Wypisz w oknie gry przeciwnikow, ktorych nazwa zawiera fraze (np. `/odpornosci kikimora`) |\n| `/odpornosci-usun <nazwa>` | Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`) |\n| `/odpornosci-reset` | Wyczysc cala baze odpornosci |\n\n> **Wskazowka:** Baza zapisuje sie sama z wynikow `ocen <przeciwnik>` — wystarczy linia \"Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest on odporny/wrazliwy na ...\". Nazwa w mianowniku brana jest z linii porownania (\"... niz wielka krwiozercza kikimora.\"); gdy jej brak, przeciwnik jest dopasowywany do obiektow na lokacji. Przymiotniki sa pomijane — \"wielka krwiozercza kikimora\" i \"mala kikimora\" to jeden wpis `kikimora` (nazwy dwuczlonowe, np. `zywiolak ognia`, `troll jaskiniowy`, zostaja w calosci). Postaci z imieniem (gracze, nazwani NPC) nie sa zapisywane. Jesli linii z odpornosciami nie da sie odczytac albo nie wiadomo, ktorego przeciwnika dotyczy, pod linia pojawia sie pomaranczowy komunikat - klikniecie kopiuje oryginalna linie do schowka, zeby mozna ja bylo zglosic. Przelacznik Tabela/Lista zmienia widok: lista pokazuje dla kazdego przeciwnika wrazliwosci i odpornosci jako ikonki. W oknie `W` (zielone) oznacza wrazliwosc, `O` (czerwone) odpornosc; klikniecie naglowka kolumny sortuje najpierw przeciwnikow wrazliwych na dany rodzaj obrazen. Okno otworzysz tez z menu kontekstowego (pozycja \"Odpornosci\").\n\n## Oswajanie\n\n| Komenda | Opis |\n|---------|------|\n| `/o_pomoc` | Otworz okno oswajania z pomoca i lista aliasow |\n| `/o_pokaz` | Pokaz liste oswajanych zwierzat (z przyciskiem aktywne/nieaktywne) |\n| `/o_pokaz <zwierze>` | Pokaz historie karmienia i poziomy oswojenia danego zwierzecia |\n| `/o_ostatnio` | Pokaz historie ostatnio karmionego zwierzecia |\n| `/o_historia` | Pokaz historie karmienia wszystkich aktywnych zwierzat |\n| `/o_wylacz <zwierze>` | Oznacz zwierze jako nieaktywne (ukrywa z historii) |\n| `/o_wlacz <zwierze>` | Oznacz zwierze jako aktywne |\n| `/o_przemianuj <stare> na <nowe>` | Zmien nazwe zwierzecia w bazie |\n| `/o_eksport` | Zapisz baze oswajania tej postaci do pliku JSON |\n| `/o_import` | Wczytaj baze z pliku JSON (nadpisuje baze tej postaci) |\n\n> **Wskazowka:** Baza buduje sie automatycznie z komend `oswajaj zwierze ...`. Po oswojeniu wykonaj `ocen zwierze` (po nakarmieniu jest to automatycznie podstawiane pod funkcjonalny bind), aby zapisac poziom oswojenia. Dane sa zapisywane osobno dla kazdej postaci. Po nakarmieniu, po uplywie czasu odnowienia, pojawi sie powiadomienie, ze mozna oswajac ponownie. Okno otworzysz tez z menu kontekstowego (prawy przycisk myszy na oknie gry, pozycja \"Oswajanie\").\n\n> **Widok zwierzecia:** Na gorze wybierasz zwierze z listy; nieaktywne mozna wlaczyc przyciskiem \"Aktywuj\". W tabeli kolumna \"ile\" rozwija (klik) poprzednie wpisy danego pokarmu. Rozne opisy tego samego pokarmu (np. `miesem` i `kawalkiem miesa`) mozesz scalic ikona polaczenia przy pokarmie — wtedy maja wspolny licznik czasu i jedna grupe, a kolejne karmienia automatycznie trafiaja do tej grupy. Polaczenie pokarmow jest globalne (wspolne dla wszystkich postaci); cofniesz je ikona rozlaczenia.\n\n## Woz/bryczka\n\n| Komenda | Opis |\n|---------|------|\n| `/woz` | Przelacz tryb wozu (wlacz/wylacz) |\n| `/wozw` | Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy |\n| `/wozblok` | Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji) |\n| `/wozbloki` | Pokaz liste nieprzejezdnych lokacji i linie do skopiowania |\n| `/wozbloki+ <numery>` | Wczytaj liste nieprzejezdnych lokacji |\n| `/wozbloki-` | Wyczysc liste nieprzejezdnych lokacji |\n\n> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.\n\n> **Wskazowka:** Tryb wozu wlacza sie tylko wtedy, gdy to ty powozisz — czyli kiedy jedziesz sam albo prowadzisz druzyne. Jako pasazer (jestes w druzynie, ale nie ty ja prowadzisz) masz strzalki i klawisz `zerknij` bez zmian, bo i tak nie mozesz kierowac pojazdem; pojazd jest za to normalnie zapisywany w oknie `/wozw` i na mapie, a bind `usiadz ...` dalej sie pokazuje. Jesli przejmiesz prowadzenie druzyny w trakcie jazdy, tryb wozu wlaczy sie sam (i wylaczy, gdy oddasz prowadzenie). Alias `/woz` ma pierwszenstwo przed tym sprawdzeniem — mozesz nim wlaczyc tryb wozu takze jako pasazer.\n\n> **Wskazowka:** Okno \"Wozy\" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.\n\n> **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.\n\n> **Wskazowka:** Okno rozroznia, czy siedzisz w stojacym pojezdzie, czy jedziesz — znacznik przy nazwie pokazuje `stoisz` albo `jedziesz`, na podstawie komunikatow `... rusza na ...` i `... zatrzymuje sie.` twojego pojazdu.\n\n> **Wskazowka:** W czasie jazdy `zerknij` zatrzymuje pojazd — wysyla `zatrzymaj woz` / `zatrzymaj bryczke` / `zatrzymaj dylizans`. Kiedy pojazd stoi, `zerknij` znowu rozglada sie po lokacji. Tak dziala klawisz `zerknij` (domyslnie Numpad5) i srodkowy przycisk krzyzaka na panelu mobilnym; to samo mozna przypisac dowolnemu przyciskowi mobilnemu lub desktopowemu, wybierajac makro **Zerknij / zatrzymaj pojazd**.\n\n> **Wskazowka:** Po ponownym polaczeniu z gra (\"przywracam polaczenie\" albo \"polaczenie zostalo przywrocone\") gra wysadza cie z pojazdu, wiec klient zapisuje pojazd jako zaparkowany w biezacej lokacji. Jesli przerwa byla na tyle dluga, ze logujesz sie od nowa, pojazd zostaje zaparkowany w ostatniej znanej lokacji. Jesli mapa nie nadazyla, miejsce postoju poprawia sie samo, gdy zobaczysz pojazd w opisie lokacji.\n\n> **Wskazowka:** Lokacje oznaczone przez `/wozblok` sa omijane przy prowadzeniu (`/prowadz`, `/prowadzt`, klikniecie na mapie) tylko wtedy, gdy jedziesz wozem — pieszo nic sie nie zmienia. Jesli cel jest nieprzejezdny (np. wnetrze budynku), trasa dzieli sie na dwa odcinki w roznych kolorach: dojazd wozem i dalsza droga pieszo, a klient wypisuje, gdzie zostawic woz. Wyjscia specjalne skladajace sie z kilku slow (`wejdz na skaly`, `zejdz na dol`, `przecisnij sie przez szczeline`) sa pomijane przy jezdzie automatycznie — to czynnosci, ktorych nie wykonasz siedzac na wozie, wiec nie trzeba ich oznaczac. Kiedy pojazd stanie na koncu drogi (`Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`), klient oznacza wszystkie sasiednie lokacje poza ta, z ktorej przyjechales — ale tylko wtedy, gdy gra wypisala przy opisie lokacji liste wyjsc; bez niej nic nie jest zapamietywane. Klient dopisuje lokacje sam, kiedy gra odmowi przejazdu (`Nie mozna jechac na ...`) — blokowana jest lokacja **za** tym wyjsciem, nie ta, w ktorej stoisz. Lista jest wspolna dla wszystkich postaci i na razie zbierana samodzielnie — `/wozbloki` wypisuje ja w formie gotowej do skopiowania. Oznaczone lokacje mozna pokazac na mapie jako przekreslone kolko — wlacza sie to w menu mapy (\"Nieprzejezdne dla wozu\"), domyslnie jest wylaczone. Znaczniki widac takze wtedy, gdy idziesz pieszo, bo czesto dopiero wtedy widac, ze woz tam nie wjedzie.\n\n> **Wskazowka:** Bindy: kiedy wracasz pieszo do lokacji, w ktorej stoi twoj pojazd, bind zmienia sie na `usiadz na wozie` / `usiadz w bryczce` / `usiadz w dylizansie`. Bind znika, gdy odejdziesz z lokacji. Kiedy prowadzisz trase wozem, na bindzie glownym pojawia sie kolejny krok trasy (a w miejscu, gdzie trzeba zostawic woz — `zsiadz z ...`). Bind pokazuje sie tylko wtedy, gdy woz stoi, i aktualizuje sie, gdy trasa sie zmieni; wylaczysz go opcja \"Bindy trasy wozu\". W ustawieniach (Interfejs → Komendy) mozna wlaczyc opcje, ktora sprawia, ze powtorzenie odrzuconej komendy jazdy (`Nie mozna jechac na ...`) wysyla dwie komendy: zsiadniecie z wozu i przejscie pieszo w tym kierunku. Komunikaty konczace jazde (`Dojechaliscie do rozdrozy.` i `Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`) sa podswietlane na zolto, zeby nie zginely w opisach mijanych lokacji.\n\n## Odkladanie magii\n\n| Komenda | Opis |\n|---------|------|\n| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |\n\n## Labirynty\n\n| Komenda | Opis |\n|---------|------|\n| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |\n| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |\n| `/raon_mapa` | Przelacz mapper Labiryntu Raon |\n| `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |\n\n## Odswiezanie danych\n\n| Komenda | Opis |\n|---------|------|\n| `/refresh_magics` | Wymus odswiezenie danych magii |\n| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |\n| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |"
     },
     {
       "id": "SKRYPTY.md",
@@ -6146,18 +6428,18 @@
     }
   ],
   "gaps": [],
-  "version": "fdc2a9f04dbea2f3",
-  "generatedAt": "2026-09-16T18:52:07.446Z",
+  "version": "d2adfb45724b2197",
+  "generatedAt": "2026-09-17T07:35:47.580Z",
   "stats": {
     "settings": 127,
     "settingsWithLabels": 127,
-    "commands": 228,
-    "commandsWithDescriptions": 226,
-    "events": 17,
+    "commands": 231,
+    "commandsWithDescriptions": 229,
+    "events": 28,
     "docs": 12,
-    "leanChars": 43261,
-    "leanTokens": 10816,
-    "fatChars": 226612,
-    "fatTokens": 56653
+    "leanChars": 45097,
+    "leanTokens": 11275,
+    "fatChars": 234346,
+    "fatTokens": 58587
   }
 }

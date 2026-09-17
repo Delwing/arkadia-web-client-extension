@@ -6,8 +6,13 @@ import {
     isTriggerMacroAvailable,
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
-import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent, EventArg } from './UserTriggers';
-import { SUPPORTED_EVENTS, GMCP_MSG_TYPES } from './UserTriggers';
+import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent, EventArg, TriggerCondition } from './UserTriggers';
+import { SUPPORTED_EVENTS, GMCP_MSG_TYPES, GMCP_EVENT_CATEGORY, CONDITION_OPERATORS } from './UserTriggers';
+
+const GMCP_EVENTS = SUPPORTED_EVENTS.filter(e => e.category === GMCP_EVENT_CATEGORY);
+const GMCP_EVENT_IDS = new Set(GMCP_EVENTS.map(e => e.id));
+/** Value of the single "GMCP" option standing in for all GMCP packages in the event picker. */
+const GMCP_GROUP_VALUE = '__gmcp__';
 
 const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push']);
 
@@ -116,6 +121,114 @@ function EventArgChips({
                     {`{${arg.name}}`}
                 </Button>
             ))}
+        </div>
+    );
+}
+
+function operatorsFor(arg: EventArg | undefined) {
+    return arg?.type
+        ? CONDITION_OPERATORS.filter(o => o.types.includes(arg.type!))
+        : CONDITION_OPERATORS;
+}
+
+/**
+ * Conditions on an event trigger's payload, limited to the event's declared
+ * args — the caller only renders this for events that have some.
+ */
+function ConditionsEditor({
+    conditions,
+    onChange,
+    args,
+}: {
+    conditions: TriggerCondition[];
+    onChange: (conditions: TriggerCondition[]) => void;
+    args: EventArg[];
+}) {
+    const update = (idx: number, patch: Partial<TriggerCondition>) => {
+        onChange(conditions.map((c, i) => {
+            if (i !== idx) return c;
+            const next = { ...c, ...patch };
+            const allowed = operatorsFor(args.find(a => a.name === next.arg));
+            if (!allowed.some(o => o.id === next.op)) next.op = allowed[0].id;
+            return next;
+        }));
+    };
+
+    const add = () => {
+        const arg = args[0];
+        onChange([...conditions, { arg: arg.name, op: operatorsFor(arg)[0].id, value: '' }]);
+    };
+
+    return (
+        <div className="mb-3 trigger-conditions-editor">
+            <div className="d-flex align-items-center gap-2 mb-1">
+                <label className="form-label mb-0">Warunki</label>
+                <button type="button" className="btn btn-outline-secondary py-0 px-2" style={{ fontSize: '0.75rem' }} onClick={add}>
+                    Dodaj warunek
+                </button>
+            </div>
+            {conditions.map((c, idx) => {
+                const arg = args.find(a => a.name === c.arg);
+                return (
+                    <div key={idx} className="d-flex gap-1 mb-1 align-items-center trigger-condition">
+                        <Form.Select
+                            size="sm"
+                            style={{ maxWidth: '12rem' }}
+                            value={c.arg}
+                            onChange={(e) => update(idx, { arg: e.target.value })}
+                        >
+                            {args.map(a => <option key={a.name} value={a.name}>{a.label}</option>)}
+                        </Form.Select>
+                        <Form.Select
+                            size="sm"
+                            style={{ maxWidth: '11rem' }}
+                            value={c.op}
+                            onChange={(e) => update(idx, { op: e.target.value as TriggerCondition['op'] })}
+                        >
+                            {operatorsFor(arg).map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                        </Form.Select>
+                        {arg?.type === 'boolean' ? (
+                            <Form.Select
+                                size="sm"
+                                className="flex-grow-1"
+                                value={c.value}
+                                onChange={(e) => update(idx, { value: e.target.value })}
+                            >
+                                <option value="">—</option>
+                                <option value="true">tak</option>
+                                <option value="false">nie</option>
+                            </Form.Select>
+                        ) : (
+                            <Form.Control
+                                size="sm"
+                                className="flex-grow-1 font-monospace"
+                                type={arg?.type === 'number' ? 'number' : 'text'}
+                                placeholder="Wartosc"
+                                value={c.value}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => update(idx, { value: e.target.value })}
+                                autoCorrect="off"
+                                autoComplete="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
+                            />
+                        )}
+                        <Button
+                            size="sm"
+                            variant="outline-danger"
+                            className="py-0 px-1"
+                            onClick={() => onChange(conditions.filter((_, i) => i !== idx))}
+                        >
+                            <Trash2 size={14} />
+                        </Button>
+                    </div>
+                );
+            })}
+            {conditions.length > 0 && (
+                <Form.Text className="text-muted d-block">
+                    Wszystkie warunki musza byc spelnione. Jesli zdarzenie nie przyniesie danego pola
+                    (np. Char.State wysyla tylko to, co sie zmienilo), warunek nie jest spelniony.
+                </Form.Text>
+            )}
         </div>
     );
 }
@@ -553,6 +666,9 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
     const [triggerType, setTriggerType] = useState<TriggerType>('pattern');
     const [pattern, setPattern] = useState('');
     const [event, setEvent] = useState('');
+    // The GMCP option stays selected while no package has been picked yet.
+    const [gmcpPicker, setGmcpPicker] = useState(false);
+    const [conditions, setConditions] = useState<TriggerCondition[]>([]);
     const [flags, setFlags] = useState('');
     const [gmcpMsgType, setGmcpMsgType] = useState('');
     const [macros, setMacros] = useState<UserMacro[]>([]);
@@ -562,6 +678,8 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
             setTriggerType(trigger.type || 'pattern');
             setPattern(trigger.pattern || '');
             setEvent(trigger.event || '');
+            setGmcpPicker(GMCP_EVENT_IDS.has(trigger.event || ''));
+            setConditions(trigger.conditions ?? []);
             setFlags(trigger.flags || '');
             setGmcpMsgType(trigger.gmcpMsgType || '');
             setMacros(trigger.macros ? trigger.macros.map(normalizeMacro) : []);
@@ -569,6 +687,8 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
             setTriggerType('pattern');
             setPattern('');
             setEvent('');
+            setGmcpPicker(false);
+            setConditions([]);
             setFlags('');
             setGmcpMsgType('');
             setMacros([]);
@@ -600,6 +720,7 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
         if (triggerType === 'event') {
             if (!event) return;
             entry = { type: 'event', event, macros };
+            if (applicableConditions.length) entry.conditions = applicableConditions;
         } else {
             const p = pattern.trim();
             if (!p) return;
@@ -622,6 +743,10 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
     // Placeholders offered by the currently selected event. Pattern triggers
     // get none — their macros already fall back to the matched text.
     const selectedEventArgs: EventArg[] = selectedEvent?.args ?? [];
+
+    // Conditions left over from a previously picked event reference fields this
+    // one does not carry and could never pass; they are hidden and not saved.
+    const applicableConditions = conditions.filter(c => selectedEventArgs.some(a => a.name === c.arg));
 
     return (
         <div
@@ -710,13 +835,18 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                             <div className="mb-3">
                                 <Form.Select
                                     size="sm"
-                                    value={event}
-                                    onChange={(e) => setEvent(e.target.value)}
+                                    value={gmcpPicker ? GMCP_GROUP_VALUE : event}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setGmcpPicker(value === GMCP_GROUP_VALUE);
+                                        setEvent(value === GMCP_GROUP_VALUE ? '' : value);
+                                    }}
                                 >
                                     <option value="">Wybierz zdarzenie...</option>
                                     {(() => {
                                         const byCategory = new Map<string, SupportedEvent[]>();
                                         for (const ev of SUPPORTED_EVENTS) {
+                                            if (ev.category === GMCP_EVENT_CATEGORY) continue;
                                             if (!byCategory.has(ev.category)) byCategory.set(ev.category, []);
                                             byCategory.get(ev.category)!.push(ev);
                                         }
@@ -728,13 +858,36 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
                                             </optgroup>
                                         ));
                                     })()}
+                                    <option value={GMCP_GROUP_VALUE}>GMCP</option>
                                 </Form.Select>
+                                {gmcpPicker && (
+                                    <Form.Select
+                                        size="sm"
+                                        className="mt-2"
+                                        data-testid="trigger-gmcp-type"
+                                        value={event}
+                                        onChange={(e) => setEvent(e.target.value)}
+                                    >
+                                        <option value="">Wybierz typ GMCP...</option>
+                                        {GMCP_EVENTS.map(ev => (
+                                            <option key={ev.id} value={ev.id}>{ev.label}</option>
+                                        ))}
+                                    </Form.Select>
+                                )}
                                 {selectedEvent?.description && (
                                     <Form.Text className="text-muted d-block mt-1">
                                         {selectedEvent.description}
                                     </Form.Text>
                                 )}
                             </div>
+                        )}
+
+                        {triggerType === 'event' && selectedEventArgs.length > 0 && (
+                            <ConditionsEditor
+                                conditions={applicableConditions}
+                                onChange={setConditions}
+                                args={selectedEventArgs}
+                            />
                         )}
 
                         <div className="d-flex align-items-center gap-2 mb-2">

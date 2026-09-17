@@ -1,5 +1,11 @@
 import { vi } from 'vitest';
-import initUserTriggers, { UserTrigger } from '@client/scripts/userTriggers';
+import initUserTriggers, {
+  GMCP_EVENT_CATEGORY,
+  SUPPORTED_EVENTS,
+  evaluateCondition,
+  type TriggerCondition,
+  type UserTrigger,
+} from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage } from '@modules/core/storage';
@@ -172,6 +178,86 @@ describe('userTriggers', () => {
       { title: 'Arkadia', body: 'Atakuje cie Zbojca!' },
       { bypassCooldown: undefined },
     );
+  });
+
+  test('gmcp event triggers fire on the package event with its fields as placeholders', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'gmcp.char.state',
+      macros: [{ type: 'command', command: 'powiedz hp {hp}' }],
+    }];
+    globalStorage.set('triggers', list);
+    client.sendEvent('gmcp.room.info', { num: 1 });
+    expect(client.sendCommand).not.toHaveBeenCalled();
+
+    client.sendEvent('gmcp.char.state', { hp: 3 });
+    expect(client.sendCommand).toHaveBeenCalledWith('powiedz hp 3');
+  });
+
+  test('conditions gate event macros', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{
+      type: 'event',
+      event: 'gmcp.char.state',
+      conditions: [{ arg: 'hp', op: 'lte', value: '2' }],
+      macros: [{ type: 'command', command: 'uciekaj' }],
+    }];
+    globalStorage.set('triggers', list);
+
+    client.sendEvent('gmcp.char.state', { hp: 5 });
+    client.sendEvent('gmcp.char.state', { mana: 1 });
+    expect(client.sendCommand).not.toHaveBeenCalled();
+
+    client.sendEvent('gmcp.char.state', { hp: 2 });
+    expect(client.sendCommand).toHaveBeenCalledWith('uciekaj');
+  });
+
+  describe('evaluateCondition', () => {
+    const cond = (arg: string, op: TriggerCondition['op'], value: string) => ({ arg, op, value });
+
+    test('numeric comparisons', () => {
+      expect(evaluateCondition(cond('hp', 'gt', '3'), { hp: 4 })).toBe(true);
+      expect(evaluateCondition(cond('hp', 'gt', '4'), { hp: 4 })).toBe(false);
+      expect(evaluateCondition(cond('hp', 'gte', '4'), { hp: 4 })).toBe(true);
+      expect(evaluateCondition(cond('hp', 'lt', '4'), { hp: 4 })).toBe(false);
+      expect(evaluateCondition(cond('hp', 'lte', '4'), { hp: 4 })).toBe(true);
+      expect(evaluateCondition(cond('hp', 'eq', '4.0'), { hp: 4 })).toBe(true);
+      expect(evaluateCondition(cond('hp', 'gt', 'abc'), { hp: 4 })).toBe(false);
+    });
+
+    test('text equality ignores case; like takes a regex', () => {
+      expect(evaluateCondition(cond('attacker', 'eq', 'zbojca'), { attacker: 'Zbojca' })).toBe(true);
+      expect(evaluateCondition(cond('attacker', 'neq', 'zbojca'), { attacker: 'Zbojca' })).toBe(false);
+      expect(evaluateCondition(cond('attacker', 'like', '^zb'), { attacker: 'Zbojca' })).toBe(true);
+      expect(evaluateCondition(cond('attacker', 'notLike', 'ork'), { attacker: 'Zbojca' })).toBe(true);
+      expect(evaluateCondition(cond('attacker', 'like', '('), { attacker: 'Zbojca' })).toBe(false);
+      expect(evaluateCondition(cond('attacker', 'notLike', '('), { attacker: 'Zbojca' })).toBe(false);
+    });
+
+    test('booleans compare as true/false', () => {
+      expect(evaluateCondition(cond('unread', 'eq', 'true'), { unread: true })).toBe(true);
+      expect(evaluateCondition(cond('unread', 'neq', 'true'), { unread: false })).toBe(true);
+    });
+
+    test('a missing field fails every operator, neq included', () => {
+      expect(evaluateCondition(cond('hp', 'neq', '10'), { mana: 3 })).toBe(false);
+      expect(evaluateCondition(cond('hp', 'notLike', 'x'), { mana: 3 })).toBe(false);
+    });
+
+    test('a bare payload is exposed as value', () => {
+      expect(evaluateCondition(cond('value', 'lt', '5'), 3)).toBe(true);
+    });
+  });
+
+  test('every gmcp event is a gmcp.* id without a value suffix', () => {
+    const gmcpEvents = SUPPORTED_EVENTS.filter(e => e.category === GMCP_EVENT_CATEGORY);
+    expect(gmcpEvents.length).toBeGreaterThan(0);
+    for (const e of gmcpEvents) {
+      expect(e.id).toMatch(/^gmcp\.[a-z_.]+$/);
+    }
   });
 
   test('an unknown placeholder is left visible rather than blanked', () => {

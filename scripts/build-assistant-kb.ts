@@ -1391,16 +1391,21 @@ function buildSchemas(): { schemas: SchemaCatalog; events: EventEntry[]; macroTy
     const trigger: ProposalSchema = {
         name: 'UserTrigger',
         description: 'Trigger uzytkownika. Przechowywany w localStorage pod kluczem `triggers` jako tablica UserTrigger[]. Dwa rodzaje: wzorcowy (dopasowuje tekst z gry) i zdarzeniowy (reaguje na zdarzenie klienta).',
-        typescript: declarationSource(triggerSf, ['TriggerType', 'UserTrigger', 'SupportedEvent']),
+        typescript: declarationSource(triggerSf, ['TriggerType', 'UserTrigger', 'ConditionOperator', 'TriggerCondition', 'EventArg', 'SupportedEvent']),
         fields: toFields(triggerProps, {
             type: '"pattern" (domyslne, gdy pominiete) albo "event".',
             pattern: 'Wyrazenie regularne dopasowywane do linii z gry. W przeciwienstwie do aliasow NIE jest kotwiczone — dopasowanie czesciowe wystarczy.',
             event: `Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: ${events.map(e => e.id).join(', ')}.`,
             flags: 'Podzbior "gim": g = wszystkie dopasowania w linii, i = ignoruj wielkosc liter, m = trigger wieloliniowy.',
             gmcpMsgType: 'Ogranicza trigger do konkretnego typu wiadomosci GMCP.',
+            conditions: 'Tylko triggery zdarzeniowe. Lista warunkow { arg, op, value } — wszystkie musza byc spelnione. `arg` to nazwa pola z `args` zdarzenia — zdarzenia bez `args` nie obsluguja warunkow. `op`: eq/neq (liczbowo, gdy obie strony sa liczbami, inaczej tekstowo bez wielkosci liter), like/notLike (regex bez wielkosci liter), gt/gte/lt/lte (tylko liczby). `value` zawsze jako tekst. Brak pola w zdarzeniu = warunek niespelniony.',
             macros: 'Lista akcji do wykonania (UserMacro[]).',
         }),
         examples: [
+            {
+                description: 'Zdarzeniowy z warunkiem: powiadom, gdy zycie z GMCP Char.State spadnie do 2 lub mniej.',
+                value: { type: 'event', event: 'gmcp.char.state', conditions: [{ arg: 'hp', op: 'lte', value: '2' }], macros: [{ type: 'notify', message: 'Zycie: {hp}' }] },
+            },
             {
                 description: 'Podswietl na czerwono kazda wzmianke o trollu i zagraj dzwiek.',
                 value: { type: 'pattern', pattern: 'troll', flags: 'gi', macros: [{ type: 'color', color: '#ff0000' }, { type: 'beep' }] },
@@ -1669,6 +1674,16 @@ function validateSchemas(
                 if (value.type === 'event') {
                     if (typeof value.event !== 'string' || !eventIds.has(value.event)) {
                         fail(`${where}: event "${String(value.event)}" is not in SUPPORTED_EVENTS`);
+                    }
+                    if (value.conditions !== undefined) {
+                        const event = events.find(e => e.id === value.event) as (EventEntry & { args?: { name: string }[] }) | undefined;
+                        if (!Array.isArray(value.conditions)) fail(`${where}: \`conditions\` must be an array`);
+                        for (const c of value.conditions as Record<string, unknown>[]) {
+                            if (!event?.args?.some(a => a.name === c.arg)) {
+                                fail(`${where}: condition arg "${String(c.arg)}" is not an arg of ${String(value.event)}`);
+                            }
+                            if (typeof c.value !== 'string') fail(`${where}: condition value must be a string`);
+                        }
                     }
                 } else {
                     if (typeof value.pattern !== 'string') fail(`${where}: pattern trigger needs a string \`pattern\``);

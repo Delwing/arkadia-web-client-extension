@@ -123,6 +123,7 @@ function applyTrigger(proposal: TriggerProposal): ApplyResult {
         ...(proposal.event !== undefined ? { event: proposal.event } : {}),
         ...(proposal.flags !== undefined ? { flags: proposal.flags } : {}),
         ...(proposal.gmcpMsgType !== undefined ? { gmcpMsgType: proposal.gmcpMsgType } : {}),
+        ...(proposal.conditions !== undefined ? { conditions: proposal.conditions } : {}),
         macros: proposal.macros,
     };
     const list = globalStorage.get('triggers') ?? [];

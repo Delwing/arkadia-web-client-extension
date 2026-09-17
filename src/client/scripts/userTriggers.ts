@@ -43,13 +43,46 @@ export interface UserTrigger {
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
     flags?: string;      // for pattern triggers only
     gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type
+    /** Event triggers only: every condition must hold for the macros to run. */
+    conditions?: TriggerCondition[];
     macros: UserMacro[];
 }
+
+export type ConditionOperator = 'eq' | 'neq' | 'like' | 'notLike' | 'gt' | 'gte' | 'lt' | 'lte';
+
+/** Compares one field of an event's payload (see `EventArg`) against a value. */
+export interface TriggerCondition {
+    arg: string;
+    op: ConditionOperator;
+    value: string;
+}
+
+export type EventArgType = 'number' | 'string' | 'boolean';
+
+export interface ConditionOperatorInfo {
+    id: ConditionOperator;
+    label: string;
+    /** Arg types this operator makes sense for. Untyped args get every operator. */
+    types: EventArgType[];
+}
+
+export const CONDITION_OPERATORS: ConditionOperatorInfo[] = [
+    { id: 'eq', label: 'jest', types: ['number', 'string', 'boolean'] },
+    { id: 'neq', label: 'nie jest', types: ['number', 'string', 'boolean'] },
+    { id: 'like', label: 'pasuje do (regex)', types: ['string'] },
+    { id: 'notLike', label: 'nie pasuje do (regex)', types: ['string'] },
+    { id: 'gt', label: '>', types: ['number'] },
+    { id: 'gte', label: '>=', types: ['number'] },
+    { id: 'lt', label: '<', types: ['number'] },
+    { id: 'lte', label: '<=', types: ['number'] },
+];
 
 /** One value an event carries, offered to the user as a `{name}` placeholder. */
 export interface EventArg {
     name: string;
     label: string;
+    /** Decides which condition operators the editor offers for this arg. */
+    type?: EventArgType;
 }
 
 export interface SupportedEvent {
@@ -88,7 +121,7 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         category: 'Walka',
         description:
             'Gdy atakuje cie ktos z gildii oznaczonej jako wroga — dokladnie w tym samym momencie, w ktorym odzywa sie beep.',
-        args: [{ name: 'attacker', label: 'Nazwa atakujacego' }],
+        args: [{ name: 'attacker', label: 'Nazwa atakujacego', type: 'string' }],
     },
 
     // Character condition. These exist so the built-in alerts can be bound to a
@@ -100,8 +133,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         description:
             'Gdy kondycja spadnie do progu ustawionego w "Alarm niskiego zdrowia" (Opcje → Ustawienia).',
         args: [
-            { name: 'text', label: 'Opis kondycji' },
-            { name: 'hp', label: 'Poziom zycia (GMCP)' },
+            { name: 'text', label: 'Opis kondycji', type: 'string' },
+            { name: 'hp', label: 'Poziom zycia (GMCP)', type: 'number' },
         ],
     },
     {
@@ -111,7 +144,7 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         description:
             '3 minuty po odzyskaniu pelnego zycia, o ile w tym czasie zycie nie spadlo i nie atakowales. '
             + 'Wymaga wlaczonej opcji "Informacja o pelnym zdrowiu" — bez niej nie zadziala wcale.',
-        args: [{ name: 'text', label: 'Tresc alertu' }],
+        args: [{ name: 'text', label: 'Tresc alertu', type: 'string' }],
     },
     {
         id: 'hp.idleFull',
@@ -120,7 +153,7 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         description:
             'W chwili odzyskania pelnego zycia, jesli przez ostatnie 2 minuty nie wyslales zadnej komendy. '
             + 'To zdarzenie do powiadomien "wrocilem, jestem wyleczony".',
-        args: [{ name: 'text', label: 'Tresc alertu' }],
+        args: [{ name: 'text', label: 'Tresc alertu', type: 'string' }],
     },
 
     // Connection
@@ -131,7 +164,101 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'zaskTimer', label: 'Timer zaskoczenia', category: 'Timery' },
     { id: 'coverTimer', label: 'Timer oslony', category: 'Timery' },
     { id: 'transportTimer', label: 'Timer transportu', category: 'Timery' },
+
+    // Raw GMCP packages, fired as `gmcp.<package>` for every message the server
+    // sends. The editor collapses this category into a single "GMCP" choice
+    // with its own package picker (see GMCP_EVENT_CATEGORY).
+    {
+        id: 'gmcp.char.state',
+        label: 'Char.State — stan postaci',
+        category: 'GMCP',
+        description: 'Przy kazdej zmianie stanu postaci (zycie, zmeczenie, mana, obciazenie...). Przychodzi bardzo czesto.',
+        args: [
+            { name: 'hp', label: 'Zycie', type: 'number' },
+            { name: 'mana', label: 'Mana', type: 'number' },
+            { name: 'fatigue', label: 'Zmeczenie', type: 'number' },
+            { name: 'improve', label: 'Postepy', type: 'number' },
+            { name: 'form', label: 'Forma', type: 'number' },
+            { name: 'intox', label: 'Upojenie', type: 'number' },
+            { name: 'headache', label: 'Kac', type: 'number' },
+            { name: 'stuffed', label: 'Najedzenie', type: 'number' },
+            { name: 'soaked', label: 'Napojenie', type: 'number' },
+            { name: 'encumbrance', label: 'Obciazenie', type: 'number' },
+            { name: 'panic', label: 'Panika', type: 'number' },
+            { name: 'state', label: 'Stan', type: 'string' },
+        ],
+    },
+    {
+        id: 'gmcp.char.info',
+        label: 'Char.Info — informacje o postaci',
+        category: 'GMCP',
+        description: 'Po zalogowaniu i przy zmianie danych postaci.',
+        args: [
+            { name: 'name', label: 'Imie', type: 'string' },
+            { name: 'race', label: 'Rasa', type: 'string' },
+            { name: 'gender', label: 'Plec', type: 'string' },
+            { name: 'guild_occ', label: 'Gildia zawodowa', type: 'string' },
+            { name: 'guild_lay', label: 'Gildia laicka', type: 'string' },
+            { name: 'guild_race', label: 'Gildia rasowa', type: 'string' },
+            { name: 'guild_rel', label: 'Gildia religijna', type: 'string' },
+        ],
+    },
+    {
+        id: 'gmcp.char.options',
+        label: 'Char.Options — opcje postaci',
+        category: 'GMCP',
+        description: 'Po zalogowaniu i przy zmianie opcji. Serwer moze wyslac tylko zmieniona opcje.',
+    },
+    { id: 'gmcp.char.options.info', label: 'Char.Options.Info — dozwolone wartosci opcji', category: 'GMCP' },
+    { id: 'gmcp.char.colors', label: 'Char.Colors — kolory', category: 'GMCP' },
+    {
+        id: 'gmcp.room.info',
+        label: 'Room.Info — lokacja',
+        category: 'GMCP',
+        description: 'Przy kazdym wejsciu na lokacje.',
+        args: [
+            { name: 'num', label: 'Numer lokacji', type: 'number' },
+            { name: 'id', label: 'Identyfikator lokacji', type: 'number' },
+            { name: 'hash', label: 'Hash lokacji', type: 'string' },
+            { name: 'exits', label: 'Wyjscia', type: 'string' },
+        ],
+    },
+    {
+        id: 'gmcp.room.time',
+        label: 'Room.Time — pora dnia',
+        category: 'GMCP',
+        args: [
+            { name: 'daylight', label: 'Dzien', type: 'boolean' },
+            { name: 'season', label: 'Pora roku', type: 'number' },
+        ],
+    },
+    {
+        id: 'gmcp.mail.state',
+        label: 'Mail.State — poczta',
+        category: 'GMCP',
+        args: [
+            { name: 'unread', label: 'Nieprzeczytane', type: 'boolean' },
+            { name: 'unreceived', label: 'Nieodebrane', type: 'boolean' },
+            { name: 'unsent', label: 'Niewyslane', type: 'boolean' },
+        ],
+    },
+    {
+        id: 'gmcp.objects.nums',
+        label: 'Objects.Nums — obiekty wokol',
+        category: 'GMCP',
+        description: 'Przy kazdej zmianie listy obiektow na lokacji.',
+    },
+    {
+        id: 'gmcp.objects.data',
+        label: 'Objects.Data — dane obiektow',
+        category: 'GMCP',
+        description: 'Przy kazdej zmianie stanu obiektow wokol (np. w trakcie walki). Przychodzi bardzo czesto.',
+    },
+    { id: 'gmcp.core.ping', label: 'Core.Ping — odpowiedz na ping', category: 'GMCP' },
 ];
+
+/** Category of the raw GMCP entries in `SUPPORTED_EVENTS`. */
+export const GMCP_EVENT_CATEGORY = 'GMCP';
 
 const STORAGE_KEY = 'triggers';
 
@@ -255,15 +382,74 @@ function applyMacrosToMatch(
 export function interpolateEventArgs(text: string, payload: unknown): string {
     if (!text || !text.includes('{')) return text;
 
-    const source: Record<string, unknown> =
-        typeof payload === 'object' && payload !== null
-            ? (payload as Record<string, unknown>)
-            : { value: payload };
+    const source = eventPayloadFields(payload);
 
     return text.replace(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (whole, name: string) => {
         const value = source[name];
         return value === undefined || value === null ? whole : String(value);
     });
+}
+
+/** An event's payload as named fields; a bare (non-object) payload is `value`. */
+function eventPayloadFields(payload: unknown): Record<string, unknown> {
+    return typeof payload === 'object' && payload !== null
+        ? (payload as Record<string, unknown>)
+        : { value: payload };
+}
+
+function asNumber(value: unknown): number | undefined {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+    if (typeof value !== 'string' || value.trim() === '') return undefined;
+    const n = Number(value.trim().replace(',', '.'));
+    return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Whether the event payload satisfies one condition.
+ *
+ * A field the payload does not carry fails every operator, `neq` included.
+ * Several events arrive partial (Char.State only sends what changed), and
+ * "hp is not 10" must not fire on every mana update that omits hp.
+ *
+ * `eq`/`neq` compare numerically when both sides are numbers, otherwise as
+ * text ignoring case. `like`/`notLike` take a case-insensitive regex; one that
+ * does not compile fails the condition either way.
+ */
+export function evaluateCondition(condition: TriggerCondition, payload: unknown): boolean {
+    const actual = eventPayloadFields(payload)[condition.arg];
+    if (actual === undefined || actual === null) return false;
+
+    const expected = condition.value ?? '';
+    const actualNumber = asNumber(actual);
+    const expectedNumber = asNumber(expected);
+
+    const equals = () =>
+        actualNumber !== undefined && expectedNumber !== undefined
+            ? actualNumber === expectedNumber
+            : String(actual).toLowerCase() === expected.trim().toLowerCase();
+
+    const likes = (): boolean | undefined => {
+        try {
+            return new RegExp(expected, 'i').test(String(actual));
+        } catch {
+            return undefined;
+        }
+    };
+
+    const compare = (fn: (a: number, b: number) => boolean) =>
+        actualNumber !== undefined && expectedNumber !== undefined && fn(actualNumber, expectedNumber);
+
+    switch (condition.op) {
+        case 'eq': return equals();
+        case 'neq': return !equals();
+        case 'like': return likes() === true;
+        case 'notLike': return likes() === false;
+        case 'gt': return compare((a, b) => a > b);
+        case 'gte': return compare((a, b) => a >= b);
+        case 'lt': return compare((a, b) => a < b);
+        case 'lte': return compare((a, b) => a <= b);
+        default: return false;
+    }
 }
 
 function applyEventMacros(
@@ -351,6 +537,7 @@ export default function initUserTriggers(client: Client) {
                     if (eventValue !== undefined) {
                         if (String(data) !== eventValue) return;
                     }
+                    if (item.conditions?.some(c => c.arg && !evaluateCondition(c, data))) return;
                     applyEventMacros(client, item.macros, data);
                 };
 

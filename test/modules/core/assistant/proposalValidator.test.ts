@@ -604,6 +604,43 @@ describe('trigger proposals - event', () => {
         expect(result.issues[0].message).toContain('enemyKilled');
     });
 
+    it('keeps valid conditions and stringifies their values', () => {
+        const result = validateProposal({
+            kind: 'trigger', type: 'event', event: 'gmcp.char.state',
+            conditions: [{ arg: 'hp', op: 'lte', value: 2 }],
+            macros: [{ type: 'beep' }],
+        }) as ValidationResult<TriggerProposal>;
+        expect(result.ok).toBe(true);
+        expect(result.proposal!.conditions).toEqual([{ arg: 'hp', op: 'lte', value: '2' }]);
+    });
+
+    it('rejects an unknown condition operator and an uncompilable like', () => {
+        const result = validateProposal({
+            kind: 'trigger', type: 'event', event: 'enemy.attack',
+            conditions: [{ arg: 'attacker', op: 'between', value: 'a' }, { arg: 'attacker', op: 'like', value: '(' }],
+            macros: [{ type: 'beep' }],
+        });
+        expect(result.ok).toBe(false);
+        expect(errorCodes(result)).toEqual(['invalidCondition', 'invalidCondition']);
+    });
+
+    it('rejects a condition on a field the event does not carry', () => {
+        const unknownArg = validateProposal({
+            kind: 'trigger', type: 'event', event: 'gmcp.char.state',
+            conditions: [{ arg: 'attacker', op: 'eq', value: 'x' }],
+            macros: [{ type: 'beep' }],
+        });
+        expect(errorCodes(unknownArg)).toEqual(['invalidCondition']);
+        expect(unknownArg.issues[0].suggestions).toContain('hp');
+
+        const noArgs = validateProposal({
+            kind: 'trigger', type: 'event', event: 'kill',
+            conditions: [{ arg: 'value', op: 'eq', value: 'x' }],
+            macros: [{ type: 'beep' }],
+        });
+        expect(errorCodes(noArgs)).toEqual(['invalidCondition']);
+    });
+
     it('exposes the real event list', () => {
         expect(SUPPORTED_EVENT_IDS).toContain('combatState:true');
         expect(SUPPORTED_EVENT_IDS).not.toContain('onPlayerDeath');

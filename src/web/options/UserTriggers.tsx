@@ -12,8 +12,12 @@ import TriggerEditModal from "./TriggerEditModal";
 import { normalizeTriggerList } from "./userTriggerNormalize";
 import {
     SUPPORTED_EVENTS,
+    GMCP_EVENT_CATEGORY,
+    CONDITION_OPERATORS,
     type EventArg,
     type SupportedEvent,
+    type TriggerCondition,
+    type ConditionOperator,
 } from "@client/scripts/userTriggers";
 
 export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
@@ -51,6 +55,7 @@ export interface UserTrigger {
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
     flags?: string;      // for pattern triggers only
     gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type
+    conditions?: TriggerCondition[]; // event triggers only; all must hold
     macros: UserMacro[];
 }
 
@@ -94,8 +99,19 @@ export const GMCP_MSG_TYPES: GmcpMsgTypeOption[] = [
 // @client/scripts/userTriggers, and is re-exported here rather than copied.
 // It was duplicated before, and the copies drifted: events added on the client
 // side never appeared in this editor at all.
-export type { SupportedEvent, EventArg };
-export { SUPPORTED_EVENTS };
+export type { SupportedEvent, EventArg, TriggerCondition, ConditionOperator };
+export { SUPPORTED_EVENTS, GMCP_EVENT_CATEGORY, CONDITION_OPERATORS };
+
+/** `hp < 3, name jest Zbojca` — the one-line summary shown on a trigger card. */
+function conditionsToText(conditions: TriggerCondition[] = []): string {
+    return conditions
+        .filter(c => c.arg)
+        .map(c => {
+            const op = CONDITION_OPERATORS.find(o => o.id === c.op)?.label ?? c.op;
+            return `${c.arg} ${op} ${c.value}`;
+        })
+        .join(', ');
+}
 
 // Shared with the AI assistant's apply path — see userTriggerNormalize.ts for
 // why these no longer live here.
@@ -355,6 +371,11 @@ function UserTriggers() {
                                         <code className="alias-pattern">
                                             {SUPPORTED_EVENTS.find(e => e.id === t.event)?.label || t.event}
                                         </code>
+                                        {t.conditions?.some(c => c.arg) && (
+                                            <span className="badge bg-secondary ms-1 trigger-conditions">
+                                                gdy {conditionsToText(t.conditions)}
+                                            </span>
+                                        )}
                                     </>
                                 ) : (
                                     <>

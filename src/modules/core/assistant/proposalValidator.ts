@@ -30,7 +30,7 @@
  */
 
 import { stripPolishCharacters } from '@client/stripPolishCharacters';
-import { SUPPORTED_EVENTS, type BuiltInMacroType, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
+import { CONDITION_OPERATORS, SUPPORTED_EVENTS, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { CustomBind } from '../keymapTypes';
 import {
@@ -1074,7 +1074,15 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
         if (input.gmcpMsgType !== undefined) {
             issues.push(warn('unusedGmcpMsgType', 'gmcpMsgType', 'Trigger zdarzeniowy ignoruje pole "gmcpMsgType".'));
         }
+        if (input.conditions !== undefined) {
+            const conditions = validateConditions(input.conditions, SUPPORTED_EVENTS.find(e => e.id === event)?.args ?? []);
+            issues.push(...conditions.issues);
+            if (conditions.conditions.length) proposal.conditions = conditions.conditions;
+        }
     } else {
+        if (input.conditions !== undefined) {
+            issues.push(warn('unusedConditions', 'conditions', 'Trigger wzorcowy ignoruje pole "conditions".'));
+        }
         const flags = typeof input.flags === 'string' ? input.flags : '';
         const sanitized = sanitizeRegexSource(input.pattern, { path: 'pattern', flags });
         if (!sanitized.ok || !sanitized.pattern) {
@@ -1111,6 +1119,59 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
 
     if (typeof input.reason === 'string') proposal.reason = input.reason;
     return { ok: true, proposal, issues, repairs, commandFlags };
+}
+
+const CONDITION_OPERATOR_IDS: readonly string[] = CONDITION_OPERATORS.map(o => o.id);
+
+function validateConditions(raw: unknown, eventArgs: readonly EventArg[]): { issues: ValidationIssue[]; conditions: TriggerCondition[] } {
+    const issues: ValidationIssue[] = [];
+    const conditions: TriggerCondition[] = [];
+    if (!Array.isArray(raw)) {
+        issues.push(err('wrongValueType', 'conditions', 'Pole "conditions" musi byc tablica warunkow.'));
+        return { issues, conditions };
+    }
+    raw.forEach((c, i) => {
+        const path = `conditions[${i}]`;
+        if (typeof c !== 'object' || c === null) {
+            issues.push(err('invalidCondition', path, 'Kazdy warunek musi byc obiektem { arg, op, value }.'));
+            return;
+        }
+        const { arg, op, value } = c as Record<string, unknown>;
+        if (typeof arg !== 'string' || arg.trim() === '') {
+            issues.push(err('invalidCondition', `${path}.arg`, 'Warunek wymaga niepustego pola "arg".'));
+            return;
+        }
+        const argNames = eventArgs.map(a => a.name);
+        if (!argNames.includes(arg.trim())) {
+            issues.push(err(
+                'invalidCondition',
+                `${path}.arg`,
+                argNames.length
+                    ? `Pole "${arg}" nie nalezy do tego zdarzenia. Dostepne pola: ${argNames.join(', ')}.`
+                    : 'To zdarzenie nie niesie zadnych pol, wiec nie obsluguje warunkow.',
+                argNames,
+            ));
+            return;
+        }
+        if (typeof op !== 'string' || !CONDITION_OPERATOR_IDS.includes(op)) {
+            issues.push(err('invalidCondition', `${path}.op`, `Pole "op" przyjmuje: ${CONDITION_OPERATOR_IDS.join(', ')}.`, [...CONDITION_OPERATOR_IDS]));
+            return;
+        }
+        if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+            issues.push(err('invalidCondition', `${path}.value`, 'Pole "value" musi byc tekstem, liczba albo wartoscia logiczna.'));
+            return;
+        }
+        if (op === 'like' || op === 'notLike') {
+            try {
+                new RegExp(String(value), 'i');
+            } catch {
+                issues.push(err('invalidCondition', `${path}.value`, 'Wyrazenie regularne w warunku sie nie kompiluje.'));
+                return;
+            }
+        }
+        conditions.push({ arg: arg.trim(), op: op as TriggerCondition['op'], value: String(value) });
+    });
+    return { issues, conditions };
 }
 
 function editDistanceLocal(a: string, b: string): number {
