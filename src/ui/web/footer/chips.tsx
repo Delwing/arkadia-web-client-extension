@@ -1,7 +1,7 @@
 import { useState } from "react";
 import eventBus from "@modules/core/eventBus";
 import type { PackageStatus } from "@shared/events/clientEvents";
-import { useClientEvent } from "../hooks";
+import { useAttentionBlink, useClientEvent } from "../hooks";
 import { Chip, type ChipTone } from "./Chip";
 import { ChipIcon } from "./icons";
 
@@ -151,11 +151,16 @@ export function PackageChip() {
   );
 }
 
-/** Mail waiting to be collected or sent. Click dispatches the courier animal. */
+/**
+ * Mail waiting to be collected or sent. Click dispatches the courier animal.
+ * Blinks for 5s when it appears, then for 5s every minute while it stays.
+ */
 export function MailChip() {
   const [state, setState] = useState<{ unreceived?: boolean; unsent?: boolean }>({});
   useClientEvent<{ unreceived?: boolean; unsent?: boolean }>("gmcp.mail.state", (s) => setState(s || {}));
-  if (!state.unreceived && !state.unsent) return null;
+  const pending = Boolean(state.unreceived || state.unsent);
+  const blinking = useAttentionBlink(pending);
+  if (!pending) return null;
   const parts: string[] = [];
   if (state.unreceived) parts.push("Nowa");
   if (state.unsent) parts.push("Niewyslana");
@@ -166,6 +171,7 @@ export function MailChip() {
       value={parts.join(", ")}
       tone="warn"
       title="Wyslij zwierze pocztowe"
+      className={blinking ? "attention-blink" : undefined}
       onClick={() => eventBus.emit("sendCommand", { command: "wyslij zwierze" })}
     />
   );

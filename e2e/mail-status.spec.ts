@@ -134,4 +134,19 @@ test.describe('Mail status', () => {
         const command = await getLastOutgoingCommand(page);
         expect(command, 'should send wyslij zwierze command').toBe('wyslij zwierze');
     });
+
+    test('blinks for a few seconds when it appears', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const badge = page.locator('#mail-status > span');
+
+        await pushGmcp(page, 'mail.state', {
+            unreceived: true,
+        });
+
+        await expect(badge, 'should blink right away').toHaveClass(/attention-blink/);
+        await expect(badge, 'should stop blinking after the burst').not.toHaveClass(/attention-blink/, {timeout: 8000});
+    });
 });

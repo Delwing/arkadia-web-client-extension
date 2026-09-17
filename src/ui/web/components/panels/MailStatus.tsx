@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useClientEvent, useClientCommand } from "../../hooks";
+import { useClientEvent, useClientCommand, useAttentionBlink } from "../../hooks";
 
 interface MailState {
   unread?: boolean;
@@ -11,6 +11,7 @@ interface MailState {
  * MailStatus component - displays mail status indicators
  * Shows status from gmcp.mail.state event with 3 boolean flags
  * Sends "wyslij zwierze" command when clicked
+ * Blinks for 5s when it appears, then for 5s every minute while it stays
  */
 export const MailStatus: React.FC = () => {
   const [mailState, setMailState] = useState<MailState>({});
@@ -20,7 +21,8 @@ export const MailStatus: React.FC = () => {
     setMailState(state || {});
   });
 
-  const hasAnyStatus = mailState.unreceived || mailState.unsent;
+  const hasAnyStatus = Boolean(mailState.unreceived || mailState.unsent);
+  const blinking = useAttentionBlink(hasAnyStatus);
 
   if (!hasAnyStatus) {
     return null;
@@ -38,7 +40,7 @@ export const MailStatus: React.FC = () => {
     statusParts.push("Niewyslana");
   }
 
-  return <span onClick={handleClick} style={{ cursor: "pointer", color: "orange" }}>✉: {statusParts.join(", ")}</span>;
+  return <span className={blinking ? "attention-blink" : undefined} onClick={handleClick} style={{ cursor: "pointer", color: "orange" }}>✉: {statusParts.join(", ")}</span>;
 };
 
 export default MailStatus;

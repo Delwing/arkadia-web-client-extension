@@ -707,6 +707,10 @@ body::after {
 }
 @media (prefers-reduced-motion: reduce) { .chip__ember--lit { animation: none; } }
 
+/* short bursts toggled from JS (useAttentionBlink) for chips waiting on the player */
+.chip.attention-blink { animation: chipAttentionBlink 1s steps(1, end) infinite; }
+@keyframes chipAttentionBlink { 50% { opacity: .15; } }
+
 .gems { display: flex; gap: 4px; -webkit-user-select: none; user-select: none; }
 
 /* "Postep" lifted out of the gem row: a thin full-width exp-bar with one tick

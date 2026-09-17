@@ -13,15 +13,16 @@ export type ChipTone = "ok" | "warn" | "danger";
  * something on click and a plain `<div>` otherwise, so only interactive chips
  * present themselves as clickable.
  */
-export function Chip({ icon, label, value, tone, onClick, title }: {
+export function Chip({ icon, label, value, tone, onClick, title, className }: {
   icon: ReactNode;
   label: string;
   value: ReactNode;
   tone?: ChipTone;
   onClick?: () => void;
   title?: string;
+  className?: string;
 }) {
-  const cls = ["chip", tone && `chip--${tone}`, onClick && "chip--act"].filter(Boolean).join(" ");
+  const cls = ["chip", tone && `chip--${tone}`, onClick && "chip--act", className].filter(Boolean).join(" ");
   const inner = (
     <>
       {icon}

@@ -2324,6 +2324,17 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   }
 }
 
+/* Short bursts toggled from JS (useAttentionBlink) for footer items that wait on the player. */
+.attention-blink {
+  animation: attention-blink 1s steps(1, end) infinite;
+}
+
+@keyframes attention-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
 /* Mobile-specific styles */
 @media (max-width: 768px) {
   body {
