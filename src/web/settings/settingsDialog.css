@@ -87,7 +87,10 @@
   background: var(--popup-accent);
 }
 
-.settings-dialog__select {
+/* Qualified past .form-select (and forge's .forge-menu-modal .form-select),
+   whose display:block would otherwise auto-place the select into an implicit
+   grid cell in the bottom-right corner of the wide layout. */
+.settings-dialog select.settings-dialog__select {
   grid-area: select;
   display: none;
 }
@@ -225,7 +228,7 @@
     border-right: 0;
   }
 
-  .settings-dialog__select {
+  .settings-dialog select.settings-dialog__select {
     display: block;
     width: auto;
     margin: 0.25rem 0.75rem 0.5rem;
@@ -233,7 +236,7 @@
 
   /* 16px keeps iOS from zooming the page when the field takes focus. */
   .settings-dialog__search .form-control,
-  .settings-dialog__select {
+  .settings-dialog select.settings-dialog__select {
     font-size: 16px;
     min-height: 2.5rem;
   }

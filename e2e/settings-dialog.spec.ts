@@ -46,6 +46,7 @@ test.describe('Settings dialog', () => {
         await expect(settingsPage(page, 'character-general'), 'Ustawienia opens on Postac > Ogolne').toBeVisible();
         await expect(navItem(page, 'character-general')).toHaveClass(/settings-dialog__nav-item--active/);
         await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
+        await expect(modal.locator('#settings-category-select'), 'wide dialog has no page select').toBeHidden();
         await closeWithoutSaving(page);
 
         await page.click('#menu-button');
