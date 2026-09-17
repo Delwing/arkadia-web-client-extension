@@ -120,6 +120,34 @@ test.describe('Transport timer', () => {
         await expect(transportTimer, 'should clear timer after driving off').toBeEmpty();
     });
 
+    test('tracks the journey when a teammate drives the wagon aboard', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await waitForMapReady(page);
+
+        const transportTimer = page.locator('#transport-timer');
+
+        await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+            num: 6429,
+            id: 6429,
+            name: 'Przystan na Blekitnej Wstedze',
+            zone: 'Blekitna Wstega',
+            map: {
+                x: 0,
+                y: 0,
+                name: 'Transport Docks',
+            },
+        });
+
+        // A passenger never types the board command — the driver does
+        await pushText(page, 'Wraz z Vesper, Chorem i Pablem wjezdzasz elegancka drewniana bryczka na poklad wielkiej galery.');
+        await expect(transportTimer, 'should show destination after being driven aboard').toContainText('Kraina Zgromadzenia');
+
+        await pushText(page, 'Wraz z Pablem, Chorem i Vesper zjezdzasz elegancka drewniana bryczka na brzeg.');
+        await expect(transportTimer, 'should clear timer after being driven off').toBeEmpty();
+    });
+
     test('clears timer after exiting transport', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

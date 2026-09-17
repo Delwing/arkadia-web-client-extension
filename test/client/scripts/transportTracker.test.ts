@@ -109,3 +109,33 @@ describe('transport board bind team tickets', () => {
     ]);
   });
 });
+
+describe('transport journey as a wagon passenger', () => {
+  let client: FakeClient;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
+  const onBoard = () => client.sendEvent.mock.calls.filter(c => c[0] === 'transport.onBoard').map(c => c[1]);
+
+  beforeEach(() => {
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
+    client = new FakeClient();
+    initTransportTracker((client as unknown) as any);
+    parse = (line: string, type = '') =>
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
+  });
+
+  test('a teammate driving aboard starts the journey without any board command', () => {
+    client.sendEvent('enterLocation', { id: 6429 });
+    parse('Wraz z Vesper, silnym zmeczonym mezczyzna, Chorem i Pablem wjezdzasz elegancka drewniana bryczka na poklad wielkiej galery.');
+    expect(onBoard()).toEqual([true]);
+
+    parse('Wraz z Pablem, Chorem, silnym zmeczonym mezczyzna i Vesper zjezdzasz elegancka drewniana bryczka na brzeg.');
+    expect(onBoard()).toEqual([true, false]);
+  });
+
+  test('driving aboard away from any dock is ignored', () => {
+    client.sendEvent('enterLocation', { id: 1 });
+    parse('Wraz z Vesper wjezdzasz elegancka drewniana bryczka na poklad wielkiej galery.');
+    expect(onBoard()).toEqual([]);
+  });
+});

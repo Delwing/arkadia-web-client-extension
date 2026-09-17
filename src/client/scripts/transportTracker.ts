@@ -293,7 +293,8 @@ class Tracker {
 
     // ── event handlers (called by triggers) ───────────────────────────────────
 
-    private onBoardCommand(locationId: number): void {
+    /** Transports departing from this node, each with the stops it may be heading to next. */
+    private candidatesAt(locationId: number): Map<Def, number[]> {
         const found = new Map<Def, number[]>();
         for (const def of this.defs) {
             const idxs = def.stops.map((s, i) => s.start === locationId ? i : -1).filter(i => i >= 0);
@@ -303,6 +304,11 @@ class Tracker {
             const effective = (staged !== undefined && idxs.includes(staged)) ? [staged] : idxs;
             found.set(def, effective);
         }
+        return found;
+    }
+
+    private onBoardCommand(locationId: number): void {
+        const found = this.candidatesAt(locationId);
         if (found.size === 0) return;
 
         if (this.state.kind === 'on_board' && found.has(this.state.def)) {
@@ -351,11 +357,21 @@ class Tracker {
      * Driving a wagon aboard produces a generic line instead of the ship's own enter line, so the
      * ship has to come from the candidates the board command left pending at this dock. The vessel
      * named on the line only breaks ties when several ships dock at the same node.
+     *
+     * A passenger on a teammate's wagon is driven aboard without typing any board command, so
+     * nothing is pending — the candidates then come straight from the dock we are standing at.
      */
     private onCarriageBoard(vessel: string): void {
         if (this.state.kind === 'exiting') {
             this.onEnter(this.state.def);
             return;
+        }
+        if (this.state.kind === 'idle') {
+            const locId = this.locationId ?? this.prevLocationId;
+            if (typeof locId !== 'number') return;
+            const found = this.candidatesAt(locId);
+            if (found.size === 0) return;
+            this.go({ kind: 'pending', defs: found });
         }
         if (this.state.kind !== 'pending') return;
         const candidates = [...this.state.defs.keys()];
