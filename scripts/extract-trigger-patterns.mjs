@@ -7,8 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-const targetScript = process.argv[2] || 'trigger_func_skrypty_ui_footer_elements_weapon_on';
-
 // Pattern types from Mudlet:
 // 0 = substring
 // 1 = regex
@@ -88,16 +86,7 @@ function findTriggersWithScript(node, targetScript, parentChain = []) {
     return results;
 }
 
-async function main() {
-    const xmlPath = path.join(rootDir, 'data', 'Arkadia.xml');
-
-    if (!fs.existsSync(xmlPath)) {
-        console.error(`File not found: ${xmlPath}`);
-        process.exit(1);
-    }
-
-    const xmlData = fs.readFileSync(xmlPath, 'utf8');
-
+export async function extractTriggerPatterns(xmlData, targetScript) {
     const result = await new Promise((resolve, reject) => {
         xml2js.parseString(xmlData, { explicitArray: false }, (err, result) => {
             if (err) reject(err);
@@ -108,8 +97,7 @@ async function main() {
     // Start from the root TriggerPackage
     const triggerPackage = result.MudletPackage?.TriggerPackage;
     if (!triggerPackage) {
-        console.error('TriggerPackage not found in XML');
-        process.exit(1);
+        throw new Error('TriggerPackage not found in XML');
     }
 
     const allResults = [];
@@ -122,10 +110,28 @@ async function main() {
         allResults.push(...findTriggersWithScript(trigger, targetScript));
     }
 
+    return allResults;
+}
+
+async function main() {
+    const targetScript = process.argv[2] || 'trigger_func_skrypty_ui_footer_elements_weapon_on';
+    const xmlPath = path.join(rootDir, 'data', 'Arkadia.xml');
+
+    if (!fs.existsSync(xmlPath)) {
+        console.error(`File not found: ${xmlPath}`);
+        process.exit(1);
+    }
+
+    const xmlData = fs.readFileSync(xmlPath, 'utf8');
+    const allResults = await extractTriggerPatterns(xmlData, targetScript);
+
     console.log(JSON.stringify(allResults, null, 2));
 }
 
-main().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+// Only run the CLI when executed directly, not when imported.
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+    main().catch(err => {
+        console.error(err);
+        process.exit(1);
+    });
+}

@@ -90,6 +90,24 @@ describe('followSpecialExits', () => {
         expect(h.set).toHaveBeenLastCalledWith('wejdz na gore');
     });
 
+    test('binds "wespnij sie na polke" in room 24162 (Lua override)', () => {
+        const h = makeHarness({leader: 'Gandalf', roomId: 24162});
+        h.feed('Gandalf zaczyna wspinac sie na polke.');
+        expect(h.set).toHaveBeenLastCalledWith('wespnij sie na polke');
+    });
+
+    test('keeps "wejdz na gore" for the polka line outside room 24162', () => {
+        const h = makeHarness({leader: 'Gandalf', roomId: 1});
+        h.feed('Gandalf zaczyna wspinac sie na polke.');
+        expect(h.set).toHaveBeenLastCalledWith('wejdz na gore');
+    });
+
+    test('binds "zejdz po linie" at the cedar on the cliff edge (Lua override)', () => {
+        const h = makeHarness({leader: 'Gandalf'});
+        h.feed('Gandalf podchodzi do cedru na skraju urwiska i zaczyna schodzic na dol.');
+        expect(h.set).toHaveBeenLastCalledWith('zejdz po linie');
+    });
+
     test('pins the conflicting "szczelina" line to "przecisnij sie przez szczeline"', () => {
         const h = makeHarness({leader: 'Gandalf'});
         h.feed('Gandalf przeslizguje sie przez szczeline.');
@@ -103,6 +121,7 @@ describe('followSpecialExits', () => {
         ['Grung zaczyna wspinac sie na most.', 'wespnij sie na most'],
         ['Grung zaczyna przeciskac sie przez odplyw.', 'przecisnij sie przez odplyw'],
         ['Grung schodzi po zboczu.', 'zejdz po zboczu'],
+        ['Grung zeskakuje z pomostu ku zaroslom.', 'zejdz z pomostu'],
     ])('binds %j -> %j', (line, command) => {
         const h = makeHarness({leader: 'Grung'});
         h.feed(line);

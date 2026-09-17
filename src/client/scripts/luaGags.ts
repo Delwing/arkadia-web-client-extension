@@ -26,6 +26,7 @@ import {
     normalizeLuaGagsWalkaConfig,
 } from "../luaGagsSettings";
 import {recordCombatStat} from "./combatStats";
+import {createMatchesLuaCode, escapeLuaString} from "../luaInterop";
 
 const ERROR_COLOR = createColorFormat('#ff0000');
 
@@ -453,38 +454,6 @@ export default function registerLuaGagTriggers(client: Client) {
         return {global, luaEnv, resetSelection, gagsTable};
     }
 
-    function escapeLuaString(str: string): string {
-        return str
-            .replace(/\\/g, '\\\\')
-            .replace(/"/g, '\\"')
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
-            .replace(/\t/g, '\\t');
-    }
-
-    function createMatchesLuaCode(matches: RegExpMatchArray): string {
-        const entries: string[] = [];
-
-        // Add indexed groups (1-based for Lua)
-        matches.forEach((value, index) => {
-            if (value !== undefined) {
-                entries.push(`[${index + 1}] = "${escapeLuaString(value)}"`);
-            }
-        });
-
-        // Add named groups
-        if (matches.groups) {
-            Object.entries(matches.groups).forEach(([key, value]) => {
-                if (value !== undefined) {
-                    entries.push(`["${key}"] = "${escapeLuaString(value)}"`);
-                }
-            });
-        }
-
-        return `matches = {${entries.join(", ")}}`;
-    }
-
-
     (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
     client.on("playSound", (category: string) => {
         client.sendEvent("sound:category", category as SoundCategory);
@@ -492,7 +461,8 @@ export default function registerLuaGagTriggers(client: Client) {
 
     const {global, luaEnv, resetSelection, gagsTable: gagsTableRef} = createLuaEnv();
     gagsTable = gagsTableRef;
-    const luaFiles = import.meta.glob("../lua/**/*.lua", {query: "?raw", eager: true});
+    // lua/follow/ is executed by followSpecialExits in its own environment.
+    const luaFiles = import.meta.glob(["../lua/**/*.lua", "!../lua/follow/**"], {query: "?raw", eager: true});
     Object.values(luaFiles).forEach((file: any) => {
         luaEnv.parse(file.default).exec()
     });

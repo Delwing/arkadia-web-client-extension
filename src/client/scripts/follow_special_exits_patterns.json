@@ -2024,6 +2024,16 @@
     ]
   },
   {
+    "name": "zejdz_z_pomostu",
+    "script": "trigger_func_skrypty_ui_special_exits_follow(\"zejdz z pomostu\")",
+    "patterns": [
+      {
+        "pattern": "zeskakuje z pomostu ku zaroslom.",
+        "type": 0
+      }
+    ]
+  },
+  {
     "name": "zeskocz_na_dol",
     "script": "trigger_func_skrypty_ui_special_exits_follow(\"zeskocz na dol\")",
     "patterns": [
