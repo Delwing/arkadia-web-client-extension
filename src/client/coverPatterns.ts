@@ -132,6 +132,15 @@ const RULES: CoverRule[] = [
         re: /^(?<coverer>.+?) przestaje zaslaniac (?<covered>.+?)\.$/,
         build: g => ({ kind: 'released', source: 'cover-line', covered: g.covered, coverer: g.coverer }),
     },
+    // The covered side ending it - typically after a retreat-behind.
+    {
+        re: /^(?<covered>.+?) wychodzi zza twojej zaslony\.$/,
+        build: g => ({ kind: 'released', source: 'retreat', covered: g.covered, coverer: PLAYER }),
+    },
+    {
+        re: /^Wychodzisz zza zaslony (?<coverer>.+?)\.$/,
+        build: g => ({ kind: 'released', source: 'retreat', covered: PLAYER, coverer: g.coverer }),
+    },
 
     // --- 3.2 failed covers - matched only so they are never half-matched ----
     {

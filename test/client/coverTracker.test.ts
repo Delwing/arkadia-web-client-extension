@@ -778,6 +778,28 @@ describe('coverTracker - team fight replay', () => {
         expect(h.edges()).toHaveLength(0);
     });
 
+    it('drops a retreat-behind us when the covered steps out from behind', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Pablo zastawia sie swoja zdobiona stalowa halabarda i szybko przesuwa sie za ciebie, '
+            + 'kryjac sie przed atakami muskularnego groznego mezczyzny.');
+        expect(h.triple()).toEqual([`${PABLO}:${KHORN}:${GROZNY}`]);
+        h.tracker.handleLine('Pablo wychodzi zza twojej zaslony.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'released' });
+    });
+
+    it('drops our retreat-behind a teammate when we step out from behind', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Zastawiasz sie swoja zdobiona stalowa halabarda i szybko przesuwasz sie za Pabla, '
+            + 'kryjac sie przed atakami muskularnego groznego mezczyzny.');
+        expect(h.triple()).toEqual([`${KHORN}:${PABLO}:${GROZNY}`]);
+        h.tracker.handleLine('Wychodzisz zza zaslony Pabla.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'released' });
+    });
+
     it('reads "zaslania cie" as a cover on us, and its release', () => {
         const h = fight();
         h.tracker.handleLine('Pablo zrecznie zaslania cie przed ciosami muskularnego groznego mezczyzny.');
