@@ -257,8 +257,11 @@ const CoverDebugPopup: React.FC = () => {
                             </span>
                             <span className="cover-dbg-log-pair">
                                 {entry.coveredName ?? nameOf(entry.coveredId)}
-                                {' <- '}
-                                {entry.covererName ?? nameOf(entry.covererId)}
+                                {/* A break line names no coverer, and by then there
+                                    may have been several - say nothing rather than '?'. */}
+                                {(entry.covererId !== undefined || entry.covererName) && (
+                                    <>{' <- '}{entry.covererName ?? nameOf(entry.covererId)}</>
+                                )}
                                 {entry.attackerId !== undefined && ` (przed ${nameOf(entry.attackerId)})`}
                             </span>
                             <span className="cover-dbg-log-source">({entry.source})</span>

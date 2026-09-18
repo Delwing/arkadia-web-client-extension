@@ -716,6 +716,147 @@ describe('coverTracker - standing GMCP corroboration', () => {
 });
 
 /**
+ * A five-enemy team fight, from the second recording. Where the first episode had
+ * one attacker and two mobs, this one has four teammates, five near-identical mob
+ * descs, covers running in both directions and momentary team covers that end in
+ * the same frame they start.
+ *
+ * Ids and lines are verbatim from the capture.
+ */
+describe('coverTracker - team fight replay', () => {
+    const KHORN = 707885;
+    const MUZIKUHR = 677162;
+    const GRUNG = 672318;
+    const VESPER = 690555;
+    const PABLO = 692135;
+    const BARCZYSTY = 265074;
+    const ZGARBIONY = 265081;
+    const GROZNY = 265088;
+    const PONURY = 265095;
+    const WYSOKI = 654287;
+
+    const ALL = [KHORN, MUZIKUHR, GRUNG, VESPER, PABLO, BARCZYSTY, ZGARBIONY, GROZNY, PONURY, WYSOKI];
+
+    function fight(): Harness {
+        const h = harness([
+            { num: KHORN, desc: 'Khorn', __category: 'player' },
+            { num: MUZIKUHR, desc: 'Muzikuhr', __category: 'team' },
+            { num: GRUNG, desc: 'Grung', __category: 'team' },
+            { num: VESPER, desc: 'Vesper', __category: 'team' },
+            { num: PABLO, desc: 'Pablo', __category: 'team' },
+            { num: BARCZYSTY, desc: 'barczysty butny mezczyzna', __category: 'rest' },
+            { num: ZGARBIONY, desc: 'zgarbiony ponury mezczyzna', __category: 'rest' },
+            { num: GROZNY, desc: 'muskularny grozny mezczyzna', __category: 'rest' },
+            { num: PONURY, desc: 'muskularny ponury mezczyzna', __category: 'rest' },
+            { num: WYSOKI, desc: 'wysoki niebieskooki mezczyzna', __category: 'rest' },
+        ], KHORN);
+        h.tracker.handleObjectsNums(ALL);
+        return h;
+    }
+
+    it('fans our own three-attacker cover out and drops it all on release', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Zrecznie zaslaniasz Grunga przed ciosami muskularnego groznego mezczyzny, '
+            + 'zgarbionego ponurego mezczyzny i muskularnego ponurego mezczyzny.');
+        // Three attackers, three edges - and the two "muskularny ... mezczyzna"
+        // descs differing in one adjective must land on different objects.
+        expect(h.triple()).toEqual([
+            `${GRUNG}:${KHORN}:${GROZNY}`,
+            `${GRUNG}:${KHORN}:${PONURY}`,
+            `${GRUNG}:${KHORN}:${ZGARBIONY}`,
+        ].sort());
+
+        h.tracker.handleLine('Przestajesz zaslaniac Grunga.');
+        expect(h.edges()).toHaveLength(0);
+    });
+
+    it('handles a team cover that ends in the same frame it starts', () => {
+        const h = fight();
+        h.tracker.handleLine('Muzikuhr zrecznie zaslania Grunga przed ciosami barczystego butnego mezczyzny.');
+        expect(h.triple()).toEqual([`${GRUNG}:${MUZIKUHR}:${BARCZYSTY}`]);
+        h.tracker.handleLine('Muzikuhr przestaje zaslaniac Grunga.');
+        expect(h.edges()).toHaveLength(0);
+    });
+
+    it('reads "zaslania cie" as a cover on us, and its release', () => {
+        const h = fight();
+        h.tracker.handleLine('Pablo zrecznie zaslania cie przed ciosami muskularnego groznego mezczyzny.');
+        expect(h.triple()).toEqual([`${KHORN}:${PABLO}:${GROZNY}`]);
+        h.tracker.handleLine('Pablo przestaje cie zaslaniac przed ciosami wrogow.');
+        expect(h.edges()).toHaveLength(0);
+    });
+
+    it('resolves an undeclined teammate name in the attacker list', () => {
+        const h = fight();
+        // "przed ciosami Vesper" - nominative, where mobs decline.
+        h.tracker.handleLine(
+            'Wysoki niebieskooki mezczyzna zrecznie zaslania zgarbionego ponurego mezczyzne przed ciosami Vesper.');
+        expect(h.triple()).toEqual([`${ZGARBIONY}:${WYSOKI}:${VESPER}`]);
+    });
+
+    it('lets one teammate\'s break free the target for the whole team', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Wysoki niebieskooki mezczyzna zrecznie zaslania zgarbionego ponurego mezczyzne przed ciosami Vesper.');
+        // Grung breaks through, though the cover named Vesper.
+        h.tracker.handleLine('Grung rzuca sie na zgarbionego ponurego mezczyzne przebijajac sie przez jego ochrone.');
+        expect(h.edges()).toHaveLength(0);
+        // The break line names no coverer; the log says who was actually cleared.
+        expect(h.log.at(-1)).toMatchObject({
+            kind: 'break-ok', coveredId: ZGARBIONY, covererId: WYSOKI, attackerId: GRUNG,
+        });
+    });
+
+    it('drops a mob\'s cover when the mob it was protecting dies', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Muskularny grozny mezczyzna zrecznie zaslania zgarbionego ponurego mezczyzne przed ciosami Pabla.');
+        h.tracker.handleLine('Zgarbiony ponury mezczyzna umarl.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'death' });
+    });
+
+    it('creates nothing from the seventeen failed cover attempts', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Pablo probuje zaslonic Grunga przed ciosami wysokiego niebieskookiego mezczyzny, '
+            + 'jednak nie jest w stanie tego uczynic.');
+        h.tracker.handleLine(
+            'Barczysty butny mezczyzna probuje zaslonic muskularnego groznego mezczyzne przed ciosami Pabla, '
+            + 'jednak nie jest w stanie tego uczynic.');
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).toEqual(['failed', 'failed']);
+    });
+
+    it('recognises the block line as one it already knew about', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Barczysty butny mezczyzna zrecznie zaslania wysokiego niebieskookiego mezczyzne przed ciosami Grunga.');
+        h.tracker.handleLine(
+            'Grung rzuca sie na wysokiego niebieskookiego mezczyzne, lecz barczysty butny mezczyzna staje mu na drodze.');
+        expect(h.triple()).toEqual([`${WYSOKI}:${BARCZYSTY}:${GRUNG}`]);
+        // The fight produced two of these and neither was a surprise - the
+        // tracker's own miss counter read zero across the whole 95 s.
+        expect(h.log.at(-1)).toMatchObject({ kind: 'blocked', wasKnown: true });
+    });
+
+    it('keeps covers on different targets apart', () => {
+        const h = fight();
+        h.tracker.handleLine(
+            'Barczysty butny mezczyzna zrecznie zaslania wysokiego niebieskookiego mezczyzne przed ciosami Muzikuhr.');
+        h.tracker.handleLine('Pablo zrecznie zaslania Vesper przed ciosami wysokiego niebieskookiego mezczyzny.');
+        expect(h.triple()).toEqual([
+            `${VESPER}:${PABLO}:${WYSOKI}`,
+            `${WYSOKI}:${BARCZYSTY}:${MUZIKUHR}`,
+        ].sort());
+        // Releasing one leaves the other standing.
+        h.tracker.handleLine('Pablo przestaje zaslaniac Vesper.');
+        expect(h.triple()).toEqual([`${WYSOKI}:${BARCZYSTY}:${MUZIKUHR}`]);
+    });
+});
+
+/**
  * The real cover episode from `arkadia-recording-zaslony.json`, replayed in order
  * with the recording's own timestamps. Steps keep their original t (ms) so the
  * death / break grace windows are exercised at the spacing the game produced.

@@ -410,7 +410,15 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             e.coveredId === covered.id && (attacker === undefined || e.attackerId === attacker));
         if (removed.length === 0 && match.playerOnly) return;
         recentlyFreed.set(covered.id, ctx.now());
-        log(entryFor('break-ok', match, raw, { coveredId: covered.id }));
+        // The break line never names the coverer, so the log used to read
+        // "<target> <- ?". Say who we actually cleared - and who broke through,
+        // which the third-person form does name.
+        const coverers = [...new Set(removed.map(e => e.covererId))];
+        log(entryFor('break-ok', match, raw, {
+            coveredId: covered.id,
+            covererId: coverers.length === 1 ? coverers[0] : undefined,
+            attackerId: attacker ?? resolve(match.attackers?.[0]).id,
+        }));
     }
 
     function applyReleased(match: CoverLineMatch, raw: string) {
