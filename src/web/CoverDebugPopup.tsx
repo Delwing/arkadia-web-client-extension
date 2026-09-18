@@ -34,7 +34,7 @@ const KIND_LABEL: Record<CoverLogEntry['kind'], string> = {
 };
 
 /**
- * Four different things remove an edge. Saying which one fired is the difference
+ * Several different things remove an edge. Saying which one fired is the difference
  * between the log answering "why did that go away" and merely restating that it did.
  */
 const REASON_LABEL: Record<CoverExpiryReason, string> = {
@@ -43,6 +43,7 @@ const REASON_LABEL: Record<CoverExpiryReason, string> = {
     'stun': 'ogluszenie',
     'max-age': 'limit wieku',
     'superseded': 'zastapiona nowa zaslona',
+    'now-covering': 'zaslaniany sam zaczal zaslaniac',
 };
 
 function seconds(ms: number): string {
