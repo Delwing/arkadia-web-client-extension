@@ -34,15 +34,15 @@ const EMPTY_MATCH = (() => {
  * The only lifetime an edge has, and a last-resort net rather than a duration.
  *
  * A cover does not decay. It lasts until it is broken, released, superseded by a
- * newer cover against the same attacker, or one of the parties dies - and every one
- * of those arrives as a line we read and clears the edge outright. There is
- * therefore nothing for a short timeout to catch that is not already caught, and a
- * short one is actively wrong: it ends covers the game has not ended. This exists
- * only for the case where a cover ends with
- * no line we can read while the blocked attacker keeps swinging at the coverer,
- * which would otherwise sustain the GMCP fingerprint forever. Set long enough that
- * it never fires during a real fight; if it does fire, that is the bug, not the
- * cover being old.
+ * newer cover against the same attacker, undone by the covered party itself
+ * starting to cover somebody, or one of the parties dies - and every one of those
+ * arrives as a line we read and clears the edge outright. There is therefore
+ * nothing for a short timeout to catch that is not already caught, and a short one
+ * is actively wrong: it ends covers the game has not ended. This exists only for
+ * the case where a cover ends with no line we can read while the blocked attacker
+ * keeps swinging at the coverer, which would otherwise sustain the GMCP
+ * fingerprint forever. Set long enough that it never fires during a real fight; if
+ * it does fire, that is the bug, not the cover being old.
  */
 export const COVER_MAX_AGE_MS = 600000;
 
@@ -79,11 +79,11 @@ export interface CoverEdge {
 }
 
 /**
- * Why an edge went away. Four different things used to log an indistinguishable
+ * Why an edge went away. Several different things used to log an indistinguishable
  * "expired", which made the popup useless for the one question it exists to
  * answer: was that the TTL, or did somebody vanish?
  */
-export type CoverExpiryReason = 'gone' | 'death' | 'stun' | 'max-age' | 'superseded';
+export type CoverExpiryReason = 'gone' | 'death' | 'stun' | 'max-age' | 'superseded' | 'now-covering';
 
 export interface CoverLogEntry {
     at: number;
@@ -264,6 +264,26 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         logExpiry(removed, at, 'superseded');
     }
 
+    /**
+     * Cover is positional, and the two roles are exclusive: stepping in front of
+     * somebody means stepping out from behind everybody. So the moment a party
+     * starts covering, every cover held over THEM ends - all of them, whoever the
+     * coverer was and whoever they were blocking.
+     *
+     * This is the one removal path with no line of its own. The freed attackers
+     * simply start landing on the new coverer again, with nothing to break through
+     * and no release announced, so it has to be inferred here or the old edges hang
+     * around claiming a protection that is gone.
+     */
+    function dropCoversOver(covererId: number, at: number) {
+        const removed = removeWhere(e => e.coveredId === covererId);
+        if (removed.length === 0) return;
+        // Those attackers swing back at `covererId` immediately, and that flip is
+        // this release - not somebody covering THEM (see FREED_GRACE_MS).
+        recentlyFreed.set(covererId, at);
+        logExpiry(removed, at, 'now-covering');
+    }
+
     function removeWhere(predicate: (e: CoverEdge) => boolean): CoverEdge[] {
         const removed: CoverEdge[] = [];
         for (const [key, edge] of edges) {
@@ -341,6 +361,10 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             return;
         }
 
+        // Positional, so it turns on the coverer alone - before we know whether any
+        // attacker in the line resolves.
+        dropCoversOver(coverer.id, at);
+
         let created = 0;
         for (const attackerName of match.attackers ?? []) {
             const attacker = resolve(attackerName);
@@ -381,6 +405,9 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             return;
         }
         const wasKnown = edges.has(edgeKey(covered.id, coverer.id, attacker.id));
+        // A block proves the coverer is covering just as well as the cover line
+        // does, and it is the only witness when the cover was set up off-screen.
+        dropCoversOver(coverer.id, at);
         // The line carries both ids, so even an unknown pairing is full information.
         upsert(covered.id, coverer.id, attacker.id, at, match.source, 'confirmed');
         supersede(attacker.id, edgeKey(covered.id, coverer.id, attacker.id), at);

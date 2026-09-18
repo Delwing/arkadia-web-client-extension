@@ -927,8 +927,10 @@ describe('coverTracker - one cover per attacker', () => {
         h.tracker.handleLine(COVERS_MUSKULARNY);
         // Exactly one, not two: the first has stopped applying to us.
         expect(h.triple()).toEqual([`${MUSKULARNY}:${GROZNY}:${ME}`]);
+        // Two rules would each retire it here; the positional one fires first and
+        // is the stronger claim, because it holds for every attacker at once.
         expect(h.log.map(e => `${e.kind}${e.reason ? '/' + e.reason : ''}`)).toEqual([
-            'established', 'expired/superseded', 'established',
+            'established', 'expired/now-covering', 'established',
         ]);
     });
 
@@ -1029,5 +1031,185 @@ describe('coverTracker - recording replay', () => {
         expect(unknownBlocks).toHaveLength(0);
         expect(h.log.filter(e => e.kind === 'blocked')).toHaveLength(2);
         expect(h.log.filter(e => e.kind === 'gmcp-suspect')).toHaveLength(0);
+    });
+});
+
+/**
+ * Cover is positional, and the two roles are exclusive: stepping in front of
+ * somebody means stepping out from behind everybody. So the moment a party starts
+ * covering, every cover held over THEM ends - whoever the coverer was and whoever
+ * it was blocking. The game says nothing when this happens, which is exactly why
+ * it has to be inferred: the freed attackers simply start landing on the new
+ * coverer again, with no break line and no release line in between.
+ */
+describe('coverTracker - becoming a coverer ends being covered', () => {
+    const ME = 707885;
+    const VESPER = 690555;
+    const MEZCZYZNA = 473506;
+    const ZOLNIERZ = 473494;
+    const GROZNY = 473500;
+
+    const ALL = [ME, VESPER, MEZCZYZNA, ZOLNIERZ, GROZNY];
+
+    function fight(): Harness {
+        const h = harness([
+            { num: ME, desc: 'Khorn', __category: 'player' },
+            { num: VESPER, desc: 'Vesper', __category: 'team' },
+            { num: MEZCZYZNA, desc: 'muskularny wysoki mezczyzna', __category: 'rest' },
+            { num: ZOLNIERZ, desc: 'cuchnacy otyly zolnierz', __category: 'rest' },
+            { num: GROZNY, desc: 'grozny odwazny zolnierz', __category: 'rest' },
+        ], ME);
+        h.tracker.handleObjectsNums(ALL);
+        return h;
+    }
+
+    const COVERS_US_VS_MEZCZYZNA =
+        'Vesper zrecznie zaslania cie przed ciosami muskularnego wysokiego mezczyzny.';
+    const COVERS_US_VS_ZOLNIERZ =
+        'Vesper zrecznie zaslania cie przed ciosami cuchnacego otylego zolnierza.';
+    const WE_COVER_HER =
+        'Zrecznie zaslaniasz Vesper przed ciosami cuchnacego otylego zolnierza.';
+
+    it('drops every cover held over us, not just the one against the same attacker', () => {
+        const h = fight();
+        h.tracker.handleLine(COVERS_US_VS_MEZCZYZNA);
+        h.tracker.handleLine(COVERS_US_VS_ZOLNIERZ);
+        expect(h.triple()).toEqual([
+            `${ME}:${VESPER}:${MEZCZYZNA}`,
+            `${ME}:${VESPER}:${ZOLNIERZ}`,
+        ].sort());
+
+        h.tracker.handleLine(WE_COVER_HER);
+        // Both of hers are gone - including the one naming an attacker ours never
+        // mentions, which is what separates this from the per-attacker rule.
+        expect(h.triple()).toEqual([`${VESPER}:${ME}:${ZOLNIERZ}`]);
+        expect(h.tracker.isCoveredFor(ME, MEZCZYZNA)).toBe(false);
+        expect(h.tracker.getCoveredForAttacker(MEZCZYZNA)).toEqual([]);
+        expect(h.log.filter(e => e.kind === 'expired')).toEqual([
+            expect.objectContaining({
+                reason: 'now-covering', coveredId: ME, covererId: VESPER, attackerId: MEZCZYZNA,
+            }),
+            expect.objectContaining({
+                reason: 'now-covering', coveredId: ME, covererId: VESPER, attackerId: ZOLNIERZ,
+            }),
+        ]);
+    });
+
+    it('fires wherever we step, not only in front of our own coverer', () => {
+        const h = fight();
+        h.tracker.handleLine(COVERS_US_VS_MEZCZYZNA);
+        // A third party entirely - and Vesper's cover on us still ends, because what
+        // undoes it is us being in front of somebody, not who that somebody is.
+        h.tracker.handleLine(
+            'Zrecznie zaslaniasz groznego odwaznego zolnierza przed ciosami cuchnacego otylego zolnierza.');
+        expect(h.triple()).toEqual([`${GROZNY}:${ME}:${ZOLNIERZ}`]);
+    });
+
+    it('leaves covers we are no part of standing', () => {
+        const h = fight();
+        h.tracker.handleLine(COVERS_US_VS_MEZCZYZNA);
+        h.tracker.handleLine(
+            'Cuchnacy otyly zolnierz zrecznie zaslania groznego odwaznego zolnierza przed ciosami Vesper.');
+        // Only what was held over US goes; the mobs' own cover is untouched.
+        h.tracker.handleLine(WE_COVER_HER);
+        expect(h.triple()).toEqual([
+            `${GROZNY}:${ZOLNIERZ}:${VESPER}`,
+            `${VESPER}:${ME}:${ZOLNIERZ}`,
+        ].sort());
+    });
+
+    it('does not fire when somebody else starts covering', () => {
+        const h = fight();
+        h.tracker.handleLine(COVERS_US_VS_MEZCZYZNA);
+        // The zolnierz steps forward, so his own protection would go - ours does not.
+        h.tracker.handleLine(
+            'Cuchnacy otyly zolnierz zrecznie zaslania groznego odwaznego zolnierza przed ciosami Vesper.');
+        expect(h.triple()).toEqual([
+            `${GROZNY}:${ZOLNIERZ}:${VESPER}`,
+            `${ME}:${VESPER}:${MEZCZYZNA}`,
+        ].sort());
+    });
+
+    it('applies to a cover we only learn about from a block line', () => {
+        const h = fight();
+        h.tracker.handleLine(COVERS_US_VS_MEZCZYZNA);
+        // Never announced, so the block is the first we hear of us covering Vesper.
+        h.tracker.handleLine(
+            'Cuchnacy otyly zolnierz rzuca sie na Vesper, lecz Khorn staje mu na drodze.');
+        expect(h.triple()).toEqual([`${VESPER}:${ME}:${ZOLNIERZ}`]);
+    });
+
+    /**
+     * The whole episode at its own timestamps, so the GMCP flips land at the same
+     * spacing as the grace windows. Both of Vesper's covers end with no line of
+     * their own: the attackers just come back at us, the near one within the same
+     * second and the far one on its next retarget ten seconds later.
+     */
+    it('replays the episode without minting a phantom cover from the flips back', () => {
+        type Step =
+            | { t: number; text: string; edges: string[] }
+            | { t: number; nums: number[]; edges: string[] }
+            | { t: number; data: Record<number, { attack_num?: number }>; edges: string[] };
+
+        const VS_MEZCZYZNA = `${ME}:${VESPER}:${MEZCZYZNA}`;
+        const VS_ZOLNIERZ = `${ME}:${VESPER}:${ZOLNIERZ}`;
+        const BOTH = [VS_MEZCZYZNA, VS_ZOLNIERZ].sort();
+
+        const STEPS: Step[] = [
+            { t: 77568, nums: ALL, edges: [] },
+            // Everyone engages - first sighting, so there is nothing to compare against.
+            {
+                t: 79223,
+                data: {
+                    [ZOLNIERZ]: { attack_num: ME },
+                    [GROZNY]: { attack_num: VESPER },
+                    [MEZCZYZNA]: { attack_num: ME },
+                    [VESPER]: { attack_num: GROZNY },
+                    [ME]: { attack_num: ZOLNIERZ },
+                },
+                edges: [],
+            },
+            {
+                t: 80602,
+                text: 'Vesper probuje zaslonic cie przed ciosami muskularnego wysokiego mezczyzny, '
+                    + 'jednak nie jest w stanie tego uczynic.',
+                edges: [],
+            },
+            { t: 80602, data: { [ME]: { attack_num: GROZNY } }, edges: [] },
+            { t: 85461, text: COVERS_US_VS_MEZCZYZNA, edges: [VS_MEZCZYZNA] },
+            // GMCP corroborates the cover we already hold.
+            { t: 85585, data: { [MEZCZYZNA]: { attack_num: VESPER } }, edges: [VS_MEZCZYZNA] },
+            { t: 95230, text: COVERS_US_VS_ZOLNIERZ, edges: BOTH },
+            { t: 95407, data: { [ZOLNIERZ]: { attack_num: VESPER } }, edges: BOTH },
+            { t: 101604, data: { [VESPER]: { attack_num: ZOLNIERZ } }, edges: BOTH },
+            { t: 104236, text: 'Zabiles groznego odwaznego zolnierza.', edges: BOTH },
+            { t: 104473, nums: [VESPER, ME, MEZCZYZNA, ZOLNIERZ], edges: BOTH },
+            { t: 104473, data: { [ME]: { attack_num: ZOLNIERZ } }, edges: BOTH },
+            {
+                t: 105815,
+                text: 'Probujesz zaslonic Vesper przed ciosami cuchnacego otylego zolnierza, '
+                    + 'jednak nie jestes w stanie tego uczynic.',
+                edges: BOTH,
+            },
+            // We get in front of her - and both of her covers end right here.
+            { t: 111872, text: WE_COVER_HER, edges: [`${VESPER}:${ME}:${ZOLNIERZ}`] },
+            { t: 111876, text: 'Przestajesz zaslaniac Vesper.', edges: [] },
+            // The near attacker is back on us 120 ms later. That flip is the release,
+            // not somebody covering us, and must not be read as a suspected cover.
+            { t: 111992, data: { [ZOLNIERZ]: { attack_num: ME } }, edges: [] },
+            { t: 121802, data: { [MEZCZYZNA]: { attack_num: ME } }, edges: [] },
+        ];
+
+        const h = fight();
+        for (const step of STEPS) {
+            h.setNow(step.t);
+            if ('text' in step) expect(h.tracker.handleLine(step.text)).toBe(true);
+            else if ('nums' in step) h.tracker.handleObjectsNums(step.nums);
+            else h.tracker.handleObjectsData(step.data);
+            h.tracker.tick(step.t);
+            expect(h.triple()).toEqual(step.edges);
+        }
+        // Nothing here is a break, so the tracker must never claim one.
+        expect(kinds(h.log)).not.toContain('break-ok');
     });
 });
