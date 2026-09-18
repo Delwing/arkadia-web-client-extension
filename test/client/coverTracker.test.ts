@@ -311,6 +311,86 @@ describe('coverTracker - text paths', () => {
     });
 });
 
+describe('coverTracker - GMCP breaks an identical-attacker tie', () => {
+    const TROAL = 1001;
+    const MUZIKUHR = 1003;
+    const GUARD_A = 3001;
+    const GUARD_B = 3002;
+    const LINE = 'Muzikuhr zrecznie zaslania Troala przed ciosami mlodego poteznego gwardzisty.';
+
+    function guards() {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Vesper', __category: 'player' },
+            { num: TROAL, desc: 'Troal', __category: 'team' },
+            { num: MUZIKUHR, desc: 'Muzikuhr', __category: 'team' },
+            { num: GUARD_A, desc: 'mlody potezny gwardzista', __category: 'rest' },
+            { num: GUARD_B, desc: 'mlody potezny gwardzista', __category: 'rest' },
+        ]);
+        h.tracker.handleObjectsNums([PLAYER_NUM, TROAL, MUZIKUHR, GUARD_A, GUARD_B]);
+        return h;
+    }
+
+    it('reports the tie with every candidate', () => {
+        const dupes: Obj[] = [
+            { num: GUARD_A, desc: 'mlody potezny gwardzista', __category: 'rest' },
+            { num: GUARD_B, desc: 'mlody potezny gwardzista', __category: 'rest' },
+        ];
+        expect(resolveObjectId('mlodego poteznego gwardzisty', dupes))
+            .toEqual({ id: GUARD_A, ambiguous: true, candidates: [GUARD_A, GUARD_B] });
+    });
+
+    it('picks the guard swinging at the covered party', () => {
+        const h = guards();
+        h.tracker.handleObjectsData({ [GUARD_A]: { attack_num: PLAYER_NUM }, [GUARD_B]: { attack_num: TROAL } });
+        h.tracker.handleLine(LINE);
+        expect(h.edges()).toEqual([expect.objectContaining({
+            coveredId: TROAL, covererId: MUZIKUHR, attackerId: GUARD_B, confidence: 'confirmed',
+        })]);
+        expect(kinds(h.log)).toEqual(['established']);
+    });
+
+    it('picks the guard already redirected onto the coverer', () => {
+        const h = guards();
+        h.tracker.handleObjectsData({ [GUARD_A]: { attack_num: MUZIKUHR }, [GUARD_B]: { attack_num: PLAYER_NUM } });
+        h.tracker.handleLine(LINE);
+        expect(h.triple()).toEqual([`${TROAL}:${MUZIKUHR}:${GUARD_A}`]);
+        expect(h.edges()[0].confidence).toBe('confirmed');
+    });
+
+    it('stays unclear with no GMCP to go on', () => {
+        const h = guards();
+        h.tracker.handleLine(LINE);
+        expect(h.edges()[0]).toMatchObject({
+            attackerId: GUARD_A, confidence: 'suspected', attackerCandidates: [GUARD_A, GUARD_B],
+        });
+        expect(kinds(h.log)).toEqual(['established', 'ambiguous']);
+    });
+
+    it('settles a standing tie when one guard flips from covered to coverer', () => {
+        const h = guards();
+        // Both on Troal - the line alone cannot say which one Muzikuhr blocks.
+        h.tracker.handleObjectsData({ [GUARD_A]: { attack_num: TROAL }, [GUARD_B]: { attack_num: TROAL } });
+        h.tracker.handleLine(LINE);
+        expect(h.edges()[0]).toMatchObject({ attackerId: GUARD_A, confidence: 'suspected' });
+
+        h.tracker.handleObjectsData({ [GUARD_B]: { attack_num: MUZIKUHR } });
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({
+            coveredId: TROAL, covererId: MUZIKUHR, attackerId: GUARD_B, confidence: 'confirmed',
+        });
+        expect(h.edges()[0].attackerCandidates).toBeUndefined();
+        expect(h.log.at(-1)).toMatchObject({ kind: 'established', source: 'gmcp', attackerId: GUARD_B });
+    });
+
+    it('does not settle on a flip that is not off the covered party', () => {
+        const h = guards();
+        h.tracker.handleObjectsData({ [GUARD_A]: { attack_num: TROAL }, [GUARD_B]: { attack_num: TROAL } });
+        h.tracker.handleLine(LINE);
+        h.tracker.handleObjectsData({ [GUARD_B]: { attack_num: PLAYER_NUM } });
+        expect(h.edges()[0]).toMatchObject({ attackerId: GUARD_A, confidence: 'suspected' });
+    });
+});
+
 describe('coverTracker - the block line as its own test oracle', () => {
     const BLOCK = 'Rzucasz sie na zrecznego ogromnego zolnierza, lecz grozny porywczy zolnierz staje ci na drodze.';
 

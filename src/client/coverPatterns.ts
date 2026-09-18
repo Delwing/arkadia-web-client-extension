@@ -308,6 +308,8 @@ export interface ResolveOptions {
 export interface ResolvedObject {
     id?: number;
     ambiguous: boolean;
+    /** Ambiguous only - every object the name fits equally well, `id` first. */
+    candidates?: number[];
 }
 
 /** Multi-word mob descs average several words, so they can afford a higher floor. */
@@ -370,9 +372,12 @@ function discriminate(tied: Scored[], query: string): ResolvedObject {
         || best.prefix - runnerUp.prefix > TIE_EPSILON)) {
         return { id: best.candidate.obj.num, ambiguous: false };
     }
-    // Still tied - hand back the top candidate so a suspected edge can carry it,
-    // and let a GMCP attack_num flip break the tie later.
-    return { id: tied[0]?.obj.num, ambiguous: true };
+    // Still tied - text cannot tell them apart. Hand back every candidate still in
+    // the running so the tracker can break the tie on GMCP `attack_num`.
+    const candidates = scored
+        .filter(s => best.score - s.score <= TIE_EPSILON && best.prefix - s.prefix <= TIE_EPSILON)
+        .map(s => s.candidate.obj.num);
+    return { id: candidates[0], ambiguous: true, candidates };
 }
 
 /** How much of a shared stem two words have, normalised by the longer one. */
@@ -389,7 +394,7 @@ function sweep(name: string, objects: LocationObject[]): ResolvedObject {
 
     const exact = objects.filter(o => o.desc && o.desc.toLowerCase() === lower);
     if (exact.length === 1) return { id: exact[0].num, ambiguous: false };
-    if (exact.length > 1) return { id: exact[0].num, ambiguous: true };
+    if (exact.length > 1) return { id: exact[0].num, ambiguous: true, candidates: exact.map(o => o.num) };
 
     const nameWords = words(name).length;
     const scored: Scored[] = [];

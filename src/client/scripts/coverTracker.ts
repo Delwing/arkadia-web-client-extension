@@ -8,6 +8,7 @@ import {
     type CoverLineMatch,
     type CoverSource,
     type LocationObject,
+    type ResolvedObject,
 } from "@client/coverPatterns";
 
 /**
@@ -76,6 +77,12 @@ export interface CoverEdge {
     /** Text => confirmed, gmcp-only => suspected. */
     confidence: 'confirmed' | 'suspected';
     source: CoverSource;
+    /**
+     * Set when the line named the attacker by a desc several objects share and
+     * GMCP could not yet say which one. `attackerId` is the first of them; the
+     * attacker whose `attack_num` moves from covered to coverer settles it.
+     */
+    attackerCandidates?: number[];
 }
 
 /**
@@ -158,8 +165,7 @@ const edgeKey = (coveredId: number, covererId: number, attackerId: number) =>
 export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
     const edges = new Map<string, CoverEdge>();
     /** Last known `attack_num` per object, so a flip can be spotted. */
-    const attackNum = new Map<number, number | undefined>();
-    /** Names survive the mob leaving the room; the log has to stay readable. */
+    const attackNum = new Map<number, number | undefined>();    /** Names survive the mob leaving the room; the log has to stay readable. */
     const descCache = new Map<number, string>();
     const recentDeaths = new Map<number, number>();
     const recentlyFreed = new Map<number, number>();
@@ -221,6 +227,23 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         return resolveObjectId(name, list, { playerNum: playerNum(), ...opts });
     }
 
+    /**
+     * Identical descs are the one thing text cannot settle, and GMCP can: the
+     * attacker a cover is aimed at is the one swinging at the covered party - or,
+     * if the packet already landed, at the coverer who stepped in the way.
+     */
+    function resolveAttacker(name: string, coveredId: number, covererId: number): ResolvedObject {
+        const result = resolve(name);
+        if (!result.ambiguous || !result.candidates) return result;
+        const aiming = result.candidates.filter(c => {
+            const target = attackNum.get(c);
+            return target === coveredId || target === covererId;
+        });
+        if (aiming.length === 1) return { id: aiming[0], ambiguous: false };
+        if (aiming.length > 1) return { id: aiming[0], ambiguous: true, candidates: aiming };
+        return result;
+    }
+
     function upsert(
         coveredId: number,
         covererId: number,
@@ -237,6 +260,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             if (confidence === 'confirmed' && existing.confidence !== 'confirmed') {
                 existing.confidence = 'confirmed';
                 existing.source = source;
+                delete existing.attackerCandidates;
             }
             markChanged();
             return { edge: existing, created: false };
@@ -367,12 +391,16 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
 
         let created = 0;
         for (const attackerName of match.attackers ?? []) {
-            const attacker = resolve(attackerName);
+            const attacker = resolveAttacker(attackerName, covered.id, coverer.id);
             if (attacker.id === undefined || attacker.id === coverer.id) continue;
             // A tie anywhere means we are guessing: say so rather than claim a fact.
             const suspected = covered.ambiguous || coverer.ambiguous || attacker.ambiguous;
-            upsert(covered.id, coverer.id, attacker.id, at,
+            const { edge } = upsert(covered.id, coverer.id, attacker.id, at,
                 match.source, suspected ? 'suspected' : 'confirmed');
+            // Only an attacker-only tie can be settled later by an attack_num flip.
+            if (attacker.ambiguous && !covered.ambiguous && !coverer.ambiguous) {
+                edge.attackerCandidates = attacker.candidates;
+            }
             supersede(attacker.id, edgeKey(covered.id, coverer.id, attacker.id), at);
             created++;
             log(entryFor(match.kind === 'retreat' ? 'retreat' : 'established', match, raw, {
@@ -397,7 +425,9 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         const at = ctx.now();
         const covered = resolve(match.covered);
         const coverer = resolve(match.coverer);
-        const attacker = resolve(match.attackers?.[0]);
+        const attacker = covered.id !== undefined && coverer.id !== undefined && match.attackers?.[0]
+            ? resolveAttacker(match.attackers[0], covered.id, coverer.id)
+            : resolve(match.attackers?.[0]);
         if (covered.id === undefined || coverer.id === undefined || attacker.id === undefined) {
             log(entryFor('ambiguous', match, raw, {
                 coveredId: covered.id, covererId: coverer.id, attackerId: attacker.id,
@@ -528,6 +558,33 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         return at !== undefined && ctx.now() - at <= window;
     }
 
+    function settleAttackerTie(flip: { attacker: number; from: number; to: number }, at: number): boolean {
+        for (const [key, edge] of edges) {
+            if (!edge.attackerCandidates?.includes(flip.attacker)) continue;
+            if (flip.from !== edge.coveredId || flip.to !== edge.covererId) continue;
+            edges.delete(key);
+            const settledKey = edgeKey(edge.coveredId, edge.covererId, flip.attacker);
+            const { edge: settled } = upsert(
+                edge.coveredId, edge.covererId, flip.attacker, at, edge.source, 'confirmed');
+            settled.since = Math.min(settled.since, edge.since);
+            supersede(flip.attacker, settledKey, at);
+            log({
+                at,
+                kind: 'established',
+                coveredId: settled.coveredId,
+                coveredName: nameOf(settled.coveredId),
+                covererId: settled.covererId,
+                covererName: nameOf(settled.covererId),
+                attackerId: flip.attacker,
+                attackerName: nameOf(flip.attacker),
+                source: 'gmcp',
+                raw: '',
+            });
+            return true;
+        }
+        return false;
+    }
+
     function handleObjectsData(data: Record<string | number, { attack_num?: unknown; desc?: string }>) {
         if (!data || typeof data !== 'object') return;
         const at = ctx.now();
@@ -542,8 +599,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             const prev = attackNum.get(id);
             attackNum.set(id, next);
             if (prev !== undefined && next !== undefined && prev !== next) {
-                flips.push({ attacker: id, from: prev, to: next });
-            }
+                flips.push({ attacker: id, from: prev, to: next });            }
         }
 
         for (const flip of flips) {
@@ -564,6 +620,10 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             // unannounced cover is still caught the moment it matters, by the block
             // line, which names both parties (3.3).
             //
+            // The one flip that IS evidence: a text-named cover whose attacker was a
+            // tie, and one of the tied attackers now swings off the covered party onto
+            // the coverer. Text already vouched for the cover; GMCP only says who.
+            if (settleAttackerTie(flip, at)) continue;
             // Only flips we cannot already explain are logged, so the log reads as
             // "something moved that no cover of mine accounts for".
             if (edges.has(edgeKey(flip.from, flip.to, flip.attacker))) continue;
@@ -630,8 +690,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
 
         for (const id of attackNum.keys()) {
             if (!present.has(id)) attackNum.delete(id);
-        }
-        flush();
+        }        flush();
     }
 
     function tick(now = Date.now()) {
