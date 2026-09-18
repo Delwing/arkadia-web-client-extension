@@ -72,6 +72,23 @@ test.describe('Cover tracker', () => {
         await expect(entries.first().locator('.cover-dbg-log-kind')).toHaveText('ZASLONA');
         await expect(entries.first().locator('.cover-dbg-log-raw')).toHaveText(COVER_LINE);
 
+        // The log takes the space left over; it must never squeeze the state table.
+        const statePane = popup.locator('.cover-dbg-state');
+        const heightBefore = (await statePane.boundingBox())!.height;
+        for (let i = 0; i < 40; i++) {
+            await pushText(page, COVER_LINE, {type: 'other'});
+        }
+        await expect(popup.locator('.cover-dbg-log-entry')).toHaveCount(41);
+        const heightAfter = (await statePane.boundingBox())!.height;
+        expect(heightAfter).toBe(heightBefore);
+        // Every row still on screen, and the log scrolls instead.
+        const stateOverflow = await statePane.evaluate(
+            el => el.scrollHeight - el.clientHeight);
+        expect(stateOverflow).toBeLessThanOrEqual(1);
+        const logScrolls = await popup.locator('.cover-dbg-log').evaluate(
+            el => el.scrollHeight > el.clientHeight);
+        expect(logScrolls).toBe(true);
+
         // The establishing line was seen, so the tracker has nothing to report missing.
         await expect(popup.locator('.cover-dbg-counter')).toHaveText('nieznane blokady: 0');
     });

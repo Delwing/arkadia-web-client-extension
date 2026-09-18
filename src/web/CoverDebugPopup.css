@@ -24,9 +24,14 @@
     opacity: 1;
 }
 
+/*
+ * The table sizes to its content and is never squeezed: it is the live state, and
+ * a row scrolled out of view is the one you needed. The log takes what is left.
+ * A cap only for the pathological room, so the log cannot vanish entirely.
+ */
 .cover-dbg-state {
-    flex: 0 1 auto;
-    max-height: 45%;
+    flex: 0 0 auto;
+    max-height: 75%;
     overflow: auto;
 }
 
@@ -97,7 +102,9 @@
 }
 
 .cover-dbg-log {
-    flex: 1 1 auto;
+    /* Zero basis, not `auto`: with a content-sized basis every new entry grew the
+       pane and pushed the table out of the popup. */
+    flex: 1 1 0;
     min-height: 0;
     overflow: auto;
     font-family: monospace;
