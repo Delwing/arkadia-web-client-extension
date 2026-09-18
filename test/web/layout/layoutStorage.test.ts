@@ -266,3 +266,48 @@ describe('shell layout overrides (forge-ui forces layout mode locally)', () => {
     expect(loadPersistedLayoutState().enabled).toBe(true);
   });
 });
+
+describe('floating window top-edge clamping', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+  });
+
+  const openFloating = () => {
+    windowManager.open('popup:clamp-test', { title: 'Test', x: 100, y: 100, ignoreHint: true });
+  };
+
+  it('clamps a negative top when the manager commits a drag', () => {
+    openFloating();
+    // User drags the titlebar up past the viewport top.
+    windowManager.setPosition('popup:clamp-test', 40, -300);
+
+    const w = windowManager.serialize().windows['popup:clamp-test'];
+    expect(w.y).toBe(0);
+    // Only the top edge is constrained.
+    expect(w.x).toBe(40);
+  });
+
+  it('leaves an on-screen position untouched', () => {
+    openFloating();
+    windowManager.setPosition('popup:clamp-test', -120, 250);
+
+    const w = windowManager.serialize().windows['popup:clamp-test'];
+    expect(w.x).toBe(-120);
+    expect(w.y).toBe(250);
+  });
+
+  it('heals a negative top persisted before the clamp existed', () => {
+    const stored = loadLayoutState();
+    stored.windows.map.y = -420;
+    stored.popupPanels.chat = { isDocked: false, floatingState: { x: 10, y: -80, width: 300 } };
+    saveLayoutState(stored);
+    invalidateLayoutCache();
+
+    const loaded = loadPersistedLayoutState();
+    expect(loaded.windows.map.y).toBe(0);
+    expect(loaded.popupPanels.chat.floatingState!.y).toBe(0);
+    expect(loaded.popupPanels.chat.floatingState!.x).toBe(10);
+  });
+});

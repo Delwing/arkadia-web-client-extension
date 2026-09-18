@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
+import { clampFloatingTop } from '../types';
 import type { DragState, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { PanelHeader, usePanelChrome } from './PanelHeader';
@@ -54,7 +55,7 @@ export function FloatingPanel({
       const el = windowRef.current;
       const onMove = (ev: PointerEvent) => {
         lastX = ev.clientX - startOffsetX;
-        lastY = ev.clientY - startOffsetY;
+        lastY = clampFloatingTop(ev.clientY - startOffsetY);
         el.style.left = `${lastX}px`;
         el.style.top = `${lastY}px`;
       };
@@ -109,7 +110,9 @@ export function FloatingPanel({
         }
         if (dir.includes('s')) lastH = Math.max(80, startH + dy);
         if (dir.includes('n')) {
-          const nh = Math.max(80, startH - dy);
+          // Cap growth at the viewport top, so dragging the north edge upwards
+          // can never push the titlebar out of reach.
+          const nh = Math.max(80, Math.min(startTop + startH, startH - dy));
           lastTop = startTop + startH - nh;
           lastH = nh;
         }

@@ -1,4 +1,5 @@
 import {
+  clampFloatingTop,
   crossDir,
   DEFAULT_DOCK_EXTENTS,
   DockSide,
@@ -506,7 +507,7 @@ export class WindowManager {
   // ── Geometry (floating) ──────────────────────────────────────────────────
 
   setPosition(id: string, x: number, y: number): void {
-    this.patch(id, { x, y });
+    this.patch(id, { x, y: clampFloatingTop(y) });
   }
 
   setSize(id: string, width: number, height: number): void {
