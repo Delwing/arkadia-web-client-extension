@@ -427,12 +427,11 @@ describe('coverTracker - GMCP corroboration (1.3)', () => {
     }
 
     it('does not let "Juz walczysz z" clear anything while our own id is unknown', () => {
-        const h = harness(RECORDING_OBJECTS, undefined);
-        // With no id of our own, only GMCP can seed an edge - 1001 is a teammate
-        // whose blow got redirected onto the coverer.
+        const h = harness([...RECORDING_OBJECTS, { num: 1001, desc: 'Vesper', __category: 'team' }], undefined);
+        // A cover line that names its attacker outright needs no id of our own.
         h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056, 1001]);
-        h.tracker.handleObjectsData({ 1001: { attack_num: 605056 } });
-        h.tracker.handleObjectsData({ 1001: { attack_num: 605050 } });
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zaslania zrecznego ogromnego zolnierza przed ciosami Vespera.');
         const before = h.triple();
         expect(before).toEqual(['605056:605050:1001']);
 
@@ -440,15 +439,54 @@ describe('coverTracker - GMCP corroboration (1.3)', () => {
         expect(h.triple()).toEqual(before);
     });
 
-    it('reads an attack_num flip as a suspected cover while the old target is present', () => {
+    it('records an attack_num flip as an observation, never as an edge', () => {
         const h = seeded();
         h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
-        expect(h.edges()).toHaveLength(1);
-        expect(h.edges()[0]).toMatchObject({
-            coveredId: 605056, covererId: 605050, attackerId: PLAYER_NUM,
-            confidence: 'suspected', source: 'gmcp',
-        });
+        // A flip is identical whether a cover redirected the blow or the attacker
+        // simply chose a new target, so it may inform the log and nothing else.
+        expect(h.edges()).toHaveLength(0);
         expect(h.log.at(-1)).toMatchObject({ kind: 'gmcp-suspect', raw: '' });
+    });
+
+    it('never paints a bystander as covered when somebody just retargets', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+            { num: 201, desc: 'Vesper', __category: 'team' },
+            { num: 202, desc: 'Muzikuhr', __category: 'team' },
+            { num: 301, desc: 'lysy rosly ogr', __category: 'rest' },
+            { num: 302, desc: 'otyly mlody mezczyzna', __category: 'rest' },
+        ]);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 201, 202, 301, 302]);
+        h.tracker.handleLine('Muzikuhr zrecznie zaslania Vesper przed ciosami lysego roslego ogra.');
+        expect(h.triple()).toEqual(['201:202:301']);
+
+        // Vesper picks a different target of her own accord. The ogr she left is
+        // NOT suddenly covered by the man she moved to.
+        h.tracker.handleObjectsData({ 201: { attack_num: 301 } });
+        h.tracker.handleObjectsData({ 201: { attack_num: 302 } });
+        expect(h.triple()).toEqual(['201:202:301']);
+        expect(h.tracker.isCoveredFor(301, 201)).toBe(false);
+    });
+
+    it('clears the cover on release even after an unrelated retarget', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+            { num: 201, desc: 'Vesper', __category: 'team' },
+            { num: 203, desc: 'Pablo', __category: 'team' },
+            { num: 301, desc: 'lysy rosly ogr', __category: 'rest' },
+            { num: 302, desc: 'otyly mlody mezczyzna', __category: 'rest' },
+        ]);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 201, 203, 301, 302]);
+        h.tracker.handleLine('Pablo zrecznie zaslania Vesper przed ciosami otylego mlodego mezczyzny.');
+        // A mob that was hitting Vesper switches off her. This used to mint a
+        // phantom edge ALSO covering Vesper but with a different coverer, which the
+        // release below could never clear - it keys on the pair, as it must.
+        h.tracker.handleObjectsData({ 301: { attack_num: 201 } });
+        h.tracker.handleObjectsData({ 301: { attack_num: 302 } });
+
+        h.tracker.handleLine('Pablo przestaje zaslaniac Vesper.');
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).toContain('released');
     });
 
     it('reads the identical flip as a death when the old target left objects.nums', () => {
@@ -460,15 +498,22 @@ describe('coverTracker - GMCP corroboration (1.3)', () => {
         expect(kinds(h.log)).not.toContain('gmcp-suspect');
     });
 
-    it('lets a text line upgrade a suspected edge without duplicating it', () => {
+    it('creates exactly one confirmed edge when text follows the flip it explains', () => {
         const h = seeded();
         h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
-        expect(h.edges()[0].confidence).toBe('suspected');
-
         h.tracker.handleLine(
             'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
         expect(h.edges()).toHaveLength(1);
         expect(h.edges()[0]).toMatchObject({ confidence: 'confirmed', source: 'cover-line' });
+    });
+
+    it('stops logging a flip once an edge explains it', () => {
+        const h = seeded();
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
+        // The flip is exactly what that cover did to us - not worth reporting.
+        expect(kinds(h.log)).not.toContain('gmcp-suspect');
     });
 
     it('drops an edge once a party leaves the room for good', () => {

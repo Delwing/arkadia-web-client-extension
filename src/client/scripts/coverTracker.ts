@@ -508,21 +508,30 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             // A flip back onto a target we just freed is the break, not a new cover.
             if (isRecent(recentlyFreed, flip.to, FREED_GRACE_MS)) continue;
 
-            const { created } = upsert(flip.from, flip.to, flip.attacker, at, 'gmcp', 'suspected');
-            if (created) {
-                log({
-                    at,
-                    kind: 'gmcp-suspect',
-                    coveredId: flip.from,
-                    coveredName: nameOf(flip.from),
-                    covererId: flip.to,
-                    covererName: nameOf(flip.to),
-                    attackerId: flip.attacker,
-                    attackerName: nameOf(flip.attacker),
-                    source: 'gmcp',
-                    raw: '',
-                });
-            }
+            // Recorded as an OBSERVATION, never as an edge. A flip looks exactly
+            // the same whether a cover redirected the blow or the attacker simply
+            // picked a different target - and in a team fight people retarget
+            // constantly, so minting edges here painted enemies as covered and left
+            // phantoms that a release line could not clear (it keys on the pair, and
+            // the phantom carried a different coverer). Text is authoritative; an
+            // unannounced cover is still caught the moment it matters, by the block
+            // line, which names both parties (3.3).
+            //
+            // Only flips we cannot already explain are logged, so the log reads as
+            // "something moved that no cover of mine accounts for".
+            if (edges.has(edgeKey(flip.from, flip.to, flip.attacker))) continue;
+            log({
+                at,
+                kind: 'gmcp-suspect',
+                coveredId: flip.from,
+                coveredName: nameOf(flip.from),
+                covererId: flip.to,
+                covererName: nameOf(flip.to),
+                attackerId: flip.attacker,
+                attackerName: nameOf(flip.attacker),
+                source: 'gmcp',
+                raw: '',
+            });
         }
         corroborateFromGmcp();
         flush();
