@@ -425,6 +425,20 @@ describe('coverTracker - GMCP corroboration (1.3)', () => {
         return h;
     }
 
+    it('does not let "Juz walczysz z" clear anything while our own id is unknown', () => {
+        const h = harness(RECORDING_OBJECTS, undefined);
+        // With no id of our own, only GMCP can seed an edge - 1001 is a teammate
+        // whose blow got redirected onto the coverer.
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056, 1001]);
+        h.tracker.handleObjectsData({ 1001: { attack_num: 605056 } });
+        h.tracker.handleObjectsData({ 1001: { attack_num: 605050 } });
+        const before = h.triple();
+        expect(before).toEqual(['605056:605050:1001']);
+
+        h.tracker.handleLine('Juz walczysz z zrecznym ogromnym zolnierzem.');
+        expect(h.triple()).toEqual(before);
+    });
+
     it('reads an attack_num flip as a suspected cover while the old target is present', () => {
         const h = seeded();
         h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });

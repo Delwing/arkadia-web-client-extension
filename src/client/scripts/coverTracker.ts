@@ -367,6 +367,9 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             return;
         }
         const attacker = match.playerOnly ? playerNum() : undefined;
+        // "Juz walczysz z X" only ever speaks for us, so with no id of our own
+        // there is nothing it can safely clear.
+        if (match.playerOnly && attacker === undefined) return;
         // 1.4: a successful break frees the target for the WHOLE team - every
         // edge for this covered id goes, whoever the coverer or attacker was.
         const removed = removeWhere(e =>
