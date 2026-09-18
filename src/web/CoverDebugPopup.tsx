@@ -5,6 +5,7 @@ import { usePopupSetting } from './hooks/usePopupSetting';
 import eventBus from '@modules/core/eventBus';
 import type {
     CoverEdge,
+    CoverExpiryReason,
     CoverLogEntry,
     CoverStateObject,
     CoverStateSnapshot,
@@ -30,6 +31,18 @@ const KIND_LABEL: Record<CoverLogEntry['kind'], string> = {
     'expired': 'WYGASLO',
     'gmcp-suspect': 'GMCP',
     'ambiguous': 'NIEJASNE',
+};
+
+/**
+ * Four different things remove an edge. Saying which one fired is the difference
+ * between the log answering "why did that go away" and merely restating that it did.
+ */
+const REASON_LABEL: Record<CoverExpiryReason, string> = {
+    'ttl': 'brak potwierdzenia',
+    'gone': 'znikl z lokacji',
+    'death': 'smierc',
+    'stun': 'ogluszenie',
+    'max-age': 'limit wieku',
 };
 
 function seconds(ms: number): string {
@@ -249,6 +262,14 @@ const CoverDebugPopup: React.FC = () => {
                                 {entry.attackerId !== undefined && ` (przed ${nameOf(entry.attackerId)})`}
                             </span>
                             <span className="cover-dbg-log-source">({entry.source})</span>
+                            {entry.reason && (
+                                <span className="cover-dbg-log-reason">
+                                    {REASON_LABEL[entry.reason]}
+                                    {entry.missingIds?.length
+                                        ? `: ${entry.missingIds.map(nameOf).join(', ')}`
+                                        : ''}
+                                </span>
+                            )}
                             {entry.wasKnown === false && (
                                 <span className="cover-dbg-log-unknown">nieznana</span>
                             )}

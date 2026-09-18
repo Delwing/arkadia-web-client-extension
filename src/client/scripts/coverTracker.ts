@@ -37,6 +37,14 @@ const EMPTY_MATCH = (() => {
  */
 export const COVER_TTL_MS = 12000;
 
+/**
+ * Hard ceiling on an edge's total age, however well corroborated. Only bites when
+ * a cover is dropped with no line we can read while the blocked attacker keeps
+ * swinging at the coverer, which keeps the GMCP fingerprint alive indefinitely.
+ * A guess - tune it from the popup, same as the TTL.
+ */
+export const COVER_MAX_AGE_MS = 45000;
+
 /** How often the TTL sweep runs while the client is live. */
 const SWEEP_INTERVAL_MS = 1000;
 
@@ -69,6 +77,13 @@ export interface CoverEdge {
     source: CoverSource;
 }
 
+/**
+ * Why an edge went away. Four different things used to log an indistinguishable
+ * "expired", which made the popup useless for the one question it exists to
+ * answer: was that the TTL, or did somebody vanish?
+ */
+export type CoverExpiryReason = 'ttl' | 'gone' | 'death' | 'stun' | 'max-age';
+
 export interface CoverLogEntry {
     at: number;
     kind: 'established' | 'failed' | 'blocked' | 'break-failed' | 'break-ok'
@@ -82,6 +97,10 @@ export interface CoverLogEntry {
     source: CoverSource;
     /** 'blocked' only - did we already hold this edge? The tracker's own grade. */
     wasKnown?: boolean;
+    /** 'expired' only - which of the removal paths fired. */
+    reason?: CoverExpiryReason;
+    /** 'expired' with reason 'gone' - who dropped out of the room. */
+    missingIds?: number[];
     /** The game line verbatim, '' for gmcp / expiry. */
     raw: string;
 }
@@ -143,6 +162,8 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
     const descCache = new Map<number, string>();
     const recentDeaths = new Map<number, number>();
     const recentlyFreed = new Map<number, number>();
+    /** Two-strike debounce for an edge party dropping out of `objects.nums`. */
+    const missingPartyCounts = new Map<number, number>();
     let currentNums: Set<number> | undefined;
 
     const objects = () => ctx.getObjects();
@@ -240,11 +261,19 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         return removed;
     }
 
-    function logExpiry(removed: CoverEdge[], at: number) {
+    function logExpiry(
+        removed: CoverEdge[],
+        at: number,
+        reason: CoverExpiryReason,
+        missingIds?: number[],
+    ) {
         for (const edge of removed) {
             log({
                 at,
                 kind: 'expired',
+                reason,
+                missingIds: missingIds?.filter(id =>
+                    id === edge.coveredId || id === edge.covererId || id === edge.attackerId),
                 coveredId: edge.coveredId,
                 coveredName: nameOf(edge.coveredId),
                 covererId: edge.covererId,
@@ -402,7 +431,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         recentDeaths.set(who.id, at);
         const removed = removeWhere(e =>
             e.coveredId === who.id || e.covererId === who.id || e.attackerId === who.id);
-        logExpiry(removed, at);
+        logExpiry(removed, at, 'death');
     }
 
     function handleLine(line: string): boolean {
@@ -490,6 +519,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
                 });
             }
         }
+        corroborateFromGmcp();
         flush();
     }
 
@@ -497,20 +527,86 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         if (!Array.isArray(nums) || nums.length === 0) return;
         currentNums = new Set(nums);
         const present = currentNums;
+
         // 2.3.3: an edge needs all three parties in the room. A departed attacker
         // makes the block moot just as surely as a departed coverer.
-        const removed = removeWhere(e =>
-            !present.has(e.coveredId) || !present.has(e.covererId) || !present.has(e.attackerId));
-        logExpiry(removed, ctx.now());
+        //
+        // But `objects.nums` can arrive partial (the same reason the enemy queue
+        // debounces), so one miss is not proof of absence - and since `attackerId`
+        // is usually US, a single frame without our own num would otherwise wipe
+        // every edge at once. Two strikes, like `missingEnemyCounts`. A death or a
+        // release line still clears immediately; this only governs the quiet case
+        // where somebody simply stops being listed.
+        const parties = new Set<number>();
+        for (const e of edges.values()) {
+            parties.add(e.coveredId);
+            parties.add(e.covererId);
+            parties.add(e.attackerId);
+        }
+        for (const id of missingPartyCounts.keys()) {
+            if (!parties.has(id)) missingPartyCounts.delete(id);
+        }
+
+        const gone = new Set<number>();
+        for (const id of parties) {
+            if (present.has(id)) {
+                missingPartyCounts.delete(id);
+                continue;
+            }
+            const misses = (missingPartyCounts.get(id) ?? 0) + 1;
+            if (misses >= 2) {
+                missingPartyCounts.delete(id);
+                gone.add(id);
+            } else {
+                missingPartyCounts.set(id, misses);
+            }
+        }
+
+        if (gone.size > 0) {
+            const removed = removeWhere(e =>
+                gone.has(e.coveredId) || gone.has(e.covererId) || gone.has(e.attackerId));
+            logExpiry(removed, ctx.now(), 'gone', [...gone]);
+        }
+
+        corroborateFromGmcp();
         for (const id of attackNum.keys()) {
             if (!present.has(id)) attackNum.delete(id);
         }
         flush();
     }
 
+    /**
+     * While a cover holds, GMCP keeps re-stating it: the blocked attacker's
+     * `attack_num` points at the COVERER (that is what the cover did to it) and the
+     * real target is still in the room. That fingerprint is continuous evidence,
+     * and without reading it the TTL was a guillotine rather than a decay - the
+     * establishing line fires once, and `staje ci na drodze` only answers a fresh
+     * poke at the covered target, so a cover nobody pokes starved at 12 s while it
+     * was still very much up in game.
+     *
+     * This only sustains an edge that already exists; it never creates one. The
+     * fingerprint breaks the moment the attacker retargets, which is the normal
+     * exit, and `COVER_MAX_AGE_MS` bounds the pathological case where a cover is
+     * dropped silently while the attacker keeps hitting the coverer.
+     */
+    function corroborateFromGmcp() {
+        const at = ctx.now();
+        for (const edge of edges.values()) {
+            if (attackNum.get(edge.attackerId) !== edge.covererId) continue;
+            if (currentNums && !currentNums.has(edge.coveredId)) continue;
+            if (at - edge.since > COVER_MAX_AGE_MS) continue;
+            edge.lastSeen = at;
+            markChanged();
+        }
+    }
+
     function tick(now = Date.now()) {
+        // The ceiling first, so a fingerprint-sustained edge reports the limit that
+        // actually caught it rather than looking like an ordinary timeout.
+        const tooOld = removeWhere(e => now - e.since > COVER_MAX_AGE_MS);
+        logExpiry(tooOld, now, 'max-age');
         const stale = removeWhere(e => now - e.lastSeen > COVER_TTL_MS);
-        logExpiry(stale, now);
+        logExpiry(stale, now, 'ttl');
         flush();
     }
 
@@ -527,9 +623,9 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
                 .filter(e => e.attackerId === attackerId)
                 .map(e => e.coveredId)),
         ],
-        clearEdgesFor: (covererId, _reason) => {
+        clearEdgesFor: (covererId, reason) => {
             const removed = removeWhere(e => e.covererId === covererId);
-            logExpiry(removed, ctx.now());
+            logExpiry(removed, ctx.now(), reason === 'death' ? 'death' : 'stun');
             flush();
         },
         reset: () => {

@@ -1,5 +1,6 @@
 import {
     createCoverTracker,
+    COVER_MAX_AGE_MS,
     COVER_TTL_MS,
     type CoverEdge,
     type CoverLogEntry,
@@ -470,14 +471,16 @@ describe('coverTracker - GMCP corroboration (1.3)', () => {
         expect(h.edges()[0]).toMatchObject({ confidence: 'confirmed', source: 'cover-line' });
     });
 
-    it('drops an edge once a party leaves the room', () => {
+    it('drops an edge once a party leaves the room for good', () => {
         const h = harness(RECORDING_OBJECTS);
         h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
         h.tracker.handleLine(
             'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        // Two strikes - one partial frame is not proof of absence.
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605056]);
         h.tracker.handleObjectsNums([PLAYER_NUM, 605056]);
         expect(h.edges()).toHaveLength(0);
-        expect(h.log.at(-1)).toMatchObject({ kind: 'expired' });
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'gone' });
     });
 });
 
@@ -510,6 +513,127 @@ describe('coverTracker - expiry', () => {
             'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
         h.tracker.clearEdgesFor(605050, 'stun');
         expect(h.edges()).toHaveLength(0);
+    });
+});
+
+describe('coverTracker - why an edge went away', () => {
+    const COVER_LINE =
+        'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.';
+
+    it('names the TTL when nothing corroborated the edge', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.setNow(0);
+        h.tracker.handleLine(COVER_LINE);
+        h.tracker.tick(COVER_TTL_MS + 1);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'ttl' });
+    });
+
+    it('names the death, and who died', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(COVER_LINE);
+        h.tracker.handleLine('Zreczny ogromny zolnierz umarl.');
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'death' });
+    });
+
+    it('names who dropped out of the room', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleLine(COVER_LINE);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050]);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050]);
+        expect(h.log.at(-1)).toMatchObject({
+            kind: 'expired', reason: 'gone', missingIds: [605056],
+        });
+    });
+
+    it('survives a single partial objects.nums frame', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleLine(COVER_LINE);
+
+        // One frame without the covered mob is not proof it left.
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050]);
+        expect(h.edges()).toHaveLength(1);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050]);
+        expect(h.edges()).toHaveLength(1);
+    });
+
+    it('survives a frame that is briefly missing our own object num', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleLine(COVER_LINE);
+        // attackerId is US - one frame without our num used to wipe every edge.
+        h.tracker.handleObjectsNums([605050, 605056]);
+        expect(h.edges()).toHaveLength(1);
+    });
+});
+
+describe('coverTracker - standing GMCP corroboration', () => {
+    const COVER_LINE =
+        'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.';
+
+    function established(): Harness {
+        const h = harness(RECORDING_OBJECTS);
+        h.setNow(0);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605056 } });
+        h.tracker.handleLine(COVER_LINE);
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
+        return h;
+    }
+
+    it('keeps the edge alive across the 22 s the recording spends without a poke', () => {
+        const h = established();
+        // In the recording our attack_num sat on the coverer from t=73483 to
+        // t=95511 with the covered mob still listed - the cover was up the whole
+        // time, and the only refreshes came from the player's own /prze pokes.
+        for (let t = 1000; t <= 22000; t += 1000) {
+            h.setNow(t);
+            h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+            h.tracker.tick(t);
+        }
+        expect(h.edges()).toHaveLength(1);
+        expect(h.log.filter(e => e.kind === 'expired')).toHaveLength(0);
+    });
+
+    it('is sustained by an hp-only delta, because the fingerprint is accumulated', () => {
+        const h = established();
+        for (let t = 1000; t <= 18000; t += 1000) {
+            h.setNow(t);
+            // A delta carrying no attack_num at all must not break corroboration.
+            h.tracker.handleObjectsData({ 605050: { hp: 4 } as any });
+            h.tracker.tick(t);
+        }
+        expect(h.edges()).toHaveLength(1);
+    });
+
+    it('stops sustaining the edge once the attacker retargets', () => {
+        const h = established();
+        const EDGE = `605056:605050:${PLAYER_NUM}`;
+        h.setNow(2000);
+        // Our attack_num moves off the coverer, so the fingerprint no longer holds.
+        // (The move itself is also a fresh cover candidate under 1.3 and mints its
+        // own `suspected` edge - hence asserting on this edge, not on the count.)
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605056 } });
+        h.tracker.tick(2000);
+        expect(h.triple()).toContain(EDGE);
+
+        h.setNow(2000 + COVER_TTL_MS + 1);
+        h.tracker.tick(2000 + COVER_TTL_MS + 1);
+        expect(h.triple()).not.toContain(EDGE);
+        expect(h.log.filter(e => e.kind === 'expired' && e.reason === 'ttl')).not.toHaveLength(0);
+    });
+
+    it('still bounds an edge the fingerprint would otherwise sustain forever', () => {
+        const h = established();
+        for (let t = 1000; t <= COVER_MAX_AGE_MS + 2000; t += 1000) {
+            h.setNow(t);
+            h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+            h.tracker.tick(t);
+        }
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'max-age' });
     });
 });
 

@@ -158,6 +158,11 @@
     opacity: 0.55;
 }
 
+.cover-dbg-log-reason {
+    opacity: 0.75;
+    font-style: italic;
+}
+
 .cover-dbg-log-unknown {
     color: #ff6347;
     font-weight: 700;
