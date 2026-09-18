@@ -627,13 +627,46 @@ describe('coverTracker - standing GMCP corroboration', () => {
 
     it('still bounds an edge the fingerprint would otherwise sustain forever', () => {
         const h = established();
-        for (let t = 1000; t <= COVER_MAX_AGE_MS + 2000; t += 1000) {
+
+        // Corroborated right up to the ceiling, so `lastSeen` is fresh and the
+        // ordinary TTL cannot be what removes it.
+        const almost = COVER_MAX_AGE_MS - 1000;
+        h.setNow(almost);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.tick(almost);
+        expect(h.edges()).toHaveLength(1);
+
+        const past = COVER_MAX_AGE_MS + 1;
+        h.setNow(past);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.tick(past);
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'max-age' });
+    });
+
+    it('sustains a cover across ten minutes of fighting the coverer', () => {
+        const h = established();
+        // A cover lasts until it is broken, released, or somebody dies - none of
+        // which happen here - so nothing may quietly time it out in between.
+        for (let t = 10000; t < COVER_MAX_AGE_MS; t += 10000) {
             h.setNow(t);
             h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
             h.tracker.tick(t);
         }
+        expect(h.edges()).toHaveLength(1);
+        expect(h.log.filter(e => e.kind === 'expired')).toHaveLength(0);
+    });
+
+    it('lets the mob\'s death end the cover long before the ceiling', () => {
+        const h = established();
+        h.setNow(120000);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.tick(120000);
+        expect(h.edges()).toHaveLength(1);
+
+        h.tracker.handleLine('Zreczny ogromny zolnierz umarl.');
         expect(h.edges()).toHaveLength(0);
-        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'max-age' });
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'death' });
     });
 });
 

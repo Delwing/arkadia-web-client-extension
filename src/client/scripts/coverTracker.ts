@@ -38,12 +38,17 @@ const EMPTY_MATCH = (() => {
 export const COVER_TTL_MS = 12000;
 
 /**
- * Hard ceiling on an edge's total age, however well corroborated. Only bites when
- * a cover is dropped with no line we can read while the blocked attacker keeps
- * swinging at the coverer, which keeps the GMCP fingerprint alive indefinitely.
- * A guess - tune it from the popup, same as the TTL.
+ * Hard ceiling on an edge's total age, however well corroborated.
+ *
+ * A cover has no duration of its own: it lasts until it is broken, released, or one
+ * of the parties dies, and all three of those clear the edge outright. So this is a
+ * leak-stopper, not a timeout - it exists only for the case where a cover ends with
+ * no line we can read while the blocked attacker keeps swinging at the coverer,
+ * which would otherwise sustain the GMCP fingerprint forever. Set long enough that
+ * it never fires during a real fight; if it does fire, that is the bug, not the
+ * cover being old.
  */
-export const COVER_MAX_AGE_MS = 45000;
+export const COVER_MAX_AGE_MS = 600000;
 
 /** How often the TTL sweep runs while the client is live. */
 const SWEEP_INTERVAL_MS = 1000;
