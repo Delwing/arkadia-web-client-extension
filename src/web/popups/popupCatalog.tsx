@@ -8,6 +8,7 @@ import ChatPopup from '../ChatPopup';
 import ClockPopup from '../ClockPopup';
 import CombatPopup from '../CombatPopup';
 import CombatStatusPopup from '../CombatStatusPopup';
+import CoverDebugPopup from '../CoverDebugPopup';
 import ContractsPopup from '../ContractsPopup';
 import DataSourcesPopup from '../DataSourcesPopup';
 import DepositsPopup from '../DepositsPopup';
@@ -106,6 +107,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:transport-times-debug', Component: TransportTimesDebugPopup },
     { id: 'popup:zlom', Component: ZlomPopup },
     { id: 'popup:enemyResistances', Component: EnemyResistancesPopup },
+    { id: 'popup:coverDebug', Component: CoverDebugPopup },
     { id: 'popup:stat', Component: StatPopup },
     { id: 'popup:oswajanie', Component: OswajaniePopup },
     { id: 'popup:dataSources', Component: DataSourcesPopup },

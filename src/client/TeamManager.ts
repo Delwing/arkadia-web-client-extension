@@ -1,5 +1,6 @@
 import Client from "./Client";
 import type {GmcpRoomInfo} from "@shared/events";
+import {parseNames} from "@client/utils/parseNames";
 
 interface ObjectData {
     attack_num: boolean | number
@@ -286,7 +287,7 @@ export default class TeamManager {
     }
 
     private parseNames(list: string): string[] {
-        return list.split(/,| i /).map(s => s.trim().replace(/^\[|]$/g, '')).filter(Boolean);
+        return parseNames(list);
     }
 
     private reconcileMembers(expectedNames: string[]) {

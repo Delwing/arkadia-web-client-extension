@@ -1,0 +1,170 @@
+/*
+ * Cover tracker debug popup. Deliberately plain - no icons, no shield glyphs.
+ * It exists to validate the state machine, so raw honesty beats polish.
+ */
+
+.cover-dbg-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    padding: 6px 8px;
+    overflow: hidden;
+}
+
+.cover-dbg-counter {
+    flex: 0 0 auto;
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+.cover-dbg-counter--bad {
+    color: #ff6347;
+    font-weight: 600;
+    opacity: 1;
+}
+
+.cover-dbg-state {
+    flex: 0 1 auto;
+    max-height: 45%;
+    overflow: auto;
+}
+
+.cover-dbg-table {
+    width: 100%;
+    font-size: 0.9em;
+}
+
+.cover-dbg-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.cover-dbg-table td {
+    vertical-align: top;
+}
+
+.cover-dbg-group td {
+    padding-top: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+}
+
+.cover-dbg-num,
+.cover-dbg-since {
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+/* The player's own entries - "can I hit it" has to read at a glance. */
+.cover-dbg-me {
+    font-weight: 700;
+}
+
+.cover-dbg-blocked {
+    font-weight: 700;
+    color: #ff6347;
+}
+
+.cover-dbg-open {
+    color: #ffa500;
+}
+
+.cover-dbg-none {
+    opacity: 0.45;
+}
+
+/* Suspected edges are guesses - they must not read like facts. */
+.cover-dbg-suspected {
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.cover-dbg-tag {
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: rgba(127, 127, 127, 0.25);
+    font-family: monospace;
+    font-size: 0.75em;
+    white-space: nowrap;
+}
+
+.cover-dbg-log {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 0.82em;
+    border-top: 1px solid rgba(127, 127, 127, 0.3);
+    padding-top: 4px;
+}
+
+.cover-dbg-log-entry {
+    padding: 1px 0;
+}
+
+.cover-dbg-log-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.cover-dbg-log-time {
+    opacity: 0.6;
+}
+
+.cover-dbg-log-kind {
+    min-width: 9ch;
+    font-weight: 700;
+}
+
+.cover-dbg-log-kind--established,
+.cover-dbg-log-kind--retreat {
+    color: #ff6347;
+}
+
+.cover-dbg-log-kind--blocked {
+    color: #ffa500;
+}
+
+.cover-dbg-log-kind--break-ok,
+.cover-dbg-log-kind--released {
+    color: #00ff7f;
+}
+
+.cover-dbg-log-kind--gmcp-suspect,
+.cover-dbg-log-kind--expired,
+.cover-dbg-log-kind--failed {
+    opacity: 0.6;
+}
+
+.cover-dbg-log-kind--ambiguous {
+    color: #ffff00;
+}
+
+.cover-dbg-log-pair {
+    white-space: normal;
+}
+
+.cover-dbg-log-source {
+    opacity: 0.55;
+}
+
+.cover-dbg-log-unknown {
+    color: #ff6347;
+    font-weight: 700;
+}
+
+.cover-dbg-log-raw {
+    padding-left: 10ch;
+    opacity: 0.55;
+    white-space: normal;
+}

@@ -1,0 +1,553 @@
+import {
+    createCoverTracker,
+    COVER_TTL_MS,
+    type CoverEdge,
+    type CoverLogEntry,
+    type CoverStateSnapshot,
+    type CoverTracker,
+} from '@client/scripts/coverTracker';
+import { matchCoverLine, resolveObjectId } from '@client/coverPatterns';
+
+type Obj = { num: number; desc?: string; __category?: string };
+
+const PLAYER_NUM = 659862;
+
+/** The cast from the recording: player + the coverer + the covered mob. */
+const RECORDING_OBJECTS: Obj[] = [
+    { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+    { num: 605050, desc: 'grozny porywczy zolnierz', __category: 'rest' },
+    { num: 605056, desc: 'zreczny ogromny zolnierz', __category: 'rest' },
+];
+
+interface Harness {
+    tracker: CoverTracker;
+    objects: Obj[];
+    log: CoverLogEntry[];
+    states: CoverStateSnapshot[];
+    setNow(ms: number): void;
+    /** Edges sorted into a stable order so assertions can compare arrays. */
+    edges(): CoverEdge[];
+    triple(): string[];
+}
+
+function harness(objects: Obj[], playerNum: number | undefined = PLAYER_NUM): Harness {
+    const list = [...objects];
+    const log: CoverLogEntry[] = [];
+    const states: CoverStateSnapshot[] = [];
+    let now = 1_000_000;
+
+    const tracker = createCoverTracker({
+        now: () => now,
+        getObjects: () => list,
+        getPlayerNum: () => playerNum,
+        emitState: snapshot => states.push(snapshot),
+        emitEvent: entry => log.push(entry),
+    });
+
+    return {
+        tracker,
+        objects: list,
+        log,
+        states,
+        setNow: ms => { now = ms; },
+        edges: () => [...tracker.getEdges()].sort((a, b) =>
+            a.coveredId - b.coveredId || a.covererId - b.covererId || a.attackerId - b.attackerId),
+        triple: () => [...tracker.getEdges()]
+            .map(e => `${e.coveredId}:${e.covererId}:${e.attackerId}`)
+            .sort(),
+    };
+}
+
+const kinds = (log: CoverLogEntry[]) => log.map(e => e.kind);
+
+describe('coverPatterns - grammar', () => {
+    it('reads the cover line against the player', () => {
+        const m = matchCoverLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        expect(m).toMatchObject({
+            kind: 'established',
+            coverer: 'Grozny porywczy zolnierz',
+            covered: 'zrecznego ogromnego zolnierza',
+            attackers: ['@ty'],
+        });
+    });
+
+    it('splits the attacker list into one entry per attacker', () => {
+        const m = matchCoverLine(
+            'Zrecznie zaslaniasz Abra przed ciosami powaznego ciemnowlosego krasnoluda chaosu '
+            + 'i ponurego ciemnowlosego krasnoluda chaosu.');
+        expect(m?.kind).toBe('established');
+        expect(m?.coverer).toBe('@ty');
+        expect(m?.covered).toBe('Abra');
+        expect(m?.attackers).toEqual([
+            'powaznego ciemnowlosego krasnoluda chaosu',
+            'ponurego ciemnowlosego krasnoluda chaosu',
+        ]);
+    });
+
+    it('strips the prompt the game prefixes lines with', () => {
+        expect(matchCoverLine('> > Przestajesz zaslaniac Abra.')).toMatchObject({
+            kind: 'released', covered: 'Abra', coverer: '@ty',
+        });
+    });
+
+    it('reads the "Na rozkaz" forms without mistaking the orderer for the coverer', () => {
+        expect(matchCoverLine('Na rozkaz Abra zaslaniasz Pabla przed ciosami wielkiego trolla.'))
+            .toMatchObject({ kind: 'established', coverer: '@ty', covered: 'Pabla' });
+        const third = matchCoverLine(
+            'Na rozkaz Abra grozny porywczy zolnierz zaslania Pabla przed ciosami wielkiego trolla.');
+        expect(third).toMatchObject({
+            kind: 'established',
+            covered: 'Pabla',
+            covererHasOrderPrefix: true,
+        });
+        // Grammar cannot split orderer from coverer - the resolver does, by suffix.
+        expect(third?.coverer).toBe('Abra grozny porywczy zolnierz');
+    });
+
+    it('matches the three release lines', () => {
+        expect(matchCoverLine('Przestajesz zaslaniac Abra.')).toMatchObject({ kind: 'released', coverer: '@ty' });
+        expect(matchCoverLine('Grozny porywczy zolnierz przestaje cie zaslaniac przed ciosami wrogow.'))
+            .toMatchObject({ kind: 'released', covered: '@ty', coverer: 'Grozny porywczy zolnierz' });
+        expect(matchCoverLine('Grozny porywczy zolnierz przestaje zaslaniac Abra.'))
+            .toMatchObject({ kind: 'released', covered: 'Abra', coverer: 'Grozny porywczy zolnierz' });
+    });
+
+    it('matches the retreat-behind lines as their own source', () => {
+        expect(matchCoverLine(
+            'Pabel unosi swoja tarcze i szybko przesuwa sie za Abra, kryjac sie przed atakami wielkiego trolla.'))
+            .toMatchObject({ kind: 'retreat', source: 'retreat', covered: 'Pabel', coverer: 'Abra' });
+        expect(matchCoverLine(
+            'Pabel unosi swoja tarcze i szybko przesuwa sie za ciebie, kryjac sie przed atakami wielkiego trolla.'))
+            .toMatchObject({ kind: 'retreat', covered: 'Pabel', coverer: 'ciebie' });
+        expect(matchCoverLine('Sprytnie manewrujac Pabel kryje sie za plecami Abra przed atakami wielkiego trolla.'))
+            .toMatchObject({ kind: 'retreat', covered: 'Pabel', coverer: 'Abra' });
+        expect(matchCoverLine('Sprytnie manewrujac kryjesz sie za plecami Abra przed atakami wielkiego trolla.'))
+            .toMatchObject({ kind: 'retreat', covered: '@ty', coverer: 'Abra' });
+    });
+
+    it('does not build on the known non-signals', () => {
+        expect(matchCoverLine('Grozny porywczy zolnierz rozglada sie szybko, jakby szukajac pomocy.')).toBeNull();
+        expect(matchCoverLine('Grozny porywczy zolnierz ocenia sytuacje.')).toBeNull();
+        // Movement blocking is a different mechanic and a different verb (stoi/staje).
+        expect(matchCoverLine('Wielki troll stoi ci na drodze.')).toBeNull();
+    });
+});
+
+describe('resolveObjectId', () => {
+    const objects: Obj[] = [
+        { num: 1, desc: 'Vesper', __category: 'team' },
+        { num: 2, desc: 'Pabel', __category: 'team' },
+        { num: 3, desc: 'zreczny ogromny zolnierz', __category: 'rest' },
+        { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+    ];
+
+    it('matches a nominative desc exactly', () => {
+        expect(resolveObjectId('zreczny ogromny zolnierz', objects, { playerNum: PLAYER_NUM }))
+            .toEqual({ id: 3, ambiguous: false });
+    });
+
+    it('matches a declined mob desc', () => {
+        expect(resolveObjectId('zrecznego ogromnego zolnierza', objects, { playerNum: PLAYER_NUM }))
+            .toEqual({ id: 3, ambiguous: false });
+    });
+
+    it('matches a declined single-token player name', () => {
+        // "Pabel" -> "Pabla" scores ~0.6 on a 5-char word with no siblings to
+        // average against, which is why single-word candidates get a lower floor.
+        expect(resolveObjectId('Pabla', objects, { playerNum: PLAYER_NUM }))
+            .toEqual({ id: 2, ambiguous: false });
+    });
+
+    it('resolves the second-person pronouns straight to the player', () => {
+        for (const pronoun of ['cie', 'ciebie', 'toba']) {
+            expect(resolveObjectId(pronoun, objects, { playerNum: PLAYER_NUM }))
+                .toEqual({ id: PLAYER_NUM, ambiguous: false });
+        }
+    });
+
+    it('strips the brackets around introduced names', () => {
+        expect(resolveObjectId('[Vesper]', objects, { playerNum: PLAYER_NUM }))
+            .toEqual({ id: 1, ambiguous: false });
+    });
+
+    it('flags a duplicate-desc tie as ambiguous', () => {
+        const dupes: Obj[] = [
+            { num: 10, desc: 'ogromny zolnierz', __category: 'rest' },
+            { num: 11, desc: 'ogromny zolnierz', __category: 'rest' },
+        ];
+        const result = resolveObjectId('ogromnego zolnierza', dupes, { playerNum: PLAYER_NUM });
+        expect(result.ambiguous).toBe(true);
+    });
+
+    it('tells near-identical descs apart on the word that differs', () => {
+        const krasnoludy: Obj[] = [
+            { num: 20, desc: 'powazny ciemnowlosy krasnolud chaosu', __category: 'rest' },
+            { num: 21, desc: 'ponury ciemnowlosy krasnolud chaosu', __category: 'rest' },
+        ];
+        expect(resolveObjectId('powaznego ciemnowlosego krasnoluda chaosu', krasnoludy))
+            .toEqual({ id: 20, ambiguous: false });
+        expect(resolveObjectId('ponurego ciemnowlosego krasnoluda chaosu', krasnoludy))
+            .toEqual({ id: 21, ambiguous: false });
+    });
+
+    it('resolves the coverer out of a "Na rozkaz <orderer> <coverer>" capture', () => {
+        const cast: Obj[] = [
+            { num: 1, desc: 'Abra', __category: 'team' },
+            { num: 2, desc: 'grozny porywczy zolnierz', __category: 'rest' },
+        ];
+        expect(resolveObjectId('Abra grozny porywczy zolnierz', cast, { trimLeadingWords: true }))
+            .toEqual({ id: 2, ambiguous: false });
+    });
+
+    it('returns nothing rather than a bad guess', () => {
+        expect(resolveObjectId('zupelnie kto inny gdzies indziej', objects).id).toBeUndefined();
+    });
+});
+
+describe('coverTracker - text paths', () => {
+    it('creates one confirmed edge from the cover line', () => {
+        const h = harness(RECORDING_OBJECTS);
+        expect(h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.'))
+            .toBe(true);
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({
+            coveredId: 605056,
+            covererId: 605050,
+            attackerId: PLAYER_NUM,
+            confidence: 'confirmed',
+            source: 'cover-line',
+        });
+        expect(kinds(h.log)).toEqual(['established']);
+        expect(h.states).toHaveLength(1);
+    });
+
+    it('fans a multi-attacker cover line out into one edge per attacker', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Vesper', __category: 'player' },
+            { num: 1001, desc: 'Abra', __category: 'team' },
+            { num: 2001, desc: 'powazny ciemnowlosy krasnolud chaosu', __category: 'rest' },
+            { num: 2002, desc: 'ponury ciemnowlosy krasnolud chaosu', __category: 'rest' },
+        ]);
+        h.tracker.handleLine(
+            'Zrecznie zaslaniasz Abra przed ciosami powaznego ciemnowlosego krasnoluda chaosu '
+            + 'i ponurego ciemnowlosego krasnoluda chaosu.');
+
+        const edges = h.edges();
+        expect(edges).toHaveLength(2);
+        expect(new Set(edges.map(e => e.coveredId))).toEqual(new Set([1001]));
+        expect(new Set(edges.map(e => e.covererId))).toEqual(new Set([PLAYER_NUM]));
+        // The two near-identical krasnoludy must land on DIFFERENT object ids.
+        expect(new Set(edges.map(e => e.attackerId))).toEqual(new Set([2001, 2002]));
+        expect(kinds(h.log)).toEqual(['established', 'established']);
+    });
+
+    it('creates no edge for a failed cover', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz probuje zaslonic zrecznego ogromnego zolnierza '
+            + 'przed twoimi ciosami, jednak nie jest w stanie tego uczynic.');
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).toEqual(['failed']);
+    });
+
+    it('logs cover flavour that names no attacker instead of inventing a wildcard edge', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz staje u jego boku, gotow w kazdej chwili zaslonic '
+            + 'zrecznego ogromnego zolnierza przed nadchodzacym niebezpieczenstwem.');
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).toEqual(['ambiguous']);
+    });
+
+    it('reads "staje pomiedzy A a B" as covered A, attacker B', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Vesper', __category: 'player' },
+            { num: 1001, desc: 'Abra', __category: 'team' },
+            { num: 2001, desc: 'wielki troll', __category: 'rest' },
+        ]);
+        h.tracker.handleLine('Z wprawa stajesz pomiedzy Abra a wielkim trollem, przyjmujac na siebie nadchodzace ciosy.');
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({ coveredId: 1001, covererId: PLAYER_NUM, attackerId: 2001 });
+    });
+
+    it('records the retreat mechanic as its own source in the same graph', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Vesper', __category: 'player' },
+            { num: 1001, desc: 'Abra', __category: 'team' },
+            { num: 1002, desc: 'Pabel', __category: 'team' },
+            { num: 2001, desc: 'wielki troll', __category: 'rest' },
+        ]);
+        h.tracker.handleLine(
+            'Pabel unosi swoja tarcze i szybko przesuwa sie za Abra, kryjac sie przed atakami wielkiego trolla.');
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({
+            coveredId: 1002, covererId: 1001, attackerId: 2001, source: 'retreat',
+        });
+        expect(kinds(h.log)).toEqual(['retreat']);
+    });
+
+    it('creates no edge for a failed retreat', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Vesper', __category: 'player' },
+            { num: 1002, desc: 'Pabel', __category: 'team' },
+            { num: 2001, desc: 'wielki troll', __category: 'rest' },
+        ]);
+        h.tracker.handleLine(
+            'Pabel unosi swoja tarcze i szybko przesuwa sie w twoja strone, '
+            + 'bezskutecznie probujac uciec przed twoimi ciosami.');
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).toEqual(['failed']);
+    });
+
+    it('clears the pair on a release line', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.handleLine('Grozny porywczy zolnierz przestaje zaslaniac zrecznego ogromnego zolnierza.');
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).toEqual(['established', 'released']);
+    });
+});
+
+describe('coverTracker - the block line as its own test oracle', () => {
+    const BLOCK = 'Rzucasz sie na zrecznego ogromnego zolnierza, lecz grozny porywczy zolnierz staje ci na drodze.';
+
+    it('creates a confirmed edge from nothing and records that it was unknown', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(BLOCK);
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({
+            coveredId: 605056, covererId: 605050, attackerId: PLAYER_NUM,
+            confidence: 'confirmed', source: 'block-line',
+        });
+        expect(h.log).toHaveLength(1);
+        expect(h.log[0]).toMatchObject({ kind: 'blocked', wasKnown: false });
+    });
+
+    it('only refreshes after the establishing line, without duplicating the edge', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.setNow(1_000_000);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.setNow(1_005_000);
+        h.tracker.handleLine(BLOCK);
+
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({ since: 1_000_000, lastSeen: 1_005_000, source: 'cover-line' });
+        expect(h.log[1]).toMatchObject({ kind: 'blocked', wasKnown: true });
+    });
+
+    it('resolves the third-person block form to the attacker and drops the pronoun', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+            { num: 1001, desc: 'Vesper', __category: 'team' },
+            { num: 488206, desc: 'hardy blondwlosy mezczyzna', __category: 'rest' },
+            { num: 488212, desc: 'potezny jasnowlosy mezczyzna', __category: 'rest' },
+        ]);
+        h.tracker.handleLine(
+            'Vesper rzuca sie na hardego blondwlosego mezczyzne, lecz potezny jasnowlosy mezczyzna staje jej na drodze.');
+
+        expect(h.edges()).toHaveLength(1);
+        const edge = h.edges()[0];
+        expect(edge).toMatchObject({ coveredId: 488206, covererId: 488212, attackerId: 1001 });
+        // "staje jej na drodze" genders the ATTACKER; it must not reach the coverer.
+        expect(edge.covererId).not.toBe(1001);
+        expect(edge.attackerId).not.toBe(488212);
+    });
+});
+
+describe('coverTracker - break semantics (1.4)', () => {
+    /** One covered target, three different attackers blocked by one coverer. */
+    function threeAttackers(): Harness {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+            { num: 1001, desc: 'Vesper', __category: 'team' },
+            { num: 1002, desc: 'Pabel', __category: 'team' },
+            { num: 605050, desc: 'grozny porywczy zolnierz', __category: 'rest' },
+            { num: 605056, desc: 'zreczny ogromny zolnierz', __category: 'rest' },
+        ]);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zaslania zrecznego ogromnego zolnierza przed ciosami Vespera i Pabla.');
+        expect(h.triple()).toEqual([
+            `605056:605050:1001`,
+            `605056:605050:1002`,
+            `605056:605050:${PLAYER_NUM}`,
+        ].sort());
+        return h;
+    }
+
+    it('a successful break frees the target for the whole team', () => {
+        const h = threeAttackers();
+        // Whoever broke it is irrelevant - a single break clears every edge.
+        h.tracker.handleLine('Vesper rzuca sie na zrecznego ogromnego zolnierza przebijajac sie przez jego ochrone.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'break-ok', coveredId: 605056 });
+    });
+
+    it('a failed break removes none of them', () => {
+        const h = threeAttackers();
+        h.setNow(1_002_000);
+        h.tracker.handleLine(
+            'Bezskutecznie rzucasz sie na zrecznego ogromnego zolnierza, probujac przebic sie przez jego ochrone.');
+        expect(h.edges()).toHaveLength(3);
+        // It names only the covered party, so it refreshes what we hold.
+        expect(h.edges().every(e => e.lastSeen === 1_002_000)).toBe(true);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'break-failed' });
+    });
+
+    it('reachability is per-attacker, not a boolean on the object', () => {
+        const h = harness([
+            { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+            { num: 1001, desc: 'Vesper', __category: 'team' },
+            { num: 605050, desc: 'grozny porywczy zolnierz', __category: 'rest' },
+            { num: 605056, desc: 'zreczny ogromny zolnierz', __category: 'rest' },
+        ]);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zaslania zrecznego ogromnego zolnierza przed ciosami Vespera.');
+
+        expect(h.tracker.isCoveredFor(605056, 1001)).toBe(true);
+        // Blocked for the teammate, wide open for the player.
+        expect(h.tracker.isCoveredFor(605056, PLAYER_NUM)).toBe(false);
+        expect(h.tracker.getCoveredForAttacker(1001)).toEqual([605056]);
+        expect(h.tracker.getCoveredForAttacker(PLAYER_NUM)).toEqual([]);
+    });
+});
+
+describe('coverTracker - GMCP corroboration (1.3)', () => {
+    function seeded(): Harness {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605056 } });
+        return h;
+    }
+
+    it('reads an attack_num flip as a suspected cover while the old target is present', () => {
+        const h = seeded();
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({
+            coveredId: 605056, covererId: 605050, attackerId: PLAYER_NUM,
+            confidence: 'suspected', source: 'gmcp',
+        });
+        expect(h.log.at(-1)).toMatchObject({ kind: 'gmcp-suspect', raw: '' });
+    });
+
+    it('reads the identical flip as a death when the old target left objects.nums', () => {
+        const h = seeded();
+        // The kill packet: the old target drops out of nums in the same breath.
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050]);
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
+        expect(h.edges()).toHaveLength(0);
+        expect(kinds(h.log)).not.toContain('gmcp-suspect');
+    });
+
+    it('lets a text line upgrade a suspected edge without duplicating it', () => {
+        const h = seeded();
+        h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605050 } });
+        expect(h.edges()[0].confidence).toBe('suspected');
+
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        expect(h.edges()).toHaveLength(1);
+        expect(h.edges()[0]).toMatchObject({ confidence: 'confirmed', source: 'cover-line' });
+    });
+
+    it('drops an edge once a party leaves the room', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605050, 605056]);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.handleObjectsNums([PLAYER_NUM, 605056]);
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired' });
+    });
+});
+
+describe('coverTracker - expiry', () => {
+    it('expires an edge that stopped being corroborated', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.setNow(1_000_000);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.tick(1_000_000 + COVER_TTL_MS - 1);
+        expect(h.edges()).toHaveLength(1);
+
+        h.tracker.tick(1_000_000 + COVER_TTL_MS + 1);
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', coveredId: 605056, raw: '' });
+    });
+
+    it('drops every edge a dead party was part of', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.handleLine('Zreczny ogromny zolnierz umarl.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired' });
+    });
+
+    it('clears a coverer\'s edges through the stun hook', () => {
+        const h = harness(RECORDING_OBJECTS);
+        h.tracker.handleLine(
+            'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
+        h.tracker.clearEdgesFor(605050, 'stun');
+        expect(h.edges()).toHaveLength(0);
+    });
+});
+
+/**
+ * The real cover episode from `arkadia-recording-zaslony.json`, replayed in order
+ * with the recording's own timestamps. Steps keep their original t (ms) so the
+ * death / break grace windows are exercised at the spacing the game produced.
+ */
+describe('coverTracker - recording replay', () => {
+    type Step =
+        | { t: number; text: string; edges: string[] }
+        | { t: number; nums: number[]; edges: string[] }
+        | { t: number; data: Record<number, { attack_num?: number }>; edges: string[] };
+
+    const EDGE = `605056:605050:${PLAYER_NUM}`;
+
+    const STEPS: Step[] = [
+        { t: 911, nums: [PLAYER_NUM, 605056, 605050], edges: [] },
+        // Both mobs engage: first sighting of attack_num, so nothing to compare against.
+        { t: 2309, data: { 605050: { attack_num: PLAYER_NUM }, 605056: { attack_num: PLAYER_NUM }, [PLAYER_NUM]: { attack_num: 605056 } }, edges: [] },
+        { t: 73291, text: 'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.', edges: [EDGE] },
+        // GMCP corroborates the cover we already hold - refresh, not a second edge.
+        { t: 73483, data: { [PLAYER_NUM]: { attack_num: 605050 } }, edges: [EDGE] },
+        { t: 81092, text: 'Rzucasz sie na zrecznego ogromnego zolnierza, lecz grozny porywczy zolnierz staje ci na drodze.', edges: [EDGE] },
+        { t: 84312, text: 'Bezskutecznie rzucasz sie na zrecznego ogromnego zolnierza, probujac przebic sie przez jego ochrone.', edges: [EDGE] },
+        { t: 84323, text: 'Rzucasz sie na zrecznego ogromnego zolnierza, lecz grozny porywczy zolnierz staje ci na drodze.', edges: [EDGE] },
+        { t: 95308, text: 'Rzucasz sie na zrecznego ogromnego zolnierza przebijajac sie przez jego ochrone.', edges: [] },
+        { t: 95321, text: 'Juz walczysz z zrecznym ogromnym zolnierzem.', edges: [] },
+        // The flip back onto the freed target is the break, not a new cover.
+        { t: 95511, data: { [PLAYER_NUM]: { attack_num: 605056 } }, edges: [] },
+        { t: 98131, text: 'Zreczny ogromny zolnierz umarl.', edges: [] },
+        { t: 98363, nums: [PLAYER_NUM, 605050], edges: [] },
+        // Same flip shape as the cover at 73483 - but this one is the death.
+        { t: 98363, data: { [PLAYER_NUM]: { attack_num: 605050 } }, edges: [] },
+    ];
+
+    it('holds exactly one edge through the cover and nothing after the break', () => {
+        const h = harness(RECORDING_OBJECTS);
+        for (const step of STEPS) {
+            h.setNow(step.t);
+            if ('text' in step) expect(h.tracker.handleLine(step.text)).toBe(true);
+            else if ('nums' in step) h.tracker.handleObjectsNums(step.nums);
+            else h.tracker.handleObjectsData(step.data);
+            // Nothing in this episode goes 12 s without corroboration.
+            h.tracker.tick(step.t);
+            expect(h.triple()).toEqual(step.edges);
+        }
+        // The block line fired three times for a cover we had already seen, so the
+        // tracker's own miss counter has to read zero.
+        const unknownBlocks = h.log.filter(e => e.kind === 'blocked' && e.wasKnown === false);
+        expect(unknownBlocks).toHaveLength(0);
+        expect(h.log.filter(e => e.kind === 'blocked')).toHaveLength(2);
+        expect(h.log.filter(e => e.kind === 'gmcp-suspect')).toHaveLength(0);
+    });
+});
