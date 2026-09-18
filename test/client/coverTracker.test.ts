@@ -6,7 +6,7 @@ import {
     type CoverStateSnapshot,
     type CoverTracker,
 } from '@client/scripts/coverTracker';
-import { matchCoverLine, resolveObjectId } from '@client/coverPatterns';
+import { ANY_ATTACKER, ENEMIES, matchCoverLine, resolveObjectId } from '@client/coverPatterns';
 
 type Obj = { num: number; desc?: string; __category?: string };
 
@@ -388,6 +388,89 @@ describe('coverTracker - GMCP breaks an identical-attacker tie', () => {
         h.tracker.handleLine(LINE);
         h.tracker.handleObjectsData({ [GUARD_B]: { attack_num: PLAYER_NUM } });
         expect(h.edges()[0]).toMatchObject({ attackerId: GUARD_A, confidence: 'suspected' });
+    });
+});
+
+describe('coverTracker - standing cover "przed ciosami wrogow"', () => {
+    const TROAL = 1001;
+    const VESPER = 1002;
+    const MOB = 3001;
+    const MOB_2 = 3002;
+    const ON_US = 'Troal zrecznie zaslania cie przed ciosami wrogow.';
+    const ON_VESPER = 'Troal zrecznie zaslania Vesper przed ciosami wrogow.';
+
+    function party() {
+        return harness([
+            { num: PLAYER_NUM, desc: 'Abra', __category: 'player' },
+            { num: TROAL, desc: 'Troal', __category: 'team' },
+            { num: VESPER, desc: 'Vesper', __category: 'team' },
+            { num: MOB, desc: 'mlody potezny gwardzista', __category: 'rest' },
+            { num: MOB_2, desc: 'stary garbaty gwardzista', __category: 'rest' },
+        ]);
+    }
+
+    it('reads "wrogow" as every enemy, never as a name', () => {
+        expect(matchCoverLine(ON_US)).toMatchObject({
+            kind: 'established', covered: 'cie', coverer: 'Troal', attackers: [ENEMIES],
+        });
+        expect(matchCoverLine(ON_VESPER)).toMatchObject({
+            kind: 'established', covered: 'Vesper', coverer: 'Troal', attackers: [ENEMIES],
+        });
+    });
+
+    it('creates one confirmed standing edge, no NIEJASNE', () => {
+        const h = party();
+        h.tracker.handleLine(ON_US);
+        h.tracker.handleLine(ON_VESPER);
+        expect(h.triple()).toEqual([
+            `${PLAYER_NUM}:${TROAL}:${ANY_ATTACKER}`,
+            `${VESPER}:${TROAL}:${ANY_ATTACKER}`,
+        ].sort());
+        expect(h.edges().every(e => e.confidence === 'confirmed')).toBe(true);
+        expect(kinds(h.log)).toEqual(['established', 'established']);
+        expect(h.log[0].attackerName).toBe('wrogowie');
+    });
+
+    it('blocks the enemies of the covered, not their own side', () => {
+        const h = party();
+        h.tracker.handleLine(ON_VESPER);
+        expect(h.tracker.isCoveredFor(VESPER, MOB)).toBe(true);
+        expect(h.tracker.isCoveredFor(VESPER, MOB_2)).toBe(true);
+        expect(h.tracker.isCoveredFor(VESPER, PLAYER_NUM)).toBe(false);
+        expect(h.tracker.getCoveredForAttacker(MOB)).toEqual([VESPER]);
+        // The przelam fallback asks this for us - a teammate must never come back.
+        expect(h.tracker.getCoveredForAttacker(PLAYER_NUM)).toEqual([]);
+    });
+
+    it('lasts until its lines end it - no max age, no displacement', () => {
+        const h = party();
+        h.tracker.handleLine(ON_VESPER);
+        h.tracker.handleObjectsNums([PLAYER_NUM, TROAL, VESPER, MOB, MOB_2]);
+        h.tracker.handleObjectsNums([PLAYER_NUM, TROAL, VESPER, MOB, MOB_2]);
+        h.tracker.handleLine('Troal zrecznie zaslania cie przed ciosami mlodego poteznego gwardzisty.');
+        h.tracker.tick(1_000_000 + COVER_MAX_AGE_MS + 1);
+        expect(h.triple()).toEqual([`${VESPER}:${TROAL}:${ANY_ATTACKER}`]);
+    });
+
+    it('is released like any other cover', () => {
+        const h = party();
+        h.tracker.handleLine(ON_US);
+        h.tracker.handleLine('Troal przestaje cie zaslaniac przed ciosami wrogow.');
+        expect(h.edges()).toHaveLength(0);
+    });
+
+    it('is broken like any other cover', () => {
+        const h = party();
+        h.tracker.handleLine(ON_VESPER);
+        h.tracker.handleLine('Mlody potezny gwardzista rzuca sie na Vesper przebijajac sie przez jej ochrone.');
+        expect(h.edges()).toHaveLength(0);
+    });
+
+    it('counts a block it predicted as known', () => {
+        const h = party();
+        h.tracker.handleLine(ON_VESPER);
+        h.tracker.handleLine('Mlody potezny gwardzista rzuca sie na Vesper, lecz Troal staje mu na drodze.');
+        expect(h.log.at(-1)).toMatchObject({ kind: 'blocked', wasKnown: true });
     });
 });
 

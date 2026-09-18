@@ -20,6 +20,14 @@ export const PLAYER = "@ty";
 /** Second-person pronouns that always mean the player - never fuzzy-matched. */
 const PLAYER_WORDS = new Set([PLAYER, "ty", "cie", "ciebie", "tobie", "toba"]);
 
+/**
+ * "... przed ciosami wrogow" - a standing cover, usually set up out of combat, that
+ * blocks every enemy of the covered party until it is released or broken.
+ */
+export const ENEMIES = "@wrogowie";
+/** The attacker id a standing cover carries. Object nums are never negative. */
+export const ANY_ATTACKER = -1;
+
 export type CoverSource = 'cover-line' | 'block-line' | 'break-fail' | 'retreat' | 'gmcp';
 
 export type CoverLineKind =
@@ -67,7 +75,12 @@ interface CoverRule {
     build: (groups: Record<string, string | undefined>) => CoverLineMatch | null;
 }
 
-const attackerList = (raw?: string): string[] => (raw ? parseNames(raw) : []);
+const attackerList = (raw?: string): string[] => {
+    if (!raw) return [];
+    // Never let "wrogow" near the fuzzy matcher - it would land on some real object.
+    if (raw.trim() === 'wrogow') return [ENEMIES];
+    return parseNames(raw);
+};
 
 /**
  * Ordered - the first rule that matches wins. Order is load-bearing in two
@@ -433,6 +446,7 @@ export function resolveObjectId(
     if (PLAYER_WORDS.has(raw.toLowerCase())) {
         return { id: opts.playerNum, ambiguous: false };
     }
+    if (raw === ENEMIES) return { id: ANY_ATTACKER, ambiguous: false };
 
     const attempts = opts.trimLeadingWords ? suffixes(raw) : [raw];
     let fallback: ResolvedObject = { ambiguous: false };

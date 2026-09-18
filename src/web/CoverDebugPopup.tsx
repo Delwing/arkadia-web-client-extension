@@ -10,6 +10,7 @@ import type {
     CoverStateObject,
     CoverStateSnapshot,
 } from '@client/scripts/coverTracker';
+import { ANY_ATTACKER } from '@client/coverPatterns';
 import './CoverDebugPopup.css';
 
 const POPUP_ID = 'popup:coverDebug';
@@ -93,6 +94,7 @@ const CoverDebugPopup: React.FC = () => {
         return (id?: number) => {
             if (id === undefined) return '?';
             if (id === state.playerNum) return 'ty';
+            if (id === ANY_ATTACKER) return 'wrogowie';
             return byNum.get(id) ?? `ob_${id}`;
         };
     }, [state]);
@@ -154,7 +156,9 @@ const CoverDebugPopup: React.FC = () => {
     const statusCell = (row: Row) => {
         if (row.covered.length > 0) {
             const blockedForMe = state.playerNum !== undefined
-                && row.covered.some(e => e.attackerId === state.playerNum);
+                && row.covered.some(e => e.attackerId === state.playerNum
+                    // A standing cover over a mob is against us too.
+                    || (e.attackerId === ANY_ATTACKER && row.obj.category.startsWith('rest')));
             const coverers = [...new Set(row.covered.map(e => e.covererId))];
             const suspected = row.covered.every(e => e.confidence === 'suspected');
             return (

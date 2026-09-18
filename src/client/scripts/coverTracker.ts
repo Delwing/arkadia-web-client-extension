@@ -1,6 +1,7 @@
 import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
 import {
+    ANY_ATTACKER,
     COVER_PREFILTER,
     PLAYER,
     matchCoverLine,
@@ -184,6 +185,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
 
     function nameOf(id?: number): string | undefined {
         if (id === undefined) return undefined;
+        if (id === ANY_ATTACKER) return 'wrogowie';
         return descCache.get(id);
     }
 
@@ -401,7 +403,10 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             if (attacker.ambiguous && !covered.ambiguous && !coverer.ambiguous) {
                 edge.attackerCandidates = attacker.candidates;
             }
-            supersede(attacker.id, edgeKey(covered.id, coverer.id, attacker.id), at);
+            // A standing cover names nobody, so it cannot displace anyone's cover.
+            if (attacker.id !== ANY_ATTACKER) {
+                supersede(attacker.id, edgeKey(covered.id, coverer.id, attacker.id), at);
+            }
             created++;
             log(entryFor(match.kind === 'retreat' ? 'retreat' : 'established', match, raw, {
                 coveredId: covered.id, covererId: coverer.id, attackerId: attacker.id,
@@ -434,7 +439,9 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             }));
             return;
         }
-        const wasKnown = edges.has(edgeKey(covered.id, coverer.id, attacker.id));
+        // A standing cover over the pair already predicted this block.
+        const wasKnown = edges.has(edgeKey(covered.id, coverer.id, attacker.id))
+            || edges.has(edgeKey(covered.id, coverer.id, ANY_ATTACKER));
         // A block proves the coverer is covering just as well as the cover line
         // does, and it is the only witness when the cover was set up off-screen.
         dropCoversOver(coverer.id, at);
@@ -661,7 +668,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         for (const e of edges.values()) {
             parties.add(e.coveredId);
             parties.add(e.covererId);
-            parties.add(e.attackerId);
+            if (e.attackerId !== ANY_ATTACKER) parties.add(e.attackerId);
         }
         for (const id of missingPartyCounts.keys()) {
             if (!parties.has(id)) missingPartyCounts.delete(id);
@@ -693,8 +700,26 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         }        flush();
     }
 
+    /** Player and team on one side, everybody else on the other. */
+    function sideOf(id: number): 'team' | 'rest' | undefined {
+        if (id === playerNum()) return 'team';
+        const category = objects().find(o => o.num === id)?.__category;
+        if (category === undefined) return undefined;
+        return category === 'team' || category === 'player' ? 'team' : 'rest';
+    }
+
+    /** Does this edge stop `attackerId`? A standing cover stops the covered's enemies. */
+    function blocks(edge: CoverEdge, attackerId: number): boolean {
+        if (edge.attackerId !== ANY_ATTACKER) return edge.attackerId === attackerId;
+        if (attackerId === edge.covererId) return false;
+        const covered = sideOf(edge.coveredId);
+        const attacker = sideOf(attackerId);
+        return covered !== undefined && attacker !== undefined && covered !== attacker;
+    }
+
     function tick(now = Date.now()) {
-        const tooOld = removeWhere(e => now - e.since > COVER_MAX_AGE_MS);
+        // A standing cover is meant to outlast any fight - only its lines end it.
+        const tooOld = removeWhere(e => e.attackerId !== ANY_ATTACKER && now - e.since > COVER_MAX_AGE_MS);
         logExpiry(tooOld, now, 'max-age');
         flush();
     }
@@ -706,10 +731,10 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         tick,
         getEdges: () => [...edges.values()],
         isCoveredFor: (coveredId, attackerId) =>
-            [...edges.values()].some(e => e.coveredId === coveredId && e.attackerId === attackerId),
+            [...edges.values()].some(e => e.coveredId === coveredId && blocks(e, attackerId)),
         getCoveredForAttacker: attackerId => [
             ...new Set([...edges.values()]
-                .filter(e => e.attackerId === attackerId)
+                .filter(e => blocks(e, attackerId))
                 .map(e => e.coveredId)),
         ],
         clearEdgesFor: (covererId, reason) => {
