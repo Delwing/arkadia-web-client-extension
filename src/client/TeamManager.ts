@@ -31,6 +31,8 @@ export default class TeamManager {
     private defenseTargetId?: number;
     private enemies: number[] = [];
     private missingEnemyCounts: Map<number, number> = new Map();
+    /** Two-strike debounce for the marked / engaged target leaving the room. */
+    private missingTargetCounts: Map<number, number> = new Map();
     private currentLocationSignature?: string;
 
     constructor(client: Client) {
@@ -123,6 +125,8 @@ export default class TeamManager {
             this.client.sendEvent('teamLeaderTargetAvatar');
         }
 
+        this.expireMissingTargets(allowed);
+
         if (this.enemies.length === 0) {
             return;
         }
@@ -149,6 +153,46 @@ export default class TeamManager {
         this.enemies = remaining;
         if (previousQueue !== this.enemies.join(",")) {
             this.notifyAttackQueueChange();
+        }
+    }
+
+    /**
+     * The marked and the engaged target are only ever cleared by an explicit
+     * `attack_target: false`, so an id marked in one room used to survive into the
+     * next one - and `przelam obrone ob_<stale>` came back "Nie widzisz zadnej
+     * takiej osoby." Drop them once they are gone from the room, on the same
+     * two-strike debounce the enemy queue uses, because `objects.nums` can arrive
+     * partial and one miss is not proof of absence.
+     */
+    private expireMissingTargets(allowed: Set<number>) {
+        const tracked = new Set<number>();
+        if (this.attackTargetId !== undefined) tracked.add(this.attackTargetId);
+        if (this.avatarAttackTargetId !== undefined) tracked.add(this.avatarAttackTargetId);
+
+        for (const id of this.missingTargetCounts.keys()) {
+            if (!tracked.has(id)) this.missingTargetCounts.delete(id);
+        }
+
+        const expired = new Set<number>();
+        for (const id of tracked) {
+            if (allowed.has(id)) {
+                this.missingTargetCounts.delete(id);
+                continue;
+            }
+            const misses = (this.missingTargetCounts.get(id) ?? 0) + 1;
+            if (misses >= 2) {
+                this.missingTargetCounts.delete(id);
+                expired.add(id);
+            } else {
+                this.missingTargetCounts.set(id, misses);
+            }
+        }
+
+        if (this.attackTargetId !== undefined && expired.has(this.attackTargetId)) {
+            this.attackTargetId = undefined;
+        }
+        if (this.avatarAttackTargetId !== undefined && expired.has(this.avatarAttackTargetId)) {
+            this.avatarAttackTargetId = undefined;
         }
     }
 
