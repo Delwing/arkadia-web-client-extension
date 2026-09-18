@@ -1,5 +1,6 @@
 import {
   BuiltInPanelState,
+  clampFloatingTop,
   crossDir,
   DEFAULT_DOCK_EXTENTS,
   DEFAULT_LAYOUT,
@@ -278,6 +279,20 @@ export function migrateLayoutState(legacy: LegacyLayoutState): LayoutState {
   };
 }
 
+/** Heal geometry saved before floating drags clamped the top edge: a negative
+ *  `y` parks the titlebar -- the only drag handle -- above the viewport, where
+ *  the user can never grab it again. */
+function clampWindowTops(state: LayoutState): LayoutState {
+  for (const w of Object.values(state.windows)) {
+    if (typeof w.y === 'number') w.y = clampFloatingTop(w.y);
+  }
+  for (const p of Object.values(state.popupPanels)) {
+    const f = p.floatingState;
+    if (f && typeof f.y === 'number') f.y = clampFloatingTop(f.y);
+  }
+  return state;
+}
+
 function ensureBuiltIns(state: LayoutState): LayoutState {
   for (const id of ['map', 'objectList'] as const) {
     if (!state.windows[id]) {
@@ -382,11 +397,11 @@ export function loadPersistedLayoutState(): LayoutState {
         popupPanels: stored.popupPanels ?? {},
         builtInPanels: stored.builtInPanels ?? {},
       };
-      return ensureBuiltIns(state);
+      return clampWindowTops(ensureBuiltIns(state));
     }
 
     // Legacy: migrate.
-    return ensureBuiltIns(migrateLayoutState(stored as LegacyLayoutState));
+    return clampWindowTops(ensureBuiltIns(migrateLayoutState(stored as LegacyLayoutState)));
   } catch (e) {
     console.error('Failed to load layout state:', e);
     return cloneDefault();

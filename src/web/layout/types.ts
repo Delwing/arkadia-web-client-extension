@@ -281,6 +281,12 @@ export const PANEL_CONFIGS: Record<string, PanelConfig> = {
 export const MIN_DOCK_SIZE = 100;
 export const MAX_DOCK_SIZE_RATIO = 0.4; // Max 40% of viewport
 
+/** Highest a floating window's top edge may go. The titlebar is the only drag
+ *  handle, so a window pushed above the viewport top can never be dragged back
+ *  -- and the position is persisted, so it stays lost across reloads. Only the
+ *  top edge is constrained; the other three may leave the viewport freely. */
+export const clampFloatingTop = (y: number): number => Math.max(0, y);
+
 export const DEFAULT_DOCK_EXTENTS: Record<DockSide, number> = {
   left: 200,
   right: 360,

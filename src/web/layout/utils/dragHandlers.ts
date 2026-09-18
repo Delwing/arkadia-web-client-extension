@@ -1,5 +1,5 @@
 import { flushSync } from 'react-dom';
-import { DockSide, DragState } from '../types';
+import { clampFloatingTop, DockSide, DragState } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { detectDock } from './dockDetect';
 
@@ -122,7 +122,7 @@ export function startUndockableDrag(opts: UndockableDragOptions): void {
 
     if (!floatingEl) return;
     lastX = ev.clientX - offsetX;
-    lastY = ev.clientY - offsetY;
+    lastY = clampFloatingTop(ev.clientY - offsetY);
     floatingEl.style.left = `${lastX}px`;
     floatingEl.style.top = `${lastY}px`;
 
@@ -248,7 +248,7 @@ export function startFloatingDrag(opts: FloatingDragOptions): void {
     lastClientX = ev.clientX;
     lastClientY = ev.clientY;
     lastX = ev.clientX - startOffsetX;
-    lastY = ev.clientY - startOffsetY;
+    lastY = clampFloatingTop(ev.clientY - startOffsetY);
     windowEl.style.left = `${lastX}px`;
     windowEl.style.top = `${lastY}px`;
     const shiftOrCtrl = ev.shiftKey || (ctrlForcesFloat && ev.ctrlKey);
