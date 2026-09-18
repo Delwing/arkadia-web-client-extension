@@ -795,6 +795,23 @@ describe('coverTracker - team fight replay', () => {
         expect(h.triple()).toEqual([`${ZGARBIONY}:${WYSOKI}:${VESPER}`]);
     });
 
+    /**
+     * The break frees the target for the WHOLE team, and the capture confirms it
+     * outright - which is worth recording, because the sequence reads as if it
+     * disproved the rule until you line it up against GMCP:
+     *
+     *   20398  cover on zgarbiony, named against Vesper
+     *   20540  {"690555":{"attack_num":654287}}   Vesper redirected onto the coverer
+     *   20768  GRUNG breaks through
+     *   21505  a NEW cover on zgarbiony, this time named against Muzikuhr
+     *   21718  {"677162":{"attack_num":265095}}   Muzikuhr redirected onto that coverer
+     *   21879  VESPER breaks through
+     *   22114  {"677162":{"attack_num":265081}}   Muzikuhr back on the real target
+     *
+     * Vesper is not breaking for herself at 21879 - she is breaking a cover that
+     * was established against Muzikuhr, and Muzikuhr is the one it frees. Each
+     * cover redirects only its named attacker; each break releases everyone.
+     */
     it('lets one teammate\'s break free the target for the whole team', () => {
         const h = fight();
         h.tracker.handleLine(
@@ -805,6 +822,19 @@ describe('coverTracker - team fight replay', () => {
         // The break line names no coverer; the log says who was actually cleared.
         expect(h.log.at(-1)).toMatchObject({
             kind: 'break-ok', coveredId: ZGARBIONY, covererId: WYSOKI, attackerId: GRUNG,
+        });
+
+        // The same target is covered again moments later, now against Muzikuhr.
+        h.tracker.handleLine(
+            'Muskularny ponury mezczyzna zrecznie zaslania zgarbionego ponurego mezczyzne przed ciosami Muzikuhr.');
+        expect(h.triple()).toEqual([`${ZGARBIONY}:${PONURY}:${MUZIKUHR}`]);
+
+        // Vesper breaks it - and it is MUZIKUHR who is freed.
+        h.tracker.handleLine('Vesper rzuca sie na zgarbionego ponurego mezczyzne przebijajac sie przez jego ochrone.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.tracker.isCoveredFor(ZGARBIONY, MUZIKUHR)).toBe(false);
+        expect(h.log.at(-1)).toMatchObject({
+            kind: 'break-ok', coveredId: ZGARBIONY, covererId: PONURY, attackerId: VESPER,
         });
     });
 
