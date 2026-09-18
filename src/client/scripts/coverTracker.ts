@@ -31,18 +31,14 @@ const EMPTY_MATCH = (() => {
 })();
 
 /**
- * How long an edge survives without corroboration. Deliberately NOT the 5 s
- * maneuver cooldown from `coverTimer.ts` - that is the recast window, not the
- * duration. Tune this from what the debug popup shows, not from a guess.
- */
-export const COVER_TTL_MS = 12000;
-
-/**
- * Hard ceiling on an edge's total age, however well corroborated.
+ * The only lifetime an edge has, and a last-resort net rather than a duration.
  *
- * A cover has no duration of its own: it lasts until it is broken, released, or one
- * of the parties dies, and all three of those clear the edge outright. So this is a
- * leak-stopper, not a timeout - it exists only for the case where a cover ends with
+ * A cover does not decay. It lasts until it is broken, released, superseded by a
+ * newer cover against the same attacker, or one of the parties dies - and every one
+ * of those arrives as a line we read and clears the edge outright. There is
+ * therefore nothing for a short timeout to catch that is not already caught, and a
+ * short one is actively wrong: it ends covers the game has not ended. This exists
+ * only for the case where a cover ends with
  * no line we can read while the blocked attacker keeps swinging at the coverer,
  * which would otherwise sustain the GMCP fingerprint forever. Set long enough that
  * it never fires during a real fight; if it does fire, that is the bug, not the
@@ -87,7 +83,7 @@ export interface CoverEdge {
  * "expired", which made the popup useless for the one question it exists to
  * answer: was that the TTL, or did somebody vanish?
  */
-export type CoverExpiryReason = 'ttl' | 'gone' | 'death' | 'stun' | 'max-age';
+export type CoverExpiryReason = 'gone' | 'death' | 'stun' | 'max-age' | 'superseded';
 
 export interface CoverLogEntry {
     at: number;
@@ -254,6 +250,20 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         return { edge, created: true };
     }
 
+    /**
+     * An attacker can only be blocked by one cover at a time. `attack_num` is a
+     * single value and the game moves it onto whichever body is in the way now, so
+     * when a fresh cover names the same attacker the previous one has stopped
+     * applying to them - otherwise a pair of mobs covering each other in turn would
+     * read as two live covers at once, and the stale one would linger until its TTL.
+     */
+    function supersede(attackerId: number, keepKey: string, at: number) {
+        const removed = removeWhere(e =>
+            e.attackerId === attackerId
+            && edgeKey(e.coveredId, e.covererId, e.attackerId) !== keepKey);
+        logExpiry(removed, at, 'superseded');
+    }
+
     function removeWhere(predicate: (e: CoverEdge) => boolean): CoverEdge[] {
         const removed: CoverEdge[] = [];
         for (const [key, edge] of edges) {
@@ -339,6 +349,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             const suspected = covered.ambiguous || coverer.ambiguous || attacker.ambiguous;
             upsert(covered.id, coverer.id, attacker.id, at,
                 match.source, suspected ? 'suspected' : 'confirmed');
+            supersede(attacker.id, edgeKey(covered.id, coverer.id, attacker.id), at);
             created++;
             log(entryFor(match.kind === 'retreat' ? 'retreat' : 'established', match, raw, {
                 coveredId: covered.id, covererId: coverer.id, attackerId: attacker.id,
@@ -372,6 +383,7 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
         const wasKnown = edges.has(edgeKey(covered.id, coverer.id, attacker.id));
         // The line carries both ids, so even an unknown pairing is full information.
         upsert(covered.id, coverer.id, attacker.id, at, match.source, 'confirmed');
+        supersede(attacker.id, edgeKey(covered.id, coverer.id, attacker.id), at);
         log(entryFor('blocked', match, raw, {
             coveredId: covered.id, covererId: coverer.id, attackerId: attacker.id,
         }, { wasKnown }));
@@ -541,7 +553,6 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
                 raw: '',
             });
         }
-        corroborateFromGmcp();
         flush();
     }
 
@@ -590,45 +601,15 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
             logExpiry(removed, ctx.now(), 'gone', [...gone]);
         }
 
-        corroborateFromGmcp();
         for (const id of attackNum.keys()) {
             if (!present.has(id)) attackNum.delete(id);
         }
         flush();
     }
 
-    /**
-     * While a cover holds, GMCP keeps re-stating it: the blocked attacker's
-     * `attack_num` points at the COVERER (that is what the cover did to it) and the
-     * real target is still in the room. That fingerprint is continuous evidence,
-     * and without reading it the TTL was a guillotine rather than a decay - the
-     * establishing line fires once, and `staje ci na drodze` only answers a fresh
-     * poke at the covered target, so a cover nobody pokes starved at 12 s while it
-     * was still very much up in game.
-     *
-     * This only sustains an edge that already exists; it never creates one. The
-     * fingerprint breaks the moment the attacker retargets, which is the normal
-     * exit, and `COVER_MAX_AGE_MS` bounds the pathological case where a cover is
-     * dropped silently while the attacker keeps hitting the coverer.
-     */
-    function corroborateFromGmcp() {
-        const at = ctx.now();
-        for (const edge of edges.values()) {
-            if (attackNum.get(edge.attackerId) !== edge.covererId) continue;
-            if (currentNums && !currentNums.has(edge.coveredId)) continue;
-            if (at - edge.since > COVER_MAX_AGE_MS) continue;
-            edge.lastSeen = at;
-            markChanged();
-        }
-    }
-
     function tick(now = Date.now()) {
-        // The ceiling first, so a fingerprint-sustained edge reports the limit that
-        // actually caught it rather than looking like an ordinary timeout.
         const tooOld = removeWhere(e => now - e.since > COVER_MAX_AGE_MS);
         logExpiry(tooOld, now, 'max-age');
-        const stale = removeWhere(e => now - e.lastSeen > COVER_TTL_MS);
-        logExpiry(stale, now, 'ttl');
         flush();
     }
 

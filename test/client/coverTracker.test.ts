@@ -1,7 +1,6 @@
 import {
     createCoverTracker,
     COVER_MAX_AGE_MS,
-    COVER_TTL_MS,
     type CoverEdge,
     type CoverLogEntry,
     type CoverStateSnapshot,
@@ -530,17 +529,18 @@ describe('coverTracker - GMCP corroboration (1.3)', () => {
 });
 
 describe('coverTracker - expiry', () => {
-    it('expires an edge that stopped being corroborated', () => {
+    it('does not expire a cover just because nothing else was said about it', () => {
         const h = harness(RECORDING_OBJECTS);
-        h.setNow(1_000_000);
+        h.setNow(0);
         h.tracker.handleLine(
             'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.');
-        h.tracker.tick(1_000_000 + COVER_TTL_MS - 1);
+        // A cover has no duration of its own. Silence is not the end of it.
+        for (let t = 1000; t < COVER_MAX_AGE_MS; t += 10000) {
+            h.setNow(t);
+            h.tracker.tick(t);
+        }
         expect(h.edges()).toHaveLength(1);
-
-        h.tracker.tick(1_000_000 + COVER_TTL_MS + 1);
-        expect(h.edges()).toHaveLength(0);
-        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', coveredId: 605056, raw: '' });
+        expect(kinds(h.log)).not.toContain('expired');
     });
 
     it('drops every edge a dead party was part of', () => {
@@ -565,12 +565,12 @@ describe('coverTracker - why an edge went away', () => {
     const COVER_LINE =
         'Grozny porywczy zolnierz zrecznie zaslania zrecznego ogromnego zolnierza przed twoimi ciosami.';
 
-    it('names the TTL when nothing corroborated the edge', () => {
+    it('names the ceiling, the only limit an edge has', () => {
         const h = harness(RECORDING_OBJECTS);
         h.setNow(0);
         h.tracker.handleLine(COVER_LINE);
-        h.tracker.tick(COVER_TTL_MS + 1);
-        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'ttl' });
+        h.tracker.tick(COVER_MAX_AGE_MS + 1);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'max-age' });
     });
 
     it('names the death, and who died', () => {
@@ -653,21 +653,20 @@ describe('coverTracker - standing GMCP corroboration', () => {
         expect(h.edges()).toHaveLength(1);
     });
 
-    it('stops sustaining the edge once the attacker retargets', () => {
+    it('survives the attacker retargeting - only a line ends a cover', () => {
         const h = established();
         const EDGE = `605056:605050:${PLAYER_NUM}`;
         h.setNow(2000);
-        // Our attack_num moves off the coverer, so the fingerprint no longer holds.
-        // (The move itself is also a fresh cover candidate under 1.3 and mints its
-        // own `suspected` edge - hence asserting on this edge, not on the count.)
+        // Swinging elsewhere does not lift a cover, and nothing in the protocol
+        // says it did. It stands until broken, released, superseded or somebody dies.
         h.tracker.handleObjectsData({ [PLAYER_NUM]: { attack_num: 605056 } });
         h.tracker.tick(2000);
         expect(h.triple()).toContain(EDGE);
 
-        h.setNow(2000 + COVER_TTL_MS + 1);
-        h.tracker.tick(2000 + COVER_TTL_MS + 1);
-        expect(h.triple()).not.toContain(EDGE);
-        expect(h.log.filter(e => e.kind === 'expired' && e.reason === 'ttl')).not.toHaveLength(0);
+        h.setNow(120000);
+        h.tracker.tick(120000);
+        expect(h.triple()).toContain(EDGE);
+        expect(kinds(h.log)).not.toContain('expired');
     });
 
     it('still bounds an edge the fingerprint would otherwise sustain forever', () => {
@@ -883,6 +882,100 @@ describe('coverTracker - team fight replay', () => {
         // Releasing one leaves the other standing.
         h.tracker.handleLine('Pablo przestaje zaslaniac Vesper.');
         expect(h.triple()).toEqual([`${WYSOKI}:${BARCZYSTY}:${MUZIKUHR}`]);
+    });
+});
+
+/**
+ * Two mobs taking turns covering each other off the player, from the third
+ * recording. GMCP settles the rule outright, because `attack_num` is a single
+ * value and every cover moves it:
+ *
+ *    18582  {"707885":{"attack_num":622911}}   we are on grozny
+ *    68600  "Muskularny ogromny zaslania groznego otylego przed twoimi ciosami."
+ *    68756  {"707885":{"attack_num":622905}}   redirected onto muskularny
+ *   120611  "Grozny otyly zaslania muskularnego ogromnego przed twoimi ciosami."
+ *   120844  {"707885":{"attack_num":622911}}   redirected onto grozny
+ *
+ * We cannot be blocked by both at once - one body is in the way, and it is the
+ * newest one. So a fresh cover naming the same attacker retires the previous one.
+ */
+describe('coverTracker - one cover per attacker', () => {
+    const ME = 707885;
+    const MUSKULARNY = 622905;
+    const GROZNY = 622911;
+
+    function pair(): Harness {
+        const h = harness([
+            { num: ME, desc: 'Khorn', __category: 'player' },
+            { num: MUSKULARNY, desc: 'muskularny ogromny zolnierz', __category: 'rest' },
+            { num: GROZNY, desc: 'grozny otyly zolnierz', __category: 'rest' },
+        ], ME);
+        h.tracker.handleObjectsNums([ME, MUSKULARNY, GROZNY]);
+        return h;
+    }
+
+    const COVERS_GROZNY =
+        'Muskularny ogromny zolnierz zrecznie zaslania groznego otylego zolnierza przed twoimi ciosami.';
+    const COVERS_MUSKULARNY =
+        'Grozny otyly zolnierz zrecznie zaslania muskularnego ogromnego zolnierza przed twoimi ciosami.';
+
+    it('retires the previous cover when the roles reverse', () => {
+        const h = pair();
+        h.tracker.handleLine(COVERS_GROZNY);
+        expect(h.triple()).toEqual([`${GROZNY}:${MUSKULARNY}:${ME}`]);
+
+        h.tracker.handleLine(COVERS_MUSKULARNY);
+        // Exactly one, not two: the first has stopped applying to us.
+        expect(h.triple()).toEqual([`${MUSKULARNY}:${GROZNY}:${ME}`]);
+        expect(h.log.map(e => `${e.kind}${e.reason ? '/' + e.reason : ''}`)).toEqual([
+            'established', 'expired/superseded', 'established',
+        ]);
+    });
+
+    it('keeps exactly one edge through a whole exchange of covers', () => {
+        const h = pair();
+        for (const line of [COVERS_GROZNY, COVERS_MUSKULARNY, COVERS_GROZNY, COVERS_MUSKULARNY]) {
+            h.tracker.handleLine(line);
+            expect(h.edges()).toHaveLength(1);
+        }
+        expect(h.log.filter(e => e.reason === 'ttl')).toHaveLength(0);
+        h.tracker.handleLine('Grozny otyly zolnierz umarl.');
+        expect(h.edges()).toHaveLength(0);
+        expect(h.log.at(-1)).toMatchObject({ kind: 'expired', reason: 'death' });
+    });
+
+    it('supersedes per attacker, leaving other attackers\' covers alone', () => {
+        const h = harness([
+            { num: ME, desc: 'Khorn', __category: 'player' },
+            { num: 1001, desc: 'Vesper', __category: 'team' },
+            { num: MUSKULARNY, desc: 'muskularny ogromny zolnierz', __category: 'rest' },
+            { num: GROZNY, desc: 'grozny otyly zolnierz', __category: 'rest' },
+        ], ME);
+        h.tracker.handleObjectsNums([ME, 1001, MUSKULARNY, GROZNY]);
+        h.tracker.handleLine(
+            'Muskularny ogromny zolnierz zrecznie zaslania groznego otylego zolnierza przed ciosami Vesper.');
+        h.tracker.handleLine(COVERS_GROZNY);
+        // Ours replaces nothing of Vesper's - she is blocked independently.
+        expect(h.triple()).toEqual([
+            `${GROZNY}:${MUSKULARNY}:1001`,
+            `${GROZNY}:${MUSKULARNY}:${ME}`,
+        ].sort());
+    });
+
+    it('does not starve between GMCP packets when nothing is changing', () => {
+        const h = pair();
+        h.setNow(0);
+        h.tracker.handleLine(COVERS_GROZNY);
+        h.tracker.handleObjectsData({ [ME]: { attack_num: MUSKULARNY } });
+
+        // GMCP only speaks when something changes: the capture went 12 593 ms
+        // between two hp ticks, and a short decay ended the cover in that gap.
+        for (let t = 1000; t <= 30000; t += 1000) {
+            h.setNow(t);
+            h.tracker.tick(t);
+        }
+        expect(h.edges()).toHaveLength(1);
+        expect(kinds(h.log)).not.toContain('expired');
     });
 });
 

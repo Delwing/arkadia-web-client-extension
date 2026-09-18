@@ -38,11 +38,11 @@ const KIND_LABEL: Record<CoverLogEntry['kind'], string> = {
  * between the log answering "why did that go away" and merely restating that it did.
  */
 const REASON_LABEL: Record<CoverExpiryReason, string> = {
-    'ttl': 'brak potwierdzenia',
     'gone': 'znikl z lokacji',
     'death': 'smierc',
     'stun': 'ogluszenie',
     'max-age': 'limit wieku',
+    'superseded': 'zastapiona nowa zaslona',
 };
 
 function seconds(ms: number): string {
