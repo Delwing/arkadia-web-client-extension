@@ -161,6 +161,7 @@ import initWrak from './scripts/wrak'
 import initLastSeen from './scripts/lastSeen'
 import initZlom from './scripts/zlom'
 import initEnemyResistances from './scripts/enemyResistances'
+import initCoverTracker from './scripts/coverTracker'
 import initBilety from './scripts/bilety'
 
 // Global reference to PluginManager
@@ -342,6 +343,7 @@ export function registerScripts(client: Client) {
     initUserTriggers(client)
     initZlom(client, aliases)
     initEnemyResistances(client, aliases)
+    initCoverTracker(client, aliases)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
     initParryShieldEvaluation(client)

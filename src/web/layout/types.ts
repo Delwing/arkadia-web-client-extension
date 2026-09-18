@@ -88,6 +88,7 @@ export type BuiltInPopupType =
   | 'transport-times-debug'
   | 'zlom'
   | 'enemyResistances'
+  | 'coverDebug'
   | 'stat'
   | 'oswajanie'
   | 'dataSources'

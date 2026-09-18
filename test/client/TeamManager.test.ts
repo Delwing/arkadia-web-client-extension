@@ -308,6 +308,59 @@ describe('TeamManager', () => {
     expect(avatarCallback).toHaveBeenCalled();
   });
 
+  test('clears the marked attack target after two objects.nums without it', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '3': { desc: 'wielki troll', living: true, attack_target: true },
+    });
+    expect(manager.getAttackTargetId()).toBe(3);
+
+    // objects.nums can arrive partial, so one miss is not proof of absence.
+    client.sendEvent('gmcp.objects.nums', [99]);
+    expect(manager.getAttackTargetId()).toBe(3);
+
+    client.sendEvent('gmcp.objects.nums', [99]);
+    expect(manager.getAttackTargetId()).toBeUndefined();
+  });
+
+  test('keeps the marked attack target when it reappears after one miss', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '3': { desc: 'wielki troll', living: true, attack_target: true },
+    });
+    client.sendEvent('gmcp.objects.nums', [99]);
+    client.sendEvent('gmcp.objects.nums', [99, 3]);
+    client.sendEvent('gmcp.objects.nums', [99]);
+    expect(manager.getAttackTargetId()).toBe(3);
+  });
+
+  test('clears the engaged target after two objects.nums without it', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '99': { desc: 'You', living: true, team: true, attack_num: 4 },
+    });
+    expect(manager.getAvatarAttackTargetId()).toBe(4);
+
+    client.sendEvent('gmcp.objects.nums', [99]);
+    client.sendEvent('gmcp.objects.nums', [99]);
+    expect(manager.getAvatarAttackTargetId()).toBeUndefined();
+  });
+
+  test('clears both targets independently when they are the same object', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '4': { desc: 'wielki troll', living: true, attack_target: true },
+      '99': { desc: 'You', living: true, team: true, attack_num: 4 },
+    });
+    expect(manager.getAttackTargetId()).toBe(4);
+    expect(manager.getAvatarAttackTargetId()).toBe(4);
+
+    client.sendEvent('gmcp.objects.nums', [99]);
+    // One shared counter, so one miss must not expire either of them.
+    expect(manager.getAttackTargetId()).toBe(4);
+    expect(manager.getAvatarAttackTargetId()).toBe(4);
+
+    client.sendEvent('gmcp.objects.nums', [99]);
+    expect(manager.getAttackTargetId()).toBeUndefined();
+    expect(manager.getAvatarAttackTargetId()).toBeUndefined();
+  });
+
   test('removes member when gmcp sends team: false', () => {
     client.sendEvent('gmcp.objects.data', {
       '42': { desc: 'Pablo', living: true, team: true },

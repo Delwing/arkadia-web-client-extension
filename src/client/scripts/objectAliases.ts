@@ -4,6 +4,7 @@ import {gmcp, setGmcp} from "../gmcp";
 import { createAttackController } from "../utils/attackController";
 import eventBus from "@modules/core/eventBus";
 import initAllyProtection from "./allyProtection";
+import { getCoverTracker } from "./coverTracker";
 import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
 import type { PersonListEntry } from '../types/people';
 import { characterStorage } from "@modules/core/storage";
@@ -58,26 +59,54 @@ export default function initObjectAliases(
         }
     }
 
+    function isOnLocation(id: number): boolean {
+        return client.ObjectManager.getObjectsOnLocation().some(o => o.num === id);
+    }
+
+    /**
+     * Every id here is validated against the room before it is sent. A target
+     * marked in an earlier room used to reach `przelam obrone ob_<stale>`, which
+     * the game answers with "Nie widzisz zadnej takiej osoby." - a wasted round
+     * in the middle of a fight.
+     */
     function breakDefenseTarget(short?: string) {
         let id: number | undefined;
         let alreadyFighting = false;
+
         if (short) {
-            const obj = findByShortcut(short);
-            id = obj?.num;
+            id = findByShortcut(short)?.num;
         } else {
-            id = client.TeamManager.getAttackTargetId();
-            if (!id) {
-                // No marked target - fall back to whoever we are fighting now.
-                id = client.TeamManager.getAvatarAttackTargetId();
-                alreadyFighting = true;
+            const marked = client.TeamManager.getAttackTargetId();
+            if (marked !== undefined && isOnLocation(marked)) {
+                id = marked;
+            } else {
+                // No usable marked target - fall back to whoever we are fighting now.
+                const engaged = client.TeamManager.getAvatarAttackTargetId();
+                if (engaged !== undefined && isOnLocation(engaged)) {
+                    id = engaged;
+                    alreadyFighting = true;
+                } else {
+                    // Last resort: whoever the cover tracker says is blocking us.
+                    const playerNum = client.TeamManager.playerNum;
+                    const covered = playerNum !== undefined
+                        ? getCoverTracker()?.getCoveredForAttacker(playerNum) ?? []
+                        : [];
+                    id = covered.find(isOnLocation);
+                }
             }
         }
-        if (id) {
-            client.sendCommand("przestan kryc sie za zaslona");
-            client.sendCommand(`przelam obrone ob_${id}`);
-            if (!alreadyFighting) {
-                attackById(id);
-            }
+
+        if (id === undefined || !isOnLocation(id)) {
+            client.print(
+                "Nie wiem, komu przelamac obrone - zaznacz cel lub zaatakuj kogos, "
+                + "kto jest zaslaniany.");
+            return;
+        }
+
+        client.sendCommand("przestan kryc sie za zaslona");
+        client.sendCommand(`przelam obrone ob_${id}`);
+        if (!alreadyFighting) {
+            attackById(id);
         }
     }
 

@@ -18,6 +18,17 @@ vi.mock('@modules/core/storage', () => {
   };
 });
 
+const { coverTrackerStub } = vi.hoisted(() => ({
+  coverTrackerStub: { covered: [] as number[] },
+}));
+
+vi.mock('@client/scripts/coverTracker', () => ({
+  __esModule: true,
+  getCoverTracker: () => ({
+    getCoveredForAttacker: () => coverTrackerStub.covered,
+  }),
+}));
+
 vi.mock('@modules/data/peopleLoader', () => ({
   subscribeMerged: jest.fn(),
   refresh: jest.fn(() => Promise.resolve()),
@@ -29,7 +40,8 @@ class FakeClient {
     getObjectsOnLocation: jest.fn(() => []),
   };
   TeamManager = {
-    getAttackTargetId: jest.fn(() => undefined),
+    playerNum: 99 as number | undefined,
+    getAttackTargetId: jest.fn((): number | undefined => undefined),
     getDefenseTargetId: jest.fn(() => undefined),
     getAvatarAttackTargetId: jest.fn((): number | undefined => undefined),
     getAccumulatedObjectsData: jest.fn(() => new Map()),
@@ -70,6 +82,7 @@ describe('object aliases', () => {
   beforeEach(() => {
     (characterStorage.onChange as jest.Mock).mockClear();
     (characterStorage.get as jest.Mock).mockClear();
+    coverTrackerStub.covered = [];
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: (m: RegExpMatchArray) => void }[] = [];
     initObjectAliases((client as unknown) as any, aliases);
@@ -307,13 +320,15 @@ describe('object aliases', () => {
   });
 
   test('/prze alias breaks defense of attack target', () => {
-    client.TeamManager.getAttackTargetId.mockReturnValue('21');
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 21 }]);
+    client.TeamManager.getAttackTargetId.mockReturnValue(21);
     breakDefense();
     expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'przestan kryc sie za zaslona');
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_21');
   });
 
   test('/prze alias falls back to current fight target when no attack target', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 17 }]);
     client.TeamManager.getAvatarAttackTargetId.mockReturnValue(17);
     breakDefense();
     expect(client.sendCommand).toHaveBeenCalledTimes(2);
@@ -321,9 +336,33 @@ describe('object aliases', () => {
     expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_17');
   });
 
+  test('/prze alias skips a marked target that left the room', () => {
+    // 623818 was marked in an earlier room and is in no objects.nums any more.
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 17 }]);
+    client.TeamManager.getAttackTargetId.mockReturnValue(623818);
+    client.TeamManager.getAvatarAttackTargetId.mockReturnValue(17);
+    breakDefense();
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_17');
+  });
+
+  test('/prze alias falls back to the cover store when no target is marked', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 605056 }]);
+    coverTrackerStub.covered = [605056];
+    breakDefense();
+    expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_605056');
+  });
+
+  test('/prze alias prints a hint instead of sending a stale id', () => {
+    client.TeamManager.getAttackTargetId.mockReturnValue(623818);
+    breakDefense();
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.print).toHaveBeenCalledWith(expect.stringContaining('przelamac obrone'));
+  });
+
   test('/prze alias does nothing without any target', () => {
     breakDefense();
     expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.print).toHaveBeenCalled();
   });
 
   test('/prze alias breaks defense of given shortcut', () => {

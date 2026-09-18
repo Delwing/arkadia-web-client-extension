@@ -22,6 +22,7 @@ import type {RouteSegment} from "@shared/map/transportPathFinder.ts";
 import type {MapLostReason} from "@shared/map/MapHelper.ts";
 import type {ChatEntry} from "@client/scripts/chatHistory.ts";
 import type {CombatEntry, CombatMessageType} from "@client/scripts/combatWindow.ts";
+import type {CoverLogEntry, CoverStateSnapshot} from "@client/scripts/coverTracker.ts";
 import type {CombatStatsSnapshot} from "@client/scripts/combatStats.ts";
 import type {CechySnapshot} from "@client/scripts/lvlCalc.ts";
 import type {MailEntry, MailType, LetterContent} from "@client/scripts/poczta.ts";
@@ -389,6 +390,12 @@ export interface KnownEvents {
     "zlom.snapshotReplaced": void;
     "zlom.popup.open": void;
     "enemyResistances.popup.open": void;
+
+    /** Full cover-graph snapshot plus the roster it applies to - emitted on every change. */
+    "cover.state": CoverStateSnapshot;
+    /** One append-only line for the cover debug log. */
+    "cover.event": CoverLogEntry;
+    "cover.popup.open": void;
     "oswajanie.updated": void;
     "oswajanie.popup.open": { view?: "animals" | "history" | "help"; animal?: string };
     "zabici.updated": unknown;
