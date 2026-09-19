@@ -389,4 +389,26 @@ describe("preferences", () => {
         expect(restored.channels.combat).toBe(false);
         expect(restored.channels.comm).toBe(true);
     });
+
+    it("leaves a channel the stored filter never heard of switched ON", () => {
+        // A filter saved before `other` and `script` existed has six keys. The
+        // merge walks CHANNELS and only overrides keys the stored object
+        // actually carries, so the new ones keep their default — which has to
+        // be on. A new channel defaulting to hidden looks exactly like lines
+        // going missing, and nobody would connect it to an upgrade.
+        const stored = {
+            channels: {
+                comm: true,
+                combat: true,
+                room: true,
+                system: false,
+                notify: true,
+                command: true,
+            },
+        };
+        const restored = applyPreferences(initialViewerState("a"), stored);
+        expect(restored.channels.system).toBe(false);
+        expect(restored.channels.other).toBe(true);
+        expect(restored.channels.script).toBe(true);
+    });
 });

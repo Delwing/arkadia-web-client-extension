@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type RefObject } from "react";
 import { formatClock } from "../model/format";
 
 export interface LineMenuState {
@@ -12,6 +12,12 @@ export interface LineMenuProps {
     menu: LineMenuState;
     /** True when a range is already set, so clearing it is worth offering. */
     hasRange: boolean;
+    /**
+     * The viewer's own subtree. Only a scroll inside it closes the menu — in
+     * the client the viewer sits in a dialog over a game log that scrolls on
+     * every line, and a capture listener on `window` sees those too.
+     */
+    boundary: RefObject<HTMLElement | null>;
     onSetBound: (edge: "from" | "to", timestamp: number) => void;
     onClearRange: () => void;
     onClose: () => void;
@@ -25,11 +31,26 @@ export interface LineMenuProps {
  * Radix menu — Radix wants a trigger element, and the trigger here is a
  * right-click anywhere in a virtualized list whose rows unmount as they scroll.
  */
-export function LineMenu({ menu, hasRange, onSetBound, onClearRange, onClose }: LineMenuProps) {
+export function LineMenu({ menu, hasRange, boundary, onSetBound, onClearRange, onClose }: LineMenuProps) {
     useEffect(() => {
         const close = () => onClose();
+        const onScroll = (event: Event) => {
+            const root = boundary.current;
+            const target = event.target;
+            if (root && target instanceof Node && !root.contains(target)) return;
+            onClose();
+        };
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
+            if (event.key !== "Escape") return;
+            // One press closes the menu and nothing else. In a modal host the
+            // dialog is listening for Escape too, and Radix's dismissable
+            // layer stands down on a prevented default — which is why this is
+            // `preventDefault` and not only `stopPropagation`: the layer
+            // listens on the document in the capture phase, so relying on
+            // propagation order alone is not enough.
+            event.preventDefault();
+            event.stopPropagation();
+            onClose();
         };
 
         // Attach on the NEXT tick. The right-click that opened this menu is
@@ -37,22 +58,23 @@ export function LineMenu({ menu, hasRange, onSetBound, onClearRange, onClose }: 
         // native contextmenu event goes on to reach window and would close the
         // menu in the same gesture that opened it.
         const armed = window.setTimeout(() => {
-            // Scroll closes it too: the menu is pinned to the viewport, so a
-            // scrolled list would leave it pointing at a different line.
+            // Scrolling the viewer closes it too: the menu is pinned to the
+            // viewport, so a scrolled list would leave it pointing at a
+            // different line.
             window.addEventListener("click", close);
             window.addEventListener("contextmenu", close);
-            window.addEventListener("scroll", close, true);
+            window.addEventListener("scroll", onScroll, true);
         }, 0);
-        window.addEventListener("keydown", onKey);
+        window.addEventListener("keydown", onKey, true);
 
         return () => {
             window.clearTimeout(armed);
             window.removeEventListener("click", close);
             window.removeEventListener("contextmenu", close);
-            window.removeEventListener("scroll", close, true);
-            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("scroll", onScroll, true);
+            window.removeEventListener("keydown", onKey, true);
         };
-    }, [onClose]);
+    }, [onClose, boundary]);
 
     return (
         <div

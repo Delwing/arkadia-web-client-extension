@@ -110,6 +110,28 @@ export const STATUS_SCALES = {
   info: 'blue',
 };
 
+/**
+ * Categorical data palette — hues for telling game DATA apart, never for
+ * ranking it.
+ *
+ * The stock client carried sixteen `--popup-data-*` variables, hand-tuned in
+ * every theme, for colouring things like the date column, the state column and
+ * the count column of a report. Auditing their uses split them in two: a
+ * good/middling/bad triple (which is status, and belongs on
+ * `--ark-success/warning/danger`) and this — a set of hues whose only job is to
+ * stay distinguishable from one another. That second job is a real gap: it
+ * cannot be expressed with an accent and four status roles.
+ *
+ * Indexed, not named by hue, for the same reason the neutral ramp is: a slot
+ * called `--ark-data-tomato` invites someone to reach for it when they mean
+ * danger, and then the palette is a status layer again. The contract a slot
+ * carries is "distinct from the other slots", nothing more.
+ *
+ * Deliberately avoids `grass`, `amber` and `tomato` (the STATUS_SCALES hues):
+ * a data colour must never read as a status colour sitting next to it.
+ */
+export const DATA_SCALES = ['indigo', 'cyan', 'jade', 'bronze', 'plum', 'pink'];
+
 export function isBrightSolid(scale) {
   return BRIGHT_SOLID_SCALES.includes(scale);
 }

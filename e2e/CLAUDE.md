@@ -176,6 +176,45 @@ yarn test:e2e -- --grep "feature description"    # Filter by test name
 - Per-test timeout: 30 seconds; per-assertion: 10 seconds; global: 20 minutes
 - Tests that pass only on a retry are listed under "Flaky e2e tests" in the run summary
 
+## Specs that need the public internet
+
+A handful of specs exercise data the client fetches from a third-party repository
+at runtime, above all `HERBS_URL` in `src/modules/data/dataStores/herbsStore.ts`:
+
+```
+https://raw.githubusercontent.com/tjurczyk/arkadia-data/.../herbs_data.json
+```
+
+In a sandboxed agent container the shell can usually reach that host (curl goes
+through the agent proxy) while **Chromium cannot** - it does not inherit
+`HTTPS_PROXY`, so the in-page `fetch` fails outright. The herb store then never
+populates and the specs below sit on a `waitForFunction` until the 30s per-test
+timeout, while every other test in the same file passes in about 2s:
+
+- `character-switch-data.spec.ts` - "herbs are cleared when switching..." and
+  "herbs restore when switching back..."
+- `herbs.spec.ts` - "give panel hands herbs from the basket to a team member"
+
+**These are not flaky tests and there is nothing to fix in them.** They are green
+in CI, where the runner has direct network access. Three separate sessions have
+now each spent time re-discovering this, which is why it is written down.
+
+If you see exactly-30s timeouts in herb-related specs locally, confirm the cause
+rather than changing the test:
+
+```bash
+node -e "..." # or simply: curl -sS -o /dev/null -w '%{http_code}\n' "$HERBS_URL"
+```
+
+A shell that gets 200 while the browser reports `Failed to fetch` is this, and
+nothing else. Run those specs on CI.
+
+Worth knowing separately: because the suite fetches that URL for real, a CI run
+also depends on that third-party repository being reachable. Stubbing the route
+in `support/fixtures.ts` would remove the dependency, at the cost of no longer
+exercising the real fetch-and-parse path. Not done here - it is a deliberate
+trade-off, not an oversight.
+
 ## Timing Budget
 
 GitHub's runners have 4 vCPUs, so a worker there gets a fraction of the CPU a

@@ -109,6 +109,50 @@
   --ark-info-solid: var(--ark-info-9);
   --ark-info-text: var(--ark-info-11);
 
+  /* --- categorical data --------------------------------------------------
+     Six hues for telling game DATA apart — the date column from the state
+     column from the count column, one chart series from the next. They carry
+     no ranking: slot 5 is not worse than slot 2, it is merely not slot 2.
+
+     Anything that ranks (good / middling / bad) is a STATUS and belongs above,
+     so that it still reads as bad in all eight themes. See DATA_SCALES in
+     themes/themes.config.mjs for why these are numbered rather than named. */
+  --ark-data-1-text: var(--ark-data-1-11);
+  --ark-data-1-bg: var(--ark-data-1-3);
+  --ark-data-1-border: var(--ark-data-1-6);
+  --ark-data-1-solid: var(--ark-data-1-9);
+
+  --ark-data-2-text: var(--ark-data-2-11);
+  --ark-data-2-bg: var(--ark-data-2-3);
+  --ark-data-2-border: var(--ark-data-2-6);
+  --ark-data-2-solid: var(--ark-data-2-9);
+
+  --ark-data-3-text: var(--ark-data-3-11);
+  --ark-data-3-bg: var(--ark-data-3-3);
+  --ark-data-3-border: var(--ark-data-3-6);
+  --ark-data-3-solid: var(--ark-data-3-9);
+
+  --ark-data-4-text: var(--ark-data-4-11);
+  --ark-data-4-bg: var(--ark-data-4-3);
+  --ark-data-4-border: var(--ark-data-4-6);
+  --ark-data-4-solid: var(--ark-data-4-9);
+
+  --ark-data-5-text: var(--ark-data-5-11);
+  --ark-data-5-bg: var(--ark-data-5-3);
+  --ark-data-5-border: var(--ark-data-5-6);
+  --ark-data-5-solid: var(--ark-data-5-9);
+
+  --ark-data-6-text: var(--ark-data-6-11);
+  --ark-data-6-bg: var(--ark-data-6-3);
+  --ark-data-6-border: var(--ark-data-6-6);
+  --ark-data-6-solid: var(--ark-data-6-9);
+
+  /* The neutral slot: data that is deliberately NOT categorised — an
+     uncounted row, a disabled series, "brak danych". Grey is the one hue the
+     categorical set must not spend a slot on, because it has to stay
+     available next to every one of them. */
+  --ark-data-muted: var(--ark-text-tertiary);
+
   /* --- typography -------------------------------------------------------- */
   --ark-font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --ark-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
@@ -177,11 +221,17 @@
   --ark-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* --- layering ---------------------------------------------------------- */
+  /* The numbers are large because these layers have to clear the stock
+     client's, not just each other's: a design-system dialog portals to
+     <body> alongside the mobile keypad (2050), the input area (10090) and
+     the output context menu (10100), and a modal that the game's own chrome
+     pokes through is not a modal. Only the ordering between them matters
+     inside the system itself. */
   --ark-z-sticky: 1;
-  --ark-z-overlay: 100;
-  --ark-z-dialog: 101;
-  --ark-z-popover: 200;
-  --ark-z-tooltip: 300;
+  --ark-z-overlay: 10200;
+  --ark-z-dialog: 10201;
+  --ark-z-popover: 10300;
+  --ark-z-tooltip: 10400;
 }
 
 /* Light themes get a lighter scrim and shallower shadows — the alphas that read

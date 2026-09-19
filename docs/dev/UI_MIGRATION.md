@@ -26,7 +26,7 @@ of the UI" means **the client entry**, plus whatever `forge-ui` borrows from it.
 | `src/web/options/` + `hostProxy/` (settings) | 46 files, ~13 000 lines | Real component rewrites — this is where react-bootstrap lives |
 | `src/web/*Popup.tsx` (39 popups) | ~8 600 lines of `popups.css` | Mostly **token remapping**, not rewrites |
 | Shell: `index.html`, `layout.css`, `style.css` | 144 Bootstrap class uses, 15 declarative modals | Markup + layout CSS |
-| `src/web/LogBrowser.tsx` | ~1 700 lines | Fold its newer UX into `@ui/logViewer`, then host that in a popup |
+| ~~`src/web/LogBrowser.tsx`~~ | ~~~1 700 lines~~ | **Done** — it is now a ~110-line host around `@ui/logViewer` |
 | Bootstrap JS | 3 import sites | `Dropdown`, `Modal` → Radix primitives |
 
 Two measurements matter more than the totals:
@@ -67,7 +67,24 @@ The good news is that 102 `getByRole` and 56 `getByText` uses are already
 markup-agnostic and survive any rewrite. **Roughly 110 selectors are the thing
 standing between us and freely changing markup.**
 
-**(c) Cascade order is load-bearing and fragile.** `main-theme.css` exists
+**(c) The stock client's element-level CSS reaches into migrated screens.**
+`.ark-root` sits on `<body>` (Phase 1) and the design system's own element
+reset is wrapped in `:where()` so primitives can win — which leaves a bare
+`button { … }` rule in `style.css`, loaded *after* the system, outranking every
+primitive that does not happen to set that property. Phase 2 found it the hard
+way: `padding: 0.75vh 2vw` blew a 16px checkbox out to 53px and `opacity: 0.75`
+dimmed every control in the window. The rule is now guarded with
+`:where(:not([class^='ark-'], …))`, which keeps its specificity and stops it at
+the boundary. It is the only global element rule left in the stock sheets —
+but the failure mode is the thing to remember, because it is silent: nothing
+breaks, things just come out the wrong size.
+
+The same shape bit the layering. `--ark-z-dialog` was 101, against a stock
+stack that runs to 10100, so the first design-system dialog in the client had
+the mobile keypad and the input bar poking through it. The z tokens are now
+absolute values chosen against that stack.
+
+**(d) Cascade order is load-bearing and fragile.** `main-theme.css` exists
 because Rollup reshuffled shared CSS chunks and flipped the stock cascade — read
 its header before touching any import order. Every phase below must keep the
 design system's stylesheet and the Bootstrap base from fighting, which
@@ -84,8 +101,8 @@ riskier than it needs to be.
 ```
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
-2. One log viewer, hosted twice                  ← fold master's UX in, then share
-3. Popups (39)                                  ← mostly token work
+2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -173,28 +190,159 @@ master deliberately — a range narrows the log only in that scope, so the two
 wider scopes can search the whole log without master's trick of silently
 destroying the range to reach a hit outside it. See `LOG_VIEWER.md`.
 
-**PR 2 — host it in the client.** `LogBrowser.tsx` becomes a popup mounting the
-shared component, reusing `log-viewer/sessionAdapter.ts`. What does *not* come
-across for free, and must be ported or consciously dropped:
+**PR 2 — host it in the client. Done.** `LogBrowser.tsx` went from 2 009 lines
+to ~110: it loads sessions through `log-viewer/sessionAdapter.ts` and renders
+`@ui/logViewer`. The window is a design-system `Dialog` (`size="full"`, the
+size the primitive was written for), mounted from React — so the declarative
+`#logs-modal` left `index.html` and one of the three `bootstrap/js/dist/modal`
+import sites went with it. `LogTimeline.tsx`, `logToImage.ts`, ~460 lines of
+log CSS in `style.css` and most of `logBrowserUtils.ts` are gone.
 
-- the ZIP export of all sessions (`logsExport.worker.ts`)
-- the sessions-management tab (delete, download-status, file-save directory)
-- JSON export and the highlight-preserving HTML export
+It was already presented as a modal before this, not as a screen, so "in a
+popup rather than its own screen" was a change of dialog, not of shape.
 
-`e2e/logs-browser.spec.ts` (new on master, 179 lines) is the acceptance test for
-this phase: it describes the behaviour the shared component has to keep.
+What did not come across for free:
+
+- **the ZIP export, JSON export/import and deletion: ported**, into a
+  `LogManager` window opened from the viewer's header (see §9). One trap
+  there: the exports wrap their lines in `<div id="logs-preview">` and used to
+  borrow that element's rules off the live page, which deleting the old pane's
+  CSS quietly took away. `collectLogStyles()` now writes that frame out
+  itself and only scrapes the page for the game's ANSI colours — with a unit
+  test and an e2e that unzips the archive and reads it, because a saved file
+  that has merely lost its monospace column still builds and still opens.
+- **the highlight-preserving HTML export: dropped, superseded.** The shared
+  `export/logHtml.ts` writes a self-contained file whose colours travel with
+  the content, rather than scraping whatever stylesheets the page happened to
+  have loaded.
+- **the file-save directory: not ported, and never lived here.** It is a
+  switch on *Interfejs > Inne* (`logFileSaver.ts`); the browser only ever
+  showed the resulting "saved to disk" column, which the manage window keeps.
+
+Known limitation: the pane takes a snapshot when the window opens, the way the
+old browser did. The session being recorded is still marked live, because that
+is what opens it at its end — but "Sledz na zywo" has nothing to follow until
+the window is reopened. Streaming into it is a follow-up, not a regression.
+
+`e2e/logs-browser.spec.ts` is the acceptance test. Its behaviour survived
+unchanged; its *selectors* did not, because the markup is the shared
+component's now — see the PR body for the mapping.
 
 ### Phase 3 — Popups *(4–6 PRs, grouped by family)*
 
-39 components. Per popup: swap ad-hoc chrome for `@design` primitives, replace
-that popup's `--popup-*` reads with semantic tokens, delete its slice of
-`popups.css`, remove its hex literals (56 across the whole layer).
+39 components. Group by family so each PR is one coherent review: combat/status,
+world/travel, knowledge/reports, inventory/economy, debug.
 
-Group by family so each PR is one coherent review: combat/status, world/travel,
-knowledge/reports, inventory/economy, debug.
+**PR 1 (combat/status) is done** — nine popups: Postawa, Walka, Statystyki,
+Postepy, Postepy 2, Cechy, Zabici, Zabici 2, Odpornosci przeciwnikow. It also
+landed the shared pieces every later popup PR depends on, described below.
 
-*Exit:* `popups.css` is gone or vestigial, and `themes/bridge.css` can be
+*Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
+
+#### Three things PR 1 found that this plan had wrong
+
+**(1) `popups.css` has two hosts, and only one of them owns the design system.**
+`forge-ui/main.tsx` imports `@web/popups/popups.css` and renders the *same*
+`POPUP_CATALOG`, with its own bronze `--popup-*` palette, no `.ark-root`, no
+`data-ark-theme` and no `@design/css/index.css`. Constraint (a) above noticed
+only that forge consumes *settings* components. So "replace this popup's
+`--popup-*` reads with `--ark-*`" is not a local edit: done naively it leaves
+every migrated popup in forge with no tokens at all — no background, no border,
+no text contrast.
+
+The fix that does not touch forge is `src/web/popups/popup-host-tokens.css`: a
+bridge in the opposite direction, mapping forge's `--popup-*` onto the `--ark-*`
+roles, scoped `body:not(.ark-root)` so it can never meet `themes/bridge.css` and
+form a variable cycle. It also repeats the non-colour ramps, because those live
+behind `[data-ark-theme]` too; a test compares them against `tokens.css` so they
+cannot drift.
+
+**This is a workaround, and the real fix is three lines in `forge-ui`** — import
+`@design/css/index.css`, put `ark-root` + `data-ark-theme="forge"` on its root,
+add a `forge` theme to `themes.config.mjs`. That is out of scope today, and the
+bridge carries it as its deletion criterion. Whoever is allowed to touch
+`forge-ui` should do it and delete the file.
+
+**(2) Popups are not cleanly separable by family.** They share Layer-2 chrome
+(`.popup-btn`, `.popup-tab`, `.popup-empty`, `.popup-split-*`, the header strip)
+and, worse, they borrow each other's classes across families: the resistances
+popup was built out of `.zlom-*` (inventory) and `.carriage-remove-btn`
+(travel). Leaving Layer 2 on `--popup-*` would half-migrate every popup in every
+family, so **PR 1 migrated Layer 2 for everyone**. Through `bridge.css` that is
+a computed no-op — `--popup-control-bg` *was* `--ark-bg-element` — and the
+screenshots confirmed it pixel for pixel. Later PRs inherit a migrated Layer 2
+and should not need to touch it.
+
+**(3) A per-popup stylesheet may not be imported by its component.** Layer 2 and
+a per-popup delta are both specificity 0,1,0, so only source order decides which
+wins. That was automatic while everything sat in one file. Split into
+`CechyPopup.css` and pulled in by `import './CechyPopup.css'`, the order becomes
+Rollup's to choose — and it put the deltas in a chunk the built `index.html`
+links *before* the one holding Layer 2. The cascade inverted and the Cechy
+"Wlacz modyfikatory" button silently lost its amber. This is constraint (c)
+biting exactly as advertised, and it was found by looking at screenshots, not by
+any test.
+
+So `src/web/popups/popups.css` is now a **manifest**: nothing but an ordered
+`@import` list (tokens, then `popups-base.css`, then each migrated popup sheet).
+`@import` inlines in source order into one chunk, so Rollup has nothing to
+reorder, and the path forge-ui imports is unchanged. Three unit tests hold the
+rule.
+
+#### The per-popup recipe
+
+Follow this literally; it is what PR 1 converged on.
+
+1. **Take the whole family at once, including anything it borrows.** Grep the
+   popup's TSX for class names and check which belong to another family. Either
+   migrate the borrowed component onto a primitive (the resistances popup went
+   to `Table` and stopped borrowing `.zlom-*`) or leave that class alone in
+   `popups-base.css` — never migrate half of it.
+2. **Cut the slice out of `popups-base.css`** into `src/web/<Name>Popup.css`.
+   Section markers (`/* ── name ── */`) are the slice boundaries.
+3. **Add it to the manifest** `src/web/popups/popups.css`, after
+   `./popups-base.css`. **Do not** add an import to the component.
+4. **Swap the variables** using `themes/bridge.css` read backwards — it is the
+   authoritative `--popup-*` → `--ark-*` table, and following it exactly is what
+   makes the change a computed no-op. `--popup-data-*` is the one family that is
+   not a straight swap: see below.
+5. **Kill the hex literals**, in the stylesheet *and* in the component (inline
+   styles, SVG `fill`, colour maps in TS — `StatPopup.tsx` had three).
+6. **Swap chrome for `@design` primitives** where one genuinely replaces
+   bespoke markup: `Table`, `Button`, `Segmented`, `EmptyState`, `Input`,
+   `Icon`. Do not force it; a tokenised bespoke gauge beats a primitive that
+   does not fit.
+7. **Add the stylesheet to `MIGRATED_SHEETS`** in
+   `test/ui/design/stylesheets.test.ts`. That is what enforces no-hex and
+   no-`--popup-*` from then on; a migrated sheet left off the list keeps the
+   tokens but loses the rule.
+8. **Screenshot before and after, in at least three themes**, one dark, one
+   light, one with a strong accent. Diff them. A pure token swap should come out
+   near-identical; anything that moved and should not have is a cascade or
+   specificity bug. This is the step that found (3).
+
+#### `--popup-data-*`: decided
+
+`bridge.css` left the sixteen `--popup-data-*` variables out and wrote "Phase 3
+decides their fate". **Decision: the design system gets a real categorical
+palette, and the sixteen are retired.** See `DESIGN_SYSTEM.md` §3.
+
+The audit of all 71 uses is what settled it: they were never one family. A
+`spring-green` / `yellow` / `tomato` triple ranked things (resistance quality,
+kill rates, progress) — that is *status* wearing a data costume, and it went to
+`--ark-success/warning/danger`, which is precisely the rule that keeps it
+reading right in all eight themes. What was left genuinely only needed to be
+*distinguishable*, so it became `--ark-data-1..6`, generated from Radix like the
+status hues.
+
+The two alternatives were considered and rejected. *Keeping them as a hand-tuned
+legacy layer* fails the phase's own exit condition — 16 variables × 7 themes is
+112 hand-maintained values, and they are spelled `var(--popup-`, so `bridge.css`
+could never be deleted while they live. *Mapping all sixteen onto existing
+roles* is what `bridge.css` refused to do for good reason: it would have forced
+six non-ranking hues onto `success`/`warning`/`danger` and broken the rule that
+status colours mean one thing.
 
 ### Phase 4 — Settings *(8–10 PRs, by page)*
 
@@ -276,21 +424,33 @@ Sequence within the phase:
 - **`@design`'s `Icon` has 15 names.** Settings needs far more, and they are
   domain icons (plecak, miecze, tarcza) that no other screen wants. The
   category icons in `SettingsDialog.tsx` import lucide directly and say why.
-- **The tokens have to reach forge.** `forge-ui/` never loads
-  `@design/css/index.css` and has no `data-ark-theme` anywhere, so a migrated
-  component rendered inside a forge menu modal would resolve *no* `--ark-*` at
-  all — borderless controls, transparent fills. `SettingsDialog` therefore
-  imports the design stylesheet itself and sets `data-ark-theme` on its host
-  **only when no ancestor already has one**. It deliberately does not set
-  `.ark-root`: that is the visual opt-in, and claiming it would repaint the
-  pages still on Bootstrap. The consequence, which is a real product decision
-  and not a bug: inside forge the settings dialog now renders in a
-  design-system theme rather than forge's bronze. §9's "does forge-ui consume
-  `@design` too?" is no longer entirely hypothetical.
-- **`Table` and `ProgressBar` still do not exist.** The pages that need a table
-  (`Binds`, `FirebaseTab`, `DeviceManagementTab`) are all large and late, so the
-  decision can wait. `Alert` is `Callout`, which exists; `Accordion` has not
-  been needed yet.
+- **The tokens have to reach forge.** Phase 3 hit this independently for
+  popups and wrote it up above; the settings dialog has exactly the same
+  problem through a different host. `forge-ui/` loads no part of the design
+  system, so a migrated component inside a forge menu modal resolves *no*
+  `--ark-*` at all — borderless controls, transparent fills. `SettingsDialog`
+  therefore imports `@design/css/index.css` itself (forge lazy-imports the
+  component into a shell that has no entry point of ours) and sets
+  `data-ark-theme` on its host **only when no ancestor already has one** — the
+  stock client's `<body>` has it, so there the player's theme still wins, and
+  the fallback switches itself off the day forge grows the attribute. It
+  deliberately does not set `.ark-root`: that is the visual opt-in, and
+  claiming it would repaint the pages still on Bootstrap.
+
+  **These two answers should converge, and Phase 3's is the better one.**
+  `popup-host-tokens.css` maps forge's `--popup-*` *onto* the `--ark-*` roles,
+  so a migrated popup in forge stays bronze; the settings fallback picks a
+  design-system theme instead, so the dialog stops matching forge's chrome.
+  Converging means adding forge's menu-modal host to that file's selector list
+  (it is scoped to `.managed-panel, [data-popup-overlay]`, and the settings
+  dialog lives in `.forge-menu-modal`) and dropping the fallback here. Left as
+  a follow-up rather than done in Phase 4 PR 1: the two landed in parallel, and
+  the file belongs to Phase 3. The `@design/css/index.css` import stays either
+  way — the bridge supplies token *values*, not the `.ark-*` primitive classes.
+- **`Table` now exists** (Phase 3 added it for the resistances popup), so the
+  pages that need one — `Binds`, `FirebaseTab`, `DeviceManagementTab` — no
+  longer have to wait on a decision. `ProgressBar` still does not exist.
+  `Alert` is `Callout`, which exists; `Accordion` has not been needed yet.
 
 ### Phase 5 — Shell *(1–2 PRs)*
 
@@ -391,6 +551,14 @@ Two things are deliberately parked until then:
   ramps (mauve, olive, slate) are near-neutral by design and leave colour to the
   accent. That is the palette working as intended, not a bridge bug — but if
   those themes should still shout, it is a `themes.config.mjs` decision.
+- **The active tab reads weakly in the two light themes.** `.popup-tab--active`
+  is accent text on an accent tint; on `parchment` and `silver` both steps are
+  pale and the active tab barely separates from its neighbours, where on the
+  dark themes it is obvious. Computed values are identical before and after
+  Phase 3 (it is a Phase-1 bridge characteristic, not a migration regression),
+  so it is parked here rather than fixed. The fix is probably a stronger step
+  for the active tab's fill, not a per-theme special case.
+
 - **Anything else that is "the new palette is different", rather than "this
   screen is broken".** File it here; do not fix it mid-migration.
 
@@ -412,5 +580,26 @@ continuity fix, not palette tuning.
 - **Does `forge-ui` eventually consume `@design` too?** Out of scope today. If
   the answer is ever yes, Phase 4 should stop re-styling stock components for
   forge's scoped Bootstrap and let forge adopt the system instead.
-- **Is the in-client log browser's session-management tab worth porting**, or
-  does the standalone page cover it?
+- ~~**Is the in-client log browser's session-management tab worth porting**, or
+  does the standalone page cover it?~~ **Answered: ported.** The standalone
+  page does not cover it and should not. It *reads* logs and never writes to
+  the database — that is what lets it be a plain page with no character
+  context — so nothing on it can delete a session, archive one or put one
+  back. Dropping the tab would have left the client with no way to remove a
+  log at all, and IndexedDB only grows; it would also have thrown away the
+  only backup path there is, since the JSON export/import round trip is the
+  one thing that moves a log between devices.
+
+  So it is ported, and in full: bulk ZIP export (`logsExport.worker.ts`),
+  "select the ones not yet archived" with its downloaded flag, the
+  saved-to-disk column, JSON export, JSON import and deletion. What changed is
+  where it lives. It is no longer a *tab* — a tab implies two things you
+  switch between, and this is a rare administrative errand next to the thing
+  you actually came for. It is a `LogManager` window (`src/web/LogManager.tsx`)
+  opened by **Zarzadzanie** in the viewer's header, which also let the tab
+  strip and its DOM-poking effect leave `index.html`.
+
+  Two things fell out of loading every session eagerly: the manage window
+  reads line counts and time spans off `LogSession[]` instead of re-counting
+  through IndexedDB, and `alert`/`confirm` are gone — the outcome of an import
+  is a `Callout` in the window, and a delete is confirmed by a real dialog.

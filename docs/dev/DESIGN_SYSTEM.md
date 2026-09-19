@@ -4,8 +4,9 @@ The client's new base look: **Radix primitives for behaviour, our own CSS for
 everything visual, and one semantic token layer that makes theming work.**
 
 It lives in `src/ui/design` and is imported as `@design`. It currently drives
-the standalone log browser (`log-viewer/`) and the showcase (`design/`); the
-rest of the stock UI is still on Bootstrap and migrates screen by screen.
+the standalone log browser (`log-viewer/`), the showcase (`design/`) and the
+in-client Logi window; the rest of the stock UI is still on Bootstrap and
+migrates screen by screen.
 
 ---
 
@@ -36,6 +37,15 @@ from this token layer (Phase 1 of `UI_MIGRATION.md`). It carries its own
 deletion criterion — *deleted when no `var(--popup-` remains outside it* — and
 Phase 3 is what deletes it. Nothing under `src/ui/design` reads `--popup-*`, so
 the rule above still holds where it matters.
+
+Phase 3 added a second, narrower exception in the *opposite* direction:
+`src/web/popups/popup-host-tokens.css` defines `--ark-*` from `--popup-*` for
+hosts that never load this system at all. There is exactly one such host —
+`forge-ui`, which renders the same popup catalogue from the same stylesheet but
+has its own bronze `--popup-*` palette and no `.ark-root`. Without it a migrated
+popup renders in forge with no tokens at all. It is guarded by
+`body:not(.ark-root)` so the two bridges can never meet and form a cycle, and it
+dies the day forge-ui loads `@design/css/index.css` itself.
 
 ---
 
@@ -116,6 +126,34 @@ and it is commented.
 A danger state has to read as danger in every theme. Per-theme danger colours
 are how you end up with a green "your character died" tag in the forest theme.
 
+### The categorical data palette
+
+`--ark-data-1..6` (`-text`, `-bg`, `-border`, `-solid`, plus `--ark-data-muted`)
+colour game **data** so it can be told apart: the date column from the state
+column from the count column, one chart series from the next. They are generated
+from Radix like the status hues, so every theme gets them for free.
+
+**They carry no ranking.** Slot 5 is not worse than slot 2, it is merely not
+slot 2. Anything that ranks — good / middling / bad — is a *status* and belongs
+on `--ark-success/warning/danger`, which is what keeps it reading correctly in
+all eight themes.
+
+They are numbered rather than named after their hue, and that is deliberate. A
+slot called `--ark-data-tomato` invites the next person to reach for it when
+they mean danger, and one commit later the palette is a second, unpoliced status
+layer. The set also avoids `grass`, `amber` and `tomato` outright, so a data
+colour never reads as the status colour sitting next to it.
+
+> **Where this came from.** The stock client carried sixteen `--popup-data-*`
+> variables, hand-tuned in each of seven themes — 112 values maintained by hand.
+> `themes/bridge.css` deliberately left them alone and wrote "Phase 3 decides
+> their fate". Phase 3 audited all 71 uses and found they were not one thing:
+> a good/middling/bad triple (`spring-green` / `yellow` / `tomato`, used for
+> resistances and kill rates) that was status wearing a data costume, and a
+> genuinely categorical remainder. The triple went to the status roles; the
+> remainder became this palette. Nothing was left on the old layer, which is
+> what lets `bridge.css` eventually die. See `UI_MIGRATION.md` §4, Phase 3.
+
 ---
 
 ## 4. Theming
@@ -182,7 +220,8 @@ import { Button, Dialog, Icon, Input, Toggle } from "@design";
 Primitives available: `Badge`, `Button`/`IconButton`, `Callout`/`EmptyState`,
 `Checkbox`, `Chip`, `Dialog` (+ header/body/footer/close), `Field`, `Icon`,
 `Input`/`InputShell`, `Kbd`, `Row`/`Col`/`Spacer`/`Divider`, `Menu`,
-`Segmented`, `Select`, `Spinner`, `Switch`, `Tabs`, `Toggle`, `Tooltip`.
+`Segmented`, `Select`, `Spinner`, `Switch`, `Table` (+ scroll/row/cell),
+`Tabs`, `Toggle`, `Tooltip`.
 
 ### Conventions
 
@@ -219,9 +258,12 @@ the exclusion inside `:where()` so nothing else changes.
 |---|---|
 | `log-viewer/` (standalone log browser) | **on the design system**, no Bootstrap |
 | `design/` (showcase) | on the design system |
-| `src/web/settings/` (the settings dialog shell) | **on the design system** |
+| Logi window (`src/web/LogBrowser.tsx`, `LogManager.tsx`) | **on the design system**, in a `Dialog` inside the stock client (Phase 2, PR 2) |
+| `src/web/` combat + status popups (9) | **on the design system**, `--ark-*` only (Phase 3, PR 1) |
+| `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
+| `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki |
-| the rest of `src/web/` (popups, layout) | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
+| `src/web/` remaining popups, settings, layout | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |
 
@@ -233,9 +275,31 @@ the exclusion inside `:where()` so nothing else changes.
 4. Replace `--popup-*` reads with semantic tokens.
 5. Drop the screen's Bootstrap imports when nothing in it needs them.
 
-The natural next target is `src/web/LogBrowser.tsx` — the in-client log browser,
-which can drop ~1700 lines onto the shared `LogViewer` component (see
-`docs/dev/LOG_VIEWER.md`).
+### Living inside the stock client
+
+The first screen to do this (the Logi window) turned up two things that a
+standalone page never shows, and every later screen inherits both.
+
+**The stock cascade reaches in.** `.ark-root` is on `<body>`, and the system's
+element reset is wrapped in `:where()` so primitives can win — which means a
+bare `button { … }` rule in `style.css`, loaded after the system, outranks
+every primitive that does not set that property. It silently gave every
+control `opacity: 0.75` and `padding: 0.75vh 2vw` (a 16px checkbox came out
+53px wide). That rule is now guarded with
+`button:where(:not([class^='ark-'], …))` — same specificity, no reach. When a
+new screen migrates, check it renders *in the client*, not only in the
+showcase.
+
+**The z tokens are absolute, not relative.** `--ark-z-overlay` and friends are
+five-digit numbers because the stock client's own stack runs to 10100 (the
+output context menu); a dialog below that has the mobile keypad and the input
+bar poking through it. Nested dialogs are handled by the `Dialog` component
+itself: it counts its own depth through a context and writes
+`--ark-dialog-level`, which `dialog.css` adds onto both z-indexes, so a dialog
+opened from a dialog scrims the one underneath.
+
+The natural next target is the popup layer — see `docs/dev/UI_MIGRATION.md`
+Phase 3.
 
 ---
 

@@ -51,7 +51,7 @@ const OgolemPie: React.FC<{ slices: PieSlice[] }> = ({ slices }) => {
     if (total <= 0) {
         return (
             <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="stat-popup__pie">
-                <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--popup-border)" strokeWidth="1" />
+                <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--ark-border)" strokeWidth="1" />
             </svg>
         );
     }
@@ -84,10 +84,14 @@ const OgolemPie: React.FC<{ slices: PieSlice[] }> = ({ slices }) => {
     );
 };
 
+/* Two of the three slices rank — taking a hit is bad, dodging it is good — so
+   they take status roles and keep reading that way in all eight themes. Only
+   "wyparowane" (soaked by armour) is a plain category, and it takes a slot from
+   the categorical palette (indigo, which is where its old blue landed). */
 const PIE_COLORS = {
-    otrzymane: '#e06464',
-    wyparowane: '#6498e0',
-    unikniete: '#64c878',
+    otrzymane: 'var(--ark-danger-solid)',
+    wyparowane: 'var(--ark-data-1-solid)',
+    unikniete: 'var(--ark-success-solid)',
 } as const;
 
 const StatPopup: React.FC = () => {

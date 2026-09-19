@@ -1,0 +1,161 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = resolve(__dirname, "../../..");
+
+const hostTokensPath = "src/web/popups/popup-host-tokens.css";
+const hostTokens = readFileSync(resolve(root, hostTokensPath), "utf8");
+const designTokens = readFileSync(resolve(root, "src/ui/design/css/tokens.css"), "utf8");
+
+/**
+ * `--x: value;` declarations, as a name -> value map.
+ *
+ * First occurrence wins: tokens.css re-declares the duration ramp inside a
+ * `prefers-reduced-motion` block, and that override is not the value the bridge
+ * is supposed to repeat.
+ */
+function declarations(css: string): Map<string, string> {
+    const map = new Map<string, string>();
+    for (const match of css.matchAll(/^\s*(--[a-z0-9-]+)\s*:\s*([^;]+);/gim)) {
+        if (!map.has(match[1])) map.set(match[1], match[2].trim());
+    }
+    return map;
+}
+
+/**
+ * The non-colour ramps popup-host-tokens.css has to repeat, because forge-ui
+ * never loads tokens.css. Values, not roles — so they have to match exactly.
+ */
+const REPEATED_RAMP_PREFIXES = [
+    "--ark-font-",
+    "--ark-weight-",
+    "--ark-leading-",
+    "--ark-tracking-",
+    "--ark-space-",
+    "--ark-radius-",
+    "--ark-control-",
+    "--ark-duration-",
+    "--ark-ease",
+    "--ark-z-",
+];
+
+function isRepeatedRamp(name: string): boolean {
+    // `--ark-text-4` is a font size; `--ark-text-faint` is a colour role and
+    // comes from the host's palette instead.
+    if (/^--ark-text-\d+$/.test(name)) return true;
+    return REPEATED_RAMP_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
+describe("popup host token bridge", () => {
+    const host = declarations(hostTokens);
+    const design = declarations(designTokens);
+
+    it("never applies inside the stock client, where it would cycle", () => {
+        // themes/bridge.css maps --popup-* onto --ark-*; this file maps back.
+        // Both live at once would invalidate every variable in the cycle, so
+        // every selector here must be guarded by :not(.ark-root).
+        const selectors = [...hostTokens.matchAll(/^([^@/\s][^{]*)\{/gm)].map((match) =>
+            match[1].trim(),
+        );
+        expect(selectors.length).toBeGreaterThan(0);
+        for (const selector of selectors) {
+            for (const part of selector.split(",")) {
+                expect(part.trim(), `unguarded selector: ${part.trim()}`).toContain(
+                    "body:not(.ark-root)",
+                );
+            }
+        }
+    });
+
+    it("repeats the non-colour ramps with exactly the design system's values", () => {
+        // The drift this catches: tokens.css changes --ark-space-4 to 9px and
+        // every migrated popup silently keeps 8px in forge-ui.
+        const drifted: string[] = [];
+        for (const [name, value] of host) {
+            if (!isRepeatedRamp(name)) continue;
+            const expected = design.get(name);
+            if (expected !== undefined && expected.replace(/\s+/g, " ") !== value.replace(/\s+/g, " ")) {
+                drifted.push(`${name}: ${value} (tokens.css: ${expected})`);
+            }
+        }
+        expect(drifted).toEqual([]);
+    });
+
+    it("covers every non-colour ramp the design system declares", () => {
+        const missing = [...design.keys()].filter(
+            (name) => isRepeatedRamp(name) && !host.has(name),
+        );
+        expect(missing).toEqual([]);
+    });
+
+    it("is imported by the stylesheet both UIs load", () => {
+        const manifest = readFileSync(resolve(root, "src/web/popups/popups.css"), "utf8");
+        expect(manifest).toContain("@import './popup-host-tokens.css';");
+        expect(manifest).toContain("@import './popups-base.css';");
+        // Tokens have to be defined before the rules that read them.
+        expect(manifest.indexOf("@import './popup-host-tokens.css';")).toBeLessThan(
+            manifest.indexOf("@import './popups-base.css';"),
+        );
+    });
+});
+
+/**
+ * The cascade rule that the file split broke once already.
+ *
+ * Layer 2 (`.popup-btn`) and a per-popup delta (`.cechy-popup__warning-btn`)
+ * are both specificity 0,1,0, so only source order decides. While everything
+ * lived in one file that was automatic. Split across files, it holds only if
+ * every migrated sheet arrives through the manifest's @import list, in order —
+ * a component-level `import './CechyPopup.css'` lets Rollup put the delta in a
+ * chunk the HTML links FIRST, and Layer 2 then overrides it. That is how the
+ * Cechy button lost its amber.
+ */
+describe("popup stylesheet ordering", () => {
+    const manifestPath = "src/web/popups/popups.css";
+    const manifest = readFileSync(resolve(root, manifestPath), "utf8");
+
+    const imported = [...manifest.matchAll(/@import\s+'([^']+)'/g)].map((match) => match[1]);
+
+    it("pulls every migrated popup sheet in after the base layer", () => {
+        const baseAt = imported.indexOf("./popups-base.css");
+        expect(baseAt).toBeGreaterThanOrEqual(0);
+        const deltas = imported.filter((path) => path.startsWith("../"));
+        expect(deltas.length).toBeGreaterThan(0);
+        for (const delta of deltas) {
+            expect(imported.indexOf(delta), `${delta} must come after the base`).toBeGreaterThan(baseAt);
+        }
+    });
+
+    it("has no popup component importing its own stylesheet", () => {
+        for (const path of imported.filter((entry) => entry.startsWith("../"))) {
+            const sheet = path.replace("../", "");
+            const component = resolve(root, "src/web", sheet.replace(/\.css$/, ".tsx"));
+            const source = readFileSync(component, "utf8");
+            expect(source, `${sheet} must come from the manifest, not from its component`).not.toContain(
+                `import './${sheet}'`,
+            );
+        }
+    });
+
+    it("lists every migrated sheet the manifest owns", () => {
+        // A sheet that exists but is in neither place reaches no browser at all.
+        const manifestSheets = imported
+            .filter((entry) => entry.startsWith("../"))
+            .map((entry) => `src/web/${entry.replace("../", "")}`)
+            .sort();
+        expect(manifestSheets).toEqual(
+            [
+                "src/web/CechyPopup.css",
+                "src/web/CombatPopup.css",
+                "src/web/CombatStatusPopup.css",
+                "src/web/EnemyResistancesPopup.css",
+                "src/web/Postepy2Popup.css",
+                "src/web/PostepyPopup.css",
+                "src/web/StatPopup.css",
+                "src/web/ZabiciPopup.css",
+                "src/web/Zabici2Popup.css",
+            ].sort(),
+        );
+    });
+});
