@@ -2,19 +2,12 @@ import React, { useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import './WorldTimePopup.css';
+import { SEASON_COLORS, SEASON_NAMES } from './popups/worldPalette';
+// The stylesheet arrives through src/web/popups/popups.css — see its header.
 
 const POPUP_ID = 'popup:worldTime';
 
 type Domain = 'Empire' | 'Ishtar';
-
-// Season index → Polish name + hue. Muted, parchment-friendly tones.
-const SEASONS = [
-    { name: 'Wiosna', color: '#8fbf94' }, // spring — muted sage
-    { name: 'Lato', color: '#d6c06e' },   // summer — muted wheat gold
-    { name: 'Jesien', color: '#cc8a55' }, // autumn — muted amber
-    { name: 'Zima', color: '#8fb2c9' },   // winter — muted slate blue
-];
 
 interface ClockSnapshot {
     hours: number;
@@ -95,7 +88,8 @@ const WorldTimePopup: React.FC = () => {
     const seasonIdx = clock?.season ?? gmcpSeason;
     const daylight = clock?.daylight ?? gmcpDaylight;
     const time = clock ? formatTime(clock.hours, clock.minutes) : undefined;
-    const season = seasonIdx !== undefined ? SEASONS[seasonIdx] : undefined;
+    const seasonName = seasonIdx !== undefined ? SEASON_NAMES[seasonIdx] : undefined;
+    const seasonColor = seasonIdx !== undefined ? SEASON_COLORS[seasonIdx] : undefined;
 
     return (
         <DockablePopupWrapper
@@ -115,10 +109,10 @@ const WorldTimePopup: React.FC = () => {
                     )}
                     <span className="wt-time">{time ?? '--:--'}</span>
                 </span>
-                {(season || clock?.dayLabel) && (
+                {(seasonName || clock?.dayLabel) && (
                     <div className="wt-cal">
-                        {season && (
-                            <span className="wt-season" style={{ color: season.color }}>{season.name}</span>
+                        {seasonName && (
+                            <span className="wt-season" style={{ color: seasonColor }}>{seasonName}</span>
                         )}
                         {clock?.dayLabel && (
                             <span className="wt-date">

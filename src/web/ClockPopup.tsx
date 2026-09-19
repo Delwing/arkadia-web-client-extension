@@ -3,6 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { MONTHS, MONTHS_ORDER } from '@client/scripts/clock';
+import { SEASON_COLORS, SEASON_NAMES } from './popups/worldPalette';
 
 type ClockData = {
     domain: "Empire" | "Ishtar";
@@ -17,15 +18,6 @@ type ClockData = {
     daylight?: boolean;
     season?: number;
 };
-
-// Season names and colors matching ClockDisplay
-const SEASON_NAMES = ['Wiosna', 'Lato', 'Jesien', 'Zima'];
-const SEASON_COLORS = [
-    'var(--popup-data-spring-green)', // wiosna (spring)
-    'var(--popup-data-yellow)',       // lato (summer)
-    'var(--popup-data-orange)',       // jesien (autumn)
-    'var(--popup-data-blue)',         // zima (winter)
-];
 
 function formatTime(hours: number, minutes: number): string {
     const h = hours.toString().padStart(2, '0');

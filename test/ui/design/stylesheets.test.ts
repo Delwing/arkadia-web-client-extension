@@ -28,6 +28,10 @@ const MIGRATED_SHEETS = [
     "src/web/StatPopup.css",
     "src/web/ZabiciPopup.css",
     "src/web/Zabici2Popup.css",
+    // Faza 3, rodzina 2 — swiat i czas.
+    "src/web/ClockPopup.css",
+    "src/web/RoomInfoPopup.css",
+    "src/web/WorldTimePopup.css",
     // Faza 4 — powloka ustawien i pierwsze strony.
     "src/web/settings/settingsDialog.css",
     "src/web/options/guildsSettings.css",

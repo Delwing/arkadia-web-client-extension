@@ -49,14 +49,14 @@ function formatOffset(minutes: number): string {
     return `${sign}${Math.abs(minutes)} min`;
 }
 
-const labelStyle: React.CSSProperties = { color: 'var(--popup-text-subtle)' };
+const labelStyle: React.CSSProperties = { color: 'var(--ark-text-secondary)' };
 const sectionStyle: React.CSSProperties = {
     marginBottom: 10,
     paddingBottom: 8,
-    borderBottom: '1px solid var(--popup-border-control)',
+    borderBottom: '1px solid var(--ark-border-element)',
 };
 const headingStyle: React.CSSProperties = {
-    color: 'var(--popup-text-subtle)',
+    color: 'var(--ark-text-secondary)',
     textTransform: 'uppercase',
     fontSize: 10,
     letterSpacing: 1,
@@ -219,7 +219,7 @@ const SunCalcPopup: React.FC = () => {
                 fontFamily: 'monospace',
                 fontSize: 12,
                 padding: 8,
-                color: 'var(--popup-text)',
+                color: 'var(--ark-text)',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
@@ -284,7 +284,7 @@ const CandidateTable: React.FC<{ forecast: GeheimnisnachtForecast }> = ({ foreca
                     <tr
                         key={cycle.cycle}
                         style={{
-                            color: isWinner ? 'var(--popup-text)' : 'var(--popup-text-subtle)',
+                            color: isWinner ? 'var(--ark-text)' : 'var(--ark-text-secondary)',
                             fontWeight: isWinner ? 'bold' : 'normal',
                         }}
                     >

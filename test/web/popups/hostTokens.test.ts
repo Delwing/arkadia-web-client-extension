@@ -147,6 +147,9 @@ describe("popup stylesheet ordering", () => {
         expect(manifestSheets).toEqual(
             [
                 "src/web/CechyPopup.css",
+                "src/web/ClockPopup.css",
+                "src/web/RoomInfoPopup.css",
+                "src/web/WorldTimePopup.css",
                 "src/web/CombatPopup.css",
                 "src/web/CombatStatusPopup.css",
                 "src/web/EnemyResistancesPopup.css",

@@ -1,0 +1,172 @@
+/* ============================================================================
+   Zegar (popup:clock) — delta nad warstwa 2 (.popup-btn, .popup-tab,
+   .popup-input). Faza 3, rodzina "swiat i czas".
+   ============================================================================
+
+   Arkusz wjezdza przez manifest src/web/popups/popups.css, NIE przez import w
+   komponencie — patrz naglowek manifestu.
+
+   Dwie klasy nie sa czystym przepisaniem zmiennych i to jest swiadome:
+   .clock-daylight siedzialo na --popup-warning, a .clock-night na
+   --popup-accent. Dzien i noc niczego nie stopniuja, wiec nie sa statusem ani
+   akcentem — to para kategoryczna i idzie na palete danych, ta sama, ktora
+   maluje slonce i ksiezyc w Kalendarzu i w Czasie (src/web/popups/worldPalette.ts).
+   ========================================================================== */
+
+/* Clock Window - size overrides */
+.clock-window {
+  --fw-width: 480px;
+}
+
+.clock-window-body {
+  padding: 1rem 1.25rem 1.35rem;
+}
+
+.clock-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* clock tab buttons folded to .popup-tab (container .clock-tabs kept above). */
+
+.clock-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.clock-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--ark-text-tertiary);
+  font-size: 0.925rem;
+}
+
+.clock-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.clock-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.875rem;
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.375rem;
+  font-size: 0.925rem;
+}
+
+.clock-detail-label {
+  font-weight: 500;
+  color: var(--ark-text-secondary);
+}
+
+.clock-detail-value {
+  font-weight: 600;
+  color: var(--ark-text);
+  text-align: right;
+}
+
+.clock-time {
+  font-size: 1.1rem;
+  font-family: 'Courier New', monospace;
+  color: var(--ark-accent-text);
+}
+
+.clock-precision {
+  font-size: 0.85rem;
+  color: var(--ark-text-tertiary);
+  margin-left: 0.5rem;
+}
+
+/* sun/moon, not warning/accent — see the header */
+.clock-daylight {
+  color: var(--ark-data-4-text);
+}
+
+.clock-night {
+  color: var(--ark-data-1-text);
+}
+
+.clock-detail-separator {
+  height: 1px;
+  background-color: var(--ark-border-subtle);
+  margin: 0.25rem 0;
+}
+
+/* = .popup-btn (+ .popup-btn--primary when active) + spacing delta */
+.clock-header-toggle {
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+.clock-header-toggle:hover {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
+}
+
+/* .clock-header-toggle--active + :hover folded to .popup-btn--primary */
+
+.clock-set-time-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.clock-set-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.875rem;
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.375rem;
+  font-size: 0.925rem;
+}
+
+.clock-set-time-row--action {
+  justify-content: flex-end;
+}
+
+/* input/select base = .popup-input; keep the numeric-field deltas + option colour */
+.clock-set-time-input {
+  width: 5rem;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.clock-set-time-select option {
+  background-color: var(--ark-bg-sunken);
+  color: var(--ark-text);
+}
+
+.clock-set-time-colon {
+  color: var(--ark-text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.clock-set-time-toggle {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.25rem;
+  background-color: transparent;
+  color: var(--ark-text-tertiary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.clock-set-time-toggle:hover {
+  color: var(--ark-text-secondary);
+  border-color: var(--ark-border-element);
+}
+
+.clock-set-time-toggle--active {
+  background-color: var(--ark-accent-bg-hover);
+  color: var(--ark-accent-text);
+  border-color: var(--ark-accent-border);
+}
+
+/* set-time button = .popup-btn.popup-btn--md.popup-btn--primary (folded) */
