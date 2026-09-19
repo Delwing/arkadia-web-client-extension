@@ -251,3 +251,12 @@ body {
     border: 1px solid var(--ark-border-strong);
     background: var(--ark-bg-element);
 }
+
+/* The table specimen needs a bounded height for the sticky header to have
+   something to stick against. */
+.sc-table-demo {
+  max-height: 200px;
+  width: 100%;
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}

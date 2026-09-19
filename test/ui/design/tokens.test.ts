@@ -82,6 +82,7 @@ describe("primitive stylesheets", () => {
         "select",
         "spinner",
         "switch",
+        "table",
         "tabs",
         "toggle",
         "tooltip",

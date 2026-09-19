@@ -28,6 +28,11 @@ import {
     Select,
     Spinner,
     Switch,
+    Table,
+    TableCell,
+    TableHeadCell,
+    TableRow,
+    TableScroll,
     TabPanel,
     Tabs,
     THEME_CATALOG,
@@ -71,6 +76,19 @@ const SEMANTIC_GROUPS: { title: string; tokens: string[] }[] = [
     {
         title: "Statusy",
         tokens: ["--ark-success-solid", "--ark-warning-solid", "--ark-danger-solid", "--ark-info-solid"],
+    },
+    {
+        // Numbered, not named: a slot's only promise is that it differs from
+        // the other slots. Anything that RANKS belongs in "Statusy" above.
+        title: "Dane (kategoryczne)",
+        tokens: [
+            "--ark-data-1-solid",
+            "--ark-data-2-solid",
+            "--ark-data-3-solid",
+            "--ark-data-4-solid",
+            "--ark-data-5-solid",
+            "--ark-data-6-solid",
+        ],
     },
 ];
 
@@ -331,6 +349,60 @@ export default function Showcase() {
                                 message="Zadna linia w tym logu nie pasuje do zapytania."
                                 action={<Button size="sm">Zresetuj filtry</Button>}
                             />
+                        </Specimen>
+                    </Section>
+
+                    <Section
+                        title="Tabela"
+                        note="Gesty raport: cyfry w monospace, naglowek zostaje na miejscu przy przewijaniu."
+                    >
+                        <Specimen label="table">
+                            <TableScroll className="sc-table-demo">
+                                <Table compact hoverable>
+                                    <thead>
+                                        <tr>
+                                            <TableHeadCell align="grow">Przeciwnik</TableHeadCell>
+                                            <TableHeadCell align="num">Zabici</TableHeadCell>
+                                            <TableHeadCell align="num">Sredni czas</TableHeadCell>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <TableRow section>
+                                            <TableCell colSpan={3}>Puszcza</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableHeadCell row align="grow">
+                                                dzik
+                                            </TableHeadCell>
+                                            <TableCell align="num">128</TableCell>
+                                            <TableCell align="num">0:42</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableHeadCell row align="grow">
+                                                wilk
+                                            </TableHeadCell>
+                                            <TableCell align="num">91</TableCell>
+                                            <TableCell align="num">1:05</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableHeadCell row align="grow">
+                                                zajac
+                                            </TableHeadCell>
+                                            <TableCell align="num" tone="muted">
+                                                0
+                                            </TableCell>
+                                            <TableCell align="num" tone="muted">
+                                                —
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow total>
+                                            <TableCell align="grow">Razem</TableCell>
+                                            <TableCell align="num">219</TableCell>
+                                            <TableCell align="num">0:51</TableCell>
+                                        </TableRow>
+                                    </tbody>
+                                </Table>
+                            </TableScroll>
                         </Specimen>
                     </Section>
 

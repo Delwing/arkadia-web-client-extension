@@ -1,0 +1,271 @@
+/* ============================================================================
+   Most w druga strone: paleta --popup-* hosta bez systemu projektowego
+   -> tokeny --ark-*.
+   ============================================================================
+
+   KRYTERIUM USUNIECIA: ten plik kasujemy w chwili, gdy forge-ui zacznie samo
+   wczytywac system projektowy. Sa to trzy linie w forge-ui:
+
+       import '@design/css/index.css';        // forge-ui/main.tsx
+       <body class="ark-root" data-ark-theme="forge">   // forge-ui/index.html
+       { id: 'forge', gray: 'sand', accent: 'bronze' }  // themes.config.mjs
+
+   Dopoki forge-ui jest poza zakresem redesignu, tego zrobic nie wolno - a bez
+   tego pliku kazdy zmigrowany popup gasnie w forge. Szczegoly nizej.
+
+   ---------------------------------------------------------------------------
+   Po co to jest
+
+   Plan fazy 3 (docs/dev/UI_MIGRATION.md) zaklada, ze popup czyta --popup-*,
+   wiec zamiana tych odczytow na --ark-* jest lokalna. Nie jest, bo popupy maja
+   DWA hosty:
+
+     - klient stockowy: src/web/main.ts -> popups.css, <body class="ark-root">,
+       wiec tokeny --ark-* sa zdefiniowane i wszystko dziala;
+     - forge-ui: forge-ui/main.tsx -> @web/popups/popups.css i TEN SAM
+       POPUP_CATALOG, ale bez .ark-root, bez data-ark-theme i bez
+       @design/css/index.css.
+
+   Zmigrowany popup w forge nie mial by wiec ani jednego tokenu --ark-*.
+   `background: var(--ark-bg-surface)` bez wartosci to deklaracja niewazna na
+   etapie wyliczania wartosci - czyli tlo znika, ramka znika, tekst zostaje
+   czarny na czarnym. Plan tego nie zauwazyl: jego ograniczenie (a) mowi tylko
+   o tym, ze forge konsumuje komponenty USTAWIEN.
+
+   ---------------------------------------------------------------------------
+   Jak to dziala
+
+   forge definiuje swoja palete na `.managed-panel, [data-popup-overlay]`
+   (forge-ui/layout-theme.css). Ten plik siedzi w tej samej warstwie i w tych
+   samych selektorach, tyle ze mapuje w druga strone: --popup-* -> --ark-*.
+   Efekt: popup w forge dostaje komplet tokenow systemu projektowego, ale
+   WYPELNIONYCH paleta forge - zostaje brazowy, nie robi sie niebieski.
+
+   `body:not(.ark-root)` jest krytyczne. Bez tego w kliencie stockowym mielismy
+   by cykl: most (themes/bridge.css) robi --popup-bg: var(--ark-bg-surface), a
+   ten plik --ark-bg-surface: var(--popup-bg). Cykl w custom properties
+   uniewaznia OBIE zmienne. Stockowy <body> ma .ark-root, wiec ten blok nigdy
+   tam nie startuje. Okna wyrwane (popup/index.html) kopiuja klasy <body>
+   z otwierajacego (src/shared/dom/mirrorDocumentStyles.ts), wiec dziedzicza
+   wlasciwa strone tego warunku.
+
+   ---------------------------------------------------------------------------
+   Czego tu nie ma
+
+   Palety kategorycznej --ark-data-*. forge stroi swoje --popup-data-* recznie
+   (stonowane, brazowe), a ten plik mapuje je 1:1 na sloty, zeby zmigrowany
+   popup dostal w forge dokladnie te barwy, co przed migracja.
+   ========================================================================== */
+
+/* Arkusze prymitywow. W kliencie stockowym przychodza juz przez
+   @design/css/index.css (main-theme.css) - tutaj ladujemy je drugi raz, bo
+   forge nie wczytuje tamtego wejscia. Reguly sa identyczne, wiec podwojne
+   wczytanie nic nie zmienia poza rozmiarem arkusza; znika razem z tym plikiem. */
+@import '../../ui/design/primitives/badge.css';
+@import '../../ui/design/primitives/button.css';
+@import '../../ui/design/primitives/callout.css';
+@import '../../ui/design/primitives/chip.css';
+@import '../../ui/design/primitives/layout.css';
+@import '../../ui/design/primitives/segmented.css';
+@import '../../ui/design/primitives/table.css';
+@import '../../ui/design/primitives/tabs.css';
+
+body:not(.ark-root) .managed-panel,
+body:not(.ark-root) [data-popup-overlay] {
+  /* --- powierzchnie ------------------------------------------------------ */
+  --ark-bg-app: var(--popup-bg);
+  --ark-bg-surface: var(--popup-bg);
+  --ark-bg-raised: var(--popup-section-bg);
+  --ark-bg-sunken: var(--popup-input-bg);
+  --ark-bg-overlay: var(--popup-section-bg);
+
+  /* --- elementy interaktywne --------------------------------------------- */
+  --ark-bg-element: var(--popup-control-bg);
+  --ark-bg-element-hover: var(--popup-control-hover-bg);
+  --ark-bg-element-active: var(--popup-control-active-bg);
+  --ark-bg-element-ghost-hover: var(--popup-hover-bg);
+  --ark-bg-selected: var(--popup-control-active-bg);
+  --ark-bg-selected-hover: var(--popup-control-pressed-bg);
+
+  /* --- ramki -------------------------------------------------------------- */
+  --ark-border-subtle: var(--popup-border-subtle);
+  --ark-border: var(--popup-border);
+  --ark-border-element: var(--popup-border-control);
+  --ark-border-strong: var(--popup-border-strong);
+
+  /* --- tekst -------------------------------------------------------------
+     Stara warstwa ma osiem odcieni, system projektowy piec rol. Ten sam podzial
+     co w themes/bridge.css, tyle ze czytany od konca. */
+  --ark-text: var(--popup-text);
+  --ark-text-secondary: var(--popup-text-subtle);
+  --ark-text-tertiary: var(--popup-text-dim);
+  --ark-text-faint: var(--popup-text-faint);
+  --ark-text-disabled: var(--popup-text-faint);
+
+  /* --- akcent ------------------------------------------------------------- */
+  --ark-accent-bg: var(--popup-accent-subtle-bg);
+  --ark-accent-bg-hover: var(--popup-accent-bg);
+  --ark-accent-bg-active: var(--popup-accent-hover-bg);
+  --ark-accent-border: var(--popup-accent-border);
+  --ark-accent-border-strong: var(--popup-accent-border);
+  --ark-accent-solid: var(--popup-accent);
+  --ark-accent-solid-hover: var(--popup-accent);
+  --ark-accent-text: var(--popup-accent);
+  --ark-accent-text-strong: var(--popup-accent);
+  /* Tekst NA wypelnieniu akcentu. Stara warstwa nie zna pojecia "kontrast do
+     wypelnienia" (patrz ten sam brak w themes/bridge.css), a --popup-accent to
+     w forge braz - czyli wypelnienie jest ciemne i bialy tekst na nim dziala. */
+  --ark-accent-contrast: #fff;
+  --ark-accent-tint: var(--popup-accent-dim-bg);
+  --ark-accent-tint-strong: var(--popup-accent-strong-bg);
+  --ark-accent-wash: var(--popup-accent-hover-bg);
+
+  /* --- fokus -------------------------------------------------------------- */
+  --ark-focus-ring: var(--popup-input-focus-border);
+
+  /* --- statusy ------------------------------------------------------------ */
+  --ark-success-bg: var(--popup-success-bg);
+  --ark-success-border: var(--popup-success-border);
+  --ark-success-solid: var(--popup-success);
+  --ark-success-text: var(--popup-success-light);
+  --ark-success-4: var(--popup-success-hover-bg);
+
+  --ark-warning-bg: var(--popup-warning-bg);
+  --ark-warning-border: var(--popup-warning-border);
+  --ark-warning-solid: var(--popup-warning);
+  --ark-warning-text: var(--popup-warning-light);
+  --ark-warning-4: var(--popup-warning-hover-bg);
+
+  --ark-danger-bg: var(--popup-danger-bg);
+  --ark-danger-bg-hover: var(--popup-danger-hover-bg);
+  --ark-danger-border: var(--popup-danger-border);
+  --ark-danger-solid: var(--popup-danger);
+  --ark-danger-solid-hover: var(--popup-danger);
+  --ark-danger-text: var(--popup-danger-light);
+
+  --ark-info-bg: var(--popup-accent-subtle-bg);
+  --ark-info-border: var(--popup-accent-border);
+  --ark-info-solid: var(--popup-accent);
+  --ark-info-text: var(--popup-accent);
+
+  --ark-success-contrast: #fff;
+  --ark-warning-contrast: #fff;
+  --ark-danger-contrast: #fff;
+  --ark-info-contrast: #fff;
+
+  /* --- paleta kategoryczna ------------------------------------------------
+     Sloty ida na te same barwy, ktore forge stroil recznie jako --popup-data-*,
+     wiec zmigrowany popup wyglada w forge tak samo jak przed migracja.
+     Kolejnosc slotow: 1 indigo, 2 cyan, 3 jade, 4 bronze, 5 plum, 6 pink
+     (src/ui/design/themes/themes.config.mjs). */
+  --ark-data-1-text: var(--popup-data-blue);
+  --ark-data-1-solid: var(--popup-data-blue);
+  --ark-data-1-border: var(--popup-data-blue);
+  --ark-data-1-bg: var(--popup-accent-dim-bg);
+
+  --ark-data-2-text: var(--popup-data-purple-light);
+  --ark-data-2-solid: var(--popup-data-purple-light);
+  --ark-data-2-border: var(--popup-data-purple-light);
+  --ark-data-2-bg: var(--popup-accent-dim-bg);
+
+  --ark-data-3-text: var(--popup-data-green-light);
+  --ark-data-3-solid: var(--popup-data-green-light);
+  --ark-data-3-border: var(--popup-data-green-light);
+  --ark-data-3-bg: var(--popup-accent-dim-bg);
+
+  --ark-data-4-text: var(--popup-data-gold);
+  --ark-data-4-solid: var(--popup-data-gold);
+  --ark-data-4-border: var(--popup-data-gold);
+  --ark-data-4-bg: var(--popup-accent-dim-bg);
+
+  --ark-data-5-text: var(--popup-data-purple);
+  --ark-data-5-solid: var(--popup-data-purple);
+  --ark-data-5-border: var(--popup-data-purple);
+  --ark-data-5-bg: var(--popup-accent-dim-bg);
+
+  --ark-data-6-text: var(--popup-data-pink);
+  --ark-data-6-solid: var(--popup-data-pink);
+  --ark-data-6-border: var(--popup-data-pink);
+  --ark-data-6-bg: var(--popup-accent-dim-bg);
+
+  --ark-data-muted: var(--popup-data-gray);
+
+  --ark-gray-a2: var(--popup-subtle-bg);
+  --ark-gray-a3: var(--popup-hover-bg);
+  --ark-gray-a9: var(--popup-border-stronger);
+
+  /* --- rampy nie-barwne ---------------------------------------------------
+     Metryka, nie paleta: te same wartosci co w src/ui/design/css/tokens.css.
+     Stara warstwa nie ma dla nich odpowiednika, a kazdy prymityw ich uzywa.
+     Powtorzenia pilnuje test test/web/popups/hostTokens.test.ts - porownuje te
+     deklaracje z tokens.css i wywala sie, gdy ktoras ucieknie. */
+  --ark-font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ark-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+
+  --ark-text-1: 11px;
+  --ark-text-2: 11.5px;
+  --ark-text-3: 12px;
+  --ark-text-4: 12.5px;
+  --ark-text-5: 13px;
+  --ark-text-6: 13.5px;
+  --ark-text-7: 16px;
+  --ark-text-8: 20px;
+
+  --ark-weight-regular: 400;
+  --ark-weight-medium: 500;
+  --ark-weight-semibold: 600;
+
+  --ark-leading-tight: 1.25;
+  --ark-leading-normal: 1.5;
+  --ark-leading-log-compact: 21px;
+  --ark-leading-log-comfortable: 26px;
+
+  --ark-tracking-wide: 0.06em;
+  --ark-tracking-eyebrow: 0.08em;
+
+  --ark-space-1: 2px;
+  --ark-space-2: 4px;
+  --ark-space-3: 6px;
+  --ark-space-4: 8px;
+  --ark-space-5: 10px;
+  --ark-space-6: 12px;
+  --ark-space-7: 14px;
+  --ark-space-8: 16px;
+  --ark-space-9: 20px;
+  --ark-space-10: 24px;
+  --ark-space-11: 32px;
+  --ark-space-12: 48px;
+
+  --ark-radius-1: 3px;
+  --ark-radius-2: 4px;
+  --ark-radius-3: 6px;
+  --ark-radius-4: 8px;
+  --ark-radius-5: 10px;
+  --ark-radius-full: 999px;
+
+  --ark-control-xs: 24px;
+  --ark-control-sm: 26px;
+  --ark-control-md: 28px;
+  --ark-control-lg: 32px;
+  --ark-control-xl: 34px;
+
+  --ark-duration-1: 80ms;
+  --ark-duration-2: 140ms;
+  --ark-duration-3: 220ms;
+  --ark-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --ark-z-sticky: 1;
+  --ark-z-overlay: 100;
+  --ark-z-dialog: 101;
+  --ark-z-popover: 200;
+  --ark-z-tooltip: 300;
+
+  /* Cienie: w systemie projektowym stoja na --ark-black-a*, ktore pochodza z
+     wygenerowanych skal. Tutaj wprost, bo forge tamtego pliku nie wczytuje.
+     Te same krycia, zapisane jako rgba - forge jest motywem ciemnym, wiec
+     wariant dla motywow jasnych nie jest potrzebny. */
+  --ark-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --ark-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --ark-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --ark-shadow-4: 0 24px 80px rgba(0, 0, 0, 0.7);
+}

@@ -36,6 +36,11 @@
  * MIGRATION: popups are consolidated here out of style.css; bespoke button /
  * list / item classes are folded into the shared primitives above.
  */
+/* Tokeny --ark-* dla hostow bez systemu projektowego (forge-ui). MUSI stac
+   przed regulami - @import jest wazny tylko na poczatku arkusza. Patrz naglowek
+   tego pliku: kasujemy go, gdy forge-ui zacznie wczytywac @design samo. */
+@import './popup-host-tokens.css';
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SHARED POPUP PRIMITIVES (Layer 2)
