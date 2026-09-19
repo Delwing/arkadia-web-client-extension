@@ -668,6 +668,36 @@
   border-radius: var(--ark-radius-2);
 }
 
+/* The collect-overrides table: one row per enemy, with a chip list of extra
+   items that has to wrap inside its cell. */
+.settings-overrides__extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-2);
+}
+
+.settings-overrides__add {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-2);
+}
+
+.settings-overrides__add .ark-input {
+  width: 100%;
+  min-width: 6rem;
+  max-width: 12rem;
+}
+
+.settings-overrides__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+  width: 100%;
+}
+
 .settings-stack--tight {
   gap: var(--ark-space-4);
 }
