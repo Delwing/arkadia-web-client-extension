@@ -18,7 +18,7 @@ async function openBindsModal(page: Page): Promise<void> {
         return !el || window.getComputedStyle(el).display === 'none';
     });
     await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal.show', {timeout: 5000});
+    await expect(page.locator('#binds-modal'), 'binds window should open').toBeVisible({timeout: 5000});
     await keymapDropdown(page).waitFor({timeout: 5000});
     // Wait for the open animation to finish so modal.hide() won't be silently ignored
     await page.waitForFunction(() => {
@@ -29,7 +29,7 @@ async function openBindsModal(page: Page): Promise<void> {
 
 async function closeBindsModal(page: Page): Promise<void> {
     await dialogClose(page.locator('#binds-modal')).first().click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await expect(page.locator('#binds-modal'), 'binds window should close').not.toBeVisible({timeout: 5000});
 }
 
 async function login(page: Page): Promise<void> {

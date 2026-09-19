@@ -13,7 +13,7 @@ async function login(page: Page): Promise<void> {
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+    await expect(page.locator('#logs-modal'), 'logs window should open').toBeVisible({timeout: 5000});
 }
 
 /** Pushes `count` filler lines, each long enough to wrap in the preview on some rows. */

@@ -17,18 +17,18 @@ import {dialogClose} from './support/dialogs';
 async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal.show', {timeout: 5000});
+    await expect(page.locator('#binds-modal'), 'binds window should open').toBeVisible({timeout: 5000});
     await page.locator('#binds-modal').getByRole('combobox').first().waitFor({timeout: 5000});
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
     await dialogClose(page.locator('#binds-modal')).first().click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await expect(page.locator('#binds-modal'), 'binds window should close').not.toBeVisible({timeout: 5000});
 }
 
 async function saveAndCloseBindsModal(page: Page): Promise<void> {
     await page.locator('#binds-modal button:has-text("Zapisz")').click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await expect(page.locator('#binds-modal'), 'binds window should close').not.toBeVisible({timeout: 5000});
 }
 
 // ---------------------------------------------------------------------------

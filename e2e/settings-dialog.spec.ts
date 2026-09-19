@@ -89,8 +89,7 @@ test.describe('Settings dialog', () => {
 
         await search.press('Escape');
         await expect(search, 'Escape clears the query').toHaveValue('');
-        await expect(modal, 'Escape in a non-empty search does not close the dialog').toHaveClass(/\bshow\b/);
-        await expect(modal).toBeVisible();
+        await expect(modal, 'Escape in a non-empty search does not close the dialog').toBeVisible();
         await expect(settingsPage(page, 'ui-appearance'), 'back on the page that was open').toBeVisible();
         await expect(settingsPage(page, 'ui-map')).toBeHidden();
         await expect(modal.locator('#ui-map-scale')).toBeHidden();

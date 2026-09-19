@@ -36,7 +36,7 @@ export async function waitForSettingsModalClosed(page: Page) {
 
 /** Waits for the open animation, so a following hide() is not silently ignored. */
 export async function waitForSettingsModalShown(page: Page) {
-    await page.waitForSelector('#settings-modal.show', {timeout: 5000});
+    await expect(page.locator(SETTINGS_MODAL), 'settings modal should open').toBeVisible({timeout: 5000});
     // The dialog fades in; until that has settled the framework treats it as
     // still opening and drops a hide() on the floor.
     await page.waitForFunction(() => {

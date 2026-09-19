@@ -20,12 +20,12 @@ async function login(page: Page, name: string): Promise<void> {
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+    await expect(page.locator('#logs-modal'), 'logs window should open').toBeVisible({timeout: 5000});
 }
 
 async function closeLogs(page: Page): Promise<void> {
     await dialogClose(page.locator('#logs-modal')).click();
-    await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
+    await expect(page.locator('#logs-modal'), 'logs window should close').not.toBeVisible({timeout: 5000});
 }
 
 const sessionOptions = (page: Page) => page.locator('#logs-session-select option');
