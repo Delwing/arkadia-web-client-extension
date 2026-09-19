@@ -239,6 +239,23 @@ line, and all four exports work on what is visible, which is what makes
 A range belongs to the session it was drawn on, so switching sessions clears it
 and it is never persisted.
 
+**Its rows wrap below 1150px, and only below it.** The header, the search bar
+and the status bar carry more controls than fit a small window, and the client
+hosts the viewer in a dialog that clips its overflow — so what falls off the
+right edge is not decoration, it is the close control and the search scope.
+Wrapping is gated on a width rather than simply left on because flexbox wraps
+on the *hypothetical* size, before anything shrinks: always-on, these rows
+take a second line at 1240px too, where they fit perfectly well. The channel
+bar is the exception and wraps unconditionally — eight chips squeezed to width
+clip their counts.
+
+The gate is a viewport `@media`, which is a proxy, not the real question: the
+viewer should respond to *its box*. It happens to be a good proxy for both
+hosts today (the standalone page fills the viewport, and the in-client dialog
+is `min(1240px, 100vw - 48px)` wide). A host that gave the viewer a narrow box
+inside a wide window would not get the wrapping, and would want a container
+query instead.
+
 **Shortcuts are scoped to the viewer's subtree**, never to `window`: a modal
 that listens globally steals keys from the game input.
 
