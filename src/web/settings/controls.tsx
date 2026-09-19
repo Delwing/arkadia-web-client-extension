@@ -13,9 +13,10 @@ import { Button, Checkbox } from "@design";
  * Shape notes, because two of them are deliberate departures:
  *
  * - The checkbox is Radix (`@design`'s `Checkbox`), which renders a <button>,
- *   not an <input>. A native <label for> cannot activate a button, so the label
- *   carries its own click handler; `id`/`htmlFor` stay for the e2e selectors.
- *   `settingsDirty.ts` knows how to read it — see the note there.
+ *   not an <input>. <button> is a labelable element, so a plain <label for>
+ *   still activates it and the label needs no click handler of its own — adding
+ *   one toggles twice and the checkbox appears not to react at all.
+ *   `settingsDirty.ts` reads its state off `data-state` — see the note there.
  * - `<select>` and `<input type="color">` stay native. The design system's
  *   `Select` is a Radix listbox with no <optgroup> and no `selectOption()` for
  *   the e2e suite, and there is no colour-picker primitive at all. Both are
@@ -74,11 +75,7 @@ export function CheckboxField({ id, label, checked, onChange, disabled, labelExt
     return (
         <div className="settings-check">
             <Checkbox id={id} checked={checked} onCheckedChange={onChange} disabled={disabled} />
-            <label
-                className="settings-check__label"
-                htmlFor={id}
-                onClick={() => { if (!disabled) onChange(!checked); }}
-            >
+            <label className="settings-check__label" htmlFor={id}>
                 {label}{labelExtra}
             </label>
         </div>

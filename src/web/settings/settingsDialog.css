@@ -281,9 +281,8 @@
   font-size: var(--ark-text-3);
 }
 
-/* Checkbox + its label. The label is a real <label for>, so e2e selectors and
-   the browser's own hit target both still work, but the click is handled in
-   controls.tsx: the Radix checkbox is a <button>, which `for` cannot activate. */
+/* Checkbox + its label. A plain <label for>: <button> is labelable, so the
+   browser forwards the activation to the Radix checkbox by itself. */
 .settings-check {
   display: flex;
   align-items: center;
