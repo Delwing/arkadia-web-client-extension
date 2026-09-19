@@ -23,6 +23,13 @@ import {
 import {chromeSettingsKeys} from "@shared/settingsDefaults";
 import {loadLayoutState} from "@web/layout";
 import {applyCustomTheme, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
+import {
+    applyTheme as applyArkThemeTo,
+    CUSTOM_THEME_ID,
+    DEFAULT_THEME as DEFAULT_ARK_THEME,
+    removeCustomTheme as removeArkCustomTheme,
+    type ThemeId as ArkThemeId,
+} from "@design/themes/theme.ts";
 
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapHighlightShape, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
@@ -226,6 +233,57 @@ export function resolveOutputFontFamily(selection: UiFontSelection, customFontFa
     }
 }
 
+/**
+ * Stary wybor motywu -> motyw systemu projektowego.
+ *
+ * Mapowanie jest 1:1 z dwiema zmianami nazwy ("light-" nie niesie tu zadnej
+ * informacji, bo o jasnosci mowi juz sam motyw), a "default" - czyli brak
+ * klasy na <body> - to w nowym systemie nazwany motyw "arkadia".
+ *
+ * Record<ColorTheme, ...> jest tu celowo: dolozenie kolejnego motywu do
+ * ColorTheme bez wpisu w tej tablicy nie przejdzie kompilacji.
+ */
+const ARK_THEME_BY_COLOR_THEME: Record<ColorTheme, ArkThemeId> = {
+    'default': 'arkadia',
+    'dark-neutral': 'dark-neutral',
+    'fantasy': 'fantasy',
+    'forest': 'forest',
+    'icy': 'icy',
+    'gray': 'gray',
+    'light-parchment': 'parchment',
+    'light-silver': 'silver',
+    'custom-dark': CUSTOM_THEME_ID,
+};
+
+/**
+ * Motyw-dawca dla koloru wlasnego.
+ *
+ * Blok generowany dla motywu "custom" rozwija z jednego ziarna tylko rampe
+ * szarosci i akcentu. Barwy statusow (--ark-success-*, --ark-warning-*,
+ * --ark-danger-*, --ark-info-*) oraz przezroczyste czernie i biele siedza w
+ * blokach motywow wbudowanych, wiec przy samym "custom" nie rozwiazalyby sie
+ * wcale - kazdy status zniknal by z ekranu. Dlatego przy kolorze wlasnym
+ * kladziemy gotowy motyw na <html>: <body> nadpisuje z niego to, co blok
+ * "custom" faktycznie definiuje, a reszta spokojnie sie dziedziczy.
+ */
+const ARK_CUSTOM_BASE: ArkThemeId = DEFAULT_ARK_THEME;
+
+/**
+ * Ustawia data-ark-theme obok starej klasy theme-*. Stara warstwa zostaje -
+ * most (src/web/themes/bridge.css) przejmuje z niej tylko zmienne rolowe.
+ */
+function applyArkTheme(colorTheme: ColorTheme, customColor?: string): void {
+    const theme = ARK_THEME_BY_COLOR_THEME[colorTheme] ?? DEFAULT_ARK_THEME;
+    if (theme === CUSTOM_THEME_ID && customColor) {
+        document.documentElement.setAttribute('data-ark-theme', ARK_CUSTOM_BASE);
+        applyArkThemeTo(document.body, { theme: CUSTOM_THEME_ID, customColor });
+        return;
+    }
+    document.documentElement.removeAttribute('data-ark-theme');
+    removeArkCustomTheme();
+    applyArkThemeTo(document.body, { theme: theme === CUSTOM_THEME_ID ? DEFAULT_ARK_THEME : theme });
+}
+
 /** Ids that are also real DOM ids of stock chips, and safe inside a selector. */
 const STOCK_CHIP_ID = /^[A-Za-z0-9_-]+$/;
 
@@ -279,6 +337,7 @@ export function apply(settings: UiSettings) {
         } else if (settings.colorTheme && settings.colorTheme !== 'default') {
             document.body.classList.add(`theme-${settings.colorTheme}`);
         }
+        applyArkTheme(settings.colorTheme, settings.customThemeColor);
     }
     // Set CSS custom properties for font settings (used by chat popup and other components)
     if (document.body) {
