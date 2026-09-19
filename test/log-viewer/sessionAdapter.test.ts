@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { entriesToLines, sessionStartFromName } from "../../log-viewer/sessionAdapter";
+import { beforeEach, describe, expect, it } from "vitest";
+import { entriesToLines, loadSession, sessionStartFromName } from "../../log-viewer/sessionAdapter";
+import { upgradeLogsDb } from "@web/logsDatabase";
 
 describe("sessionStartFromName", () => {
     it("reads the timestamp out of a session store name", () => {
@@ -78,5 +79,80 @@ describe("entriesToLines", () => {
     it("finds no marks in a log recorded before the client stamped them", () => {
         const { marks } = entriesToLines([{ text: "Rynek", type: "room.short", timestamp: 1 }]);
         expect(marks).toEqual([]);
+    });
+});
+
+describe("loadSession", () => {
+    const STORE = "session_1758304931000";
+
+    interface Entry {
+        text: string;
+        type?: string;
+        timestamp: number;
+        character?: string;
+    }
+
+    /** Writes one session's records and hands back the open database. */
+    async function store(entries: Entry[]): Promise<IDBDatabase> {
+        const db = await upgradeLogsDb((upgrading) => {
+            if (!upgrading.objectStoreNames.contains(STORE)) upgrading.createObjectStore(STORE, { autoIncrement: true });
+        });
+        const tx = db.transaction(STORE, "readwrite");
+        entries.forEach((entry) => tx.objectStore(STORE).add(entry));
+        await new Promise<void>((resolve) => {
+            tx.oncomplete = () => resolve();
+        });
+        return db;
+    }
+
+    beforeEach(async () => {
+        localStorage.clear();
+        await new Promise<void>((resolve) => {
+            const request = indexedDB.deleteDatabase("ArkadiaMessagesDB");
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+            request.onblocked = () => resolve();
+        });
+    });
+
+    it("takes the stamped names over the banner, in order", async () => {
+        const db = await store([
+            { text: "Witaj, Dargocie. Podaj swe haslo:", type: "system.login", timestamp: 1000 },
+            { text: "Rynek w Bandzie", type: "room.short", timestamp: 2000, character: "dargoth" },
+            { text: "Witaj, Kethro. Podaj swe haslo:", type: "system.login", timestamp: 3000 },
+            { text: "Trakt", type: "room.short", timestamp: 4000, character: "kethra" },
+        ]);
+        const session = (await loadSession(db, STORE))!;
+        db.close();
+
+        expect(session.characters).toEqual(["Dargoth", "Kethra"]);
+        // Each name reaches back onto the login that produced it.
+        expect(session.lines.map((line) => line.character)).toEqual(["Dargoth", "Dargoth", "Kethra", "Kethra"]);
+    });
+
+    it("reads an old log's banner against the characters on this device", async () => {
+        localStorage.setItem("Kethra:settings", "{}");
+        localStorage.setItem("Dorn:settings", "{}");
+        const db = await store([
+            { text: "Witaj, Kethro. Podaj swe haslo:", type: "system.login", timestamp: 1000 },
+            { text: "Rynek w Bandzie", type: "room.short", timestamp: 2000 },
+        ]);
+        const session = (await loadSession(db, STORE))!;
+        db.close();
+
+        expect(session.characters).toEqual(["Kethra"]);
+    });
+
+    it("leaves a session no candidate explains without a character", async () => {
+        localStorage.setItem("Dorn:settings", "{}");
+        const db = await store([
+            { text: "Witaj, Dargocie. Podaj swe haslo:", type: "system.login", timestamp: 1000 },
+            { text: "Rynek w Bandzie", type: "room.short", timestamp: 2000 },
+        ]);
+        const session = (await loadSession(db, STORE))!;
+        db.close();
+
+        expect(session.characters).toEqual([]);
+        expect(session.lines.every((line) => line.character === undefined)).toBe(true);
     });
 });
