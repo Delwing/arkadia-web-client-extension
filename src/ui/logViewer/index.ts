@@ -12,6 +12,16 @@ export type { LogViewerProps } from "./LogViewer";
 export { CHANNEL_META, CHANNELS, allChannelsOn, channelForType } from "./model/channels";
 export type { Channel, ChannelFilter } from "./model/channels";
 
+export {
+    attributeCharacters,
+    charactersLabel,
+    findBannerMarks,
+    loginBannerToken,
+    matchCharacter,
+    titleCase,
+} from "./model/characters";
+export type { Attribution, CharacterMark } from "./model/characters";
+
 export { LOG_EVENT_KINDS, LOG_EVENT_META, detectEvent } from "./model/events";
 export type { LogEventKind } from "./model/events";
 

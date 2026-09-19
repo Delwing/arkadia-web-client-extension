@@ -23,7 +23,7 @@ function line(number: number, text: string, channel: LogLine["channel"] = "syste
 function session(id: string, lines: LogLine[], extra: Partial<LogSession> = {}): LogSession {
     return {
         id,
-        character: id,
+        characters: [id],
         dayLabel: "Dzisiaj",
         dateLabel: "sob 19 wrz 2026",
         startedAt: lines[0]?.timestamp ?? T0,
@@ -43,7 +43,7 @@ const sessionA = session("a", [
 ]);
 
 const sessionB = session("b", [line(1, "inny troll", "combat"), line(2, "nic tu nie ma", "room")], {
-    character: "Dorn",
+    characters: ["Dorn"],
 });
 
 function state(overrides: Partial<ViewerState> = {}): ViewerState {
@@ -292,6 +292,40 @@ describe("stepMatch, all-logs scope", () => {
         // -1 is the agreed "last match" sentinel; deriveView normalises it.
         expect(result.matchIndex).toBe(-1);
         expect(result.notice).toContain("Powrot");
+    });
+
+    it("names the character playing where the jump lands, not the whole list", () => {
+        // The sub-line does not wrap, so a session spanning three characters
+        // still gets one name: the one on the match being jumped to.
+        const twoChars = session(
+            "c",
+            [
+                { ...line(1, "troll na poczatku", "combat"), character: "Dargoth" },
+                { ...line(2, "troll na koncu", "combat"), character: "Kethra" },
+            ],
+            { dayLabel: "Wczoraj" },
+        );
+        const order = [sessionA, twoChars];
+
+        const forward = state({ query: "troll", scope: "all", matchIndex: 2 });
+        expect(stepMatch(1, forward, deriveView(order, forward), order)!.notice).toBe(
+            "Dalej w: Dargoth, Wczoraj",
+        );
+
+        // Backwards the jump lands on that session's LAST match, so it is the
+        // character playing there that gets named.
+        const back = state({ sessionId: "a", query: "troll", scope: "all", matchIndex: 0 });
+        expect(stepMatch(-1, back, deriveView(order, back), order)!.notice).toBe("Powrot do: Kethra, Wczoraj");
+    });
+
+    it("says only the day for a session whose character is not known", () => {
+        const unnamed = session("c", [line(1, "troll bez imienia", "combat")], {
+            characters: [],
+            dayLabel: "Wczoraj",
+        });
+        const order = [sessionA, unnamed];
+        const current = state({ query: "troll", scope: "all", matchIndex: 2 });
+        expect(stepMatch(1, current, deriveView(order, current), order)!.notice).toBe("Dalej w: Wczoraj");
     });
 
     it("skips sessions that have no matches", () => {

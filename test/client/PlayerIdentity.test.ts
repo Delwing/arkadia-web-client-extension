@@ -63,6 +63,37 @@ describe('PlayerIdentity', () => {
     localStorage.clear();
   });
 
+  describe('the name it announces', () => {
+    const names = () => {
+      const seen: string[] = [];
+      client.on('player.character', (name: string) => { seen.push(name); });
+      return seen;
+    };
+
+    test('names the character a login let in', () => {
+      const seen = names();
+      login(101, 'dargoth');
+      expect(seen).toEqual(['dargoth']);
+    });
+
+    test('names the second character of a switch over one connection', () => {
+      const seen = names();
+      login(101, 'dargoth');
+      client.sendEvent('gmcp.char.info', { name: 'kethra', object_num: 202 });
+      expect(seen).toEqual(['dargoth', 'kethra']);
+    });
+
+    test('says nothing for a change of body', async () => {
+      // A przeobrazenie must not reach the log looking like a relogin.
+      const seen = names();
+      login(101, 'dargoth');
+      client.line(TRANSFORM_LINE);
+      client.sendEvent('gmcp.char.info', { name: 'dargoth', object_num: 512 });
+      await settle();
+      expect(seen).toEqual(['dargoth']);
+    });
+  });
+
   test('publishes the id the session logs in with', () => {
     login(101);
     expect(identity.num).toBe(101);

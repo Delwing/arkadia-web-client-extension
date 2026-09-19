@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Icon, IconButton } from "@design";
 import { LOG_EVENT_KINDS, LOG_EVENT_META } from "../model/events";
 import { formatAxisLabel, formatClock, formatDuration, pluralLines } from "../model/format";
@@ -45,6 +45,32 @@ export interface TimelineProps {
 
 /** Past this point a hover tooltip would run off the right edge, so it flips. */
 const TOOLTIP_FLIP_AT = 0.78;
+
+/** The same, in percent, for the name written next to a login marker. */
+const NAME_FLIP_AT = 78;
+
+/**
+ * Which login markers write the character's name next to them.
+ *
+ * Only where it says something: a session with one character has it in the
+ * header already, and a login prints several `system.login` lines in a row,
+ * which would stack the same name on top of itself. So the name goes on the
+ * first marker of each character — which is exactly where the switch is.
+ */
+function namedLogins(events: LogLine[]): Set<number> {
+    const first = new Set<number>();
+    const distinct = new Set<string>();
+    let previous: string | undefined;
+    for (const line of events) {
+        if (line.event !== "login") continue;
+        if (line.character && line.character !== previous) {
+            first.add(line.number);
+            distinct.add(line.character);
+        }
+        previous = line.character;
+    }
+    return distinct.size > 1 ? first : new Set();
+}
 
 /**
  * Movement, in pixels, that separates a click from a drag on the track.
@@ -93,6 +119,7 @@ export function Timeline({
     const ticks = buildMatchTicks(matchTimestamps, span);
     const axis = buildAxisTicks(span);
     const events = allLines.filter((line) => line.event);
+    const named = namedLogins(events);
     const box = viewport ? viewportBox(viewport.from, viewport.to, span) : null;
 
     const fractionFromEvent = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
@@ -326,20 +353,35 @@ export function Timeline({
                     <div className="lv-track__events">
                         {events.map((line) => {
                             const meta = LOG_EVENT_META[line.event!];
+                            const left = percentOf(line.timestamp, span);
+                            const flip = left > NAME_FLIP_AT;
                             return (
-                                <button
-                                    key={`event-${line.number}`}
-                                    type="button"
-                                    className="lv-track__event"
-                                    style={{ left: `${percentOf(line.timestamp, span)}%`, color: meta.colorToken }}
-                                    title={`${meta.label} o ${formatClock(line.timestamp)}`}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        onJumpToTime(line.timestamp, "center");
-                                    }}
-                                >
-                                    {meta.glyph}
-                                </button>
+                                <Fragment key={`event-${line.number}`}>
+                                    <button
+                                        type="button"
+                                        className="lv-track__event"
+                                        style={{ left: `${left}%`, color: meta.colorToken }}
+                                        title={`${meta.label}${line.character ? `: ${line.character}` : ""} o ${formatClock(line.timestamp)}`}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onJumpToTime(line.timestamp, "center");
+                                        }}
+                                    >
+                                        {meta.glyph}
+                                    </button>
+                                    {named.has(line.number) ? (
+                                        <span
+                                            className="lv-track__event-name"
+                                            style={{
+                                                left: `${left}%`,
+                                                transform: flip ? "translateX(-100%)" : "none",
+                                                marginLeft: flip ? "-10px" : "10px",
+                                            }}
+                                        >
+                                            {line.character}
+                                        </span>
+                                    ) : null}
+                                </Fragment>
                             );
                         })}
                     </div>

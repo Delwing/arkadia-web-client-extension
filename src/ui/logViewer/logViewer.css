@@ -23,7 +23,6 @@
 
     --ark-log-event-login: var(--ark-gray-11);
     --ark-log-event-death: var(--ark-danger-11);
-    --ark-log-event-trait: var(--ark-success-11);
 
     --lv-sidebar-width: 288px;
     --lv-line-height: var(--ark-leading-log-compact);
@@ -442,6 +441,16 @@
     font-size: var(--ark-text-1);
     font-weight: var(--ark-weight-semibold);
     line-height: 17px;
+}
+
+.lv-track__event-name {
+    position: absolute;
+    top: 0;
+    color: var(--ark-text-tertiary);
+    font-size: var(--ark-text-1);
+    line-height: 17px;
+    white-space: nowrap;
+    pointer-events: none;
 }
 
 .lv-track__hairline {

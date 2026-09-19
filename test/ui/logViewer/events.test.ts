@@ -15,14 +15,11 @@ describe("detectEvent", () => {
         ).toBe("death");
     });
 
-    it("marks a trait advance", () => {
-        expect(detectEvent("Twoja sila osiagnela nadludzki poziom.", "system")).toBe("trait");
-        expect(detectEvent("Twoj refleks osiagnal nadludzki poziom.", "system")).toBe("trait");
-    });
-
     it("leaves ordinary lines alone", () => {
         expect(detectEvent("Atakujesz goblina!", "combat.avatar")).toBeUndefined();
         expect(detectEvent("Rynek w Bandzie", "room.short")).toBeUndefined();
+        // The trait advance used to be a marker of its own and is not one now.
+        expect(detectEvent("Twoja sila osiagnela nadludzki poziom.", "system")).toBeUndefined();
         // Near-misses matter: a line merely mentioning death is not a death.
         expect(detectEvent("Boisz sie smierci.", "system")).toBeUndefined();
     });
