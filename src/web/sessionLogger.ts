@@ -89,12 +89,12 @@ export default async function initSessionLogger(client: SessionClient) {
    * always saw.
    */
   let pendingCharacter: string | undefined;
+  let opening: Promise<IDBDatabase | null> | null = null;
+  let closeTimeout: number | null = null;
 
   eventBus.on('player.character', name => {
     if (name) pendingCharacter = name;
   });
-  let opening: Promise<IDBDatabase | null> | null = null;
-  let closeTimeout: number | null = null;
 
   function ensureDb(): Promise<IDBDatabase | null> {
     // Clear any pending close timeout
