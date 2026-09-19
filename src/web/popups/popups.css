@@ -32,6 +32,7 @@
 @import './popup-host-tokens.css';
 @import './popups-base.css';
 
+@import '../CarriagesPopup.css';
 @import '../CechyPopup.css';
 @import '../CombatPopup.css';
 @import '../CombatStatusPopup.css';

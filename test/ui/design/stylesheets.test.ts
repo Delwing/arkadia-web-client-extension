@@ -28,6 +28,8 @@ const MIGRATED_SHEETS = [
     "src/web/StatPopup.css",
     "src/web/ZabiciPopup.css",
     "src/web/Zabici2Popup.css",
+    // Faza 3, rodzina 3 — podroze i transport.
+    "src/web/CarriagesPopup.css",
     // Faza 4 — powloka ustawien i pierwsze strony.
     "src/web/settings/settingsDialog.css",
     "src/web/options/guildsSettings.css",
