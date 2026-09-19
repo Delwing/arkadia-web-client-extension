@@ -413,6 +413,19 @@
   outline-offset: 2px;
 }
 
+/* A control row that may run out of width (a swatch, a slider, its readout and
+   a reset button on one line). */
+.settings-row__controls--wrap {
+  flex-wrap: wrap;
+}
+
+/* A slider sharing its line with other controls takes the leftover width
+   rather than the full one. */
+.settings-range--inline {
+  flex: 1 1 7.5rem;
+  width: auto;
+}
+
 /* A checkbox subordinate to the one above it (the old markup used Bootstrap's
    .ms-3 for this). */
 .settings-check--indent {
@@ -423,6 +436,77 @@
    start of its card instead of stretching across it. */
 .settings-card > .settings-action {
   align-self: flex-start;
+}
+
+/* Muted inline text inside a label (the exploration counter). */
+.settings-muted {
+  color: var(--ark-text-tertiary);
+}
+
+/* ---------------------------------------------------------------------------
+   Interfejs > Mapa.
+
+   The version pill doubles as the refresh button, so it spins while the data
+   is being fetched. Its keyframe is named for this sheet: style.css still
+   carries a bare `spin`, which forge's _stock-settings.scss references, and
+   two sheets owning one animation name is how one of them silently wins.
+   ------------------------------------------------------------------------ */
+.settings-map-version {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-space-3);
+  padding: var(--ark-space-2) var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: 1rem;
+  color: var(--ark-text-tertiary);
+  font-size: var(--ark-text-2);
+  font-weight: var(--ark-weight-medium);
+  cursor: pointer;
+  transition: color var(--ark-duration-1), background var(--ark-duration-1), border-color var(--ark-duration-1);
+}
+
+.settings-map-version:hover:not(:disabled) {
+  background: var(--ark-bg-element-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-text);
+}
+
+.settings-map-version:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.settings-map-version:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.settings-map-version__icon {
+  display: inline-block;
+  font-size: var(--ark-text-3);
+  line-height: 1;
+}
+
+.settings-map-version:disabled .settings-map-version__icon {
+  animation: settings-map-refresh 1s linear infinite;
+}
+
+@keyframes settings-map-refresh {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* The marker preview. The canvas is painted with clearRect, so what shows
+   through behind the marker is this background rather than a fill. */
+.settings-map-preview {
+  display: flex;
+  justify-content: center;
+}
+
+.settings-map-preview__canvas {
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
 }
 
 /* ---------------------------------------------------------------------------

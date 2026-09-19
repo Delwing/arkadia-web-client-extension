@@ -2968,46 +2968,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   align-items: center;
 }
 
-.ui-map-version-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--popup-text-dim);
-  background: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 1rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.ui-map-version-badge:hover {
-  color: var(--popup-text-bright);
-  border-color: var(--popup-accent);
-  background: var(--popup-control-hover-bg);
-}
-
-.ui-map-version-badge:active {
-  transform: scale(0.95);
-}
-
-.ui-map-refresh-icon {
-  display: inline-block;
-  font-size: 0.8rem;
-  line-height: 1;
-  transition: transform 0.3s ease;
-}
-
-.ui-map-version-badge:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.ui-map-version-badge:disabled .ui-map-refresh-icon {
-  animation: spin 1s linear infinite;
-}
+/* Interfejs > Mapa moved to settings/settingsDialog.css (Phase 4, PR 2). */
 
 @keyframes spin {
   from { transform: rotate(0deg); }

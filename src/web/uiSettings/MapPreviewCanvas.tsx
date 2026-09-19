@@ -47,6 +47,16 @@ function traceShape(ctx: CanvasRenderingContext2D, shape: MapRoomShape, cx: numb
  * Used for both the player marker (markerShape defaults to 'circle') and
  * room highlights (markerShape resolved from the highlight shape setting).
  */
+/**
+ * One design-system token, resolved against an element. Returns the fallback
+ * when the property is missing -- a canvas painted with an empty string throws
+ * nothing and silently draws in black.
+ */
+function cssValue(el: Element, name: string, fallback: string): string {
+    const value = getComputedStyle(el).getPropertyValue(name).trim();
+    return value || fallback;
+}
+
 function MapPreviewCanvas(props: MapPreviewCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -74,8 +84,11 @@ function MapPreviewCanvas(props: MapPreviewCanvasProps) {
         const centerX = width / 2;
         const centerY = height / 2;
 
-        // Draw sample room based on shape
-        ctx.strokeStyle = '#888';
+        // Draw sample room based on shape. A canvas cannot read a custom
+        // property, so the sample room's colour is resolved off the element --
+        // this is a settings preview, and a fixed gray reads wrong in the two
+        // light themes.
+        ctx.strokeStyle = cssValue(canvas, '--ark-text-tertiary', '#888888');
         ctx.lineWidth = scaledLineWidth;
         traceShape(ctx, roomShape, centerX, centerY, scaledRoomSize);
         ctx.stroke();
@@ -110,13 +123,13 @@ function MapPreviewCanvas(props: MapPreviewCanvasProps) {
     });
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="settings-map-preview">
             <canvas
                 id={props.id ?? 'ui-map-preview-canvas'}
                 ref={canvasRef}
                 width={200}
                 height={100}
-                style={{ border: '1px solid var(--surface-border)', borderRadius: '0.25rem', background: '#1a1a1a' }}
+                className="settings-map-preview__canvas"
             />
         </div>
     );
