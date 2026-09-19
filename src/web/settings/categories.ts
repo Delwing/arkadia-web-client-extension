@@ -58,7 +58,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "ui-footer", group: "ui", label: "Stopka", keywords: "paski kondycja" },
     { key: "ui-map", group: "ui", label: "Mapa" },
     { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dzwieki beep powiadomienia push" },
-    { key: "ui-other", group: "ui", label: "Inne", keywords: "telefon" },
+    { key: "ui-other", group: "ui", label: "Inne", keywords: "telefon logi dysk zapis" },
 ];
 
 export const DEFAULT_SETTINGS_CATEGORY: Record<SettingsGroup, SettingsCategoryKey> = {

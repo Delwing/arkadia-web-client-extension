@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useMemo, Fragment, type MouseEvent as ReactMouseEvent } from "react";
+import { memo, useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, Fragment, type MouseEvent as ReactMouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { globalStorage } from "@modules/core/storage";
 import type { LogsExportWorkerResponse, LogExportData } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
 import { LogTimeline, type TimeRange } from "./LogTimeline";
-import { isFileSaveSupported, isFileSaveActive, enableFileSave, disableFileSave, getDirectoryName, onStatusChange, getSavedToDiskSessions } from "./logFileSaver";
+import { getSavedToDiskSessions } from "./logFileSaver";
 import {
   type LogEntry,
   type FlatLogLine,
@@ -13,6 +12,7 @@ import {
   type SearchResult,
   type SearchSessionGroup,
   formatDateTime,
+  formatTime,
   formatSessionLabel,
   formatSessionFileName,
   getSessionYear,
@@ -595,44 +595,132 @@ function LogManager({
   );
 }
 
-export function LogLine({
+// --- Search-match highlighting in the preview ---
+//
+// Matches are painted with the CSS Custom Highlight API, so the stored line
+// HTML is rendered untouched (no <mark> splicing through ANSI spans). Browsers
+// without it still get the whole-line highlight of the active result.
+
+interface MatchSpan {
+  start: number;
+  length: number;
+}
+
+let matchHighlights: { match: Highlight; active: Highlight } | null | undefined;
+
+function getMatchHighlights() {
+  if (matchHighlights !== undefined) return matchHighlights;
+  if (typeof CSS === "undefined" || !("highlights" in CSS) || typeof Highlight === "undefined") {
+    matchHighlights = null;
+    return null;
+  }
+  matchHighlights = { match: new Highlight(), active: new Highlight() };
+  CSS.highlights.set("logs-match", matchHighlights.match);
+  CSS.highlights.set("logs-match-active", matchHighlights.active);
+  return matchHighlights;
+}
+
+/** DOM ranges covering `matches` (offsets into root's textContent). */
+function rangesForMatches(root: Node, matches: MatchSpan[]): Range[] {
+  const nodes: { node: Text; start: number }[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let pos = 0;
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    nodes.push({ node: n as Text, start: pos });
+    pos += (n as Text).data.length;
+  }
+  const locate = (offset: number, isEnd: boolean) => {
+    for (const entry of nodes) {
+      const end = entry.start + entry.node.data.length;
+      if (isEnd ? offset <= end : offset < end) return { node: entry.node, offset: offset - entry.start };
+    }
+    return null;
+  };
+  const ranges: Range[] = [];
+  for (const m of matches) {
+    const a = locate(m.start, false);
+    const b = locate(m.start + m.length, true);
+    if (!a || !b) continue;
+    const range = document.createRange();
+    range.setStart(a.node, a.offset);
+    range.setEnd(b.node, b.offset);
+    ranges.push(range);
+  }
+  return ranges;
+}
+
+export const LogLine = memo(function LogLine({
   line,
   isHighlighted,
+  matches,
   onContextMenu,
 }: {
   line: FlatLogLine;
   isHighlighted: boolean;
+  /** Search matches within this line, painted in place. */
+  matches?: MatchSpan[];
   onContextMenu?: (e: ReactMouseEvent, line: FlatLogLine) => void;
 }) {
+  const htmlRef = useRef<HTMLSpanElement>(null);
+  // React re-assigns innerHTML whenever this object's identity changes, which
+  // would re-parse every visible row on each scroll frame (and drop the match
+  // highlights anchored in its text nodes).
+  const innerHtml = useMemo(() => ({ __html: line.html }), [line.html]);
   const classes = ["output_msg"];
   if (line.type) classes.push(line.type);
   if (isHighlighted) classes.push("logs-preview-highlight");
+
+  useLayoutEffect(() => {
+    const highlights = getMatchHighlights();
+    const root = htmlRef.current;
+    if (!highlights || !root || !matches?.length) return;
+    const target = isHighlighted ? highlights.active : highlights.match;
+    const ranges = rangesForMatches(root, matches);
+    for (const r of ranges) target.add(r);
+    return () => {
+      for (const r of ranges) target.delete(r);
+    };
+  }, [matches, isHighlighted, line.html]);
 
   return (
     <div className={classes.join(" ")} onContextMenu={onContextMenu ? (e) => onContextMenu(e, line) : undefined}>
       <div className="output_msg_text" style={{ whiteSpace: "pre-wrap" }}>
         <span className="log-time">{line.time}</span>
-        <span dangerouslySetInnerHTML={{ __html: line.html }} />
+        <span ref={htmlRef} dangerouslySetInnerHTML={innerHtml} />
       </div>
     </div>
   );
+});
+
+// --- Search results list ---
+
+/** Longest result list rendered at once; navigation still covers every result. */
+const MAX_RENDERED_RESULTS = 500;
+
+function plural(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
 }
 
 function SearchResultSnippet({ text, matchIndex, matchText }: { text: string; matchIndex: number; matchText: string }) {
-  const windowSize = 60;
-  const start = Math.max(0, matchIndex - windowSize);
-  const end = Math.min(text.length, matchIndex + matchText.length + windowSize);
+  const before = 40;
+  const after = 120;
+  const start = Math.max(0, matchIndex - before);
+  const end = Math.min(text.length, matchIndex + matchText.length + after);
   const prefix = text.slice(start, matchIndex).replace(/\s+/g, " ");
   const suffix = text.slice(matchIndex + matchText.length, end).replace(/\s+/g, " ");
   const normalizedMatch = matchText.replace(/\s+/g, " ");
 
   return (
     <>
-      {start > 0 && "..."}
+      {start > 0 && "…"}
       {prefix}
       <mark>{normalizedMatch}</mark>
       {suffix}
-      {end < text.length && "..."}
+      {end < text.length && "…"}
     </>
   );
 }
@@ -640,20 +728,27 @@ function SearchResultSnippet({ text, matchIndex, matchText }: { text: string; ma
 function SearchResultItem({
   result,
   isActive,
-  onClick
+  onClick,
 }: {
   result: SearchResult;
   isActive: boolean;
   onClick: () => void;
 }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (isActive) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [isActive]);
+
   const firstMatch = result.matches[0];
   return (
     <button
+      ref={ref}
       type="button"
       className={`logs-search-result ${isActive ? "logs-search-result-active" : ""}`}
       onClick={onClick}
+      title={result.groupDateTime}
     >
-      <span className="logs-search-result-time">{result.groupDateTime}</span>
+      <span className="logs-search-result-time">{formatTime(result.groupTimestamp).slice(0, 8)}</span>
       <span className="logs-search-result-snippet">
         <SearchResultSnippet
           text={firstMatch.lineText}
@@ -661,44 +756,67 @@ function SearchResultItem({
           matchText={firstMatch.text}
         />
       </span>
-      <span className="logs-search-result-count">({result.matches.length})</span>
+      {result.matches.length > 1 && (
+        <span className="logs-search-result-count">{`×${result.matches.length}`}</span>
+      )}
     </button>
   );
 }
 
 function SearchResults({
   sessionGroups,
+  totalResults,
+  totalMatches,
   activeResultIndex,
-  activeSessionName,
   onResultClick,
   hideSessionHeaders,
+  rangeLabel,
 }: {
   sessionGroups: SearchSessionGroup[];
+  totalResults: number;
+  totalMatches: number;
   activeResultIndex: number;
-  activeSessionName: string | null;
   onResultClick: (globalIndex: number) => void;
   hideSessionHeaders?: boolean;
+  /** Set when the search covered only a timeline window. */
+  rangeLabel?: string;
 }) {
   let globalIndex = 0;
+  let rendered = 0;
+  const sessionCount = sessionGroups.length;
 
-  return (
+  return (<>
+    <div className="logs-search-summary">
+      {`${totalMatches} ${plural(totalMatches, "trafienie", "trafienia", "trafien")}`}
+      {!hideSessionHeaders && ` w ${sessionCount} ${plural(sessionCount, "sesji", "sesjach", "sesjach")}`}
+      {rangeLabel && ` w zakresie ${rangeLabel}`}
+      {totalResults > MAX_RENDERED_RESULTS && ` · lista pokazuje ${MAX_RENDERED_RESULTS} pierwszych, reszta przez ▼`}
+    </div>
     <div id="logs-search-results" className="logs-search-results border rounded">
       {sessionGroups.map(session => {
-        const isActiveSession = session.sessionName === activeSessionName;
+        if (rendered >= MAX_RENDERED_RESULTS) {
+          globalIndex += session.results.length;
+          return null;
+        }
+        const containsActive = activeResultIndex >= globalIndex && activeResultIndex < globalIndex + session.results.length;
         return (
           <div
             key={session.sessionName}
-            className={`logs-search-session ${isActiveSession ? "logs-search-session-active" : ""}`}
+            className={`logs-search-session ${containsActive ? "logs-search-session-active" : ""}`}
           >
             {!hideSessionHeaders && (
               <div className="logs-search-session-header">
-                <span className="logs-search-session-title">{session.sessionLabel}</span>
-                <span className="logs-search-session-count">({session.totalMatches})</span>
+                <span className="logs-search-session-title">{`Sesja z ${session.sessionLabel}`}</span>
+                <span className="logs-search-session-count">
+                  {`${session.totalMatches} ${plural(session.totalMatches, "trafienie", "trafienia", "trafien")}`}
+                </span>
               </div>
             )}
             <div className="logs-search-session-results">
               {session.results.map((result, resultIdx) => {
                 const currentIndex = globalIndex++;
+                if (rendered >= MAX_RENDERED_RESULTS) return null;
+                rendered++;
                 return (
                   <SearchResultItem
                     key={`${result.groupTimestamp}-${resultIdx}`}
@@ -713,7 +831,51 @@ function SearchResults({
         );
       })}
     </div>
-  );
+  </>);
+}
+
+// --- Search scope ---
+
+type SearchScope = "all" | "session" | "range";
+
+const SEARCH_SCOPES: { value: SearchScope; label: string; placeholder: string }[] = [
+  { value: "all", label: "Wszystkie", placeholder: "Szukaj we wszystkich logach" },
+  { value: "session", label: "Ten log", placeholder: "Szukaj w otwartym logu" },
+  { value: "range", label: "Zakres", placeholder: "Szukaj w zaznaczonym zakresie" },
+];
+
+// --- Preview scrolling ---
+
+/**
+ * Where the preview should scroll once `session` is the loaded one. `target`
+ * is an index into the session's full flatLines; a target outside the current
+ * timeline window clears the window first.
+ */
+interface ScrollRequest {
+  session: string;
+  target: number | "top" | "bottom";
+  align: "start" | "center" | "end";
+}
+
+interface LineMetrics {
+  cols: number;
+  lineHeight: number;
+}
+
+/** First index in chronologically ordered `lines` at or after `ts`. */
+function lowerBoundByTime(lines: FlatLogLine[], ts: number): number {
+  let lo = 0;
+  let hi = lines.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (lines[mid].timestamp < ts) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.min(lo, lines.length - 1);
+}
+
+function isTextField(el: EventTarget | null): boolean {
+  return el instanceof HTMLElement && !!el.closest("input, textarea, select, [contenteditable='true']");
 }
 
 export function LogBrowser() {
@@ -725,36 +887,33 @@ export function LogBrowser() {
   // #logs-modal is absent, treat the component as open from mount.
   const [isOpen, setIsOpen] = useState(() => !document.getElementById("logs-modal"));
   const [activeTab, setActiveTab] = useState<"logs" | "manage">("logs");
-  const [loggingEnabled, setLoggingEnabled] = useState(true);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [currentSession, setCurrentSession] = useState<string | null>(null);
+  // The session `flatLines` belong to. Lags `currentSession` while a newly
+  // picked session loads; anything indexing into flatLines must check it.
+  const [loadedSession, setLoadedSession] = useState<string | null>(null);
   const [flatLines, setFlatLines] = useState<FlatLogLine[]>([]);
   const [rangeFilter, setRangeFilter] = useState<TimeRange | null>(null);
   const [lineMenu, setLineMenu] = useState<{ x: number; y: number; timestamp: number } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchCurrentOnly, setSearchCurrentOnly] = useState(false);
+  const [lastSearch, setLastSearch] = useState<{ query: string; scope: SearchScope } | null>(null);
+  const [searchScope, setSearchScope] = useState<SearchScope>("all");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchSessionGroups, setSearchSessionGroups] = useState<SearchSessionGroup[]>([]);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [activeResultIndex, setActiveResultIndex] = useState(-1);
-  const [highlightedIndices, setHighlightedIndices] = useState<Set<number>>(new Set());
-  const [pendingScrollTarget, setPendingScrollTarget] = useState<SearchResult | null>(null);
+  const [scrollRequest, setScrollRequest] = useState<ScrollRequest | null>(null);
+  const [lineMetrics, setLineMetrics] = useState<LineMetrics | null>(null);
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number; sessionName: string } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const [fileSaveEnabled, setFileSaveEnabled] = useState(isFileSaveActive());
-  const [fileSaveDirName, setFileSaveDirName] = useState(getDirectoryName());
-
   const [logsDb] = useState(() => new LogsDatabase());
   const exportWorkerRef = useRef<Worker | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
+  const probeRef = useRef<HTMLDivElement>(null);
   const searchRequestIdRef = useRef(0);
-  // Mirrors pendingScrollTarget for the loader effect. Reading it through a ref
-  // keeps it out of the loader's dependency array, so clearing the target after
-  // a scroll-to-result does not re-trigger a reload (which would then scroll to
-  // the bottom of the log).
-  const pendingScrollTargetRef = useRef<SearchResult | null>(null);
 
   // Narrow the rendered lines to the selected timeline window. Lines are
   // chronologically ordered, so the range maps to a contiguous slice; the
@@ -769,34 +928,52 @@ export function LogBrowser() {
     return { visibleLines: flatLines.slice(start, end + 1), visibleStartIdx: start };
   }, [flatLines, rangeFilter]);
 
+  // Rows are measured once rendered, but everything above the viewport is only
+  // ever estimated — so the estimate decides where a jump lands and how steady
+  // the scrollbar is. Lines are monospace and wrap at the preview width, so the
+  // wrapped row count follows from the text length.
+  const estimateSize = useCallback((index: number) => {
+    if (!lineMetrics) return 20;
+    const length = visibleLines[index]?.text.length ?? 0;
+    return Math.max(1, Math.ceil(length / lineMetrics.cols)) * lineMetrics.lineHeight;
+  }, [lineMetrics, visibleLines]);
+
   const virtualizer = useVirtualizer({
     count: visibleLines.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 20,
-    overscan: 50,
+    estimateSize,
+    getItemKey: (index) => visibleStartIdx + index,
+    overscan: 30,
   });
 
-  // Listen to file saver status changes
+  // Cached row sizes belong to one session at one width; start over when either changes.
   useEffect(() => {
-    return onStatusChange((active, dirName) => {
-      setFileSaveEnabled(active);
-      setFileSaveDirName(dirName);
-    });
-  }, []);
+    virtualizer.measure();
+  }, [lineMetrics, loadedSession, virtualizer]);
 
-  const handleFileSaveToggle = useCallback(async (enabled: boolean) => {
-    if (enabled) {
-      const result = await enableFileSave();
-      if (result) {
-        setFileSaveEnabled(true);
-        setFileSaveDirName(result.dirName);
-      }
-    } else {
-      disableFileSave();
-      setFileSaveEnabled(false);
-      setFileSaveDirName(null);
-    }
-  }, []);
+  // Measure a character cell and the time column, and re-measure on resize.
+  useLayoutEffect(() => {
+    const el = parentRef.current;
+    const probe = probeRef.current;
+    if (!el || !probe) return;
+    const measure = () => {
+      const time = probe.querySelector<HTMLElement>(".log-time");
+      const text = probe.querySelector<HTMLElement>(".logs-preview-probe-text");
+      if (!time || !text) return;
+      const style = getComputedStyle(el);
+      const inner = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const textRect = text.getBoundingClientRect();
+      if (inner <= 0 || textRect.width <= 0) return;
+      const charWidth = textRect.width / 10;
+      const cols = Math.max(10, Math.floor((inner - time.getBoundingClientRect().width) / charWidth));
+      const lineHeight = probe.getBoundingClientRect().height;
+      setLineMetrics(prev => (prev && prev.cols === cols && prev.lineHeight === lineHeight ? prev : { cols, lineHeight }));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeTab]);
 
   // Listen to modal events (modal is created in initLogBrowser, not here)
   useEffect(() => {
@@ -844,18 +1021,6 @@ export function LogBrowser() {
       buttons.forEach(btn => btn.removeEventListener("click", handleClick));
     };
   }, [activeTab]);
-
-  // Load logging preference
-  useEffect(() => {
-    const saved = globalStorage.get("loggingEnabled");
-    setLoggingEnabled(saved !== false);
-  }, []);
-
-  // Save logging preference
-  const handleLoggingChange = useCallback((enabled: boolean) => {
-    setLoggingEnabled(enabled);
-    globalStorage.set("loggingEnabled", enabled);
-  }, []);
 
   // Reusable session loader
   const reloadSessions = useCallback(async () => {
@@ -917,6 +1082,102 @@ export function LogBrowser() {
     setLineMenu(null);
   }, [currentSession]);
 
+  // Load session data when current session changes or modal opens
+  useEffect(() => {
+    if (!isOpen || !currentSession) return;
+    let cancelled = false;
+
+    const loadSession = async () => {
+      setIsLoading(true);
+      try {
+        const db = await logsDb.get();
+        if (!db || cancelled) return;
+        const groups = await getSessionData(db, currentSession);
+        if (cancelled) return;
+        setFlatLines(flattenLogGroups(groups));
+        setLoadedSession(currentSession);
+        // Open at the end of the log, unless a search result is waiting for this session.
+        setScrollRequest(prev =>
+          prev && prev.session === currentSession ? prev : { session: currentSession, target: "bottom", align: "end" });
+        // Keys scroll the preview without clicking into it first.
+        if (!isTextField(document.activeElement)) parentRef.current?.focus({ preventScroll: true });
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    loadSession();
+    return () => { cancelled = true; };
+  }, [isOpen, currentSession, logsDb]);
+
+  // Jump to a row. Rows above it are only estimated until rendered, so the
+  // offset is re-read and re-applied each frame until it holds; any input of
+  // the user's own in the preview abandons the jump. (The virtualizer's own
+  // scrollToIndex keeps re-snapping to the target for seconds, fighting a user
+  // who scrolls away, and gives up on a scroll clamped by a not-yet-grown list.)
+  const scrollJobRef = useRef<number | null>(null);
+  const cancelScrollJob = useCallback(() => {
+    if (scrollJobRef.current !== null) cancelAnimationFrame(scrollJobRef.current);
+    scrollJobRef.current = null;
+  }, []);
+
+  const scrollToLine = useCallback((index: number, align: ScrollRequest["align"]) => {
+    cancelScrollJob();
+    const el = parentRef.current;
+    if (!el) return;
+    let stableFrames = 0;
+    let frames = 0;
+    const step = () => {
+      scrollJobRef.current = null;
+      const offset = virtualizer.getOffsetForIndex(index, align);
+      if (!offset) return;
+      const target = Math.max(0, Math.min(offset[0], el.scrollHeight - el.clientHeight));
+      if (Math.abs(el.scrollTop - target) <= 1) stableFrames++;
+      else {
+        stableFrames = 0;
+        el.scrollTop = target;
+      }
+      if (stableFrames >= 3 || ++frames > 60) return;
+      scrollJobRef.current = requestAnimationFrame(step);
+    };
+    step();
+  }, [virtualizer, cancelScrollJob]);
+
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    const events = ["wheel", "pointerdown", "touchstart", "keydown"] as const;
+    for (const type of events) el.addEventListener(type, cancelScrollJob, { passive: true });
+    return () => {
+      for (const type of events) el.removeEventListener(type, cancelScrollJob);
+      cancelScrollJob();
+    };
+  }, [activeTab, cancelScrollJob]);
+
+  // Carry out a pending scroll once its session is the one on screen.
+  useEffect(() => {
+    if (!scrollRequest || scrollRequest.session !== loadedSession || isLoading) return;
+    const count = visibleLines.length;
+    if (count === 0) {
+      setScrollRequest(null);
+      return;
+    }
+    let index: number;
+    if (scrollRequest.target === "top") index = 0;
+    else if (scrollRequest.target === "bottom") index = count - 1;
+    else {
+      index = scrollRequest.target - visibleStartIdx;
+      if ((index < 0 || index >= count) && rangeFilter) {
+        // Outside the timeline window: widen to the whole log and retry.
+        setRangeFilter(null);
+        return;
+      }
+      index = Math.min(count - 1, Math.max(0, index));
+    }
+    scrollToLine(index, scrollRequest.align);
+    setScrollRequest(null);
+  }, [scrollRequest, loadedSession, isLoading, visibleLines, visibleStartIdx, rangeFilter, scrollToLine]);
+
   // Right-click on a log line opens a "start/end here" context menu
   const handleLineContextMenu = useCallback((e: ReactMouseEvent, line: FlatLogLine) => {
     e.preventDefault();
@@ -936,80 +1197,81 @@ export function LogBrowser() {
       return { from, to };
     });
     setLineMenu(null);
-    // Reveal the chosen boundary line once the narrowed slice has rendered:
-    // "start here" lands at the top, "end here" at the bottom.
-    setTimeout(() => {
-      const el = parentRef.current;
-      if (!el) return;
-      el.scrollTop = kind === "start" ? 0 : el.scrollHeight;
-    }, 0);
-  }, [flatLines]);
+    // Reveal the chosen boundary line: "start here" lands at the top, "end here" at the bottom.
+    if (loadedSession) {
+      setScrollRequest(kind === "start"
+        ? { session: loadedSession, target: "top", align: "start" }
+        : { session: loadedSession, target: "bottom", align: "end" });
+    }
+  }, [flatLines, loadedSession]);
 
-  // Dismiss the line context menu on outside click, scroll, or Escape
+  // Dismiss the line context menu on outside click, Escape, or scrolling the
+  // preview. Only the preview's own scroll counts: the game output keeps
+  // scrolling behind the modal as lines arrive. And only real movement: a scroll
+  // event can land just after the menu opened (the tail of a wheel or
+  // scroll-into-view) without the lines having moved since.
   useEffect(() => {
     if (!lineMenu) return;
     const close = () => setLineMenu(null);
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLineMenu(null); };
+    const preview = parentRef.current;
+    const openedAt = preview?.scrollTop ?? 0;
+    const onScroll = () => {
+      if (preview && Math.abs(preview.scrollTop - openedAt) > 2) close();
+    };
+    // Capture phase, so Escape closes just the menu and never reaches the dialog.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      e.preventDefault();
+      setLineMenu(null);
+    };
     window.addEventListener("click", close);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey, true);
+    preview?.addEventListener("scroll", onScroll);
     return () => {
       window.removeEventListener("click", close);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey, true);
+      preview?.removeEventListener("scroll", onScroll);
     };
   }, [lineMenu]);
 
-  // Load session data when current session changes or modal opens
+  // Page Up/Down, Home and End scroll the preview from anywhere in the dialog
+  // except text fields. Bootstrap keeps focus on the modal element, which sits
+  // above this component, so listen there.
   useEffect(() => {
-    if (!isOpen || !currentSession) return;
-
-    const loadSession = async () => {
-      setIsLoading(true);
-      try {
-        const db = await logsDb.get();
-        if (!db) return;
-        const groups = await getSessionData(db, currentSession);
-        const flat = flattenLogGroups(groups);
-        setFlatLines(flat);
-        // Scroll to bottom after loading (unless we have a pending scroll target)
-        const pending = pendingScrollTargetRef.current;
-        if (!pending || pending.sessionName !== currentSession) {
-          setTimeout(() => {
-            if (parentRef.current) {
-              parentRef.current.scrollTop = parentRef.current.scrollHeight;
-            }
-          }, 0);
-        }
-      } finally {
-        setIsLoading(false);
+    if (!isOpen || activeTab !== "logs") return;
+    const root = rootRef.current;
+    const host: HTMLElement | null = root?.closest(".modal") ?? root;
+    if (!host) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || isTextField(e.target)) return;
+      const el = parentRef.current;
+      const count = visibleLines.length;
+      if (!el || count === 0) return;
+      const page = Math.max(20, el.clientHeight - 40);
+      switch (e.key) {
+        case "PageDown": cancelScrollJob(); el.scrollTop += page; break;
+        case "PageUp": cancelScrollJob(); el.scrollTop -= page; break;
+        case "Home": scrollToLine(0, "start"); break;
+        case "End": scrollToLine(count - 1, "end"); break;
+        default: return;
       }
+      e.preventDefault();
     };
+    host.addEventListener("keydown", onKey);
+    return () => host.removeEventListener("keydown", onKey);
+  }, [isOpen, activeTab, visibleLines.length, scrollToLine, cancelScrollJob]);
 
-    loadSession();
-  }, [isOpen, currentSession, logsDb]);
-
-  // Handle pending scroll target after session loads
-  useEffect(() => {
-    if (!pendingScrollTarget || pendingScrollTarget.sessionName !== currentSession || flatLines.length === 0 || isLoading) {
-      return;
-    }
-
-    const indices = new Set(pendingScrollTarget.matches.map(m => m.flatIndex));
-    setHighlightedIndices(indices);
-    if (pendingScrollTarget.matches.length > 0) {
-      const targetIndex = pendingScrollTarget.matches[0].flatIndex;
-      // Use requestAnimationFrame to ensure virtualizer has updated
-      requestAnimationFrame(() => {
-        virtualizer.scrollToIndex(targetIndex, { align: "center" });
-      });
-    }
-    pendingScrollTargetRef.current = null;
-    setPendingScrollTarget(null);
-
-    // Clear highlight after 2s
-    setTimeout(() => setHighlightedIndices(new Set()), 2000);
-  }, [pendingScrollTarget, currentSession, flatLines.length, isLoading, virtualizer]);
+  // Select a search result and scroll to it, switching sessions if needed.
+  const goToResult = useCallback((results: SearchResult[], index: number) => {
+    const result = results[index];
+    if (!result) return;
+    setActiveResultIndex(index);
+    setScrollRequest({ session: result.sessionName, target: result.matches[0].flatIndex, align: "center" });
+    setCurrentSession(result.sessionName);
+  }, []);
 
   // Search functionality
   const runSearch = useCallback(async () => {
@@ -1021,6 +1283,7 @@ export function LogBrowser() {
       setSearchResults([]);
       setSearchSessionGroups([]);
       setActiveResultIndex(-1);
+      setLastSearch(null);
       return;
     }
 
@@ -1028,6 +1291,8 @@ export function LogBrowser() {
       setSearchMessage(error ?? "Nie udalo sie utworzyc wyrazenia wyszukiwania.");
       setSearchResults([]);
       setSearchSessionGroups([]);
+      setActiveResultIndex(-1);
+      setLastSearch(null);
       return;
     }
 
@@ -1036,31 +1301,34 @@ export function LogBrowser() {
       return;
     }
 
+    // "range" without a range left (cleared since) searches the whole open log.
+    const scope: SearchScope = searchScope === "range" && !rangeFilter ? "session" : searchScope;
+    const currentSessionInfo = scope !== "all" ? sessions.find(s => s.name === loadedSession) : undefined;
+    if (scope !== "all" && !currentSessionInfo) {
+      setSearchMessage("Brak otwartego logu do przeszukania.");
+      return;
+    }
+
     const requestId = ++searchRequestIdRef.current;
+    setLastSearch({ query: trimmed, scope });
     setSearchMessage("Wyszukiwanie...");
     setSearchResults([]);
     setSearchSessionGroups([]);
     setActiveResultIndex(-1);
-    // Searching spans the whole session; clear any timeline narrowing so
-    // result indices line up with the full flatLines array.
-    setRangeFilter(null);
 
     const baseFlags = normalizeFlags(regex.flags);
     const globalFlags = `${baseFlags}g`;
     const allResults: SearchResult[] = [];
     const sessionGroupsMap = new Map<string, SearchSessionGroup>();
 
-    if (searchCurrentOnly) {
-      // Search only the current session using in-memory flatLines
-      if (!currentSession) return;
-
-      const currentSessionInfo = sessions.find(s => s.name === currentSession);
-      if (!currentSessionInfo) return;
-
-      // Group flatLines by their groupIndex to reconstruct group-level results
+    if (currentSessionInfo) {
+      // Search only the open session (or its timeline window) using in-memory flatLines
       const groupMap = new Map<number, { timestamp: number; dateTime: string; matches: LineMatch[] }>();
+      const [firstLine, endLine] = scope === "range"
+        ? [visibleStartIdx, visibleStartIdx + visibleLines.length]
+        : [0, flatLines.length];
 
-      for (let flatIndex = 0; flatIndex < flatLines.length; flatIndex++) {
+      for (let flatIndex = firstLine; flatIndex < endLine; flatIndex++) {
         const line = flatLines[flatIndex];
         if (!line.text) continue;
 
@@ -1090,19 +1358,30 @@ export function LogBrowser() {
       }
 
       for (const group of groupMap.values()) {
-        const result: SearchResult = {
+        allResults.push({
           sessionName: currentSessionInfo.name,
           sessionLabel: currentSessionInfo.label,
           groupTimestamp: group.timestamp,
           groupDateTime: group.dateTime,
           matches: group.matches,
-        };
-        allResults.push(result);
+        });
+      }
+      if (allResults.length > 0) {
+        sessionGroupsMap.set(currentSessionInfo.name, {
+          sessionName: currentSessionInfo.name,
+          sessionLabel: currentSessionInfo.label,
+          results: allResults,
+          totalMatches: allResults.reduce((sum, r) => sum + r.matches.length, 0),
+        });
       }
     } else {
       // Search all sessions via IndexedDB
       const db = await logsDb.get();
-      if (!db) return;
+      if (requestId !== searchRequestIdRef.current) return;
+      if (!db) {
+        setSearchMessage("Nie udalo sie otworzyc bazy danych.");
+        return;
+      }
 
       for (let i = 0; i < sessions.length; i++) {
         const session = sessions[i];
@@ -1170,64 +1449,61 @@ export function LogBrowser() {
       return;
     }
 
-    // Build session groups for current-only mode (single group, no header needed)
-    if (searchCurrentOnly) {
-      const currentSessionInfo = sessions.find(s => s.name === currentSession)!;
-      const totalMatches = allResults.reduce((sum, r) => sum + r.matches.length, 0);
-      sessionGroupsMap.set(currentSession!, {
-        sessionName: currentSessionInfo.name,
-        sessionLabel: currentSessionInfo.label,
-        results: allResults,
-        totalMatches,
-      });
-    }
-
     setSearchMessage(null);
     setSearchResults(allResults);
     setSearchSessionGroups(Array.from(sessionGroupsMap.values()));
-    setActiveResultIndex(0);
 
-    // Highlight and scroll to first result via the pending-scroll effect, so
-    // it runs after the range reset re-renders the full (unfiltered) list.
-    if (allResults.length > 0) {
-      const firstResult = allResults[0];
-      pendingScrollTargetRef.current = firstResult;
-      setPendingScrollTarget(firstResult);
-      if (firstResult.sessionName !== currentSession) {
-        setCurrentSession(firstResult.sessionName);
+    // Jump to the first result at or after what is on screen now, so searching
+    // the open log continues from where you are rather than from its start.
+    let first = 0;
+    const range = virtualizer.range;
+    if (loadedSession && range) {
+      const viewIndex = visibleStartIdx + range.startIndex;
+      const idx = allResults.findIndex(r => r.sessionName === loadedSession && r.matches[0].flatIndex >= viewIndex);
+      if (idx !== -1) first = idx;
+    }
+    goToResult(allResults, first);
+  }, [searchQuery, sessions, loadedSession, searchScope, rangeFilter, flatLines, logsDb, visibleStartIdx, visibleLines.length, virtualizer, goToResult]);
+
+  const handleResultClick = (globalIndex: number) => goToResult(searchResults, globalIndex);
+
+  const handlePrev = () => {
+    if (searchResults.length === 0) return;
+    goToResult(searchResults, (activeResultIndex - 1 + searchResults.length) % searchResults.length);
+  };
+
+  const handleNext = () => {
+    if (searchResults.length === 0) return;
+    goToResult(searchResults, (activeResultIndex + 1) % searchResults.length);
+  };
+
+  // Matches of the loaded session, by line, for painting them in the preview.
+  const matchesByLine = useMemo(() => {
+    const map = new Map<number, MatchSpan[]>();
+    for (const r of searchResults) {
+      if (r.sessionName !== loadedSession) continue;
+      for (const m of r.matches) {
+        let spans = map.get(m.flatIndex);
+        if (!spans) map.set(m.flatIndex, spans = []);
+        spans.push({ start: m.matchIndex, length: m.text.length });
       }
     }
-  }, [searchQuery, sessions, currentSession, searchCurrentOnly, flatLines, logsDb]);
+    return map;
+  }, [searchResults, loadedSession]);
 
-  // Handle result click
-  const handleResultClick = useCallback((globalIndex: number) => {
-    if (globalIndex < 0 || globalIndex >= searchResults.length) return;
+  const activeLines = useMemo(() => {
+    const result = searchResults[activeResultIndex];
+    if (!result || result.sessionName !== loadedSession) return new Set<number>();
+    return new Set(result.matches.map(m => m.flatIndex));
+  }, [searchResults, activeResultIndex, loadedSession]);
 
-    setActiveResultIndex(globalIndex);
-    const result = searchResults[globalIndex];
+  const totalMatches = useMemo(() => searchResults.reduce((sum, r) => sum + r.matches.length, 0), [searchResults]);
 
-    // Clear any timeline narrowing so the target line is in view, then let the
-    // pending-scroll effect do the highlight/scroll against the full list.
-    setRangeFilter(null);
-    pendingScrollTargetRef.current = result;
-    setPendingScrollTarget(result);
-    if (result.sessionName !== currentSession) {
-      setCurrentSession(result.sessionName);
-    }
-  }, [searchResults, currentSession]);
-
-  // Navigation
-  const handlePrev = useCallback(() => {
-    if (activeResultIndex > 0) {
-      handleResultClick(activeResultIndex - 1);
-    }
-  }, [activeResultIndex, handleResultClick]);
-
-  const handleNext = useCallback(() => {
-    if (activeResultIndex < searchResults.length - 1) {
-      handleResultClick(activeResultIndex + 1);
-    }
-  }, [activeResultIndex, searchResults.length, handleResultClick]);
+  // Seek from a timeline click: bring the first line at that time to the top.
+  const handleSeek = useCallback((ts: number) => {
+    if (!loadedSession || flatLines.length === 0) return;
+    setScrollRequest({ session: loadedSession, target: lowerBoundByTime(flatLines, ts), align: "start" });
+  }, [loadedSession, flatLines]);
 
   // Download
   const handleDownload = useCallback(async () => {
@@ -1368,6 +1644,7 @@ export function LogBrowser() {
       });
 
       setFlatLines([]);
+      setLoadedSession(null);
       setCurrentSession(null);
       reloadSessions();
     } catch (error) {
@@ -1377,41 +1654,62 @@ export function LogBrowser() {
     }
   }, [currentSession, isDeleting, reloadSessions, logsDb]);
 
-  // Re-run search when the toggle changes and there's an active search
-  const prevSearchCurrentOnlyRef = useRef(searchCurrentOnly);
+  // Re-run search when the scope toggle changes and there's an active search
+  const prevSearchScopeRef = useRef(searchScope);
   useEffect(() => {
-    if (prevSearchCurrentOnlyRef.current !== searchCurrentOnly) {
-      prevSearchCurrentOnlyRef.current = searchCurrentOnly;
-      if (searchQuery.trim() && (searchResults.length > 0 || searchMessage === "Brak wynikow.")) {
-        runSearch();
-      }
+    if (prevSearchScopeRef.current !== searchScope) {
+      prevSearchScopeRef.current = searchScope;
+      if (lastSearch) runSearch();
     }
-  }, [searchCurrentOnly, searchQuery, searchResults.length, searchMessage, runSearch]);
+  }, [searchScope, lastSearch, runSearch]);
 
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
+  // Setting a timeline window while searching the open log narrows the search
+  // to it; clearing the window widens it back.
+  const hasRange = rangeFilter !== null;
+  useEffect(() => {
+    setSearchScope(scope => {
+      if (hasRange && scope === "session") return "range";
+      if (!hasRange && scope === "range") return "session";
+      return scope;
+    });
+  }, [hasRange]);
+
+  // A range search follows the window, once a drag settles.
+  const runSearchRef = useRef(runSearch);
+  runSearchRef.current = runSearch;
+  const lastSearchScopeRef = useRef(lastSearch?.scope);
+  lastSearchScopeRef.current = lastSearch?.scope;
+  useEffect(() => {
+    if (lastSearchScopeRef.current !== "range" || !rangeFilter) return;
+    const timer = window.setTimeout(() => runSearchRef.current(), 300);
+    return () => window.clearTimeout(timer);
+  }, [rangeFilter]);
+
+  // Enter searches; pressed again on the same query it steps through the
+  // results (Shift+Enter backwards), like find-in-page.
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const unchanged = lastSearch && lastSearch.query === searchQuery.trim() && lastSearch.scope === searchScope;
+    if (unchanged && searchResults.length > 0) {
+      if (e.shiftKey) handlePrev();
+      else handleNext();
+    } else {
       runSearch();
     }
-  }, [runSearch]);
+  };
 
   const handleSearchInput = useCallback((value: string) => {
     setSearchQuery(value);
     if (!value.trim()) {
+      searchRequestIdRef.current++;
       setSearchMessage(null);
       setSearchResults([]);
       setSearchSessionGroups([]);
       setActiveResultIndex(-1);
-      setHighlightedIndices(new Set());
+      setLastSearch(null);
     }
   }, []);
-
-  const activeSessionName = useMemo(() => {
-    if (activeResultIndex >= 0 && activeResultIndex < searchResults.length) {
-      return searchResults[activeResultIndex].sessionName;
-    }
-    return null;
-  }, [activeResultIndex, searchResults]);
 
   const sessionsByYear = useMemo(() => {
     const groups: { year: number | null; sessions: SessionInfo[] }[] = [];
@@ -1429,39 +1727,24 @@ export function LogBrowser() {
 
   const virtualItems = virtualizer.getVirtualItems();
 
+  // Time span on screen, for the timeline's position marker.
+  const viewRange = virtualizer.range;
+  const viewport = viewRange && visibleLines.length > 0 && loadedSession === currentSession
+    ? {
+      from: visibleLines[Math.min(viewRange.startIndex, visibleLines.length - 1)].timestamp,
+      to: visibleLines[Math.min(viewRange.endIndex, visibleLines.length - 1)].timestamp,
+    }
+    : null;
+
+  const menuPosition = lineMenu && {
+    left: Math.max(0, Math.min(lineMenu.x, window.innerWidth - 200)),
+    top: Math.max(0, Math.min(lineMenu.y, window.innerHeight - 80)),
+  };
+
   return (
-    <div className="modal-body d-flex flex-column gap-2">
+    <div ref={rootRef} className="modal-body d-flex flex-column gap-2 logs-browser">
       {activeTab === "logs" && (<>
-        <div className="form-check form-switch">
-          <input
-            id="logs-enabled"
-            className="form-check-input"
-            type="checkbox"
-            checked={loggingEnabled}
-            onChange={(e) => handleLoggingChange(e.target.checked)}
-          />
-          <label className="form-check-label" htmlFor="logs-enabled">Zapisuj logi</label>
-        </div>
-
-        {isFileSaveSupported() && (
-          <div className="d-flex align-items-center gap-2">
-            <div className="form-check form-switch mb-0">
-              <input
-                id="logs-file-save"
-                className="form-check-input"
-                type="checkbox"
-                checked={fileSaveEnabled}
-                onChange={(e) => handleFileSaveToggle(e.target.checked)}
-              />
-              <label className="form-check-label" htmlFor="logs-file-save">Zapisuj na dysk</label>
-            </div>
-            {fileSaveEnabled && fileSaveDirName && (
-              <span className="text-muted small">{"\uD83D\uDCC2"} {fileSaveDirName}</span>
-            )}
-          </div>
-        )}
-
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap logs-toolbar">
           <select
             id="logs-session-select"
             className="form-select"
@@ -1536,50 +1819,55 @@ export function LogBrowser() {
             }}
             title="Otworz log w nowej karcie"
           >
-            {`Otw\u00F3rz w nowej karcie`}
+            {`Otwórz w nowej karcie`}
           </button>
         </div>
 
         <div className="d-flex flex-column gap-2">
-          <div className="d-flex justify-content-between align-items-center">
-            <label htmlFor="logs-search-input" className="form-label mb-0">
-              {searchCurrentOnly ? "Szukaj w biezacym logu" : "Szukaj w logach"}
-            </label>
-            <div className="form-check form-switch mb-0">
+          <div className="d-flex gap-2 align-items-center flex-wrap logs-search-bar">
+            <div className="logs-search-input-wrapper flex-grow-1">
               <input
-                id="logs-search-current-only"
-                className="form-check-input"
-                type="checkbox"
-                checked={searchCurrentOnly}
-                onChange={(e) => setSearchCurrentOnly(e.target.checked)}
+                id="logs-search-input"
+                className="form-control"
+                placeholder={`${SEARCH_SCOPES.find(s => s.value === searchScope)!.placeholder} (fraza lub /wzorzec/)`}
+                title="Enter: szukaj, potem nastepny wynik. Shift+Enter: poprzedni."
+                value={searchQuery}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
               />
-              <label className="form-check-label" htmlFor="logs-search-current-only">
-                Tylko biezacy log
-              </label>
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="logs-search-clear"
+                  onClick={() => handleSearchInput("")}
+                >
+                  &times;
+                </button>
+              )}
             </div>
-          </div>
-          <div className="d-flex gap-2 align-items-end flex-wrap">
-            <div className="flex-grow-1">
-              <div className="logs-search-input-wrapper">
-                <input
-                  id="logs-search-input"
-                  className="form-control"
-                  placeholder="Fraza lub /wzorzec/"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchInput(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    className="logs-search-clear"
-                    onClick={() => handleSearchInput("")}
-                  >
-                    &times;
-                  </button>
-                )}
+            {searchResults.length > 0 && (
+              <div id="logs-search-controls" className="logs-search-controls">
+                <button
+                  id="logs-search-prev"
+                  className="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  title="Poprzedni wynik (Shift+Enter)"
+                  onClick={handlePrev}
+                >
+                  {"▲"}
+                </button>
+                <span className="logs-search-position">{`${activeResultIndex + 1} / ${searchResults.length}`}</span>
+                <button
+                  id="logs-search-next"
+                  className="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  title="Nastepny wynik (Enter)"
+                  onClick={handleNext}
+                >
+                  {"▼"}
+                </button>
               </div>
-            </div>
+            )}
             <button
               id="logs-search-button"
               className="btn btn-primary"
@@ -1587,30 +1875,22 @@ export function LogBrowser() {
             >
               Szukaj
             </button>
-          </div>
-
-          {searchResults.length > 0 && (
-            <div id="logs-search-controls" className="logs-search-controls">
-              <button
-                id="logs-search-prev"
-                className="btn btn-secondary btn-sm"
-                type="button"
-                disabled={activeResultIndex <= 0}
-                onClick={handlePrev}
-              >
-                Poprzedni
-              </button>
-              <button
-                id="logs-search-next"
-                className="btn btn-secondary btn-sm"
-                type="button"
-                disabled={activeResultIndex >= searchResults.length - 1}
-                onClick={handleNext}
-              >
-                Nastepny
-              </button>
+            <div id="logs-search-scope" className="btn-group btn-group-sm" title="Gdzie szukac">
+              {SEARCH_SCOPES.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-scope={option.value}
+                  className={`btn ${searchScope === option.value ? "btn-primary" : "btn-outline-secondary"}`}
+                  disabled={option.value === "range" && !rangeFilter}
+                  title={option.value === "range" && !rangeFilter ? "Zaznacz zakres na osi czasu" : option.placeholder}
+                  onClick={() => setSearchScope(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
 
           {searchMessage && (
             <div id="logs-search-results" className="logs-search-results border rounded">
@@ -1621,10 +1901,14 @@ export function LogBrowser() {
           {searchSessionGroups.length > 0 && (
             <SearchResults
               sessionGroups={searchSessionGroups}
+              totalResults={searchResults.length}
+              totalMatches={totalMatches}
               activeResultIndex={activeResultIndex}
-              activeSessionName={activeSessionName}
               onResultClick={handleResultClick}
-              hideSessionHeaders={searchCurrentOnly}
+              hideSessionHeaders={lastSearch?.scope !== "all"}
+              rangeLabel={lastSearch?.scope === "range" && rangeFilter
+                ? `${formatTime(rangeFilter.from).slice(0, 8)} – ${formatTime(rangeFilter.to).slice(0, 8)}`
+                : undefined}
             />
           )}
         </div>
@@ -1634,6 +1918,8 @@ export function LogBrowser() {
             lines={flatLines}
             value={rangeFilter}
             onChange={setRangeFilter}
+            viewport={viewport}
+            onSeek={handleSeek}
           />
         )}
 
@@ -1641,8 +1927,15 @@ export function LogBrowser() {
           id="logs-preview"
           ref={parentRef}
           className="border"
+          tabIndex={0}
           style={{ position: "relative" }}
         >
+          <div ref={probeRef} className="output_msg logs-preview-probe">
+            <div className="output_msg_text">
+              <span className="log-time">00:00:00.000</span>
+              <span className="logs-preview-probe-text">MMMMMMMMMM</span>
+            </div>
+          </div>
           {isLoading && (
             <div className="logs-loading-overlay">
               <div className="logs-loading-spinner" />
@@ -1657,6 +1950,7 @@ export function LogBrowser() {
           >
             {virtualItems.map(virtualRow => {
               const line = visibleLines[virtualRow.index];
+              const flatIndex = visibleStartIdx + virtualRow.index;
               return (
                 <div
                   key={virtualRow.key}
@@ -1672,7 +1966,8 @@ export function LogBrowser() {
                 >
                   <LogLine
                     line={line}
-                    isHighlighted={highlightedIndices.has(visibleStartIdx + virtualRow.index)}
+                    isHighlighted={activeLines.has(flatIndex)}
+                    matches={matchesByLine.get(flatIndex)}
                     onContextMenu={handleLineContextMenu}
                   />
                 </div>
@@ -1681,10 +1976,10 @@ export function LogBrowser() {
           </div>
         </div>
 
-        {lineMenu && (
+        {lineMenu && menuPosition && (
           <div
             className="logs-line-menu"
-            style={{ left: lineMenu.x, top: lineMenu.y }}
+            style={menuPosition}
             onClick={(e) => e.stopPropagation()}
           >
             <button type="button" onClick={() => setRangeBound("start", lineMenu.timestamp)}>
