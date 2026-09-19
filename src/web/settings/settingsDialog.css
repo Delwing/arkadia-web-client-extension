@@ -446,6 +446,39 @@
   color: var(--ark-text-tertiary);
 }
 
+/* A help affordance next to a label, for a setting whose name cannot carry the
+   whole explanation. The tooltip is the `title`: this project sets no aria-*
+   (AGENTS.md), so title is both the accessible name and the hover text. */
+.settings-help {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--ark-space-3);
+  color: var(--ark-text-tertiary);
+  vertical-align: middle;
+  cursor: help;
+}
+
+/* Options that only exist while their parent checkbox is on. Ruled off rather
+   than indented, so the card does not grow a second left edge. */
+.settings-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-6);
+  padding-top: var(--ark-space-6);
+  border-top: 1px solid var(--ark-border);
+}
+
+/* The short-exits sample line. Both colours are the player's own setting and
+   arrive inline; everything else here is a token. */
+.settings-exits-preview {
+  padding: var(--ark-space-3);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-3);
+  white-space: nowrap;
+}
+
 /* A row of buttons that wraps rather than overflowing its card. */
 .settings-button-row {
   display: flex;

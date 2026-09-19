@@ -714,7 +714,7 @@ test.describe('Lua gags colors character switch', () => {
         const modal = await openSettings(page, 'character-combat');
         await modal.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
 
-        const colorInput = modal.locator('input[type="color"]#luaGag-moje_ciosy');
+        const colorInput = modal.locator('input[type="color"]#luaGag-moje_ciosy-color');
         await colorInput.fill('#ff0000');
         await saveSettings(page);
 
@@ -739,7 +739,7 @@ test.describe('Lua gags colors character switch', () => {
         const modal2 = await openSettings(page, 'character-combat');
         await modal2.locator('h5:has-text("Ustawienia walki")').waitFor({state: 'visible'});
 
-        const colorInputB = modal2.locator('input[type="color"]#luaGag-moje_ciosy');
+        const colorInputB = modal2.locator('input[type="color"]#luaGag-moje_ciosy-color');
         // Default color for moje_ciosy is #f0f8ff
         await expect(colorInputB, 'GagColorB should show default color').toHaveValue('#f0f8ff');
 

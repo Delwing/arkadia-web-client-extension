@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
-import {Button, Form} from "react-bootstrap";
+import {Button} from "@design";
+import {SettingsCard, TextField} from "@web/settings/controls.tsx";
 import {characterStorage} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
@@ -118,88 +119,61 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
 
     return (
         <>
-            <section className="character-settings-section character-settings-section--full">
-                <h5 className="character-settings-section-title">Prefiksy</h5>
-                <div className="character-settings-stack">
-                    <Form.Group
-                        className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                        controlId="walka-ownSpecPrefix"
-                    >
-                        <Form.Label className="mb-0 me-2">Prefiks moje spece</Form.Label>
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            className="w-auto"
-                            style={{maxWidth: "120px"}}
-                            value={walkaConfig.ownSpecPrefix}
-                            placeholder=""
-                            onChange={e => setWalkaConfig(prev => ({...prev, ownSpecPrefix: e.target.value}))}
-                        />
-                    </Form.Group>
-                    <Form.Group
-                        className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                        controlId="walka-finPrefix"
-                    >
-                        <Form.Label className="mb-0 me-2">Prefiks finishera</Form.Label>
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            className="w-auto"
-                            style={{maxWidth: "120px"}}
-                            value={walkaConfig.finPrefix}
-                            placeholder="FIN"
-                            onChange={e => setWalkaConfig(prev => ({...prev, finPrefix: e.target.value}))}
-                        />
-                    </Form.Group>
-                </div>
-            </section>
-            <section className="character-settings-section character-settings-section--full">
-                <h5 className="character-settings-section-title">Ustawienia walki</h5>
-                <div className="character-settings-stack">
-                    {LUA_GAG_LINE_TYPES.map(key => (
-                        <Form.Group
-                            key={key}
-                            className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                            controlId={`luaGag-${key}`}
-                        >
-                            <Form.Label className="mb-0 me-2">{labels[key]}</Form.Label>
-                            <div className="d-flex gap-2 align-items-center">
-                                <Form.Select
-                                    size="sm"
-                                    className="w-auto"
-                                    value={deleteLines[key]}
-                                    onChange={event =>
-                                        handleChange(key, Number(event.target.value) as LuaGagDeleteMode)
-                                    }
-                                >
-                                    {selectOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Control
-                                    type="color"
-                                    size="sm"
-                                    value={colors[key]}
-                                    onChange={event => handleColorChange(key, event.target.value)}
-                                    style={{width: "50px"}}
-                                    title="Kolor prefixu"
-                                />
-                                <Button
-                                    size="sm"
-                                    variant="outline-secondary"
-                                    onClick={() => resetColorToDefault(key)}
-                                    title="Przywróć domyślny kolor"
-                                    style={{padding: "0.25rem 0.5rem"}}
-                                >
-                                    ↺
-                                </Button>
-                            </div>
-                        </Form.Group>
-                    ))}
-                </div>
-            </section>
+            <SettingsCard title="Prefiksy" full>
+                <TextField
+                    id="walka-ownSpecPrefix"
+                    label="Prefiks moje spece"
+                    value={walkaConfig.ownSpecPrefix}
+                    onChange={value => setWalkaConfig(prev => ({...prev, ownSpecPrefix: value}))}
+                />
+                <TextField
+                    id="walka-finPrefix"
+                    label="Prefiks finishera"
+                    value={walkaConfig.finPrefix}
+                    placeholder="FIN"
+                    onChange={value => setWalkaConfig(prev => ({...prev, finPrefix: value}))}
+                />
+            </SettingsCard>
+            <SettingsCard title="Ustawienia walki" full>
+                {LUA_GAG_LINE_TYPES.map(key => (
+                    <div className="settings-row" key={key}>
+                        <label className="settings-row__label" htmlFor={`luaGag-${key}`}>{labels[key]}</label>
+                        {/* The select, the swatch and the reset button share one
+                            parent on purpose: lua-gags-settings.spec.ts reaches
+                            the button as the select's sibling. */}
+                        <div className="settings-row__controls">
+                            <select
+                                id={`luaGag-${key}`}
+                                className="settings-native-select"
+                                value={deleteLines[key]}
+                                onChange={event => handleChange(key, Number(event.target.value) as LuaGagDeleteMode)}
+                            >
+                                {selectOptions.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <input
+                                id={`luaGag-${key}-color`}
+                                type="color"
+                                className="settings-color"
+                                value={colors[key]}
+                                title="Kolor prefixu"
+                                onChange={event => handleColorChange(key, event.target.value)}
+                            />
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                title="Przywróć domyślny kolor"
+                                onClick={() => resetColorToDefault(key)}
+                            >
+                                {'↺'}
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+            </SettingsCard>
         </>
     );
 }
