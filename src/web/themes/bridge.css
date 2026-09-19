@@ -1,0 +1,230 @@
+/* ============================================================================
+   Most: stara warstwa zmiennych --popup-* -> tokeny systemu projektowego.
+   ============================================================================
+
+   KRYTERIUM USUNIECIA: ten plik kasujemy w chwili, gdy poza nim nie zostanie
+   ani jedno `var(--popup-`. Sprawdzenie:
+
+       grep -rn "var(--popup-" src/ index.html | grep -v themes/bridge.css
+
+   Pusty wynik = plik jest martwy, kasujemy go razem z src/web/themes/*.css.
+   Faza 3 planu (popupy, docs/dev/UI_MIGRATION.md) to wykona.
+
+   ---------------------------------------------------------------------------
+   Dlaczego ten plik w ogole istnieje
+
+   docs/dev/DESIGN_SYSTEM.md zabrania aliasowania NOWE -> STARE: token --ark-*
+   nigdy nie moze byc zdefiniowany przez --popup-*, bo wtedy jeden token znaczy
+   co innego na dwoch ekranach. Tu jest odwrotnie - STARE -> NOWE - i jest to
+   tymczasowe. Dzieki temu 1020 istniejacych deklaracji w popups.css (1613 w
+   calym src/web) przemalowuje sie z nowej warstwy tokenow w dniu, w ktorym ten
+   plik ladujemy, bez dotykania ani jednego komponentu.
+
+   ---------------------------------------------------------------------------
+   Kaskada
+
+   Selektor `.ark-root[data-ark-theme]` (0,2,0) bije i `:root` ze style.css, i
+   klase `.theme-*` z src/web/themes/*.css (obie 0,1,0), i wstrzykiwany w
+   locie blok `.theme-custom-dark`. Nie zalezy wiec od kolejnosci zrodel -
+   Rollup moze przestawiac chunki do woli (patrz naglowek main-theme.css).
+   Stare motywy zostaja na miejscu i dalej definiuja to, czego most nie
+   przejmuje.
+
+   ---------------------------------------------------------------------------
+   Zakres
+
+   Most obejmuje 66 zmiennych: 55 rolowych --popup-* oraz 11 --footer-*
+   (ta sama warstwa per-motyw, ten sam plik zrodlowy; bez nich stopka byla by
+   jedyna wyspa w starych kolorach). Do tego --bs-primary, ktory kazdy stary
+   plik motywu i tak spinal z --popup-accent.
+
+   Nie obejmuje rodzin, ktore juz w starym kliencie byly niezalezne od motywu,
+   bo zaden plik motywu ich nie nadpisywal: --surface-*, --text-*, --input-*,
+   --bs-body-* i --floating-*. Zostaja takie, jakie byly - to nie regresja,
+   tylko granica tej fazy. Biora je m.in. ekran logowania i tlo <body>.
+
+   Swiadomie NIE obejmuje 16 zmiennych --popup-data-* (yellow, gold, blue,
+   pink, purple, tomato, ...). To paleta kategoryczna do kolorowania danych z
+   gry, a nie role interfejsu - system projektowy takiej palety nie ma, a
+   naciaganie jej na --ark-success/warning/danger zlamalo by regule "barwy
+   statusow nigdy nie ida za akcentem". Zostaja na starej warstwie, gdzie kazdy
+   motyw ma je dostrojone recznie. Faza 3 zdecyduje o ich losie.
+
+   ---------------------------------------------------------------------------
+   Warstwa
+
+   Ten plik stoi w tej samej warstwie co src/ui/design/css/tokens.css: mapuje
+   role na stopnie skali. Dlatego wolno mu siegac po surowy stopien (np.
+   --ark-gray-a2), gdy zbior nazw semantycznych nie ma odpowiednika. Kolejnosc:
+   najpierw token semantyczny, surowy stopien dopiero gdy nie ma innego wyjscia.
+   Wartosci szesnastkowych tu nie ma i byc nie moze - test to pilnuje.
+   ========================================================================== */
+
+.ark-root[data-ark-theme] {
+  /* --- powierzchnie ------------------------------------------------------ */
+  --popup-bg: var(--ark-bg-surface);
+  --popup-section-bg: var(--ark-bg-raised);
+  --popup-subtle-bg: var(--ark-gray-a2);
+  --popup-hover-bg: var(--ark-bg-element-ghost-hover);
+  --popup-input-bg: var(--ark-bg-sunken);
+
+  /* --- kontrolki: rowna drabinka 3 -> 4 -> 5 -> 6 ------------------------- */
+  --popup-control-bg: var(--ark-bg-element);
+  --popup-control-hover-bg: var(--ark-bg-element-hover);
+  --popup-control-active-bg: var(--ark-bg-element-active);
+  --popup-control-pressed-bg: var(--ark-bg-selected-hover);
+
+  /* --- tekst -------------------------------------------------------------
+     Stara warstwa miala osiem odcieni bieli (alfa 1.0 ... 0.4), system
+     projektowy nazywa piec rol. Osiem schodzi do czterech parami - roznica
+     wewnatrz pary (np. 0.5 vs 0.45) byla dekoracyjna i w zadnym motywie nie
+     niesie znaczenia. */
+  --popup-text: var(--ark-text);
+  --popup-text-strong: var(--ark-text);
+  --popup-text-bright: var(--ark-text-secondary);
+  --popup-text-subtle: var(--ark-text-secondary);
+  --popup-text-medium: var(--ark-text-tertiary);
+  --popup-text-dim: var(--ark-text-tertiary);
+  --popup-text-faint: var(--ark-text-faint);
+  --popup-text-dimmer: var(--ark-text-faint);
+  --popup-input-text: var(--ark-text);
+
+  /* --- ramki -------------------------------------------------------------- */
+  --popup-border-subtle: var(--ark-border-subtle);
+  --popup-border: var(--ark-border);
+  --popup-border-control: var(--ark-border-element);
+  --popup-border-strong: var(--ark-border-strong);
+  /* Mocniejsza niz "mocna": stopien 9 nie ma nazwy semantycznej dla ramki,
+     a wersja alfa lezy blizej starej rgba(255, 255, 255, 0.45). */
+  --popup-border-stronger: var(--ark-gray-a9);
+  --popup-input-focus-border: var(--ark-focus-ring);
+
+  /* --- akcent -------------------------------------------------------------
+     --popup-accent to w 47 na 81 uzyc `color:`, wiec idzie na stopien tekstowy
+     (11), nie na wypelnienie (9). Tla akcentu ida drabinka 3 -> 4 -> 5;
+     najdelikatniejsze tinty wierszy zostaja przezroczyste, bo w oryginale byly
+     filmem nakladanym na tlo popupu. */
+  --popup-accent: var(--ark-accent-text);
+  --popup-accent-border: var(--ark-accent-border);
+  --popup-accent-dim-bg: var(--ark-accent-tint);
+  --popup-accent-subtle-bg: var(--ark-accent-bg);
+  --popup-accent-bg: var(--ark-accent-bg-hover);
+  --popup-accent-hover-bg: var(--ark-accent-bg-active);
+  --popup-accent-strong-bg: var(--ark-accent-bg);
+  --popup-accent-strong-hover-bg: var(--ark-accent-bg-hover);
+  --popup-accent-strong-active-bg: var(--ark-accent-bg-active);
+  --popup-accent-team-bg: var(--ark-accent-tint);
+  --popup-accent-team-hover-bg: var(--ark-accent-tint-strong);
+  /* Bootstrap czyta --bs-primary w kilkunastu miejscach stylu powloki. Kazdy
+     stary plik motywu spina go z --popup-accent, ale :root (czyli motyw
+     domyslny) zostawia blekit bootswatcha - i motyw domyslny jako jedyny
+     rozjechal by sie z reszta. Most robi to dla wszystkich naraz.
+     --bs-primary-rgb zostaje na starym: to surowa trojka kanalow, ktorej z
+     tokenu nie da sie wyliczyc. Karmi dwa polprzezroczyste wypelnienia i ginie
+     razem z Bootstrapem w fazie 6. */
+  --bs-primary: var(--ark-accent-text);
+
+  /* --- statusy ------------------------------------------------------------
+     Tak samo jak akcent: barwa podstawowa i "-light" to prawie wylacznie
+     `color:`, wiec obie ida na stopien tekstowy. Stopien 9 czytalby sie zle na
+     jasnym tle pergaminu i srebra, a status ma byc czytelny w kazdym z osmiu
+     motywow. */
+  --popup-success: var(--ark-success-text);
+  --popup-success-light: var(--ark-success-text);
+  --popup-success-subtle-bg: var(--ark-success-bg);
+  --popup-success-bg: var(--ark-success-bg);
+  --popup-success-hover-bg: var(--ark-success-4);
+  --popup-success-active-bg: var(--ark-success-border);
+  --popup-success-border: var(--ark-success-border);
+
+  --popup-warning: var(--ark-warning-text);
+  --popup-warning-light: var(--ark-warning-text);
+  --popup-warning-bg: var(--ark-warning-bg);
+  --popup-warning-hover-bg: var(--ark-warning-4);
+  --popup-warning-border: var(--ark-warning-border);
+
+  --popup-danger: var(--ark-danger-text);
+  --popup-danger-light: var(--ark-danger-text);
+  --popup-danger-soft: var(--ark-danger-text);
+  --popup-danger-subtle-bg: var(--ark-danger-bg);
+  --popup-danger-bg: var(--ark-danger-bg);
+  --popup-danger-hover-bg: var(--ark-danger-bg-hover);
+  --popup-danger-active-bg: var(--ark-danger-border);
+  --popup-danger-border: var(--ark-danger-border);
+
+  /* --- stopka i dolna chromia --------------------------------------------- */
+  --footer-bg: var(--ark-bg-surface);
+  --footer-border: var(--ark-border);
+  --footer-button-bg: var(--ark-bg-raised);
+  --footer-control-bg: var(--ark-bg-element);
+  --footer-control-hover-bg: var(--ark-bg-element-hover);
+  --footer-control-border: var(--ark-border-element);
+  --footer-control-hover-border: var(--ark-border-strong);
+  --footer-input-focus-border: var(--ark-focus-ring);
+  --footer-text-strong: var(--ark-text);
+  --footer-text: var(--ark-text-secondary);
+  --footer-text-dim: var(--ark-text-tertiary);
+}
+
+/* ---------------------------------------------------------------------------
+   Pelne przyciski Bootstrapa: tekst NA wypelnieniu.
+
+   --popup-accent, --popup-danger, --popup-warning i --popup-success sa w starej
+   warstwie przeciazone: w ~47 na 81 uzyc to `color:`, ale style.css podaje je
+   Bootstrapowi takze jako --bs-btn-bg. Most kieruje je na stopien tekstowy
+   (11), bo tak wygrywa wiekszosc uzyc - i wtedy biala etykieta, ktora
+   bootswatch daje pelnym przyciskom, siada na jasnym wypelnieniu (bursztynowy
+   "Zapisz" w motywie arkadia).
+
+   Stopien 11 jest jasny w motywach ciemnych i ciemny w jasnych - dokladnie
+   odwrotnie niz --ark-bg-app (stopien 1). Dlatego tlo aplikacji jest tu
+   poprawna barwa tekstu w kazdym z osmiu motywow i w kolorze wlasnym.
+   Stara warstwa nie miala pojecia "kontrast do wypelnienia", wiec brakujacy
+   kawalek musi dolozyc most.
+   --------------------------------------------------------------------------- */
+.ark-root .btn-primary,
+.ark-root .btn-danger,
+.ark-root .btn-warning,
+.ark-root .btn-success {
+  --bs-btn-color: var(--ark-bg-app);
+  --bs-btn-hover-color: var(--ark-bg-app);
+  --bs-btn-active-color: var(--ark-bg-app);
+  --bs-btn-disabled-color: var(--ark-bg-app);
+}
+
+/* ---------------------------------------------------------------------------
+   Powloka zostaje na swoim malowaniu.
+
+   `.ark-root` z base.css ustawia na swoim korzeniu piec rzeczy: font-family,
+   font-size, color, background i line-height. Na <body> starego klienta cztery
+   z nich to nie przemalowanie, tylko awaria:
+
+   - font-family -> IBM Plex Sans, ktorego index.html nie wczytuje (i wczytywac
+     nie powinien: e2e blokuje zapytania zewnetrzne, patrz
+     e2e/support/fixtures.ts), wiec kroj spada na systemowy fallback;
+   - font-size -> 13 px, czyli caly tekst bez wlasnego rozmiaru zjezdza z 16 na
+     13 px i uklad sie przelewa;
+   - color -> w motywach jasnych prawie czern, a glowne okno gry ma swoje
+     ciemne tlo z ustawienia gracza (outputBackground), nie z motywu. Tekst z
+     gry stawal sie wtedy nieczytelny - czarne na ciemnym;
+   - background -> stary klient we wszystkich motywach, takze jasnych, mial tlo
+     <body> z bootswatcha.
+
+   Przemalowanie ma isc przez most, czyli przez --popup-* i --footer-*, a nie
+   przez korzen powloki. Line-height zostawiamy: base.css i bootswatch daja tu
+   te sama wartosc 1.5.
+
+   --bs-body-* sa zadeklarowane na :root, czyli licza sie na <html>, gdzie
+   mostu nie ma - wychodzi z nich dokladnie to samo, co powloka miala przed tym
+   PR-em, w kazdym motywie. Gdyby ktoras z pozniejszych faz przerzucila
+   --bs-body-* na most, ten blok trzeba bedzie przepiac na cos stalego, bo
+   inaczej wroci czarny tekst na ciemnym tle okna gry.
+
+   Ten blok znika razem z powloka w fazie 5 (index.html, layout, stopka).
+   --------------------------------------------------------------------------- */
+body.ark-root {
+  font-family: "Open Sans", sans-serif;
+  font-size: var(--bs-body-font-size);
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+}

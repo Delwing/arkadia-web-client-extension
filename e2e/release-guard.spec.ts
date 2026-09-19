@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {resolveColor} from './support/theme';
 
 test.describe('Release guard timer', () => {
     test('displays initial state with guard ON and timer OK', async ({page}) => {
@@ -15,9 +16,12 @@ test.describe('Release guard timer', () => {
         await expect(releaseGuardTimer, 'should display Zas:').toContainText('Zas:');
         await expect(releaseGuardTimer, 'should show OK state').toContainText('OK');
 
-        // Pusc should be white when active
+        // Pusc takes the footer's strong text role when active. Resolved from the
+        // token rather than hard-coded: the footer themes from --ark-* now, so a
+        // literal would pin this test to one theme's shade.
         const puscSpan = releaseGuardTimer.locator('span').first();
-        await expect(puscSpan, 'Pusc should be white when active').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
+        const strong = await resolveColor(page, 'var(--footer-text-strong)');
+        await expect(puscSpan, 'Pusc should take the strong footer colour when active').toHaveCSS('color', strong);
     });
 
     test('toggles guard state when clicking anywhere on element', async ({page}) => {
@@ -27,21 +31,24 @@ test.describe('Release guard timer', () => {
 
         const releaseGuardTimer = page.locator('#release-guard-timer');
         const puscSpan = releaseGuardTimer.locator('span').first();
+        const strong = await resolveColor(page, 'var(--footer-text-strong)');
+        const dim = await resolveColor(page, 'var(--footer-text-dim)');
+        expect(strong, 'the two footer text roles must differ, or this test proves nothing').not.toBe(dim);
 
         // Initial state should be ON (strong)
-        await expect(puscSpan, 'Pusc should be strong initially').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
+        await expect(puscSpan, 'Pusc should be strong initially').toHaveCSS('color', strong);
 
         // Click anywhere to turn OFF
         await releaseGuardTimer.click();
 
         // Should change to OFF state (dim)
-        await expect(puscSpan, 'Pusc should be dim after click').toHaveCSS('color', 'rgba(255, 255, 255, 0.5)');
+        await expect(puscSpan, 'Pusc should be dim after click').toHaveCSS('color', dim);
 
         // Click again to toggle back ON
         await releaseGuardTimer.click();
 
         // Should return to ON state (strong)
-        await expect(puscSpan, 'Pusc should be strong again').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
+        await expect(puscSpan, 'Pusc should be strong again').toHaveCSS('color', strong);
     });
 
     test('always remains visible', async ({page}) => {

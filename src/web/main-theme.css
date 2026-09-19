@@ -26,6 +26,15 @@
    Rollup was extracting the node_modules CSS into its own vendor chunk and
    linking it AFTER the entry chunk, so even as main.ts's first import it lost
    to style.css. Inlining it at the top of this file pins it first, in-chunk. */
+/* System projektowy idzie PRZED baza bootswatcha, zeby przy rownej
+   specyficznosci wygrywal stary klient, a nie nowa warstwa: `.ark-root` siedzi
+   teraz na <body>, wiec globalne reguly z base.css (pasek przewijania,
+   ::placeholder, :focus-visible) dotykaja calego, jeszcze nie zmigrowanego
+   drzewa. Reszta base.css jest owinieta w :where() i ma zerowa specyficznosc,
+   wiec i tak przegrywa z czymkolwiek. Do stylowania nowych ekranow ta
+   kolejnosc nic nie zmienia: klasy `.ark-*` (0,1,0) bija selektory elementowe
+   bootstrapa (0,0,1). */
+@import '../ui/design/css/index.css';
 @import 'bootswatch/dist/darkly/bootstrap.min.css';
 @import './style.css';
 @import './themes/fantasy.css';
@@ -35,6 +44,9 @@
 @import './themes/dark-neutral.css';
 @import './themes/light-parchment.css';
 @import './themes/light-silver.css';
+/* Most stare -> nowe: po starych motywach, bo przejmuje czesc ich zmiennych.
+   Kryterium usuniecia pliku siedzi w jego naglowku. */
+@import './themes/bridge.css';
 @import './layout/layout.css';
 /* Phone footer — last, so its narrow-viewport block wins over the stock
    footer rules it reshapes. */

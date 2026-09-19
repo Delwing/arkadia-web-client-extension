@@ -36,8 +36,15 @@
 </head>
 <!-- data-mobile-footer / data-footer-expand default to the compact phone footer
      with its expander, so both are there from the first paint;
-     uiSettingsCore.apply() rewrites them from the player's settings. -->
-<body data-map-position="top-overlay" data-mobile-footer="1" data-footer-expand="toggle">
+     uiSettingsCore.apply() rewrites them from the player's settings.
+
+     Tak samo data-ark-theme: "arkadia" to motyw, na ktory mapuje sie domyslne
+     ustawienie colorTheme ("default"), zeby pierwsza klatka nie byla bez
+     tokenow. uiSettingsCore.apply() nadpisuje je ustawieniem gracza.
+     Klasa ark-root wlacza system projektowy dla calego drzewa - jest celowo
+     opt-in, zeby nie bic sie z Bootstrapem; szczegoly w
+     src/ui/design/css/base.css i src/web/themes/bridge.css. -->
+<body class="ark-root" data-ark-theme="arkadia" data-map-position="top-overlay" data-mobile-footer="1" data-footer-expand="toggle">
 <div id="main-container">
     <div id="content-area">
         <div id="layout-manager-root"></div>
