@@ -11,6 +11,11 @@ package-lock.json
 playwright-report/
 blob-report/
 test-results/
+# Katalog roboczy harnessa zrzutow z recepty fazy 3
+# (docs/dev/UI_MIGRATION.md §4, krok 8). Do repo trafiaja tylko gotowe
+# zlozenia PRZED/PO w docs/dev/screens/.
+shots/
+shots-before/
 coverage/
 .claude/
 !/.claude/

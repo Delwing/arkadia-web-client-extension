@@ -66,6 +66,9 @@ export { Spinner } from "./primitives/Spinner";
 export { Switch } from "./primitives/Switch";
 export type { SwitchProps } from "./primitives/Switch";
 
+export { Table, TableCell, TableHeadCell, TableRow, TableScroll } from "./primitives/Table";
+export type { TableCellProps, TableHeadCellProps, TableProps, TableRowProps } from "./primitives/Table";
+
 export { TabPanel, Tabs } from "./primitives/Tabs";
 export type { TabItem, TabsProps } from "./primitives/Tabs";
 

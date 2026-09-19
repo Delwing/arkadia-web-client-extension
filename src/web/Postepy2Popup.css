@@ -1,0 +1,406 @@
+/* Progress-by-day ("Postepy 2") popup.
+   Tabs over an entry list, a bar chart per skill and an import panel.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme. */
+
+/* Postepy2 Popup */
+.postepy2-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+/* base = .popup-btn.popup-btn--md; only the right-alignment delta remains */
+.postepy2-import-button {
+  margin-left: auto;
+}
+
+.postepy2-import-panel {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--ark-accent-tint);
+  border-bottom: 1px solid var(--ark-accent-bg);
+  font-size: 0.8rem;
+  color: var(--ark-text-secondary);
+}
+
+.postepy2-import-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.postepy2-import-panel__label {
+  color: var(--ark-text-tertiary);
+}
+
+.postepy2-import-panel__select {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--ark-border-strong);
+  border-radius: 0.25rem;
+  background-color: var(--ark-bg-sunken);
+  color: var(--ark-text);
+  font-size: 0.8rem;
+}
+
+.postepy2-import-panel__select option {
+  background-color: var(--ark-bg-sunken);
+  color: var(--ark-text);
+}
+
+.postepy2-import-panel__info {
+  color: var(--ark-data-3-text);
+  margin-bottom: 0.25rem;
+}
+
+.postepy2-import-panel__note {
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.postepy2-import-panel__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.postepy2-import-panel__btn {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.postepy2-import-panel__btn--confirm {
+  background-color: var(--ark-accent-bg-hover);
+  color: var(--ark-accent-text);
+}
+
+.postepy2-import-panel__btn--confirm:hover {
+  background-color: var(--ark-accent-bg-active);
+}
+
+.postepy2-import-panel__btn--cancel {
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text-secondary);
+}
+
+.postepy2-import-panel__btn--cancel:hover {
+  background-color: var(--ark-bg-element-active);
+}
+
+.postepy2-import-message {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.postepy2-import-message--success {
+  background-color: var(--ark-success-bg);
+  border-bottom: 1px solid var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.postepy2-import-message--error {
+  background-color: var(--ark-danger-bg);
+  border-bottom: 1px solid var(--ark-danger-border);
+  color: var(--ark-danger-text);
+}
+
+.postepy2-import-message__close {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+.postepy2-import-message__close:hover {
+  opacity: 1;
+}
+
+/* tabs folded to .popup-tabs/.popup-tab; only the container's chrome remains. */
+.postepy2-tabs {
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--ark-border);
+}
+
+.postepy2-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.8rem);
+  line-height: 1.4;
+}
+
+.postepy2-entries {
+  display: flex;
+  flex-direction: column;
+}
+
+.postepy2-entry {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.postepy2-entry:hover {
+  background-color: var(--ark-bg-element-ghost-hover);
+}
+
+.postepy2-entry__num {
+  color: var(--ark-text-tertiary);
+  min-width: 3.5rem;
+  font-family: var(--output-font-family), monospace;
+  white-space: pre;
+}
+
+.postepy2-entry__date {
+  color: var(--ark-data-4-text);
+  min-width: 5.5rem;
+}
+
+.postepy2-entry__counts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.postepy2-entry__count {
+  color: var(--ark-data-3-text);
+}
+
+.postepy2-entry__count--noform {
+  color: var(--ark-data-muted);
+}
+
+.postepy2-entry__edit-trigger {
+  border: none;
+  background: none;
+  color: var(--ark-text-faint);
+  cursor: pointer;
+  padding: 0 0.25rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.postepy2-entry:hover .postepy2-entry__edit-trigger {
+  opacity: 1;
+}
+
+.postepy2-entry__edit-trigger:hover {
+  color: var(--ark-text-secondary);
+}
+
+.postepy2-entry__edit {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 1;
+}
+
+.postepy2-entry__edit-input {
+  width: 4.5rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--ark-gray-a9);
+  border-radius: 0.25rem;
+  background-color: var(--ark-bg-sunken);
+  color: var(--ark-text);
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  height: 1.4em;
+  box-sizing: border-box;
+}
+
+.postepy2-entry__edit-input:focus {
+  outline: none;
+  border-color: var(--ark-focus-ring);
+}
+
+.postepy2-entry__edit-btn {
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0 0.375rem;
+  font-size: inherit;
+  cursor: pointer;
+  line-height: inherit;
+}
+
+.postepy2-entry__edit-btn--save {
+  background-color: var(--ark-success-bg);
+  color: var(--ark-success-text);
+}
+
+.postepy2-entry__edit-btn--save:hover {
+  background-color: var(--ark-success-border);
+}
+
+.postepy2-entry__edit-btn--delete {
+  background-color: var(--ark-danger-bg);
+  color: var(--ark-danger-text);
+}
+
+.postepy2-entry__edit-btn--delete:hover {
+  background-color: var(--ark-danger-border);
+}
+
+.postepy2-entry__edit-btn--cancel {
+  background: none;
+  color: var(--ark-text-tertiary);
+  margin-left: auto;
+}
+
+.postepy2-entry__edit-btn--cancel:hover {
+  color: var(--ark-text-secondary);
+}
+
+.postepy2-noform-total {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--ark-border);
+  color: var(--ark-data-muted);
+}
+
+.postepy2-footer {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--ark-gray-a2);
+  border-top: 1px solid var(--ark-border);
+  font-size: 0.8rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.postepy2-footer__label {
+  color: var(--ark-data-6-text);
+}
+
+.postepy2-footer__total {
+  color: var(--ark-data-3-text);
+  font-weight: 500;
+}
+
+.postepy2-footer__noform {
+  color: var(--ark-data-muted);
+}
+
+.postepy2-footer__approx {
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+}
+
+/* Postepy2 Graphs */
+.postepy2-graphs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.postepy2-graph-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.postepy2-graph-title {
+  color: var(--ark-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin: 0;
+  padding: 0 0.25rem;
+}
+
+.postepy2-chart {
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+.postepy2-chart__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100px;
+  padding-top: 1.5rem;
+}
+
+.postepy2-chart__bar-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.postepy2-chart__bar-wrapper {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+.postepy2-chart__bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--ark-data-5-text);
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+}
+
+.postepy2-chart__bar:hover {
+  background-color: var(--ark-data-2-text);
+}
+
+.postepy2-chart__bar--noform {
+  background-color: var(--ark-data-muted);
+}
+
+.postepy2-chart__bar--noform:hover {
+  background-color: var(--ark-data-muted);
+}
+
+.postepy2-chart__bar-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+  font-size: 0.65rem;
+  color: var(--ark-text-secondary);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  margin-bottom: 0.25rem;
+}
+
+.postepy2-chart__bar-label {
+  font-size: 0.7rem;
+  color: var(--ark-text-tertiary);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+  white-space: pre;
+}

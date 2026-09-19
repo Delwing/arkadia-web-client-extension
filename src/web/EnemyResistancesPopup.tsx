@@ -16,7 +16,6 @@ import {
     Snowflake,
     Sparkles,
     Sword,
-    TriangleAlert,
     Wind,
     Wine,
     Zap,
@@ -40,6 +39,18 @@ import {
     type ResistanceKind,
     type ResistanceTrait,
 } from '@modules/data/enemyResistanceStore';
+import {
+    Button,
+    EmptyState,
+    Icon,
+    Input,
+    Segmented,
+    Table,
+    TableCell,
+    TableHeadCell,
+    TableRow,
+    TableScroll,
+} from '@design';
 
 const POPUP_ID = 'popup:enemyResistances';
 const CONFIRM_MS = 4000;
@@ -184,25 +195,26 @@ const EnemyResistancesPopup: React.FC = () => {
     };
 
     const headerActions = entries.length > 0 ? (
-        <button
-            type="button"
-            className={`popup-btn popup-btn--sm${confirmClear ? ' popup-btn--danger' : ''}`}
+        <Button
+            size="sm"
+            variant={confirmClear ? 'danger' : 'soft'}
             onClick={handleClearAll}
             title="Usun wszystkie wpisy"
         >
             {confirmClear ? 'Na pewno?' : 'Wyczysc'}
-        </button>
+        </Button>
     ) : undefined;
 
     const removeButton = (group: EnemyResistanceGroup) => (
-        <button
-            type="button"
-            className="carriage-remove-btn"
+        <Button
+            size="sm"
+            variant="ghost"
+            className="enemy-res-remove"
             onClick={() => void removeEnemyResistanceGroup(group)}
             title="Usun wpis"
         >
-            X
-        </button>
+            <Icon name="close" size={13} />
+        </Button>
     );
 
     const enemyName = (group: EnemyResistanceGroup) => (
@@ -211,7 +223,7 @@ const EnemyResistancesPopup: React.FC = () => {
             {group.hasUnknownArea && (
                 // A title on the <svg> itself is not a reliable tooltip - wrap it.
                 <span className="enemy-res-warn" title={UNKNOWN_AREA_HINT}>
-                    <TriangleAlert size={13} />
+                    <Icon name="warning" size={13} />
                 </span>
             )}
             {group.areaLabel && <span className="enemy-res-area">{group.areaLabel}</span>}
@@ -219,65 +231,67 @@ const EnemyResistancesPopup: React.FC = () => {
     );
 
     const renderTable = () => (
-        <table className="zlom-table enemy-res-table">
-            <thead>
-                <tr>
-                    <th rowSpan={2} className="enemy-res-name-head">Przeciwnik</th>
-                    {DAMAGE_CATEGORIES.map(c => (
-                        <th key={c.label} colSpan={c.types.length} className="enemy-res-group">
-                            {c.label}
-                        </th>
-                    ))}
-                    {hasUnknown && <th rowSpan={2}>Nierozpoznane</th>}
-                    <th rowSpan={2} />
-                </tr>
-                <tr>
-                    {DAMAGE_KEYS.map(key => (
-                        <th
-                            key={key}
-                            className={`enemy-res-type${sortKey === key ? ' enemy-res-type--sorted' : ''}`}
-                            onClick={() => setSortKey(k => (k === key ? null : key))}
-                            title={`Sortuj: najpierw wrazliwe na ${key}`}
-                        >
-                            <span>{key}</span>
-                        </th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row, i) => (
-                    <tr key={row.group.key} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-                        <td className="zlom-cell zlom-cell--short" title={rowTooltip(row.group)}>
-                            {enemyName(row.group)}
-                        </td>
-                        {DAMAGE_KEYS.map(key => {
-                            const trait = row.byType.get(key);
-                            return (
-                                <td
-                                    key={key}
-                                    className={`zlom-cell enemy-res-cell${trait ? ` enemy-res-cell--${trait.kind}` : ''}`}
-                                    title={trait ? traitPhrase(trait) : undefined}
-                                >
-                                    {trait ? (trait.kind === 'odporny' ? 'O' : 'W') : ''}
-                                </td>
-                            );
-                        })}
-                        {hasUnknown && (
-                            <td className="zlom-cell">
-                                {row.unknown.map(traitPhrase).join('; ')}
-                            </td>
-                        )}
-                        <td className="zlom-cell">{removeButton(row.group)}</td>
+        <TableScroll>
+            <Table compact zebra className="enemy-res-table">
+                <thead>
+                    <tr>
+                        <TableHeadCell rowSpan={2} className="enemy-res-name-head">Przeciwnik</TableHeadCell>
+                        {DAMAGE_CATEGORIES.map(c => (
+                            <TableHeadCell key={c.label} colSpan={c.types.length} align="center" className="enemy-res-group">
+                                {c.label}
+                            </TableHeadCell>
+                        ))}
+                        {hasUnknown && <TableHeadCell rowSpan={2}>Nierozpoznane</TableHeadCell>}
+                        <TableHeadCell rowSpan={2} />
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                    <tr>
+                        {DAMAGE_KEYS.map(key => (
+                            <TableHeadCell
+                                key={key}
+                                align="center"
+                                className={`enemy-res-type${sortKey === key ? ' enemy-res-type--sorted' : ''}`}
+                                onClick={() => setSortKey(k => (k === key ? null : key))}
+                                title={`Sortuj: najpierw wrazliwe na ${key}`}
+                            >
+                                <span>{key}</span>
+                            </TableHeadCell>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map(row => (
+                        <TableRow key={row.group.key}>
+                            <TableCell align="grow" tone="strong" title={rowTooltip(row.group)}>
+                                {enemyName(row.group)}
+                            </TableCell>
+                            {DAMAGE_KEYS.map(key => {
+                                const trait = row.byType.get(key);
+                                return (
+                                    <TableCell
+                                        key={key}
+                                        align="center"
+                                        className={`enemy-res-cell${trait ? ` enemy-res-cell--${trait.kind}` : ''}`}
+                                        title={trait ? traitPhrase(trait) : undefined}
+                                    >
+                                        {trait ? (trait.kind === 'odporny' ? 'O' : 'W') : ''}
+                                    </TableCell>
+                                );
+                            })}
+                            {hasUnknown && (
+                                <TableCell tone="muted">{row.unknown.map(traitPhrase).join('; ')}</TableCell>
+                            )}
+                            <TableCell align="center">{removeButton(row.group)}</TableCell>
+                        </TableRow>
+                    ))}
+                </tbody>
+            </Table>
+        </TableScroll>
     );
 
     const renderList = () => (
         <div className="enemy-res-lines">
             {rows.map((row, i) => (
-                <div key={row.group.key} className={i % 2 ? 'enemy-res-line zlom-row zlom-row--alt' : 'enemy-res-line zlom-row'}>
+                <div key={row.group.key} className={i % 2 ? 'enemy-res-line enemy-res-line--alt' : 'enemy-res-line'}>
                     <span className="enemy-res-line__name" title={rowTooltip(row.group)}>
                         {enemyName(row.group)}
                     </span>
@@ -305,29 +319,21 @@ const EnemyResistancesPopup: React.FC = () => {
             headerActions={headerActions}
         >
             <div className="postepy2-header">
-                <input
-                    type="text"
-                    className="zlom-filter enemy-res-filter"
+                <Input
+                    className="enemy-res-filter"
                     placeholder="Filtruj po nazwie..."
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
                 />
-                <span className="enemy-res-view">
-                    <button
-                        type="button"
-                        className={`popup-btn popup-btn--sm${view === 'table' ? ' popup-btn--primary' : ''}`}
-                        onClick={() => setView('table')}
-                    >
-                        Tabela
-                    </button>
-                    <button
-                        type="button"
-                        className={`popup-btn popup-btn--sm${view === 'list' ? ' popup-btn--primary' : ''}`}
-                        onClick={() => setView('list')}
-                    >
-                        Lista
-                    </button>
-                </span>
+                <Segmented<View>
+                    className="enemy-res-view"
+                    value={view}
+                    onValueChange={next => setView(next)}
+                    options={[
+                        { value: 'table', label: 'Tabela' },
+                        { value: 'list', label: 'Lista' },
+                    ]}
+                />
                 {view === 'table' && (
                     <span className="enemy-res-legend">
                         <span className="enemy-res-mark enemy-res-mark--wrazliwy">W</span> wrazliwy
@@ -338,11 +344,13 @@ const EnemyResistancesPopup: React.FC = () => {
 
             <div className="enemy-res-content">
                 {rows.length === 0 ? (
-                    <div className="popup-empty">
-                        {entries.length === 0
-                            ? "Brak zapisanych odpornosci. Uzyj 'ocen' na przeciwniku, zeby je zebrac."
-                            : 'Brak wynikow dla filtra.'}
-                    </div>
+                    <EmptyState
+                        message={
+                            entries.length === 0
+                                ? "Brak zapisanych odpornosci. Uzyj 'ocen' na przeciwniku, zeby je zebrac."
+                                : 'Brak wynikow dla filtra.'
+                        }
+                    />
                 ) : view === 'table' ? renderTable() : renderList()}
             </div>
         </DockablePopupWrapper>

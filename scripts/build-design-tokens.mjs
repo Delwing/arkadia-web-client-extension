@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 
-import { THEMES, STATUS_SCALES, isBrightSolid } from '../src/ui/design/themes/themes.config.mjs';
+import { THEMES, STATUS_SCALES, DATA_SCALES, isBrightSolid } from '../src/ui/design/themes/themes.config.mjs';
 
 const require = createRequire(import.meta.url);
 const radix = require('@radix-ui/colors');
@@ -26,6 +26,14 @@ export const OUTPUT_PATH = resolve(HERE, '../src/ui/design/css/scales.generated.
 
 /** Steps of a status scale we actually expose — soft fill, border, solid, text. */
 const STATUS_STEPS = [3, 4, 6, 9, 10, 11];
+
+/**
+ * Steps of a categorical data scale we expose. Fewer than a status scale: a
+ * data hue tints a cell, outlines a chart series or colours a label, so it
+ * needs a soft fill, a border, a solid and a text step — no hover ramp, because
+ * nothing in this palette is an interactive element.
+ */
+const DATA_STEPS = [3, 6, 9, 11];
 
 /** Radix export name for a scale in a given appearance. */
 function scaleKey(name, appearance, alpha) {
@@ -87,6 +95,15 @@ function emitTheme(theme) {
       `  --ark-${role}-contrast: ${isBrightSolid(scaleName) ? 'var(--ark-gray-1)' : '#fff'};`,
     );
   }
+  lines.push('');
+  lines.push('  /* categorical data hues — distinguishable, never a status */');
+  DATA_SCALES.forEach((scaleName, index) => {
+    const scale = readScale(scaleName, appearance, false);
+    lines.push(...emitSteps(scale, scaleName, `data-${index + 1}`, appearance, false, DATA_STEPS));
+    lines.push(
+      `  --ark-data-${index + 1}-contrast: ${isBrightSolid(scaleName) ? 'var(--ark-gray-1)' : '#fff'};`,
+    );
+  });
   lines.push('');
   lines.push('  /* transparent blacks/whites for scrims and hover films */');
   const overlay = appearance === 'dark' ? radix.blackA : radix.blackA;
