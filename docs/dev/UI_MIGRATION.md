@@ -410,9 +410,9 @@ recorded above.** `.map-header-menu*` appears 32 times in `StaticMapPopup.tsx`,
 `ChatPopup.tsx`; the class family is still defined in `layout/layout.css` (and
 mirrored in `forge-ui/layout-theme.css`), and the popup's own rules are still in
 `style.css`. Both files are still inside `main-theme.css`'s cascade lock. So the
-blocker is the class graph, not the popup's size — 1 154 lines is a red herring,
-and a PR that "does StaticMap" without doing `.map-header-menu__*` for all four
-consumers is half-migrating a screen, which §5 forbids.
+blocker is the class graph, not the popup's size — at 1 154 lines it is the
+largest popup in the codebase, and that is a red herring: were it a third the
+size it would be blocked by exactly the same four consumers.
 
 Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
 would half-migrate the screen, which §5 forbids for exactly the reason that
