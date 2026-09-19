@@ -24,12 +24,18 @@
   box-shadow: var(--ark-shadow-2);
 }
 
+/* `opacity` and `border-radius` are declared because style.css skins every bare
+   <button> in the stock shell and a class only wins for what it declares. The
+   design system's own controls are excluded there by their `ark-` prefix; a
+   screen's bespoke button has to say it itself. */
 .magiki-suggest__item {
   display: block;
   width: 100%;
   padding: var(--ark-space-4) var(--ark-space-5);
   background: none;
   border: 0;
+  border-radius: 0;
+  opacity: 1;
   color: var(--ark-text-secondary);
   font-size: var(--ark-text-5);
   text-align: left;
@@ -64,6 +70,7 @@
   font-size: var(--ark-text-4);
 }
 
+/* Smaller than IconButton's ladder goes (sm is 28px), inside a 24px chip. */
 .magiki-chip__remove {
   display: inline-flex;
   align-items: center;
@@ -74,6 +81,7 @@
   background: none;
   border: 0;
   border-radius: var(--ark-radius-full);
+  opacity: 1;
   color: inherit;
   cursor: pointer;
 }

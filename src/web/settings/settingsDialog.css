@@ -295,7 +295,6 @@
   cursor: pointer;
 }
 
-.settings-check__label:has(+ *:disabled),
 .settings-check:has(.ark-checkbox:disabled) .settings-check__label {
   cursor: not-allowed;
   opacity: 0.5;

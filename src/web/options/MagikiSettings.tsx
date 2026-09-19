@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Icon, IconButton, Input } from "@design";
+import { Icon, Input } from "@design";
 import { CheckboxField, ColorField, SettingsCard, SettingsHint } from "@web/settings/controls.tsx";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
@@ -174,15 +174,14 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
                             {favoriteMagics.map((magic) => (
                                 <span key={magic} className="magiki-chip">
                                     {magic}
-                                    <IconButton
+                                    <button
+                                        type="button"
                                         className="magiki-chip__remove"
-                                        size="sm"
-                                        plain
                                         title={`Usuń ${magic}`}
                                         onClick={() => handleRemoveMagic(magic)}
                                     >
                                         <Icon name="close" size={12} />
-                                    </IconButton>
+                                    </button>
                                 </span>
                             ))}
                         </div>

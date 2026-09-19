@@ -23,18 +23,14 @@ import { Button, Checkbox } from "@design";
  *   styled from tokens in `settingsDialog.css`.
  */
 
-export function SettingsCard({ title, titleExtra, headerExtra, full, children }: {
+export function SettingsCard({ title, headerExtra, full, children }: {
     title: string;
-    /** Rendered inside the heading, after the text — a scope badge, typically. */
-    titleExtra?: ReactNode;
     /** Rendered opposite the heading, on the same line. */
     headerExtra?: ReactNode;
     full?: boolean;
     children: ReactNode;
 }) {
-    const heading = (
-        <h5 className="settings-card__title">{title}{titleExtra}</h5>
-    );
+    const heading = <h5 className="settings-card__title">{title}</h5>;
     return (
         <section className={`settings-card${full ? " settings-card--full" : ""}`}>
             {headerExtra ? (
