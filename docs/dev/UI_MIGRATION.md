@@ -246,6 +246,11 @@ below.
 Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
 worth keeping are in "What PR 3 found" below.
 
+**PR 4 (debug and the rest) is done** — three popups: Zaslony (debug), Zrodla
+danych, Demo listy obiektow. **Okno mapy (StaticMap) is still not migrated**;
+PR 4 re-checked the block and it holds unchanged — see "Okno mapy" below.
+What PR 4 found is below it.
+
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
 
@@ -399,9 +404,76 @@ past the rest of `layout.css` in the cascade, which that file's header warns
 about specifically. That change belongs either to Phase 5 or to a small PR of
 its own; it should not be smuggled in under one popup's name.
 
+**Phase 3 PR 4 re-checked this and it holds, with the counts higher than
+recorded above.** `.map-header-menu*` appears 32 times in `StaticMapPopup.tsx`,
+49 in `MapHeaderMenu.tsx`, 20 in `ObjectListHeaderMenu.tsx` and 12 in
+`ChatPopup.tsx`; the class family is still defined in `layout/layout.css` (and
+mirrored in `forge-ui/layout-theme.css`), and the popup's own rules are still in
+`style.css`. Both files are still inside `main-theme.css`'s cascade lock. So the
+blocker is the class graph, not the popup's size — 1 154 lines is a red herring,
+and a PR that "does StaticMap" without doing `.map-header-menu__*` for all four
+consumers is half-migrating a screen, which §5 forbids.
+
 Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
 would half-migrate the screen, which §5 forbids for exactly the reason that
 applies here — the body would re-theme and the header would not.
+
+#### What PR 4 (debug and the rest) found
+
+**A sheet can sit outside the manifest and nothing notices.** `CoverDebugPopup.css`
+was pulled in by `import './CoverDebugPopup.css'` in its own component — the one
+thing the manifest's header forbids — and it had been there since before the
+manifest existed. The test that guards this (`hostTokens.test.ts`, "no migrated
+sheet is imported by its component") only checks sheets that are already on the
+manifest's list, so an unmigrated sheet importing itself is invisible to it. The
+rule to draw: **the guard tests check the sheets they know about; they cannot
+tell you about a file nobody has listed.** That is the same shape as a popup
+left off `MIGRATED_SHEETS` entirely, and it is worth a grep for
+`import '.*Popup.css'` before each family is declared done.
+
+**`--ark-table__cell--grow` does not do what its name says.** `Table`'s `grow`
+modifier is documented as "the one column allowed to wrap and absorb the leftover
+width". The width half works. The wrap half does not: `.ark-table__cell--grow`
+is (0,1,0) and `.ark-table th, .ark-table td { white-space: nowrap }` in the same
+sheet is (0,1,1), so the modifier's `white-space: normal` is dead in every table
+in the codebase. PR 3 worked around it without naming it (the times-debug sheet
+carries a two-class delta *and* passes `align="grow"`), and
+`EnemyResistancesPopup` passes `align="grow"` with no delta, so its description
+column has never wrapped. **Fixing the primitive is a one-line change
+(`.ark-table td.ark-table__cell--grow`) but it touches every migrated table, so
+it wants its own PR and its own screenshots** — it is queued in §7 rather than
+smuggled in here.
+
+**Reach for `grow` only when a column should really eat the slack.** Put on this
+popup's first column it pushed `num` / `status` / `przed kim` / `od` against the
+right edge and left a gulf between an object's name and its data. Dropping the
+modifier let the table distribute columns the way the old `.zlom-table` did.
+Caught on the before/after screenshot; nothing else would have shown it.
+
+**The same family can need both answers on `--popup-data-*`.** Two popups in
+this one went opposite ways and both are right. The cover debug tape ranks —
+a cover standing means you cannot hit the target, breaking it means you can —
+so its four-step green/yellow/orange/red ladder went to the three status roles
+(the two middle steps merge; both mean "something in between"). The object-list
+demo's marks do not rank — "attack target" is not worse than "defense target" —
+so they went to `--ark-data-*`. **Deciding per call site, not per popup, is what
+§4's `--popup-data-*` decision actually asks for.**
+
+**Not every `--ark-data-*` slot is equally loud.** Slot 4 is a muted brown in
+every theme (`#d4b3a5` dark, `#7d5e54` light). The demo's gold "next target"
+mark — the most operationally important mark in that window, the head of the
+attack queue — landed on it and went nearly invisible against ordinary text in
+parchment. Slots 1, 3, 5 and 6 are the four that stay loud in both directions.
+**A categorical palette guarantees distinguishable, not prominent**; if a mark
+has to shout, check it on a light theme before trusting the slot.
+
+**A migration can be a bug fix, and the light themes are where.** The demo's
+`select` had a hard-coded `rgba(0, 0, 0, 0.3)` background under
+`--popup-text-strong` text. In the two light themes that is dark text on a
+mid-grey plate — the same unreadable-panel failure as PR 3's
+`--ark-bg-overlay`, arrived at from the other direction. Its gold and pink
+checkbox labels had the same problem against a near-white card. None of it was
+visible in a dark theme and no test could see it.
 
 #### What PR 3 (travel/transport) found
 
@@ -721,6 +793,15 @@ than it adds.
   `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
   it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
   popups manifest — `layout.css`'s own header says why.
+
+- **Fix `white-space` on `Table`'s `grow` modifier.** `.ark-table__cell--grow`
+  (0,1,0) loses to `.ark-table th, .ark-table td` (0,1,1) in the same sheet, so
+  the modifier's `white-space: normal` never applies and only its `width: 100%`
+  works. `.ark-table td.ark-table__cell--grow` fixes it. Deliberately not done
+  under Phase 3 PR 4: it changes wrapping in every migrated table at once
+  (`EnemyResistancesPopup` has been passing `align="grow"` with no delta and no
+  wrapping since PR 1), so it wants its own before/after pass. Popups that today
+  carry a two-class delta for this can drop it afterwards.
 
 - **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
   hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3

@@ -155,6 +155,14 @@ slot 2. Anything that ranks — good / middling / bad — is a *status* and belo
 on `--ark-success/warning/danger`, which is what keeps it reading correctly in
 all eight themes.
 
+**Distinguishable is not the same as prominent.** Slot 4 is a muted brown in
+every theme (`#d4b3a5` dark, `#7d5e54` light) and it sits close to ordinary body
+text, most visibly in the light ones. It tells apart a column perfectly well; it
+is the wrong home for a mark that has to catch the eye. Slots 1, 3, 5 and 6 stay
+loud in both directions, and four is as many loud categories as this palette
+gives you. Phase 3 PR 4 put a "next target" marker on slot 4 and lost it against
+plain text in parchment.
+
 They are numbered rather than named after their hue, and that is deliberate. A
 slot called `--ark-data-tomato` invites the next person to reach for it when
 they mean danger, and one commit later the palette is a second, unpoliced status
@@ -279,6 +287,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `src/web/` combat + status popups (9) | **on the design system**, `--ark-*` only (Phase 3, PR 1) |
 | `src/web/` world + time popups (6) | **on the design system**, `--ark-*` only (Phase 3, PR 2). Okno mapy is not among them — see `UI_MIGRATION.md` §4 |
 | `src/web/` travel + transport popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 3) |
+| `src/web/` debug + misc popups (3) | **on the design system**, `--ark-*` only (Phase 3, PR 4). Okno mapy is still not among them — see `UI_MIGRATION.md` §4 |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki (Faza 4, PR 1), Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2) |

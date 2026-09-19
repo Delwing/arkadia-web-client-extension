@@ -203,10 +203,7 @@ const CoverDebugPopup: React.FC = () => {
                 </TableRow>
             ) : group.map(row => (
                 <TableRow key={row.obj.num}>
-                    <TableCell
-                        align="grow"
-                        className={row.obj.category === 'player' ? 'cover-dbg-me' : undefined}
-                    >
+                    <TableCell className={row.obj.category === 'player' ? 'cover-dbg-me' : undefined}>
                         {row.obj.desc}
                     </TableCell>
                     <TableCell className="cover-dbg-num">ob_{row.obj.num}</TableCell>
@@ -243,7 +240,7 @@ const CoverDebugPopup: React.FC = () => {
                 <Table compact hoverable>
                     <thead>
                         <tr>
-                            <TableHeadCell align="grow">opis</TableHeadCell>
+                            <TableHeadCell>opis</TableHeadCell>
                             <TableHeadCell>num</TableHeadCell>
                             <TableHeadCell>status</TableHeadCell>
                             <TableHeadCell>przed kim</TableHeadCell>

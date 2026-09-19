@@ -82,10 +82,13 @@
    `white-space: nowrap` w kazdej komorce - slusznie dla gestej tabeli liczb,
    ale tutaj rozpycha okno i scina ostatnie kolumny.
 
-   Dwuklasowo z tego samego powodu co wyzej, a dodatkowo dlatego, ze sam
-   modyfikator `align="grow"` tego NIE zalatwia: `.ark-table__cell--grow`
-   (0,1,0) przegrywa z `.ark-table td` (0,1,1) i jego `white-space: normal`
-   jest martwe. Szerokosc 100% z tego modyfikatora dziala i zostaje. */
+   Dwuklasowo, bo modyfikator `align="grow"` tego NIE zalatwia:
+   `.ark-table__cell--grow` (0,1,0) przegrywa z `.ark-table td` (0,1,1) i jego
+   `white-space: normal` jest martwe. Dziala z niego tylko `width: 100%` - i
+   wlasnie dlatego ta kolumna go NIE dostaje: na zrzucie przed/po szerokosc
+   100% na pierwszej kolumnie zepchnela num / status / przed kim / od do samej
+   prawej krawedzi, zostawiajac przepasc miedzy nazwa obiektu a jego danymi.
+   Bez tego modyfikatora tabela rozklada kolumny tak jak stara .zlom-table. */
 .cover-dbg-state .ark-table td:first-child {
     white-space: normal;
     word-break: break-word;

@@ -26,6 +26,19 @@
    --ark-success/warning/danger. Odwrotnie niz w CoverDebugPopup.css, gdzie
    barwy odpowiadaja na pytanie "czy moge uderzyc" i rankuja naprawde.
 
+   Sloty dobrane na ROZROZNIALNOSC, nie na podobienstwo do starego hexa.
+   Paleta swiadomie nie ma ani czerwieni, ani bursztynu (DESIGN_SYSTEM.md §3:
+   barwa danych nie ma czytac sie jak status obok niej), wiec czerwonego
+   "cel ataku" i zlotego "nastepny cel" nie da sie odwzorowac co do odcienia.
+   Wybrane cztery sloty leza daleko od siebie na kole: 1 (indygo), 3 (zielen),
+   5 (fiolet), 6 (roz).
+
+   Slot 4 jest tu SWIADOMIE NIEUZYTY. To przygaszony braz - w motywach ciemnych
+   jasny, w jasnych ciemny, ale w obie strony blisko barwy zwyklego tekstu. Na
+   zrzucie w pergaminie "nastepny cel" zlewal sie z nia zupelnie, a to
+   najwazniejszy znacznik w tym oknie (glowa kolejki atakow). Zlapane na
+   zrzucie, nie przez test.
+
    Karta obiektu zostaje na statusach (--popup-success-* / --popup-danger-* szly
    na --ark-success-* / --ark-danger-*): tam podzial druzyna/wrog JEST
    wartosciujacy i tak byl pomyslany.
@@ -216,11 +229,11 @@
 }
 
 .demo-checkbox--target {
-  color: var(--ark-data-2-text);
+  color: var(--ark-data-6-text);
 }
 
 .demo-checkbox--next {
-  color: var(--ark-data-4-text);
+  color: var(--ark-data-5-text);
 }
 
 .demo-checkbox--ogluch {
