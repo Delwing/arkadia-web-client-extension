@@ -66,29 +66,27 @@
     min-height: 0;
 }
 
-/* Prymityw Table ma wlasna typografie (--ark-text-4, font bezszeryfowy); okno
-   diagnostyczne trzyma swoja, gestsza.
+/* Gestosc bierze sie z modyfikatora `compact` prymitywu, ktory ustawia
+   font-size wprost na komorkach. Wlasna regula font-size na samej tabeli nic by
+   tu nie dala - nie dlatego, ze przegrywa specyficznoscia, tylko dlatego, ze
+   dotyczy INNEGO elementu: komorka ma swoja reguly i dziedziczenie do niej nie
+   dochodzi. Stare .cover-dbg-table { font-size: 0.9em } dzialalo, bo .zlom-cell
+   nie podawalo rozmiaru wcale.
 
-   Selektor celowo dwuklasowy (0,2,0). Klasa wlasna podana Table przez
-   `className` remisuje z `.ark-table` (0,1,0), a remis miedzy arkuszem popupu a arkuszem prymitywu
-   rozstrzyga kolejnosc chunkow Rollupa, ktorej manifest NIE ustala - manifest
-   porzadkuje tylko arkusze popupow miedzy soba. Ta sama pulapka zjadla bursztyn
-   przycisku w Cechach w PR 1. */
-.cover-dbg-state .ark-table {
-    font-size: 0.9em;
-}
-
-/* Kolumna "opis" bywa dluga (pelny opis obiektu z gry). Table trzyma
+   Kolumna "opis" bywa dluga (pelny opis obiektu z gry). Table trzyma
    `white-space: nowrap` w kazdej komorce - slusznie dla gestej tabeli liczb,
    ale tutaj rozpycha okno i scina ostatnie kolumny.
 
-   Dwuklasowo, bo modyfikator `align="grow"` tego NIE zalatwia:
-   `.ark-table__cell--grow` (0,1,0) przegrywa z `.ark-table td` (0,1,1) i jego
-   `white-space: normal` jest martwe. Dziala z niego tylko `width: 100%` - i
-   wlasnie dlatego ta kolumna go NIE dostaje: na zrzucie przed/po szerokosc
-   100% na pierwszej kolumnie zepchnela num / status / przed kim / od do samej
-   prawej krawedzi, zostawiajac przepasc miedzy nazwa obiektu a jego danymi.
-   Bez tego modyfikatora tabela rozklada kolumny tak jak stara .zlom-table. */
+   Selektor celowo dwuklasowy. `.ark-table td` to (0,1,1); zeby je przebic,
+   delta musi miec wiecej niz jedna klase - remis rozstrzygalaby kolejnosc
+   chunkow Rollupa, ktorej manifest NIE ustala (porzadkuje tylko arkusze popupow
+   miedzy soba). Ta sama pulapka zjadla bursztyn przycisku w Cechach w PR 1.
+
+   Modyfikator `align="grow"` tego NIE zalatwia: `.ark-table__cell--grow`
+   (0,1,0) przegrywa z `.ark-table td` (0,1,1) i jego `white-space: normal` jest
+   martwe w calym repo. Dziala z niego tylko `width: 100%` - i wlasnie dlatego
+   ta kolumna go nie dostaje: na zrzucie przed/po szerokosc 100% na pierwszej
+   kolumnie zepchnela num / status / przed kim / od do prawej krawedzi. */
 .cover-dbg-state .ark-table td:first-child {
     white-space: normal;
     word-break: break-word;
