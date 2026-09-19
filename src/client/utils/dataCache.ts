@@ -46,48 +46,19 @@ async function getDatabase(config: IndexedDBConfig): Promise<IDBDatabase> {
     return db;
 }
 
-/**
- * Runs one IndexedDB request and resolves when its transaction COMMITS.
- *
- * It takes a callback rather than handing back an object store, and that shape is
- * load-bearing twice over:
- *
- * 1. A transaction goes inactive as soon as control returns to the event loop, so
- *    its first request has to be issued in the same task that created it. The old
- *    `getStore()` helper returned the store and let callers `await` before calling
- *    `.get()`/`.put()`, which put a microtask boundary in between. That works while
- *    the continuation happens to run in the same drain and throws
- *    `TransactionInactiveError` when it does not - so it passed locally and failed
- *    on a loaded CI runner, where the caller's error handling turned it into an
- *    empty result rather than a visible error.
- * 2. Resolving on `tx.oncomplete` instead of `request.onsuccess` means a resolved
- *    write is actually durable. A request succeeds well before its transaction
- *    commits, so the old code could report a successful write that a later read
- *    never saw.
- */
-function runRequest<T>(
-    config: IndexedDBConfig,
-    mode: IDBTransactionMode,
-    run: (store: IDBObjectStore) => IDBRequest,
-): Promise<T | undefined> {
-    return getDatabase(config).then(db => new Promise<T | undefined>((resolve, reject) => {
-        // Nothing may await between these two lines.
-        const tx = db.transaction([config.storeName], mode);
-        const req = run(tx.objectStore(config.storeName));
-
-        let result: T | undefined;
-        req.onsuccess = () => { result = req.result as T; };
-        req.onerror = () => reject(req.error ?? new Error('IndexedDB request failed'));
-        tx.oncomplete = () => resolve(result);
-        tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
-        tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
-    }));
+async function getStore(config: IndexedDBConfig, mode: IDBTransactionMode) {
+    const db = await getDatabase(config);
+    return db.transaction([config.storeName], mode).objectStore(config.storeName);
 }
 
 export async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
     try {
-        await runRequest(config, 'readwrite', store =>
-            store.put({ id: config.key, data, timestamp: Date.now() }));
+        const store = await getStore(config, 'readwrite');
+        await new Promise<void>((resolve, reject) => {
+            const req = store.put({ id: config.key, data, timestamp: Date.now() });
+            req.onsuccess = () => resolve(undefined);
+            req.onerror = () => reject(new Error('Failed to store data in IndexedDB'));
+        });
     } catch {
         throw new Error('Failed to store data in IndexedDB');
     }
@@ -95,11 +66,20 @@ export async function storeInIndexedDB(config: IndexedDBConfig, data: any) {
 
 export async function getFromIndexedDB<T = any>(config: IndexedDBConfig, ttl?: number): Promise<T | null> {
     try {
-        const record = await runRequest<{ data: T; timestamp?: number }>(config, 'readonly', store =>
-            store.get(config.key));
-        if (!record) return null;
-        if (ttl && !(record.timestamp && record.timestamp + ttl > Date.now())) return null;
-        return record.data;
+        const store = await getStore(config, 'readonly');
+        return await new Promise<any>((resolve, reject) => {
+            const req = store.get(config.key);
+            req.onsuccess = () => {
+                if (req.result) {
+                    if (!ttl || (req.result.timestamp && req.result.timestamp + ttl > Date.now())) {
+                        resolve(req.result.data as T);
+                        return;
+                    }
+                }
+                resolve(null);
+            };
+            req.onerror = () => reject(new Error('Failed to get data from IndexedDB'));
+        });
     } catch {
         throw new Error('Failed to get data from IndexedDB');
     }
@@ -107,7 +87,12 @@ export async function getFromIndexedDB<T = any>(config: IndexedDBConfig, ttl?: n
 
 export async function clearIndexedDB(config: IndexedDBConfig): Promise<void> {
     try {
-        await runRequest(config, 'readwrite', store => store.delete(config.key));
+        const store = await getStore(config, 'readwrite');
+        await new Promise<void>((resolve, reject) => {
+            const req = store.delete(config.key);
+            req.onsuccess = () => resolve(undefined);
+            req.onerror = () => reject(new Error('Failed to clear IndexedDB'));
+        });
     } catch {
         throw new Error('Failed to clear IndexedDB');
     }
