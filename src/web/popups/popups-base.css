@@ -747,13 +747,18 @@
 /* fishing — przeniesione do src/web/FishingPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */
 
 /* ── chat ────────────────────────────────────────────────────────────── */
-/* Chat Popup Styles */
+/* Chat Popup Styles.
+
+   Na --ark-* od fazy 5 (docs/dev/UI_MIGRATION.md §7): slice zostaje na razie
+   TUTAJ, a nie w src/web/ChatPopup.css na manifescie, bo migracja samego okna
+   Czat to robota fazy 3 - ten PR zdejmuje tylko blokade, czyli wspolna rodzine
+   .map-header-menu__*, ktora jest calym naglowkiem tego popupu. */
 .chat-popup-body {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: var(--popup-bg);
+  background-color: var(--ark-bg-surface);
 }
 
 .chat-popup__messages {
@@ -770,7 +775,7 @@
 .chat-popup__empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
   font-style: italic;
 }
 
@@ -781,33 +786,33 @@
 }
 
 .chat-popup__message:hover {
-  background-color: var(--popup-hover-bg);
+  background-color: var(--ark-bg-element-ghost-hover);
 }
 
 .chat-popup__message--team {
-  background-color: var(--popup-accent-team-bg);
-  border-left: 2px solid var(--popup-accent);
+  background-color: var(--ark-accent-tint);
+  border-left: 2px solid var(--ark-accent-text);
 }
 
 .chat-popup__message--team:hover {
-  background-color: var(--popup-accent-team-hover-bg);
+  background-color: var(--ark-accent-tint-strong);
 }
 
 .chat-popup__timestamp {
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
   margin-right: 0.5rem;
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.8rem);
 }
 
 .chat-popup__text {
-  color: var(--popup-text);
+  color: var(--ark-text);
 }
 
 .chat-popup__team-toggle {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
   font-size: 0.7rem;
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
@@ -818,18 +823,18 @@
 }
 
 .chat-popup__team-toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
 }
 
 .chat-popup__team-toggle--active {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
 }
 
 .chat-popup__team-toggle--active:hover {
-  background-color: var(--popup-accent-hover-bg);
+  background-color: var(--ark-accent-bg-active);
 }
 
 .chat-popup__messages--no-wrap .chat-popup__message {

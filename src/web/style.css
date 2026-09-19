@@ -3301,14 +3301,27 @@ body.layout-manager-enabled #notification-center {
 
 /* ============================================
    Static Map Popup
-   ============================================ */
+   ============================================
+
+   Rodzina .static-map-popup__* czyta --ark-* (faza 5, docs/dev/UI_MIGRATION.md
+   §7) razem z .map-header-menu__* w src/web/layout/layout.css i
+   .chat-popup__* w src/web/popups/popups-base.css - te trzy rodziny dziela
+   chromie naglowka, wiec migruja jedna zmiana.
+
+   DWIE reguly zostaja na wartosciach stalych, swiadomie: .static-map-popup__map
+   (plyta pod mapa) i .static-map-popup__notes (etykieta NA mapie) nie leza na
+   powierzchni motywu, tylko na kanwie, ktora renderer mapy maluje wlasna
+   paleta (patrz ctx.fillStyle w StaticMapPopup.tsx i kolor podswietlenia
+   przekazywany do renderHighlight). To ta sama klasa wyjatku, co barwy linii
+   drukowanych do okna gry. Co z nimi zrobic, decyduje PR Okna mapy w fazie 3:
+   to on przeglada ten ekran na zrzutach i to jego decyzja o wygladzie. */
 
 .static-map-popup-body {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: var(--popup-bg);
+  background-color: var(--ark-bg-surface);
 }
 
 .static-map-popup__content {
@@ -3323,8 +3336,8 @@ body.layout-manager-enabled #notification-center {
   flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0.25rem;
-  border-bottom: 1px solid var(--popup-border);
-  background-color: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--ark-border);
+  background-color: var(--ark-bg-sunken);
 }
 
 .static-map-popup__dropdown-container {
@@ -3333,10 +3346,10 @@ body.layout-manager-enabled #notification-center {
 
 .static-map-popup__btn {
   padding: 0.2rem 0.5rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
   border-radius: 0.25rem;
-  color: var(--popup-text-subtle);
+  color: var(--ark-text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -3344,8 +3357,8 @@ body.layout-manager-enabled #notification-center {
 }
 
 .static-map-popup__btn:hover:not(:disabled) {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-strong);
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text);
 }
 
 .static-map-popup__btn:disabled {
@@ -3371,10 +3384,10 @@ body.layout-manager-enabled #notification-center {
   min-width: 150px;
   max-height: 250px;
   overflow-y: auto;
-  background-color: var(--popup-bg);
-  border: 1px solid var(--popup-border-strong);
+  background-color: var(--ark-bg-surface);
+  border: 1px solid var(--ark-border-strong);
   border-radius: 0.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--ark-shadow-2);
   margin-top: 2px;
 }
 
@@ -3384,7 +3397,7 @@ body.layout-manager-enabled #notification-center {
   padding: 0.35rem 0.5rem;
   background: none;
   border: none;
-  color: var(--popup-text-bright);
+  color: var(--ark-text-secondary);
   font-size: 0.75rem;
   text-align: left;
   cursor: pointer;
@@ -3392,12 +3405,12 @@ body.layout-manager-enabled #notification-center {
 }
 
 .static-map-popup__dropdown-item:hover {
-  background-color: var(--popup-control-hover-bg);
+  background-color: var(--ark-bg-element-hover);
 }
 
 .static-map-popup__dropdown-item--active {
-  background-color: var(--popup-accent-bg);
-  color: var(--popup-accent);
+  background-color: var(--ark-accent-bg-hover);
+  color: var(--ark-accent-text);
 }
 
 .static-map-popup__notes {
@@ -3438,9 +3451,9 @@ body.layout-manager-enabled #notification-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
   border-radius: 0.25rem;
   padding: 0.2rem;
   cursor: pointer;
@@ -3449,12 +3462,12 @@ body.layout-manager-enabled #notification-center {
 }
 
 .static-map-popup__image-btn:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
 }
 
 .static-map-popup__image-btn:active {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--ark-bg-selected-hover);
 }
 
 /* ===== Object List Documentation ===== */
