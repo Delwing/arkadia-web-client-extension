@@ -196,9 +196,11 @@ knowledge/reports, inventory/economy, debug.
 *Exit:* `popups.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
 
-### Phase 4 — Settings *(6–8 PRs, by tab)*
+### Phase 4 — Settings *(8–10 PRs, by page)*
 
-The long pole: 46 files, ~13 000 lines, all the react-bootstrap.
+The long pole: 46 files, ~13 000 lines, all the react-bootstrap. Of those 46,
+the ones reachable from the settings dialog are 15 *pages*; the other ten are
+standalone modals that belong to Phase 5 (see below).
 
 **Rewritten after PR 1.** The sequence below used to say "`SettingsDialog`
 shell first — Radix `Dialog` + `Tabs`" and then list Shortcuts / Aliases /
