@@ -65,6 +65,35 @@ describe("design tokens", () => {
     });
 });
 
+/**
+ * Stylesheets owned by a screen that has been migrated onto the design system.
+ * A migrated screen is under the same rule as a primitive: tokens only. Add the
+ * sheet here in the PR that migrates the screen — a rule that stops being
+ * enforced exactly where it was just applied is not a rule.
+ */
+const MIGRATED_SCREEN_SHEETS = [
+    "src/ui/logViewer/logViewer.css",
+    "log-viewer/log-viewer.css",
+    "src/web/settings/settingsDialog.css",
+    "src/web/options/guildsSettings.css",
+    "src/web/options/magikiSettings.css",
+];
+
+describe("migrated screen stylesheets", () => {
+    it.each(MIGRATED_SCREEN_SHEETS)("%s uses tokens rather than literal colours", (sheet) => {
+        const css = readFileSync(resolve(root, sheet), "utf8");
+        const literals = [...css.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0]);
+        expect(literals.filter((value) => value.toLowerCase() !== "#fff")).toEqual([]);
+    });
+
+    it.each(MIGRATED_SCREEN_SHEETS)("%s reads no legacy --popup-* variable", (sheet) => {
+        // The other half of "migrated": a screen on --ark-* must not also be on
+        // the bridge, or themes/bridge.css can never be deleted (Phase 3's exit).
+        const css = readFileSync(resolve(root, sheet), "utf8");
+        expect([...css.matchAll(/var\(\s*--popup-[a-z0-9-]+/gi)].map((m) => m[0])).toEqual([]);
+    });
+});
+
 describe("primitive stylesheets", () => {
     const primitiveFiles = [
         "badge",

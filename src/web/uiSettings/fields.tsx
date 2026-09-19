@@ -13,7 +13,7 @@ const DEVICE_SETTING_KEYS: ReadonlySet<string> = new Set(chromeSettingsKeys);
 export function DeviceOnlyBadge({ settingKey }: { settingKey?: keyof UiSettings }) {
     if (!settingKey || !DEVICE_SETTING_KEYS.has(settingKey)) return null;
     return (
-        <span className="settings-scope-badge ms-2" title="Zapisywane tylko na tym urządzeniu, bez synchronizacji z innymi">
+        <span className="settings-scope-badge" title="Zapisywane tylko na tym urządzeniu, bez synchronizacji z innymi">
             to urządzenie
         </span>
     );

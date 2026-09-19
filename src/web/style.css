@@ -2200,7 +2200,17 @@ h1 {
   color: #888;
 }
 
-button {
+/* The bare-element button skin of the stock shell.
+   The `:where(:not(...))` exclusion keeps the design system's controls out of
+   it. It matches a class TOKEN starting with `ark-`, not the substring, so
+   `object-card__icon--mark-attack` and `enemy-res-mark` still get the skin.
+   Radix builds Checkbox, Switch, Toggle, Segmented, Tabs and the Select trigger
+   out of <button>, and a bare `button` selector (0,0,1) loses to `.ark-checkbox`
+   (0,1,0) only for the properties that class actually declares — padding,
+   opacity, border-radius and font-size are not among them, so without the
+   exclusion a 16px checkbox renders as a 60px translucent pill. :where() carries
+   zero specificity, so nothing that used to win against a bare `button` changes. */
+button:where(:not([class^='ark-'], [class*=' ark-'])) {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
   padding: 0.75vh 2vw;
@@ -2214,11 +2224,11 @@ button {
   transition: border-color 0.25s;
   opacity: 0.75;
 }
-button:hover {
+button:where(:not([class^='ark-'], [class*=' ark-'])):hover {
   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
+button:where(:not([class^='ark-'], [class*=' ark-'])):focus,
+button:where(:not([class^='ark-'], [class*=' ark-'])):focus-visible {
   outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
@@ -2230,7 +2240,7 @@ button:focus-visible {
   a:hover {
   color: #747bff;
   }
-  button {
+  button:where(:not([class^='ark-'], [class*=' ark-'])) {
   background-color: #f9f9f9;
   }
 }
@@ -2508,8 +2518,10 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
   /* Not inside a popped-out window: that is a narrow desktop window, not a
      phone, and 8vmin of its viewport blows every panel button up. :where()
-     keeps the specificity of a bare `button`, so phone overrides still win. */
-  button:where(:not(.popout-root *)) {
+     keeps the specificity of a bare `button`, so phone overrides still win.
+     Design-system controls are out too: they carry their own touch sizing from
+     the --ark-control-* ladder, and 8vmin would square off every checkbox. */
+  button:where(:not(.popout-root *)):where(:not([class^='ark-'], [class*=' ark-'])) {
   min-height: 8vmin; /* Minimum touch target size */
   min-width: 8vmin;
   }

@@ -180,6 +180,7 @@
 
 .settings-scope-badge {
   display: inline-block;
+  margin-left: var(--ark-space-4);
   padding: 0 0.4rem;
   border: 1px dashed var(--ark-border);
   border-radius: 1rem;
@@ -275,8 +276,44 @@
 }
 
 .settings-hint {
+  margin: 0;
   color: var(--ark-text-tertiary);
   font-size: var(--ark-text-3);
+}
+
+/* Checkbox + its label. The label is a real <label for>, so e2e selectors and
+   the browser's own hit target both still work, but the click is handled in
+   controls.tsx: the Radix checkbox is a <button>, which `for` cannot activate. */
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-5);
+}
+
+.settings-check__label {
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-5);
+  cursor: pointer;
+}
+
+.settings-check__label:has(+ *:disabled),
+.settings-check:has(.ark-checkbox:disabled) .settings-check__label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Label above its control, for controls too wide to sit beside one. */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-3);
+  min-width: 0;
+}
+
+.settings-field__label {
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-4);
+  font-weight: var(--ark-weight-medium);
 }
 
 /* Native <select> and <input type="color"> inside a migrated tab. Neither has

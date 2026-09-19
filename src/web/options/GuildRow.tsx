@@ -1,5 +1,5 @@
 import {ChangeEvent, useEffect, useState} from "react";
-import {Form} from "react-bootstrap";
+import {CheckboxField} from "@web/settings/controls.tsx";
 
 interface Props {
     guild: string;
@@ -25,17 +25,6 @@ export default function GuildRow({guild, selected, enemySelected, allySelected, 
     useEffect(() => {
         setPickerColor(color ?? defaultColor);
     }, [color, defaultColor]);
-    function handleSelect(ev: ChangeEvent<HTMLInputElement>) {
-        onChange(guild, ev.target.checked);
-    }
-
-    function handleEnemySelect(ev: ChangeEvent<HTMLInputElement>) {
-        onEnemyChange(guild, ev.target.checked);
-    }
-
-    function handleAllySelect(ev: ChangeEvent<HTMLInputElement>) {
-        onAllyChange(guild, ev.target.checked);
-    }
 
     function handleColorChange(ev: ChangeEvent<HTMLInputElement>) {
         const newColor = ev.target.value;
@@ -45,61 +34,48 @@ export default function GuildRow({guild, selected, enemySelected, allySelected, 
         }
     }
 
-    function handleColorToggle(ev: ChangeEvent<HTMLInputElement>) {
-        if (ev.target.checked) {
-            onColorChange(guild, pickerColor);
-        } else {
-            onColorChange(guild, undefined);
-        }
+    function handleColorToggle(checked: boolean) {
+        onColorChange(guild, checked ? pickerColor : undefined);
     }
 
     return (
-        <div className="mb-2">
-            <h6 className="fw-bold mb-1">{guild}</h6>
-            <div className="d-flex align-items-center flex-wrap gap-2 ms-2">
-                <Form.Check
-                    type="checkbox"
+        <div className="guild-row">
+            <h6 className="guild-row__name">{guild}</h6>
+            <div className="guild-row__options">
+                <CheckboxField
                     id={`guild-${guild}`}
                     label="Ładowanie triggerów"
                     checked={selected}
-                    onChange={handleSelect}
-                    className="me-2"
+                    onChange={(checked) => onChange(guild, checked)}
                 />
-                <Form.Check
-                    type="checkbox"
+                <CheckboxField
                     id={`enemy-guild-${guild}`}
                     label="Wróg"
                     checked={enemySelected}
-                    onChange={handleEnemySelect}
-                    className="me-2"
+                    onChange={(checked) => onEnemyChange(guild, checked)}
                     disabled={allySelected}
                 />
-                <Form.Check
-                    type="checkbox"
+                <CheckboxField
                     id={`ally-guild-${guild}`}
                     label="Sojusz"
                     checked={allySelected}
-                    onChange={handleAllySelect}
-                    className="me-2"
+                    onChange={(checked) => onAllyChange(guild, checked)}
                     disabled={enemySelected}
                 />
-                <Form.Check
-                    type="checkbox"
+                <CheckboxField
                     id={`guild-color-enabled-${guild}`}
                     label="Kolor"
                     checked={color !== undefined}
                     onChange={handleColorToggle}
-                    className="me-2"
                     disabled={enemySelected}
                 />
-                <Form.Control
+                <input
                     type="color"
                     id={`guild-color-${guild}`}
+                    className="settings-color"
                     value={pickerColor}
                     onChange={handleColorChange}
                     disabled={enemySelected}
-                    className="form-control-color"
-                    style={{width: '3rem'}}
                 />
             </div>
         </div>

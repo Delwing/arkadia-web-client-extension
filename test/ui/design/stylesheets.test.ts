@@ -13,6 +13,9 @@ const SHEETS = [
     "src/ui/logViewer/logViewer.css",
     "design/showcase.css",
     "log-viewer/log-viewer.css",
+    "src/web/settings/settingsDialog.css",
+    "src/web/options/guildsSettings.css",
+    "src/web/options/magikiSettings.css",
     ...globSync("src/ui/design/primitives/*.css", { cwd: root }),
 ];
 

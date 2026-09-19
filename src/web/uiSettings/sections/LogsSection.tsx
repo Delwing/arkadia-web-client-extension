@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { globalStorage } from "@modules/core/storage";
 import { disableFileSave, enableFileSave, getDirectoryName, isFileSaveActive, isFileSaveSupported, onStatusChange } from "../../logFileSaver";
-import { CheckboxRow, SettingsSection } from "../fields";
+import { CheckboxField, SettingsCard, SettingsHint } from "@web/settings/controls.tsx";
 
 /**
  * Session-log recording. Unlike the rest of the page these apply on click, not
  * on save: picking the disk folder needs the click's user activation, and the
  * logger reads `loggingEnabled` live.
+ *
+ * Migrated onto the design system (UI_MIGRATION.md §4) together with the rest
+ * of Interfejs > Inne.
  */
 export default function LogsSection() {
     const [loggingEnabled, setLoggingEnabled] = useState(() => globalStorage.get("loggingEnabled") !== false);
@@ -45,17 +48,17 @@ export default function LogsSection() {
     };
 
     return (
-        <SettingsSection title="Logi">
-            <CheckboxRow id="logs-enabled" label="Zapisuj logi" checked={loggingEnabled} onChange={onLoggingChange} />
+        <SettingsCard title="Logi">
+            <CheckboxField id="logs-enabled" label="Zapisuj logi" checked={loggingEnabled} onChange={onLoggingChange} />
             {isFileSaveSupported() && (
                 <>
-                    <CheckboxRow id="logs-file-save" label="Zapisuj na dysk" checked={fileSaveEnabled} onChange={(v) => void onFileSaveChange(v)} />
+                    <CheckboxField id="logs-file-save" label="Zapisuj na dysk" checked={fileSaveEnabled} onChange={(v) => void onFileSaveChange(v)} />
                     {fileSaveEnabled && fileSaveDirName && (
-                        <span className="text-muted small">{"📂"} {fileSaveDirName}</span>
+                        <SettingsHint>{"📂"} {fileSaveDirName}</SettingsHint>
                     )}
                 </>
             )}
-            <span className="text-muted small">Zmiany działają od razu.</span>
-        </SettingsSection>
+            <SettingsHint>Zmiany działają od razu.</SettingsHint>
+        </SettingsCard>
     );
 }

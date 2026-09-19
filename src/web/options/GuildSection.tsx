@@ -1,6 +1,6 @@
 import guilds from "./guilds";
 import GuildRow from "./GuildRow";
-import {Form} from "react-bootstrap";
+import {CheckboxField, SettingsCard} from "@web/settings/controls.tsx";
 
 interface Props {
     selected: string[];
@@ -18,31 +18,32 @@ interface Props {
     onChangeAllEnemy: (checked: boolean) => void;
 }
 
+/** Postac > Gildie. Migrated onto the design system (UI_MIGRATION.md §4). */
 export default function GuildSection({selected, enemySelected, allySelected, colors = {}, defaultColors, onChange, onEnemyChange, onAllyChange, onColorChange, onChangeAll, onChangeAllEnemy}: Props) {
     const allSelected = selected.length === guilds.length;
     const allEnemySelected = enemySelected.length === guilds.length;
     return (
-        <section className="character-settings-section character-settings-section--full">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <h5 className="character-settings-section-title mb-0">Gildie</h5>
-                <div className="d-flex gap-2">
-                    <Form.Check
-                        type="checkbox"
+        <SettingsCard
+            title="Gildie"
+            full
+            headerExtra={
+                <div className="settings-row__controls">
+                    <CheckboxField
                         id="guild-all"
                         label="Wszystkie"
                         checked={allSelected}
-                        onChange={ev => onChangeAll(ev.target.checked)}
+                        onChange={onChangeAll}
                     />
-                    <Form.Check
-                        type="checkbox"
+                    <CheckboxField
                         id="enemy-guild-all"
                         label="Wrogowie"
                         checked={allEnemySelected}
-                        onChange={ev => onChangeAllEnemy(ev.target.checked)}
+                        onChange={onChangeAllEnemy}
                     />
                 </div>
-            </div>
-            <div className="d-flex flex-column">
+            }
+        >
+            <div className="guild-list">
                 {guilds.map(g => (
                     <GuildRow
                         key={g}
@@ -59,6 +60,6 @@ export default function GuildSection({selected, enemySelected, allySelected, col
                     />
                 ))}
             </div>
-        </section>
+        </SettingsCard>
     );
 }
