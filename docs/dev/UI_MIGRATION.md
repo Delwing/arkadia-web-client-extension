@@ -526,9 +526,10 @@ than it adds.
 
 ## 7. Queued follow-up
 
-- **Delete `src/web/options/ShortExitsSettings.tsx` (210 lines).** Nothing
-  imports it; the live short-exits UI is a section of `Settings.tsx`. Found
-  while picking Phase 4's first tabs — the plan had it queued for migration.
+- ~~**Delete `src/web/options/ShortExitsSettings.tsx` (210 lines).**~~ — done
+  in Phase 4 PR 2. Nothing imported it; the live short-exits UI is a section of
+  `Settings.tsx`. Found while picking Phase 4's first tabs — the plan had it
+  queued for migration.
 
 - ~~**Character attribution for logs**~~ — done, see
   `LOG_CHARACTER_ATTRIBUTION.md` and `LOG_VIEWER.md` §1. The log carries a
