@@ -39,6 +39,10 @@ const MIGRATED_SHEETS = [
     "src/web/TransportTimesDebugPopup.css",
     "src/web/TripPlannerPopup.css",
     "src/web/WalkerPopup.css",
+    // Faza 3, rodzina 4 — debug i reszta.
+    "src/web/CoverDebugPopup.css",
+    "src/web/DataSourcesPopup.css",
+    "src/web/ObjectListDemoPopup.css",
     // Faza 4 — powloka ustawien i pierwsze strony.
     "src/web/settings/settingsDialog.css",
     "src/web/options/guildsSettings.css",

@@ -164,6 +164,9 @@ describe("popup stylesheet ordering", () => {
                 "src/web/WalkerPopup.css",
                 "src/web/ZabiciPopup.css",
                 "src/web/Zabici2Popup.css",
+                "src/web/CoverDebugPopup.css",
+                "src/web/DataSourcesPopup.css",
+                "src/web/ObjectListDemoPopup.css",
             ].sort(),
         );
     });

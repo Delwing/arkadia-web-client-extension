@@ -37,7 +37,10 @@
 @import '../ClockPopup.css';
 @import '../CombatPopup.css';
 @import '../CombatStatusPopup.css';
+@import '../CoverDebugPopup.css';
+@import '../DataSourcesPopup.css';
 @import '../EnemyResistancesPopup.css';
+@import '../ObjectListDemoPopup.css';
 @import '../Postepy2Popup.css';
 @import '../PostepyPopup.css';
 @import '../RoomInfoPopup.css';
