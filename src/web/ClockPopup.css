@@ -35,13 +35,6 @@
   overflow-y: auto;
 }
 
-.clock-empty {
-  padding: 2rem 1rem;
-  text-align: center;
-  color: var(--ark-text-tertiary);
-  font-size: 0.925rem;
-}
-
 .clock-details {
   display: flex;
   flex-direction: column;

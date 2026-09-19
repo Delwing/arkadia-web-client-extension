@@ -39,13 +39,21 @@ Phase 3 is what deletes it. Nothing under `src/ui/design` reads `--popup-*`, so
 the rule above still holds where it matters.
 
 Phase 3 added a second, narrower exception in the *opposite* direction:
-`src/web/popups/popup-host-tokens.css` defines `--ark-*` from `--popup-*` for
-hosts that never load this system at all. There is exactly one such host —
-`forge-ui`, which renders the same popup catalogue from the same stylesheet but
-has its own bronze `--popup-*` palette and no `.ark-root`. Without it a migrated
+`src/web/popups/popup-host-tokens.css` defines `--ark-*` from `--popup-*` for a
+host that loads the system's stylesheet but never opts into a theme. There is
+exactly one — `forge-ui`, which renders the same popup catalogue from the same
+stylesheet and has its own bronze `--popup-*` palette. Without it a migrated
 popup renders in forge with no tokens at all. It is guarded by
-`body:not(.ark-root)` so the two bridges can never meet and form a cycle, and it
-dies the day forge-ui loads `@design/css/index.css` itself.
+`body:not(.ark-root)` so the two bridges can never meet and form a cycle.
+
+**Its deletion criterion is the theme attribute, not the import.** Phase 3 PR 1
+wrote "dies the day forge-ui loads `@design/css/index.css` itself" — forge has
+imported it since `f087744`, and the bridge is still load-bearing, because
+`tokens.css` is scoped `:where([data-ark-theme])` and forge sets no such
+attribute. What the import *does* buy is the primitives: `.ark-table` and the
+rest are styled in forge, so a migrated popup may use an `@design` primitive
+freely. The file dies when forge puts `ark-root` + `data-ark-theme` on its root
+and takes a theme of its own.
 
 ---
 
@@ -260,6 +268,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `design/` (showcase) | on the design system |
 | Logi window (`src/web/LogBrowser.tsx`, `LogManager.tsx`) | **on the design system**, in a `Dialog` inside the stock client (Phase 2, PR 2) |
 | `src/web/` combat + status popups (9) | **on the design system**, `--ark-*` only (Phase 3, PR 1) |
+| `src/web/` world + time popups (6) | **on the design system**, `--ark-*` only (Phase 3, PR 2). Okno mapy is not among them — see `UI_MIGRATION.md` §4 |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki |
