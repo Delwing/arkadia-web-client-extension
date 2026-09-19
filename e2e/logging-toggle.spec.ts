@@ -1,6 +1,10 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, pushText, waitForCharacter, waitForCommandInput} from './support/mocks';
+import {openSettings, SETTINGS_MODAL} from './support/settings';
 import type {Page} from '@playwright/test';
+
+// The "Zapisuj logi" / "Zapisuj na dysk" switches live on Interfejs > Inne,
+// not in the Logi browser, and apply on click (no Save needed).
 
 async function login(page: Page): Promise<void> {
     await page.goto('/');
@@ -10,17 +14,24 @@ async function login(page: Page): Promise<void> {
     await waitForCharacter(page, 'TestChar');
 }
 
-async function openLogsModal(page: Page): Promise<void> {
+async function closeSettings(page: Page): Promise<void> {
+    await page.locator(`${SETTINGS_MODAL} .btn-close`).first().click();
+    await expect(page.locator(SETTINGS_MODAL)).not.toBeVisible();
+}
+
+async function setLogging(page: Page, enabled: boolean): Promise<void> {
+    const modal = await openSettings(page, 'ui-other');
+    const toggle = modal.locator('#logs-enabled');
+    await expect(modal.locator('label[for="logs-enabled"]')).toHaveText('Zapisuj logi');
+    await toggle.setChecked(enabled);
+    await expect(toggle).toBeChecked({checked: enabled});
+    await closeSettings(page);
+}
+
+async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
     await page.waitForSelector('#logs-modal.show', {timeout: 5000});
-    // Wait for React component to mount and render the toggle
-    await page.waitForSelector('#logs-enabled', {timeout: 5000});
-}
-
-async function closeLogsModal(page: Page): Promise<void> {
-    await page.locator('#logs-modal .btn-close').click();
-    await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
 }
 
 test.describe('Logging toggle', () => {
@@ -28,104 +39,36 @@ test.describe('Logging toggle', () => {
         await login(page);
     });
 
-    test('logging toggle is visible and can be toggled on and off', async ({page}) => {
-        await openLogsModal(page);
+    test('the switch is in UI settings, not in the Logi browser', async ({page}) => {
+        await openLogs(page);
+        await expect(page.locator('#logs-modal #logs-enabled')).toHaveCount(0);
+        await page.locator('#logs-modal .btn-close').click();
+        await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
 
-        const loggingToggle = page.locator('#logs-enabled');
-        await expect(loggingToggle).toBeVisible();
-
-        // Get initial state
-        const initialChecked = await loggingToggle.isChecked();
-
-        // Toggle it
-        await loggingToggle.click();
-
-        // Verify the state changed
-        if (initialChecked) {
-            await expect(loggingToggle).not.toBeChecked();
-        } else {
-            await expect(loggingToggle).toBeChecked();
-        }
-
-        // Toggle it back
-        await loggingToggle.click();
-
-        // Verify it returned to original state
-        if (initialChecked) {
-            await expect(loggingToggle).toBeChecked();
-        } else {
-            await expect(loggingToggle).not.toBeChecked();
-        }
-
-        await closeLogsModal(page);
+        const modal = await openSettings(page, 'ui-other');
+        await expect(modal.locator('#logs-enabled')).toBeVisible();
     });
 
-    test('logging toggle label is present', async ({page}) => {
-        await openLogsModal(page);
+    test('lines are not stored while logging is off', async ({page}) => {
+        await setLogging(page, false);
+        await pushText(page, 'Linia gdy logi wylaczone');
+        await setLogging(page, true);
+        await pushText(page, 'Linia gdy logi wlaczone');
 
-        // Verify the label text
-        const label = page.locator('label[for="logs-enabled"]');
-        await expect(label).toBeVisible();
-        await expect(label).toHaveText('Zapisuj logi');
-
-        await closeLogsModal(page);
+        await openLogs(page);
+        const preview = page.locator('#logs-preview');
+        await expect(preview).toContainText('Linia gdy logi wlaczone');
+        await expect(preview).not.toContainText('Linia gdy logi wylaczone');
     });
 
-    test('logging enabled state persists after page reload', async ({page}) => {
-        await openLogsModal(page);
+    test('the setting persists after page reload', async ({page}) => {
+        await setLogging(page, false);
 
-        const loggingToggle = page.locator('#logs-enabled');
-
-        // Ensure logging is enabled first
-        const isChecked = await loggingToggle.isChecked();
-        if (!isChecked) {
-            await loggingToggle.click();
-        }
-        await expect(loggingToggle).toBeChecked();
-
-        await closeLogsModal(page);
-
-        // Reload the page
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Re-open logs modal
-        await openLogsModal(page);
-
-        // Verify logging is still enabled
-        const toggleAfterReload = page.locator('#logs-enabled');
-        await expect(toggleAfterReload).toBeChecked();
-
-        await closeLogsModal(page);
-    });
-
-    test('logging disabled state persists after page reload', async ({page}) => {
-        await openLogsModal(page);
-
-        const loggingToggle = page.locator('#logs-enabled');
-
-        // Disable logging
-        const isChecked = await loggingToggle.isChecked();
-        if (isChecked) {
-            await loggingToggle.click();
-        }
-        await expect(loggingToggle).not.toBeChecked();
-
-        await closeLogsModal(page);
-
-        // Reload the page
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-
-        // Re-open logs modal
-        await openLogsModal(page);
-
-        // Verify logging is still disabled
-        const toggleAfterReload = page.locator('#logs-enabled');
-        await expect(toggleAfterReload).not.toBeChecked();
-
-        await closeLogsModal(page);
+        const modal = await openSettings(page, 'ui-other');
+        await expect(modal.locator('#logs-enabled')).not.toBeChecked();
     });
 });
