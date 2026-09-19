@@ -1,0 +1,124 @@
+/* ============================================================================
+   Zrodla danych (popup:dataSources) — Faza 3, rodzina "debug i reszta".
+   ============================================================================
+
+   Arkusz wjezdza przez manifest src/web/popups/popups.css, NIE przez import w
+   komponencie — patrz naglowek manifestu.
+
+   Wyciety z popups-base.css, z sekcji "data sources". Granica sekcji pokrywa
+   sie tu z granica grafu klas: okno uzywa wylacznie .data-sources-*, a poza tym
+   .popup-btn z warstwy 2, ktora jest zmigrowana od PR 1. Nic nie pozycza i nic
+   nie jest pozyczane, wiec ciecie jest czyste.
+
+   JEDNA ZMIANA, KTORA NIE JEST PRZEPISANIEM ZMIENNEJ JEDEN DO JEDNEGO:
+   --popup-data-blue w .data-sources-row--due. Szesnastka zmiennych
+   --popup-data-* jest wycofywana (UI_MIGRATION.md §4, "--popup-data-*:
+   decided"), a decyzja mowi, zeby audytowac ja po miejscu uzycia, nie po
+   nazwie. Tutaj "due" znaczy "to zrodlo nadaje sie do odswiezenia" — to nie
+   jest ranking (nic nie jest gorsze od niczego) ani kategoria danych, tylko
+   informacja do przeczytania. Idzie wiec na --ark-info-text, a nie na
+   --ark-data-*: blekit tej zmiennej i rola "info" znacza w tym miejscu to samo.
+
+   Font podgladu surowych danych zostaje na --output-font-family. To ustawienie
+   gracza, nie decyzja motywu — tak samo jak w RoomInfoPopup.css.
+   ========================================================================== */
+
+.data-sources-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--ark-bg-surface);
+}
+
+.data-sources-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: var(--ark-text-secondary);
+}
+
+.data-sources-table th,
+.data-sources-table td {
+  padding: 0.35rem 0.55rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--ark-border);
+}
+
+.data-sources-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--ark-bg-surface);
+  color: var(--ark-text-tertiary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.data-sources-row--due td {
+  color: var(--ark-info-text);
+}
+
+.data-sources-note {
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+}
+
+.data-sources-action-cell {
+  text-align: right;
+  white-space: nowrap;
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+/* refresh / preview / back / refresh-all buttons = .popup-btn (folded) */
+
+/* Data Sources — raw data preview (detail) view */
+.data-sources-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.data-sources-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.55rem;
+  border-bottom: 1px solid var(--ark-border);
+  flex: 0 0 auto;
+}
+
+.data-sources-detail__title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-sources-detail__status {
+  padding: 1rem;
+  color: var(--ark-text-tertiary);
+  font-size: 0.8rem;
+}
+
+.data-sources-detail__content {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0.55rem;
+  overflow: auto;
+  font-family: var(--output-font-family), monospace;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ark-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  tab-size: 2;
+}
