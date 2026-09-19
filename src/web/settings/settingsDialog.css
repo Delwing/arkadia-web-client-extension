@@ -432,9 +432,12 @@
   margin-left: var(--ark-space-8);
 }
 
-/* A control that saves on its own rather than through Save, parked at the
-   start of its card instead of stretching across it. */
-.settings-card > .settings-action {
+/* A button parked at the start of its column instead of stretching across it.
+   Both containers are flex columns with `align-items: stretch`, so without
+   this a lone button is as wide as the card -- which on a phone is the whole
+   dialog. */
+.settings-card > .settings-action,
+.settings-stack > .settings-action {
   align-self: flex-start;
 }
 

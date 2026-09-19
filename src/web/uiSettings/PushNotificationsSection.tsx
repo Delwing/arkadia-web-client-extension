@@ -171,8 +171,11 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
                         Wyłącz na tym urządzeniu
                     </Button>
                 ) : (
-                    /* The one thing this card is for, so it is the one solid button. */
-                    <Button size="sm" variant="solid" id="push-enable" disabled={busy} onClick={handleEnable}>
+                    /* Soft, not solid: the card's one accent button is the
+                       permission prompt above, which only shows when something
+                       actually blocks notifications. Two solids on one view and
+                       the accent stops meaning anything (DESIGN_SYSTEM.md §6). */
+                    <Button size="sm" id="push-enable" disabled={busy} onClick={handleEnable}>
                         Odbieraj na tym urządzeniu
                     </Button>
                 )}

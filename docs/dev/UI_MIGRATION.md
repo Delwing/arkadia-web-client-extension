@@ -395,13 +395,28 @@ Sequence within the phase:
    hand-rolled `.character-settings-section` markup. Both old layers stay until
    the last page leaves them.
 2. **Then a page per PR**, smallest first. Done: `ui-commands`, `ui-other`,
-   `character-guilds`, `character-magics`. Remaining, roughly by size:
-   `ui-windows` → `ui-footer` (pulls in BarOrderSettings +
-   FooterComponentSettings) → `ui-appearance` → `ui-map` → `ui-sound` →
-   `character-items` / `character-general` (both are sections of
+   `character-guilds`, `character-magics` (PR 1); `ui-windows`,
+   `ui-appearance`, `ui-map`, `ui-sound` (PR 2). Remaining, roughly by size:
+   `ui-footer` → `character-items` / `character-general` (both are sections of
    `Settings.tsx`, 855 lines, so they land together) → `character-combat`
    (CombatCommands + DrawSheathe + EnemyBinds + LuaGags) → `ui-buttons` /
    `ui-mobile-buttons` / `ui-radial` (the button editors, 761 lines).
+
+   **`ui-footer` is not the small page this order assumed**, which is why PR 2
+   took the four after it instead. It is `FooterSections` (76 lines) plus two
+   dnd-kit list editors, and the editors are the work: `BarOrderSettings` and
+   `FooterComponentSettings` are react-bootstrap `Form.Check type="switch"`
+   rows that read `--popup-control-bg` inline. Worse, two e2e specs are pinned
+   to their markup in ways a migration breaks —
+   `footer-plugin-components.spec.ts` locates a row by the Bootstrap utility
+   class `.d-flex.align-items-center` and its toggle by
+   `getByRole('checkbox')`, which stops matching the moment the switch becomes
+   `@design`'s `Switch` (`role="switch"`). Phase 0's exit grep never covered
+   `.d-flex`, so this is not a regression of that rule, but it is the same
+   problem, and whoever takes `ui-footer` pays for it there and not here.
+   Before swapping in `Switch`, confirm Playwright's `isChecked()` drives it:
+   PR 1 proved `check()`/`isChecked()` work against `@design`'s `Checkbox`
+   (`role="checkbox"`), and `role="switch"` has not been tried.
 3. **Coordinate with forge-ui** on the ten modules it imports. Note that
    `forge-modal-bootstrap.scss` compiles Bootstrap *whole*; it cannot shrink
    per module, only be deleted once nothing forge renders needs Bootstrap at
@@ -437,16 +452,29 @@ Sequence within the phase:
   deliberately does not set `.ark-root`: that is the visual opt-in, and
   claiming it would repaint the pages still on Bootstrap.
 
-  **These two answers should converge, and Phase 3's is the better one.**
-  `popup-host-tokens.css` maps forge's `--popup-*` *onto* the `--ark-*` roles,
-  so a migrated popup in forge stays bronze; the settings fallback picks a
-  design-system theme instead, so the dialog stops matching forge's chrome.
-  Converging means adding forge's menu-modal host to that file's selector list
-  (it is scoped to `.managed-panel, [data-popup-overlay]`, and the settings
-  dialog lives in `.forge-menu-modal`) and dropping the fallback here. Left as
-  a follow-up rather than done in Phase 4 PR 1: the two landed in parallel, and
-  the file belongs to Phase 3. The `@design/css/index.css` import stays either
-  way — the bridge supplies token *values*, not the `.ark-*` primitive classes.
+  **These two answers should converge, and Phase 3's is the better one** — but
+  **not the way this section first described it, which does not work.** PR 2
+  checked before attempting it. The recipe was "add forge's menu-modal host to
+  `popup-host-tokens.css`'s selector list (it is scoped to `.managed-panel,
+  [data-popup-overlay]`, and the settings dialog lives in `.forge-menu-modal`)
+  and drop the fallback here". The flaw is that forge's `--popup-*` palette is
+  itself scoped to exactly `.managed-panel, [data-popup-overlay]`
+  (`forge-ui/layout-theme.css`), and `.forge-menu-modal` is neither: it is a
+  `.forged.panel.panel--modal` (`forge-ui/components/menu/MenuModal.tsx`) with
+  no `data-popup-overlay`. Mapping `--popup-*` onto `--ark-*` there would map
+  values that are **not defined at that node**, so every `--ark-*` role becomes
+  invalid at computed value — the borderless, transparent failure that
+  `popup-host-tokens.css` exists to prevent, reintroduced by the fix for it.
+
+  Converging therefore needs forge's palette block widened to cover
+  `.forge-menu-modal` first, and that is an edit to `forge-ui/`, which is out
+  of scope. So the fallback in `SettingsDialog.tsx` stays for now. It is the
+  right call on its own terms anyway: a fallback that only fires when no
+  ancestor sets `data-ark-theme` costs nothing the day forge grows one. Whoever
+  does converge should do it from the forge side — the real answer is §9's
+  question, `forge-ui` loading `@design/css/index.css` itself, which deletes
+  both halves at once. The `@design/css/index.css` import stays either way —
+  the bridge supplies token *values*, not the `.ark-*` primitive classes.
 - **`Table` now exists** (Phase 3 added it for the resistances popup), so the
   pages that need one — `Binds`, `FirebaseTab`, `DeviceManagementTab` — no
   longer have to wait on a decision. `ProgressBar` still does not exist.
@@ -488,8 +516,10 @@ delete `forge-modal-bootstrap.scss`, and remove the `scss` handling from
 - **Screenshot before and after.** For a redesign, that diff *is* the review.
 - **No hex in a component stylesheet.** Already enforced by a unit test for the
   design system; extend that test's file list as each screen migrates
-  (`test/ui/design/tokens.test.ts`, `MIGRATED_SCREEN_SHEETS` — it also checks
-  the screen reads no `--popup-*`, which is the other half of "migrated").
+  (`test/ui/design/stylesheets.test.ts`, `MIGRATED_SHEETS` — it also checks the
+  screen reads no `--popup-*`, which is the other half of "migrated"). `#fff`
+  is the one allowed literal, for a solid danger/accent fill and for the push
+  pairing card's QR plate, which a camera needs light to read.
 - **Watch the stock shell's bare-element rules.** `DESIGN_SYSTEM.md` §6 warns
   about `base.css` out-specifying its own primitives; the stock client has the
   mirror-image problem. `style.css` skins bare `button`, and Radix builds
@@ -501,6 +531,20 @@ delete `forge-modal-bootstrap.scss`, and remove the `scss` handling from
   rules with a zero-specificity `:where(:not(...))`. `log-viewer/` never hit
   this because it is a separate entry that does not load `style.css`; any screen
   migrating inside the client entry will.
+
+  **`button` was not the only one.** Phase 4 PR 2 found the same shape on text
+  fields: `style.css` skins `input[type="text"]`, `input[type="number"]`,
+  `input[type="url"]` and friends, plus `.modal input` / `.modal select` /
+  `.modal textarea`. Each is (0,1,1) and so out-specifies `.ark-input` (0,1,0)
+  for `background-color`, `border`, `color` and `border-radius` — which means
+  every design-system `Input` in the client, including the settings dialog's
+  own search box from PR 1, was being painted from `--popup-*`. It looked right
+  only because `themes/bridge.css` maps the old layer onto the new, so the
+  screenshots are identical before and after the fix; it would have broken
+  outright on the day Phase 3 deletes that bridge. Same zero-specificity guard.
+  The lesson to carry: grep `style.css` for a bare element selector matching
+  whatever primitive the next screen introduces, *before* trusting that it
+  renders correctly — the bridge hides this class of bug completely.
 
 ---
 
