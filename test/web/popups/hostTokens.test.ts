@@ -177,6 +177,12 @@ describe("popup stylesheet ordering", () => {
                 "src/web/ZlomPopup.css",
                 "src/web/herbs/HerbManager.css",
                 "src/web/herbs/HerbTextWindow.css",
+                "src/web/AssistantPopup.css",
+                "src/web/KnowledgeReport.css",
+                "src/web/OswajaniePopup.css",
+                "src/web/PeopleBrowser/PeopleBrowser.css",
+                "src/web/ProfessionPopup.css",
+                "src/web/SkrotyPopup.css",
             ].sort(),
         );
     });

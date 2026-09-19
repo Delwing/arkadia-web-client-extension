@@ -1,0 +1,47 @@
+/* Skroty popup — the saved map shortcuts list: key, location id, optional label.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   WARSTWA 2 NIESIE TU PRAWIE WSZYSTKO. Lista, wiersz, element, pasek
+   przyciskow i pustka to `.popup-list` / `.popup-row` / `.popup-item` /
+   `.popup-toolbar` / `.popup-btn` / `.popup-empty` — ten popup byl pilotem
+   warstwy 2 i zostaly mu tylko wlasny kontener plus trzy role tekstu.
+
+   TRZY BARWY DANYCH, NIE RANKING. Klawisz, identyfikator lokacji i etykieta to
+   trzy kolumny tego samego wiersza, ktore maja sie od siebie ODROZNIAC — nic
+   tu nie jest lepsze ani gorsze, wiec ida na palete kategoryczna, a nie na
+   statusy (DESIGN_SYSTEM.md §3). Stara warstwa dawala klawiszowi
+   --popup-data-green, a etykiecie przezroczysty pomaranczowy wpisany na
+   sztywno; slot 3 i slot 4 sa tym, co w tej palecie lezy im najblizej. */
+
+.skroty-window-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  overflow: auto;
+  background-color: var(--ark-bg-surface);
+}
+
+.skroty-item-key {
+  color: var(--ark-data-3-text);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.skroty-item-id {
+  color: var(--ark-text-faint);
+  font-size: 0.75rem;
+}
+
+.skroty-item-label {
+  color: var(--ark-data-4-text);
+  font-size: 0.7rem;
+  padding-left: 0.1rem;
+}

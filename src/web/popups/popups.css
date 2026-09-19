@@ -32,6 +32,7 @@
 @import './popup-host-tokens.css';
 @import './popups-base.css';
 
+@import '../AssistantPopup.css';
 @import '../CarriagesPopup.css';
 @import '../CechyPopup.css';
 @import '../ClockPopup.css';
@@ -43,14 +44,19 @@
 @import '../DepositsPopup.css';
 @import '../EnemyResistancesPopup.css';
 @import '../FishingPopup.css';
+@import '../KnowledgeReport.css';
 @import '../LetterViewPopup.css';
 @import '../LootPopup.css';
 @import '../ObjectListDemoPopup.css';
+@import '../OswajaniePopup.css';
 @import '../PackageReceiverPopup.css';
+@import '../PeopleBrowser/PeopleBrowser.css';
 @import '../PocztaPopup.css';
 @import '../Postepy2Popup.css';
 @import '../PostepyPopup.css';
+@import '../ProfessionPopup.css';
 @import '../RoomInfoPopup.css';
+@import '../SkrotyPopup.css';
 @import '../StatPopup.css';
 @import '../TransportDebugPopup.css';
 @import '../TransportRoutePopup.css';

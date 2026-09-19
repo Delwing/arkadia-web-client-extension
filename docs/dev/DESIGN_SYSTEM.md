@@ -129,6 +129,17 @@ the non-colour ramps: `--ark-space-1..12`, `--ark-radius-1..5`,
 `--ark-duration-1..3`, `--ark-z-*`. Read `css/tokens.css`; it is the reference
 and it is commented.
 
+### The tints are accent-only
+
+`--ark-accent-tint` and `--ark-accent-tint-strong` are alphas
+(`--ark-accent-a3` / `a5`), and there is no status equivalent: `--ark-success-bg`
+and its siblings are opaque step-3 surfaces, not films. That matters when a
+screen wants a row to read as *barely* marked. Phase 3 mapped three 3-6%-alpha
+green row tints onto `--ark-success-bg` and turned a whole table into a solid
+green plate. For a neutral whisper the token is `--ark-gray-a2` (`#ffffff09`),
+which is the same weight and layers the same way; for anything that has to stay
+in a hue, the only alpha on offer is the accent's.
+
 ### One surface name that is not a surface
 
 `--ark-bg-overlay` is the **scrim** a dialog lays over the page
@@ -299,6 +310,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `src/web/` travel + transport popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 3) |
 | `src/web/` inventory + economy popups (10) | **on the design system**, `--ark-*` only (Phase 3, PR 4) |
 | `src/web/` debug + misc popups (3) | **on the design system**, `--ark-*` only (Phase 3, PR 5). Okno mapy is still not among them — see `UI_MIGRATION.md` §4 |
+| `src/web/` knowledge + report popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 6). Czat is not among them — it is blocked by `.map-header-menu__*`, exactly as Okno mapy is; see `UI_MIGRATION.md` §4 |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki (Faza 4, PR 1), Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2) |
