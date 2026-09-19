@@ -235,7 +235,7 @@ const LetterComposer: React.FC = () => {
                             onClick={togglePinned}
                             title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
                         />
-                        <button type="button" className="panel-button panel-button--close btn-close btn-close-white" onClick={close} />
+                        <button type="button" className="panel-button panel-button--close btn-close btn-close-white" data-testid="dialog-close" onClick={close} />
                     </div>
                 </div>
                 <div className="window-body letter-composer-body">

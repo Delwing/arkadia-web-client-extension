@@ -1,17 +1,21 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
+import {dialogClose} from './support/dialogs';
+
+/** The keymap dropdown at the top of the binds window. */
+const keymapDropdown = (page: Page) => page.locator('#binds-modal').getByRole('combobox').first();
 
 async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
     await page.waitForSelector('#binds-modal.show', {timeout: 5000});
     // Wait for React to render the keymap UI
-    await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
+    await keymapDropdown(page).waitFor({timeout: 5000});
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal .btn-close').click();
+    await dialogClose(page.locator('#binds-modal')).click();
     await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
 }
 
@@ -36,7 +40,7 @@ test.describe('Keymaps management', () => {
         await expect(keymapLabel).toBeVisible();
 
         // The select should have the default keymap option
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
         await expect(keymapSelect).toBeVisible();
 
         // The default keymap should contain an option (at minimum one)
@@ -54,7 +58,7 @@ test.describe('Keymaps management', () => {
     test('create a new keymap and verify it appears in the list', async ({page}) => {
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
 
         // Count initial keymaps
         const initialCount = await keymapSelect.locator('option').count();
@@ -84,7 +88,7 @@ test.describe('Keymaps management', () => {
     test('switch between keymaps and verify selection changes', async ({page}) => {
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
 
         // Create a second keymap first
         await page.locator('#binds-modal button:has-text("Nowa mapa")').click();
@@ -140,7 +144,7 @@ test.describe('Keymaps management', () => {
             await renameInput.press('Enter');
         }
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
         await keymapSelect.waitFor({state: 'visible', timeout: 3000});
 
         // Get all option values and find the non-default one
@@ -163,7 +167,7 @@ test.describe('Keymaps management', () => {
         await openBindsModal(page);
 
         // Verify the same keymap is still selected
-        const keymapSelectAfter = page.locator('#binds-modal .form-select').first();
+        const keymapSelectAfter = keymapDropdown(page);
         const afterValue = await keymapSelectAfter.inputValue();
         expect(afterValue).toBe(selectedValue);
 
@@ -177,7 +181,7 @@ test.describe('Keymaps management', () => {
     test('rename a keymap and verify the name changes', async ({page}) => {
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
 
         // Create a new keymap to rename (avoid renaming the default)
         await page.locator('#binds-modal button:has-text("Nowa mapa")').click();
@@ -225,7 +229,7 @@ test.describe('Keymaps management', () => {
 
         await openBindsModal(page);
 
-        const afterOptions = page.locator('#binds-modal .form-select').first().locator('option');
+        const afterOptions = keymapDropdown(page).locator('option');
         const afterTexts: string[] = [];
         const afterCount = await afterOptions.count();
         for (let i = 0; i < afterCount; i++) {

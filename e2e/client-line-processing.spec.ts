@@ -1,4 +1,5 @@
 import {expect, test} from './support/fixtures';
+import {dialogClose} from './support/dialogs';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
@@ -63,7 +64,7 @@ test.describe('Line processing pipeline', () => {
             'should list the new trigger pattern',
         ).toBeVisible();
 
-        await triggersModal.locator('button.btn-close').click();
+        await dialogClose(triggersModal).click();
         await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
 
         await page.evaluate(() => {
@@ -96,7 +97,7 @@ test.describe('Line processing pipeline', () => {
         await triggersModal.getByPlaceholder('Command').fill('some command');
         await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
 
-        await triggersModal.locator('button.btn-close').click();
+        await dialogClose(triggersModal).click();
         await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
 
         await page.evaluate(() => {
@@ -145,7 +146,7 @@ test.describe('Line processing pipeline', () => {
             'should list the color trigger pattern',
         ).toBeVisible();
 
-        await triggersModal.locator('button.btn-close').click();
+        await dialogClose(triggersModal).click();
         await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
 
         const output = page.locator('#main_text_output_msg_wrapper');
@@ -184,7 +185,7 @@ test.describe('Line processing pipeline', () => {
             'should list the uppercase trigger pattern',
         ).toBeVisible();
 
-        await triggersModal.locator('button.btn-close').click();
+        await dialogClose(triggersModal).click();
         await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
 
         const output = page.locator('#main_text_output_msg_wrapper');

@@ -10,6 +10,7 @@
 
 import { expect, test } from './support/fixtures';
 import type { Page } from '@playwright/test';
+import { dialogClose } from './support/dialogs';
 import {
     ensureGameSocket,
     primeCharInfo,
@@ -37,7 +38,7 @@ async function openFirebaseTab(page: Page) {
  */
 async function closeModal(page: Page) {
     const modal = page.locator(EXPORT_IMPORT_MODAL);
-    await modal.locator('.btn-close').click();
+    await dialogClose(modal).click();
     await expect(modal).not.toBeVisible();
 }
 

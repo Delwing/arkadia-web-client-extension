@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
+import {dialogClose} from './support/dialogs';
 import {ensureGameSocket, getLastOutgoingCommand, submitCommand, waitForCommandInput} from './support/mocks';
 
 async function openLetterComposer(page: Page) {
@@ -68,7 +69,7 @@ test.describe('Letter composer', () => {
         await expect(templateSelect, 'should select parchment template').toHaveValue('parchment');
 
         // Close and reopen to verify persistence
-        await composer.locator('.btn-close').click();
+        await dialogClose(composer).click();
         await expect(composer, 'should close composer').not.toBeVisible();
 
         // Reopen
@@ -88,7 +89,7 @@ test.describe('Letter composer', () => {
         await composer.locator('#letter-content').fill('Test content');
 
         // Click close button
-        await composer.locator('.btn-close').click();
+        await dialogClose(composer).click();
 
         // Modal should be closed
         await expect(composer, 'should close composer on close button').not.toBeVisible();

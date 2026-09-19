@@ -62,16 +62,17 @@ function SubDialog({
     return (
         <div
             className="modal show d-block"
+            data-testid="sub-dialog"
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
             onClick={(e) => {
                 if (dismissible && e.target === e.currentTarget) onClose();
             }}
         >
             <div className={dialogClasses} style={{ zIndex: 1061 }}>
-                <div className="modal-content">
+                <div className="modal-content" data-testid="sub-dialog-content">
                     <div className="modal-header">
                         <h5 className="modal-title">{title}</h5>
-                        {dismissible && <button type="button" className="btn-close" onClick={onClose} />}
+                        {dismissible && <button type="button" className="btn-close" data-testid="dialog-close" onClick={onClose} />}
                     </div>
                     <div className="modal-body">{children}</div>
                     {footer && <div className="modal-footer">{footer}</div>}

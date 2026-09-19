@@ -1,4 +1,5 @@
 import {expect, test} from './support/fixtures';
+import {dialogClose} from './support/dialogs';
 import {
     ensureGameSocket,
     getCommandLog,
@@ -41,7 +42,7 @@ test('User trigger creation executes command and persists after reload', async (
         'should display command macro summary',
     ).toBeVisible();
 
-    await triggersModal.locator('button.btn-close').click();
+    await dialogClose(triggersModal).click();
     await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
 
     await page.evaluate(() => {
@@ -79,7 +80,7 @@ test('User trigger creation executes command and persists after reload', async (
         'should preserve macro summary after reload',
     ).toBeVisible();
 
-    await triggersModal.locator('button.btn-close').click();
+    await dialogClose(triggersModal).click();
     await expect(triggersModal, 'should close triggers modal after verification').not.toBeVisible();
 
     await pushText(page, 'Trigger test incoming again!');
@@ -143,7 +144,7 @@ test('GMCP event trigger lets the user pick a known GMCP package', async ({page}
     ).toBeVisible();
     await expect(triggersModal.locator('.trigger-conditions'), 'should summarise the condition').toHaveText('gdy hp <= 2');
 
-    await triggersModal.locator('button.btn-close').click();
+    await dialogClose(triggersModal).click();
     await expect(triggersModal).not.toBeVisible();
 
     await page.evaluate(() => {
