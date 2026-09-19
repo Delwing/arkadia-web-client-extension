@@ -172,6 +172,9 @@ the system.
 ```tsx
 // once, in the entry point — never from the component barrel
 import "@design/css/index.css";
+// (One deliberate exception: src/web/settings/SettingsDialog.tsx imports it
+//  itself, because forge lazy-imports that component into a shell that has no
+//  entry point of ours. See UI_MIGRATION.md Phase 4.)
 
 import { Button, Dialog, Icon, Input, Toggle } from "@design";
 ```
@@ -194,10 +197,19 @@ Primitives available: `Badge`, `Button`/`IconButton`, `Callout`/`EmptyState`,
 
 ### The specificity trap
 
-`base.css` wraps its element resets in `:where()` so they carry **zero**
-specificity. Without that, `.ark-root button { padding: 0 }` (0,1,1) outranks
+It runs both ways. Inside the system, `base.css` wraps its element resets in
+`:where()` so they carry **zero** specificity. Without that, `.ark-root button { padding: 0 }` (0,1,1) outranks
 `.ark-button--solid` (0,1,0) and every button in the system renders as bare
 text. If you add to the reset, keep it inside `:where()`.
+
+The mirror image bites when the system loads inside a screen that has its own
+bare-element rules. `src/web/style.css` skins `button`, and Radix builds
+`Checkbox`, `Switch`, `Toggle`, `Segmented`, `Tabs` and the `Select` trigger out
+of `<button>`. A bare `button` (0,0,1) loses to `.ark-checkbox` (0,1,0) only for
+the properties that class declares — `padding`, `opacity`, `border-radius` and
+`min-width` are not among them, so the checkbox rendered as a 60px translucent
+pill. `style.css` now excludes `ark-`-prefixed classes from those rules, with
+the exclusion inside `:where()` so nothing else changes.
 
 ---
 
@@ -207,7 +219,9 @@ text. If you add to the reset, keep it inside `:where()`.
 |---|---|
 | `log-viewer/` (standalone log browser) | **on the design system**, no Bootstrap |
 | `design/` (showcase) | on the design system |
-| `src/web/` stock UI (settings, popups, layout) | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
+| `src/web/settings/` (the settings dialog shell) | **on the design system** |
+| `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki |
+| the rest of `src/web/` (popups, layout) | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |
 

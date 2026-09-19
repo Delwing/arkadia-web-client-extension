@@ -50,6 +50,17 @@ file we touch. Its scoped Bootstrap must keep working until the last stock
 component stops needing it — at which point that file gets deleted, which is a
 simplification for forge, not a regression.
 
+Two things about this that only showed up once Phase 4 started. First,
+`forge-modal-bootstrap.scss` compiles Bootstrap **whole**, under one
+`.forge-menu-modal` prefix; there is nothing in it to remove per migrated
+module, so it shrinks not at all and then disappears all at once. Second, and
+larger: **forge loads no part of the design system.** No `@design/css/index.css`
+import, no `.ark-root`, no `data-ark-theme` anywhere in `forge-ui/`. A migrated
+component rendered in a forge menu modal resolves no `--ark-*` at all, which is
+not a wrong colour but an invalid-at-computed-value for every one of them. Phase
+4 PR 1 works around it from the stock side (see that phase), but the real
+question is §9's, and it is now on the critical path rather than hypothetical.
+
 **(b) The e2e suite is pinned to Bootstrap class names.** Across 129 specs:
 ~45 `.btn`, ~40 `.modal`, ~17 `.form-select`, plus a few `.alert`/`.form-check`.
 The good news is that 102 `getByRole` and 56 `getByText` uses are already
@@ -189,22 +200,95 @@ deleted — which is the signal that the legacy token layer is dead.
 
 The long pole: 46 files, ~13 000 lines, all the react-bootstrap.
 
+**Rewritten after PR 1.** The sequence below used to say "`SettingsDialog`
+shell first — Radix `Dialog` + `Tabs`" and then list Shortcuts / Aliases /
+ShortExits / Scripts as the first tabs. All of that was written against an
+older tree and every part of it was wrong by the time anyone acted on it. What
+the tree actually looks like:
+
+- **The shell was never react-bootstrap.** `SettingsDialog.tsx` is 390 lines
+  with no react-bootstrap import; `settingsDialog.css` had no hex literal. It
+  was *bridged*, not unmigrated — 18 `var(--popup-*)` reads, three Bootstrap
+  class names (`.form-control`, `.form-select`, `.alert`). The job was to
+  re-point it, not to rewrite it.
+- **It is not a Radix `Dialog`, and must not become one yet.** The dialog
+  chrome — title, Save, the close button, the backdrop — belongs to
+  `#settings-modal` in `index.html` and is driven by `bootstrap/js/dist/modal`.
+  `SettingsDialog` is only the *body*; it hooks `show.bs.modal` /
+  `hidden.bs.modal` on that element, and forge fakes those same events on its
+  own shell (`MenuModalHost.tsx`). Turning the chrome into a Radix dialog is
+  **Phase 5** work (it is one of that phase's 15 declarative modals) and it
+  breaks forge unless forge changes with it.
+- **It is not `Tabs` either.** The navigation is a two-group sidebar of 15
+  pages with a search box, a per-page unsaved-changes dot and, under 40rem, a
+  native `<select>`. `@design`'s `Tabs` is a horizontal tablist and does not fit.
+- **Shortcuts, Aliases and Scripts are not tabs.** Nor are Binds, Recordings,
+  UserTriggers, LocationNotes, ExportImport, CharacterManagementModal or
+  HelperSettings. All ten are standalone modals mounted into their own roots
+  from `index.html` (`src/web/main.ts` ~line 1536) — they are exactly the ten
+  modules forge imports, and their shells are Phase 5, not Phase 4.
+- **`ShortExitsSettings.tsx` (210 lines) is dead code.** Nothing imports it.
+  The live short-exits UI is a section inside `Settings.tsx`. Delete it; do not
+  migrate it.
+
+The real Phase 4 population is the 15 pages in `settings/categories.ts`, served
+by `useCharacterSettingsPages.tsx` and `useUiSettingsPages.tsx`. A page is the
+unit of migration, not a file: `character-combat` is four components, and
+`ui-other` is two.
+
 Sequence within the phase:
 
-1. **`SettingsDialog` shell first** — Radix `Dialog` + `Tabs`, with the existing
-   tab bodies rendered inside it unchanged. One PR, immediately visible, and it
-   establishes the container every later PR drops into.
-2. **Then a tab per PR**, smallest first to shake out missing primitives:
-   Shortcuts (113) → Aliases (204) → ShortExits (210) → Scripts (218) →
-   … → MobileButtons (761) → Settings (855) → FirebaseTab (1 064) →
-   Binds (1 223).
-3. **Coordinate with forge-ui** on the ten modules it imports. Each migrated
-   module can drop out of `forge-modal-bootstrap.scss`'s scope; the file shrinks
-   PR by PR and is deleted at the end.
+1. **Shell and the shared control layer** — done in PR 1. `settingsDialog.css`
+   is on `--ark-*`; `src/web/settings/controls.tsx` holds the migrated
+   `SettingsCard` / `SettingsRow` / `CheckboxField` / `SelectField` /
+   `ColorField`, the counterpart of `uiSettings/fields.tsx` and of the
+   hand-rolled `.character-settings-section` markup. Both old layers stay until
+   the last page leaves them.
+2. **Then a page per PR**, smallest first. Done: `ui-commands`, `ui-other`,
+   `character-guilds`, `character-magics`. Remaining, roughly by size:
+   `ui-windows` → `ui-footer` (pulls in BarOrderSettings +
+   FooterComponentSettings) → `ui-appearance` → `ui-map` → `ui-sound` →
+   `character-items` / `character-general` (both are sections of
+   `Settings.tsx`, 855 lines, so they land together) → `character-combat`
+   (CombatCommands + DrawSheathe + EnemyBinds + LuaGags) → `ui-buttons` /
+   `ui-mobile-buttons` / `ui-radial` (the button editors, 761 lines).
+3. **Coordinate with forge-ui** on the ten modules it imports. Note that
+   `forge-modal-bootstrap.scss` compiles Bootstrap *whole*; it cannot shrink
+   per module, only be deleted once nothing forge renders needs Bootstrap at
+   all. Since forge renders the entire `SettingsDialog`, that means after the
+   last settings page **and** the ten standalone modals.
 
-Expect this phase to surface primitives the system does not have yet —
-`Table`, `Accordion`, `ProgressBar`, `Alert` are the likely four. Add them to
-`@design` when the second screen needs them, not the first.
+#### What a page actually needs
+
+- **`@design`'s `Select` does not replace a `<select>`.** It is a Radix listbox:
+  no `<optgroup>`, and Playwright's `selectOption()` does not drive it. The e2e
+  suite uses `selectOption` on `#luaGag-*`, `#ui-multibind-key-hints`,
+  `#settings-category-select` and more. Migrated pages keep a native `<select>`
+  styled from tokens (`.settings-native-select`). The same goes for
+  `<input type="color">` — there is no colour-picker primitive.
+- **`@design`'s `Checkbox` is a `<button role="checkbox">`.** Two consequences,
+  both handled in PR 1 and both silent if you miss them: `<label for>` cannot
+  activate a button (so `CheckboxField` clicks it itself), and
+  `settingsDirty.ts` had to learn to read `data-state` or the unsaved-changes
+  dot quietly stops working on migrated pages.
+- **`@design`'s `Icon` has 15 names.** Settings needs far more, and they are
+  domain icons (plecak, miecze, tarcza) that no other screen wants. The
+  category icons in `SettingsDialog.tsx` import lucide directly and say why.
+- **The tokens have to reach forge.** `forge-ui/` never loads
+  `@design/css/index.css` and has no `data-ark-theme` anywhere, so a migrated
+  component rendered inside a forge menu modal would resolve *no* `--ark-*` at
+  all — borderless controls, transparent fills. `SettingsDialog` therefore
+  imports the design stylesheet itself and sets `data-ark-theme` on its host
+  **only when no ancestor already has one**. It deliberately does not set
+  `.ark-root`: that is the visual opt-in, and claiming it would repaint the
+  pages still on Bootstrap. The consequence, which is a real product decision
+  and not a bug: inside forge the settings dialog now renders in a
+  design-system theme rather than forge's bronze. §9's "does forge-ui consume
+  `@design` too?" is no longer entirely hypothetical.
+- **`Table` and `ProgressBar` still do not exist.** The pages that need a table
+  (`Binds`, `FirebaseTab`, `DeviceManagementTab`) are all large and late, so the
+  decision can wait. `Alert` is `Callout`, which exists; `Accordion` has not
+  been needed yet.
 
 ### Phase 5 — Shell *(1–2 PRs)*
 
@@ -241,7 +325,20 @@ delete `forge-modal-bootstrap.scss`, and remove the `scss` handling from
   build and the unit tests. Only looking at it found them.
 - **Screenshot before and after.** For a redesign, that diff *is* the review.
 - **No hex in a component stylesheet.** Already enforced by a unit test for the
-  design system; extend that test's file list as each screen migrates.
+  design system; extend that test's file list as each screen migrates
+  (`test/ui/design/tokens.test.ts`, `MIGRATED_SCREEN_SHEETS` — it also checks
+  the screen reads no `--popup-*`, which is the other half of "migrated").
+- **Watch the stock shell's bare-element rules.** `DESIGN_SYSTEM.md` §6 warns
+  about `base.css` out-specifying its own primitives; the stock client has the
+  mirror-image problem. `style.css` skins bare `button`, and Radix builds
+  `Checkbox`, `Switch`, `Toggle`, `Segmented`, `Tabs` and the `Select` trigger
+  out of `<button>`. A bare `button` selector loses to `.ark-checkbox` only for
+  the properties that class declares — `padding`, `opacity`, `border-radius`,
+  `min-width` are not among them, so a 16px checkbox rendered as a 60px
+  translucent pill. Phase 4 PR 1 excluded `ark-`-prefixed classes from those
+  rules with a zero-specificity `:where(:not(...))`. `log-viewer/` never hit
+  this because it is a separate entry that does not load `style.css`; any screen
+  migrating inside the client entry will.
 
 ---
 
@@ -266,6 +363,10 @@ than it adds.
 ---
 
 ## 7. Queued follow-up
+
+- **Delete `src/web/options/ShortExitsSettings.tsx` (210 lines).** Nothing
+  imports it; the live short-exits UI is a section of `Settings.tsx`. Found
+  while picking Phase 4's first tabs — the plan had it queued for migration.
 
 - ~~**Character attribution for logs**~~ — done, see
   `LOG_CHARACTER_ATTRIBUTION.md` and `LOG_VIEWER.md` §1. The log carries a
