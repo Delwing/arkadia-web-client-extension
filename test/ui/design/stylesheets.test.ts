@@ -39,6 +39,26 @@ const MIGRATED_SHEETS = [
 ];
 
 /**
+ * Migrated popups that have NO stylesheet of their own — they are styled from
+ * `style={{ ... }}` objects in the component, so `MIGRATED_SHEETS` above cannot
+ * reach them and the rule it enforces would quietly not apply.
+ *
+ * Found in Faza 3, rodzina 2: the calendar, the sun calculator and the sun
+ * tracker are between them ~1 500 lines of inline styles and zero CSS files.
+ * Rewriting them into stylesheets would have been a rewrite, not a migration,
+ * so instead the same two rules are held against the TSX.
+ */
+const MIGRATED_POPUP_COMPONENTS = [
+    "src/web/CalendarPopup.tsx",
+    "src/web/ClockPopup.tsx",
+    "src/web/RoomInfoPopup.tsx",
+    "src/web/SunCalcPopup.tsx",
+    "src/web/SunTrackerPopup.tsx",
+    "src/web/WorldTimePopup.tsx",
+    "src/web/popups/worldPalette.ts",
+];
+
+/**
  * Sheets held to the no-hex rule but NOT to the no-`--popup-*` rule: reading
  * the old layer is the whole job of a bridge. themes/bridge.css maps old onto
  * new for the stock client, popup-host-tokens.css maps it back for forge-ui.
@@ -143,6 +163,28 @@ describe("migrated screens", () => {
             const legacy = [...css.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)]
                 .map((match) => match[1])
                 .filter((name) => name !== "--popup-split-gutter");
+            expect(legacy).toEqual([]);
+        });
+    }
+});
+
+describe("migrated popup components", () => {
+    for (const component of MIGRATED_POPUP_COMPONENTS) {
+        const source = readFileSync(resolve(root, component), "utf8");
+
+        it(`${component} uses tokens rather than literal colours`, () => {
+            // Inline styles break a theme exactly as a stylesheet does; the
+            // only difference is that nothing used to be watching them.
+            // A colour arriving from the GAME (a room's envColor) is data, not
+            // a theme decision, so only literals written INTO the source count.
+            const literals = [...source.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0]);
+            expect(literals.filter((value) => value.toLowerCase() !== "#fff")).toEqual([]);
+        });
+
+        it(`${component} has no --popup-* reads left`, () => {
+            const legacy = [...source.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)].map(
+                (match) => match[1],
+            );
             expect(legacy).toEqual([]);
         });
     }
