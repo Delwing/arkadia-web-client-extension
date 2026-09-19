@@ -2,11 +2,19 @@
 
 The reference screen for the design system: a session log browser with
 time-based navigation, search across one log or all of them, and channel
-filters. It lives in `src/ui/logViewer` (`@ui/logViewer`) and is mounted by the
-standalone page in `log-viewer/`.
+filters. It lives in `src/ui/logViewer` (`@ui/logViewer`).
 
-It is host-agnostic on purpose — it renders into whatever box it is given, so
-the same component can become a modal inside the client without a rewrite.
+**Two hosts render it**, and neither owns it:
+
+- the standalone page, `log-viewer/` — its own entry point, its own theme
+  setting, reachable in a tab of its own;
+- the in-client window, `src/web/LogBrowser.tsx` — the same component in a
+  design-system `Dialog`, opened from *Logi* in the menu, plus the session
+  management the client alone has (`LogManager.tsx`).
+
+Both load their sessions through `log-viewer/sessionAdapter.ts` and share one
+set of stored view preferences, so a fix in either shows up in both. It is
+host-agnostic on purpose: it renders into whatever box it is given.
 
 ---
 
@@ -203,6 +211,14 @@ and it is never persisted.
 **Shortcuts are scoped to the viewer's subtree**, never to `window`: a modal
 that listens globally steals keys from the game input.
 
+The range menu is the exception, and both halves of it are fixes the in-client
+host forced. Its `Escape` is captured on `window` and `preventDefault`ed —
+Radix's dismissable layer stands down on a prevented default, so one press
+closes the menu and leaves the window it sits in open. And it closes on a
+scroll only when that scroll happened *inside the viewer*: a capture listener
+on `window` also sees the game's own log scrolling behind the dialog, which
+threw the menu away on every line that arrived.
+
 | Key | Action |
 |---|---|
 | `Ctrl/Cmd+F` | focus and select the search field |
@@ -228,8 +244,23 @@ that listens globally steals keys from the game input.
 />
 ```
 
-`?session=<store name>` on the standalone page preselects a session — that is
-how the in-client log browser opens one in a new tab.
+`?session=<store name>` on the standalone page preselects a session and
+`?live=<store name>` says which one is still being written to — that is how
+**Nowa karta** in the in-client window hands a log over.
+
+The in-client host (`src/web/LogBrowser.tsx`) differs from the page in three
+ways, all deliberate:
+
+- it renders its own `.ark-root` boundary, so it themes correctly in the stock
+  dialog *and* inside forge-ui's modal shell, neither of which is a page the
+  design system owns;
+- it drops `sessionId` out of the restored preferences and always opens the
+  session being recorded. Which log you were last reading is a page-level
+  convenience; in the client the answer is always "this one" — and two tabs
+  sharing one `localStorage` key would otherwise open each other's session;
+- its session list is a snapshot taken when the window opens. The live session
+  is still flagged live (that is what opens it at its end), but nothing
+  streams into the pane while it is open.
 
 View preferences that persist between openings: channels, timestamps, the
 tag/line-number columns, the game's colours (on by default), wrapping, search
@@ -269,8 +300,10 @@ bar rather than failing silently, and the download is always available.
 
 ## 6. Not built
 
-- JSON export and the highlight-preserving export are still in
-  `src/web/logsExport.worker.ts`, on the old screen.
+- Bulk work on the store — the ZIP archive of every session, JSON export and
+  import, deletion — is not the viewer's job and never will be: it is a client
+  concern, and it lives in `src/web/LogManager.tsx`, opened from the in-client
+  window's header. The standalone page reads logs and never writes.
 - "Open folder" — no browser equivalent; the client's File System Access
   integration (`src/web/logFileSaver.ts`) is the nearest thing.
 - Bookmarks, timeline zoom, and context lines around matches in "matching lines
@@ -281,6 +314,6 @@ bar rather than failing silently, and the download is always available.
 - Sessions are loaded eagerly. If that stops scaling, the shape to move to is a
   lines-on-demand `LogSession` plus a cached per-session hit count, keyed by
   (query, flags, channels).
-- **The in-client log browser (`src/web/LogBrowser.tsx`, ~1700 lines) still runs
-  the old UI.** It is the obvious next migration: most of its bulk is search,
-  timeline and rendering that this component already does.
+- Following a live log *as it is written*. Both hosts take a snapshot; the
+  live flag and "Sledz na zywo" only follow what is already loaded. The shape
+  of the fix is a subscription that appends to the open session, not a reload.

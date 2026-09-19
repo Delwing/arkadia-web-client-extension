@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { Dialog as RadixDialog } from "radix-ui";
 import { cx } from "../cx";
 import { Icon } from "./Icon";
@@ -21,6 +21,18 @@ export interface DialogProps {
 }
 
 /**
+ * How deep in a stack of dialogs this one sits.
+ *
+ * Radix manages focus and dismissal for nested layers but not their painting
+ * order, and every dialog portals to `document.body` at the same z-index —
+ * so a dialog opened from a dialog had its scrim land *under* the one it was
+ * covering. The depth turns into `--ark-dialog-level`, which `dialog.css`
+ * adds onto both z-indexes. Nesting is counted rather than declared: a call
+ * site that has to pass its own depth eventually passes the wrong one.
+ */
+const DialogDepth = createContext(0);
+
+/**
  * Modal shell. Radix owns focus trapping, focus restore, scroll locking and
  * the dismiss behaviour — the things hand-rolled modals in this codebase have
  * historically got wrong.
@@ -38,26 +50,33 @@ export function Dialog({
     children,
     dismissible = true,
 }: DialogProps) {
+    const depth = useContext(DialogDepth) + 1;
     return (
-        <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
-            <RadixDialog.Portal>
-                <div className="ark-root" data-ark-theme={theme}>
-                    <RadixDialog.Overlay className="ark-dialog-overlay" />
-                    <RadixDialog.Content
-                        className={cx(
-                            "ark-dialog-content",
-                            size !== "full" && "ark-dialog-content--auto",
-                            size !== "full" && `ark-dialog-content--${size}`,
-                            className,
-                        )}
-                        onEscapeKeyDown={dismissible ? undefined : (event) => event.preventDefault()}
-                        onPointerDownOutside={dismissible ? undefined : (event) => event.preventDefault()}
+        <DialogDepth.Provider value={depth}>
+            <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
+                <RadixDialog.Portal>
+                    <div
+                        className="ark-root"
+                        data-ark-theme={theme}
+                        style={{ "--ark-dialog-level": depth } as CSSProperties}
                     >
-                        {children}
-                    </RadixDialog.Content>
-                </div>
-            </RadixDialog.Portal>
-        </RadixDialog.Root>
+                        <RadixDialog.Overlay className="ark-dialog-overlay" />
+                        <RadixDialog.Content
+                            className={cx(
+                                "ark-dialog-content",
+                                size !== "full" && "ark-dialog-content--auto",
+                                size !== "full" && `ark-dialog-content--${size}`,
+                                className,
+                            )}
+                            onEscapeKeyDown={dismissible ? undefined : (event) => event.preventDefault()}
+                            onPointerDownOutside={dismissible ? undefined : (event) => event.preventDefault()}
+                        >
+                            {children}
+                        </RadixDialog.Content>
+                    </div>
+                </RadixDialog.Portal>
+            </RadixDialog.Root>
+        </DialogDepth.Provider>
     );
 }
 

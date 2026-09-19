@@ -1737,7 +1737,21 @@ h1 {
   color: #888;
 }
 
-button {
+/* Left over from the Vite template, and the stock client leans on it for every
+   button it never gave a class to.
+
+   The guard is what keeps it out of migrated screens. `.ark-root` sits on
+   <body> since Phase 1 of the redesign, and the design system's own element
+   reset is wrapped in `:where()` (zero specificity) so that `.ark-button`
+   can win — which means this bare `button` rule outranks it and reaches
+   straight into every primitive that does not happen to set the property.
+   It did: `padding: 0.75vh 2vw` blew a 16px checkbox out to 53px, and
+   `opacity: 0.75` dimmed every control in the Logi window.
+
+   `:where()` around the `:not()` keeps the selector at a bare element's
+   specificity, so nothing else in the stock cascade moves. Add a namespace
+   here when a screen migrates; the whole block goes when Bootstrap does. */
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
   padding: 0.75vh 2vw;
@@ -1751,11 +1765,11 @@ button {
   transition: border-color 0.25s;
   opacity: 0.75;
 }
-button:hover {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):hover {
   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus-visible {
   outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
@@ -1767,7 +1781,7 @@ button:focus-visible {
   a:hover {
   color: #747bff;
   }
-  button {
+  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
   background-color: #f9f9f9;
   }
 }

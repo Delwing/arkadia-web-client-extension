@@ -4,8 +4,9 @@ The client's new base look: **Radix primitives for behaviour, our own CSS for
 everything visual, and one semantic token layer that makes theming work.**
 
 It lives in `src/ui/design` and is imported as `@design`. It currently drives
-the standalone log browser (`log-viewer/`) and the showcase (`design/`); the
-rest of the stock UI is still on Bootstrap and migrates screen by screen.
+the standalone log browser (`log-viewer/`), the showcase (`design/`) and the
+in-client Logi window; the rest of the stock UI is still on Bootstrap and
+migrates screen by screen.
 
 ---
 
@@ -207,6 +208,7 @@ text. If you add to the reset, keep it inside `:where()`.
 |---|---|
 | `log-viewer/` (standalone log browser) | **on the design system**, no Bootstrap |
 | `design/` (showcase) | on the design system |
+| Logi window (`src/web/LogBrowser.tsx`, `LogManager.tsx`) | **on the design system**, in a `Dialog` inside the stock client |
 | `src/web/` stock UI (settings, popups, layout) | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |
@@ -219,9 +221,31 @@ text. If you add to the reset, keep it inside `:where()`.
 4. Replace `--popup-*` reads with semantic tokens.
 5. Drop the screen's Bootstrap imports when nothing in it needs them.
 
-The natural next target is `src/web/LogBrowser.tsx` — the in-client log browser,
-which can drop ~1700 lines onto the shared `LogViewer` component (see
-`docs/dev/LOG_VIEWER.md`).
+### Living inside the stock client
+
+The first screen to do this (the Logi window) turned up two things that a
+standalone page never shows, and every later screen inherits both.
+
+**The stock cascade reaches in.** `.ark-root` is on `<body>`, and the system's
+element reset is wrapped in `:where()` so primitives can win — which means a
+bare `button { … }` rule in `style.css`, loaded after the system, outranks
+every primitive that does not set that property. It silently gave every
+control `opacity: 0.75` and `padding: 0.75vh 2vw` (a 16px checkbox came out
+53px wide). That rule is now guarded with
+`button:where(:not([class^='ark-'], …))` — same specificity, no reach. When a
+new screen migrates, check it renders *in the client*, not only in the
+showcase.
+
+**The z tokens are absolute, not relative.** `--ark-z-overlay` and friends are
+five-digit numbers because the stock client's own stack runs to 10100 (the
+output context menu); a dialog below that has the mobile keypad and the input
+bar poking through it. Nested dialogs are handled by the `Dialog` component
+itself: it counts its own depth through a context and writes
+`--ark-dialog-level`, which `dialog.css` adds onto both z-indexes, so a dialog
+opened from a dialog scrims the one underneath.
+
+The natural next target is the popup layer — see `docs/dev/UI_MIGRATION.md`
+Phase 3.
 
 ---
 

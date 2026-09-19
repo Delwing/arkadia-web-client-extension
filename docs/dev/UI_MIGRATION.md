@@ -26,7 +26,7 @@ of the UI" means **the client entry**, plus whatever `forge-ui` borrows from it.
 | `src/web/options/` + `hostProxy/` (settings) | 46 files, ~13 000 lines | Real component rewrites — this is where react-bootstrap lives |
 | `src/web/*Popup.tsx` (39 popups) | ~8 600 lines of `popups.css` | Mostly **token remapping**, not rewrites |
 | Shell: `index.html`, `layout.css`, `style.css` | 144 Bootstrap class uses, 15 declarative modals | Markup + layout CSS |
-| `src/web/LogBrowser.tsx` | ~1 700 lines | Fold its newer UX into `@ui/logViewer`, then host that in a popup |
+| ~~`src/web/LogBrowser.tsx`~~ | ~~~1 700 lines~~ | **Done** — it is now a ~110-line host around `@ui/logViewer` |
 | Bootstrap JS | 3 import sites | `Dropdown`, `Modal` → Radix primitives |
 
 Two measurements matter more than the totals:
@@ -56,7 +56,24 @@ The good news is that 102 `getByRole` and 56 `getByText` uses are already
 markup-agnostic and survive any rewrite. **Roughly 110 selectors are the thing
 standing between us and freely changing markup.**
 
-**(c) Cascade order is load-bearing and fragile.** `main-theme.css` exists
+**(c) The stock client's element-level CSS reaches into migrated screens.**
+`.ark-root` sits on `<body>` (Phase 1) and the design system's own element
+reset is wrapped in `:where()` so primitives can win — which leaves a bare
+`button { … }` rule in `style.css`, loaded *after* the system, outranking every
+primitive that does not happen to set that property. Phase 2 found it the hard
+way: `padding: 0.75vh 2vw` blew a 16px checkbox out to 53px and `opacity: 0.75`
+dimmed every control in the window. The rule is now guarded with
+`:where(:not([class^='ark-'], …))`, which keeps its specificity and stops it at
+the boundary. It is the only global element rule left in the stock sheets —
+but the failure mode is the thing to remember, because it is silent: nothing
+breaks, things just come out the wrong size.
+
+The same shape bit the layering. `--ark-z-dialog` was 101, against a stock
+stack that runs to 10100, so the first design-system dialog in the client had
+the mobile keypad and the input bar poking through it. The z tokens are now
+absolute values chosen against that stack.
+
+**(d) Cascade order is load-bearing and fragile.** `main-theme.css` exists
 because Rollup reshuffled shared CSS chunks and flipped the stock cascade — read
 its header before touching any import order. Every phase below must keep the
 design system's stylesheet and the Bootstrap base from fighting, which
@@ -73,7 +90,7 @@ riskier than it needs to be.
 ```
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
-2. One log viewer, hosted twice                  ← fold master's UX in, then share
+2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
 3. Popups (39)                                  ← mostly token work
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
@@ -162,16 +179,37 @@ master deliberately — a range narrows the log only in that scope, so the two
 wider scopes can search the whole log without master's trick of silently
 destroying the range to reach a hit outside it. See `LOG_VIEWER.md`.
 
-**PR 2 — host it in the client.** `LogBrowser.tsx` becomes a popup mounting the
-shared component, reusing `log-viewer/sessionAdapter.ts`. What does *not* come
-across for free, and must be ported or consciously dropped:
+**PR 2 — host it in the client. Done.** `LogBrowser.tsx` went from 2 009 lines
+to ~110: it loads sessions through `log-viewer/sessionAdapter.ts` and renders
+`@ui/logViewer`. The window is a design-system `Dialog` (`size="full"`, the
+size the primitive was written for), mounted from React — so the declarative
+`#logs-modal` left `index.html` and one of the three `bootstrap/js/dist/modal`
+import sites went with it. `LogTimeline.tsx`, `logToImage.ts`, ~460 lines of
+log CSS in `style.css` and most of `logBrowserUtils.ts` are gone.
 
-- the ZIP export of all sessions (`logsExport.worker.ts`)
-- the sessions-management tab (delete, download-status, file-save directory)
-- JSON export and the highlight-preserving HTML export
+It was already presented as a modal before this, not as a screen, so "in a
+popup rather than its own screen" was a change of dialog, not of shape.
 
-`e2e/logs-browser.spec.ts` (new on master, 179 lines) is the acceptance test for
-this phase: it describes the behaviour the shared component has to keep.
+What did not come across for free:
+
+- **the ZIP export, JSON export/import and deletion: ported**, into a
+  `LogManager` window opened from the viewer's header (see §9).
+- **the highlight-preserving HTML export: dropped, superseded.** The shared
+  `export/logHtml.ts` writes a self-contained file whose colours travel with
+  the content, rather than scraping whatever stylesheets the page happened to
+  have loaded.
+- **the file-save directory: not ported, and never lived here.** It is a
+  switch on *Interfejs > Inne* (`logFileSaver.ts`); the browser only ever
+  showed the resulting "saved to disk" column, which the manage window keeps.
+
+Known limitation: the pane takes a snapshot when the window opens, the way the
+old browser did. The session being recorded is still marked live, because that
+is what opens it at its end — but "Sledz na zywo" has nothing to follow until
+the window is reopened. Streaming into it is a follow-up, not a regression.
+
+`e2e/logs-browser.spec.ts` is the acceptance test. Its behaviour survived
+unchanged; its *selectors* did not, because the markup is the shared
+component's now — see the PR body for the mapping.
 
 ### Phase 3 — Popups *(4–6 PRs, grouped by family)*
 
@@ -309,5 +347,26 @@ continuity fix, not palette tuning.
 - **Does `forge-ui` eventually consume `@design` too?** Out of scope today. If
   the answer is ever yes, Phase 4 should stop re-styling stock components for
   forge's scoped Bootstrap and let forge adopt the system instead.
-- **Is the in-client log browser's session-management tab worth porting**, or
-  does the standalone page cover it?
+- ~~**Is the in-client log browser's session-management tab worth porting**, or
+  does the standalone page cover it?~~ **Answered: ported.** The standalone
+  page does not cover it and should not. It *reads* logs and never writes to
+  the database — that is what lets it be a plain page with no character
+  context — so nothing on it can delete a session, archive one or put one
+  back. Dropping the tab would have left the client with no way to remove a
+  log at all, and IndexedDB only grows; it would also have thrown away the
+  only backup path there is, since the JSON export/import round trip is the
+  one thing that moves a log between devices.
+
+  So it is ported, and in full: bulk ZIP export (`logsExport.worker.ts`),
+  "select the ones not yet archived" with its downloaded flag, the
+  saved-to-disk column, JSON export, JSON import and deletion. What changed is
+  where it lives. It is no longer a *tab* — a tab implies two things you
+  switch between, and this is a rare administrative errand next to the thing
+  you actually came for. It is a `LogManager` window (`src/web/LogManager.tsx`)
+  opened by **Zarzadzanie** in the viewer's header, which also let the tab
+  strip and its DOM-poking effect leave `index.html`.
+
+  Two things fell out of loading every session eagerly: the manage window
+  reads line counts and time spans off `LogSession[]` instead of re-counting
+  through IndexedDB, and `alert`/`confirm` are gone — the outcome of an import
+  is a `Callout` in the window, and a delete is confirmed by a real dialog.

@@ -535,24 +535,24 @@ export function LogManager({ open, onOpenChange, sessions, onSessionsChanged }: 
                         </Button>
                     </div>
                 </DialogFooter>
-            </Dialog>
 
-            <Dialog open={confirmDelete} onOpenChange={setConfirmDelete} size="sm">
-                <DialogHeader compact>
-                    <DialogTitle>Usunac zaznaczone logi?</DialogTitle>
-                </DialogHeader>
-                <DialogBody padded>
-                    {`Zaznaczonych sesji: ${selected.size}. Tej operacji nie da sie cofnac.`}
-                </DialogBody>
-                <DialogFooter>
-                    <div className="logs-manage__spacer" />
-                    <Button size="sm" onClick={() => setConfirmDelete(false)}>
-                        Anuluj
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => void deleteSelected()}>
-                        Usun
-                    </Button>
-                </DialogFooter>
+                <Dialog open={confirmDelete} onOpenChange={setConfirmDelete} size="sm">
+                    <DialogHeader compact>
+                        <DialogTitle>Usunac zaznaczone logi?</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody padded>
+                        {`Zaznaczonych sesji: ${selected.size}. Tej operacji nie da sie cofnac.`}
+                    </DialogBody>
+                    <DialogFooter>
+                        <div className="logs-manage__spacer" />
+                        <Button size="sm" onClick={() => setConfirmDelete(false)}>
+                            Anuluj
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => void deleteSelected()}>
+                            Usun
+                        </Button>
+                    </DialogFooter>
+                </Dialog>
             </Dialog>
         </>
     );
