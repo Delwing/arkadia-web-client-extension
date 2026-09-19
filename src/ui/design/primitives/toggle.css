@@ -1,0 +1,51 @@
+/* Toggle — a two-state control (on = raised, off = quiet). The `Aa` / `.*`
+   search modifiers, the status-bar switches and the channel chips are all
+   this same state pair; only the shape differs. */
+
+.ark-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ark-space-3);
+  height: var(--ark-control-sm);
+  padding: 0 var(--ark-space-5);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+  background: transparent;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-3);
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--ark-duration-1) linear,
+    border-color var(--ark-duration-1) linear,
+    color var(--ark-duration-1) linear;
+}
+
+.ark-toggle:hover:not(:disabled) {
+  border-color: var(--ark-border-element);
+  color: var(--ark-text);
+}
+
+.ark-toggle[data-state='on'] {
+  background: var(--ark-bg-selected);
+  border-color: var(--ark-border-strong);
+  color: var(--ark-text);
+}
+
+.ark-toggle--md {
+  height: var(--ark-control-md);
+  padding: 0 var(--ark-space-5);
+  font-size: var(--ark-text-4);
+}
+
+.ark-toggle--square {
+  width: var(--ark-control-xs);
+  height: var(--ark-control-xs);
+  padding: 0;
+  font-size: var(--ark-text-3);
+}
+
+.ark-toggle--mono {
+  font-family: var(--ark-font-mono);
+}

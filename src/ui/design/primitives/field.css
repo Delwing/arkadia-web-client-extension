@@ -1,0 +1,39 @@
+/* Field — label + control + hint/error, the settings-form building block. */
+
+.ark-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-3);
+  min-width: 0;
+}
+
+.ark-field--row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ark-space-5);
+}
+
+.ark-field__label {
+  font-size: var(--ark-text-4);
+  font-weight: var(--ark-weight-medium);
+  color: var(--ark-text-secondary);
+}
+
+/* The uppercase section label above a sidebar or a settings group. */
+.ark-field__eyebrow {
+  font-size: var(--ark-text-1);
+  font-weight: var(--ark-weight-semibold);
+  letter-spacing: var(--ark-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ark-text-secondary);
+}
+
+.ark-field__hint {
+  font-size: var(--ark-text-3);
+  color: var(--ark-text-tertiary);
+}
+
+.ark-field__error {
+  font-size: var(--ark-text-3);
+  color: var(--ark-danger-text);
+}

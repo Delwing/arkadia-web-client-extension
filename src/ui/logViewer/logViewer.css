@@ -1,0 +1,596 @@
+/* ============================================================================
+   Log viewer.
+   ============================================================================
+
+   Every value here is a design-system token. The only colours this file
+   *defines* are the log-specific roles below, and those are themselves built
+   from tokens — so the viewer re-themes with everything else and a new theme
+   needs no changes here.
+   ========================================================================== */
+
+.lv {
+    /* --- log-specific roles --------------------------------------------- */
+
+    /* Channel text colours. Readability first: the loud channels get full
+       contrast, the ambient ones (room description, system chatter) step back
+       so a wall of them does not compete with what was said to you. */
+    --ark-log-comm: var(--ark-text);
+    --ark-log-combat: var(--ark-text);
+    --ark-log-room: var(--ark-gray-11);
+    --ark-log-system: var(--ark-gray-10);
+    --ark-log-notify: var(--ark-info-11);
+    --ark-log-command: var(--ark-accent-11);
+
+    --ark-log-event-login: var(--ark-gray-11);
+    --ark-log-event-death: var(--ark-danger-11);
+    --ark-log-event-trait: var(--ark-success-11);
+
+    --lv-sidebar-width: 288px;
+    --lv-line-height: var(--ark-leading-log-compact);
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--ark-bg-surface);
+}
+
+.lv[data-density='comfortable'] {
+    --lv-line-height: var(--ark-leading-log-comfortable);
+}
+
+/* --- header ------------------------------------------------------------- */
+
+.lv__title-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-1);
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.lv__meta {
+    font-size: var(--ark-text-4);
+    color: var(--ark-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- body split --------------------------------------------------------- */
+
+.lv__split {
+    display: flex;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.lv__main {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+/* --- sidebar ------------------------------------------------------------ */
+
+.lv-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: var(--lv-sidebar-width);
+    border-right: 1px solid var(--ark-border-subtle);
+    background: var(--ark-bg-app);
+}
+
+.lv-sidebar__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-4);
+    padding: var(--ark-space-6);
+    border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.lv-sidebar__list {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 var(--ark-space-4) var(--ark-space-6);
+}
+
+.lv-sidebar__group {
+    position: sticky;
+    top: 0;
+    z-index: var(--ark-z-sticky);
+    padding: var(--ark-space-6) var(--ark-space-3) var(--ark-space-3);
+    background: var(--ark-bg-app);
+    font-size: var(--ark-text-2);
+    font-weight: var(--ark-weight-semibold);
+    color: var(--ark-text-secondary);
+}
+
+.lv-sidebar__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-1);
+}
+
+.lv-session {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-1);
+    width: 100%;
+    padding: var(--ark-space-4) var(--ark-space-5);
+    border: 1px solid transparent;
+    border-radius: var(--ark-radius-3);
+    text-align: left;
+    color: var(--ark-text);
+    transition: background-color var(--ark-duration-1) linear;
+}
+
+.lv-session:hover {
+    background: var(--ark-bg-element-ghost-hover);
+}
+
+.lv-session[data-selected='true'] {
+    background: var(--ark-bg-selected);
+    border-color: var(--ark-border-strong);
+}
+
+/* In All-logs scope a session with no hits stays clickable but recedes, so the
+   ones worth opening stand out without the list jumping around. */
+.lv-session[data-dimmed='true'] {
+    opacity: 0.5;
+}
+
+.lv-session__name {
+    flex-grow: 1;
+    font-size: var(--ark-text-6);
+    font-weight: var(--ark-weight-medium);
+}
+
+.lv-session[data-selected='true'] .lv-session__name {
+    font-weight: var(--ark-weight-semibold);
+}
+
+.lv-session__range {
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-2);
+    font-variant-numeric: tabular-nums;
+    color: var(--ark-text-secondary);
+}
+
+.lv-session__live {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--ark-radius-full);
+    background: var(--ark-success-solid);
+}
+
+.lv-sidebar__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 var(--ark-space-7);
+    border-top: 1px solid var(--ark-border-subtle);
+    font-size: var(--ark-text-3);
+    color: var(--ark-text-secondary);
+}
+
+/* --- search bar --------------------------------------------------------- */
+
+.lv-search {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-4);
+    padding: var(--ark-space-5) var(--ark-space-8);
+    border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.lv-search__field {
+    width: 340px;
+    flex-shrink: 0;
+}
+
+.lv-search__counter {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 168px;
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-search__count {
+    font-size: var(--ark-text-4);
+    font-weight: var(--ark-weight-medium);
+    color: var(--ark-text);
+}
+
+.lv-search__count[data-tone='muted'] {
+    color: var(--ark-text-secondary);
+    font-weight: var(--ark-weight-regular);
+}
+
+.lv-search__count[data-tone='error'] {
+    color: var(--ark-danger-text);
+}
+
+.lv-search__sub {
+    font-size: var(--ark-text-2);
+    color: var(--ark-text-tertiary);
+}
+
+/* A jump the player did not ask for is announced in the accent colour, so it
+   is the one thing in this row that catches the eye when it appears. */
+.lv-search__sub[data-notice='true'] {
+    color: var(--ark-accent-text);
+}
+
+/* --- channel bar -------------------------------------------------------- */
+
+.lv-channels {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-3);
+    padding: var(--ark-space-4) var(--ark-space-8);
+    border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.lv-channels__label {
+    margin-right: var(--ark-space-2);
+    font-size: var(--ark-text-3);
+    color: var(--ark-text-secondary);
+}
+
+/* --- timeline ----------------------------------------------------------- */
+
+.lv-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-3);
+    padding: var(--ark-space-5) var(--ark-space-8) var(--ark-space-4);
+    border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.lv-timeline__head {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-7);
+    font-size: var(--ark-text-3);
+    color: var(--ark-text-secondary);
+}
+
+.lv-timeline__title {
+    font-weight: var(--ark-weight-semibold);
+    color: var(--ark-text);
+}
+
+.lv-timeline__span {
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-2);
+}
+
+.lv-legend {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-6);
+    flex-wrap: wrap;
+}
+
+.lv-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ark-space-3);
+    white-space: nowrap;
+}
+
+.lv-legend__swatch {
+    display: inline-block;
+    width: 8px;
+    height: 10px;
+    background: var(--ark-gray-8);
+}
+
+.lv-legend__swatch--match {
+    width: 2px;
+    height: 12px;
+    background: var(--ark-accent-solid);
+}
+
+.lv-legend__swatch--view {
+    width: 14px;
+    height: 10px;
+    border: 1px solid var(--ark-text);
+    border-radius: var(--ark-radius-1);
+    background: none;
+}
+
+.lv-legend__swatch--idle {
+    width: 12px;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--ark-gray-a6) 0 2px,
+        transparent 2px 4px
+    );
+}
+
+.lv-legend__glyph {
+    font-weight: var(--ark-weight-semibold);
+}
+
+.lv-timeline__row {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-4);
+}
+
+.lv-track {
+    position: relative;
+    flex-grow: 1;
+    height: 66px;
+    overflow: hidden;
+    border: 1px solid var(--ark-border-subtle);
+    border-radius: var(--ark-radius-3);
+    background: var(--ark-bg-sunken);
+    cursor: crosshair;
+}
+
+.lv-track__gap {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--ark-gray-a4) 0 4px,
+        transparent 4px 8px
+    );
+}
+
+.lv-track__bars {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--ark-space-3);
+    bottom: 20px;
+}
+
+.lv-track__bar {
+    position: absolute;
+    bottom: 0;
+    background: var(--ark-gray-8);
+    border-radius: 1px 1px 0 0;
+}
+
+.lv-track__tick {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--ark-accent-solid);
+    opacity: 0.7;
+}
+
+.lv-track__current {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    width: 4px;
+    margin-left: -2px;
+    background: var(--ark-accent-solid);
+    /* A halo in the track colour so the marker reads over a dense histogram. */
+    box-shadow: 0 0 0 2px var(--ark-bg-sunken);
+}
+
+.lv-track__viewport {
+    position: absolute;
+    top: 1px;
+    bottom: 19px;
+    min-width: 4px;
+    border: 1px solid var(--ark-text);
+    border-radius: var(--ark-radius-1);
+    background: var(--ark-gray-a3);
+    pointer-events: none;
+}
+
+.lv-track__events {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 18px;
+    border-top: 1px solid var(--ark-border-subtle);
+}
+
+.lv-track__event {
+    position: absolute;
+    top: 0;
+    width: 16px;
+    height: 17px;
+    padding: 0;
+    transform: translateX(-50%);
+    font-size: var(--ark-text-1);
+    font-weight: var(--ark-weight-semibold);
+    line-height: 17px;
+}
+
+.lv-track__hairline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--ark-gray-a8);
+    pointer-events: none;
+}
+
+.lv-track__hover {
+    position: absolute;
+    top: var(--ark-space-3);
+    padding: var(--ark-space-1) var(--ark-space-4);
+    border: 1px solid var(--ark-border-strong);
+    border-radius: var(--ark-radius-2);
+    background: var(--ark-bg-raised);
+    color: var(--ark-text);
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-1);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.lv-timeline__axis {
+    position: relative;
+    height: 14px;
+    /* Clears the two jump buttons, so the first and last labels sit under the
+       ends of the track rather than under the buttons. */
+    margin: 0 40px;
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-1);
+    color: var(--ark-text-tertiary);
+}
+
+.lv-timeline__axis span {
+    position: absolute;
+    top: 0;
+}
+
+/* --- log pane ----------------------------------------------------------- */
+
+.lv-log {
+    position: relative;
+    flex-grow: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--ark-space-3) 0;
+    background: var(--ark-bg-app);
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-5);
+}
+
+/* An empty pane centres its explanation rather than leaving it pinned to the
+   top of a very tall, very blank box. */
+.lv-log--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lv-log__row {
+    display: grid;
+    grid-template-columns: 64px 40px 46px minmax(0, 1fr);
+    column-gap: var(--ark-space-6);
+    padding: 0 var(--ark-space-8);
+    line-height: var(--lv-line-height);
+}
+
+.lv-log[data-timestamps='false'] .lv-log__row {
+    grid-template-columns: 40px 46px minmax(0, 1fr);
+}
+
+.lv-log__row[data-current='true'] {
+    background: var(--ark-accent-a3);
+}
+
+/* An event line is tinted whether or not it is the current match, so scanning
+   for "where did I die" works without searching. */
+.lv-log__row[data-event='true'] {
+    background: var(--ark-gray-a2);
+}
+
+.lv-log__row[data-event='true'][data-current='true'] {
+    background: var(--ark-accent-a3);
+}
+
+.lv-log__time {
+    color: var(--ark-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-log__number {
+    color: var(--ark-text-faint);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-log__tag {
+    font-size: 10.5px;
+    letter-spacing: var(--ark-tracking-wide);
+    color: var(--ark-text-tertiary);
+    font-weight: var(--ark-weight-medium);
+}
+
+.lv-log__tag[data-event='true'] {
+    font-weight: var(--ark-weight-semibold);
+}
+
+.lv-log__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre-wrap;
+}
+
+.lv-log[data-wrap='false'] .lv-log__text {
+    white-space: pre;
+}
+
+.lv-log__text mark {
+    background: var(--ark-accent-a5);
+    color: inherit;
+    border-radius: var(--ark-radius-1);
+}
+
+.lv-log__text mark[data-current='true'] {
+    background: var(--ark-accent-solid);
+    color: var(--ark-accent-contrast);
+}
+
+/* --- status bar --------------------------------------------------------- */
+
+.lv-status {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-5);
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 var(--ark-space-6) 0 var(--ark-space-8);
+    border-top: 1px solid var(--ark-border-subtle);
+    font-size: var(--ark-text-3);
+    color: var(--ark-text-secondary);
+}
+
+.lv-status__lines {
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-status__view {
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-2);
+}
+
+/* --- responsive --------------------------------------------------------- */
+
+/* Below the spec's 960px floor the sidebar is the first thing to go: the log
+   itself is what the player came for. */
+@media (max-width: 1040px) {
+    .lv {
+        --lv-sidebar-width: 220px;
+    }
+
+    .lv-search__field {
+        width: 240px;
+    }
+
+    .lv-legend {
+        display: none;
+    }
+}
+
+@media (max-width: 820px) {
+    .lv-sidebar {
+        display: none;
+    }
+}

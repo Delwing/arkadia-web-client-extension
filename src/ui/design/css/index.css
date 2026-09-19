@@ -1,0 +1,38 @@
+/* ============================================================================
+   Arkadia design system — stylesheet entry point.
+   ============================================================================
+
+   Import THIS, not the parts. The order matters and is fixed here so it cannot
+   be reshuffled by Rollup's chunk splitting: `@import` inlines each sheet into
+   this file's chunk in source order. (The stock UI learned this the hard way —
+   see the header of src/web/main-theme.css.)
+
+     1. scales   — raw colour steps per theme
+     2. tokens   — semantic roles, written once in terms of those steps
+     3. base     — the `.ark-root` opt-in boundary
+     4. …        — primitive stylesheets, alphabetical; each owns its `.ark-*`
+                   classes and none of them reaches outside its own component
+   ========================================================================== */
+
+@import './scales.generated.css';
+@import './tokens.css';
+@import './base.css';
+
+@import '../primitives/badge.css';
+@import '../primitives/button.css';
+@import '../primitives/callout.css';
+@import '../primitives/checkbox.css';
+@import '../primitives/chip.css';
+@import '../primitives/dialog.css';
+@import '../primitives/field.css';
+@import '../primitives/input.css';
+@import '../primitives/kbd.css';
+@import '../primitives/layout.css';
+@import '../primitives/menu.css';
+@import '../primitives/segmented.css';
+@import '../primitives/select.css';
+@import '../primitives/spinner.css';
+@import '../primitives/switch.css';
+@import '../primitives/tabs.css';
+@import '../primitives/toggle.css';
+@import '../primitives/tooltip.css';

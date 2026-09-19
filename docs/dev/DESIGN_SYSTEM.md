@@ -1,0 +1,226 @@
+# Design system
+
+The client's new base look: **Radix primitives for behaviour, our own CSS for
+everything visual, and one semantic token layer that makes theming work.**
+
+It lives in `src/ui/design` and is imported as `@design`. It currently drives
+the standalone log browser (`log-viewer/`) and the showcase (`design/`); the
+rest of the stock UI is still on Bootstrap and migrates screen by screen.
+
+---
+
+## 1. Why this shape
+
+**Radix primitives, not a styled component library.** `radix-ui` supplies the
+things that are tedious and easy to get wrong — focus trapping and restore,
+scroll locking, roving tabindex, typeahead in listboxes, correct popper
+placement — and no visual opinions. `@radix-ui/themes` was rejected: it ships
+its own CSS, and the whole point here is that *we* own the look across eight
+themes.
+
+**Radix Colours as the palette source, at build time only.** Not for the
+specific hues, but for the *structure*: twelve steps with fixed meanings across
+every scale. That is what lets a new theme be a two-line config entry rather
+than a hand-tuned palette, and what stops components from needing per-theme
+special cases. Nothing from `@radix-ui/colors` reaches the browser — a Node
+script reads it and emits plain custom properties.
+
+**No aliasing of the old `--popup-*` variables.** The two systems run side by
+side. A screen is either migrated or it is not; there is no half-state where a
+token means one thing here and another there.
+
+---
+
+## 2. Layout of the code
+
+```
+src/ui/design/
+├── css/
+│   ├── index.css              ← import THIS; @imports everything in order
+│   ├── scales.generated.css   ← GENERATED: raw colour steps per theme
+│   ├── tokens.css             ← semantic roles, written ONCE
+│   └── base.css               ← the `.ark-root` opt-in boundary
+├── primitives/                ← one .tsx + one .css per primitive
+├── themes/
+│   ├── themes.config.mjs      ← the theme catalogue (generator input)
+│   └── theme.ts               ← runtime: applying themes, custom colours
+├── cx.ts
+└── index.ts                   ← the public surface (`@design`)
+
+scripts/build-design-tokens.mjs ← yarn build:design-tokens
+design/                         ← the showcase entry point
+```
+
+---
+
+## 3. Tokens
+
+### The twelve steps
+
+Every theme supplies a neutral ramp (`--ark-gray-1..12`) and an accent ramp
+(`--ark-accent-1..12`), plus alpha variants (`--ark-gray-a1..a12`). The step
+roles are fixed:
+
+| Step | Role |
+|---|---|
+| 1 | app background |
+| 2 | subtle / surface background |
+| 3 | element background (rest) |
+| 4 | element background (hover) |
+| 5 | element background (pressed / selected) |
+| 6 | subtle border, separator |
+| 7 | element border |
+| 8 | strong border, focus ring |
+| 9 | solid fill (the accent proper) |
+| 10 | solid fill, hovered |
+| 11 | low-contrast text |
+| 12 | high-contrast text |
+
+### The rule
+
+**Components use semantic tokens. Only `tokens.css` uses raw steps. Nothing
+uses a hex value.**
+
+```css
+/* yes */
+.my-thing { background: var(--ark-bg-element); border: 1px solid var(--ark-border); }
+
+/* no — works in one theme, breaks in the other seven */
+.my-thing { background: #222221; border: 1px solid #3b3a37; }
+
+/* no — a step is a raw material, not a role */
+.my-thing { background: var(--ark-gray-3); }
+```
+
+A unit test enforces the last two for `tokens.css` and every primitive
+stylesheet, with `#fff` on a solid danger/accent fill as the one exception.
+
+The semantic names are grouped as surfaces (`--ark-bg-*`), borders
+(`--ark-border*`), text (`--ark-text*`), accent (`--ark-accent-*`), status
+(`--ark-success-*`, `--ark-warning-*`, `--ark-danger-*`, `--ark-info-*`), and
+the non-colour ramps: `--ark-space-1..12`, `--ark-radius-1..5`,
+`--ark-control-xs..xl`, `--ark-text-1..8`, `--ark-shadow-1..4`,
+`--ark-duration-1..3`, `--ark-z-*`. Read `css/tokens.css`; it is the reference
+and it is commented.
+
+### Status colours never follow the accent
+
+A danger state has to read as danger in every theme. Per-theme danger colours
+are how you end up with a green "your character died" tag in the forest theme.
+
+---
+
+## 4. Theming
+
+A theme is a `data-ark-theme` attribute plus the `.ark-root` class:
+
+```html
+<div id="root" class="ark-root" data-ark-theme="arkadia">
+```
+
+`.ark-root` is the opt-in boundary. Everything outside it is untouched by the
+system — which is what lets this load next to Bootstrap while screens migrate.
+
+### Adding a theme
+
+Add an entry to `src/ui/design/themes/themes.config.mjs`:
+
+```js
+{ id: 'ember', label: 'Zar', appearance: 'dark', gray: 'mauve', accent: 'tomato' }
+```
+
+then run `yarn build:design-tokens` and add the same id/label/appearance to
+`THEME_CATALOG` in `themes/theme.ts`. That is the whole change: no component
+touches a colour, so none of them need to know. A test fails if the generated
+file or the TypeScript catalogue drifts out of step.
+
+The eight shipped themes: `arkadia` (default), `dark-neutral`, `fantasy`,
+`forest`, `icy`, `gray`, `parchment` (light), `silver` (light).
+
+### The player's own colour
+
+`applyTheme(element, { theme: 'custom', customColor: '#58b0e8' })` builds a full
+twelve-step ramp from one seed at runtime and installs it as a single `<style>`
+element. Nothing downstream can tell it apart from a generated theme — same
+custom properties, same step semantics — including contrast text, which flips to
+near-black for a bright accent.
+
+---
+
+## 5. Typography
+
+IBM Plex Sans for UI, IBM Plex Mono for log text, timestamps and numbers
+(tabular figures). Loaded from Google Fonts by the entry HTML of pages that use
+the system.
+
+> If a new entry point adds that `<link>`, add it to the route-blocking pattern
+> in `e2e/support/fixtures.ts` and `firebase-fixtures.ts` — the e2e suite blocks
+> external requests, and an unblocked font request stalls page load.
+
+---
+
+## 6. Using it
+
+```tsx
+// once, in the entry point — never from the component barrel
+import "@design/css/index.css";
+
+import { Button, Dialog, Icon, Input, Toggle } from "@design";
+```
+
+Primitives available: `Badge`, `Button`/`IconButton`, `Callout`/`EmptyState`,
+`Checkbox`, `Chip`, `Dialog` (+ header/body/footer/close), `Field`, `Icon`,
+`Input`/`InputShell`, `Kbd`, `Row`/`Col`/`Spacer`/`Divider`, `Menu`,
+`Segmented`, `Select`, `Spinner`, `Switch`, `Tabs`, `Toggle`, `Tooltip`.
+
+### Conventions
+
+- **`solid` is for one action per view.** If every button is the accent colour,
+  the accent colour stops meaning anything. Default to `soft`.
+- **Icons go through `Icon`, by meaning** (`name="jump-start"`), not by importing
+  from `lucide-react` directly. Swapping an icon is then a one-file change.
+- **Icon-only buttons take a `title`** with the shortcut spelled out
+  (`"Zamknij  Esc"`). This project does not use `aria-*` attributes (AGENTS.md),
+  so `title` is both the accessible name and the tooltip.
+- **UI text is Polish**, ASCII-only, like the rest of the client.
+
+### The specificity trap
+
+`base.css` wraps its element resets in `:where()` so they carry **zero**
+specificity. Without that, `.ark-root button { padding: 0 }` (0,1,1) outranks
+`.ark-button--solid` (0,1,0) and every button in the system renders as bare
+text. If you add to the reset, keep it inside `:where()`.
+
+---
+
+## 7. What is migrated
+
+| Screen | State |
+|---|---|
+| `log-viewer/` (standalone log browser) | **on the design system**, no Bootstrap |
+| `design/` (showcase) | on the design system |
+| `src/web/` stock UI (settings, popups, layout) | Bootstrap + `--popup-*` |
+| `forge-ui/` | out of scope by decision; its own theme layer |
+| `editor/`, `viewer/`, `popup/` | Bootstrap |
+
+### Migrating a screen
+
+1. Wrap its root in `.ark-root` with a `data-ark-theme`.
+2. Import `@design/css/index.css` in that entry (once).
+3. Replace react-bootstrap components with `@design` primitives.
+4. Replace `--popup-*` reads with semantic tokens.
+5. Drop the screen's Bootstrap imports when nothing in it needs them.
+
+The natural next target is `src/web/LogBrowser.tsx` — the in-client log browser,
+which can drop ~1700 lines onto the shared `LogViewer` component (see
+`docs/dev/LOG_VIEWER.md`).
+
+---
+
+## 8. Commands
+
+```bash
+yarn build:design-tokens   # regenerate scales.generated.css after a theme change
+yarn dev                   # then open /design/index.html for the showcase
+yarn vitest run test/ui    # design system + log viewer unit tests
+```

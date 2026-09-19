@@ -1,0 +1,253 @@
+/* Showcase chrome. Uses the same tokens as everything else — if a specimen
+   looks wrong in a theme, the theme or the token is wrong, not this file. */
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+}
+
+/* A fixed height, not a minimum: the log-viewer tab is a working surface that
+   pins its own status bar, and `min-height` lets the column grow past the
+   viewport instead, pushing that bar off screen. */
+#root {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--ark-bg-app);
+}
+
+.sc-header {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-6);
+    flex-shrink: 0;
+    height: 64px;
+    padding: 0 var(--ark-space-9);
+    border-bottom: 1px solid var(--ark-border-subtle);
+    background: var(--ark-bg-surface);
+}
+
+.sc-brand {
+    font-size: var(--ark-text-7);
+    font-weight: var(--ark-weight-semibold);
+}
+
+.sc-brand__note {
+    font-size: var(--ark-text-4);
+    color: var(--ark-text-tertiary);
+}
+
+.sc-color {
+    width: var(--ark-control-lg);
+    height: var(--ark-control-lg);
+    padding: 2px;
+    border: 1px solid var(--ark-border-element);
+    border-radius: var(--ark-radius-3);
+    background: var(--ark-bg-sunken);
+    cursor: pointer;
+}
+
+.sc-tabs {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.sc-tabs > .ark-tabs-list {
+    flex-shrink: 0;
+    padding: 0 var(--ark-space-9);
+    background: var(--ark-bg-surface);
+}
+
+.sc-panel {
+    flex-grow: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--ark-space-10) var(--ark-space-9) var(--ark-space-12);
+}
+
+/* The viewer is a fixed-height working surface: it pins its own status bar and
+   scrolls internally, so the panel must clamp rather than scroll. */
+.sc-panel--flush {
+    padding: 0;
+    display: flex;
+    overflow: hidden;
+}
+
+.sc-viewer {
+    flex-grow: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.sc-viewer > * {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+.sc-section {
+    max-width: 1100px;
+    margin: 0 auto var(--ark-space-12);
+}
+
+.sc-section__head {
+    margin-bottom: var(--ark-space-8);
+}
+
+.sc-section__title {
+    font-size: var(--ark-text-8);
+    font-weight: var(--ark-weight-semibold);
+}
+
+.sc-section__note {
+    margin-top: var(--ark-space-2);
+    max-width: 72ch;
+    font-size: var(--ark-text-5);
+    color: var(--ark-text-secondary);
+}
+
+.sc-specimen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-5);
+    padding: var(--ark-space-8);
+    margin-bottom: var(--ark-space-5);
+    border: 1px solid var(--ark-border-subtle);
+    border-radius: var(--ark-radius-4);
+    background: var(--ark-bg-surface);
+}
+
+.sc-specimen__label {
+    font-size: var(--ark-text-1);
+    font-weight: var(--ark-weight-semibold);
+    letter-spacing: var(--ark-tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--ark-text-tertiary);
+}
+
+.sc-specimen__body {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ark-space-6);
+}
+
+/* --- tokens tab ---------------------------------------------------------- */
+
+.sc-scale {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-1);
+    margin-bottom: var(--ark-space-5);
+}
+
+.sc-scale__label {
+    width: 88px;
+    flex-shrink: 0;
+    font-size: var(--ark-text-3);
+    color: var(--ark-text-secondary);
+}
+
+.sc-scale__step {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-grow: 1;
+    height: 52px;
+    padding-bottom: var(--ark-space-2);
+    border-radius: var(--ark-radius-2);
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-1);
+    /* Mid-grey reads on both the dark and the light end of every scale. */
+    color: var(--ark-gray-9);
+}
+
+.sc-tokens {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--ark-space-8);
+}
+
+.sc-tokens__title {
+    margin-bottom: var(--ark-space-4);
+    font-size: var(--ark-text-4);
+    font-weight: var(--ark-weight-semibold);
+    color: var(--ark-text-secondary);
+}
+
+.sc-swatch {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-5);
+    padding: var(--ark-space-2) 0;
+}
+
+.sc-swatch__chip {
+    width: 28px;
+    height: 20px;
+    flex-shrink: 0;
+    border: 1px solid var(--ark-border);
+    border-radius: var(--ark-radius-2);
+}
+
+.sc-swatch__name {
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-2);
+    color: var(--ark-text-secondary);
+}
+
+.sc-type__row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--ark-space-8);
+    padding: var(--ark-space-3) 0;
+    border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.sc-type__token {
+    width: 100px;
+    flex-shrink: 0;
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-2);
+    color: var(--ark-text-tertiary);
+}
+
+.sc-ramp {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ark-space-8);
+    margin-bottom: var(--ark-space-8);
+}
+
+.sc-ramp__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ark-space-3);
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-1);
+    color: var(--ark-text-tertiary);
+}
+
+.sc-ramp__bar {
+    display: block;
+    height: 20px;
+    min-width: 2px;
+    background: var(--ark-accent-solid);
+    border-radius: var(--ark-radius-1);
+}
+
+.sc-ramp__radius {
+    display: block;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--ark-border-strong);
+    background: var(--ark-bg-element);
+}

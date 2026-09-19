@@ -1,0 +1,817 @@
+/*
+ * GENERATED FILE — do not edit by hand.
+ *
+ * Source: src/ui/design/themes/themes.config.mjs + @radix-ui/colors
+ * Regenerate: yarn build:design-tokens
+ *
+ * Declares the raw colour steps for every theme. The semantic tokens that
+ * components actually use live in tokens.css and are written ONCE, in terms
+ * of these steps — see the step-role table there.
+ */
+/* Arkadia (ciemny) — sand / amber, dark */
+[data-ark-theme="arkadia"] {
+  color-scheme: dark;
+  --ark-appearance: dark;
+
+  /* neutral: sand */
+  --ark-gray-1: #111110;
+  --ark-gray-2: #191918;
+  --ark-gray-3: #222221;
+  --ark-gray-4: #2a2a28;
+  --ark-gray-5: #31312e;
+  --ark-gray-6: #3b3a37;
+  --ark-gray-7: #494844;
+  --ark-gray-8: #62605b;
+  --ark-gray-9: #6f6d66;
+  --ark-gray-10: #7c7b74;
+  --ark-gray-11: #b5b3ad;
+  --ark-gray-12: #eeeeec;
+  --ark-gray-a1: #00000000;
+  --ark-gray-a2: #f4f4f309;
+  --ark-gray-a3: #f6f6f513;
+  --ark-gray-a4: #fefef31b;
+  --ark-gray-a5: #fbfbeb23;
+  --ark-gray-a6: #fffaed2d;
+  --ark-gray-a7: #fffbed3c;
+  --ark-gray-a8: #fff9eb57;
+  --ark-gray-a9: #fffae965;
+  --ark-gray-a10: #fffdee73;
+  --ark-gray-a11: #fffcf4b0;
+  --ark-gray-a12: #fffffded;
+
+  /* accent: amber */
+  --ark-accent-1: #16120c;
+  --ark-accent-2: #1d180f;
+  --ark-accent-3: #302008;
+  --ark-accent-4: #3f2700;
+  --ark-accent-5: #4d3000;
+  --ark-accent-6: #5c3d05;
+  --ark-accent-7: #714f19;
+  --ark-accent-8: #8f6424;
+  --ark-accent-9: #ffc53d;
+  --ark-accent-10: #ffd60a;
+  --ark-accent-11: #ffca16;
+  --ark-accent-12: #ffe7b3;
+  --ark-accent-a1: #e63c0006;
+  --ark-accent-a2: #fd9b000d;
+  --ark-accent-a3: #fa820022;
+  --ark-accent-a4: #fc820032;
+  --ark-accent-a5: #fd8b0041;
+  --ark-accent-a6: #fd9b0051;
+  --ark-accent-a7: #ffab2567;
+  --ark-accent-a8: #ffae3587;
+  --ark-accent-a9: #ffc53d;
+  --ark-accent-a10: #ffd60a;
+  --ark-accent-a11: #ffca16;
+  --ark-accent-a12: #ffe7b3;
+  --ark-accent-contrast: var(--ark-gray-1);
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #1b2a1e;
+  --ark-success-4: #1d3a24;
+  --ark-success-6: #2d5736;
+  --ark-success-9: #46a758;
+  --ark-success-10: #53b365;
+  --ark-success-11: #71d083;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #302008;
+  --ark-warning-4: #3f2700;
+  --ark-warning-6: #5c3d05;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffd60a;
+  --ark-warning-11: #ffca16;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #391714;
+  --ark-danger-4: #4e1511;
+  --ark-danger-6: #6e2920;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #ec6142;
+  --ark-danger-11: #ff977d;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #0d2847;
+  --ark-info-4: #003362;
+  --ark-info-6: #104d87;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #3b9eff;
+  --ark-info-11: #70b8ff;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Neutralny ciemny — gray / blue, dark */
+[data-ark-theme="dark-neutral"] {
+  color-scheme: dark;
+  --ark-appearance: dark;
+
+  /* neutral: gray */
+  --ark-gray-1: #111111;
+  --ark-gray-2: #191919;
+  --ark-gray-3: #222222;
+  --ark-gray-4: #2a2a2a;
+  --ark-gray-5: #313131;
+  --ark-gray-6: #3a3a3a;
+  --ark-gray-7: #484848;
+  --ark-gray-8: #606060;
+  --ark-gray-9: #6e6e6e;
+  --ark-gray-10: #7b7b7b;
+  --ark-gray-11: #b4b4b4;
+  --ark-gray-12: #eeeeee;
+  --ark-gray-a1: #00000000;
+  --ark-gray-a2: #ffffff09;
+  --ark-gray-a3: #ffffff12;
+  --ark-gray-a4: #ffffff1b;
+  --ark-gray-a5: #ffffff22;
+  --ark-gray-a6: #ffffff2c;
+  --ark-gray-a7: #ffffff3b;
+  --ark-gray-a8: #ffffff55;
+  --ark-gray-a9: #ffffff64;
+  --ark-gray-a10: #ffffff72;
+  --ark-gray-a11: #ffffffaf;
+  --ark-gray-a12: #ffffffed;
+
+  /* accent: blue */
+  --ark-accent-1: #0d1520;
+  --ark-accent-2: #111927;
+  --ark-accent-3: #0d2847;
+  --ark-accent-4: #003362;
+  --ark-accent-5: #004074;
+  --ark-accent-6: #104d87;
+  --ark-accent-7: #205d9e;
+  --ark-accent-8: #2870bd;
+  --ark-accent-9: #0090ff;
+  --ark-accent-10: #3b9eff;
+  --ark-accent-11: #70b8ff;
+  --ark-accent-12: #c2e6ff;
+  --ark-accent-a1: #004df211;
+  --ark-accent-a2: #1166fb18;
+  --ark-accent-a3: #0077ff3a;
+  --ark-accent-a4: #0075ff57;
+  --ark-accent-a5: #0081fd6b;
+  --ark-accent-a6: #0f89fd7f;
+  --ark-accent-a7: #2a91fe98;
+  --ark-accent-a8: #3094feb9;
+  --ark-accent-a9: #0090ff;
+  --ark-accent-a10: #3b9eff;
+  --ark-accent-a11: #70b8ff;
+  --ark-accent-a12: #c2e6ff;
+  --ark-accent-contrast: #fff;
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #1b2a1e;
+  --ark-success-4: #1d3a24;
+  --ark-success-6: #2d5736;
+  --ark-success-9: #46a758;
+  --ark-success-10: #53b365;
+  --ark-success-11: #71d083;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #302008;
+  --ark-warning-4: #3f2700;
+  --ark-warning-6: #5c3d05;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffd60a;
+  --ark-warning-11: #ffca16;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #391714;
+  --ark-danger-4: #4e1511;
+  --ark-danger-6: #6e2920;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #ec6142;
+  --ark-danger-11: #ff977d;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #0d2847;
+  --ark-info-4: #003362;
+  --ark-info-6: #104d87;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #3b9eff;
+  --ark-info-11: #70b8ff;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Fantasy — mauve / purple, dark */
+[data-ark-theme="fantasy"] {
+  color-scheme: dark;
+  --ark-appearance: dark;
+
+  /* neutral: mauve */
+  --ark-gray-1: #121113;
+  --ark-gray-2: #1a191b;
+  --ark-gray-3: #232225;
+  --ark-gray-4: #2b292d;
+  --ark-gray-5: #323035;
+  --ark-gray-6: #3c393f;
+  --ark-gray-7: #49474e;
+  --ark-gray-8: #625f69;
+  --ark-gray-9: #6f6d78;
+  --ark-gray-10: #7c7a85;
+  --ark-gray-11: #b5b2bc;
+  --ark-gray-12: #eeeef0;
+  --ark-gray-a1: #00000000;
+  --ark-gray-a2: #f5f4f609;
+  --ark-gray-a3: #ebeaf814;
+  --ark-gray-a4: #eee5f81d;
+  --ark-gray-a5: #efe6fe25;
+  --ark-gray-a6: #f1e6fd30;
+  --ark-gray-a7: #eee9ff40;
+  --ark-gray-a8: #eee7ff5d;
+  --ark-gray-a9: #eae6fd6e;
+  --ark-gray-a10: #ece9fd7c;
+  --ark-gray-a11: #f5f1ffb7;
+  --ark-gray-a12: #fdfdffef;
+
+  /* accent: purple */
+  --ark-accent-1: #18111b;
+  --ark-accent-2: #1e1523;
+  --ark-accent-3: #301c3b;
+  --ark-accent-4: #3d224e;
+  --ark-accent-5: #48295c;
+  --ark-accent-6: #54346b;
+  --ark-accent-7: #664282;
+  --ark-accent-8: #8457aa;
+  --ark-accent-9: #8e4ec6;
+  --ark-accent-10: #9a5cd0;
+  --ark-accent-11: #d19dff;
+  --ark-accent-12: #ecd9fa;
+  --ark-accent-a1: #b412f90b;
+  --ark-accent-a2: #b744f714;
+  --ark-accent-a3: #c150ff2d;
+  --ark-accent-a4: #bb53fd42;
+  --ark-accent-a5: #be5cfd51;
+  --ark-accent-a6: #c16dfd61;
+  --ark-accent-a7: #c378fd7a;
+  --ark-accent-a8: #c47effa4;
+  --ark-accent-a9: #b661ffc2;
+  --ark-accent-a10: #bc6fffcd;
+  --ark-accent-a11: #d19dff;
+  --ark-accent-a12: #f1ddfffa;
+  --ark-accent-contrast: #fff;
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #1b2a1e;
+  --ark-success-4: #1d3a24;
+  --ark-success-6: #2d5736;
+  --ark-success-9: #46a758;
+  --ark-success-10: #53b365;
+  --ark-success-11: #71d083;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #302008;
+  --ark-warning-4: #3f2700;
+  --ark-warning-6: #5c3d05;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffd60a;
+  --ark-warning-11: #ffca16;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #391714;
+  --ark-danger-4: #4e1511;
+  --ark-danger-6: #6e2920;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #ec6142;
+  --ark-danger-11: #ff977d;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #0d2847;
+  --ark-info-4: #003362;
+  --ark-info-6: #104d87;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #3b9eff;
+  --ark-info-11: #70b8ff;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Las — olive / grass, dark */
+[data-ark-theme="forest"] {
+  color-scheme: dark;
+  --ark-appearance: dark;
+
+  /* neutral: olive */
+  --ark-gray-1: #111210;
+  --ark-gray-2: #181917;
+  --ark-gray-3: #212220;
+  --ark-gray-4: #282a27;
+  --ark-gray-5: #2f312e;
+  --ark-gray-6: #383a36;
+  --ark-gray-7: #454843;
+  --ark-gray-8: #5c625b;
+  --ark-gray-9: #687066;
+  --ark-gray-10: #767d74;
+  --ark-gray-11: #afb5ad;
+  --ark-gray-12: #eceeec;
+  --ark-gray-a1: #00000000;
+  --ark-gray-a2: #f1f2f008;
+  --ark-gray-a3: #f4f5f312;
+  --ark-gray-a4: #f3fef21a;
+  --ark-gray-a5: #f2fbf122;
+  --ark-gray-a6: #f4faed2c;
+  --ark-gray-a7: #f2fced3b;
+  --ark-gray-a8: #edfdeb57;
+  --ark-gray-a9: #ebfde766;
+  --ark-gray-a10: #f0fdec74;
+  --ark-gray-a11: #f6fef4b0;
+  --ark-gray-a12: #fdfffded;
+
+  /* accent: grass */
+  --ark-accent-1: #0e1511;
+  --ark-accent-2: #141a15;
+  --ark-accent-3: #1b2a1e;
+  --ark-accent-4: #1d3a24;
+  --ark-accent-5: #25482d;
+  --ark-accent-6: #2d5736;
+  --ark-accent-7: #366740;
+  --ark-accent-8: #3e7949;
+  --ark-accent-9: #46a758;
+  --ark-accent-10: #53b365;
+  --ark-accent-11: #71d083;
+  --ark-accent-12: #c2f0c2;
+  --ark-accent-a1: #00de1205;
+  --ark-accent-a2: #5ef7780a;
+  --ark-accent-a3: #70fe8c1b;
+  --ark-accent-a4: #57ff802c;
+  --ark-accent-a5: #68ff8b3b;
+  --ark-accent-a6: #71ff8f4b;
+  --ark-accent-a7: #77fd925d;
+  --ark-accent-a8: #77fd9070;
+  --ark-accent-a9: #65ff82a1;
+  --ark-accent-a10: #72ff8dae;
+  --ark-accent-a11: #89ff9fcd;
+  --ark-accent-a12: #ceffceef;
+  --ark-accent-contrast: #fff;
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #1b2a1e;
+  --ark-success-4: #1d3a24;
+  --ark-success-6: #2d5736;
+  --ark-success-9: #46a758;
+  --ark-success-10: #53b365;
+  --ark-success-11: #71d083;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #302008;
+  --ark-warning-4: #3f2700;
+  --ark-warning-6: #5c3d05;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffd60a;
+  --ark-warning-11: #ffca16;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #391714;
+  --ark-danger-4: #4e1511;
+  --ark-danger-6: #6e2920;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #ec6142;
+  --ark-danger-11: #ff977d;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #0d2847;
+  --ark-info-4: #003362;
+  --ark-info-6: #104d87;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #3b9eff;
+  --ark-info-11: #70b8ff;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Lodowy — slate / sky, dark */
+[data-ark-theme="icy"] {
+  color-scheme: dark;
+  --ark-appearance: dark;
+
+  /* neutral: slate */
+  --ark-gray-1: #111113;
+  --ark-gray-2: #18191b;
+  --ark-gray-3: #212225;
+  --ark-gray-4: #272a2d;
+  --ark-gray-5: #2e3135;
+  --ark-gray-6: #363a3f;
+  --ark-gray-7: #43484e;
+  --ark-gray-8: #5a6169;
+  --ark-gray-9: #696e77;
+  --ark-gray-10: #777b84;
+  --ark-gray-11: #b0b4ba;
+  --ark-gray-12: #edeef0;
+  --ark-gray-a1: #00000000;
+  --ark-gray-a2: #d8f4f609;
+  --ark-gray-a3: #ddeaf814;
+  --ark-gray-a4: #d3edf81d;
+  --ark-gray-a5: #d9edfe25;
+  --ark-gray-a6: #d6ebfd30;
+  --ark-gray-a7: #d9edff40;
+  --ark-gray-a8: #d9edff5d;
+  --ark-gray-a9: #dfebfd6d;
+  --ark-gray-a10: #e5edfd7b;
+  --ark-gray-a11: #f1f7feb5;
+  --ark-gray-a12: #fcfdffef;
+
+  /* accent: sky */
+  --ark-accent-1: #0d141f;
+  --ark-accent-2: #111a27;
+  --ark-accent-3: #112840;
+  --ark-accent-4: #113555;
+  --ark-accent-5: #154467;
+  --ark-accent-6: #1b537b;
+  --ark-accent-7: #1f6692;
+  --ark-accent-8: #197cae;
+  --ark-accent-9: #7ce2fe;
+  --ark-accent-10: #a8eeff;
+  --ark-accent-11: #75c7f0;
+  --ark-accent-12: #c2f3ff;
+  --ark-accent-a1: #0044ff0f;
+  --ark-accent-a2: #1171fb18;
+  --ark-accent-a3: #1184fc33;
+  --ark-accent-a4: #128fff49;
+  --ark-accent-a5: #1c9dfd5d;
+  --ark-accent-a6: #28a5ff72;
+  --ark-accent-a7: #2badfe8b;
+  --ark-accent-a8: #1db2fea9;
+  --ark-accent-a9: #7ce3fffe;
+  --ark-accent-a10: #a8eeff;
+  --ark-accent-a11: #7cd3ffef;
+  --ark-accent-a12: #c2f3ff;
+  --ark-accent-contrast: var(--ark-gray-1);
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #1b2a1e;
+  --ark-success-4: #1d3a24;
+  --ark-success-6: #2d5736;
+  --ark-success-9: #46a758;
+  --ark-success-10: #53b365;
+  --ark-success-11: #71d083;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #302008;
+  --ark-warning-4: #3f2700;
+  --ark-warning-6: #5c3d05;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffd60a;
+  --ark-warning-11: #ffca16;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #391714;
+  --ark-danger-4: #4e1511;
+  --ark-danger-6: #6e2920;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #ec6142;
+  --ark-danger-11: #ff977d;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #0d2847;
+  --ark-info-4: #003362;
+  --ark-info-6: #104d87;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #3b9eff;
+  --ark-info-11: #70b8ff;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Szary — gray / slate, dark */
+[data-ark-theme="gray"] {
+  color-scheme: dark;
+  --ark-appearance: dark;
+
+  /* neutral: gray */
+  --ark-gray-1: #111111;
+  --ark-gray-2: #191919;
+  --ark-gray-3: #222222;
+  --ark-gray-4: #2a2a2a;
+  --ark-gray-5: #313131;
+  --ark-gray-6: #3a3a3a;
+  --ark-gray-7: #484848;
+  --ark-gray-8: #606060;
+  --ark-gray-9: #6e6e6e;
+  --ark-gray-10: #7b7b7b;
+  --ark-gray-11: #b4b4b4;
+  --ark-gray-12: #eeeeee;
+  --ark-gray-a1: #00000000;
+  --ark-gray-a2: #ffffff09;
+  --ark-gray-a3: #ffffff12;
+  --ark-gray-a4: #ffffff1b;
+  --ark-gray-a5: #ffffff22;
+  --ark-gray-a6: #ffffff2c;
+  --ark-gray-a7: #ffffff3b;
+  --ark-gray-a8: #ffffff55;
+  --ark-gray-a9: #ffffff64;
+  --ark-gray-a10: #ffffff72;
+  --ark-gray-a11: #ffffffaf;
+  --ark-gray-a12: #ffffffed;
+
+  /* accent: slate */
+  --ark-accent-1: #111113;
+  --ark-accent-2: #18191b;
+  --ark-accent-3: #212225;
+  --ark-accent-4: #272a2d;
+  --ark-accent-5: #2e3135;
+  --ark-accent-6: #363a3f;
+  --ark-accent-7: #43484e;
+  --ark-accent-8: #5a6169;
+  --ark-accent-9: #696e77;
+  --ark-accent-10: #777b84;
+  --ark-accent-11: #b0b4ba;
+  --ark-accent-12: #edeef0;
+  --ark-accent-a1: #00000000;
+  --ark-accent-a2: #d8f4f609;
+  --ark-accent-a3: #ddeaf814;
+  --ark-accent-a4: #d3edf81d;
+  --ark-accent-a5: #d9edfe25;
+  --ark-accent-a6: #d6ebfd30;
+  --ark-accent-a7: #d9edff40;
+  --ark-accent-a8: #d9edff5d;
+  --ark-accent-a9: #dfebfd6d;
+  --ark-accent-a10: #e5edfd7b;
+  --ark-accent-a11: #f1f7feb5;
+  --ark-accent-a12: #fcfdffef;
+  --ark-accent-contrast: #fff;
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #1b2a1e;
+  --ark-success-4: #1d3a24;
+  --ark-success-6: #2d5736;
+  --ark-success-9: #46a758;
+  --ark-success-10: #53b365;
+  --ark-success-11: #71d083;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #302008;
+  --ark-warning-4: #3f2700;
+  --ark-warning-6: #5c3d05;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffd60a;
+  --ark-warning-11: #ffca16;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #391714;
+  --ark-danger-4: #4e1511;
+  --ark-danger-6: #6e2920;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #ec6142;
+  --ark-danger-11: #ff977d;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #0d2847;
+  --ark-info-4: #003362;
+  --ark-info-6: #104d87;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #3b9eff;
+  --ark-info-11: #70b8ff;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Pergamin (jasny) — sand / bronze, light */
+[data-ark-theme="parchment"] {
+  color-scheme: light;
+  --ark-appearance: light;
+
+  /* neutral: sand */
+  --ark-gray-1: #fdfdfc;
+  --ark-gray-2: #f9f9f8;
+  --ark-gray-3: #f1f0ef;
+  --ark-gray-4: #e9e8e6;
+  --ark-gray-5: #e2e1de;
+  --ark-gray-6: #dad9d6;
+  --ark-gray-7: #cfceca;
+  --ark-gray-8: #bcbbb5;
+  --ark-gray-9: #8d8d86;
+  --ark-gray-10: #82827c;
+  --ark-gray-11: #63635e;
+  --ark-gray-12: #21201c;
+  --ark-gray-a1: #55550003;
+  --ark-gray-a2: #25250007;
+  --ark-gray-a3: #20100010;
+  --ark-gray-a4: #1f150019;
+  --ark-gray-a5: #1f180021;
+  --ark-gray-a6: #19130029;
+  --ark-gray-a7: #19140035;
+  --ark-gray-a8: #1915014a;
+  --ark-gray-a9: #0f0f0079;
+  --ark-gray-a10: #0c0c0083;
+  --ark-gray-a11: #080800a1;
+  --ark-gray-a12: #060500e3;
+
+  /* accent: bronze */
+  --ark-accent-1: #fdfcfc;
+  --ark-accent-2: #fdf7f5;
+  --ark-accent-3: #f6edea;
+  --ark-accent-4: #efe4df;
+  --ark-accent-5: #e7d9d3;
+  --ark-accent-6: #dfcdc5;
+  --ark-accent-7: #d3bcb3;
+  --ark-accent-8: #c2a499;
+  --ark-accent-9: #a18072;
+  --ark-accent-10: #957468;
+  --ark-accent-11: #7d5e54;
+  --ark-accent-12: #43302b;
+  --ark-accent-a1: #55000003;
+  --ark-accent-a2: #cc33000a;
+  --ark-accent-a3: #92250015;
+  --ark-accent-a4: #80280020;
+  --ark-accent-a5: #7423002c;
+  --ark-accent-a6: #7324003a;
+  --ark-accent-a7: #6c1f004c;
+  --ark-accent-a8: #671c0066;
+  --ark-accent-a9: #551a008d;
+  --ark-accent-a10: #4c150097;
+  --ark-accent-a11: #3d0f00ab;
+  --ark-accent-a12: #1d0600d4;
+  --ark-accent-contrast: #fff;
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #e9f6e9;
+  --ark-success-4: #daf1db;
+  --ark-success-6: #b2ddb5;
+  --ark-success-9: #46a758;
+  --ark-success-10: #3e9b4f;
+  --ark-success-11: #2a7e3b;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #fff7c2;
+  --ark-warning-4: #ffee9c;
+  --ark-warning-6: #f3d673;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffba18;
+  --ark-warning-11: #ab6400;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #feebe7;
+  --ark-danger-4: #ffdcd3;
+  --ark-danger-6: #fdbdaf;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #dd4425;
+  --ark-danger-11: #d13415;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #e6f4fe;
+  --ark-info-4: #d5efff;
+  --ark-info-6: #acd8fc;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #0588f0;
+  --ark-info-11: #0d74ce;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Srebrny (jasny) — slate / indigo, light */
+[data-ark-theme="silver"] {
+  color-scheme: light;
+  --ark-appearance: light;
+
+  /* neutral: slate */
+  --ark-gray-1: #fcfcfd;
+  --ark-gray-2: #f9f9fb;
+  --ark-gray-3: #f0f0f3;
+  --ark-gray-4: #e8e8ec;
+  --ark-gray-5: #e0e1e6;
+  --ark-gray-6: #d9d9e0;
+  --ark-gray-7: #cdced6;
+  --ark-gray-8: #b9bbc6;
+  --ark-gray-9: #8b8d98;
+  --ark-gray-10: #80838d;
+  --ark-gray-11: #60646c;
+  --ark-gray-12: #1c2024;
+  --ark-gray-a1: #00005503;
+  --ark-gray-a2: #00005506;
+  --ark-gray-a3: #0000330f;
+  --ark-gray-a4: #00002d17;
+  --ark-gray-a5: #0009321f;
+  --ark-gray-a6: #00002f26;
+  --ark-gray-a7: #00062e32;
+  --ark-gray-a8: #00083046;
+  --ark-gray-a9: #00051d74;
+  --ark-gray-a10: #00071b7f;
+  --ark-gray-a11: #0007149f;
+  --ark-gray-a12: #000509e3;
+
+  /* accent: indigo */
+  --ark-accent-1: #fdfdfe;
+  --ark-accent-2: #f7f9ff;
+  --ark-accent-3: #edf2fe;
+  --ark-accent-4: #e1e9ff;
+  --ark-accent-5: #d2deff;
+  --ark-accent-6: #c1d0ff;
+  --ark-accent-7: #abbdf9;
+  --ark-accent-8: #8da4ef;
+  --ark-accent-9: #3e63dd;
+  --ark-accent-10: #3358d4;
+  --ark-accent-11: #3a5bc7;
+  --ark-accent-12: #1f2d5c;
+  --ark-accent-a1: #00008002;
+  --ark-accent-a2: #0040ff08;
+  --ark-accent-a3: #0047f112;
+  --ark-accent-a4: #0044ff1e;
+  --ark-accent-a5: #0044ff2d;
+  --ark-accent-a6: #003eff3e;
+  --ark-accent-a7: #0037ed54;
+  --ark-accent-a8: #0034dc72;
+  --ark-accent-a9: #0031d2c1;
+  --ark-accent-a10: #002ec9cc;
+  --ark-accent-a11: #002bb7c5;
+  --ark-accent-a12: #001046e0;
+  --ark-accent-contrast: #fff;
+
+  /* status hues — fixed per appearance, never follow the accent */
+  --ark-success-3: #e9f6e9;
+  --ark-success-4: #daf1db;
+  --ark-success-6: #b2ddb5;
+  --ark-success-9: #46a758;
+  --ark-success-10: #3e9b4f;
+  --ark-success-11: #2a7e3b;
+  --ark-success-contrast: #fff;
+  --ark-warning-3: #fff7c2;
+  --ark-warning-4: #ffee9c;
+  --ark-warning-6: #f3d673;
+  --ark-warning-9: #ffc53d;
+  --ark-warning-10: #ffba18;
+  --ark-warning-11: #ab6400;
+  --ark-warning-contrast: var(--ark-gray-1);
+  --ark-danger-3: #feebe7;
+  --ark-danger-4: #ffdcd3;
+  --ark-danger-6: #fdbdaf;
+  --ark-danger-9: #e54d2e;
+  --ark-danger-10: #dd4425;
+  --ark-danger-11: #d13415;
+  --ark-danger-contrast: #fff;
+  --ark-info-3: #e6f4fe;
+  --ark-info-4: #d5efff;
+  --ark-info-6: #acd8fc;
+  --ark-info-9: #0090ff;
+  --ark-info-10: #0588f0;
+  --ark-info-11: #0d74ce;
+  --ark-info-contrast: #fff;
+
+  /* transparent blacks/whites for scrims and hover films */
+  --ark-black-a3: rgba(0, 0, 0, 0.15);
+  --ark-black-a6: rgba(0, 0, 0, 0.4);
+  --ark-black-a8: rgba(0, 0, 0, 0.6);
+  --ark-black-a9: rgba(0, 0, 0, 0.7);
+  --ark-black-a11: rgba(0, 0, 0, 0.9);
+  --ark-white-a2: rgba(255, 255, 255, 0.1);
+  --ark-white-a3: rgba(255, 255, 255, 0.15);
+  --ark-white-a4: rgba(255, 255, 255, 0.2);
+  --ark-white-a6: rgba(255, 255, 255, 0.4);
+}
+
+/* Light appearances — softer scrim and shadows. */
+[data-ark-theme="parchment"],
+[data-ark-theme="silver"] {
+  --ark-bg-overlay: var(--ark-black-a6);
+  --ark-shadow-3: 0 12px 32px var(--ark-black-a6);
+  --ark-shadow-4: 0 24px 64px var(--ark-black-a8);
+}

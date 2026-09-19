@@ -1,0 +1,137 @@
+/* ============================================================================
+   Arkadia design system — base layer.
+   ============================================================================
+
+   Deliberately NOT a global reset: this stylesheet has to be able to load next
+   to Bootstrap while screens migrate one at a time, so it must not restyle
+   elements it does not own. Everything here is either scoped to `.ark-root`
+   (the subtree that has opted into the system) or to `.ark-*` classes.
+   ========================================================================== */
+
+/* The opt-in boundary. Put it on the element that carries `data-ark-theme`. */
+.ark-root {
+  background: var(--ark-bg-app);
+  color: var(--ark-text);
+  font-family: var(--ark-font-sans);
+  font-size: var(--ark-text-5);
+  line-height: var(--ark-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Element-level resets are wrapped in `:where()` so they carry ZERO
+   specificity.
+   Without that, `.ark-root button { padding: 0 }` (0,1,1) outranks
+   `.ark-button--solid` (0,1,0) and every button in the system renders as bare
+   text — which is exactly what happened the first time this file was written.
+   Component classes must always win over the reset. */
+:where(.ark-root) *,
+:where(.ark-root) *::before,
+:where(.ark-root) *::after {
+  box-sizing: border-box;
+}
+
+:where(.ark-root) :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+:where(.ark-root) :where(button) {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+:where(.ark-root) :where(button):disabled {
+  cursor: not-allowed;
+}
+
+:where(.ark-root) :where(h1, h2, h3, h4, p, figure) {
+  margin: 0;
+}
+
+:where(.ark-root) :where(ul, ol) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:where(.ark-root) :where(a) {
+  color: var(--ark-accent-text);
+  text-decoration: none;
+}
+
+:where(.ark-root) :where(a):hover {
+  text-decoration: underline;
+}
+
+:where(.ark-root) ::placeholder {
+  color: var(--ark-text-faint);
+  opacity: 1;
+}
+
+:where(.ark-root) ::selection {
+  background: var(--ark-accent-wash);
+  color: var(--ark-accent-contrast);
+}
+
+/* One focus treatment for the whole system. Components never redefine it; they
+   only choose where it sits (`:focus-visible` on the control, or on a child via
+   `.ark-focus-target`). */
+.ark-root :focus-visible {
+  outline: var(--ark-focus-ring-width) solid var(--ark-focus-ring);
+  outline-offset: var(--ark-focus-ring-offset);
+}
+
+/* Screen-reader-only text. `.ark-sr-only` rather than aria-* attributes, which
+   this project does not use — see AGENTS.md. */
+.ark-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Scrollbars inside the system, where the platform allows styling them. */
+.ark-root ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.ark-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ark-root ::-webkit-scrollbar-thumb {
+  background: var(--ark-gray-6);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--ark-radius-full);
+}
+
+.ark-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--ark-gray-8);
+  background-clip: content-box;
+}
+
+.ark-root {
+  scrollbar-color: var(--ark-gray-6) transparent;
+  scrollbar-width: thin;
+}
+
+/* Numbers that have to line up in columns — log timestamps, counters, line
+   numbers, durations. */
+.ark-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.ark-mono {
+  font-family: var(--ark-font-mono);
+}

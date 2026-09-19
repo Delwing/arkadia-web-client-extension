@@ -1,0 +1,40 @@
+/* Switch — for settings that take effect immediately. */
+
+.ark-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-full);
+  background: var(--ark-bg-sunken);
+  transition:
+    background-color var(--ark-duration-2) var(--ark-ease),
+    border-color var(--ark-duration-2) var(--ark-ease);
+}
+
+.ark-switch[data-state='checked'] {
+  background: var(--ark-accent-solid);
+  border-color: var(--ark-accent-solid);
+}
+
+.ark-switch:disabled {
+  opacity: 0.5;
+}
+
+.ark-switch__thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--ark-radius-full);
+  background: var(--ark-gray-12);
+  transform: translateX(2px);
+  transition: transform var(--ark-duration-2) var(--ark-ease);
+  will-change: transform;
+}
+
+.ark-switch[data-state='checked'] .ark-switch__thumb {
+  background: var(--ark-accent-contrast);
+  transform: translateX(16px);
+}

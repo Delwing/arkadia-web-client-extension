@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:types": "node plugin-types/build.cjs",
+    "build:design-tokens": "node scripts/build-design-tokens.mjs",
     "build:assistant-kb": "node scripts/build-assistant-kb.ts",
     "build:examples": "node examples/build.cjs",
     "generate:plugin-types": "node scripts/generate-plugin-types.js",
@@ -41,6 +42,7 @@
     "nosleep.js": "^0.12.0",
     "pako": "^2.1.0",
     "qrcode-generator": "^2.0.4",
+    "radix-ui": "^1.6.7",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
@@ -50,6 +52,7 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@playwright/test": "1.56.1",
+    "@radix-ui/colors": "^3.0.0",
     "@types/bootstrap": "^5.2.10",
     "@types/jest": "^29.5.5",
     "@types/pako": "^2.0.4",

@@ -1,0 +1,67 @@
+/* Text input, including the search field with its trailing adornments. */
+
+.ark-input {
+  display: block;
+  width: 100%;
+  height: var(--ark-control-lg);
+  padding: 0 var(--ark-space-5);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  color: var(--ark-text);
+  font-size: var(--ark-text-5);
+  transition: border-color var(--ark-duration-1) linear;
+}
+
+.ark-input:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
+}
+
+.ark-input:disabled {
+  opacity: 0.5;
+}
+
+.ark-input--mono {
+  font-family: var(--ark-font-mono);
+}
+
+.ark-input--lg {
+  height: var(--ark-control-xl);
+}
+
+.ark-input--invalid,
+.ark-input--invalid:hover {
+  border-color: var(--ark-danger-solid);
+}
+
+/* Wrapper that lets icons and toggle buttons sit inside the field. */
+.ark-input-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ark-input-shell .ark-input {
+  padding-left: var(--ark-space-5);
+  padding-right: var(--ark-space-5);
+}
+
+.ark-input-shell--with-icon .ark-input {
+  padding-left: var(--ark-space-11);
+}
+
+.ark-input-shell__icon {
+  position: absolute;
+  left: var(--ark-space-5);
+  display: inline-flex;
+  color: var(--ark-text-secondary);
+  pointer-events: none;
+}
+
+.ark-input-shell__adornments {
+  position: absolute;
+  right: var(--ark-space-2);
+  display: flex;
+  gap: var(--ark-space-1);
+}

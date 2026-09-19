@@ -1,0 +1,51 @@
+/* Chip — a pill filter with a count. Channel filters in the log viewer. */
+
+.ark-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-space-3);
+  height: var(--ark-control-md);
+  padding: 0 var(--ark-space-5);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-full);
+  background: transparent;
+  color: var(--ark-text-tertiary);
+  font-size: var(--ark-text-4);
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--ark-duration-1) linear,
+    border-color var(--ark-duration-1) linear,
+    color var(--ark-duration-1) linear;
+}
+
+.ark-chip:hover:not(:disabled) {
+  border-color: var(--ark-border-element);
+}
+
+.ark-chip[data-state='on'] {
+  background: var(--ark-bg-selected);
+  border-color: var(--ark-border-strong);
+  color: var(--ark-text);
+}
+
+.ark-chip__count {
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  font-variant-numeric: tabular-nums;
+  color: var(--ark-text-faint);
+}
+
+.ark-chip[data-state='on'] .ark-chip__count {
+  color: var(--ark-text-secondary);
+}
+
+/* A dot that marks the chip's channel, so colour is never the only cue but is
+   still available at a glance. */
+.ark-chip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ark-radius-full);
+  background: currentColor;
+  opacity: 0.85;
+}
