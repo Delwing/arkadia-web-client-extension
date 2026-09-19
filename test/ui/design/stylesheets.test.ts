@@ -16,6 +16,8 @@ const MIGRATED_SHEETS = [
     "src/ui/logViewer/logViewer.css",
     "design/showcase.css",
     "log-viewer/log-viewer.css",
+    // Faza 2 — przegladarka logow w kliencie.
+    "src/web/logBrowser.css",
     // Faza 3, rodzina 1 — walka i status.
     "src/web/CombatPopup.css",
     "src/web/CombatStatusPopup.css",

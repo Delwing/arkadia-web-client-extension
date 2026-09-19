@@ -254,11 +254,14 @@ body:not(.ark-root) [data-popup-overlay] {
   --ark-duration-3: 220ms;
   --ark-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Kept in step with tokens.css by hostTokens.test.ts. The five-digit
+     values are not arbitrary: a design-system layer has to clear the stock
+     client's own stack, which runs to 10100. */
   --ark-z-sticky: 1;
-  --ark-z-overlay: 100;
-  --ark-z-dialog: 101;
-  --ark-z-popover: 200;
-  --ark-z-tooltip: 300;
+  --ark-z-overlay: 10200;
+  --ark-z-dialog: 10201;
+  --ark-z-popover: 10300;
+  --ark-z-tooltip: 10400;
 
   /* Cienie: w systemie projektowym stoja na --ark-black-a*, ktore pochodza z
      wygenerowanych skal. Tutaj wprost, bo forge tamtego pliku nie wczytuje.

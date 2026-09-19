@@ -2,14 +2,20 @@
  * Log viewer — public surface.
  *
  * The component is host-agnostic: it renders into whatever box it is given, so
- * the same code serves the standalone page and (later) a modal inside the
- * client. Hosts supply sessions and preference storage; everything else is
- * internal.
+ * the same code serves the standalone page and the dialog inside the client.
+ * Hosts supply sessions and preference storage; everything else is internal.
  */
 export { LogViewer } from "./LogViewer";
 export type { LogViewerProps } from "./LogViewer";
 
-export { CHANNEL_META, CHANNELS, allChannelsOn, channelForType } from "./model/channels";
+export {
+    CHANNEL_META,
+    CHANNELS,
+    FALLBACK_CHANNEL,
+    UNTYPED_CHANNEL,
+    allChannelsOn,
+    channelForType,
+} from "./model/channels";
 export type { Channel, ChannelFilter } from "./model/channels";
 
 export {

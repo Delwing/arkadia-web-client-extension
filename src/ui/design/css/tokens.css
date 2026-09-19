@@ -221,11 +221,17 @@
   --ark-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* --- layering ---------------------------------------------------------- */
+  /* The numbers are large because these layers have to clear the stock
+     client's, not just each other's: a design-system dialog portals to
+     <body> alongside the mobile keypad (2050), the input area (10090) and
+     the output context menu (10100), and a modal that the game's own chrome
+     pokes through is not a modal. Only the ordering between them matters
+     inside the system itself. */
   --ark-z-sticky: 1;
-  --ark-z-overlay: 100;
-  --ark-z-dialog: 101;
-  --ark-z-popover: 200;
-  --ark-z-tooltip: 300;
+  --ark-z-overlay: 10200;
+  --ark-z-dialog: 10201;
+  --ark-z-popover: 10300;
+  --ark-z-tooltip: 10400;
 }
 
 /* Light themes get a lighter scrim and shallower shadows — the alphas that read

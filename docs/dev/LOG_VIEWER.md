@@ -2,11 +2,19 @@
 
 The reference screen for the design system: a session log browser with
 time-based navigation, search across one log or all of them, and channel
-filters. It lives in `src/ui/logViewer` (`@ui/logViewer`) and is mounted by the
-standalone page in `log-viewer/`.
+filters. It lives in `src/ui/logViewer` (`@ui/logViewer`).
 
-It is host-agnostic on purpose — it renders into whatever box it is given, so
-the same component can become a modal inside the client without a rewrite.
+**Two hosts render it**, and neither owns it:
+
+- the standalone page, `log-viewer/` — its own entry point, its own theme
+  setting, reachable in a tab of its own;
+- the in-client window, `src/web/LogBrowser.tsx` — the same component in a
+  design-system `Dialog`, opened from *Logi* in the menu, plus the session
+  management the client alone has (`LogManager.tsx`).
+
+Both load their sessions through `log-viewer/sessionAdapter.ts` and share one
+set of stored view preferences, so a fix in either shows up in both. It is
+host-agnostic on purpose: it renders into whatever box it is given.
 
 ---
 
@@ -58,7 +66,7 @@ character it is.
 
 Arkadia tags every line with a GMCP message type as it arrives (`comm`,
 `combat.avatar`, `room.long`, `system.login`, …); `sessionLogger` already stores
-that type with the line. `model/channels.ts` folds those ~25 types into six
+that type with the line. `model/channels.ts` folds those ~25 types into eight
 buckets:
 
 | Channel | GMCP types |
@@ -66,13 +74,44 @@ buckets:
 | `comm` — Rozmowy | `comm`, `emotes` |
 | `combat` — Walka | `combat.*`, `room.combat` |
 | `room` — Lokacja | `room.*`, `living.long`, `object.long` |
-| `system` — System | `system`, `system.login`, `prompt`, `other`, unknown |
+| `system` — System | `system`, `system.login`, `prompt` |
 | `notify` — Powiadomienia | `notification.*`, `mail`, `editor*` |
 | `command` — Komendy | `command` (the echoed player input) |
+| `other` — Inne | `other`, `mud`, and any type not folded yet |
+| `script` — Skrypty | no type at all |
 
 Prefixes match longest-first, so `room.combat` lands in combat rather than
 scenery. Because classification happens at write time, filters work on every log
 already recorded — no re-parsing of game text, and no regexes over Polish.
+
+#### System is the client's housekeeping, and only that
+
+The last two buckets are the interesting ones, because they used to be part of
+System and that hid things.
+
+`other` is **Arkadia's own** catch-all for game text the server did not tag
+more specifically — the trigger catalogue calls it *Pozostale komunikaty*
+(`src/web/options/UserTriggers.tsx`). `mud` is what `MudClient.pushChunk` puts
+on every chunk arriving outside GMCP msg framing: the login screen, and
+anything else unframed. Both are the game talking, and a player hiding System
+to quieten the client's chatter was hiding them too.
+
+**An absent type and an unrecognized one are not the same thing**, which is
+why `channelForType` has two fallbacks rather than one. Game text always
+carries a type — it reaches the logger through `Client.flushLines`, which sets
+one on every group. A record with *no* type came from `Client.print`, and that
+is the path every script, plugin and `printLine` takes. So an unknown type
+falls to `other` (the game said something we do not fold yet) and a missing
+type falls to `script` (the client said it). One constant serving both is what
+made script output invisible: it was filed under System, where nobody would
+look for it.
+
+Adding a channel is safe for logs and filters already stored. Records are
+classified on the way out of the store, never written back, and
+`applyPreferences` merges a saved filter over `allChannelsOn()` key by key —
+so a six-key filter from an older session leaves the two new channels **on**.
+A new channel defaulting to hidden would look exactly like lines going
+missing, which is why there is a test pinning it.
 
 ### Events
 
@@ -200,8 +239,33 @@ line, and all four exports work on what is visible, which is what makes
 A range belongs to the session it was drawn on, so switching sessions clears it
 and it is never persisted.
 
+**Its rows wrap below 1150px, and only below it.** The header, the search bar
+and the status bar carry more controls than fit a small window, and the client
+hosts the viewer in a dialog that clips its overflow — so what falls off the
+right edge is not decoration, it is the close control and the search scope.
+Wrapping is gated on a width rather than simply left on because flexbox wraps
+on the *hypothetical* size, before anything shrinks: always-on, these rows
+take a second line at 1240px too, where they fit perfectly well. The channel
+bar is the exception and wraps unconditionally — eight chips squeezed to width
+clip their counts.
+
+The gate is a viewport `@media`, which is a proxy, not the real question: the
+viewer should respond to *its box*. It happens to be a good proxy for both
+hosts today (the standalone page fills the viewport, and the in-client dialog
+is `min(1240px, 100vw - 48px)` wide). A host that gave the viewer a narrow box
+inside a wide window would not get the wrapping, and would want a container
+query instead.
+
 **Shortcuts are scoped to the viewer's subtree**, never to `window`: a modal
 that listens globally steals keys from the game input.
+
+The range menu is the exception, and both halves of it are fixes the in-client
+host forced. Its `Escape` is captured on `window` and `preventDefault`ed —
+Radix's dismissable layer stands down on a prevented default, so one press
+closes the menu and leaves the window it sits in open. And it closes on a
+scroll only when that scroll happened *inside the viewer*: a capture listener
+on `window` also sees the game's own log scrolling behind the dialog, which
+threw the menu away on every line that arrived.
 
 | Key | Action |
 |---|---|
@@ -228,8 +292,23 @@ that listens globally steals keys from the game input.
 />
 ```
 
-`?session=<store name>` on the standalone page preselects a session — that is
-how the in-client log browser opens one in a new tab.
+`?session=<store name>` on the standalone page preselects a session and
+`?live=<store name>` says which one is still being written to — that is how
+**Nowa karta** in the in-client window hands a log over.
+
+The in-client host (`src/web/LogBrowser.tsx`) differs from the page in three
+ways, all deliberate:
+
+- it renders its own `.ark-root` boundary, so it themes correctly in the stock
+  dialog *and* inside forge-ui's modal shell, neither of which is a page the
+  design system owns;
+- it drops `sessionId` out of the restored preferences and always opens the
+  session being recorded. Which log you were last reading is a page-level
+  convenience; in the client the answer is always "this one" — and two tabs
+  sharing one `localStorage` key would otherwise open each other's session;
+- its session list is a snapshot taken when the window opens. The live session
+  is still flagged live (that is what opens it at its end), but nothing
+  streams into the pane while it is open.
 
 View preferences that persist between openings: channels, timestamps, the
 tag/line-number columns, the game's colours (on by default), wrapping, search
@@ -269,8 +348,10 @@ bar rather than failing silently, and the download is always available.
 
 ## 6. Not built
 
-- JSON export and the highlight-preserving export are still in
-  `src/web/logsExport.worker.ts`, on the old screen.
+- Bulk work on the store — the ZIP archive of every session, JSON export and
+  import, deletion — is not the viewer's job and never will be: it is a client
+  concern, and it lives in `src/web/LogManager.tsx`, opened from the in-client
+  window's header. The standalone page reads logs and never writes.
 - "Open folder" — no browser equivalent; the client's File System Access
   integration (`src/web/logFileSaver.ts`) is the nearest thing.
 - Bookmarks, timeline zoom, and context lines around matches in "matching lines
@@ -281,6 +362,6 @@ bar rather than failing silently, and the download is always available.
 - Sessions are loaded eagerly. If that stops scaling, the shape to move to is a
   lines-on-demand `LogSession` plus a cached per-session hit count, keyed by
   (query, flags, channels).
-- **The in-client log browser (`src/web/LogBrowser.tsx`, ~1700 lines) still runs
-  the old UI.** It is the obvious next migration: most of its bulk is search,
-  timeline and rendering that this component already does.
+- Following a live log *as it is written*. Both hosts take a snapshot; the
+  live flag and "Sledz na zywo" only follow what is already loaded. The shape
+  of the fix is a subscription that appends to the open session, not a reload.

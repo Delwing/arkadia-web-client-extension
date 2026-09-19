@@ -29,10 +29,13 @@ async function setLogging(page: Page, enabled: boolean): Promise<void> {
     await closeSettings(page);
 }
 
+const LOGS_DIALOG = '.logs-dialog';
+
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await expect(page.locator('#logs-modal'), 'logs window should open').toBeVisible({timeout: 5000});
+    await expect(page.locator(LOGS_DIALOG), 'logs window should open').toBeVisible({timeout: 5000});
+    await expect(page.locator('.lv-log'), 'the log pane should render').toBeVisible({timeout: 5000});
 }
 
 test.describe('Logging toggle', () => {
@@ -42,9 +45,9 @@ test.describe('Logging toggle', () => {
 
     test('the switch is in UI settings, not in the Logi browser', async ({page}) => {
         await openLogs(page);
-        await expect(page.locator('#logs-modal #logs-enabled')).toHaveCount(0);
-        await dialogClose(page.locator('#logs-modal')).click();
-        await expect(page.locator('#logs-modal'), 'logs window should close').not.toBeVisible({timeout: 5000});
+        await expect(page.locator(`${LOGS_DIALOG} #logs-enabled`)).toHaveCount(0);
+        await dialogClose(page.locator(LOGS_DIALOG)).click();
+        await expect(page.locator(LOGS_DIALOG), 'logs window should close').not.toBeVisible({timeout: 5000});
 
         const modal = await openSettings(page, 'ui-other');
         await expect(modal.locator('#logs-enabled')).toBeVisible();
@@ -57,7 +60,7 @@ test.describe('Logging toggle', () => {
         await pushText(page, 'Linia gdy logi wlaczone');
 
         await openLogs(page);
-        const preview = page.locator('#logs-preview');
+        const preview = page.locator('.lv-log');
         await expect(preview).toContainText('Linia gdy logi wlaczone');
         await expect(preview).not.toContainText('Linia gdy logi wylaczone');
     });

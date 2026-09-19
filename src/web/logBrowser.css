@@ -1,0 +1,140 @@
+/* ============================================================================
+   In-client log browser — host chrome only.
+   ============================================================================
+
+   The viewer itself is `@ui/logViewer` and brings its own stylesheet. What is
+   left here is the box it fills inside whichever shell hosts it, plus the
+   session-management table, which is client-only and has no counterpart on the
+   standalone page.
+
+   Tokens only, no literal colours: this screen is on the design system and
+   has to work in all eight themes. A unit test enforces it
+   (`test/ui/design/stylesheets.test.ts`).
+   ========================================================================== */
+
+/* The `.ark-root` boundary the browser carries itself, so it themes the same
+   in the stock dialog and inside forge-ui's modal. It must be a full-height
+   flex box: `.lv` sizes itself with `height: 100%`. */
+.logs-browser {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--ark-bg-surface);
+}
+
+.logs-browser__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ark-space-6);
+    flex-grow: 1;
+    min-height: 0;
+    color: var(--ark-text-secondary);
+    font-size: var(--ark-text-5);
+}
+
+/* --- session management ------------------------------------------------- */
+
+.logs-manage__spacer {
+    flex-grow: 1;
+}
+
+.logs-manage__file {
+    display: none;
+}
+
+.logs-manage__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-3);
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.logs-manage__table-box {
+    border: 1px solid var(--ark-border-subtle);
+    border-radius: var(--ark-radius-3);
+    overflow: auto;
+    max-height: 56vh;
+}
+
+.logs-manage__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--ark-text-4);
+}
+
+.logs-manage__table th,
+.logs-manage__table td {
+    padding: var(--ark-space-2) var(--ark-space-4);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.logs-manage__table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--ark-bg-raised);
+    color: var(--ark-text-secondary);
+    font-weight: var(--ark-weight-medium);
+    border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.logs-manage__table tbody tr {
+    cursor: pointer;
+    border-top: 1px solid var(--ark-border-subtle);
+}
+
+.logs-manage__table tbody tr:hover {
+    background: var(--ark-bg-element-hover);
+}
+
+.logs-manage__table tbody tr[data-selected='true'] {
+    background: var(--ark-bg-element-active);
+}
+
+/* Year separator: sticky under the header, so a long list keeps saying which
+   year you are scrolled into. */
+.logs-manage__year td {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--ark-bg-raised);
+    color: var(--ark-text-secondary);
+    font-weight: var(--ark-weight-semibold);
+}
+
+.logs-manage__table tbody tr.logs-manage__year {
+    cursor: default;
+}
+
+.logs-manage__table tbody tr.logs-manage__year:hover {
+    background: var(--ark-bg-raised);
+}
+
+.logs-manage__pick {
+    width: var(--ark-space-9);
+}
+
+.logs-manage__span {
+    font-family: var(--ark-font-mono);
+    color: var(--ark-text-secondary);
+}
+
+.logs-manage__num {
+    text-align: right;
+    font-family: var(--ark-font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.logs-manage__flag {
+    text-align: center;
+    width: var(--ark-space-10);
+    color: var(--ark-text-secondary);
+}

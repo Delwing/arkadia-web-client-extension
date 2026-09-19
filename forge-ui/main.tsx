@@ -7,6 +7,11 @@
  * map mount, game-log append) runs inside component effects.
  */
 import './style.css';
+// The design system's tokens and primitives. forge keeps its own theme layer
+// for its own HUD, but the stock screens it hosts are migrating onto `@design`
+// (the Logi window already is), and outside `.ark-root` they would have no
+// tokens at all. Deleted when forge stops hosting stock screens.
+import '@design/css/index.css';
 // Shared, var-driven popup body styles (see src/web/popups/popups.css).
 import '@web/popups/popups.css';
 import '@web-ui/messageFlair.css';

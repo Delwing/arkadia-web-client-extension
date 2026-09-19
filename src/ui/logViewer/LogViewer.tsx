@@ -700,6 +700,7 @@ export function LogViewer({
                 <LineMenu
                     menu={lineMenu}
                     hasRange={state.range !== null}
+                    boundary={rootRef}
                     onSetBound={setRangeBound}
                     onClearRange={clearRange}
                     onClose={() => setLineMenu(null)}

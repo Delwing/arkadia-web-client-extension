@@ -1,10 +1,14 @@
 /* Dialog — the modal shell. Radix owns focus trapping, scroll locking and the
    escape/outside-click behaviour; this file owns nothing but the look. */
 
+/* `--ark-dialog-level` is the nesting depth the Dialog component sets on the
+   portal wrapper (1 for a plain dialog). Both layers move up together, so a
+   dialog opened from a dialog scrims the one underneath instead of sliding
+   behind it. */
 .ark-dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--ark-z-overlay);
+  z-index: calc(var(--ark-z-overlay) + var(--ark-dialog-level, 1) * 2);
   background: var(--ark-bg-overlay);
   animation: ark-fade-in var(--ark-duration-2) var(--ark-ease);
 }
@@ -13,7 +17,7 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  z-index: var(--ark-z-dialog);
+  z-index: calc(var(--ark-z-dialog) + var(--ark-dialog-level, 1) * 2);
   display: flex;
   flex-direction: column;
   overflow: hidden;

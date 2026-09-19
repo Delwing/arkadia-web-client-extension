@@ -1,4 +1,5 @@
 import {
+    Archive,
     ChartColumn,
     ChevronDown,
     ChevronLeft,
@@ -7,6 +8,7 @@ import {
     Check,
     Copy,
     Download,
+    ExternalLink,
     Flag,
     FolderOpen,
     HandHelping,
@@ -19,7 +21,9 @@ import {
     TrendingUp,
     SkipBack,
     SkipForward,
+    Trash2,
     TriangleAlert,
+    Upload,
     X,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -37,6 +41,7 @@ import type { ComponentType } from "react";
  * in new design-system screens.
  */
 const ICONS = {
+    archive: Archive,
     "chevron-down": ChevronDown,
     "chevron-left": ChevronLeft,
     "chevron-right": ChevronRight,
@@ -47,10 +52,13 @@ const ICONS = {
     export: Download,
     filters: SlidersHorizontal,
     folder: FolderOpen,
+    import: Upload,
     "jump-start": SkipBack,
     "jump-end": SkipForward,
+    "open-external": ExternalLink,
     search: Search,
     sparkle: Sparkles,
+    trash: Trash2,
     warning: TriangleAlert,
     // Combat and report popups.
     banner: Flag,

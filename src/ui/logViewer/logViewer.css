@@ -20,6 +20,14 @@
     --ark-log-system: var(--ark-gray-10);
     --ark-log-notify: var(--ark-info-11);
     --ark-log-command: var(--ark-accent-11);
+    /* Game text the server did not tag more specifically. Full contrast: it
+       can be anything, including something said to you. */
+    --ark-log-other: var(--ark-text);
+    /* The client talking, not the game — a script, a plugin, `printLine`. The
+       accent already means "you typed this" and info already means "the game
+       notified you", so this takes the one remaining ramp that stays distinct
+       in all eight themes. It is a channel identity, not a status. */
+    --ark-log-script: var(--ark-warning-11);
 
     --ark-log-event-login: var(--ark-gray-11);
     --ark-log-event-death: var(--ark-danger-11);
@@ -257,8 +265,11 @@
 
 /* --- channel bar -------------------------------------------------------- */
 
+/* Eight chips plus "Pokaz wszystkie" do not fit a narrow dialog on one line,
+   and a chip squeezed until its count clips is worse than a second row. */
 .lv-channels {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--ark-space-3);
     padding: var(--ark-space-4) var(--ark-space-8);
@@ -807,4 +818,41 @@
     height: 1px;
     margin: var(--ark-space-2) 0;
     background: var(--ark-border-subtle);
+}
+
+/* --- narrow window ------------------------------------------------------ */
+
+/* Below this the viewer's rows stop fitting on one line, and what falls off
+   the right edge is not decoration: the dialog clips its overflow, so the
+   close control and the search scope simply become unreachable. Wrapping is
+   gated on a width rather than left on, because flexbox wraps on the
+   *hypothetical* size — always-on, these rows take a second line at 1240px
+   too, where they fit perfectly well once the controls shrink.
+   Viewport width is the right proxy for both hosts: the standalone page fills
+   it, and the in-client dialog is `min(1240px, 100vw - 48px)` wide. */
+@media (max-width: 1150px) {
+    /* `.ark-dialog-header` fixes the height and lands in another CSS chunk,
+       whose order relative to this file is Rollup's to decide — hence two
+       classes rather than one. */
+    .lv .lv__header {
+        height: auto;
+        min-height: 64px;
+        flex-wrap: wrap;
+        row-gap: var(--ark-space-3);
+        padding-top: var(--ark-space-3);
+        padding-bottom: var(--ark-space-3);
+    }
+
+    .lv-search {
+        flex-wrap: wrap;
+    }
+
+    .lv-status {
+        height: auto;
+        min-height: 36px;
+        flex-wrap: wrap;
+        row-gap: var(--ark-space-2);
+        padding-top: var(--ark-space-2);
+        padding-bottom: var(--ark-space-2);
+    }
 }

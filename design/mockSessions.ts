@@ -75,7 +75,11 @@ type PlanStep =
     | ["say", string, string[]]
     | ["afk", number]
     | ["trait", string]
-    | ["system", string];
+    | ["system", string]
+    /** Raw game text arriving outside GMCP framing — the login screen, mostly. */
+    | ["mud", string]
+    /** A print from a script or plugin: no message type at all. */
+    | ["script", string];
 
 interface SessionPlan {
     id: string;
@@ -94,9 +98,11 @@ function generateLines(plan: SessionPlan): {
     const between = (low: number, high: number) => low + Math.floor(random() * (high - low + 1));
 
     let clock = plan.startedAt;
-    const out: { text: string; type: string; timestamp: number }[] = [];
+    // `type` is optional because the absence of one is itself a case the viewer
+    // has to get right: that is what the client's own prints look like.
+    const out: { text: string; type?: string; timestamp: number }[] = [];
     const marks: CharacterMark[] = [];
-    const add = (type: string, text: string, stepSeconds: number) => {
+    const add = (type: string | undefined, text: string, stepSeconds: number) => {
         clock += stepSeconds * 1000;
         out.push({ text, type, timestamp: clock });
     };
@@ -181,6 +187,12 @@ function generateLines(plan: SessionPlan): {
             case "trait":
                 add("system", `Twoja ${step[1]} osiagnela nadludzki poziom.`, 2);
                 break;
+            case "mud":
+                add("mud", step[1], between(2, 10));
+                break;
+            case "script":
+                add(undefined, step[1], between(2, 12));
+                break;
         }
     }
 
@@ -203,9 +215,12 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
             startedAt: at(0, 19, 2, now),
             live: true,
             plan: [
+                ["mud", "Arkadia - swiat, w ktorym warto sie zgubic. Podaj imie:"],
                 ["login", "Kethra"],
+                ["script", "[zbieranie] Wlaczono. Trasa: Banda -> grota."],
                 ["tell", "Brannoc", ["polujesz jeszcze na tego trolla?", "tak, wczoraj omal mnie nie zabil", "wez oliwe, trolle sie regeneruja"]],
                 ["walk", 4],
+                ["script", "[zbieranie] Zebrano 3 ziola, w torbie 11."],
                 ["say", "kupiec", ["Trzy flaszki oliwy poprosze.", "Trzydziesci szesc sztuk zlota."]],
                 ["walk", 3],
                 ["combat", "goblinski zwiadowca", 5, "kill"],
@@ -227,6 +242,7 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
             startedAt: at(1, 21, 40, now),
             plan: [
                 ["login", "Kethra"],
+                ["script", "[walka] Ostrzezenie: zycie ponizej 40 procent."],
                 ["walk", 3],
                 ["combat", "dziki wilk", 5, "kill"],
                 ["combat", "dziki wilk", 4, "kill"],
