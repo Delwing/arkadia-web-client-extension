@@ -17,18 +17,22 @@ async function login(page: Page, name: string): Promise<void> {
     await waitForCharacter(page, name);
 }
 
+const DIALOG = '.logs-dialog';
+
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await expect(page.locator('#logs-modal'), 'logs window should open').toBeVisible({timeout: 5000});
+    await expect(page.locator(DIALOG), 'logs window should open').toBeVisible({timeout: 5000});
+    await expect(page.locator('.lv-log'), 'the log pane should render').toBeVisible({timeout: 5000});
 }
 
 async function closeLogs(page: Page): Promise<void> {
-    await dialogClose(page.locator('#logs-modal')).click();
-    await expect(page.locator('#logs-modal'), 'logs window should close').not.toBeVisible({timeout: 5000});
+    await dialogClose(page.locator(DIALOG)).click();
+    await expect(page.locator(DIALOG), 'logs window should close').not.toBeVisible({timeout: 5000});
 }
 
-const sessionOptions = (page: Page) => page.locator('#logs-session-select option');
+/** One entry per session, in the viewer's sidebar. */
+const sessionItems = (page: Page) => page.locator('.lv-session');
 
 test.describe('Logs across tabs', () => {
     test('a second tab logs and reads while the first tab has the log browser open', async ({context, page: first}) => {
@@ -36,8 +40,8 @@ test.describe('Logs across tabs', () => {
         await pushText(first, 'Alfa pisze w pierwszej karcie');
 
         await openLogs(first);
-        await expect(first.locator('#logs-modal')).toContainText('Alfa pisze w pierwszej karcie');
-        await expect(sessionOptions(first)).toHaveCount(1);
+        await expect(first.locator(DIALOG)).toContainText('Alfa pisze w pierwszej karcie');
+        await expect(sessionItems(first)).toHaveCount(1);
         // Left open on purpose: an open browser must not hold the database.
 
         const second = await context.newPage();
@@ -45,16 +49,16 @@ test.describe('Logs across tabs', () => {
         await pushText(second, 'Beta pisze w drugiej karcie');
 
         await openLogs(second);
-        await expect(sessionOptions(second), 'the second tab created its own session').toHaveCount(2);
-        await expect(second.locator('#logs-modal'), 'and can read it').toContainText('Beta pisze w drugiej karcie');
+        await expect(sessionItems(second), 'the second tab created its own session').toHaveCount(2);
+        await expect(second.locator(DIALOG), 'and can read it').toContainText('Beta pisze w drugiej karcie');
         await closeLogs(second);
 
         await pushText(first, 'Alfa pisze dalej po drugiej karcie');
         await closeLogs(first);
         await openLogs(first);
-        await expect(sessionOptions(first), 'the first tab sees the new session').toHaveCount(2);
+        await expect(sessionItems(first), 'the first tab sees the new session').toHaveCount(2);
         await expect(
-            first.locator('#logs-modal'),
+            first.locator(DIALOG),
             'and its own logging kept going',
         ).toContainText('Alfa pisze dalej po drugiej karcie');
     });
@@ -63,7 +67,7 @@ test.describe('Logs across tabs', () => {
         await login(first, 'Alfa');
         await pushText(first, 'Alfa przeglada logi');
         await openLogs(first);
-        await expect(first.locator('#logs-modal')).toContainText('Alfa przeglada logi');
+        await expect(first.locator(DIALOG)).toContainText('Alfa przeglada logi');
         await closeLogs(first);
 
         const second = await context.newPage();
@@ -71,7 +75,7 @@ test.describe('Logs across tabs', () => {
         await pushText(second, 'Beta loguje po zamknieciu przegladarki');
 
         await openLogs(second);
-        await expect(sessionOptions(second)).toHaveCount(2);
-        await expect(second.locator('#logs-modal')).toContainText('Beta loguje po zamknieciu przegladarki');
+        await expect(sessionItems(second)).toHaveCount(2);
+        await expect(second.locator(DIALOG)).toContainText('Beta loguje po zamknieciu przegladarki');
     });
 });

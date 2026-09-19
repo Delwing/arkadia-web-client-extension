@@ -44,9 +44,21 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
     const [manageOpen, setManageOpen] = useState(false);
     // Bumped when the store changes underneath us (a delete or an import).
     const [reloadToken, setReloadToken] = useState(0);
-    const [preferences, setPreferences] = useState<PersistedPreferences | null>(() =>
-        readPreferences(),
-    );
+
+    /**
+     * The stored view preferences, minus the last-viewed session.
+     *
+     * Channels, density and the rest are worth carrying over between the two
+     * hosts; *which log* is not. In the client the answer is always the one
+     * being recorded right now — and it has to be, or a second tab would open
+     * the browser on the first tab's session rather than its own.
+     */
+    const [initialPreferences] = useState<PersistedPreferences | null>(() => {
+        const stored = readPreferences();
+        return stored ? { ...stored, sessionId: undefined } : null;
+    });
+    /** The session the viewer has open, for "Nowa karta". */
+    const [openSessionId, setOpenSessionId] = useState<string | undefined>();
 
     useEffect(() => {
         let cancelled = false;
@@ -67,15 +79,13 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
 
     const onPreferencesChange = useCallback((next: PersistedPreferences) => {
         writePreferences(next);
-        setPreferences(next);
+        setOpenSessionId(next.sessionId);
     }, []);
 
     const reload = useCallback(() => {
         setSessions(null);
         setReloadToken((token) => token + 1);
     }, []);
-
-    const openSessionId = preferences?.sessionId;
 
     return (
         <div className="ark-root logs-browser">
@@ -87,7 +97,7 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
             ) : (
                 <LogViewer
                     sessions={sessions}
-                    preferences={preferences}
+                    preferences={initialPreferences}
                     onPreferencesChange={onPreferencesChange}
                     headerTrailing={
                         <>
