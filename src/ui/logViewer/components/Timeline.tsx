@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon, IconButton } from "@design";
 import { LOG_EVENT_KINDS, LOG_EVENT_META } from "../model/events";
 import { formatAxisLabel, formatClock, formatDuration, pluralLines } from "../model/format";
@@ -12,13 +12,17 @@ import {
     spanOf,
     viewportBox,
 } from "../model/timeline";
-import type { LogLine } from "../model/types";
+import type { LogLine, TimeRange } from "../model/types";
 
 export interface TimelineProps {
     /** Every line in the session — idle gaps and the span come from these. */
     allLines: LogLine[];
-    /** The lines currently shown — the histogram and ticks come from these. */
-    visibleLines: LogLine[];
+    /**
+     * Lines passing the channel and search filters but NOT the range — the
+     * histogram draws these. Filtering them by the range too would empty the
+     * part of the track you need to see in order to move the range.
+     */
+    activityLines: LogLine[];
     live: boolean;
     matchTimestamps: number[];
     currentMatchTimestamp: number | null;
@@ -27,14 +31,26 @@ export interface TimelineProps {
     onJumpToTime: (timestamp: number, align: "start" | "center") => void;
     onJumpToStart: () => void;
     onJumpToEnd: () => void;
+    /** Selected slice of the session, or null for the whole of it. */
+    range: TimeRange | null;
+    onRangeChange: (range: TimeRange | null) => void;
 }
 
 /** Past this point a hover tooltip would run off the right edge, so it flips. */
 const TOOLTIP_FLIP_AT = 0.78;
 
+/**
+ * Movement, in pixels, that separates a click from a drag on the track.
+ *
+ * The track carries both gestures: a click jumps to that moment, a drag selects
+ * a range. Without a threshold the jump would fire on every range drag, because
+ * a drag begins as a press.
+ */
+const DRAG_THRESHOLD_PX = 4;
+
 export function Timeline({
     allLines,
-    visibleLines,
+    activityLines,
     live,
     matchTimestamps,
     currentMatchTimestamp,
@@ -42,12 +58,29 @@ export function Timeline({
     onJumpToTime,
     onJumpToStart,
     onJumpToEnd,
+    range,
+    onRangeChange,
 }: TimelineProps) {
     const trackRef = useRef<HTMLDivElement>(null);
     const [hover, setHover] = useState<number | null>(null);
+    const [selecting, setSelecting] = useState(false);
+
+    /**
+     * Live drag state. A ref rather than state: the window listeners below are
+     * installed once and must not close over a stale snapshot, and a pointer
+     * move should not re-render anything but the range it emits.
+     */
+    const drag = useRef<{
+        mode: "track" | "handle";
+        edge: "from" | "to";
+        /** Anchor for a track drag — the moment the press landed on. */
+        anchor: number;
+        startX: number;
+        exceeded: boolean;
+    } | null>(null);
 
     const span = spanOf(allLines, live);
-    const buckets = buildHistogram(visibleLines, span);
+    const buckets = buildHistogram(activityLines, span);
     const gaps = findIdleGaps(allLines, span);
     const ticks = buildMatchTicks(matchTimestamps, span);
     const axis = buildAxisTicks(span);
@@ -58,6 +91,91 @@ export function Timeline({
         const rect = event.currentTarget.getBoundingClientRect();
         return Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
     }, []);
+
+    const timeFromClientX = useCallback(
+        (clientX: number) => {
+            const rect = trackRef.current?.getBoundingClientRect();
+            if (!rect || rect.width === 0) return span.from;
+            const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            return Math.round(span.from + span.duration * fraction);
+        },
+        [span.from, span.duration],
+    );
+
+    /** Collapses back to "no range" once the slice covers the whole session. */
+    const emitRange = useCallback(
+        (from: number, to: number) => {
+            const lo = Math.min(from, to);
+            const hi = Math.max(from, to);
+            if (lo <= span.from && hi >= span.to) onRangeChange(null);
+            else onRangeChange({ from: lo, to: hi });
+        },
+        [span.from, span.to, onRangeChange],
+    );
+
+    const rangeFrom = range?.from ?? span.from;
+    const rangeTo = range?.to ?? span.to;
+
+    // Window-level listeners so a drag keeps working once the pointer leaves
+    // the track, and still ends if the button is released outside the window.
+    useEffect(() => {
+        const onMove = (event: PointerEvent) => {
+            const state = drag.current;
+            if (!state) return;
+            if (!state.exceeded) {
+                if (Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD_PX) return;
+                state.exceeded = true;
+                if (state.mode === "track") setSelecting(true);
+            }
+            const timestamp = timeFromClientX(event.clientX);
+            if (state.mode === "track") {
+                emitRange(state.anchor, timestamp);
+            } else if (state.edge === "from") {
+                emitRange(Math.min(timestamp, rangeTo), rangeTo);
+            } else {
+                emitRange(rangeFrom, Math.max(timestamp, rangeFrom));
+            }
+        };
+
+        const onUp = (event: PointerEvent) => {
+            const state = drag.current;
+            drag.current = null;
+            setSelecting(false);
+            if (!state) return;
+            // A press that never moved is a click: jump there, as before.
+            if (state.mode === "track" && !state.exceeded) {
+                onJumpToTime(timeFromClientX(event.clientX), "start");
+            }
+        };
+
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+        window.addEventListener("pointercancel", onUp);
+        return () => {
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("pointerup", onUp);
+            window.removeEventListener("pointercancel", onUp);
+        };
+    }, [timeFromClientX, emitRange, onJumpToTime, rangeFrom, rangeTo]);
+
+    const onTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        // Only the primary button drives selection; right-click belongs to the
+        // browser menu and middle-click to nothing here.
+        if (event.button !== 0) return;
+        drag.current = {
+            mode: "track",
+            edge: "from",
+            anchor: timeFromClientX(event.clientX),
+            startX: event.clientX,
+            exceeded: false,
+        };
+    };
+
+    const onHandlePointerDown = (edge: "from" | "to") => (event: React.PointerEvent<HTMLElement>) => {
+        if (event.button !== 0) return;
+        event.stopPropagation();
+        drag.current = { mode: "handle", edge, anchor: 0, startX: event.clientX, exceeded: true };
+    };
 
     const hoverTimestamp = hover === null ? null : span.from + span.duration * hover;
 
@@ -110,7 +228,9 @@ export function Timeline({
                 <div
                     ref={trackRef}
                     className="lv-track"
-                    title="Kliknij, aby przejsc do tego momentu"
+                    data-selecting={selecting}
+                    title="Kliknij, aby przejsc do tego momentu. Przeciagnij, aby zaznaczyc zakres."
+                    onPointerDown={onTrackPointerDown}
                     onMouseMove={(event) => {
                         const fraction = fractionFromEvent(event);
                         setHover((previous) =>
@@ -118,10 +238,6 @@ export function Timeline({
                         );
                     }}
                     onMouseLeave={() => setHover(null)}
-                    onClick={(event) => {
-                        const fraction = fractionFromEvent(event);
-                        onJumpToTime(span.from + span.duration * fraction, "start");
-                    }}
                 >
                     {gaps.map((gap) => (
                         <div
@@ -164,6 +280,35 @@ export function Timeline({
                         />
                     ) : null}
 
+                    {range ? (
+                        <>
+                            <div
+                                className="lv-track__outside"
+                                style={{ left: 0, width: `${percentOf(range.from, span)}%` }}
+                            />
+                            <div
+                                className="lv-track__outside"
+                                style={{ left: `${percentOf(range.to, span)}%`, right: 0 }}
+                            />
+                            <button
+                                type="button"
+                                className="lv-track__handle"
+                                data-edge="from"
+                                style={{ left: `${percentOf(range.from, span)}%` }}
+                                title={`Poczatek zakresu: ${formatClock(range.from)}`}
+                                onPointerDown={onHandlePointerDown("from")}
+                            />
+                            <button
+                                type="button"
+                                className="lv-track__handle"
+                                data-edge="to"
+                                style={{ left: `${percentOf(range.to, span)}%` }}
+                                title={`Koniec zakresu: ${formatClock(range.to)}`}
+                                onPointerDown={onHandlePointerDown("to")}
+                            />
+                        </>
+                    ) : null}
+
                     <div className="lv-track__events">
                         {events.map((line) => {
                             const meta = LOG_EVENT_META[line.event!];
@@ -197,7 +342,7 @@ export function Timeline({
                             >
                                 {formatClock(hoverTimestamp)} {"·"}{" "}
                                 {(() => {
-                                    const near = countNear(visibleLines, hoverTimestamp, span);
+                                    const near = countNear(activityLines, hoverTimestamp, span);
                                     return `${near} ${pluralLines(near)}`;
                                 })()}
                             </div>

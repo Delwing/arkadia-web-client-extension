@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { allChannelsOff, allChannelsOn, anyChannelOff, type Channel } from "./model/channels";
 import { formatClock, pluralLogs } from "./model/format";
 import { indexAtOrAfter } from "./model/timeline";
-import type { Density, LogSession, SearchScope } from "./model/types";
+import type { Density, LogSession, SearchScope, TimeRange } from "./model/types";
 import {
     applyPreferences,
     deriveView,
@@ -13,7 +13,10 @@ import {
     type PersistedPreferences,
     type ViewerState,
 } from "./model/viewerState";
+import { buildLogHtml, escapeHtml } from "./export/logHtml";
+import { copyBlobToClipboard, downloadBlob, renderLogImage, type ImageStyle } from "./export/logImage";
 import { ChannelBar } from "./components/ChannelBar";
+import { LineMenu, type LineMenuState } from "./components/LineMenu";
 import { LogPane, type ScrollRequest } from "./components/LogPane";
 import { SearchBar } from "./components/SearchBar";
 import { SessionSidebar } from "./components/SessionSidebar";
@@ -65,6 +68,9 @@ export function LogViewer({
     const [activeQuery, setActiveQuery] = useState(state.query);
     const [viewport, setViewport] = useState<{ from: number; to: number } | null>(null);
     const [scrollRequest, setScrollRequest] = useState<ScrollRequest | null>(null);
+    const [lineMenu, setLineMenu] = useState<LineMenuState | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [exportError, setExportError] = useState("");
     const searchRef = useRef<HTMLInputElement>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const scrollToken = useRef(0);
@@ -146,6 +152,14 @@ export function LogViewer({
         requestScroll({ kind: session.live ? "bottom" : "top" });
     }, [sessionId, sessions, requestScroll]);
 
+    // A range belongs to the session it was drawn on; carrying it across would
+    // silently hide most of the log you just opened.
+    useEffect(() => {
+        setLineMenu(null);
+        setExportError("");
+        setState((previous) => (previous.range ? { ...previous, range: null } : previous));
+    }, [sessionId]);
+
     /* --- actions --------------------------------------------------------- */
 
     const stepSession = useCallback(
@@ -201,23 +215,171 @@ export function LogViewer({
         else void navigator.clipboard?.writeText(text);
     }, [visibleText, onCopy]);
 
-    const exportView = useCallback(() => {
+    /* --- range ----------------------------------------------------------- */
+
+    const setRangeBound = useCallback(
+        (edge: "from" | "to", timestamp: number) => {
+            setLineMenu(null);
+            setState((previous) => {
+                const lines = sessions.find((entry) => entry.id === previous.sessionId)?.lines ?? [];
+                const first = lines[0]?.timestamp ?? timestamp;
+                const last = lines[lines.length - 1]?.timestamp ?? timestamp;
+                let from = previous.range?.from ?? first;
+                let to = previous.range?.to ?? last;
+                // Each bound is clamped by the other, so a range can never
+                // invert into an empty log.
+                if (edge === "from") from = Math.min(timestamp, to);
+                else to = Math.max(timestamp, from);
+                const range = from <= first && to >= last ? null : { from, to };
+                return { ...previous, range, matchIndex: 0 };
+            });
+            // Reveal the bound that was just set: "start here" lands at the top,
+            // "end here" at the bottom of the narrowed slice.
+            requestScroll({ kind: edge === "from" ? "top" : "bottom" });
+        },
+        [sessions, requestScroll],
+    );
+
+    const setRange = useCallback(
+        (range: TimeRange | null) => {
+            setState((previous) => ({ ...previous, range, matchIndex: 0 }));
+        },
+        [],
+    );
+
+    const clearRange = useCallback(() => {
+        setLineMenu(null);
+        setRange(null);
+    }, [setRange]);
+
+    /* --- export ---------------------------------------------------------- */
+
+    /** Base file name for exports, with the range marked when one is set. */
+    const exportName = useCallback(
+        (extension: string) => {
+            const base = (view.session?.file ?? "log").replace(/\.[^.]+$/, "");
+            return `${base}${state.range ? "_zakres" : ""}.${extension}`;
+        },
+        [view.session, state.range],
+    );
+
+    const plainText = useCallback(
+        () =>
+            view.rows
+                .map((row) => (state.showTimestamps ? `${formatClock(row.timestamp)} ${row.text}` : row.text))
+                .join("\n"),
+        [view.rows, state.showTimestamps],
+    );
+
+    const exportText = useCallback(() => {
         if (!view.session) return;
-        const text = view.rows
-            .map((row) => (state.showTimestamps ? `${formatClock(row.timestamp)} ${row.text}` : row.text))
-            .join("\n");
+        const text = plainText();
         if (onExport) {
             onExport(view.session, text);
             return;
         }
-        const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = view.session.file;
-        anchor.click();
-        URL.revokeObjectURL(url);
-    }, [view.session, view.rows, state.showTimestamps, onExport]);
+        downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), exportName("txt"));
+    }, [view.session, plainText, onExport, exportName]);
+
+    /**
+     * Resolves the design tokens the exporters need into plain CSS colours.
+     *
+     * A saved file cannot carry our token layer with it, and the canvas has no
+     * concept of custom properties at all, so both ask the live pane what the
+     * current theme actually resolved to.
+     */
+    const readPaneStyle = useCallback(() => {
+        const pane = rootRef.current?.querySelector(".lv-log");
+        const source = pane ?? rootRef.current;
+        if (!source) return null;
+        const computed = window.getComputedStyle(source);
+        const time = rootRef.current?.querySelector(".lv-log__time");
+        return {
+            pane: pane as HTMLElement | null,
+            background: computed.backgroundColor || "#111110",
+            text: computed.color || "#eeeeec",
+            timeColor: time ? window.getComputedStyle(time).color : computed.color,
+            fontSize: parseFloat(computed.fontSize) || 13,
+            fontFamily: computed.fontFamily || "monospace",
+        };
+    }, []);
+
+    const exportHtml = useCallback(() => {
+        if (!view.session) return;
+        const style = readPaneStyle();
+        const html = buildLogHtml(view.rows, {
+            title: view.session.character,
+            meta: [
+                view.session.dateLabel,
+                state.range
+                    ? `zakres ${formatClock(state.range.from)}\u2013${formatClock(state.range.to)}`
+                    : "caly log",
+                `${view.rows.length} z ${view.session.lines.length} linii`,
+            ].join("  \u00b7  "),
+            showTimestamps: state.showTimestamps,
+            showMeta: state.showMeta,
+            showColors: state.showColors,
+            palette: {
+                background: style?.background ?? "#111110",
+                text: style?.text ?? "#eeeeec",
+                secondary: "#b5b3ad",
+                faint: "#7c7b74",
+                border: "#3b3a37",
+                accent: "#ffc53d",
+            },
+        });
+        downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), exportName("html"));
+    }, [view.session, view.rows, state.range, state.showTimestamps, state.showMeta, state.showColors, readPaneStyle, exportName]);
+
+    /** Renders what is on screen to a PNG, then hands it to `deliver`. */
+    const withImage = useCallback(
+        async (deliver: (blob: Blob) => void | Promise<void>) => {
+            if (busy) return;
+            if (view.rows.length === 0) {
+                setExportError("Brak linii do zapisu.");
+                return;
+            }
+            const style = readPaneStyle();
+            if (!style) return;
+            setBusy(true);
+            setExportError("");
+            try {
+                const imageStyle: ImageStyle = {
+                    bgColor: style.background,
+                    defaultColor: style.text,
+                    timeColor: style.timeColor,
+                    fontSize: style.fontSize,
+                    fontFamily: style.fontFamily,
+                    containerWidth: Math.max(320, (style.pane?.clientWidth ?? 900) - 48),
+                };
+                const blob = await renderLogImage(
+                    view.rows.map((row) => ({
+                        time: state.showTimestamps ? formatClock(row.timestamp) : undefined,
+                        // Mirror the pane: the game's colours when they are on,
+                        // escaped plain text when they are not.
+                        html: state.showColors && row.html ? row.html : escapeHtml(row.text),
+                    })),
+                    imageStyle,
+                );
+                await deliver(blob);
+            } catch (error) {
+                setExportError(error instanceof Error ? error.message : "Nie udalo sie utworzyc obrazu.");
+            } finally {
+                setBusy(false);
+            }
+        },
+        [busy, view.rows, state.showTimestamps, state.showColors, readPaneStyle],
+    );
+
+    const downloadImage = useCallback(
+        () => void withImage((blob) => downloadBlob(blob, exportName("png"))),
+        [withImage, exportName],
+    );
+
+    const copyImage = useCallback(
+        () => void withImage((blob) => copyBlobToClipboard(blob)),
+        [withImage],
+    );
 
     /* --- keyboard -------------------------------------------------------- */
 
@@ -307,6 +469,12 @@ export function LogViewer({
         );
     }
 
+    // The histogram must show activity OUTSIDE the range too, or the part of
+    // the track you need in order to move the handles is empty.
+    const activityLines = state.range
+        ? view.session.lines.filter((line) => state.channels[line.channel])
+        : view.rows;
+
     const order = view.visibleSessions;
     const positionInOrder = order.findIndex((session) => session.id === state.sessionId);
     const matchTimestamps = view.matches.map((match) => view.rows[match.row].timestamp);
@@ -329,7 +497,12 @@ export function LogViewer({
                 hasPrev={positionInOrder > 0}
                 hasNext={positionInOrder >= 0 && positionInOrder < order.length - 1}
                 onCopyView={copyView}
-                onExport={exportView}
+                onExportText={exportText}
+                onExportHtml={exportHtml}
+                onDownloadImage={downloadImage}
+                onCopyImage={copyImage}
+                busy={busy}
+                ranged={state.range !== null}
                 trailing={headerTrailing}
             />
 
@@ -379,7 +552,7 @@ export function LogViewer({
 
                     <Timeline
                         allLines={view.session.lines}
-                        visibleLines={view.rows}
+                        activityLines={activityLines}
                         live={view.session.live}
                         matchTimestamps={matchTimestamps}
                         currentMatchTimestamp={currentMatchTimestamp}
@@ -390,11 +563,14 @@ export function LogViewer({
                             requestScroll({ kind: "top" });
                         }}
                         onJumpToEnd={() => requestScroll({ kind: "bottom" })}
+                        range={state.range}
+                        onRangeChange={setRange}
                     />
 
                     <LogPane
                         rows={view.rows}
                         showTimestamps={state.showTimestamps}
+                        showMeta={state.showMeta}
                         showColors={state.showColors}
                         wrap={state.wrap}
                         lineHeight={LINE_HEIGHT[state.density]}
@@ -410,14 +586,28 @@ export function LogViewer({
                         onScrollAwayFromBottom={() => patch({ follow: false })}
                         follow={state.follow && view.session.live}
                         scrollRequest={scrollRequest}
+                        onLineContextMenu={(event, row) => {
+                            event.preventDefault();
+                            setLineMenu({
+                                x: event.clientX,
+                                y: event.clientY,
+                                timestamp: row.timestamp,
+                                lineNumber: row.number,
+                            });
+                        }}
                     />
 
                     <StatusBar
                         shownLines={view.rows.length}
                         totalLines={view.session.lines.length}
                         viewport={viewport}
+                        range={state.range}
+                        onClearRange={clearRange}
+                        error={exportError}
                         showTimestamps={state.showTimestamps}
                         onShowTimestampsChange={(value) => patch({ showTimestamps: value })}
+                        showMeta={state.showMeta}
+                        onShowMetaChange={(value) => patch({ showMeta: value })}
                         showColors={state.showColors}
                         onShowColorsChange={(value) => patch({ showColors: value })}
                         colorsAvailable={view.session.lines.some((line) => Boolean(line.html))}
@@ -431,6 +621,16 @@ export function LogViewer({
                     />
                 </div>
             </div>
+
+            {lineMenu ? (
+                <LineMenu
+                    menu={lineMenu}
+                    hasRange={state.range !== null}
+                    onSetBound={setRangeBound}
+                    onClearRange={clearRange}
+                    onClose={() => setLineMenu(null)}
+                />
+            ) : null}
         </div>
     );
 }

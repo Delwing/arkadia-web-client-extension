@@ -62,7 +62,9 @@ src/ui/logViewer/
 ├── LogViewer.tsx           ← state, keyboard, scroll orchestration
 ├── logViewer.css
 ├── components/             ← ViewerHeader, SessionSidebar, SearchBar,
-│                             ChannelBar, Timeline, LogPane, StatusBar
+│                             ChannelBar, Timeline, LogPane, StatusBar,
+│                             LineMenu
+├── export/                 ← logHtml (standalone .html), logImage (canvas PNG)
 └── model/                  ← pure, fully unit-tested
     ├── channels.ts  events.ts  format.ts
     ├── search.ts    timeline.ts
@@ -81,8 +83,10 @@ filter pass is the only way to guarantee that.
 **The timeline's x axis is time, not line index.** Half an hour of standing
 still looks like half an hour of nothing. Layers, bottom to top: idle bands
 (gaps > 4 min, from *all* lines — a gap that exists only because a channel is
-hidden is not a gap), activity histogram (96 buckets, from *visible* lines),
-match ticks, current-match marker, viewport box, event lane, hover hairline.
+hidden is not a gap), activity histogram (96 buckets),
+match ticks, current-match marker, range scrim and handles, viewport box, event
+lane, hover hairline. The histogram counts lines passing the channel and search
+filters but *not* the range — see below.
 
 **Search never surprises you.** Stepping past the last match wraps and says so;
 in All-logs scope it crosses into the next session that has matches and names
@@ -102,6 +106,27 @@ grace window; without it, turning follow on immediately turns it off again.
 tracking reads the virtualizer's range rather than scanning the DOM — with rows
 unmounted outside the window there is nothing in the DOM to scan.
 
+**A range is a span of time, not a pair of line numbers.** Time is what the
+timeline handles move along, and it survives a change of channel filters —
+"20:31 to 20:40" still means the same moment after you hide the combat channel,
+where "line 900" does not. It is set three ways, all equivalent:
+
+- right-click a line → *Zacznij od tej linii* / *Zakoncz na tej linii*
+- drag across the timeline track
+- drag either handle once a range exists
+
+The track carries two gestures, separated by a 4px movement threshold: a click
+still jumps to that moment, a drag selects. The histogram deliberately ignores
+the range — it draws every channel-matching line — because a histogram filtered
+by the range would empty exactly the part of the track you need in order to move
+the handles. Out-of-range regions are scrimmed instead.
+
+Everything downstream reads the range for free: the match counter, the status
+line, and all four exports work on what is visible, which is what makes
+"Eksport zakresu" correct by construction rather than by a second code path.
+A range belongs to the session it was drawn on, so switching sessions clears it
+and it is never persisted.
+
 **Shortcuts are scoped to the viewer's subtree**, never to `window`: a modal
 that listens globally steals keys from the game input.
 
@@ -113,6 +138,8 @@ that listens globally steals keys from the game input.
 | `Esc` | clear a non-empty query; otherwise falls through to the host |
 | `[` / `]` | previous / next session |
 | `Home` / `End` | start / end of the log |
+| right-click a line | range menu |
+| `Esc` (menu open) | close the range menu |
 
 ---
 
@@ -130,16 +157,53 @@ that listens globally steals keys from the game input.
 `?session=<store name>` on the standalone page preselects a session — that is
 how the in-client log browser opens one in a new tab.
 
+View preferences that persist between openings: channels, timestamps, the
+tag/line-number columns, the game's colours (on by default), wrapping, search
+scope and density. The range and the query do not persist.
+
 ---
 
-## 5. Not built
+## 5. Exports
 
-- Export is plain `.txt`. The HTML/JSON exports and the highlight-preserving
-  export are still in `src/web/logsExport.worker.ts`, on the old screen.
+The four file exports work on the visible rows, so a selected range scopes every
+one of them and the file names pick up a `_zakres` suffix. "Kopiuj widok" is
+narrower still: it copies only what is in the scroll viewport.
+
+| Action | Output |
+|---|---|
+| Kopiuj widok | the lines on screen, as plain text, to the clipboard |
+| Pobierz HTML | a standalone `.html` |
+| Pobierz tekst | `.txt` |
+| Pobierz jako obraz | `.png` |
+| Kopiuj jako obraz | `.png` to the clipboard |
+
+The **HTML** export is self-contained (`export/logHtml.ts`): the in-client
+browser's version scrapes the live page's stylesheets with `collectLogStyles()`,
+which ties the file to whatever CSS happened to be loaded. Here the colours
+travel with the content, so the saved file looks the same on a machine that has
+never run the client.
+
+The **PNG** renderer (`export/logImage.ts`) is the in-client browser's, moved
+here and given an explicit style argument instead of reading `#logs-preview`;
+`src/web/logToImage.ts` is now a thin wrapper over it. One implementation — the
+wrapping, ANSI-colour extraction and canvas-size guarding are fiddly enough that
+a second copy would drift immediately.
+
+Copying an image throws where the browser has no async clipboard or refuses
+images (Firefox still does by default); the viewer reports that in the status
+bar rather than failing silently, and the download is always available.
+
+## 6. Not built
+
+- JSON export and the highlight-preserving export are still in
+  `src/web/logsExport.worker.ts`, on the old screen.
 - "Open folder" — no browser equivalent; the client's File System Access
   integration (`src/web/logFileSaver.ts`) is the nearest thing.
-- Line-range selection, bookmarks, timeline zoom, context lines around matches
-  in "matching lines only". All out of scope per the original spec.
+- Bookmarks, timeline zoom, and context lines around matches in "matching lines
+  only". Out of scope per the original spec.
+- Searching while the game's colours are on falls back to plain text on rows
+  that contain a match, because highlighting inside pre-rendered markup would
+  mean parsing it. Non-matching rows stay coloured.
 - Sessions are loaded eagerly. If that stops scaling, the shape to move to is a
   lines-on-demand `LogSession` plus a cached per-session hit count, keyed by
   (query, flags, channels).

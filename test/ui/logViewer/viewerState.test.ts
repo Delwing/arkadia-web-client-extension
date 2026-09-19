@@ -146,6 +146,63 @@ describe("session order", () => {
     });
 });
 
+describe("range", () => {
+    // sessionA's four lines sit one second apart from T0 + 1s.
+    const at = (second: number) => T0 + second * 1000;
+
+    it("drops lines outside the slice", () => {
+        const view = deriveView([sessionA], state({ range: { from: at(2), to: at(3) } }));
+        expect(view.rows.map((entry) => entry.number)).toEqual([2, 3]);
+    });
+
+    it("keeps original line numbers inside the slice", () => {
+        const view = deriveView([sessionA], state({ range: { from: at(3), to: at(4) } }));
+        expect(view.rows.map((entry) => entry.number)).toEqual([3, 4]);
+    });
+
+    it("includes lines exactly on each bound", () => {
+        const view = deriveView([sessionA], state({ range: { from: at(1), to: at(1) } }));
+        expect(view.rows.map((entry) => entry.number)).toEqual([1]);
+    });
+
+    it("counts every channel regardless of the slice, so chip counts stay put", () => {
+        const view = deriveView([sessionA], state({ range: { from: at(4), to: at(4) } }));
+        expect(view.rows).toHaveLength(1);
+        expect(view.channelCounts.combat).toBe(2);
+        expect(view.channelCounts.room).toBe(1);
+    });
+
+    it("scopes the match counter to the slice", () => {
+        const all = deriveView([sessionA], state({ query: "troll" }));
+        expect(all.totalMatches).toBe(3);
+        const sliced = deriveView([sessionA], state({ query: "troll", range: { from: at(1), to: at(1) } }));
+        expect(sliced.totalMatches).toBe(1);
+    });
+
+    it("leaves other sessions' hit badges alone", () => {
+        // The range belongs to the open session; applying it to a sibling's
+        // badge would silently under-report it.
+        const view = deriveView(
+            [sessionA, sessionB],
+            state({ query: "troll", scope: "all", range: { from: at(1), to: at(1) } }),
+        );
+        expect(view.hitsBySession.b).toBe(1);
+    });
+
+    it("combines with channel filters", () => {
+        const view = deriveView(
+            [sessionA],
+            state({ range: { from: at(1), to: at(3) }, channels: { ...allChannelsOn(), room: false } }),
+        );
+        expect(view.rows.map((entry) => entry.number)).toEqual([1, 3]);
+    });
+
+    it("can select nothing, which the empty state then explains", () => {
+        const view = deriveView([sessionA], state({ range: { from: at(90), to: at(99) } }));
+        expect(view.rows).toEqual([]);
+    });
+});
+
 describe("stepMatch, this-log scope", () => {
     const base = state({ query: "troll" });
 
@@ -226,6 +283,22 @@ describe("preferences", () => {
         const stored = pickPreferences(state({ query: "troll", matchIndex: 4 }));
         expect(stored).not.toHaveProperty("query");
         expect(stored).not.toHaveProperty("matchIndex");
+    });
+
+    it("does not persist the range", () => {
+        // A slice belongs to the session it was drawn on; restoring it onto
+        // whatever opens next would hide most of that log for no visible reason.
+        const stored = pickPreferences(state({ range: { from: 1, to: 2 } }));
+        expect(stored).not.toHaveProperty("range");
+    });
+
+    it("round-trips the tag/line-number toggle", () => {
+        const restored = applyPreferences(initialViewerState("a"), pickPreferences(state({ showMeta: false })));
+        expect(restored.showMeta).toBe(false);
+    });
+
+    it("shows the game's colours by default", () => {
+        expect(initialViewerState("a").showColors).toBe(true);
     });
 
     it("ignores junk rather than breaking the viewer", () => {

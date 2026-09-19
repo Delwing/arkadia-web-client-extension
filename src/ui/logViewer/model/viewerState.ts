@@ -9,7 +9,7 @@
 import { allChannelsOn, CHANNELS, type Channel, type ChannelFilter } from "./channels";
 import type { LogEventKind } from "./events";
 import { countMatches, makeMatcher, normalizeMatchIndex, splitMatches, type MatchSegment } from "./search";
-import type { Density, LogSession, SearchScope } from "./types";
+import type { Density, LogSession, SearchScope, TimeRange } from "./types";
 
 export interface ViewerState {
     sessionId: string;
@@ -22,7 +22,15 @@ export interface ViewerState {
     /** Raw index; may run outside [0, total) — `deriveView` normalises it. */
     matchIndex: number;
     channels: ChannelFilter;
+    /**
+     * Narrows the log to a slice of the session. Set from a line's context menu
+     * or by dragging the timeline handles; null means the whole session.
+     * Everything that exports or copies works on what this leaves visible.
+     */
+    range: TimeRange | null;
     showTimestamps: boolean;
+    /** The tag and line-number columns, shown or hidden together. */
+    showMeta: boolean;
     showColors: boolean;
     wrap: boolean;
     follow: boolean;
@@ -61,8 +69,12 @@ export function initialViewerState(sessionId: string): ViewerState {
         scope: "log",
         matchIndex: 0,
         channels: allChannelsOn(),
+        range: null,
         showTimestamps: true,
-        showColors: false,
+        showMeta: true,
+        // On by default: the game's own colours are how players read their logs,
+        // and the plain-text rendering is the fallback, not the intent.
+        showColors: true,
         wrap: true,
         follow: true,
         density: "compact",
@@ -74,6 +86,8 @@ export function initialViewerState(sessionId: string): ViewerState {
 export interface PersistedPreferences {
     channels: ChannelFilter;
     showTimestamps: boolean;
+    /** The tag and line-number columns, shown or hidden together. */
+    showMeta: boolean;
     showColors: boolean;
     wrap: boolean;
     scope: SearchScope;
@@ -85,6 +99,7 @@ export function pickPreferences(state: ViewerState): PersistedPreferences {
     return {
         channels: state.channels,
         showTimestamps: state.showTimestamps,
+        showMeta: state.showMeta,
         showColors: state.showColors,
         wrap: state.wrap,
         scope: state.scope,
@@ -109,6 +124,7 @@ export function applyPreferences(state: ViewerState, stored: unknown): ViewerSta
         channels,
         showTimestamps:
             typeof preferences.showTimestamps === "boolean" ? preferences.showTimestamps : state.showTimestamps,
+        showMeta: typeof preferences.showMeta === "boolean" ? preferences.showMeta : state.showMeta,
         showColors: typeof preferences.showColors === "boolean" ? preferences.showColors : state.showColors,
         wrap: typeof preferences.wrap === "boolean" ? preferences.wrap : state.wrap,
         scope: preferences.scope === "all" || preferences.scope === "log" ? preferences.scope : state.scope,
@@ -168,6 +184,8 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
     const visibleSessions = ordered.filter((session) => matchesSessionFilter(session, filter));
     const session = ordered.find((candidate) => candidate.id === state.sessionId) ?? ordered[0];
 
+    // Deliberately NOT range-filtered: the range belongs to the session being
+    // viewed, so applying it to another session's badge would be meaningless.
     const hitsBySession: Record<string, number> = {};
     for (const candidate of ordered) {
         hitsBySession[candidate.id] = matcher.regex
@@ -187,6 +205,10 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
         session.lines.forEach((line, lineIndex) => {
             channelCounts[line.channel] += 1;
             if (!state.channels[line.channel]) return;
+            // The range narrows the log BEFORE anything else looks at it, so
+            // exporting, copying and the match counter all agree with what is
+            // on screen.
+            if (state.range && (line.timestamp < state.range.from || line.timestamp > state.range.to)) return;
 
             let segments: MatchSegment[] = [{ text: line.text, match: false }];
             let matchCount = 0;

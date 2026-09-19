@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button, EmptyState } from "@design";
 import { CHANNEL_META } from "../model/channels";
@@ -9,6 +9,8 @@ import type { RenderedRow } from "../model/viewerState";
 export interface LogPaneProps {
     rows: RenderedRow[];
     showTimestamps: boolean;
+    /** Tag and line-number columns, shown or hidden together. */
+    showMeta: boolean;
     showColors: boolean;
     wrap: boolean;
     lineHeight: number;
@@ -24,6 +26,8 @@ export interface LogPaneProps {
     follow: boolean;
     /** Bumped by the parent to request a scroll; see `LogViewer`. */
     scrollRequest: ScrollRequest | null;
+    /** Right-click on a row — opens the range menu. */
+    onLineContextMenu: (event: React.MouseEvent, row: RenderedRow) => void;
 }
 
 export interface ScrollRequest {
@@ -49,6 +53,7 @@ const PROGRAMMATIC_SCROLL_GRACE_MS = 300;
 export function LogPane({
     rows,
     showTimestamps,
+    showMeta,
     showColors,
     wrap,
     lineHeight,
@@ -60,6 +65,7 @@ export function LogPane({
     onScrollAwayFromBottom,
     follow,
     scrollRequest,
+    onLineContextMenu,
 }: LogPaneProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const lastRequest = useRef<number>(-1);
@@ -69,14 +75,28 @@ export function LogPane({
         ignoreScrollUntil.current = Date.now() + PROGRAMMATIC_SCROLL_GRACE_MS;
     }, []);
 
+    /**
+     * Row identity carries the settings that decide a row's height.
+     *
+     * The virtualizer caches a measured size per item KEY and keeps it until
+     * the key stops matching. With the default key (the index), switching
+     * density left every offset stepping by the OLD line height while the rows
+     * were drawn at the new one — 26px rows laid out 21px apart, overlapping by
+     * five pixels each. Folding the height-deciding settings into the key
+     * invalidates exactly the stale entries, and does it declaratively rather
+     * than depending on an effect firing before the next paint.
+     */
+    const getItemKey = useCallback(
+        (index: number) => `${wrap ? "w" : "n"}${lineHeight}:${index}`,
+        [wrap, lineHeight],
+    );
+
     const virtualizer = useVirtualizer({
         count: rows.length,
         getScrollElement: () => scrollRef.current,
         estimateSize: () => lineHeight,
         overscan: 24,
-        // With wrapping on a row can be several lines tall, so measured heights
-        // are the only way the scrollbar and the viewport box stay honest.
-        measureElement: wrap ? undefined : () => lineHeight,
+        getItemKey,
     });
 
     const virtualRows = virtualizer.getVirtualItems();
@@ -115,7 +135,16 @@ export function LogPane({
         }
     }, [scrollRequest, rows.length, virtualizer, markProgrammaticScroll]);
 
-    const grid = useMemo(() => ({ minHeight: `${virtualizer.getTotalSize()}px` }), [virtualizer]);
+    /**
+     * Recomputed every render, deliberately NOT memoised on `virtualizer`:
+     * that object keeps the same identity for the life of the component, so a
+     * memo keyed on it freezes the scroll height at whatever the FIRST render
+     * measured. Every later change to the row count — a range, a channel
+     * filter, "matching lines only" — then left the pane with a stale scroll
+     * height, and a shrinking list simply rendered blank because the scroll
+     * position was past the end of the real content.
+     */
+    const totalSize = virtualizer.getTotalSize();
 
     if (emptyMessage) {
         return (
@@ -137,6 +166,7 @@ export function LogPane({
             className="lv-log"
             ref={scrollRef}
             data-timestamps={showTimestamps}
+            data-meta={showMeta}
             data-wrap={wrap}
             onScroll={(event) => {
                 if (!follow) return;
@@ -147,7 +177,7 @@ export function LogPane({
                 }
             }}
         >
-            <div style={{ ...grid, position: "relative" }}>
+            <div style={{ minHeight: `${totalSize}px`, position: "relative" }}>
                 {virtualRows.map((virtualRow) => {
                     const row = rows[virtualRow.index];
                     if (!row) return null;
@@ -162,6 +192,7 @@ export function LogPane({
                             ref={wrap ? virtualizer.measureElement : undefined}
                             data-index={virtualRow.index}
                             className="lv-log__row"
+                            onContextMenu={(event) => onLineContextMenu(event, row)}
                             data-current={isCurrentRow}
                             data-event={Boolean(eventMeta)}
                             style={{
@@ -175,14 +206,18 @@ export function LogPane({
                             {showTimestamps ? (
                                 <span className="lv-log__time">{formatClock(row.timestamp)}</span>
                             ) : null}
-                            <span className="lv-log__number">{row.number}</span>
-                            <span
-                                className="lv-log__tag"
-                                data-event={Boolean(eventMeta)}
-                                style={eventMeta ? { color: eventMeta.colorToken } : undefined}
-                            >
-                                {eventMeta ? eventMeta.tag : CHANNEL_META[row.channel].tag}
-                            </span>
+                            {showMeta ? (
+                                <>
+                                    <span className="lv-log__number">{row.number}</span>
+                                    <span
+                                        className="lv-log__tag"
+                                        data-event={Boolean(eventMeta)}
+                                        style={eventMeta ? { color: eventMeta.colorToken } : undefined}
+                                    >
+                                        {eventMeta ? eventMeta.tag : CHANNEL_META[row.channel].tag}
+                                    </span>
+                                </>
+                            ) : null}
                             <div
                                 className="lv-log__text"
                                 style={{ color: CHANNEL_META[row.channel].colorToken }}

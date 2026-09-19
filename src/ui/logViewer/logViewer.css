@@ -486,8 +486,19 @@
     line-height: var(--lv-line-height);
 }
 
-.lv-log[data-timestamps='false'] .lv-log__row {
+/* Column layout follows the two visibility toggles. Four explicit rules rather
+   than anything clever: the grid has to match the children the row actually
+   renders, and a mismatch silently collapses the text column. */
+.lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row {
     grid-template-columns: 40px 46px minmax(0, 1fr);
+}
+
+.lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row {
+    grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.lv-log[data-timestamps='false'][data-meta='false'] .lv-log__row {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .lv-log__row[data-current='true'] {
@@ -566,6 +577,10 @@
     font-variant-numeric: tabular-nums;
 }
 
+.lv-status__error {
+    color: var(--ark-danger-text);
+}
+
 .lv-status__view {
     font-family: var(--ark-font-mono);
     font-size: var(--ark-text-2);
@@ -593,4 +608,131 @@
     .lv-sidebar {
         display: none;
     }
+}
+
+/* --- range selection ----------------------------------------------------- */
+
+/* Everything outside the selected slice is scrimmed rather than hidden: the
+   timeline keeps its full span so the slice can be seen, and moved, in the
+   context of the whole session. */
+.lv-track__outside {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    background: var(--ark-black-a6);
+    pointer-events: none;
+}
+
+.lv-track__handle {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    width: 9px;
+    margin-left: -4px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+/* The grip is drawn as a child line so the hit area can stay finger-sized
+   while the mark itself stays 1px. */
+.lv-track__handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    width: 1px;
+    background: var(--ark-accent-solid);
+}
+
+.lv-track__handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 0 0 var(--ark-radius-1) var(--ark-radius-1);
+    background: var(--ark-accent-solid);
+}
+
+.lv-track__handle[data-edge='to']::after {
+    top: auto;
+    bottom: 0;
+    border-radius: var(--ark-radius-1) var(--ark-radius-1) 0 0;
+}
+
+.lv-track__handle:hover::before,
+.lv-track__handle:focus-visible::before {
+    width: 2px;
+}
+
+/* Live feedback while a range is being dragged out on the track. */
+.lv-track[data-selecting='true'] {
+    cursor: ew-resize;
+}
+
+.lv-range-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ark-space-3);
+    height: var(--ark-control-sm);
+    padding: 0 var(--ark-space-3) 0 var(--ark-space-5);
+    border: 1px solid var(--ark-accent-border);
+    border-radius: var(--ark-radius-full);
+    background: var(--ark-accent-bg);
+    color: var(--ark-accent-text);
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-2);
+    white-space: nowrap;
+}
+
+/* --- line context menu --------------------------------------------------- */
+
+.lv-line-menu {
+    position: fixed;
+    z-index: var(--ark-z-popover);
+    display: flex;
+    flex-direction: column;
+    min-width: 210px;
+    padding: var(--ark-space-2);
+    border: 1px solid var(--ark-border-element);
+    border-radius: var(--ark-radius-3);
+    background: var(--ark-bg-raised);
+    box-shadow: var(--ark-shadow-3);
+    font-family: var(--ark-font-sans);
+}
+
+.lv-line-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--ark-space-4);
+    height: var(--ark-control-md);
+    padding: 0 var(--ark-space-5);
+    border-radius: var(--ark-radius-2);
+    color: var(--ark-text-secondary);
+    font-size: var(--ark-text-5);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.lv-line-menu__item:hover {
+    background: var(--ark-bg-element-hover);
+    color: var(--ark-text);
+}
+
+.lv-line-menu__label {
+    padding: var(--ark-space-3) var(--ark-space-5) var(--ark-space-2);
+    font-family: var(--ark-font-mono);
+    font-size: var(--ark-text-1);
+    color: var(--ark-text-tertiary);
+}
+
+.lv-line-menu__separator {
+    height: 1px;
+    margin: var(--ark-space-2) 0;
+    background: var(--ark-border-subtle);
 }

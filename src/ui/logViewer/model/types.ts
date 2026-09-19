@@ -46,3 +46,15 @@ export interface LogSession {
 
 export type SearchScope = "log" | "all";
 export type Density = "compact" | "comfortable";
+
+/**
+ * A slice of a session, as a span of TIME rather than a pair of line indices.
+ *
+ * Time is what the timeline handles move along, and it is what survives a
+ * change of channel filters: narrowing to "20:31 to 20:40" still means the same
+ * moment after you hide the combat channel, where line 900 does not.
+ */
+export interface TimeRange {
+    from: number;
+    to: number;
+}

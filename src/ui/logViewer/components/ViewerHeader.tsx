@@ -1,4 +1,4 @@
-import { Badge, Button, Icon, IconButton } from "@design";
+import { Badge, Button, Icon, IconButton, Menu, MenuItem, MenuLabel, MenuSeparator } from "@design";
 import { formatClock, formatDuration, pluralLines } from "../model/format";
 import type { LogSession } from "../model/types";
 
@@ -9,7 +9,14 @@ export interface ViewerHeaderProps {
     hasPrev: boolean;
     hasNext: boolean;
     onCopyView: () => void;
-    onExport: () => void;
+    onExportText: () => void;
+    onExportHtml: () => void;
+    onDownloadImage: () => void;
+    onCopyImage: () => void;
+    /** True while an image is rendering — the canvas work is not instant. */
+    busy?: boolean;
+    /** Labels say "zakres" when only a slice of the session is in view. */
+    ranged: boolean;
     /** Rendered at the far right — the dialog's close control, when there is one. */
     trailing?: React.ReactNode;
 }
@@ -21,7 +28,12 @@ export function ViewerHeader({
     hasPrev,
     hasNext,
     onCopyView,
-    onExport,
+    onExportText,
+    onExportHtml,
+    onDownloadImage,
+    onCopyImage,
+    busy,
+    ranged,
     trailing,
 }: ViewerHeaderProps) {
     const meta = [
@@ -64,14 +76,26 @@ export function ViewerHeader({
                 >
                     Kopiuj widok
                 </Button>
-                <Button
-                    size="sm"
-                    icon={<Icon name="export" size={14} />}
-                    onClick={onExport}
-                    title="Zapisz widoczne linie jako .txt"
+                <Menu
+                    trigger={
+                        <Button
+                            size="sm"
+                            icon={<Icon name="export" size={14} />}
+                            trailing={<Icon name="chevron-down" size={14} />}
+                            disabled={busy}
+                            title={ranged ? "Zapisz zaznaczony zakres" : "Zapisz caly log"}
+                        >
+                            {busy ? "Zapisywanie..." : ranged ? "Eksport zakresu" : "Eksport"}
+                        </Button>
+                    }
                 >
-                    Eksport
-                </Button>
+                    <MenuLabel>{ranged ? "Zaznaczony zakres" : "Caly log"}</MenuLabel>
+                    <MenuItem onSelect={onExportHtml}>Pobierz HTML</MenuItem>
+                    <MenuItem onSelect={onExportText}>Pobierz tekst (.txt)</MenuItem>
+                    <MenuSeparator />
+                    <MenuItem onSelect={onDownloadImage}>Pobierz jako obraz</MenuItem>
+                    <MenuItem onSelect={onCopyImage}>Kopiuj jako obraz</MenuItem>
+                </Menu>
                 {trailing ? (
                     <>
                         <div className="ark-divider ark-divider--vertical" />
