@@ -196,18 +196,35 @@
     flex-shrink: 0;
 }
 
+/* The counter and its sub-line are both empty until you type, and an empty
+   span makes no line box at all — so the block used to be 1px tall at rest and
+   two lines tall from the first keystroke, taking the whole row up with it.
+   Both lines therefore reserve their height unconditionally, below.
+
+   The width is reserved for the same reason, and exactly rather than as a
+   floor: the counter runs from "" to "Bledny wzorzec" to "3 z 128" while you
+   type, and the sub-line can be a notice naming a character and a day, which
+   no fixed width could ever fit. A floor alone let that notice widen the block
+   and shove the scope buttons sideways; 168px both ways means nothing after it
+   can move, and the overflow is handled by the ellipsis below. */
 .lv-search__counter {
     display: flex;
     flex-direction: column;
     gap: 1px;
+    flex: 0 0 168px;
     min-width: 168px;
     font-variant-numeric: tabular-nums;
 }
 
 .lv-search__count {
     font-size: var(--ark-text-4);
+    line-height: 16px;
+    min-height: 16px;
     font-weight: var(--ark-weight-medium);
     color: var(--ark-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .lv-search__count[data-tone='muted'] {
@@ -219,9 +236,18 @@
     color: var(--ark-danger-text);
 }
 
+/* A notice is as long as the session it names, and at 168px "Dalej w: Kethra,
+   Wczoraj · pt 18 wrz" wraps to two lines and grows the row a second time. It
+   is clipped instead: a notice is meant to catch the eye, not to be a
+   paragraph, and the whole text is on the element's title. */
 .lv-search__sub {
     font-size: var(--ark-text-2);
+    line-height: 15px;
+    min-height: 15px;
     color: var(--ark-text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* A jump the player did not ask for is announced in the accent colour, so it

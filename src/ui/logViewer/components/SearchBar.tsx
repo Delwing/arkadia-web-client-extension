@@ -124,7 +124,10 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                 <span className="lv-search__count" data-tone={counterTone}>
                     {counter}
                 </span>
-                <span className="lv-search__sub" data-notice={subIsNotice}>
+                {/* The notice can be any length ("Dalej w: <postac>, <dzien>"), so
+                    it is clipped rather than wrapped — the full text is in the
+                    title. A second line here would push the whole row down. */}
+                <span className="lv-search__sub" data-notice={subIsNotice} title={subLine || undefined}>
                     {subLine}
                 </span>
             </div>
@@ -137,8 +140,6 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
             >
                 Tylko trafienia
             </Toggle>
-
-            <div className="ark-spacer" />
 
             <Segmented
                 value={scope}
