@@ -71,8 +71,8 @@ everything after them cheap and safe; skipping them makes every later phase
 riskier than it needs to be.
 
 ```
-0. Cut the tests loose from Bootstrap classes   ← no product change, unblocks all
-1. Token bridge + theme attribute               ← small diff, whole app re-themes
+0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
+1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← fold master's UX in, then share
 3. Popups (39)                                  ← mostly token work
 4. Settings (46 files)                          ← the long pole, sub-phased

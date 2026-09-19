@@ -25,9 +25,17 @@ than a hand-tuned palette, and what stops components from needing per-theme
 special cases. Nothing from `@radix-ui/colors` reaches the browser — a Node
 script reads it and emits plain custom properties.
 
-**No aliasing of the old `--popup-*` variables.** The two systems run side by
-side. A screen is either migrated or it is not; there is no half-state where a
-token means one thing here and another there.
+**No aliasing of the old `--popup-*` variables.** A new token must never be
+defined in terms of an old one, and a screen is either migrated or it is not;
+there is no half-state where a token means one thing here and another there.
+
+There is one deliberate, temporary exception, in the other direction:
+`src/web/themes/bridge.css` redefines the *old* `--popup-*` and `--footer-*`
+variables in terms of `--ark-*`, so the not-yet-migrated stock client repaints
+from this token layer (Phase 1 of `UI_MIGRATION.md`). It carries its own
+deletion criterion — *deleted when no `var(--popup-` remains outside it* — and
+Phase 3 is what deletes it. Nothing under `src/ui/design` reads `--popup-*`, so
+the rule above still holds where it matters.
 
 ---
 
@@ -199,7 +207,7 @@ text. If you add to the reset, keep it inside `:where()`.
 |---|---|
 | `log-viewer/` (standalone log browser) | **on the design system**, no Bootstrap |
 | `design/` (showcase) | on the design system |
-| `src/web/` stock UI (settings, popups, layout) | Bootstrap + `--popup-*` |
+| `src/web/` stock UI (settings, popups, layout) | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |
 
