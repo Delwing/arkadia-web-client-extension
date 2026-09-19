@@ -27,6 +27,14 @@
  * themes where a sixth hue would have had to fight the parchment.
  */
 
+import { SEASON_NAMES } from '@client/scripts/sunModel.ts';
+
+/**
+ * Re-exported so a popup needs one import for "what is this season called and
+ * what colour is it". The names themselves stay where the model owns them.
+ */
+export { SEASON_NAMES };
+
 /** Season index (0..3 = Wiosna, Lato, Jesien, Zima) to its data slot. */
 export const SEASON_COLORS = [
     'var(--ark-data-3-text)', // wiosna (spring)
@@ -34,8 +42,6 @@ export const SEASON_COLORS = [
     'var(--ark-data-5-text)', // jesien (autumn)
     'var(--ark-data-2-text)', // zima (winter)
 ];
-
-export const SEASON_NAMES = ['Wiosna', 'Lato', 'Jesien', 'Zima'];
 
 /** Sunrise, daylight, the sun glyph. */
 export const SUN_COLOR = 'var(--ark-data-4-text)';

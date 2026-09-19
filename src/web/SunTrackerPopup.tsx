@@ -528,10 +528,15 @@ const SunTrackerPopup: React.FC = () => {
                                             style={{
                                                 padding: '2px 3px',
                                                 textAlign: 'center',
+                                                // Selection and "today" shared one brightness in the old
+                                                // palette and the in-range run sat a step below both;
+                                                // accent 8 over accent 7 keeps that order. The branch
+                                                // order is the old one too: a day that is both in a
+                                                // range and today reads as in-range.
                                                 border: isEditing || isRangeSelected
                                                     ? '1px solid var(--ark-accent-border-strong)'
                                                     : isInRange ? '1px solid var(--ark-accent-border)'
-                                                    : isToday ? '1px solid var(--ark-accent-border)'
+                                                    : isToday ? '1px solid var(--ark-accent-border-strong)'
                                                     : `1px solid ${hasAny ? 'var(--ark-border-element)' : 'var(--ark-border-subtle)'}`,
                                                 borderRadius: 3,
                                                 fontSize: 10,

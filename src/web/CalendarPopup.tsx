@@ -8,7 +8,6 @@ import {
     type MoonPhase,
     MONTH_LENGTHS,
     MONTH_ORDER,
-    SEASON_NAMES,
     YEAR_LENGTH,
     dayLengthHours,
     formatDay,
@@ -24,6 +23,7 @@ import {
     MOON_COLOR,
     NEW_MOON_COLOR,
     SEASON_COLORS,
+    SEASON_NAMES,
     SUN_COLOR,
 } from './popups/worldPalette';
 
