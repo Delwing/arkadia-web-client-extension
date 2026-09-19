@@ -2,7 +2,8 @@ import type { UiSettings } from "../../uiSettingsCore";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
 import FooterComponentSettings from "../../options/FooterComponentSettings";
-import { CheckboxRow, DeviceOnlyBadge, SelectField, SettingsSection } from "../fields";
+import { DeviceOnlyBadge } from "../fields";
+import { CheckboxField, SelectField, SettingsCard, SettingsHint } from "@web/settings/controls.tsx";
 
 interface FooterSectionsProps {
     draft: UiSettings;
@@ -12,17 +13,17 @@ interface FooterSectionsProps {
 function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
-            <SettingsSection title="Stan postaci">
-                <SelectField id="ui-footer-mode" settingKey="footerMode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v) || 0 })}>
+            <SettingsCard title="Stan postaci">
+                <SelectField id="ui-footer-mode" labelExtra={<DeviceOnlyBadge settingKey="footerMode" />} label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v) || 0 })}>
                     <option value="0">Liczbowy</option>
                     <option value="1">Pasek</option>
                     <option value="2">Pasek jednolity</option>
                     <option value="3">Pasek graficzny</option>
                 </SelectField>
-                <CheckboxRow id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
-                <div>
-                    <label className="form-label mb-1">Kolejnosc i widocznosc paskow<DeviceOnlyBadge settingKey="barOrder" /></label>
-                    <div id="ui-bar-order-settings">
+                <CheckboxField id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
+                <div className="settings-field">
+                    <span className="settings-field__label">Kolejnosc i widocznosc paskow<DeviceOnlyBadge settingKey="barOrder" /></span>
+                    <div id="ui-bar-order-settings" className="settings-stack settings-stack--tight">
                         <BarOrderSettings
                             barOrder={draft.barOrder || defaultUiSettings.barOrder}
                             alwaysVisibleBars={draft.alwaysVisibleBars || []}
@@ -30,26 +31,26 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                         />
                     </div>
                 </div>
-            </SettingsSection>
+            </SettingsCard>
 
-            <SettingsSection title="Stopka na telefonie">
-                <p className="text-muted small mb-1">
+            <SettingsCard title="Stopka na telefonie">
+                <SettingsHint>
                     Na waskim ekranie stopka jest podzielona na dwa przewijane paski o stalej
                     wysokosci (stan postaci i plakietki), a stan postaci pokazywany jest w postaci
                     kompaktowych miernikow zamiast trybu stopki. Przycisk po prawej stronie stopki
                     rozwija oba paski - a jesli stopka ma byc zawsze rozwinieta albo zawsze
                     zwinieta, przycisku nie ma wcale.
-                </p>
-                <CheckboxRow
+                </SettingsHint>
+                <CheckboxField
                     id="ui-mobile-footer-compact"
-                    settingKey="mobileFooterCompact"
+                    labelExtra={<DeviceOnlyBadge settingKey="mobileFooterCompact" />}
                     label="Kompaktowa stopka na telefonie"
                     checked={draft.mobileFooterCompact}
                     onChange={(v) => update({ mobileFooterCompact: v })}
                 />
                 <SelectField
                     id="ui-mobile-footer-expand"
-                    settingKey="mobileFooterExpand"
+                    labelExtra={<DeviceOnlyBadge settingKey="mobileFooterExpand" />}
                     label="Rozwijanie stopki na telefonie"
                     value={draft.mobileFooterExpand}
                     disabled={!draft.mobileFooterCompact}
@@ -59,16 +60,16 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                     <option value="expanded">Zawsze rozwinieta</option>
                     <option value="collapsed">Zawsze zwinieta</option>
                 </SelectField>
-            </SettingsSection>
+            </SettingsCard>
 
-            <SettingsSection title="Elementy stopki" settingKey="footerComponents">
-                <div id="ui-footer-components-settings">
+            <SettingsCard title="Elementy stopki" full headerExtra={<DeviceOnlyBadge settingKey="footerComponents" />}>
+                <div id="ui-footer-components-settings" className="settings-stack settings-stack--tight">
                     <FooterComponentSettings
                         components={draft.footerComponents}
                         onChange={(footerComponents) => update({ footerComponents })}
                     />
                 </div>
-            </SettingsSection>
+            </SettingsCard>
         </>
     );
 }

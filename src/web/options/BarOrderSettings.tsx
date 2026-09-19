@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Form } from "react-bootstrap";
+import { Checkbox } from "@design";
+import { CheckboxField } from "@web/settings/controls.tsx";
 import {
     DndContext,
     closestCenter,
@@ -61,29 +62,25 @@ function SortableBarItem({ item, hasDefault, onToggle }: SortableBarItemProps) {
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            className="d-flex align-items-center gap-2 p-1 border rounded"
-            style={{ ...style, background: 'var(--popup-control-bg)' }}
-        >
+        <div ref={setNodeRef} className="settings-sortable-row settings-sortable-row--inline" style={style}>
             <span
                 {...attributes}
                 {...listeners}
-                className="text-muted"
-                style={{ cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
+                className="settings-drag-handle"
+                title="Przeciagnij, aby zmienic kolejnosc"
             >
-                &#x2630;
+                {"\u2630"}
             </span>
             {hasDefault && (
-                <Form.Check
-                    type="switch"
-                    id={`avb-${item.id}`}
-                    checked={item.alwaysVisible}
-                    onChange={() => onToggle(item.id)}
-                    title="Zawsze widoczny"
-                />
+                <span title="Zawsze widoczny" className="settings-sortable-row__toggle">
+                    <Checkbox
+                        id={`avb-${item.id}`}
+                        checked={item.alwaysVisible}
+                        onCheckedChange={() => onToggle(item.id)}
+                    />
+                </span>
             )}
-            <span style={{ fontSize: '0.85rem' }}>
+            <span className="settings-sortable-row__name">
                 {DISPLAY_NAMES[item.id] || item.id}
             </span>
         </div>
@@ -145,19 +142,19 @@ function BarOrderSettings({ barOrder, alwaysVisibleBars, onChange }: BarOrderSet
 
     return (
         <>
-            <div className="d-flex align-items-center gap-2 mb-1">
-                <Form.Check
-                    type="switch"
-                    id="avb-all"
-                    checked={allChecked}
-                    onChange={toggleAll}
-                    label="Wszystkie zawsze widoczne"
-                    style={{ fontSize: '0.85rem' }}
-                />
-            </div>
+            {/* A Checkbox, not a Switch: these are written by the settings
+                dialog's Save button, and the design system reserves Switch for
+                settings that take effect immediately. It also keeps the e2e
+                suite's getByRole('checkbox') working. */}
+            <CheckboxField
+                id="avb-all"
+                label="Wszystkie zawsze widoczne"
+                checked={allChecked}
+                onChange={toggleAll}
+            />
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                    <div className="d-flex flex-column gap-1">
+                    <div className="settings-stack settings-stack--tight">
                         {items.map(item => (
                             <SortableBarItem
                                 key={item.id}

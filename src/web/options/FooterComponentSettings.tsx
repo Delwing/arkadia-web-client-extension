@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
-import { Form } from "react-bootstrap";
+import { Badge, Checkbox } from "@design";
 import {
     DndContext,
     closestCenter,
@@ -45,31 +45,28 @@ function SortableItem({ item, onToggle }: SortableItemProps) {
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            className="d-flex align-items-center gap-2 p-1 border rounded"
-            style={{ ...style, background: 'var(--popup-control-bg)' }}
-        >
+        <div ref={setNodeRef} className="settings-sortable-row settings-sortable-row--inline" style={style}>
             <span
                 {...attributes}
                 {...listeners}
-                className="text-muted"
-                style={{ cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
+                className="settings-drag-handle"
+                title="Przeciagnij, aby zmienic kolejnosc"
             >
-                &#x2630;
+                {"\u2630"}
             </span>
-            <Form.Check
-                type="switch"
+            {/* A Checkbox, not a Switch: saved by the dialog's Save button, not
+                applied on the spot. See the note in BarOrderSettings. */}
+            <Checkbox
                 id={`fc-${domId(item.id)}`}
                 checked={item.visible}
-                onChange={() => onToggle(item.id)}
+                onCheckedChange={() => onToggle(item.id)}
             />
-            <span className={item.visible ? '' : 'text-muted'} style={{ fontSize: '0.85rem' }}>
+            <span className={`settings-sortable-row__name${item.visible ? '' : ' settings-muted'}`}>
                 {item.label}
             </span>
             {item.fromPlugin && (
-                <span className="badge bg-secondary ms-auto" style={{ fontSize: '0.65rem' }}>
-                    plugin
+                <span className="settings-sortable-row__badge">
+                    <Badge>plugin</Badge>
                 </span>
             )}
         </div>
@@ -123,7 +120,7 @@ function FooterComponentSettings({ components, onChange }: FooterComponentSettin
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map(c => domId(c.id))} strategy={verticalListSortingStrategy}>
-                <div className="d-flex flex-column gap-1">
+                <div className="settings-stack settings-stack--tight">
                     {items.map(item => (
                         <SortableItem key={item.id} item={item} onToggle={toggleVisibility} />
                     ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Input } from "@design";
+import { CheckboxField, SettingsHint } from "@web/settings/controls.tsx";
 import {
     DndContext,
     closestCenter,
@@ -47,31 +48,9 @@ function RadialPreview({ commands }: { commands: RadialCommandSetting[] }) {
     const startAngle = -Math.PI / 2;
 
     return (
-        <div
-            className="radial-preview mx-auto"
-            style={{
-                width: PREVIEW_SIZE,
-                height: PREVIEW_SIZE,
-                position: "relative",
-                borderRadius: "50%",
-                background: "rgba(15, 23, 42, 0.3)",
-                border: "1px solid rgba(148, 163, 184, 0.3)",
-            }}
-        >
+        <div className="radial-preview" style={{width: PREVIEW_SIZE, height: PREVIEW_SIZE}}>
             {/* Threshold circle */}
-            <div
-                style={{
-                    position: "absolute",
-                    left: center,
-                    top: center,
-                    width: 24,
-                    height: 24,
-                    transform: "translate(-50%, -50%)",
-                    borderRadius: "50%",
-                    border: "1px solid rgba(148, 163, 184, 0.4)",
-                    background: "rgba(15, 23, 42, 0.2)",
-                }}
-            />
+            <div className="radial-preview__threshold"/>
             {/* Command buttons */}
             {commands.map((cmd, index) => {
                 const angle = startAngle + step * index;
@@ -83,25 +62,16 @@ function RadialPreview({ commands }: { commands: RadialCommandSetting[] }) {
                     <div
                         key={cmd.id}
                         title={label}
+                        className="radial-preview__command"
                         style={{
-                            position: "absolute",
                             left: x,
                             top: y,
                             width: PREVIEW_BUTTON_SIZE,
                             height: PREVIEW_BUTTON_SIZE,
-                            transform: "translate(-50%, -50%)",
-                            borderRadius: "50%",
-                            background: cmd.color || "rgba(110, 180, 220, 0.85)",
-                            color: cmd.fontColor || "#f1f5f9",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "0.5rem",
-                            fontWeight: 600,
-                            boxShadow: "0 2px 6px rgba(15, 23, 42, 0.4)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            // The player picks these two per command; everything
+                            // else on the preview is a token.
+                            background: cmd.color || undefined,
+                            color: cmd.fontColor || undefined,
                         }}
                     >
                         {displayLabel}
@@ -137,53 +107,41 @@ function SortableRadialItem({ cmd, disabled, onUpdate, onRemove }: SortableRadia
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            className="border rounded p-2 d-flex flex-column flex-lg-row gap-2"
-            style={{ ...style, background: 'var(--popup-control-bg)' }}
-        >
-            <div className="d-flex align-items-center">
-                <span
-                    {...attributes}
-                    {...listeners}
-                    className={disabled ? "text-muted opacity-50" : "text-muted"}
-                    style={{ cursor: disabled ? 'not-allowed' : 'grab', userSelect: 'none', touchAction: 'none', fontSize: '1.2rem', padding: '0 0.25rem' }}
-                >
-                    &#x2630;
-                </span>
-            </div>
-            <Form.Group className="flex-grow-1">
-                <Form.Label className="small mb-1">Etykieta</Form.Label>
-                <Form.Control
-                    size="sm"
+        <div ref={setNodeRef} className="settings-sortable-row" style={style}>
+            <span
+                {...attributes}
+                {...listeners}
+                className="settings-drag-handle"
+                data-disabled={disabled ? "" : undefined}
+                title="Przeciagnij, aby zmienic kolejnosc"
+            >
+                {"\u2630"}
+            </span>
+            <div className="settings-field settings-sortable-row__field">
+                <label className="settings-field__label" htmlFor={`radial-label-${cmd.id}`}>Etykieta</label>
+                <Input
+                    id={`radial-label-${cmd.id}`}
                     type="text"
                     value={cmd.label}
                     placeholder="Nazwa przycisku"
                     disabled={disabled}
                     onChange={e => onUpdate(cmd.id, "label", e.target.value)}
                 />
-            </Form.Group>
-            <Form.Group className="flex-grow-1">
-                <Form.Label className="small mb-1">Komenda</Form.Label>
-                <Form.Control
-                    size="sm"
+            </div>
+            <div className="settings-field settings-sortable-row__field">
+                <label className="settings-field__label" htmlFor={`radial-command-${cmd.id}`}>Komenda</label>
+                <Input
+                    id={`radial-command-${cmd.id}`}
                     type="text"
                     value={cmd.command}
                     placeholder="Tekst komendy"
                     disabled={disabled}
                     onChange={e => onUpdate(cmd.id, "command", e.target.value)}
                 />
-            </Form.Group>
-            <div className="d-flex align-items-end">
-                <Button
-                    variant="danger"
-                    size="sm"
-                    disabled={disabled}
-                    onClick={() => onRemove(cmd.id)}
-                >
-                    Usuń
-                </Button>
             </div>
+            <Button variant="danger-soft" size="sm" disabled={disabled} onClick={() => onRemove(cmd.id)}>
+                Usuń
+            </Button>
         </div>
     );
 }
@@ -261,34 +219,32 @@ function MobileRadialCommands({ registerSave }: { registerSave: (save: () => voi
     }
 
     return (
-        <div className="w-100 d-flex flex-column gap-3">
-            <div className="d-flex flex-column gap-2">
-                <Form.Check
-                    type="switch"
-                    id="mobile-radial-enabled"
-                    label="Włącz menu kołowe"
-                    checked={radialEnabled}
-                    onChange={event => setRadial(prev => ({ ...prev, enabled: event.target.checked }))}
-                />
-                {!radialEnabled && (
-                    <p className="text-muted small mb-0">
-                        Menu kołowe jest wyłączone. Włącz je, aby edytować komendy.
-                    </p>
-                )}
-            </div>
+        <div className="settings-stack">
+            {/* A Checkbox, not a Switch: the design system reserves Switch for
+                settings that take effect immediately, and this one is written
+                by the dialog's Save button like every other field here. */}
+            <CheckboxField
+                id="mobile-radial-enabled"
+                label="Włącz menu kołowe"
+                checked={radialEnabled}
+                onChange={checked => setRadial(prev => ({ ...prev, enabled: checked }))}
+            />
+            {!radialEnabled && (
+                <SettingsHint>Menu kołowe jest wyłączone. Włącz je, aby edytować komendy.</SettingsHint>
+            )}
             {radialEnabled && commands.length > 0 && (
-                <div className="mb-2">
-                    <Form.Label className="mb-2 d-block text-center">Podglad</Form.Label>
+                <div className="settings-field">
+                    <span className="settings-field__label">Podglad</span>
                     <RadialPreview commands={commands} />
                 </div>
             )}
-            <div>
-                <Form.Label className="mb-2">Komendy menu kołowego</Form.Label>
+            <div className="settings-field">
+                <span className="settings-field__label">Komendy menu kołowego</span>
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={commands.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                        <div className="d-flex flex-column gap-2">
+                        <div className="settings-stack settings-stack--tight">
                             {commands.length === 0 && (
-                                <p className="text-muted small mb-0">Brak komend. Dodaj nową, aby pojawiła się w menu.</p>
+                                <SettingsHint>Brak komend. Dodaj nową, aby pojawiła się w menu.</SettingsHint>
                             )}
                             {commands.map(cmd => (
                                 <SortableRadialItem
@@ -303,8 +259,8 @@ function MobileRadialCommands({ registerSave }: { registerSave: (save: () => voi
                     </SortableContext>
                 </DndContext>
             </div>
-            <div>
-                <Button id="mobile-radial-add" size="sm" variant="secondary" disabled={!radialEnabled} onClick={addRadialCommand}>
+            <div className="settings-button-row">
+                <Button id="mobile-radial-add" size="sm" disabled={!radialEnabled} onClick={addRadialCommand}>
                     Dodaj komendę
                 </Button>
             </div>
