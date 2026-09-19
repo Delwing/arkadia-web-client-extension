@@ -47,12 +47,17 @@ async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
 }
 
 /** False when the connection was closed under us (released for an upgrade), so the caller reopens and retries. */
-async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number): Promise<boolean> {
+async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number, character?: string): Promise<boolean> {
   try {
     const tx = db.transaction(storeName, 'readwrite');
     await new Promise<void>((resolve, reject) => {
       // Event time, not arrival: a stored log is a record of the game.
-      const req = tx.objectStore(storeName).add({ text, type, timestamp: timestamp ?? eventNow() });
+      const record: { text: string; type?: string; timestamp: number; character?: string } =
+        { text, type, timestamp: timestamp ?? eventNow() };
+      // Present only on the record that starts a character's stretch of the
+      // log, so the shape every other reader of the store knows is unchanged.
+      if (character) record.character = character;
+      const req = tx.objectStore(storeName).add(record);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
@@ -69,6 +74,25 @@ interface SessionClient {
 
 export default async function initSessionLogger(client: SessionClient) {
   let db: IDBDatabase | null = null;
+  /**
+   * Who the log is of, from the moment the game says so.
+   *
+   * A log runs from page load to page close and a player can re-log in between,
+   * so this moves - which is the whole reason the name is recorded at all. The
+   * source is `PlayerIdentity`, not the raw GMCP frame: it already tells a new
+   * life from a new body, and a przeobrazenie must not land in the log looking
+   * like a relogin.
+   *
+   * The name is written onto the FIRST record after it changed and onto nothing
+   * else. A record per switch is all the reader needs, no line of text is
+   * invented for it, and every other consumer of the store sees the shape it
+   * always saw.
+   */
+  let pendingCharacter: string | undefined;
+
+  eventBus.on('player.character', name => {
+    if (name) pendingCharacter = name;
+  });
   let opening: Promise<IDBDatabase | null> | null = null;
   let closeTimeout: number | null = null;
 
@@ -110,7 +134,11 @@ export default async function initSessionLogger(client: SessionClient) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const currentDb = await ensureDb();
       if (!currentDb) return;
-      if (await save(currentDb, text, type, timestamp)) {
+      const character = pendingCharacter;
+      if (await save(currentDb, text, type, timestamp, character)) {
+        // Cleared only once the record is actually in: a write that fails
+        // keeps the name for the next line rather than losing the switch.
+        if (character === pendingCharacter) pendingCharacter = undefined;
         scheduleClose();
         return;
       }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { allChannelsOff, allChannelsOn, anyChannelOff, type Channel } from "./model/channels";
+import { charactersLabel } from "./model/characters";
 import { formatClock, pluralLogs } from "./model/format";
 import { indexAtOrAfter } from "./model/timeline";
 import type { Density, LogSession, SearchScope, TimeRange } from "./model/types";
@@ -369,7 +370,7 @@ export function LogViewer({
         if (!view.session) return;
         const style = readPaneStyle();
         const html = buildLogHtml(view.rows, {
-            title: view.session.character,
+            title: charactersLabel(view.session.characters, view.session.dateLabel),
             meta: [
                 view.session.dateLabel,
                 view.range

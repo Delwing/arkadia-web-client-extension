@@ -25,12 +25,25 @@ export interface LogLine {
      */
     html?: string;
     event?: LogEventKind;
+    /**
+     * The character playing when this line was written, when it is known.
+     * Undefined is normal: a log can start before anyone logged in, and old
+     * logs give up a name only where the login banner names one.
+     */
+    character?: string;
 }
 
 export interface LogSession {
     id: string;
-    /** Character name, or the session's own label when it is not known. */
-    character: string;
+    /**
+     * Characters played in this session, in order of first appearance.
+     *
+     * A list rather than a name: the log runs from page load to page close, so
+     * one session can span a re-login. It is empty for a session that never
+     * reached the game, and for old logs whose character could not be
+     * recognised — both are normal, and the date label stands in.
+     */
+    characters: string[];
     /** Day heading this session is grouped under ("Dzisiaj · sob 19 wrz"). */
     dayLabel: string;
     /** Full date, for the header meta line. */

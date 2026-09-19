@@ -1,4 +1,5 @@
 import { Badge, Field, Input, Kbd } from "@design";
+import { charactersLabel } from "../model/characters";
 import { formatClock, formatDuration, pluralSessions } from "../model/format";
 import type { LogSession } from "../model/types";
 
@@ -85,7 +86,9 @@ export function SessionSidebar({
                                         onClick={() => onSelect(session.id)}
                                     >
                                         <span className="ark-row ark-row--tight">
-                                            <span className="lv-session__name ark-truncate">{session.character}</span>
+                                            <span className="lv-session__name ark-truncate">
+                                                {charactersLabel(session.characters, session.dateLabel)}
+                                            </span>
                                             {session.live ? (
                                                 <span className="lv-session__live" title="Nagrywana teraz" />
                                             ) : null}

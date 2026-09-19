@@ -261,6 +261,12 @@ export interface KnownEvents {
      * A disconnect does not clear it; see PlayerIdentity.
      */
     "player.objectNum": number | undefined;
+    /**
+     * Who we are playing, as the game spells it, fired when a life starts rather
+     * than on every Char.Info - a change of body is not a change of character.
+     * The session logger stamps it onto the log; see PlayerIdentity.
+     */
+    "player.character": string;
     "refreshPositionWhenAble": void;
     "knowledgeReport": unknown | null;
     "knowledgeReport.popup.open": void;

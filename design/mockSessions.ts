@@ -7,8 +7,8 @@
  * makes the timeline worth looking at, so the generator plans a session rather
  * than sprinkling lines evenly.
  */
-import { channelForType, detectEvent, formatDateLong, formatDayLabel } from "@ui/logViewer";
-import type { LogLine, LogSession } from "@ui/logViewer";
+import { attributeCharacters, channelForType, detectEvent, formatDateLong, formatDayLabel } from "@ui/logViewer";
+import type { CharacterMark, LogLine, LogSession } from "@ui/logViewer";
 
 function seededRandom(seed: number): () => number {
     let state = seed >>> 0;
@@ -54,12 +54,19 @@ const ROOM_DESCRIPTIONS = [
     "Most ze sczernialych bali przerzucono nad leniwie plynaca, czarna woda; porecze dawno zgnily, a spomiedzy desek widac wirujacy nurt, w ktorym co jakis czas cos ciezkiego uderza o filary.",
 ];
 
+/**
+ * The banner greets in the vocative, so the showcase's logs do too — the read
+ * side has to recognise the name in the same shape a real log carries it.
+ */
+const VOCATIVE: Record<string, string> = { Kethra: "Kethro", Dorn: "Dornie", Dargoth: "Dargocie" };
+
 const SPEAKERS = ["Brannoc", "Ysolda", "Thessaly", "Merrow", "Stary Gaunt"];
 const HITS = ["tniesz", "rabiesz", "przebijasz", "uderzasz", "walisz"];
 const MOB_HITS = ["drapie", "gryzie", "uderza", "tratuje"];
 
 type PlanStep =
-    | ["login"]
+    /** The character being logged in — a session can span more than one. */
+    | ["login", string]
     | ["logout"]
     | ["walk", number]
     | ["combat", string, number, "kill" | "death" | "flee"]
@@ -72,20 +79,23 @@ type PlanStep =
 
 interface SessionPlan {
     id: string;
-    character: string;
     seed: number;
     startedAt: number;
     live?: boolean;
     plan: PlanStep[];
 }
 
-function generateLines(plan: SessionPlan): { text: string; type: string; timestamp: number }[] {
+function generateLines(plan: SessionPlan): {
+    entries: { text: string; type: string; timestamp: number }[];
+    marks: CharacterMark[];
+} {
     const random = seededRandom(plan.seed);
     const pick = <T,>(items: T[]) => items[Math.floor(random() * items.length)];
     const between = (low: number, high: number) => low + Math.floor(random() * (high - low + 1));
 
     let clock = plan.startedAt;
     const out: { text: string; type: string; timestamp: number }[] = [];
+    const marks: CharacterMark[] = [];
     const add = (type: string, text: string, stepSeconds: number) => {
         clock += stepSeconds * 1000;
         out.push({ text, type, timestamp: clock });
@@ -97,7 +107,11 @@ function generateLines(plan: SessionPlan): { text: string; type: string; timesta
         switch (step[0]) {
             case "login":
                 add("system.login", "Polaczono z arkadia.pl:4000", 0);
-                add("system", "Witaj ponownie. Ostatnie logowanie: wczoraj o 21:40.", 1);
+                add("system.login", `Witaj, ${VOCATIVE[step[1]] ?? step[1]}. Podaj swe haslo:`, 1);
+                // What the logger stamps: the game names the character a moment
+                // after the banner the player sees.
+                marks.push({ line: out.length, character: step[1].toLowerCase() });
+                add("system", "Witaj ponownie. Ostatnie logowanie: wczoraj o 21:40.", 2);
                 break;
             case "logout":
                 add("system", "Zapisywanie postaci... Do zobaczenia.", between(4, 20));
@@ -170,7 +184,7 @@ function generateLines(plan: SessionPlan): { text: string; type: string; timesta
         }
     }
 
-    return out;
+    return { entries: out, marks };
 }
 
 const DAY = 86_400_000;
@@ -185,12 +199,11 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
     const plans: SessionPlan[] = [
         {
             id: "mock-1",
-            character: "Kethra",
             seed: 7,
             startedAt: at(0, 19, 2, now),
             live: true,
             plan: [
-                ["login"],
+                ["login", "Kethra"],
                 ["tell", "Brannoc", ["polujesz jeszcze na tego trolla?", "tak, wczoraj omal mnie nie zabil", "wez oliwe, trolle sie regeneruja"]],
                 ["walk", 4],
                 ["say", "kupiec", ["Trzy flaszki oliwy poprosze.", "Trzydziesci szesc sztuk zlota."]],
@@ -210,11 +223,10 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
         },
         {
             id: "mock-2",
-            character: "Kethra",
             seed: 21,
             startedAt: at(1, 21, 40, now),
             plan: [
-                ["login"],
+                ["login", "Kethra"],
                 ["walk", 3],
                 ["combat", "dziki wilk", 5, "kill"],
                 ["combat", "dziki wilk", 4, "kill"],
@@ -224,16 +236,23 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
                 ["system", "Zauwazasz swieze slady trolla prowadzace do wawozu."],
                 ["combat", "jaskiniowy troll", 6, "flee"],
                 ["afk", 14],
+                // One log, two characters: the player logs out and comes back
+                // as somebody else, which is what the character list and the
+                // named markers on the timeline are for.
+                ["logout"],
+                ["login", "Dargoth"],
+                ["walk", 3],
+                ["chat", 2],
+                ["combat", "dziki wilk", 4, "kill"],
                 ["logout"],
             ],
         },
         {
             id: "mock-3",
-            character: "Dorn",
             seed: 33,
             startedAt: at(1, 17, 15, now),
             plan: [
-                ["login"],
+                ["login", "Dorn"],
                 ["say", "kowal", ["Ile za naprawe kolczugi?", "Osiemdziesiat sztuk zlota."]],
                 ["walk", 5],
                 ["chat", 4],
@@ -245,11 +264,10 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
         },
         {
             id: "mock-4",
-            character: "Kethra",
             seed: 45,
             startedAt: at(4, 20, 14, now),
             plan: [
-                ["login"],
+                ["login", "Kethra"],
                 ["walk", 6],
                 ["combat", "bagienny troll", 16, "kill"],
                 ["trait", "zrecznosc"],
@@ -261,7 +279,8 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
     ];
 
     return plans.map((plan) => {
-        const entries = generateLines(plan);
+        // One entry is one line here, so a mark's entry index is its line index.
+        const { entries, marks } = generateLines(plan);
         const lines: LogLine[] = entries.map((entry, index) => ({
             number: index + 1,
             timestamp: entry.timestamp,
@@ -269,9 +288,13 @@ export function buildMockSessions(now: number = Date.now()): LogSession[] {
             text: entry.text,
             event: detectEvent(entry.text, entry.type),
         }));
+        const { characters, byLine } = attributeCharacters(lines, marks);
+        byLine.forEach((character, index) => {
+            if (character) lines[index].character = character;
+        });
         return {
             id: plan.id,
-            character: plan.character,
+            characters,
             dayLabel: formatDayLabel(plan.startedAt, now),
             dateLabel: formatDateLong(plan.startedAt),
             startedAt: plan.startedAt,

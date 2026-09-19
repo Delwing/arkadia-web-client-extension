@@ -176,6 +176,16 @@ export interface RenderedRow {
     matchCount: number;
 }
 
+/**
+ * The character playing on the first and last matching line of a session — the
+ * two lines a hand-over from another log can land on. Either is undefined when
+ * the session's character is not known there.
+ */
+export interface MatchEdges {
+    first?: string;
+    last?: string;
+}
+
 export interface MatchRef {
     /** Index into `rows`. */
     row: number;
@@ -194,6 +204,8 @@ export interface DerivedView {
     currentMatch: number;
     currentRow: number | null;
     hitsBySession: Record<string, number>;
+    /** Who was playing at either end of another session's hits — see `stepMatch`. */
+    matchEdges: Record<string, MatchEdges>;
     channelCounts: Record<Channel, number>;
     invalidPattern: boolean;
     searching: boolean;
@@ -203,7 +215,8 @@ export interface DerivedView {
 
 function matchesSessionFilter(session: LogSession, filter: string): boolean {
     if (!filter) return true;
-    const haystack = `${session.character} ${session.dayLabel} ${session.dateLabel} ${session.file}`.toLowerCase();
+    const haystack =
+        `${session.characters.join(" ")} ${session.dayLabel} ${session.dateLabel} ${session.file}`.toLowerCase();
     return haystack.includes(filter);
 }
 
@@ -218,14 +231,22 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
     // Deliberately NOT range-filtered: the range belongs to the session being
     // viewed, so applying it to another session's badge would be meaningless.
     const hitsBySession: Record<string, number> = {};
+    const matchEdges: Record<string, MatchEdges> = {};
     for (const candidate of ordered) {
-        hitsBySession[candidate.id] = matcher.regex
-            ? candidate.lines.reduce(
-                  (total, line) =>
-                      state.channels[line.channel] ? total + countMatches(line.text, matcher.regex!) : total,
-                  0,
-              )
-            : 0;
+        let total = 0;
+        const edges: MatchEdges = {};
+        if (matcher.regex) {
+            for (const line of candidate.lines) {
+                if (!state.channels[line.channel]) continue;
+                const count = countMatches(line.text, matcher.regex);
+                if (count === 0) continue;
+                if (total === 0) edges.first = line.character;
+                edges.last = line.character;
+                total += count;
+            }
+        }
+        hitsBySession[candidate.id] = total;
+        matchEdges[candidate.id] = edges;
     }
 
     const channelCounts = Object.fromEntries(CHANNELS.map((channel) => [channel, 0])) as Record<Channel, number>;
@@ -281,6 +302,7 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
         currentMatch,
         currentRow: totalMatches ? matches[currentMatch].row : null,
         hitsBySession,
+        matchEdges,
         channelCounts,
         invalidPattern: matcher.invalid,
         searching: Boolean(matcher.regex),
@@ -309,7 +331,7 @@ export function stepMatch(
     view: DerivedView,
     sessionOrder: LogSession[],
 ): StepResult | null {
-    const { totalMatches, currentMatch, hitsBySession } = view;
+    const { totalMatches, currentMatch, hitsBySession, matchEdges } = view;
 
     if (state.scope === "all") {
         const atEdge =
@@ -323,11 +345,17 @@ export function stepMatch(
                 if (candidateId === state.sessionId) break;
                 if ((hitsBySession[candidateId] ?? 0) === 0) continue;
                 const candidate = sessionOrder[index];
+                // One name, not the session's whole list: the sub-line does not
+                // wrap, and the useful name is the one playing where the jump
+                // lands — which is the first hit going forward, the last going
+                // back.
+                const edges = matchEdges[candidateId] ?? {};
+                const who = direction > 0 ? edges.first : edges.last;
                 return {
                     sessionId: candidateId,
                     // -1 lands on the last match of the session we move back into.
                     matchIndex: direction > 0 ? 0 : -1,
-                    notice: `${direction > 0 ? "Dalej w" : "Powrot do"}: ${candidate.character}, ${candidate.dayLabel}`,
+                    notice: `${direction > 0 ? "Dalej w" : "Powrot do"}: ${who ? `${who}, ` : ""}${candidate.dayLabel}`,
                 };
             }
         }

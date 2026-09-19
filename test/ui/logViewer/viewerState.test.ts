@@ -23,7 +23,7 @@ function line(number: number, text: string, channel: LogLine["channel"] = "syste
 function session(id: string, lines: LogLine[], extra: Partial<LogSession> = {}): LogSession {
     return {
         id,
-        character: id,
+        characters: [id],
         dayLabel: "Dzisiaj",
         dateLabel: "sob 19 wrz 2026",
         startedAt: lines[0]?.timestamp ?? T0,
@@ -43,7 +43,7 @@ const sessionA = session("a", [
 ]);
 
 const sessionB = session("b", [line(1, "inny troll", "combat"), line(2, "nic tu nie ma", "room")], {
-    character: "Dorn",
+    characters: ["Dorn"],
 });
 
 function state(overrides: Partial<ViewerState> = {}): ViewerState {

@@ -1,4 +1,5 @@
 import { Badge, Button, Icon, IconButton, Menu, MenuItem, MenuLabel, MenuSeparator } from "@design";
+import { charactersLabel } from "../model/characters";
 import { formatClock, formatDuration, pluralLines } from "../model/format";
 import type { LogSession } from "../model/types";
 
@@ -57,7 +58,7 @@ export function ViewerHeader({
 
             <div className="lv__title-block">
                 <div className="ark-row">
-                    <h2 className="ark-dialog-title">{session.character}</h2>
+                    <h2 className="ark-dialog-title">{charactersLabel(session.characters, session.dateLabel)}</h2>
                     {session.live ? (
                         <Badge tone="success" status dot="live">
                             Nagrywanie

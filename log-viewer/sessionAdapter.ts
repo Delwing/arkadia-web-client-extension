@@ -10,15 +10,19 @@
  * and stay stable no matter which filters are on.
  */
 import {
+    attributeCharacters,
     channelForType,
     detectEvent,
+    findBannerMarks,
     formatDateLong,
     formatDayLabel,
+    type CharacterMark,
     type LogLine,
     type LogSession,
 } from "@ui/logViewer";
 import { getRawSessionData, splitLines } from "@web/logBrowserUtils";
 import { LogsDatabase } from "@web/logsDatabase";
+import { collectCharacters } from "@web/options/exportUtils";
 
 /** `session_1758304931000` -> 1758304931000; null for anything else. */
 export function sessionStartFromName(name: string): number | null {
@@ -41,11 +45,25 @@ interface StoredEntry {
     text: string;
     type?: string;
     timestamp: number;
+    /**
+     * Written by `sessionLogger` on the first record after the character
+     * changed, and on nothing else — see `src/web/sessionLogger.ts`.
+     */
+    character?: string;
 }
 
-export function entriesToLines(entries: StoredEntry[]): LogLine[] {
+/**
+ * Lines, plus the character marks the logger left among the records.
+ *
+ * The marks come out here rather than from a second pass because only this
+ * function knows how many lines a record turned into, and a mark is a line
+ * index.
+ */
+export function entriesToLines(entries: StoredEntry[]): { lines: LogLine[]; marks: CharacterMark[] } {
     const lines: LogLine[] = [];
+    const marks: CharacterMark[] = [];
     for (const entry of entries) {
+        if (entry.character) marks.push({ line: lines.length, character: entry.character });
         for (const part of splitLines(entry.text)) {
             const text = htmlToText(part);
             lines.push({
@@ -58,7 +76,7 @@ export function entriesToLines(entries: StoredEntry[]): LogLine[] {
             });
         }
     }
-    return lines;
+    return { lines, marks };
 }
 
 /** Store names holding at least one record, oldest first. */
@@ -86,6 +104,11 @@ export interface LoadOptions {
     /** Name of the store currently being written to, if any. */
     liveSessionName?: string;
     now?: number;
+    /**
+     * Characters this device holds settings for — what an old log's login
+     * banner is matched against. Defaults to `collectCharacters()`.
+     */
+    candidates?: string[];
 }
 
 export async function loadSession(
@@ -96,8 +119,22 @@ export async function loadSession(
     const entries = (await getRawSessionData(db, storeName)) as StoredEntry[];
     if (entries.length === 0) return null;
 
-    const lines = entriesToLines(entries);
+    const { lines, marks } = entriesToLines(entries);
     if (lines.length === 0) return null;
+
+    // Computed here, on the way out of the store, rather than written back into
+    // it: the heuristic below can be improved later without anyone having
+    // rewritten a record, and a log is not worth risking for a label. A log
+    // recorded before the client stamped names has no marks and never will, so
+    // its login banner is read instead — see `model/characters.ts`.
+    const candidates = options.candidates ?? collectCharacters();
+    const { characters, byLine } = attributeCharacters(
+        lines,
+        marks.length > 0 ? marks : findBannerMarks(lines, candidates),
+    );
+    byLine.forEach((character, index) => {
+        if (character) lines[index].character = character;
+    });
 
     const now = options.now ?? Date.now();
     const startedAt = sessionStartFromName(storeName) ?? lines[0].timestamp;
@@ -106,10 +143,7 @@ export async function loadSession(
 
     return {
         id: storeName,
-        // The store name carries no character; the first `Welcome back` line
-        // would, but reading it would mean parsing game text. Until the logger
-        // records the character, the date is the honest label.
-        character: formatDateLong(startedAt),
+        characters,
         dayLabel: formatDayLabel(startedAt, now),
         dateLabel: formatDateLong(startedAt),
         startedAt,
@@ -131,9 +165,11 @@ export async function loadAllSessions(options: LoadOptions = {}): Promise<LogSes
     if (!db) return [];
 
     const names = await listSessionStores(db);
+    // One sweep of localStorage for all of them; it does not change under us.
+    const withCandidates = { ...options, candidates: options.candidates ?? collectCharacters() };
     const sessions: LogSession[] = [];
     for (const name of names) {
-        const session = await loadSession(db, name, options);
+        const session = await loadSession(db, name, withCandidates);
         if (session) sessions.push(session);
     }
     return sessions;
