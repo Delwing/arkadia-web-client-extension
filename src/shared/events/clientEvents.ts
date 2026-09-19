@@ -249,6 +249,7 @@ export interface KnownEvents {
     "combatTimer": number | null;
     "worldDestructionTimer": number | null;
     "combatState": boolean;
+    "playerDeath": void;
     "teamLeaderTargetNoAvatar": number;
     "teamLeaderTargetAvatar": void;
     "teamChange": void;
