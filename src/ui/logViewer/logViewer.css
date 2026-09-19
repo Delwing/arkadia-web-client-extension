@@ -20,6 +20,14 @@
     --ark-log-system: var(--ark-gray-10);
     --ark-log-notify: var(--ark-info-11);
     --ark-log-command: var(--ark-accent-11);
+    /* Game text the server did not tag more specifically. Full contrast: it
+       can be anything, including something said to you. */
+    --ark-log-other: var(--ark-text);
+    /* The client talking, not the game — a script, a plugin, `printLine`. The
+       accent already means "you typed this" and info already means "the game
+       notified you", so this takes the one remaining ramp that stays distinct
+       in all eight themes. It is a channel identity, not a status. */
+    --ark-log-script: var(--ark-warning-11);
 
     --ark-log-event-login: var(--ark-gray-11);
     --ark-log-event-death: var(--ark-danger-11);

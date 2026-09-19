@@ -66,7 +66,7 @@ character it is.
 
 Arkadia tags every line with a GMCP message type as it arrives (`comm`,
 `combat.avatar`, `room.long`, `system.login`, …); `sessionLogger` already stores
-that type with the line. `model/channels.ts` folds those ~25 types into six
+that type with the line. `model/channels.ts` folds those ~25 types into eight
 buckets:
 
 | Channel | GMCP types |
@@ -74,13 +74,44 @@ buckets:
 | `comm` — Rozmowy | `comm`, `emotes` |
 | `combat` — Walka | `combat.*`, `room.combat` |
 | `room` — Lokacja | `room.*`, `living.long`, `object.long` |
-| `system` — System | `system`, `system.login`, `prompt`, `other`, unknown |
+| `system` — System | `system`, `system.login`, `prompt` |
 | `notify` — Powiadomienia | `notification.*`, `mail`, `editor*` |
 | `command` — Komendy | `command` (the echoed player input) |
+| `other` — Inne | `other`, `mud`, and any type not folded yet |
+| `script` — Skrypty | no type at all |
 
 Prefixes match longest-first, so `room.combat` lands in combat rather than
 scenery. Because classification happens at write time, filters work on every log
 already recorded — no re-parsing of game text, and no regexes over Polish.
+
+#### System is the client's housekeeping, and only that
+
+The last two buckets are the interesting ones, because they used to be part of
+System and that hid things.
+
+`other` is **Arkadia's own** catch-all for game text the server did not tag
+more specifically — the trigger catalogue calls it *Pozostale komunikaty*
+(`src/web/options/UserTriggers.tsx`). `mud` is what `MudClient.pushChunk` puts
+on every chunk arriving outside GMCP msg framing: the login screen, and
+anything else unframed. Both are the game talking, and a player hiding System
+to quieten the client's chatter was hiding them too.
+
+**An absent type and an unrecognized one are not the same thing**, which is
+why `channelForType` has two fallbacks rather than one. Game text always
+carries a type — it reaches the logger through `Client.flushLines`, which sets
+one on every group. A record with *no* type came from `Client.print`, and that
+is the path every script, plugin and `printLine` takes. So an unknown type
+falls to `other` (the game said something we do not fold yet) and a missing
+type falls to `script` (the client said it). One constant serving both is what
+made script output invisible: it was filed under System, where nobody would
+look for it.
+
+Adding a channel is safe for logs and filters already stored. Records are
+classified on the way out of the store, never written back, and
+`applyPreferences` merges a saved filter over `allChannelsOn()` key by key —
+so a six-key filter from an older session leaves the two new channels **on**.
+A new channel defaulting to hidden would look exactly like lines going
+missing, which is why there is a test pinning it.
 
 ### Events
 

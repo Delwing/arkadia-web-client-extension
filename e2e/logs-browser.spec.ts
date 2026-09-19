@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, pushText, waitForCharacter, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, pushText, submitCommand, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
 
 // The Logi window is the shared @ui/logViewer in a design-system Dialog, so
@@ -205,6 +205,42 @@ test.describe('Logi browser', () => {
         await expect(page.locator('.lv-range-chip')).toBeVisible();
         // Every export now works on the range, and says so.
         await expect(page.getByRole('button', {name: 'Eksport zakresu'})).toBeVisible();
+    });
+
+    test('the game, the client and System get separate channels', async ({page}) => {
+        // `other` is Arkadia's catch-all, `mud` is raw text arriving outside
+        // GMCP framing, an unrecognized type is still the game talking, and a
+        // line with no type at all was printed by the client. All four used to
+        // land in System together with `system.login`, which is what made the
+        // script prints invisible. The counts are the assertion: this is the
+        // only test that runs the whole path, from MudClient through the
+        // logger to the viewer.
+        await login(page);
+        await pushText(page, 'Krasnolud mowi: Piwa mi nalej!', {type: 'comm'});
+        await pushText(page, 'Witaj ponownie w Arkadii.', {type: 'system.login'});
+        await pushText(page, 'Pozostaly komunikat gry.', {type: 'other'});
+        await pushText(page, 'Surowy tekst z ekranu logowania.', {type: 'mud'});
+        await pushText(page, 'Typ ktorego jeszcze nie skladamy.', {type: 'zupelnie.nowy'});
+        // `/labirynt` is a client-side alias answering with `client.println` —
+        // the path every script, plugin and `printLine` takes. It prints three
+        // lines (a blank one either side of the text).
+        await submitCommand(page, '/labirynt');
+
+        await openLogs(page);
+        const channels = page.locator('.lv-channels');
+        await expect(channels).toBeVisible();
+
+        const count = (label: string) =>
+            channels.locator('button').filter({hasText: label}).first();
+
+        await expect(count('System'), 'only the login banner is System').toHaveText(/System\s*1$/);
+        await expect(count('Inne'), 'other + mud + the unrecognized type').toHaveText(/Inne\s*3$/);
+        await expect(count('Skrypty'), 'the three lines of the alias reply').toHaveText(/Skrypty\s*3$/);
+
+        // Hiding Skrypty must take the script's lines and nothing else.
+        await count('Skrypty').click();
+        await expect(page.locator('.lv-log')).toContainText('Pozostaly komunikat gry.');
+        await expect(page.locator('.lv-log')).not.toContainText('Tryb labiryntu');
     });
 
     test('the ZIP archive carries readable HTML', async ({page}) => {
