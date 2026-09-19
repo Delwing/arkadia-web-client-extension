@@ -33,6 +33,13 @@ export interface TimelineProps {
     onJumpToEnd: () => void;
     /** Selected slice of the session, or null for the whole of it. */
     range: TimeRange | null;
+    /**
+     * Whether the slice is currently narrowing the log — it only does so in
+     * "Zakres" search scope. A slice that is merely selected keeps its handles
+     * so it can be adjusted and picked up again, but it does not scrim the
+     * track: nothing outside it is hidden.
+     */
+    rangeActive: boolean;
     onRangeChange: (range: TimeRange | null) => void;
 }
 
@@ -59,6 +66,7 @@ export function Timeline({
     onJumpToStart,
     onJumpToEnd,
     range,
+    rangeActive,
     onRangeChange,
 }: TimelineProps) {
     const trackRef = useRef<HTMLDivElement>(null);
@@ -282,17 +290,22 @@ export function Timeline({
 
                     {range ? (
                         <>
-                            <div
-                                className="lv-track__outside"
-                                style={{ left: 0, width: `${percentOf(range.from, span)}%` }}
-                            />
-                            <div
-                                className="lv-track__outside"
-                                style={{ left: `${percentOf(range.to, span)}%`, right: 0 }}
-                            />
+                            {rangeActive ? (
+                                <>
+                                    <div
+                                        className="lv-track__outside"
+                                        style={{ left: 0, width: `${percentOf(range.from, span)}%` }}
+                                    />
+                                    <div
+                                        className="lv-track__outside"
+                                        style={{ left: `${percentOf(range.to, span)}%`, right: 0 }}
+                                    />
+                                </>
+                            ) : null}
                             <button
                                 type="button"
                                 className="lv-track__handle"
+                                data-active={rangeActive}
                                 data-edge="from"
                                 style={{ left: `${percentOf(range.from, span)}%` }}
                                 title={`Poczatek zakresu: ${formatClock(range.from)}`}
@@ -301,6 +314,7 @@ export function Timeline({
                             <button
                                 type="button"
                                 className="lv-track__handle"
+                                data-active={rangeActive}
                                 data-edge="to"
                                 style={{ left: `${percentOf(range.to, span)}%` }}
                                 title={`Koniec zakresu: ${formatClock(range.to)}`}

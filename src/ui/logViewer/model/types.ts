@@ -44,7 +44,19 @@ export interface LogSession {
     lines: LogLine[];
 }
 
-export type SearchScope = "log" | "all";
+/**
+ * Where a search looks — and, for `range`, what the viewer shows.
+ *
+ * `log` and `all` differ only in how many sessions they cover. `range` is the
+ * odd one out: it is the scope in which a selected slice is APPLIED, so the
+ * rows, the counter, the timeline and every export narrow to it together. The
+ * other two leave the slice drawn on the timeline but show the whole log, which
+ * is what makes "szukaj w calym logu" mean what it says while a range exists.
+ *
+ * It is offered only when there IS a range, and falls back to `log` if the
+ * range goes away underneath it (`effectiveScope`).
+ */
+export type SearchScope = "log" | "all" | "range";
 export type Density = "compact" | "comfortable";
 
 /**

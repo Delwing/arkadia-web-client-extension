@@ -32,3 +32,10 @@
   background: var(--ark-bg-element-active);
   color: var(--ark-text);
 }
+
+/* An option that is not available yet stays in place rather than disappearing:
+   the control keeps its width, and the reason is in the button's title. */
+.ark-segmented__item:disabled {
+  color: var(--ark-text-faint);
+  cursor: not-allowed;
+}

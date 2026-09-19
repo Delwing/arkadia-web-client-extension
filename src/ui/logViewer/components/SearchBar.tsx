@@ -2,6 +2,26 @@ import { forwardRef } from "react";
 import { Icon, IconButton, Input, InputShell, Segmented, Toggle } from "@design";
 import type { SearchScope } from "../model/types";
 
+/**
+ * The field says where it is about to look. Taken from the in-client browser,
+ * which is right that a search box narrowed to a ten-minute slice has to say
+ * so — the field is the only part of the viewer a player is looking at while
+ * typing. Shortened from the in-client wording, which does not fit this field's
+ * 340px next to the Ctrl+F hint.
+ */
+const SCOPE_PLACEHOLDER: Record<SearchScope, string> = {
+    log: "Szukaj w tym logu",
+    all: "Szukaj we wszystkich",
+    range: "Szukaj w zakresie",
+};
+
+/** The long form, for the scope buttons, where there is room for it. */
+const SCOPE_TITLE: Record<SearchScope, string> = {
+    log: "Szukaj w otwartym logu",
+    all: "Szukaj we wszystkich logach",
+    range: "Szukaj w zaznaczonym zakresie",
+};
+
 export interface SearchBarProps {
     query: string;
     onQueryChange: (value: string) => void;
@@ -13,6 +33,8 @@ export interface SearchBarProps {
     onOnlyMatchesChange: (value: boolean) => void;
     scope: SearchScope;
     onScopeChange: (value: SearchScope) => void;
+    /** "Zakres" is only offered once a slice has been selected. */
+    hasRange: boolean;
     onStep: (direction: 1 | -1) => void;
     onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
     /** Pre-rendered counter line and its tone — see `LogViewer` for the wording. */
@@ -36,6 +58,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
         onOnlyMatchesChange,
         scope,
         onScopeChange,
+        hasRange,
         onStep,
         onKeyDown,
         counter,
@@ -81,7 +104,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                     value={query}
                     onChange={(event) => onQueryChange(event.target.value)}
                     onKeyDown={onKeyDown}
-                    placeholder="Szukaj   Ctrl+F"
+                    placeholder={`${SCOPE_PLACEHOLDER[scope]}  Ctrl+F`}
                     autoComplete="off"
                     spellCheck={false}
                     style={{ paddingRight: "70px" }}
@@ -121,8 +144,14 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                 value={scope}
                 onValueChange={onScopeChange}
                 options={[
-                    { value: "log", label: "Ten log" },
-                    { value: "all", label: "Wszystkie logi" },
+                    { value: "log", label: "Ten log", title: SCOPE_TITLE.log },
+                    { value: "all", label: "Wszystkie logi", title: SCOPE_TITLE.all },
+                    {
+                        value: "range",
+                        label: "Zakres",
+                        disabled: !hasRange,
+                        title: hasRange ? SCOPE_TITLE.range : "Zaznacz zakres na osi czasu",
+                    },
                 ]}
             />
         </div>

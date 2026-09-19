@@ -8,6 +8,8 @@ export interface StatusBarProps {
     viewport: { from: number; to: number } | null;
     /** The selected slice, shown with a way to clear it. */
     range: TimeRange | null;
+    /** False while the slice is selected but not narrowing the log — see `appliedRange`. */
+    rangeActive: boolean;
     onClearRange: () => void;
     /** Last export failure, if any — shown here rather than in an alert(). */
     error?: string;
@@ -33,6 +35,7 @@ export function StatusBar({
     totalLines,
     viewport,
     range,
+    rangeActive,
     onClearRange,
     error,
     showTimestamps,
@@ -63,7 +66,15 @@ export function StatusBar({
                 </span>
             ) : null}
             {range ? (
-                <span className="lv-range-chip">
+                <span
+                    className="lv-range-chip"
+                    data-active={rangeActive}
+                    title={
+                        rangeActive
+                            ? "Zakres zaweza log, wyszukiwanie i eksport"
+                            : "Zakres jest zaznaczony, ale nie zaweza logu — wybierz zasieg „Zakres”"
+                    }
+                >
                     zakres {formatClock(range.from)} {"–"} {formatClock(range.to)}
                     <Button variant="ghost" size="sm" onClick={onClearRange} title="Wyczysc zakres">
                         <Icon name="close" size={12} />

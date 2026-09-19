@@ -648,6 +648,13 @@
     background: var(--ark-accent-solid);
 }
 
+/* A slice that is selected but not applied (any scope other than "Zakres")
+   keeps its handles so it can be adjusted and switched back on, but it is
+   drawn as an outline rather than a filled edge — nothing is being hidden. */
+.lv-track__handle[data-active='false']::before {
+    background: var(--ark-accent-a7);
+}
+
 .lv-track__handle::after {
     content: '';
     position: absolute;
@@ -688,6 +695,15 @@
     font-family: var(--ark-font-mono);
     font-size: var(--ark-text-2);
     white-space: nowrap;
+}
+
+/* A slice that is selected but not applied is stated, not celebrated: the log
+   in front of the player is the whole log, and the chip must not imply
+   otherwise. */
+.lv-range-chip[data-active='false'] {
+    border-color: var(--ark-border);
+    background: var(--ark-bg-sunken);
+    color: var(--ark-text-tertiary);
 }
 
 /* --- line context menu --------------------------------------------------- */
