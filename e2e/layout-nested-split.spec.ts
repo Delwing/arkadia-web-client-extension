@@ -1,7 +1,7 @@
 import { expect, test } from './support/fixtures';
 import { ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput, waitForLayoutSaved } from './support/mocks';
 import type { Page } from '@playwright/test';
-import { openSettings, SETTINGS_SAVE } from './support/settings';
+import { openSettings, SETTINGS_MODAL, SETTINGS_SAVE } from './support/settings';
 
 async function login(page: Page): Promise<void> {
   await page.goto('/');
@@ -17,7 +17,7 @@ async function openUiSettingsModal(page: Page): Promise<void> {
 
 async function closeUiSettingsModal(page: Page): Promise<void> {
   await page.click(SETTINGS_SAVE);
-  await page.waitForSelector('#settings-modal.show', { state: 'hidden', timeout: 5000 });
+  await expect(page.locator(SETTINGS_MODAL), 'settings window should close').not.toBeVisible({ timeout: 5000 });
 }
 
 async function enableLayoutManager(page: Page): Promise<void> {

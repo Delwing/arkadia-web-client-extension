@@ -95,7 +95,7 @@ test.describe('Direction key bindings', () => {
         // Open options modal via the menu dropdown
         await page.click('#menu-button');
         await page.click('#options-button');
-        await page.waitForSelector('#settings-modal.show', {timeout: 5000});
+        await expect(page.locator('#settings-modal'), 'settings window should open').toBeVisible({timeout: 5000});
 
         await pressNumpadKey(page, 'Numpad8');
         // Short wait to confirm no command was sent while modal is open (negative assertion)
