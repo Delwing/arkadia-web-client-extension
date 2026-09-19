@@ -121,6 +121,15 @@ the non-colour ramps: `--ark-space-1..12`, `--ark-radius-1..5`,
 `--ark-duration-1..3`, `--ark-z-*`. Read `css/tokens.css`; it is the reference
 and it is commented.
 
+### One surface name that is not a surface
+
+`--ark-bg-overlay` is the **scrim** a dialog lays over the page
+(`--ark-black-a9`), not the background of something that floats. Reach for it
+for a floating panel and the two light themes render a dark box with dark text.
+The background of a panel is `--ark-bg-raised`; `--ark-bg-surface` for the
+window behind it. Phase 3 shipped this bug into a debug overlay and only a
+screenshot caught it.
+
 ### Status colours never follow the accent
 
 A danger state has to read as danger in every theme. Per-theme danger colours
@@ -260,6 +269,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `design/` (showcase) | on the design system |
 | Logi window (`src/web/LogBrowser.tsx`, `LogManager.tsx`) | **on the design system**, in a `Dialog` inside the stock client (Phase 2, PR 2) |
 | `src/web/` combat + status popups (9) | **on the design system**, `--ark-*` only (Phase 3, PR 1) |
+| `src/web/` travel + transport popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 3) |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki |
