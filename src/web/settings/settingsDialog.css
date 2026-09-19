@@ -1,7 +1,11 @@
 /*
- * Settings dialog shell: sidebar + search + pages. Every selector is namespaced
- * under .settings-* so the sheet is safe to load in both the stock UI and forge;
- * colours come from the --popup-* variables both hosts define.
+ * Settings dialog shell: sidebar + search + pages.
+ *
+ * Every selector is namespaced under .settings-* so the sheet is safe to load
+ * in both the stock UI and forge. Colours come from the design system's
+ * semantic tokens (--ark-*), which resolve wherever an ancestor carries
+ * data-ark-theme: <body> in the stock client, the dialog host itself in forge
+ * (SettingsDialog.tsx sets it as a fallback -- see the comment there).
  *
  * Layout switches on the dialog's own width (container queries), not the
  * viewport, so a narrow forge shell or popout gets the phone layout too.
@@ -27,7 +31,7 @@
 .settings-dialog__search {
   grid-area: search;
   padding: 0.75rem 0.75rem 0.5rem;
-  border-right: 1px solid var(--popup-border);
+  border-right: 1px solid var(--ark-border);
 }
 
 .settings-dialog__nav {
@@ -35,7 +39,7 @@
   min-height: 0;
   overflow-y: auto;
   padding: 0 0.5rem 0.75rem;
-  border-right: 1px solid var(--popup-border);
+  border-right: 1px solid var(--ark-border);
 }
 
 .settings-dialog__nav-group + .settings-dialog__nav-group {
@@ -48,7 +52,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -78,21 +82,21 @@
 
 .settings-dialog__nav-icon {
   flex-shrink: 0;
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
 }
 
 .settings-dialog__nav-item--active .settings-dialog__nav-icon {
-  color: var(--popup-accent);
+  color: var(--ark-accent-text);
 }
 
 .settings-dialog__nav-item:hover {
-  background: var(--popup-control-hover-bg);
+  background: var(--ark-bg-element-hover);
 }
 
 .settings-dialog__nav-item--active {
-  background: var(--popup-control-bg);
-  color: var(--popup-text-bright);
-  box-shadow: inset 3px 0 0 var(--popup-accent);
+  background: var(--ark-bg-element);
+  color: var(--ark-text-secondary);
+  box-shadow: inset 3px 0 0 var(--ark-accent-text);
 }
 
 .settings-dialog__dirty {
@@ -100,15 +104,29 @@
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: var(--popup-accent);
+  background: var(--ark-accent-text);
 }
 
-/* Qualified past .form-select (and forge's .forge-menu-modal .form-select),
-   whose display:block would otherwise auto-place the select into an implicit
-   grid cell in the bottom-right corner of the wide layout. */
+/* The phone layout's page picker stays a NATIVE <select>: it needs <optgroup>
+   (the design system's Select is a flat Radix listbox), it is what
+   e2e/settings-dialog.spec.ts drives with selectOption(), and on a phone the
+   platform picker beats a rendered popup. Styled from tokens here instead.
+   The element qualifier keeps its specificity above forge's scoped Bootstrap. */
 .settings-dialog select.settings-dialog__select {
   grid-area: select;
   display: none;
+  height: var(--ark-control-lg);
+  padding: 0 var(--ark-space-3);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  color: var(--ark-text);
+  font-family: var(--ark-font-sans);
+  font-size: var(--ark-text-5);
+}
+
+.settings-dialog select.settings-dialog__select:hover {
+  border-color: var(--ark-border-strong);
 }
 
 .settings-dialog__pages {
@@ -145,32 +163,30 @@
 
 .settings-page__group {
   font-weight: 500;
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
 }
 
+/* Page scope ("tylko Zuzanna" / "wszystkie postacie"). The Badge primitive
+   supplies the shape; character scope gets an accent outline on top. Keep the
+   --character class: e2e/character-settings.spec.ts locates the chip by it. */
 .settings-scope-chip {
-  padding: 0.05rem 0.5rem;
-  border: 1px solid var(--popup-border);
-  border-radius: 1rem;
-  font-size: 0.72rem;
-  color: var(--popup-text-dim);
   white-space: nowrap;
 }
 
 .settings-scope-chip--character {
-  border-color: var(--popup-accent);
-  color: var(--popup-text-bright);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
 }
 
 .settings-scope-badge {
   display: inline-block;
   padding: 0 0.4rem;
-  border: 1px dashed var(--popup-border);
+  border: 1px dashed var(--ark-border);
   border-radius: 1rem;
   font-size: 0.65rem;
   font-weight: 500;
   line-height: 1.5;
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -193,13 +209,113 @@
 }
 
 .settings-page__layout > section.ui-settings-section,
-.settings-page__layout > section.character-settings-section {
+.settings-page__layout > section.character-settings-section,
+.settings-page__layout > section.settings-card {
   margin: 0;
 }
 
 .settings-page__layout > section.ui-settings-section--full,
-.settings-page__layout > section.character-settings-section--full {
+.settings-page__layout > section.character-settings-section--full,
+.settings-page__layout > section.settings-card--full {
   grid-column: 1 / -1;
+}
+
+/* ---------------------------------------------------------------------------
+   The migrated tab's card.
+
+   .character-settings-section / .ui-settings-section are the Bootstrap-era
+   equivalents and they read --popup-*; a migrated tab must not, or the screen
+   ends up half on each token layer. So migrated tabs use .settings-card and
+   the two grow apart until the last tab moves over and the old pair goes.
+   ------------------------------------------------------------------------ */
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-6);
+  padding: var(--ark-space-8);
+  background: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-4);
+  box-shadow: var(--ark-shadow-2);
+  break-inside: avoid;
+}
+
+.settings-card__title {
+  margin: 0;
+  font-size: var(--ark-text-7);
+  font-weight: var(--ark-weight-semibold);
+}
+
+/* Label on the left, control on the right — the shape most settings rows take.
+   Wraps rather than squeezing the control when the card is narrow. */
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+}
+
+.settings-row__label {
+  margin: 0;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-5);
+}
+
+.settings-row__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-4);
+}
+
+.settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-6);
+}
+
+.settings-hint {
+  color: var(--ark-text-tertiary);
+  font-size: var(--ark-text-3);
+}
+
+/* Native <select> and <input type="color"> inside a migrated tab. Neither has
+   a design-system primitive that fits: Select is a flat Radix listbox (no
+   optgroup, and the e2e suite drives these with selectOption), and there is no
+   colour-picker primitive at all — the platform one is the right control. */
+.settings-native-select {
+  height: var(--ark-control-md);
+  padding: 0 var(--ark-space-3);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  color: var(--ark-text);
+  font-family: var(--ark-font-sans);
+  font-size: var(--ark-text-4);
+}
+
+.settings-native-select:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
+}
+
+.settings-native-select:disabled,
+.settings-color:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-color {
+  width: 2.75rem;
+  height: var(--ark-control-md);
+  padding: var(--ark-space-1);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  cursor: pointer;
+}
+
+.settings-color:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
 }
 
 @container settings-pages (min-width: 44rem) {
@@ -217,11 +333,13 @@
 .settings-dialog__empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
 }
 
+/* tokens.css calls --ark-accent-wash exactly this: a translucent film for
+   search highlights. Amber in every theme was the old layer's answer. */
 ::highlight(settings-search) {
-  background-color: rgba(255, 196, 0, 0.45);
+  background-color: var(--ark-accent-wash);
   color: inherit;
 }
 
@@ -251,7 +369,7 @@
   }
 
   /* 16px keeps iOS from zooming the page when the field takes focus. */
-  .settings-dialog__search .form-control,
+  .settings-dialog__search .ark-input,
   .settings-dialog select.settings-dialog__select {
     font-size: 16px;
     min-height: 2.5rem;
