@@ -1,0 +1,82 @@
+/* List ("List") popup — a single letter opened from Poczta.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   Tylko reguly `.letter-view-*`, ktore maja jednego wlasciciela — sasiadujace
+   z nimi w style.css `.ol-*` / `.static-*` / `.readonly-note-*` naleza do
+   innych komponentow i zostaja tam, gdzie byly.
+
+   Pasek naglowka listu mial tlo rgba(0, 0, 0, 0.2), czyli film czerni. W
+   motywach jasnych film czerni to nie "wglebienie", tylko brud; rola
+   --ark-bg-sunken robi to, co ten zapis mial znaczyc, w kazdym z osmiu. */
+
+.letter-view-window {
+  --fw-width: 500px;
+  --fw-min-width: 300px;
+}
+
+.letter-view-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.letter-view-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.letter-view-header {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--ark-border);
+  background-color: var(--ark-bg-sunken);
+  flex-shrink: 0;
+}
+
+.letter-view-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.letter-view-label {
+  color: var(--ark-text-tertiary);
+  min-width: 2.5rem;
+}
+
+.letter-view-value {
+  color: var(--ark-text);
+}
+
+.letter-view-body-text {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+}
+
+.letter-view-line {
+  color: var(--ark-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.letter-view-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+}
+
+/* letter-view action buttons folded to .popup-btn. */

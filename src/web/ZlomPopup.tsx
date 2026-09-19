@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { Table, TableCell, TableHeadCell, TableRow } from '@design';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import { characterStorage } from '@modules/core/storage';
@@ -274,7 +275,7 @@ const ZlomPopup: React.FC = () => {
         const hasNote = !!entry.note;
         const isOpen = noteEditor?.kind === kind && noteEditor.opis === entry.opis;
         return (
-            <td className="zlom-cell zlom-cell--note">
+            <TableCell>
                 <div className="zlom-note-wrap">
                     <button
                         type="button"
@@ -309,12 +310,12 @@ const ZlomPopup: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </td>
+            </TableCell>
         );
     };
 
     const renderColorCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => (
-        <td className="zlom-cell zlom-cell--color">
+        <TableCell className="zlom-color-cell">
             <input
                 type="color"
                 className="zlom-color-input"
@@ -331,7 +332,7 @@ const ZlomPopup: React.FC = () => {
             >
                 x
             </button>
-        </td>
+        </TableCell>
     );
 
     const entries = useMemo(() => {
@@ -377,73 +378,73 @@ const ZlomPopup: React.FC = () => {
             ? undefined
             : e.color ?? (e.srebro && effectiveSilverColor ? effectiveSilverColor : undefined);
         return (
-        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td
-                className="zlom-cell zlom-cell--short"
+        <TableRow key={e.opis || `${e.short}-${i}`}>
+            <TableCell
+                tone="strong"
                 style={effectiveColor ? { color: effectiveColor } : undefined}
             >
                 {e.short}
                 {renderAltWarning(e)}
                 {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro">Ag</span> : null}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
-            </td>
-            <td className="zlom-cell">{e.typ}</td>
-            <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
-            <td className="zlom-cell zlom-cell--num">{e.wywazenie || ''}</td>
-            <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
-            <td className="zlom-cell zlom-cell--num">{e.cena}</td>
-            <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            </TableCell>
+            <TableCell>{e.typ}</TableCell>
+            <TableCell>{protectionText(e.klute, e.obuch, e.ciete)}</TableCell>
+            <TableCell align="num">{e.wywazenie || ''}</TableCell>
+            <TableCell align="num">{e.parowanie || ''}</TableCell>
+            <TableCell align="num">{e.cena}</TableCell>
+            <TableCell align="num">{e.waga}</TableCell>
             {renderColorCell('bronie', e)}
             {renderNoteCell('bronie', e)}
-        </tr>
+        </TableRow>
         );
     };
 
     const renderShield = (e: ShieldEntry, i: number) => (
-        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
+        <TableRow key={e.opis || `${e.short}-${i}`}>
+            <TableCell tone="strong" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {renderAltWarning(e)}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
-            </td>
-            <td className="zlom-cell">{e.oslona}</td>
-            <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
-            <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
-            <td className="zlom-cell zlom-cell--num">{e.cena}</td>
-            <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            </TableCell>
+            <TableCell>{e.oslona}</TableCell>
+            <TableCell>{protectionText(e.klute, e.obuch, e.ciete)}</TableCell>
+            <TableCell align="num">{e.parowanie || ''}</TableCell>
+            <TableCell align="num">{e.cena}</TableCell>
+            <TableCell align="num">{e.waga}</TableCell>
             {renderColorCell('tarcze', e)}
             {renderNoteCell('tarcze', e)}
-        </tr>
+        </TableRow>
     );
 
     const renderArmor = (e: ArmorEntry, i: number) => (
-        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
-            <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
+        <TableRow key={e.opis || `${e.short}-${i}`}>
+            <TableCell tone="strong" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
                 {renderAltWarning(e)}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
-            </td>
-            <td className="zlom-cell">{e.typ}</td>
-            <td className="zlom-cell">{e.oslona}</td>
-            <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
-            <td className="zlom-cell zlom-cell--num">{e.cena}</td>
-            <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            </TableCell>
+            <TableCell>{e.typ}</TableCell>
+            <TableCell>{e.oslona}</TableCell>
+            <TableCell>{protectionText(e.klute, e.obuch, e.ciete)}</TableCell>
+            <TableCell align="num">{e.cena}</TableCell>
+            <TableCell align="num">{e.waga}</TableCell>
             {renderColorCell('zbroje', e)}
             {renderNoteCell('zbroje', e)}
-        </tr>
+        </TableRow>
     );
 
     const tableHead = activeTab === 'bronie' ? (
         <tr>
-            <th>Short</th><th>Typ</th><th>K/O/C</th><th>Wyw.</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <TableHeadCell>Short</TableHeadCell><TableHeadCell>Typ</TableHeadCell><TableHeadCell>K/O/C</TableHeadCell><TableHeadCell align="num">Wyw.</TableHeadCell><TableHeadCell align="num">Par.</TableHeadCell><TableHeadCell align="num">Cena</TableHeadCell><TableHeadCell align="num">Waga</TableHeadCell><TableHeadCell>Kolor</TableHeadCell><TableHeadCell>Notatka</TableHeadCell>
         </tr>
     ) : activeTab === 'tarcze' ? (
         <tr>
-            <th>Short</th><th>Oslona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <TableHeadCell>Short</TableHeadCell><TableHeadCell>Oslona</TableHeadCell><TableHeadCell>K/O/C</TableHeadCell><TableHeadCell align="num">Par.</TableHeadCell><TableHeadCell align="num">Cena</TableHeadCell><TableHeadCell align="num">Waga</TableHeadCell><TableHeadCell>Kolor</TableHeadCell><TableHeadCell>Notatka</TableHeadCell>
         </tr>
     ) : (
         <tr>
-            <th>Short</th><th>Typ</th><th>Oslona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <TableHeadCell>Short</TableHeadCell><TableHeadCell>Typ</TableHeadCell><TableHeadCell>Oslona</TableHeadCell><TableHeadCell>K/O/C</TableHeadCell><TableHeadCell align="num">Cena</TableHeadCell><TableHeadCell align="num">Waga</TableHeadCell><TableHeadCell>Kolor</TableHeadCell><TableHeadCell>Notatka</TableHeadCell>
         </tr>
     );
 
@@ -610,14 +611,14 @@ const ZlomPopup: React.FC = () => {
                 {entries.length === 0 ? (
                     <div className="popup-empty">Brak zapisanych pozycji.</div>
                 ) : (
-                    <table className="zlom-table">
+                    <Table compact hoverable zebra>
                         <thead>{tableHead}</thead>
                         <tbody>
                             {activeTab === 'bronie' && pagedEntries.map((e, i) => renderWeapon(e as WeaponEntry, i))}
                             {activeTab === 'tarcze' && pagedEntries.map((e, i) => renderShield(e as ShieldEntry, i))}
                             {activeTab === 'zbroje' && pagedEntries.map((e, i) => renderArmor(e as ArmorEntry, i))}
                         </tbody>
-                    </table>
+                    </Table>
                 )}
             </div>
 
