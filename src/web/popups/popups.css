@@ -47,10 +47,17 @@
    Reusable building blocks so popups stop re-declaring the same button / list /
    item / row rules. Use them in TSX directly: `popup-btn`, `popup-item`, etc.
    Per-popup sections further down may add slim deltas (a unique colour, a
-   width) that override these by source order. Alt-UIs re-skin EVERY popup at
-   once by remapping the `--popup-*` vars these consume — no per-popup CSS.
+   width) that override these by source order.
    Kept prefix-namespaced (not `.dockable-popup-body`-scoped) so per-popup delta
    classes at equal specificity win purely by coming later in the file.
+
+   MIGRATED (faza 3, docs/dev/UI_MIGRATION.md). Layer 2 reads `--ark-*` only.
+   It had to move before the first popup family, because these classes are
+   shared ACROSS families: `.popup-btn` alone is used by popups belonging to
+   four different PRs, so leaving it on `--popup-*` would have half-migrated
+   every one of them. Through themes/bridge.css the swap is a visual no-op in
+   the stock client — `--popup-control-bg` WAS `--ark-bg-element` — and
+   popup-host-tokens.css does the same for forge-ui.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Button — the control-styled action button nearly every popup re-invents. */
@@ -59,9 +66,9 @@
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border-control);
-  color: var(--popup-text-medium);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border-element);
+  color: var(--ark-text-tertiary);
   font-size: 0.7rem;
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
@@ -69,37 +76,37 @@
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .popup-btn:hover {
-  background-color: var(--popup-control-active-bg);
-  color: var(--popup-text-strong);
+  background-color: var(--ark-bg-element-active);
+  color: var(--ark-text);
 }
 .popup-btn:disabled {
   opacity: 0.5;
   cursor: default;
 }
 .popup-btn--primary {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
 }
 .popup-btn--primary:hover {
-  background-color: var(--popup-accent-hover-bg);
-  border-color: var(--popup-accent);
+  background-color: var(--ark-accent-bg-active);
+  border-color: var(--ark-accent-text);
 }
 .popup-btn--success {
-  background-color: var(--popup-success-bg);
-  border-color: var(--popup-success-border);
-  color: var(--popup-success);
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
 }
 .popup-btn--success:hover {
-  background-color: var(--popup-success-hover-bg);
+  background-color: var(--ark-success-4);
 }
 .popup-btn--danger {
-  background-color: var(--popup-danger-bg);
-  border-color: var(--popup-danger-border);
-  color: var(--popup-danger);
+  background-color: var(--ark-danger-bg);
+  border-color: var(--ark-danger-border);
+  color: var(--ark-danger-text);
 }
 .popup-btn--danger:hover {
-  background-color: var(--popup-danger-hover-bg);
+  background-color: var(--ark-danger-bg-hover);
 }
 .popup-btn--sm {
   font-size: 0.65rem;
@@ -142,11 +149,11 @@
   flex-direction: column;
   gap: 0.15rem;
   padding: 0.35rem 0.5rem;
-  background-color: var(--popup-subtle-bg);
+  background-color: var(--ark-gray-a2);
   border-radius: 0.25rem;
 }
 .popup-item:hover {
-  background-color: var(--popup-control-bg);
+  background-color: var(--ark-bg-element);
 }
 
 /* Horizontal cluster (label + controls), reflows at narrow widths. */
@@ -167,10 +174,34 @@
 
 /* Centered italic empty-state message. */
 .popup-empty {
-  color: var(--popup-text-dim);
+  color: var(--ark-text-tertiary);
   text-align: center;
   padding: 1rem;
   font-style: italic;
+}
+
+/* Header strip — a popup's own title/summary bar, under the window chrome.
+   Shared by postepy2, zabici2, enemy-res and (with a delta) zlom, i.e. across
+   two Phase-3 families, so it lives in Layer 2 rather than in either one. */
+.postepy2-header {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--ark-gray-a2);
+  border-bottom: 1px solid var(--ark-border);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.postepy2-header__label {
+  color: var(--ark-text-tertiary);
+  margin-right: 0.5rem;
+}
+
+.postepy2-header__name {
+  color: var(--ark-data-4-text);
+  font-weight: 500;
+  text-transform: capitalize;
 }
 
 /* Tab strip + individual tab (postepy2 / trip-planner / poczta / clock). */
@@ -181,49 +212,49 @@
 .popup-tab {
   flex: 1;
   padding: 0.35rem 0.6rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border-control);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border-element);
   border-radius: 0.25rem;
-  color: var(--popup-text-subtle);
+  color: var(--ark-text-secondary);
   font-size: 0.8rem;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .popup-tab:hover:not(.popup-tab--active):not(:disabled) {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
 }
 .popup-tab:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 .popup-tab--active {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
 }
 
 /* Text input / select / textarea. */
 .popup-input {
-  background-color: var(--popup-input-bg);
-  border: 1px solid var(--popup-border-control);
-  color: var(--popup-input-text);
+  background-color: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  color: var(--ark-text);
   border-radius: 0.25rem;
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
 }
 .popup-input:focus {
   outline: none;
-  border-color: var(--popup-input-focus-border);
+  border-color: var(--ark-focus-ring);
 }
 .popup-input::placeholder {
-  color: var(--popup-text-faint);
+  color: var(--ark-text-faint);
 }
 
 /* Sectioned card block (a titled group / panel). */
 .popup-section {
-  background-color: var(--popup-section-bg);
-  border: 1px solid var(--popup-border-subtle);
+  background-color: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border-subtle);
   border-radius: 0.5rem;
   padding: 0.75rem;
 }
@@ -235,9 +266,9 @@
   gap: 0.25rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  border: 1px solid var(--popup-border-subtle);
-  background-color: var(--popup-subtle-bg);
-  color: var(--popup-text-medium);
+  border: 1px solid var(--ark-border-subtle);
+  background-color: var(--ark-gray-a2);
+  color: var(--ark-text-tertiary);
   font-size: 0.7rem;
   font-weight: 600;
 }
@@ -274,30 +305,7 @@
   padding-left: 0.1rem;
 }
 
-/* ── combat log ────────────────────────────────────────────────────────────
-   Migrated from style.css. Remaining literals are semantic game hues (success
-   green / "others" orange) and a neutral separator gradient — forge preserves
-   data hues, so they read correctly in both UIs. Promoting them to dedicated
-   vars is left for the Layer-2 cleanup. */
-.combat-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
-.combat-popup__messages {
-  flex: 1;
-  overflow-y: auto;
-  /* No bottom padding: the split pane has to be able to cover the bottom edge
-     (see .popup-split-bottom). */
-  padding: 0.5rem 0.5rem 0;
-  font-family: var(--output-font-family), monospace;
-  font-size: var(--output-font-size, 0.875rem);
-  line-height: 1.4;
-}
-
+/* combat log — przeniesione do src/web/CombatPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */
 /* ── popup split view ──────────────────────────────────────────────────────
    The popup counterpart of the main output's #split-bottom: while the user is
    scrolled up, a sticky pane keeps the newest lines pinned to the bottom, so a
@@ -318,7 +326,7 @@
   z-index: 1;
   max-height: 70%;
   overflow: hidden;
-  background-color: var(--popup-bg);
+  background-color: var(--ark-bg-surface);
   margin: 0 calc(-1 * var(--popup-split-gutter));
   padding: 0 var(--popup-split-gutter);
 }
@@ -326,7 +334,7 @@
 .popup-split-handle {
   height: 2px;
   margin: 0 calc(-1 * var(--popup-split-gutter));
-  background-color: var(--popup-border);
+  background-color: var(--ark-border);
   cursor: ns-resize;
   user-select: none;
   touch-action: none;
@@ -336,7 +344,7 @@
 
 .popup-split-handle:hover,
 .popup-split-handle:active {
-  background-color: var(--popup-accent);
+  background-color: var(--ark-accent-text);
 }
 
 /* Bottom-anchored, so the newest line sits at the bottom edge and anything that
@@ -348,89 +356,8 @@
   right: var(--popup-split-gutter);
   display: flex;
   flex-direction: column;
-  background-color: var(--popup-bg);
+  background-color: var(--ark-bg-surface);
 }
-
-.combat-popup__message {
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  word-wrap: break-word;
-}
-
-.combat-popup__message:hover {
-  background-color: var(--popup-hover-bg);
-}
-
-.combat-popup__message--avatar {
-  border-left: 2px solid var(--popup-success);
-}
-
-.combat-popup__message--team {
-  border-left: 2px solid var(--popup-accent);
-}
-
-.combat-popup__message--others {
-  border-left: 2px solid var(--popup-data-orange-light);
-}
-
-.combat-popup__separator {
-  height: 1px;
-  margin: 0.5rem 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-}
-
-.combat-popup__text {
-  color: var(--popup-text);
-}
-
-.combat-popup__toggle {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  margin-right: 0.25rem;
-}
-
-.combat-popup__toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--avatar {
-  background-color: var(--popup-success-bg);
-  border-color: rgba(34, 197, 94, 0.4);
-  color: var(--popup-success);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--avatar:hover {
-  background-color: var(--popup-success-hover-bg);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--team {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--team:hover {
-  background-color: var(--popup-accent-hover-bg);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--others {
-  background-color: rgba(251, 146, 60, 0.2);
-  border-color: rgba(251, 146, 60, 0.4);
-  color: var(--popup-data-orange-light);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--others:hover {
-  background-color: rgba(251, 146, 60, 0.3);
-}
-
 
 /* ── herb — manager toggle + text window (pipe/char-state) ───────────── */
 /* Herb window toggle button */
@@ -1443,1117 +1370,12 @@
   text-overflow: ellipsis;
 }
 
-/* ── stat ────────────────────────────────────────────────────────────── */
-/* Stat Popup */
-.stat-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
-.stat-popup__content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem 0.75rem;
-  font-family: var(--output-font-family), monospace;
-  font-size: var(--output-font-size, 0.875rem);
-  line-height: 1.4;
-  color: var(--popup-text);
-}
-
-.stat-popup__row--total {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.25rem 0;
-  font-weight: 600;
-  border-bottom: 1px solid var(--popup-border);
-  margin-bottom: 0.5rem;
-}
-
-.stat-popup__section {
-  margin-bottom: 0.75rem;
-}
-
-.stat-popup__heading {
-  font-weight: 600;
-  color: var(--popup-text-bright);
-  padding-bottom: 0.15rem;
-  margin-bottom: 0.15rem;
-  border-bottom: 1px dotted var(--popup-border);
-}
-
-.stat-popup__line {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.05rem 0 0.05rem 0.75rem;
-}
-
-.stat-popup__label {
-  color: var(--popup-text-dim);
-}
-
-.stat-popup__value {
-  color: var(--popup-text);
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-popup__ogolem {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.stat-popup__ogolem-lines {
-  flex: 1;
-  min-width: 0;
-}
-
-.stat-popup__pie {
-  flex: 0 0 auto;
-}
-
-.stat-popup__swatch {
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 0.15rem;
-  margin-right: 0.4rem;
-  vertical-align: baseline;
-}
-
-/* ── postepy ─────────────────────────────────────────────────────────── */
-/* Postepy Popup */
-.postepy-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
-.postepy-popup__content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-  font-family: var(--output-font-family), monospace;
-  font-size: var(--output-font-size, 0.875rem);
-  line-height: 1.4;
-  display: flex;
-  flex-direction: column;
-}
-
-.postepy-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
-}
-
-.postepy-popup__entries {
-  flex: 1;
-}
-
-.postepy-popup__entry {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-}
-
-.postepy-popup__entry:hover {
-  background-color: var(--popup-hover-bg);
-}
-
-.postepy-popup__entry-num {
-  color: var(--popup-text-dim);
-  min-width: 1.5rem;
-  text-align: right;
-}
-
-.postepy-popup__entry-state {
-  flex: 1;
-  color: var(--popup-data-purple);
-}
-
-.postepy-popup__entry-time {
-  color: var(--popup-data-yellow);
-  min-width: 3.5rem;
-  text-align: right;
-}
-
-.postepy-popup__entry-kills {
-  color: var(--popup-data-green-light);
-  min-width: 3rem;
-  text-align: right;
-}
-
-.postepy-popup__since-last {
-  margin-top: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  background-color: rgba(106, 90, 205, 0.15);
-  border-radius: 0.25rem;
-  color: var(--popup-data-purple);
-  font-size: 0.7rem;
-  text-align: center;
-}
-
-.postepy-popup__mean-time {
-  color: var(--popup-data-yellow);
-  font-size: 0.75rem;
-  font-family: var(--output-font-family), monospace;
-  padding: 0.1rem 0.3rem;
-  background-color: rgba(255, 255, 0, 0.1);
-  border-radius: 0.25rem;
-}
-
-.postepy-popup__image-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  border-radius: 0.25rem;
-  padding: 0.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-left: 0.25rem;
-}
-
-.postepy-popup__image-btn:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.postepy-popup__image-btn:active {
-  background-color: var(--popup-control-pressed-bg);
-}
-
-/* ── postepy2 (incl. graphs) ─────────────────────────────────────────── */
-/* Postepy2 Popup */
-.postepy2-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
-.postepy2-header {
-  padding: 0.5rem 0.75rem;
-  background-color: var(--popup-subtle-bg);
-  border-bottom: 1px solid var(--popup-border);
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.postepy2-header__label {
-  color: var(--popup-text-medium);
-  margin-right: 0.5rem;
-}
-
-.postepy2-header__name {
-  color: var(--popup-data-yellow);
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-/* base = .popup-btn.popup-btn--md; only the right-alignment delta remains */
-.postepy2-import-button {
-  margin-left: auto;
-}
-
-.postepy2-import-panel {
-  padding: 0.5rem 0.75rem;
-  background-color: var(--popup-accent-team-bg);
-  border-bottom: 1px solid var(--popup-accent-subtle-bg);
-  font-size: 0.8rem;
-  color: var(--popup-text-bright);
-}
-
-.postepy2-import-panel__row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.375rem;
-}
-
-.postepy2-import-panel__label {
-  color: var(--popup-text-medium);
-}
-
-.postepy2-import-panel__select {
-  padding: 0.2rem 0.4rem;
-  border: 1px solid var(--popup-border-strong);
-  border-radius: 0.25rem;
-  background-color: var(--popup-input-bg);
-  color: var(--popup-input-text);
-  font-size: 0.8rem;
-}
-
-.postepy2-import-panel__select option {
-  background-color: var(--popup-input-bg);
-  color: var(--popup-input-text);
-}
-
-.postepy2-import-panel__info {
-  color: var(--popup-data-green-light);
-  margin-bottom: 0.25rem;
-}
-
-.postepy2-import-panel__note {
-  color: var(--popup-text-dim);
-  font-size: 0.75rem;
-  margin-bottom: 0.375rem;
-}
-
-.postepy2-import-panel__actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.postepy2-import-panel__btn {
-  padding: 0.25rem 0.75rem;
-  border: none;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s ease-in-out;
-}
-
-.postepy2-import-panel__btn--confirm {
-  background-color: var(--popup-accent-strong-hover-bg);
-  color: var(--popup-accent);
-}
-
-.postepy2-import-panel__btn--confirm:hover {
-  background-color: var(--popup-accent-strong-active-bg);
-}
-
-.postepy2-import-panel__btn--cancel {
-  background-color: var(--popup-control-bg);
-  color: var(--popup-text-subtle);
-}
-
-.postepy2-import-panel__btn--cancel:hover {
-  background-color: var(--popup-control-active-bg);
-}
-
-.postepy2-import-message {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.postepy2-import-message--success {
-  background-color: var(--popup-success-subtle-bg);
-  border-bottom: 1px solid var(--popup-success-border);
-  color: var(--popup-success-light);
-}
-
-.postepy2-import-message--error {
-  background-color: var(--popup-danger-subtle-bg);
-  border-bottom: 1px solid var(--popup-danger-border);
-  color: var(--popup-danger-light);
-}
-
-.postepy2-import-message__close {
-  border: none;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  padding: 0 0.25rem;
-  font-size: 0.875rem;
-  opacity: 0.7;
-}
-
-.postepy2-import-message__close:hover {
-  opacity: 1;
-}
-
-/* tabs folded to .popup-tabs/.popup-tab; only the container's chrome remains. */
-.postepy2-tabs {
-  padding: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--popup-border);
-}
-
-.postepy2-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-  font-family: var(--output-font-family), monospace;
-  font-size: var(--output-font-size, 0.8rem);
-  line-height: 1.4;
-}
-
-.postepy2-entries {
-  display: flex;
-  flex-direction: column;
-}
-
-.postepy2-entry {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-}
-
-.postepy2-entry:hover {
-  background-color: var(--popup-hover-bg);
-}
-
-.postepy2-entry__num {
-  color: var(--popup-text-dim);
-  min-width: 3.5rem;
-  font-family: var(--output-font-family), monospace;
-  white-space: pre;
-}
-
-.postepy2-entry__date {
-  color: var(--popup-data-gold);
-  min-width: 5.5rem;
-}
-
-.postepy2-entry__counts {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.postepy2-entry__count {
-  color: var(--popup-data-green-light);
-}
-
-.postepy2-entry__count--noform {
-  color: var(--popup-data-gray);
-}
-
-.postepy2-entry__edit-trigger {
-  border: none;
-  background: none;
-  color: var(--popup-text-faint);
-  cursor: pointer;
-  padding: 0 0.25rem;
-  font-size: 0.8rem;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.15s;
-  flex-shrink: 0;
-}
-
-.postepy2-entry:hover .postepy2-entry__edit-trigger {
-  opacity: 1;
-}
-
-.postepy2-entry__edit-trigger:hover {
-  color: var(--popup-text-subtle);
-}
-
-.postepy2-entry__edit {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  flex: 1;
-}
-
-.postepy2-entry__edit-input {
-  width: 4.5rem;
-  padding: 0 0.375rem;
-  border: 1px solid var(--popup-border-stronger);
-  border-radius: 0.25rem;
-  background-color: var(--popup-input-bg);
-  color: var(--popup-input-text);
-  font-size: inherit;
-  font-family: inherit;
-  line-height: inherit;
-  height: 1.4em;
-  box-sizing: border-box;
-}
-
-.postepy2-entry__edit-input:focus {
-  outline: none;
-  border-color: var(--popup-input-focus-border);
-}
-
-.postepy2-entry__edit-btn {
-  border: none;
-  border-radius: 0.25rem;
-  padding: 0 0.375rem;
-  font-size: inherit;
-  cursor: pointer;
-  line-height: inherit;
-}
-
-.postepy2-entry__edit-btn--save {
-  background-color: var(--popup-success-bg);
-  color: var(--popup-success-light);
-}
-
-.postepy2-entry__edit-btn--save:hover {
-  background-color: var(--popup-success-active-bg);
-}
-
-.postepy2-entry__edit-btn--delete {
-  background-color: var(--popup-danger-bg);
-  color: var(--popup-danger-light);
-}
-
-.postepy2-entry__edit-btn--delete:hover {
-  background-color: var(--popup-danger-active-bg);
-}
-
-.postepy2-entry__edit-btn--cancel {
-  background: none;
-  color: var(--popup-text-dim);
-  margin-left: auto;
-}
-
-.postepy2-entry__edit-btn--cancel:hover {
-  color: var(--popup-text-bright);
-}
-
-.postepy2-noform-total {
-  margin-top: 1rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--popup-border);
-  color: var(--popup-data-gray);
-}
-
-.postepy2-footer {
-  padding: 0.5rem 0.75rem;
-  background-color: var(--popup-subtle-bg);
-  border-top: 1px solid var(--popup-border);
-  font-size: 0.8rem;
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.postepy2-footer__label {
-  color: var(--popup-data-pink);
-}
-
-.postepy2-footer__total {
-  color: var(--popup-data-green-light);
-  font-weight: 500;
-}
-
-.postepy2-footer__noform {
-  color: var(--popup-data-gray);
-}
-
-.postepy2-footer__approx {
-  color: var(--popup-text-medium);
-  font-size: 0.75rem;
-}
-
-/* Postepy2 Graphs */
-.postepy2-graphs {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.postepy2-graph-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.postepy2-graph-title {
-  color: var(--popup-text-bright);
-  font-size: 0.75rem;
-  font-weight: 500;
-  margin: 0;
-  padding: 0 0.25rem;
-}
-
-.postepy2-chart {
-  background-color: var(--popup-subtle-bg);
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-}
-
-.postepy2-chart__bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 100px;
-  padding-top: 1.5rem;
-}
-
-.postepy2-chart__bar-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-  min-width: 0;
-}
-
-.postepy2-chart__bar-wrapper {
-  flex: 1;
-  width: 100%;
-  position: relative;
-}
-
-.postepy2-chart__bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--popup-data-purple);
-  border-radius: 2px 2px 0 0;
-  min-height: 2px;
-}
-
-.postepy2-chart__bar:hover {
-  background-color: var(--popup-data-purple-light);
-}
-
-.postepy2-chart__bar--noform {
-  background-color: var(--popup-data-gray);
-}
-
-.postepy2-chart__bar--noform:hover {
-  background-color: var(--popup-data-gray-light);
-}
-
-.postepy2-chart__bar-value {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%) rotate(180deg);
-  font-size: 0.65rem;
-  color: var(--popup-text-subtle);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  white-space: nowrap;
-  margin-bottom: 0.25rem;
-}
-
-.postepy2-chart__bar-label {
-  font-size: 0.7rem;
-  color: var(--popup-text-dim);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  margin-top: 0.25rem;
-  flex-shrink: 0;
-  white-space: pre;
-}
-
-/* ── cechy ───────────────────────────────────────────────────────────── */
-/* Trait history: level progress at the top, per-trait state below, and a
-   newest-first timeline of every recorded change. */
-/* Sized a step above the other data popups on purpose: this one is read at a
-   glance to spot a change, not scanned as a dense table. */
-.cechy-popup-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  overflow-y: auto;
-  padding: 0.6rem;
-}
-
-.cechy-popup__total {
-  color: var(--popup-data-green);
-  font-size: 0.95rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-/* Deliberately loud: with the option off nothing is ever recorded, so this is
-   the whole popup's blocker rather than a passing note. */
-.cechy-popup__warning {
-  background-color: var(--popup-warning-bg);
-  border: 1px solid var(--popup-warning-border);
-  border-left: 3px solid var(--popup-warning);
-  border-radius: 0.25rem;
-  color: var(--popup-warning);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.6rem 0.7rem;
-}
-
-.cechy-popup__warning-title {
-  color: var(--popup-warning);
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.cechy-popup__warning-text {
-  color: var(--popup-text-medium);
-  font-size: 0.85rem;
-  line-height: 1.45;
-  margin: 0;
-}
-
-.cechy-popup__warning code {
-  background-color: var(--popup-control-bg);
-  border-radius: 0.2rem;
-  color: var(--popup-text-bright);
-  font-size: 0.8rem;
-  padding: 0.05rem 0.25rem;
-  white-space: nowrap;
-}
-
-.cechy-popup__warning-btn {
-  align-self: stretch;
-  background-color: var(--popup-warning-bg);
-  border-color: var(--popup-warning-border);
-  color: var(--popup-warning);
-  font-weight: 600;
-}
-
-.cechy-popup__warning-btn:hover {
-  background-color: var(--popup-warning-hover-bg);
-  border-color: var(--popup-warning);
-  color: var(--popup-warning);
-}
-
-.cechy-popup__level {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  background-color: var(--popup-subtle-bg);
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-}
-
-.cechy-popup__level-name {
-  color: var(--popup-text-bright);
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.cechy-popup__bar {
-  background-color: var(--popup-control-bg);
-  border-radius: 999px;
-  height: 11px;
-  overflow: hidden;
-}
-
-.cechy-popup__bar-fill {
-  background-color: var(--popup-data-green);
-  border-radius: 999px;
-  height: 100%;
-  transition: width 0.25s ease;
-}
-
-.cechy-popup__level-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  color: var(--popup-text-dim);
-  font-size: 0.78rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.cechy-popup__level-missing {
-  color: var(--popup-text-subtle);
-  text-align: center;
-}
-
-/* The chart lives in its own tab, so it gets the full body width. */
-.cechy-popup__chart-tab {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  justify-content: center;
-  flex: 1;
-}
-
-.cechy-popup__chart {
-  width: 100%;
-  height: auto;
-}
-
-.cechy-popup__chart-legend {
-  color: var(--popup-text-dim);
-  font-size: 0.72rem;
-  text-align: center;
-}
-
-.cechy-popup__chart-line {
-  fill: none;
-  stroke: var(--popup-data-purple-light);
-  stroke-width: 1.3;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.cechy-popup__chart-dot {
-  fill: var(--popup-data-purple-light);
-}
-
-.cechy-popup__chart-grid {
-  stroke: var(--popup-border-subtle);
-  stroke-width: 0.6;
-}
-
-/* Experience-level boundaries — the lines a rise actually has to cross. */
-.cechy-popup__chart-threshold {
-  stroke: var(--popup-data-gold);
-  stroke-width: 0.6;
-  stroke-dasharray: 2 2;
-  opacity: 0.45;
-}
-
-/* Scaled in viewBox units, so this ends up around 9px on screen. */
-.cechy-popup__chart-label {
-  fill: var(--popup-text-dim);
-  font-size: 6.5px;
-}
-
-.cechy-popup__chart-label--level {
-  fill: var(--popup-data-gold);
-}
-
-.cechy-popup__entry-postepy {
-  color: var(--popup-data-gold);
-  font-size: 0.78rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.cechy-popup__traits {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.cechy-popup__trait {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.cechy-popup__trait-name {
-  color: var(--popup-text-medium);
-  flex: 0 0 6.5rem;
-}
-
-.cechy-popup__meter {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.cechy-popup__meter-cell {
-  background-color: var(--popup-control-bg);
-  border-radius: 1px;
-  height: 13px;
-  width: 7px;
-}
-
-.cechy-popup__meter-cell--on {
-  background-color: var(--popup-data-green);
-}
-
-.cechy-popup__meter--step .cechy-popup__meter-cell {
-  height: 8px;
-  width: 6px;
-}
-
-.cechy-popup__meter--step .cechy-popup__meter-cell--on {
-  background-color: var(--popup-data-green-light);
-}
-
-.cechy-popup__trait-sum {
-  color: var(--popup-text-bright);
-  font-variant-numeric: tabular-nums;
-  min-width: 2rem;
-  text-align: right;
-}
-
-.cechy-popup__trait-change {
-  align-items: center;
-  color: var(--popup-text-dim);
-  display: inline-flex;
-  font-size: 0.78rem;
-  gap: 0.35rem;
-  margin-left: auto;
-  white-space: nowrap;
-}
-
-/* The "when" is context; the delta is the fact — they must not read as one run
-   of text, so the delta gets an outline and the timestamp a quieter colour. */
-.cechy-popup__trait-when {
-  color: var(--popup-text-subtle);
-}
-
-.cechy-popup__badge {
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  line-height: 1.5;
-  padding: 0 0.35rem;
-}
-
-.cechy-popup__badge--up {
-  color: var(--popup-success);
-}
-
-.cechy-popup__badge--down {
-  color: var(--popup-danger);
-}
-
-.cechy-popup__timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.cechy-popup__entry {
-  background-color: var(--popup-subtle-bg);
-  border-radius: 0.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.4rem 0.55rem;
-}
-
-.cechy-popup__entry-head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-}
-
-.cechy-popup__entry-date {
-  color: var(--popup-text-subtle);
-}
-
-.cechy-popup__entry-total {
-  color: var(--popup-text-bright);
-  font-variant-numeric: tabular-nums;
-  margin-left: auto;
-}
-
-.cechy-popup__chip-delta--up {
-  color: var(--popup-success);
-}
-
-.cechy-popup__chip-delta--down {
-  color: var(--popup-danger);
-}
-
-.cechy-popup__entry-changes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.cechy-popup__entry-note {
-  color: var(--popup-text-dim);
-  font-size: 0.78rem;
-  font-style: italic;
-}
-
-.cechy-popup__chip {
-  background-color: var(--popup-control-bg);
-  border-radius: 0.25rem;
-  color: var(--popup-text-medium);
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
-  font-size: 0.78rem;
-  font-variant-numeric: tabular-nums;
-  padding: 0.15rem 0.4rem;
-}
-
-.cechy-popup__chip-delta {
-  color: var(--popup-text-subtle);
-  font-weight: 600;
-}
-
-/* ── zabici ──────────────────────────────────────────────────────────── */
-/* Zabici Popup */
-.zabici-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
-.zabici-popup__content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-  font-family: var(--output-font-family), monospace;
-  font-size: var(--output-font-size, 0.875rem);
-  line-height: 1.4;
-}
-
-.zabici-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
-}
-
-.zabici-popup__section {
-  margin-bottom: 0.75rem;
-}
-
-.zabici-popup__section--team {
-  border-top: 1px solid var(--popup-border);
-  padding-top: 0.5rem;
-}
-
-.zabici-popup__section-header {
-  color: var(--popup-data-yellow);
-  font-weight: bold;
-  padding: 0.125rem 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-.zabici-popup__section-header--team {
-  color: var(--popup-data-blue);
-}
-
-.zabici-popup__kill-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-}
-
-.zabici-popup__kill-row:hover {
-  background-color: var(--popup-hover-bg);
-}
-
-.zabici-popup__mob-name {
-  color: var(--popup-text);
-}
-
-.zabici-popup__kill-count {
-  color: var(--popup-data-green);
-  min-width: 2rem;
-  text-align: right;
-}
-
-.zabici-popup__section-total {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.25rem;
-  margin-top: 0.25rem;
-  color: #778899;
-  border-top: 1px dashed var(--popup-border);
-}
-
-.zabici-popup__grand-total {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.375rem 0.25rem;
-  margin-top: 0.5rem;
-  background-color: rgba(120, 152, 153, 0.1);
-  border-radius: 0.25rem;
-  color: #778899;
-  font-weight: bold;
-}
-
-.zabici-popup__team-toggle {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.zabici-popup__team-toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.zabici-popup__team-toggle--active {
-  background-color: rgba(135, 206, 235, 0.2);
-  border-color: rgba(135, 206, 235, 0.4);
-  color: var(--popup-data-blue);
-}
-
-.zabici-popup__team-toggle--active:hover {
-  background-color: rgba(135, 206, 235, 0.3);
-}
-
-/* ── zabici2 (lifetime) ──────────────────────────────────────────────── */
-/* Zabici2 (Lifetime) Popup */
-.zabici2-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
-.zabici2-popup__content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-}
-
-.zabici2-popup__tab-content {
-  padding: 0.5rem;
-  font-family: var(--output-font-family), monospace;
-  font-size: var(--output-font-size, 0.875rem);
-  line-height: 1.4;
-}
-
-.zabici2-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
-}
-
-.zabici2-popup__mob-name {
-  color: var(--popup-data-green);
-}
-
-.zabici2-popup__mob-name--boss {
-  color: var(--popup-data-orange);
-}
-
-.zabici2-popup__date-selector {
-  margin-bottom: 0.5rem;
-}
-
-.zabici2-popup__date-select {
-  width: 100%;
-  padding: 0.35rem 0.5rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.25rem;
-  color: var(--popup-text);
-  font-size: 0.8rem;
-}
-
-.zabici2-popup__date-select option {
-  background-color: var(--popup-input-bg);
-  color: var(--popup-input-text);
-}
-
-.zabici2-popup__date-select:focus {
-  outline: none;
-  border-color: var(--popup-input-focus-border);
-}
-
+/* stat — przeniesione do src/web/StatPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */
+/* postepy — przeniesione do src/web/PostepyPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */
+/* postepy2 — przeniesione do src/web/Postepy2Popup.css (faza 3, docs/dev/UI_MIGRATION.md). */
+/* cechy — przeniesione do src/web/CechyPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */
+/* zabici — przeniesione do src/web/ZabiciPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */
+/* zabici2 — przeniesione do src/web/Zabici2Popup.css (faza 3, docs/dev/UI_MIGRATION.md). */
 /* ── loot ────────────────────────────────────────────────────────────── */
 /* Loot Popup */
 .loot-popup-body {
@@ -8478,153 +7300,4 @@
   white-space: nowrap;
 }
 
-/* ── enemy resistances ───────────────────────────────────────────────── */
-
-.enemy-res-popup .postepy2-header {
-  gap: 0.75rem;
-}
-
-.enemy-res-filter {
-  max-width: 20rem;
-}
-
-.enemy-res-legend {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.75rem;
-  color: var(--popup-text-medium);
-  white-space: nowrap;
-}
-
-.enemy-res-content {
-  flex: 1;
-  overflow: auto;
-  padding: 0.25rem 0.5rem;
-}
-
-.enemy-res-table thead th.enemy-res-group {
-  text-align: center;
-  border-left: 1px solid var(--popup-border);
-}
-
-.enemy-res-table thead tr:nth-child(2) th {
-  top: 1.6rem;
-}
-
-.enemy-res-table thead th.enemy-res-name-head {
-  vertical-align: bottom;
-}
-
-.enemy-res-table thead th.enemy-res-type {
-  cursor: pointer;
-  vertical-align: bottom;
-  padding: 0.25rem 0.1rem;
-  text-align: center;
-}
-
-.enemy-res-type span {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-
-.enemy-res-table thead th.enemy-res-type:hover,
-.enemy-res-table thead th.enemy-res-type--sorted {
-  color: var(--popup-data-yellow);
-}
-
-.enemy-res-cell {
-  text-align: center;
-  font-weight: 600;
-  min-width: 1.6rem;
-  padding: 0.2rem 0.15rem;
-}
-
-.enemy-res-cell--odporny,
-.enemy-res-mark--odporny {
-  color: var(--popup-danger);
-  background-color: var(--popup-danger-bg);
-}
-
-.enemy-res-cell--wrazliwy,
-.enemy-res-mark--wrazliwy {
-  color: var(--popup-success);
-  background-color: var(--popup-success-bg);
-}
-
-.enemy-res-mark {
-  display: inline-block;
-  min-width: 1.1rem;
-  text-align: center;
-  font-weight: 600;
-  border-radius: 0.2rem;
-  margin-left: 0.35rem;
-}
-
-.enemy-res-view {
-  display: flex;
-  gap: 0.25rem;
-  margin-left: auto;
-}
-
-.enemy-res-lines {
-  display: flex;
-  flex-direction: column;
-}
-
-.enemy-res-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.2rem 0.4rem;
-}
-
-.enemy-res-line__name {
-  flex: 0 0 auto;
-  min-width: 7rem;
-  font-weight: 600;
-  color: var(--popup-text-bright);
-}
-
-.enemy-res-warn {
-  display: inline-flex;
-  vertical-align: text-bottom;
-  margin-left: 0.3rem;
-  color: var(--popup-warning);
-}
-
-.enemy-res-area {
-  margin-left: 0.35rem;
-  font-size: 0.7rem;
-  font-weight: 400;
-  font-style: italic;
-  opacity: 0.7;
-}
-
-.enemy-res-line__chips {
-  display: flex;
-  flex-wrap: wrap;
-  flex: 1 1 auto;
-  gap: 0.25rem;
-}
-
-.enemy-res-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0 0.35rem;
-  border-radius: 0.65rem;
-  font-size: 0.72rem;
-  line-height: 1.35rem;
-  white-space: nowrap;
-}
-
-.enemy-res-chip--odporny {
-  color: var(--popup-danger);
-  background-color: var(--popup-danger-bg);
-}
-
-.enemy-res-chip--wrazliwy {
-  color: var(--popup-success);
-  background-color: var(--popup-success-bg);
-}
+/* enemy resistances — przeniesione do src/web/EnemyResistancesPopup.css (faza 3, docs/dev/UI_MIGRATION.md). */

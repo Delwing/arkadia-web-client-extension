@@ -4,6 +4,7 @@ import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import { usePopupData } from './hooks/usePopupData';
 import { getKillData, KillData } from '../client/scripts/kill';
+import './ZabiciPopup.css';
 
 const POPUP_ID = 'popup:zabici';
 

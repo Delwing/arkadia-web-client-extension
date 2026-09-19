@@ -9,6 +9,7 @@ import {
     formatDuration,
 } from '../client/scripts/improveCounter';
 import { copyBufferAsImage } from './bufferToImage';
+import './PostepyPopup.css';
 
 const POPUP_ID = 'popup:postepy';
 

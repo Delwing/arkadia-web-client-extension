@@ -1,0 +1,107 @@
+/* Combat log ("Walka") popup.
+   A sticky split pane over a scrolling message list, with three
+   per-source filters (avatar / team / others).
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups.css, which both
+   UIs load; this file rides in through the component's own import instead, so
+   it reaches forge-ui the same way. There the tokens come from
+   src/web/popups/popup-host-tokens.css rather than from a theme. */
+
+.combat-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.combat-popup__messages {
+  flex: 1;
+  overflow-y: auto;
+  /* No bottom padding: the split pane has to be able to cover the bottom edge
+     (see .popup-split-bottom). */
+  padding: 0.5rem 0.5rem 0;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+}
+.combat-popup__message {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  word-wrap: break-word;
+}
+
+.combat-popup__message:hover {
+  background-color: var(--ark-bg-element-ghost-hover);
+}
+
+.combat-popup__message--avatar {
+  border-left: 2px solid var(--ark-success-text);
+}
+
+.combat-popup__message--team {
+  border-left: 2px solid var(--ark-accent-text);
+}
+
+.combat-popup__message--others {
+  border-left: 2px solid var(--ark-warning-text);
+}
+
+.combat-popup__separator {
+  height: 1px;
+  margin: 0.5rem 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+.combat-popup__text {
+  color: var(--ark-text);
+}
+
+.combat-popup__toggle {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-right: 0.25rem;
+}
+
+.combat-popup__toggle:hover {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--avatar {
+  background-color: var(--ark-success-bg);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--ark-success-text);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--avatar:hover {
+  background-color: var(--ark-success-4);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--team {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--team:hover {
+  background-color: var(--ark-accent-bg-active);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--others {
+  background-color: rgba(251, 146, 60, 0.2);
+  border-color: rgba(251, 146, 60, 0.4);
+  color: var(--ark-warning-text);
+}
+
+.combat-popup__toggle--active.combat-popup__toggle--others:hover {
+  background-color: rgba(251, 146, 60, 0.3);
+}

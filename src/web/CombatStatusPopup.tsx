@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Icon } from '@design';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
@@ -39,30 +40,6 @@ function StatBar({ left, max }: { left: number | null; max: number }) {
         </span>
     );
 }
-
-const IconSword = () => (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15.5 3.5 8 11l1.5 1.5L17 5V3.5h-1.5Z" />
-        <path d="M8 11l-4.5 4.5M5 13l2 2M4 15.5 4.5 16" />
-    </svg>
-);
-const IconShield = () => (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 2.5 4 4.5v5c0 4 2.6 6.6 6 8 3.4-1.4 6-4 6-8v-5L10 2.5Z" />
-    </svg>
-);
-const IconRelease = () => (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 3v7M6.5 6.5 10 10l3.5-3.5" />
-        <path d="M4 12c0 3.3 2.7 5 6 5s6-1.7 6-5" />
-    </svg>
-);
-const IconBanner = () => (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5.5 3v14" />
-        <path d="M5.5 4h9l-2 3 2 3h-9" />
-    </svg>
-);
 
 /**
  * "Postawa" — a compact combat-readiness popup ported from forge-ui's
@@ -118,22 +95,22 @@ const CombatStatusPopup: React.FC = () => {
             bodyClassName="combat-status-popup"
         >
             <div className="cs-row">
-                <span className="cs-ico"><IconSword /></span>
+                <span className="cs-ico"><Icon name="weapon" /></span>
                 <span className="cs-label">Bron</span>
                 <StatToggle on={weapon} onWord="dobyta" offWord="schowana" />
             </div>
             <div className="cs-row">
-                <span className="cs-ico"><IconShield /></span>
+                <span className="cs-ico"><Icon name="shield" /></span>
                 <span className="cs-label">Zaslona</span>
                 <StatBar left={cover} max={COVER_MAX} />
             </div>
             <button type="button" className="cs-row cs-row--btn" onClick={toggleGuard} title="Przelacz puszczanie zaslon">
-                <span className="cs-ico"><IconRelease /></span>
+                <span className="cs-ico"><Icon name="release" /></span>
                 <span className="cs-label">Puszczaj zaslony</span>
                 <StatToggle on={releaseGuard} />
             </button>
             <div className={`cs-row${isLeader ? '' : ' cs-row--idle'}`}>
-                <span className="cs-ico"><IconBanner /></span>
+                <span className="cs-ico"><Icon name="banner" /></span>
                 <span className="cs-label">Rozkaz</span>
                 {isLeader
                     ? <StatBar left={order} max={ORDER_MAX} />

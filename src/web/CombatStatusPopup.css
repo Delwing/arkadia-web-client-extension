@@ -1,15 +1,15 @@
-/* Combat-status ("Postawa") popup — a compact combat-readiness list ported from
-   forge-ui's StatusPanel into a shared dockable popup. Self-contained and
-   themed through the shared --popup-* variables, so it reads correctly in both
-   the stock UI and forge-ui (where layout-theme.css remaps --popup-* to the
-   forged palette). Distinct `cs-` class names avoid colliding with forge's
-   global `.st-*` rules. */
+/* Combat-status ("Postawa") popup — a compact combat-readiness list.
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. It renders in forge-ui too, where those tokens come
+   from src/web/popups/popup-host-tokens.css instead of from a theme — so the
+   popup stays bronze there without this file knowing anything about it.
+   Distinct `cs-` class names avoid colliding with forge's global `.st-*`. */
 
 .combat-status-popup {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 6px 10px 8px;
+  gap: var(--ark-space-1);
+  padding: var(--ark-space-3) var(--ark-space-5) var(--ark-space-4);
   overflow: hidden;
 }
 
@@ -17,7 +17,7 @@
   display: grid;
   grid-template-columns: 16px 1fr auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--ark-space-4);
   min-height: 16px;
 }
 .cs-row--idle {
@@ -36,33 +36,29 @@
   text-align: left;
   font: inherit;
   cursor: pointer;
-  border-radius: 3px;
-  transition: background-color 0.12s ease;
+  border-radius: var(--ark-radius-1);
+  transition: background-color var(--ark-duration-1) var(--ark-ease);
 }
 .cs-row--btn:hover {
-  background: var(--popup-hover-bg, rgba(255, 255, 255, 0.08));
+  background: var(--ark-bg-element-ghost-hover);
 }
 .cs-row--btn:active {
-  background: var(--popup-accent-subtle-bg, rgba(255, 255, 255, 0.14));
+  background: var(--ark-accent-bg);
 }
 
 .cs-ico {
   display: flex;
   width: 16px;
   height: 16px;
-  color: var(--popup-accent, #c79a4c);
-}
-.cs-ico svg {
-  width: 16px;
-  height: 16px;
+  color: var(--ark-accent-text);
 }
 
 .cs-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-size: var(--ark-text-1);
+  font-weight: var(--ark-weight-semibold);
+  letter-spacing: var(--ark-tracking-eyebrow);
   text-transform: uppercase;
-  color: var(--popup-text-dim, #b7aa8b);
+  color: var(--ark-text-tertiary);
   white-space: nowrap;
 }
 
@@ -70,59 +66,62 @@
 .cs-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--ark-space-3);
 }
 .cs-led {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--ark-radius-full);
   flex: 0 0 auto;
-  background: #2a2723;
+  background: var(--ark-bg-element);
+  /* Pure depth, not a palette colour: the LED is seated in its housing. */
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 .cs-word {
   min-width: 56px;
   text-align: right;
-  font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 9px;
-  letter-spacing: 0.06em;
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  letter-spacing: var(--ark-tracking-wide);
   text-transform: uppercase;
-  color: var(--popup-text-dim, #b7aa8b);
+  color: var(--ark-text-tertiary);
 }
 .cs-toggle--on .cs-led {
-  background: #7c9a56;
-  box-shadow: 0 0 5px rgba(124, 154, 86, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  background: var(--ark-success-solid);
+  box-shadow: 0 0 5px var(--ark-success-border), inset 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 .cs-toggle--on .cs-word {
-  color: #9bab7f;
+  color: var(--ark-success-text);
 }
 .cs-toggle--off .cs-led {
-  background: #8a3b2c;
-  box-shadow: 0 0 5px rgba(138, 59, 44, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  background: var(--ark-danger-solid);
+  box-shadow: 0 0 5px var(--ark-danger-border), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
-/* cooldown charge bar: fills toward full as the timer runs down */
+/* Cooldown charge bar: fills toward full as the timer runs down. Charging is a
+   warning (the action is unavailable), full is a success (it is ready) — status
+   roles, so the bar still reads right in all eight themes. */
 .cs-gauge {
   position: relative;
   width: 72px;
   height: 13px;
   flex: 0 0 auto;
-  border-radius: 3px;
+  border-radius: var(--ark-radius-1);
   overflow: hidden;
-  background: linear-gradient(180deg, #0b0a08, #131109);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--ark-bg-sunken);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 .cs-gauge__fill {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 3px 0 0 3px;
+  border-radius: var(--ark-radius-1) 0 0 var(--ark-radius-1);
   transition: width 0.1s linear;
 }
 .cs-gauge--charge .cs-gauge__fill {
-  background: linear-gradient(180deg, #9a7f4c, #715a30);
+  background: var(--ark-warning-solid);
 }
 .cs-gauge--ready .cs-gauge__fill {
-  background: linear-gradient(180deg, #5c6a45, #3e4a2c);
+  background: var(--ark-success-solid);
 }
 .cs-gauge__num {
   position: absolute;
@@ -130,10 +129,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 8.5px;
-  letter-spacing: 0.05em;
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  letter-spacing: var(--ark-tracking-wide);
   font-variant-numeric: tabular-nums;
-  color: #e8dfc8;
+  /* Sits ON a solid status fill, so it takes that fill's contrast colour. */
+  color: var(--ark-warning-contrast);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85);
+}
+.cs-gauge--ready .cs-gauge__num {
+  color: var(--ark-success-contrast);
 }

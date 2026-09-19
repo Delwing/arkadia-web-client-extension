@@ -13,6 +13,7 @@ import {
     getDistinctDates,
 } from '../client/scripts/killLifetimeStorage';
 import {characterStorage} from '@modules/core/storage';
+import './Zabici2Popup.css';
 
 const POPUP_ID = 'popup:zabici2';
 
