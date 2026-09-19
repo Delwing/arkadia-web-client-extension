@@ -137,13 +137,26 @@ export interface Attribution {
  * A mark recorded from GMCP lands on the first line written after the game said
  * who we are, which is a moment after the banner the player actually sees. The
  * timeline marks the banner, so the name has to travel back to it or the marker
- * stays anonymous. Generous, because the wait at the password prompt is the
- * player's, and nothing is written to the log while it lasts.
+ * stays anonymous. Generous in time, because the wait at the password prompt is
+ * the player's and nothing is written to the log while it lasts.
  */
 const SNAP_BACK_MS = 300_000;
 
 /**
- * The earliest login line within the snap window, or the mark's own line.
+ * How many lines that are NOT logins the walk backwards tolerates before it
+ * decides it has left the login behind and is looking at play.
+ *
+ * This is what stops a mark from travelling back into the PREVIOUS character's
+ * login: the two are separated by whatever was played in between, and play is
+ * dense. The cost of the bound is the opposite case — a game that prints more
+ * than this between the banner and the frame naming the character leaves that
+ * login marker under the previous name. Both readings are only ever a few lines
+ * wrong, and the common one is the one this gets right.
+ */
+const SNAP_BACK_LINES = 10;
+
+/**
+ * The start of the login block just before a mark, or the mark's own line.
  *
  * `floor` is where the previous name ends: a mark may never travel back over
  * the one before it, or a re-login would take its predecessor's lines with it.
@@ -151,9 +164,16 @@ const SNAP_BACK_MS = 300_000;
 function snapToLogin(lines: readonly LogLine[], index: number, floor: number): number {
     const limit = lines[index].timestamp - SNAP_BACK_MS;
     let snapped = index;
+    let gap = 0;
     for (let i = index; i >= floor; i -= 1) {
-        if (lines[i].timestamp < limit) break;
-        if (lines[i].event === "login") snapped = i;
+        if (lines[i].event === "login") {
+            // Still inside the block, whatever it has printed in between.
+            snapped = i;
+            gap = 0;
+            continue;
+        }
+        gap += 1;
+        if (gap > SNAP_BACK_LINES || lines[i].timestamp < limit) break;
     }
     return snapped;
 }

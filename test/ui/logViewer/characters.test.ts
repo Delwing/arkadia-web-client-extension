@@ -168,6 +168,18 @@ describe("attributeCharacters", () => {
         expect(byLine[4]).toBe("Dargoth");
     });
 
+    it("does not travel back across play into the previous login", () => {
+        // Logins at 1 and 22, with play in between; the second mark lands at 24
+        // and must not drag Dargoth's own login block along with it.
+        const lines = session(26, [1, 2, 22, 23]);
+        const { byLine } = attributeCharacters(lines, [
+            { line: 3, character: "Dargoth" },
+            { line: 24, character: "Kethra" },
+        ]);
+        expect(byLine[21]).toBe("Dargoth");
+        expect(byLine[22]).toBe("Kethra");
+    });
+
     it("leaves a mark where it is when the login is hours behind it", () => {
         const lines = session(6, [1]);
         lines[4].timestamp = lines[3].timestamp + 3_600_000;
