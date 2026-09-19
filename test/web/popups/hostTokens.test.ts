@@ -90,11 +90,72 @@ describe("popup host token bridge", () => {
     });
 
     it("is imported by the stylesheet both UIs load", () => {
-        const popups = readFileSync(resolve(root, "src/web/popups/popups.css"), "utf8");
-        expect(popups).toContain("@import './popup-host-tokens.css';");
-        // @import is only honoured at the top of a sheet.
-        expect(popups.indexOf("@import './popup-host-tokens.css';")).toBeLessThan(
-            popups.search(/^[^@/\s][^{]*\{/m),
+        const manifest = readFileSync(resolve(root, "src/web/popups/popups.css"), "utf8");
+        expect(manifest).toContain("@import './popup-host-tokens.css';");
+        expect(manifest).toContain("@import './popups-base.css';");
+        // Tokens have to be defined before the rules that read them.
+        expect(manifest.indexOf("@import './popup-host-tokens.css';")).toBeLessThan(
+            manifest.indexOf("@import './popups-base.css';"),
+        );
+    });
+});
+
+/**
+ * The cascade rule that the file split broke once already.
+ *
+ * Layer 2 (`.popup-btn`) and a per-popup delta (`.cechy-popup__warning-btn`)
+ * are both specificity 0,1,0, so only source order decides. While everything
+ * lived in one file that was automatic. Split across files, it holds only if
+ * every migrated sheet arrives through the manifest's @import list, in order —
+ * a component-level `import './CechyPopup.css'` lets Rollup put the delta in a
+ * chunk the HTML links FIRST, and Layer 2 then overrides it. That is how the
+ * Cechy button lost its amber.
+ */
+describe("popup stylesheet ordering", () => {
+    const manifestPath = "src/web/popups/popups.css";
+    const manifest = readFileSync(resolve(root, manifestPath), "utf8");
+
+    const imported = [...manifest.matchAll(/@import\s+'([^']+)'/g)].map((match) => match[1]);
+
+    it("pulls every migrated popup sheet in after the base layer", () => {
+        const baseAt = imported.indexOf("./popups-base.css");
+        expect(baseAt).toBeGreaterThanOrEqual(0);
+        const deltas = imported.filter((path) => path.startsWith("../"));
+        expect(deltas.length).toBeGreaterThan(0);
+        for (const delta of deltas) {
+            expect(imported.indexOf(delta), `${delta} must come after the base`).toBeGreaterThan(baseAt);
+        }
+    });
+
+    it("has no popup component importing its own stylesheet", () => {
+        for (const path of imported.filter((entry) => entry.startsWith("../"))) {
+            const sheet = path.replace("../", "");
+            const component = resolve(root, "src/web", sheet.replace(/\.css$/, ".tsx"));
+            const source = readFileSync(component, "utf8");
+            expect(source, `${sheet} must come from the manifest, not from its component`).not.toContain(
+                `import './${sheet}'`,
+            );
+        }
+    });
+
+    it("lists every migrated sheet the manifest owns", () => {
+        // A sheet that exists but is in neither place reaches no browser at all.
+        const manifestSheets = imported
+            .filter((entry) => entry.startsWith("../"))
+            .map((entry) => `src/web/${entry.replace("../", "")}`)
+            .sort();
+        expect(manifestSheets).toEqual(
+            [
+                "src/web/CechyPopup.css",
+                "src/web/CombatPopup.css",
+                "src/web/CombatStatusPopup.css",
+                "src/web/EnemyResistancesPopup.css",
+                "src/web/Postepy2Popup.css",
+                "src/web/PostepyPopup.css",
+                "src/web/StatPopup.css",
+                "src/web/ZabiciPopup.css",
+                "src/web/Zabici2Popup.css",
+            ].sort(),
         );
     });
 });

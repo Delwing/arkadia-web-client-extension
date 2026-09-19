@@ -1,8 +1,9 @@
 /* Combat-status ("Postawa") popup — a compact combat-readiness list.
    Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
-   `--ark-*` only, no hex. It renders in forge-ui too, where those tokens come
-   from src/web/popups/popup-host-tokens.css instead of from a theme — so the
-   popup stays bronze there without this file knowing anything about it.
+   `--ark-*` only, no hex. Pulled in by the manifest at src/web/popups/popups.css
+   (see its header for why an @import rather than a component import). It renders
+   in forge-ui too, where those tokens come from popup-host-tokens.css instead of
+   from a theme — so the popup stays bronze there without this file knowing.
    Distinct `cs-` class names avoid colliding with forge's global `.st-*`. */
 
 .combat-status-popup {

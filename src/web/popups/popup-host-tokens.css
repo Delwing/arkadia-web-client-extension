@@ -22,8 +22,8 @@
 
      - klient stockowy: src/web/main.ts -> popups.css, <body class="ark-root">,
        wiec tokeny --ark-* sa zdefiniowane i wszystko dziala;
-     - forge-ui: forge-ui/main.tsx -> @web/popups/popups.css i TEN SAM
-       POPUP_CATALOG, ale bez .ark-root, bez data-ark-theme i bez
+     - forge-ui: forge-ui/main.tsx -> @web/popups/popups.css (manifest) i TEN
+       SAM POPUP_CATALOG, ale bez .ark-root, bez data-ark-theme i bez
        @design/css/index.css.
 
    Zmigrowany popup w forge nie mial by wiec ani jednego tokenu --ark-*.

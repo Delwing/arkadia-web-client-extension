@@ -20,7 +20,6 @@ import {
     findLastKnownStat,
     getCechyHistory,
 } from '../client/scripts/cechyHistory';
-import './CechyPopup.css';
 
 const POPUP_ID = 'popup:cechy';
 

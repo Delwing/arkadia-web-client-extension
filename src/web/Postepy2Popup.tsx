@@ -14,7 +14,6 @@ import {
 } from '../client/scripts/improveCounter';
 import { characterStorage } from '@modules/core/storage';
 import type { ImproveDbResult, ImproveDbWorkerRequest, ImproveDbWorkerResponse } from '@modules/data/improveDbImport.shared';
-import './Postepy2Popup.css';
 
 const POPUP_ID = 'popup:postepy2';
 

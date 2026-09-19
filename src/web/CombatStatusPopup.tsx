@@ -3,7 +3,6 @@ import { Icon } from '@design';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import './CombatStatusPopup.css';
 
 const POPUP_ID = 'popup:combatStatus';
 

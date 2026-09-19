@@ -71,6 +71,9 @@ test.describe('Enemy resistances popup', () => {
         await expect(rows.first()).toContainText('formit');
 
         await rows.first().getByTitle('Usun wpis').click();
-        await expect(popup.locator('.popup-empty')).toBeVisible();
+        // Asserted by text, not by the chrome class: the empty state is an
+        // @design primitive since the faza-3 migration, and the next redesign
+        // of it should not break this test either.
+        await expect(popup.getByText('Brak wynikow dla filtra.')).toBeVisible();
     });
 });

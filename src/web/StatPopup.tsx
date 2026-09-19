@@ -7,7 +7,6 @@ import {
     type CombatStatsSnapshot,
     type BodyPart,
 } from '../client/scripts/combatStats';
-import './StatPopup.css';
 
 const POPUP_ID = 'popup:stat';
 

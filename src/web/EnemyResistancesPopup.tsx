@@ -51,7 +51,6 @@ import {
     TableRow,
     TableScroll,
 } from '@design';
-import './EnemyResistancesPopup.css';
 
 const POPUP_ID = 'popup:enemyResistances';
 const CONFIRM_MS = 4000;
@@ -262,9 +261,9 @@ const EnemyResistancesPopup: React.FC = () => {
                 <tbody>
                     {rows.map(row => (
                         <TableRow key={row.group.key}>
-                            <TableHeadCell row align="grow" title={rowTooltip(row.group)}>
+                            <TableCell align="grow" tone="strong" title={rowTooltip(row.group)}>
                                 {enemyName(row.group)}
-                            </TableHeadCell>
+                            </TableCell>
                             {DAMAGE_KEYS.map(key => {
                                 const trait = row.byType.get(key);
                                 return (

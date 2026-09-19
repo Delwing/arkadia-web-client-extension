@@ -10,7 +10,6 @@ import {
     CombatEntry,
     CombatMessageType
 } from '../client/scripts/combatWindow';
-import './CombatPopup.css';
 
 const POPUP_ID = 'popup:combat';
 const DISPLAY_LIMIT = 200;
