@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { Button, Checkbox } from "@design";
+import { useEffect, useState, type ReactNode } from "react";
+import { Button, Checkbox, Input } from "@design";
 
 /**
  * Building blocks for a settings page that has moved onto the design system.
@@ -101,6 +101,95 @@ export function SelectField({ id, label, value, onChange, disabled, labelExtra, 
             >
                 {children}
             </select>
+        </div>
+    );
+}
+
+/**
+ * Number input that tolerates intermediate empty/invalid text while editing,
+ * only emitting finite numbers upstream — a field cleared to retype it must
+ * not push NaN into the draft and repaint the client. The migrated counterpart
+ * of `uiSettings/fields.tsx`'s NumberField; it stays an <input type="number">
+ * because e2e drives several of these with `fill()`.
+ */
+export function NumberField({ id, label, value, step, min, onChange, labelExtra }: {
+    id: string;
+    label: ReactNode;
+    value: number;
+    step?: number | string;
+    min?: number | string;
+    onChange: (value: number) => void;
+    labelExtra?: ReactNode;
+}) {
+    const [text, setText] = useState(String(value));
+    useEffect(() => { setText(String(value)); }, [value]);
+    return (
+        <div className="settings-field">
+            <label className="settings-field__label" htmlFor={id}>{label}{labelExtra}</label>
+            <Input
+                id={id}
+                type="number"
+                step={step}
+                min={min}
+                value={text}
+                onChange={(e) => {
+                    setText(e.target.value);
+                    const n = parseFloat(e.target.value);
+                    if (Number.isFinite(n)) onChange(n);
+                }}
+            />
+        </div>
+    );
+}
+
+/**
+ * Slider with its current value beside the label. The value keeps the
+ * `${id}-value` span the Bootstrap-era field had: it is what makes the number
+ * part of the page signature, so dragging a slider raises the unsaved dot.
+ */
+export function RangeField({ id, label, value, min, max, step, onChange }: {
+    id: string;
+    label: ReactNode;
+    value: number;
+    min: number | string;
+    max: number | string;
+    step: number | string;
+    onChange: (value: number) => void;
+}) {
+    return (
+        <div className="settings-field">
+            <label className="settings-field__label" htmlFor={id}>
+                {label}: <span id={`${id}-value`} className="settings-field__value">{value}</span>
+            </label>
+            <input
+                id={id}
+                type="range"
+                className="settings-range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                onChange={(e) => onChange(parseFloat(e.target.value))}
+            />
+        </div>
+    );
+}
+
+/** Single-line text/url field with an optional hint under it. */
+export function TextField({ id, label, value, onChange, type = "text", placeholder, hint }: {
+    id: string;
+    label: ReactNode;
+    value: string;
+    onChange: (value: string) => void;
+    type?: "text" | "url";
+    placeholder?: string;
+    hint?: ReactNode;
+}) {
+    return (
+        <div className="settings-field">
+            <label className="settings-field__label" htmlFor={id}>{label}</label>
+            <Input id={id} type={type} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+            {hint && <SettingsHint>{hint}</SettingsHint>}
         </div>
     );
 }

@@ -8,7 +8,6 @@ import {
     type MoonPhase,
     MONTH_LENGTHS,
     MONTH_ORDER,
-    SEASON_NAMES,
     YEAR_LENGTH,
     dayLengthHours,
     formatDay,
@@ -19,6 +18,14 @@ import {
     seasonOf,
     sunHour,
 } from '@client/scripts/sunModel.ts';
+import {
+    FULL_MOON_COLOR,
+    MOON_COLOR,
+    NEW_MOON_COLOR,
+    SEASON_COLORS,
+    SEASON_NAMES,
+    SUN_COLOR,
+} from './popups/worldPalette';
 
 const POPUP_ID = 'popup:calendar';
 
@@ -26,14 +33,6 @@ const SUN = '☀';
 const MOON = '☾';
 const FULL_MOON = '●';
 const NEW_MOON = '○';
-
-// matching ClockPopup / ClockDisplay
-const SEASON_COLORS = [
-    'var(--popup-data-spring-green)',
-    'var(--popup-data-yellow)',
-    'var(--popup-data-orange)',
-    'var(--popup-data-blue)',
-];
 
 function pad(n: number): string {
     return String(n).padStart(2, '0');
@@ -44,7 +43,7 @@ function formatRealClock(ms: number): string {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const dimStyle: React.CSSProperties = { color: 'var(--popup-text-dim)' };
+const dimStyle: React.CSSProperties = { color: 'var(--ark-text-tertiary)' };
 
 /** Real-world clock, with the date dropped when it is today. */
 function formatRealShort(ms: number): string {
@@ -180,7 +179,7 @@ const CalendarPopup: React.FC = () => {
                 fontFamily: 'monospace',
                 fontSize: 12,
                 padding: 8,
-                color: 'var(--popup-text)',
+                color: 'var(--ark-text)',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
@@ -286,7 +285,7 @@ const Month: React.FC<{
                 marginBottom: 4,
                 fontSize: 12,
             }}>
-                <span style={{ fontWeight: 'bold', color: 'var(--popup-text-strong)' }}>
+                <span style={{ fontWeight: 'bold', color: 'var(--ark-text)' }}>
                     {section.month}
                 </span>
                 <span style={{ ...dimStyle, fontSize: 11 }}>
@@ -296,10 +295,10 @@ const Month: React.FC<{
                         </span>
                     ))}
                     {section.days.length}d
-                    <span style={{ color: 'var(--popup-data-gold)', marginLeft: 6 }}>
+                    <span style={{ color: SUN_COLOR, marginLeft: 6 }}>
                         {SUN}{range(section.sunrises)}
                     </span>
-                    <span style={{ color: 'var(--popup-data-blue)', marginLeft: 4 }}>
+                    <span style={{ color: MOON_COLOR, marginLeft: 4 }}>
                         {MOON}{range(section.sunsets)}
                     </span>
                 </span>
@@ -336,10 +335,11 @@ const Day: React.FC<{
         + (day.isGeheimnisnacht ? ', Geheimnisnacht' : '');
 
     const border = day.isGeheimnisnacht
-        ? '1px solid var(--popup-data-tomato)'
+        ? '1px solid var(--ark-danger-text)'
         : day.isToday
-            ? '1px solid #cc9900'
-            : '1px solid #2a2a2a';
+            // "today" is the one cell the eye is sent to — that is the accent's job
+            ? '1px solid var(--ark-accent-border)'
+            : '1px solid var(--ark-border-subtle)';
 
     return (
         <div
@@ -358,7 +358,7 @@ const Day: React.FC<{
                 cursor: 'default',
                 // season tint, faint enough to leave the hours legible
                 background: day.isGeheimnisnacht
-                    ? 'var(--popup-danger-subtle-bg)'
+                    ? 'var(--ark-danger-bg)'
                     : `color-mix(in srgb, ${SEASON_COLORS[day.season]} 9%, transparent)`,
             }}
         >
@@ -372,18 +372,16 @@ const Day: React.FC<{
                 <span>{day.dayOfMonth}</span>
                 {day.moon && (
                     <span style={{
-                        color: day.moon === 'full'
-                            ? 'var(--popup-data-yellow)'
-                            : 'var(--popup-text-subtle)',
+                        color: day.moon === 'full' ? FULL_MOON_COLOR : NEW_MOON_COLOR,
                     }}>
                         {day.moon === 'full' ? FULL_MOON : NEW_MOON}
                     </span>
                 )}
             </div>
             <div style={{ fontSize: 10 }}>
-                <span style={{ color: 'var(--popup-data-gold)' }}>{SUN}{day.sunrise}</span>
+                <span style={{ color: SUN_COLOR }}>{SUN}{day.sunrise}</span>
                 {' '}
-                <span style={{ color: 'var(--popup-data-blue)' }}>{MOON}{day.sunset}</span>
+                <span style={{ color: MOON_COLOR }}>{MOON}{day.sunset}</span>
             </div>
         </div>
     );
@@ -426,10 +424,10 @@ const Summary: React.FC<{
             </div>
             <div>
                 <span style={dimStyle}>Czas RL: </span>
-                <span style={{ color: 'var(--popup-data-gold)' }}>
+                <span style={{ color: SUN_COLOR }}>
                     {SUN} {formatRealShort(sunriseMs)}
                 </span>
-                <span style={{ color: 'var(--popup-data-blue)', marginLeft: 8 }}>
+                <span style={{ color: MOON_COLOR, marginLeft: 8 }}>
                     {MOON} {formatRealShort(sunsetMs)}
                 </span>
                 <span style={dimStyle}>
@@ -439,7 +437,7 @@ const Summary: React.FC<{
             {domain === 'Empire' && geheimnisnacht && (
                 <div>
                     <span style={dimStyle}>Geheimnisnacht: </span>
-                    <span style={{ color: 'var(--popup-data-tomato)' }}>
+                    <span style={{ color: 'var(--ark-danger-text)' }}>
                         {formatDay('Empire', geheimnisnacht.dayOfYear)}
                     </span>
                     <span style={dimStyle}>
@@ -467,12 +465,12 @@ const Legend: React.FC<{ domain: Domain }> = ({ domain }) => (
         gap: 10,
         flexWrap: 'wrap',
     }}>
-        <span style={{ color: 'var(--popup-data-gold)' }}>{SUN} wschod</span>
-        <span style={{ color: 'var(--popup-data-blue)' }}>{MOON} zachod</span>
-        <span style={{ color: 'var(--popup-data-yellow)' }}>{FULL_MOON} pelnia</span>
+        <span style={{ color: SUN_COLOR }}>{SUN} wschod</span>
+        <span style={{ color: MOON_COLOR }}>{MOON} zachod</span>
+        <span style={{ color: FULL_MOON_COLOR }}>{FULL_MOON} pelnia</span>
         {domain === 'Empire' && <span>{NEW_MOON} now</span>}
         {domain === 'Empire' && (
-            <span style={{ color: 'var(--popup-data-tomato)' }}>Geheimnisnacht</span>
+            <span style={{ color: 'var(--ark-danger-text)' }}>Geheimnisnacht</span>
         )}
     </div>
 );

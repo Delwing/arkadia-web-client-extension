@@ -1,8 +1,16 @@
-/* World-time ("Czas") popup — the in-game season / date / time-of-day widget
-   ported from forge-ui's TimePanel into a shared dockable popup. Self-contained
-   and themed through the shared --popup-* variables so it reads correctly in
-   both the stock UI and forge-ui. Distinct `wt-` class names avoid colliding
-   with forge's global `.tp-*` rules. */
+/* ============================================================================
+   Czas (popup:worldTime) — widget pory roku / daty swiata / pory dnia,
+   przeniesiony z forge'owego TimePanel. Faza 3, rodzina "swiat i czas".
+   ============================================================================
+
+   Arkusz wjezdza przez manifest src/web/popups/popups.css, NIE przez import w
+   komponencie — patrz naglowek manifestu. Wczesniej szedl `import
+   './WorldTimePopup.css'` z komponentu, czyli dokladnie ta droga, ktora
+   odwrocila kaskade Cechom w PR 1.
+
+   Slonce i ksiezyc biora te same dwa gniazda palety danych, co Kalendarz i
+   Zegar — patrz src/web/popups/worldPalette.ts. Odrebne nazwy klas `wt-` dalej
+   chronia przed kolizja z globalnymi regulami `.tp-*` forge'a. */
 
 .world-time-popup {
   display: flex;
@@ -45,18 +53,19 @@
   width: 28px;
   height: 28px;
 }
+/* the sun/moon pair, on the categorical data palette (worldPalette.ts) */
 .wt-day {
-  color: #f0c25a;
+  color: var(--ark-data-4-text);
 }
 .wt-night {
-  color: #9fb6d6;
+  color: var(--ark-data-1-text);
 }
 .wt-time {
   font-family: var(--output-font-family, ui-monospace, monospace);
   font-size: 23px;
   font-weight: 600;
   line-height: 1;
-  color: var(--popup-text-bright, #e8dfc8);
+  color: var(--ark-text-secondary);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
@@ -74,9 +83,9 @@
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--popup-text-dim, #b7aa8b);
+  color: var(--ark-text-tertiary);
 }
 /* day-of-year — forge's .tp-doy: dimmed bronze, a notch below the date colour */
 .wt-doy {
-  color: var(--popup-accent-border, #9a7b3e);
+  color: var(--ark-accent-border);
 }

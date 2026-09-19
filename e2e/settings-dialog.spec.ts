@@ -104,7 +104,7 @@ test.describe('Settings dialog', () => {
         await input.fill('obejrzyj');
         await expect(dot, 'typing into the add field is not a change yet').toHaveCount(0);
         await input.press('Enter');
-        const badge = modal.locator('.context-menu-badge', {hasText: 'obejrzyj'});
+        const badge = modal.locator('.settings-chip', {hasText: 'obejrzyj'});
         await expect(badge).toBeVisible();
         await expect(dot, 'adding a command is a change').toBeVisible();
 

@@ -9,8 +9,9 @@ import {
     type PairingOffer,
 } from "@modules/push/pushClient";
 import { clearPushCredentials, loadPushCredentials } from "@modules/push/pushCredentials";
+import { Button } from "@design";
 import type { UiSettings } from "../uiSettingsCore";
-import { CheckboxRow } from "./fields";
+import { CheckboxField, SettingsHint } from "@web/settings/controls.tsx";
 
 interface PushNotificationsSectionProps {
     draft: UiSettings;
@@ -133,25 +134,25 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
 
     if (!supported) {
         return (
-            <div className="small text-secondary">
+            <SettingsHint>
                 Ta przeglądarka nie obsługuje powiadomień push. Na iPhone dodaj najpierw stronę
                 do ekranu głównego (Udostępnij → Do ekranu początkowego) i otwórz ją z tej ikony
                 — Safari udostępnia powiadomienia tylko zainstalowanej aplikacji.
-            </div>
+            </SettingsHint>
         );
     }
 
     return (
-        <div className="d-flex flex-column gap-2">
-            <div className="small text-secondary">
+        <div className="settings-stack">
+            <SettingsHint>
                 Nic nie jest wysyłane samo z siebie. Żeby dostać alert na telefon, dodaj makro
                 „Powiadomienie na telefon" do triggera lub zdarzenia (Triggery → zdarzenia takie
                 jak Niskie zycie, Pelne zycie czy Atak wroga). Wysyłka działa niezależnie od
                 tego, czy karta klienta jest aktywna, i jest ograniczona do jednego alertu na
                 minutę — chyba że w makrze zaznaczysz „Wysylaj zawsze".
-            </div>
+            </SettingsHint>
 
-            <CheckboxRow
+            <CheckboxField
                 id="push-only-when-hidden"
                 label="Wysyłaj tylko gdy karta klienta jest ukryta"
                 checked={draft.pushOnlyWhenHidden}
@@ -159,80 +160,55 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
             />
 
             {status && (
-                <div className={`small ${status.kind === "ok" ? "text-success" : "text-danger"}`}>
+                <p className={`settings-status settings-status--${status.kind}`}>
                     {status.text}
-                </div>
+                </p>
             )}
 
-            <div className="d-flex gap-2 flex-wrap align-self-start">
+            <div className="settings-button-row">
                 {enabled ? (
-                    <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        id="push-disable"
-                        disabled={busy}
-                        onClick={handleDisable}
-                    >
+                    <Button size="sm" id="push-disable" disabled={busy} onClick={handleDisable}>
                         Wyłącz na tym urządzeniu
-                    </button>
+                    </Button>
                 ) : (
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        id="push-enable"
-                        disabled={busy}
-                        onClick={handleEnable}
-                    >
+                    /* Soft, not solid: the card's one accent button is the
+                       permission prompt above, which only shows when something
+                       actually blocks notifications. Two solids on one view and
+                       the accent stops meaning anything (DESIGN_SYSTEM.md §6). */
+                    <Button size="sm" id="push-enable" disabled={busy} onClick={handleEnable}>
                         Odbieraj na tym urządzeniu
-                    </button>
+                    </Button>
                 )}
-                <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    id="push-pair"
-                    disabled={busy}
-                    onClick={handlePair}
-                >
+                <Button size="sm" id="push-pair" disabled={busy} onClick={handlePair}>
                     Sparuj telefon (kod QR)
-                </button>
+                </Button>
                 {hasAccount && (
-                    <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        id="push-test"
-                        disabled={busy}
-                        onClick={handleTest}
-                    >
+                    <Button size="sm" id="push-test" disabled={busy} onClick={handleTest}>
                         Wyślij test
-                    </button>
+                    </Button>
                 )}
             </div>
 
             {pairing && (
-                <div className="d-flex flex-column align-items-start gap-1 mt-1">
+                <div className="settings-pairing">
+                    {/* The white plate is not decoration and is deliberately not
+                        a token: a QR code needs a light quiet zone to scan, so
+                        it must stay white in all eight themes. */}
                     {qrSvg && (
-                        <div
-                            style={{ width: 200, background: "#fff", padding: 10, borderRadius: 4 }}
-                            dangerouslySetInnerHTML={{ __html: qrSvg }}
-                        />
+                        <div className="settings-pairing__qr" dangerouslySetInnerHTML={{ __html: qrSvg }} />
                     )}
-                    <div className="small text-secondary">
+                    <SettingsHint>
                         Zeskanuj telefonem. Kod <code>{pairing.code}</code> jest jednorazowy i
                         wygasa po {Math.round(pairing.expiresInSeconds / 60)} min — zdjęcie kodu
                         nie daje trwałego dostępu.
-                    </div>
+                    </SettingsHint>
                 </div>
             )}
 
             {hasAccount && (
-                <button
-                    type="button"
-                    className="btn btn-link btn-sm align-self-start p-0"
-                    id="push-forget"
-                    onClick={handleForget}
-                >
+                <Button className="settings-action" size="sm" variant="link" id="push-forget" onClick={handleForget}>
                     Odłącz to urządzenie od konta powiadomień
-                </button>
+                </Button>
             )}
         </div>
     );

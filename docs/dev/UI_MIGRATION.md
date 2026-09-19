@@ -102,7 +102,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
-3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 3 (travel) done
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -233,13 +233,18 @@ component's now — see the PR body for the mapping.
 39 components. Group by family so each PR is one coherent review: combat/status,
 world/travel, knowledge/reports, inventory/economy, debug.
 
-**PR 3 (travel/transport) is done** — seven popups: Wozy, Blokady wozu, Trasa,
-Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
-worth keeping are in "What PR 3 found" below.
-
 **PR 1 (combat/status) is done** — nine popups: Postawa, Walka, Statystyki,
 Postepy, Postepy 2, Cechy, Zabici, Zabici 2, Odpornosci przeciwnikow. It also
 landed the shared pieces every later popup PR depends on, described below.
+
+**PR 2 (world/time) is done** — six popups: Zegar, Kalendarz, Czas, Slonce -
+kalkulator, Slonce - tracker, Informacje o lokacji. **Okno mapy (StaticMap) was
+deliberately left behind**; why, and the two other things this PR found, are
+below.
+
+**PR 3 (travel/transport) is done** — seven popups: Wozy, Blokady wozu, Trasa,
+Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
+worth keeping are in "What PR 3 found" below.
 
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
@@ -294,6 +299,40 @@ So `src/web/popups/popups.css` is now a **manifest**: nothing but an ordered
 reorder, and the path forge-ui imports is unchanged. Three unit tests hold the
 rule.
 
+#### Three more things PR 2 found
+
+**(4) `forge-ui` now loads `@design/css/index.css`.** The plan says twice, in
+capitals, that "forge loads no part of the design system". That stopped being
+true at `f087744`: `forge-ui/main.tsx` imports the system's stylesheet so the
+stock screens it hosts keep their primitives. What forge still does *not* have
+is `.ark-root` or `data-ark-theme`, so `popup-host-tokens.css` (`body:not(.ark-root)`)
+still applies and still supplies the token *values* from forge's bronze
+palette. The practical consequence is the useful half: **an `@design` primitive
+inside a popup is safe in forge** — `.ark-table` and friends are styled there —
+which is what PR 1's `Table` was already relying on. Nothing else about §4's
+constraint (a) or §9's open question changes.
+
+**(5) Not every popup has a stylesheet, and `MIGRATED_SHEETS` cannot see the
+ones that do not.** Recipe step 7 assumes a sheet per popup. Three popups in
+this family — Kalendarz, Slonce - kalkulator, Slonce - tracker — are ~1 500
+lines of `style={{ ... }}` objects and no CSS file at all. Migrating them is a
+token swap in the TSX, and rewriting them into stylesheets would be a rewrite,
+not a migration. So `test/ui/design/stylesheets.test.ts` grew a second list,
+`MIGRATED_POPUP_COMPONENTS`, holding the same two rules (no hex, no
+`--popup-*`) against the component source. **Step 7 should read "add it to
+`MIGRATED_SHEETS`, or to `MIGRATED_POPUP_COMPONENTS` if the popup has no
+sheet".**
+
+**(6) One legacy variable was doing two unrelated jobs.** `--popup-data-gold`
+painted both the sun (Kalendarz, tracker) and the selected day / selected range
+(tracker). The §4 decision splits them correctly and they must not both become
+one `--ark-data-*` slot: the sun is categorical data, the selection is interface
+state and belongs on the accent. The same audit moved `--popup-data-tomato`
+apart twice — Geheimnisnacht and "this observation contradicts the grid" are
+both genuinely `--ark-danger-*`, but the four season hues next to them are not.
+The lesson generalises: **audit a legacy data variable by its call sites, not by
+its name**, because the old layer had no way to say which job it meant.
+
 #### The per-popup recipe
 
 Follow this literally; it is what PR 1 converged on.
@@ -317,20 +356,52 @@ Follow this literally; it is what PR 1 converged on.
    bespoke markup: `Table`, `Button`, `Segmented`, `EmptyState`, `Input`,
    `Icon`. Do not force it; a tokenised bespoke gauge beats a primitive that
    does not fit.
-7. **Add the stylesheet to the two lists that hold it.** `MIGRATED_SHEETS` in
-   `test/ui/design/stylesheets.test.ts` enforces no-hex and no-`--popup-*` from
-   then on; a migrated sheet left off it keeps the tokens but loses the rule.
-   The second list is the expected manifest contents in
+7. **Add it to the three lists that hold it.** Two are in
+   `test/ui/design/stylesheets.test.ts`: `MIGRATED_SHEETS` for a stylesheet,
+   or `MIGRATED_POPUP_COMPONENTS` for a popup styled from inline
+   `style={{ ... }}` objects rather than a sheet. Between them they enforce
+   no-hex and no-`--popup-*` from then on; a migrated popup left off both keeps
+   the tokens but loses the rule. The third is the expected manifest contents in
    `test/web/popups/hostTokens.test.ts` ("lists every migrated sheet the
    manifest owns") — it fails the moment the manifest grows, so a PR that
    misses it is red rather than silently wrong, but it costs a round trip.
-   Note also that the no-hex check does not strip comments: a hex quoted in a
-   header comment to say *what the old value was* fails the test. Describe it
-   in words instead.
+
+   Two things the rules do not say out loud. The no-hex check **does not strip
+   comments**, so a hex quoted in a header comment to record *what the old value
+   was* fails the test — describe it in words instead. And a hex handed to
+   `createColorFormat` for a line printed into the **game output** is not a
+   theme decision: that window's background is the player's own setting, and
+   there is no token for it. Such a component stays off
+   `MIGRATED_POPUP_COMPONENTS` rather than being forced onto a token.
 8. **Screenshot before and after, in at least three themes**, one dark, one
    light, one with a strong accent. Diff them. A pure token swap should come out
    near-identical; anything that moved and should not have is a cascade or
    specificity bug. This is the step that found (3).
+
+#### Okno mapy (StaticMap): deferred, and why
+
+The world/time family on paper is seven popups. Six migrated; **Okno mapy did
+not**, and the reason is recipe step 1 rather than its size.
+
+`StaticMapPopup.tsx` builds its entire header out of `.map-header-menu__*` — 22
+uses. That class family is not the popup's: it is shared chrome, used by
+`layout/components/MapHeaderMenu.tsx` (32 uses), `ObjectListHeaderMenu.tsx`
+(12) and `ChatPopup.tsx` (8), and it lives in **`layout/layout.css`**, not in
+`popups-base.css`. The popup's own rules are in **`style.css`**. Both files are
+Phase 5's, and both sit inside `main-theme.css`'s cascade lock.
+
+So there is no migration of this one popup that is not also a migration of the
+shell's map panel, the object list and a popup from another family — which is
+Layer 2's situation all over again, and it wants the same answer: **migrate
+`.map-header-menu__*` for everyone, in place in `layout.css`, as its own
+change.** In place, because moving it into the popups manifest would move it
+past the rest of `layout.css` in the cascade, which that file's header warns
+about specifically. That change belongs either to Phase 5 or to a small PR of
+its own; it should not be smuggled in under one popup's name.
+
+Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
+would half-migrate the screen, which §5 forbids for exactly the reason that
+applies here — the body would re-theme and the header would not.
 
 #### What PR 3 (travel/transport) found
 
@@ -380,6 +451,17 @@ sits outside the `.managed-panel, [data-popup-overlay]` scope that
 at all in forge. Adding `data-popup-overlay` to the portal root fixes it: forge
 already defines its full `--popup-*` palette on that attribute, and in the
 stock client the attribute changes nothing.
+
+**Both Phase-3 popup families found inline-styled popups, and answered
+differently.** World/time kept theirs inline (the calendar, sun calculator and
+sun tracker are ~1 500 lines between them; rewriting was not a migration) and
+extended the rules to cover the TSX. Travel extracted its two into real
+stylesheets, because they were small. Both answers are legitimate and the
+choice is a size judgement — but the *rule* must reach the popup either way, so
+`test/ui/design/stylesheets.test.ts` now carries `MIGRATED_SHEETS` and
+`MIGRATED_POPUP_COMPONENTS` over one shared pair of checks rather than two
+copies of them. When the two families merged, the copies were identical.
+
 
 #### `--popup-data-*`: decided
 
@@ -454,13 +536,28 @@ Sequence within the phase:
    hand-rolled `.character-settings-section` markup. Both old layers stay until
    the last page leaves them.
 2. **Then a page per PR**, smallest first. Done: `ui-commands`, `ui-other`,
-   `character-guilds`, `character-magics`. Remaining, roughly by size:
-   `ui-windows` → `ui-footer` (pulls in BarOrderSettings +
-   FooterComponentSettings) → `ui-appearance` → `ui-map` → `ui-sound` →
-   `character-items` / `character-general` (both are sections of
+   `character-guilds`, `character-magics` (PR 1); `ui-windows`,
+   `ui-appearance`, `ui-map`, `ui-sound` (PR 2). Remaining, roughly by size:
+   `ui-footer` → `character-items` / `character-general` (both are sections of
    `Settings.tsx`, 855 lines, so they land together) → `character-combat`
    (CombatCommands + DrawSheathe + EnemyBinds + LuaGags) → `ui-buttons` /
    `ui-mobile-buttons` / `ui-radial` (the button editors, 761 lines).
+
+   **`ui-footer` is not the small page this order assumed**, which is why PR 2
+   took the four after it instead. It is `FooterSections` (76 lines) plus two
+   dnd-kit list editors, and the editors are the work: `BarOrderSettings` and
+   `FooterComponentSettings` are react-bootstrap `Form.Check type="switch"`
+   rows that read `--popup-control-bg` inline. Worse, two e2e specs are pinned
+   to their markup in ways a migration breaks —
+   `footer-plugin-components.spec.ts` locates a row by the Bootstrap utility
+   class `.d-flex.align-items-center` and its toggle by
+   `getByRole('checkbox')`, which stops matching the moment the switch becomes
+   `@design`'s `Switch` (`role="switch"`). Phase 0's exit grep never covered
+   `.d-flex`, so this is not a regression of that rule, but it is the same
+   problem, and whoever takes `ui-footer` pays for it there and not here.
+   Before swapping in `Switch`, confirm Playwright's `isChecked()` drives it:
+   PR 1 proved `check()`/`isChecked()` work against `@design`'s `Checkbox`
+   (`role="checkbox"`), and `role="switch"` has not been tried.
 3. **Coordinate with forge-ui** on the ten modules it imports. Note that
    `forge-modal-bootstrap.scss` compiles Bootstrap *whole*; it cannot shrink
    per module, only be deleted once nothing forge renders needs Bootstrap at
@@ -496,16 +593,29 @@ Sequence within the phase:
   deliberately does not set `.ark-root`: that is the visual opt-in, and
   claiming it would repaint the pages still on Bootstrap.
 
-  **These two answers should converge, and Phase 3's is the better one.**
-  `popup-host-tokens.css` maps forge's `--popup-*` *onto* the `--ark-*` roles,
-  so a migrated popup in forge stays bronze; the settings fallback picks a
-  design-system theme instead, so the dialog stops matching forge's chrome.
-  Converging means adding forge's menu-modal host to that file's selector list
-  (it is scoped to `.managed-panel, [data-popup-overlay]`, and the settings
-  dialog lives in `.forge-menu-modal`) and dropping the fallback here. Left as
-  a follow-up rather than done in Phase 4 PR 1: the two landed in parallel, and
-  the file belongs to Phase 3. The `@design/css/index.css` import stays either
-  way — the bridge supplies token *values*, not the `.ark-*` primitive classes.
+  **These two answers should converge, and Phase 3's is the better one** — but
+  **not the way this section first described it, which does not work.** PR 2
+  checked before attempting it. The recipe was "add forge's menu-modal host to
+  `popup-host-tokens.css`'s selector list (it is scoped to `.managed-panel,
+  [data-popup-overlay]`, and the settings dialog lives in `.forge-menu-modal`)
+  and drop the fallback here". The flaw is that forge's `--popup-*` palette is
+  itself scoped to exactly `.managed-panel, [data-popup-overlay]`
+  (`forge-ui/layout-theme.css`), and `.forge-menu-modal` is neither: it is a
+  `.forged.panel.panel--modal` (`forge-ui/components/menu/MenuModal.tsx`) with
+  no `data-popup-overlay`. Mapping `--popup-*` onto `--ark-*` there would map
+  values that are **not defined at that node**, so every `--ark-*` role becomes
+  invalid at computed value — the borderless, transparent failure that
+  `popup-host-tokens.css` exists to prevent, reintroduced by the fix for it.
+
+  Converging therefore needs forge's palette block widened to cover
+  `.forge-menu-modal` first, and that is an edit to `forge-ui/`, which is out
+  of scope. So the fallback in `SettingsDialog.tsx` stays for now. It is the
+  right call on its own terms anyway: a fallback that only fires when no
+  ancestor sets `data-ark-theme` costs nothing the day forge grows one. Whoever
+  does converge should do it from the forge side — the real answer is §9's
+  question, `forge-ui` loading `@design/css/index.css` itself, which deletes
+  both halves at once. The `@design/css/index.css` import stays either way —
+  the bridge supplies token *values*, not the `.ark-*` primitive classes.
 - **`Table` now exists** (Phase 3 added it for the resistances popup), so the
   pages that need one — `Binds`, `FirebaseTab`, `DeviceManagementTab` — no
   longer have to wait on a decision. `ProgressBar` still does not exist.
@@ -547,8 +657,10 @@ delete `forge-modal-bootstrap.scss`, and remove the `scss` handling from
 - **Screenshot before and after.** For a redesign, that diff *is* the review.
 - **No hex in a component stylesheet.** Already enforced by a unit test for the
   design system; extend that test's file list as each screen migrates
-  (`test/ui/design/tokens.test.ts`, `MIGRATED_SCREEN_SHEETS` — it also checks
-  the screen reads no `--popup-*`, which is the other half of "migrated").
+  (`test/ui/design/stylesheets.test.ts`, `MIGRATED_SHEETS` — it also checks the
+  screen reads no `--popup-*`, which is the other half of "migrated"). `#fff`
+  is the one allowed literal, for a solid danger/accent fill and for the push
+  pairing card's QR plate, which a camera needs light to read.
 - **Watch the stock shell's bare-element rules.** `DESIGN_SYSTEM.md` §6 warns
   about `base.css` out-specifying its own primitives; the stock client has the
   mirror-image problem. `style.css` skins bare `button`, and Radix builds
@@ -560,6 +672,20 @@ delete `forge-modal-bootstrap.scss`, and remove the `scss` handling from
   rules with a zero-specificity `:where(:not(...))`. `log-viewer/` never hit
   this because it is a separate entry that does not load `style.css`; any screen
   migrating inside the client entry will.
+
+  **`button` was not the only one.** Phase 4 PR 2 found the same shape on text
+  fields: `style.css` skins `input[type="text"]`, `input[type="number"]`,
+  `input[type="url"]` and friends, plus `.modal input` / `.modal select` /
+  `.modal textarea`. Each is (0,1,1) and so out-specifies `.ark-input` (0,1,0)
+  for `background-color`, `border`, `color` and `border-radius` — which means
+  every design-system `Input` in the client, including the settings dialog's
+  own search box from PR 1, was being painted from `--popup-*`. It looked right
+  only because `themes/bridge.css` maps the old layer onto the new, so the
+  screenshots are identical before and after the fix; it would have broken
+  outright on the day Phase 3 deletes that bridge. Same zero-specificity guard.
+  The lesson to carry: grep `style.css` for a bare element selector matching
+  whatever primitive the next screen introduces, *before* trusting that it
+  renders correctly — the bridge hides this class of bug completely.
 
 ---
 
@@ -585,9 +711,23 @@ than it adds.
 
 ## 7. Queued follow-up
 
-- **Delete `src/web/options/ShortExitsSettings.tsx` (210 lines).** Nothing
-  imports it; the live short-exits UI is a section of `Settings.tsx`. Found
-  while picking Phase 4's first tabs — the plan had it queued for migration.
+- ~~**Delete `src/web/options/ShortExitsSettings.tsx` (210 lines).**~~ — done
+  in Phase 4 PR 2. Nothing imported it; the live short-exits UI is a section of
+  `Settings.tsx`. Found while picking Phase 4's first tabs — the plan had it
+  queued for migration.
+
+- **Migrate `.map-header-menu__*` onto `--ark-*`, in place in
+  `layout/layout.css`.** Shared by `MapHeaderMenu`, `ObjectListHeaderMenu`,
+  `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
+  it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
+  popups manifest — `layout.css`'s own header says why.
+
+- **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
+  hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3
+  PR 2 left it alone. When Phase 5 reaches the footer it should read
+  `src/web/popups/worldPalette.ts` like the three popups now do. Until then the
+  chip and the popups disagree about what Wiosna looks like — as they already
+  did before, in the other direction.
 
 - ~~**Character attribution for logs**~~ — done, see
   `LOG_CHARACTER_ATTRIBUTION.md` and `LOG_VIEWER.md` §1. The log carries a

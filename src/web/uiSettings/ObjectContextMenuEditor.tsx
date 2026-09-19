@@ -6,8 +6,16 @@ interface ObjectContextMenuEditorProps {
 }
 
 /**
- * Controlled chip/badge editor for the object context-menu commands.
- * Replaces the former imperative DOM badge editor.
+ * Controlled chip editor for the object context-menu commands. Part of
+ * Interfejs > Okna, migrated onto the design system (UI_MIGRATION.md §4).
+ *
+ * Hand-rolled rather than built on `@design`'s `Chip`: that one is a Radix
+ * Toggle for filter pills (pressed / not pressed) and has no remove
+ * affordance, which is the only thing these chips do.
+ *
+ * The trailing input is marked `data-settings-ignore` — it is a scratch field
+ * for typing the next command, not a setting, so it must stay out of the
+ * page signature that raises the unsaved-changes dot.
  */
 function ObjectContextMenuEditor({ commands, onChange }: ObjectContextMenuEditorProps) {
     const [inputValue, setInputValue] = useState("");
@@ -53,58 +61,39 @@ function ObjectContextMenuEditor({ commands, onChange }: ObjectContextMenuEditor
     };
 
     const len = inputValue.length;
-    const isTyping = len > 0;
 
     return (
         <div
             id="ui-object-context-menu-container"
-            className="form-control form-control-sm d-inline-flex flex-wrap align-items-center"
-            style={{ height: 'auto', cursor: 'text', padding: '0.2rem 0.4rem', gap: '0.2rem' }}
+            className="settings-chips"
             onClick={() => inputRef.current?.focus()}
         >
             {commands.map(cmd => (
                 <span
                     key={cmd}
-                    className={`badge bg-secondary d-inline-flex align-items-center context-menu-badge${flashing === cmd ? ' duplicate-flash' : ''}`}
-                    style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', fontWeight: 'normal', lineHeight: 1, boxSizing: 'border-box', cursor: 'pointer' }}
+                    className={`settings-chip settings-chip--button${flashing === cmd ? ' settings-chip--duplicate' : ''}`}
+                    title="Kliknij, aby usunąć"
                     onClick={(e) => { e.stopPropagation(); remove(cmd); }}
                 >
-                    <span style={{ lineHeight: 1 }}>{cmd}</span>
-                    <span style={{ marginLeft: '0.25rem', lineHeight: 1, opacity: 0.7 }}>{'×'}</span>
+                    {cmd}
+                    <span className="settings-chip__remove">{'×'}</span>
                 </span>
             ))}
-            <span
+            <input
+                type="text"
+                id="ui-object-context-menu-input"
                 data-settings-ignore
-                className={isTyping
-                    ? 'badge bg-secondary d-inline-flex align-items-center context-menu-input-wrapper'
-                    : 'context-menu-input-wrapper d-inline-flex align-items-center'}
-                style={isTyping
-                    ? { fontSize: '0.7rem', padding: '0.15rem 0.35rem', fontWeight: 'normal', lineHeight: 1, boxSizing: 'border-box' }
-                    : { fontSize: '0.7rem', lineHeight: 1, padding: '0.15rem 0', boxSizing: 'border-box' }}
-            >
-                <input
-                    type="text"
-                    id="ui-object-context-menu-input"
-                    ref={inputRef}
-                    className="border-0"
-                    value={inputValue}
-                    placeholder={isTyping ? '' : '+'}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onBlur={commit}
-                    style={isTyping
-                        ? { outline: 'none', width: `${len}ch`, maxWidth: `${len}ch`, background: 'transparent', color: 'white', border: 'none', padding: 0, margin: 0, fontSize: 'inherit', fontWeight: 'inherit', lineHeight: 'inherit', boxSizing: 'border-box' }
-                        : { outline: 'none', width: '1ch', minWidth: '1ch', background: 'transparent', fontSize: 'inherit', padding: 0, margin: 0, border: 'none', lineHeight: 'inherit' }}
-                />
-                {isTyping && (
-                    <span
-                        style={{ cursor: 'pointer', marginLeft: '0.25rem', lineHeight: 1, opacity: 0.7 }}
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setInputValue(''); inputRef.current?.focus(); }}
-                    >
-                        {'×'}
-                    </span>
-                )}
-            </span>
+                ref={inputRef}
+                className="settings-chip__input"
+                // Grows with what is typed so the caret sits next to the text
+                // rather than at the end of a fixed-width field.
+                style={{ width: `${Math.max(len, 1)}ch` }}
+                value={inputValue}
+                placeholder={len > 0 ? '' : '+'}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={commit}
+            />
         </div>
     );
 }

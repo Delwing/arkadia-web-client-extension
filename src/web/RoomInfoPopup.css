@@ -1,0 +1,194 @@
+/* ============================================================================
+   Informacje o lokacji (popup:roomInfo) — Faza 3, rodzina "swiat i czas".
+   ============================================================================
+
+   Arkusz wjezdza przez manifest src/web/popups/popups.css, NIE przez import w
+   komponencie — patrz naglowek manifestu.
+
+   CO ZOSTALO W popups-base.css: kompas (.compass-rose-*, .cr-*). Siedzial w tej
+   samej sekcji, ale to nie jest czesc tego popupu — rysuje go skrypt klienta
+   (src/client/scripts/inlineCompassRose.ts) jako nakladke NA OKNIE GRY. Tlo
+   tego okna bierze sie z ustawienia gracza (outputBackground), a nie z motywu,
+   wiec przepiecie kompasu na --ark-* dalo by czarny tekst na ciemnym tle w
+   motywach jasnych — dokladnie ta awaria, ktora opisuje naglowek
+   src/web/themes/bridge.css przy `color` na body.ark-root. Kompas zostaje
+   w calosci na starej warstwie; zadna klasa nie jest zmigrowana polowicznie.
+
+   DWIE ZMIANY, KTORE NIE SA CZYSTYM PRZEPISANIEM ZMIENNYCH:
+
+   1. --text-secondary i --text-tertiary. Most (themes/bridge.css) swiadomie ich
+      nie obejmuje — zadny stary plik motywu ich nie nadpisywal, wiec we
+      wszystkich osmiu motywach mialy jedna, zamrozona wartosc ze style.css.
+      Tutaj wchodza na --ark-text-secondary / --ark-text-tertiary, czyli
+      zaczynaja chodzic za motywem. W motywach ciemnych to prawie ten sam
+      odcien; w pergaminie i srebrze naglowek sekcji przestaje byc jasnoszary
+      na jasnym tle.
+
+   2. Cztery surowe filmy rgba(). Stary arkusz malowal tlo sekcji, jej linie i
+      tlo wierszy GPS polprzezroczysta biela/czernia zamiast siegnac po
+      zmienna. Ida na role, ktore i tak udawaly.
+   ========================================================================== */
+
+.room-info-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.room-info-popup__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.room-info-popup__empty {
+  padding: 1rem;
+  color: var(--ark-text-tertiary);
+  text-align: center;
+}
+
+.room-info-popup__section {
+  padding: 0.5rem;
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.25rem;
+}
+
+.room-info-popup__section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.room-info-popup__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.125rem 0;
+  gap: 0.5rem;
+}
+
+.room-info-popup__label {
+  color: var(--ark-text-secondary);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.room-info-popup__label--special {
+  font-style: italic;
+}
+
+.room-info-popup__value {
+  color: var(--ark-text);
+  text-align: right;
+  word-break: break-word;
+}
+
+.room-info-popup__env-color {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+.room-info-popup__copy-btn {
+  all: unset;
+  cursor: pointer;
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--ark-text-faint);
+  vertical-align: middle;
+}
+
+.room-info-popup__copy-btn:hover {
+  color: var(--ark-text);
+}
+
+.room-info-popup__door {
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+}
+
+.room-info-popup__note {
+  padding: 0.25rem 0;
+}
+
+.room-info-popup__note-label {
+  display: block;
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+  margin-bottom: 0.125rem;
+}
+
+.room-info-popup__note-text {
+  color: var(--ark-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.room-info-popup__npc {
+  padding: 0.125rem 0;
+  color: var(--ark-text);
+}
+
+.room-info-popup__npc-source {
+  color: var(--ark-text-faint);
+  font-size: 0.75rem;
+}
+
+.room-info-popup__description {
+  color: var(--ark-text);
+  line-height: 1.3;
+  margin: 0;
+  white-space: pre;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  overflow-x: auto;
+}
+
+.room-info-popup__gps-entry {
+  padding: 0.25rem 0;
+}
+
+.room-info-popup__gps-entry + .room-info-popup__gps-entry {
+  border-top: 1px solid var(--ark-border-subtle);
+  margin-top: 0.25rem;
+}
+
+.room-info-popup__gps-lines {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--ark-text-tertiary);
+  background: var(--ark-bg-sunken);
+  border-radius: 2px;
+  margin: 0.125rem 0;
+}
+
+.room-info-popup__gps-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.room-info-popup__gps-line-mode {
+  margin-left: 0.35rem;
+  padding: 0 0.25rem;
+  border-radius: 2px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--ark-text-tertiary);
+  background: var(--ark-bg-element);
+}
