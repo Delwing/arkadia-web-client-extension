@@ -39,7 +39,10 @@ export const THEMES = [
     label: 'Arkadia (ciemny)',
     appearance: 'dark',
     gray: 'sand',
-    accent: 'amber',
+    // Blue, not amber: this is the theme `default` maps onto, and the stock
+    // client's accent was Bootstrap's blue long before the redesign. Keeping it
+    // means the default theme does not change colour out from under players.
+    accent: 'blue',
   },
   {
     id: 'dark-neutral',

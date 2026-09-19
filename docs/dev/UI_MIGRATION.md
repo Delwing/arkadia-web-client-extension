@@ -275,7 +275,32 @@ than it adds.
 
 ---
 
-## 8. Open questions
+## 8. Theme tuning comes last
+
+**Palette work is the final step of the migration, after Phase 6.** Not because
+it is unimportant — because it is the one thing that can be judged only once
+every screen is on the system. Tuning a ramp while half the client still reads
+`--popup-*` means tuning against a moving target, and re-tuning later anyway.
+
+Two things are deliberately parked until then:
+
+- **`fantasy`, `forest` and `icy` lost their strong colour cast.** The old
+  themes painted chrome heavily (purple / green / navy); the new system's gray
+  ramps (mauve, olive, slate) are near-neutral by design and leave colour to the
+  accent. That is the palette working as intended, not a bridge bug — but if
+  those themes should still shout, it is a `themes.config.mjs` decision.
+- **Anything else that is "the new palette is different", rather than "this
+  screen is broken".** File it here; do not fix it mid-migration.
+
+The one exception already taken: the default theme's accent is **blue, not
+amber**. `arkadia` is what `default` maps onto, and the stock client's accent
+was Bootstrap's blue long before the redesign, so leaving it amber would have
+changed colour out from under every player who never picked a theme. That is a
+continuity fix, not palette tuning.
+
+---
+
+## 9. Open questions
 
 - ~~**Do the 7 legacy themes survive by name?**~~ **Answered:** there are 8, and
   they map 1:1 onto the new set, with two renames and one default:
