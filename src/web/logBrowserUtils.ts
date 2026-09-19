@@ -1,60 +1,19 @@
+/**
+ * What is left of the old log browser's helpers.
+ *
+ * The browser itself is now `@ui/logViewer`, which brings its own model; these
+ * are the pieces around it that still have callers: reading raw records out of
+ * a session store (`log-viewer/sessionAdapter.ts`, `LogManager`), splitting a
+ * stored record into lines, and the file-name / style plumbing the ZIP export
+ * and the to-disk saver share.
+ */
 export interface LogEntry {
   text: string;
   type?: string;
   timestamp: number;
 }
 
-export interface ParsedLogLine {
-  html: string;
-  text: string;
-}
-
-export interface ParsedLogGroup {
-  timestamp: number;
-  time: string;
-  dateTime: string;
-  type?: string;
-  lines: ParsedLogLine[];
-}
-
-export interface FlatLogLine {
-  groupIndex: number;
-  lineIndex: number;
-  time: string;
-  html: string;
-  text: string;
-  type?: string;
-  timestamp: number;
-}
-
-export interface SessionInfo {
-  name: string;
-  label: string;
-}
-
-export interface LineMatch {
-  flatIndex: number;
-  matchIndex: number;
-  text: string;
-  lineText: string;
-}
-
-export interface SearchResult {
-  sessionName: string;
-  sessionLabel: string;
-  groupTimestamp: number;
-  groupDateTime: string;
-  matches: LineMatch[];
-}
-
-export interface SearchSessionGroup {
-  sessionName: string;
-  sessionLabel: string;
-  results: SearchResult[];
-  totalMatches: number;
-}
-
-export function formatTime(ts: number): string {
+function formatTime(ts: number): string {
   const d = new Date(ts);
   const h = String(d.getHours()).padStart(2, "0");
   const m = String(d.getMinutes()).padStart(2, "0");
@@ -69,22 +28,6 @@ export function formatDateTime(ts: number): string {
   const mo = String(d.getMonth() + 1).padStart(2, "0");
   const da = String(d.getDate()).padStart(2, "0");
   return `${y}-${mo}-${da} ${formatTime(ts)}`;
-}
-
-export function formatSessionLabel(name: string): string {
-  if (name.startsWith("session_")) {
-    const ts = parseInt(name.slice("session_".length), 10);
-    if (!Number.isNaN(ts)) {
-      const d = new Date(ts);
-      const da = String(d.getDate()).padStart(2, "0");
-      const mo = String(d.getMonth() + 1).padStart(2, "0");
-      const h = String(d.getHours()).padStart(2, "0");
-      const m = String(d.getMinutes()).padStart(2, "0");
-      const s = String(d.getSeconds()).padStart(2, "0");
-      return `${da}.${mo} ${h}:${m}:${s}`;
-    }
-  }
-  return name;
 }
 
 export function formatSessionFileName(name: string): string {
@@ -104,19 +47,12 @@ export function formatSessionFileName(name: string): string {
   return name;
 }
 
-export function getSessionYear(name: string): number | null {
-  if (name.startsWith("session_")) {
-    const ts = parseInt(name.slice("session_".length), 10);
-    if (!Number.isNaN(ts)) return new Date(ts).getFullYear();
-  }
-  return null;
-}
-
 /** Collect only CSS rules relevant to log HTML output. */
 export function collectLogStyles(): string {
-  // Class names used in exported log HTML. Seed these so style collection works
-  // even when the live preview (#logs-preview) is not mounted - e.g. when
-  // exporting from the "Zarzadzanie" tab, where #logs-preview does not exist.
+  // Class names used in exported log HTML. Seeded rather than scraped, because
+  // since the design-system migration no `#logs-preview` is ever mounted: the
+  // log pane is `@ui/logViewer`'s and carries its own markup. The scrape below
+  // is kept for anything else that puts one on the page.
   const usedClasses = new Set<string>([
     "output_msg",
     "output_msg_text",
@@ -220,88 +156,6 @@ export function splitLines(html: string): string[] {
   return lines;
 }
 
-export function normalizeFlags(flags: string): string {
-  const filtered = flags.replace(/g/g, "");
-  const parts = filtered.split("").filter(part => part !== "");
-  return Array.from(new Set(parts)).join("");
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export function parseSearchQuery(query: string): { regex: RegExp | null; error?: string } {
-  const trimmed = query.trim();
-  if (!trimmed) {
-    return { regex: null };
-  }
-  if (trimmed.startsWith("/")) {
-    let escaped = false;
-    for (let i = 1; i < trimmed.length; i++) {
-      const char = trimmed[i];
-      if (!escaped && char === "/") {
-        const pattern = trimmed.slice(1, i);
-        const flags = trimmed.slice(i + 1);
-        try {
-          return { regex: new RegExp(pattern, flags) };
-        } catch {
-          return { regex: null, error: "Niepoprawne wyrazenie regularne." };
-        }
-      }
-      escaped = !escaped && char === "\\";
-    }
-  }
-  try {
-    return { regex: new RegExp(escapeRegExp(trimmed), "i") };
-  } catch {
-    return { regex: null, error: "Nie udalo sie utworzyc wyrazenia wyszukiwania." };
-  }
-}
-
-const textParser = document.createElement("div");
-
-export function parseLogEntries(entries: LogEntry[]): ParsedLogGroup[] {
-  const groups: ParsedLogGroup[] = [];
-  for (const entry of entries) {
-    const lines: ParsedLogLine[] = [];
-    const parts = splitLines(entry.text);
-    for (const part of parts) {
-      textParser.innerHTML = part;
-      const text = textParser.textContent ?? "";
-      textParser.textContent = "";
-      lines.push({ html: part, text });
-    }
-    groups.push({
-      timestamp: entry.timestamp,
-      time: formatTime(entry.timestamp),
-      dateTime: formatDateTime(entry.timestamp),
-      type: entry.type,
-      lines,
-    });
-  }
-  return groups;
-}
-
-export function flattenLogGroups(groups: ParsedLogGroup[]): FlatLogLine[] {
-  const flat: FlatLogLine[] = [];
-  for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-    const group = groups[groupIndex];
-    for (let lineIndex = 0; lineIndex < group.lines.length; lineIndex++) {
-      const line = group.lines[lineIndex];
-      flat.push({
-        groupIndex,
-        lineIndex,
-        time: group.time,
-        html: line.html,
-        text: line.text,
-        type: group.type,
-        timestamp: group.timestamp,
-      });
-    }
-  }
-  return flat;
-}
-
 export async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
   return new Promise(resolve => {
     let tx: IDBTransaction;
@@ -319,9 +173,4 @@ export async function getRawSessionData(db: IDBDatabase, storeName: string): Pro
       resolve([]);
     };
   });
-}
-
-export async function getSessionData(db: IDBDatabase, storeName: string): Promise<ParsedLogGroup[]> {
-  const logs = await getRawSessionData(db, storeName);
-  return parseLogEntries(logs);
 }

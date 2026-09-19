@@ -161,16 +161,23 @@ export async function loadSession(
  */
 export async function loadAllSessions(options: LoadOptions = {}): Promise<LogSession[]> {
     const database = new LogsDatabase();
-    const db = await database.get();
-    if (!db) return [];
+    try {
+        const db = await database.get();
+        if (!db) return [];
 
-    const names = await listSessionStores(db);
-    // One sweep of localStorage for all of them; it does not change under us.
-    const withCandidates = { ...options, candidates: options.candidates ?? collectCharacters() };
-    const sessions: LogSession[] = [];
-    for (const name of names) {
-        const session = await loadSession(db, name, withCandidates);
-        if (session) sessions.push(session);
+        const names = await listSessionStores(db);
+        // One sweep of localStorage for all of them; it does not change under us.
+        const withCandidates = { ...options, candidates: options.candidates ?? collectCharacters() };
+        const sessions: LogSession[] = [];
+        for (const name of names) {
+            const session = await loadSession(db, name, withCandidates);
+            if (session) sessions.push(session);
+        }
+        return sessions;
+    } finally {
+        // Everything is in memory by now, so the connection has no further use
+        // — and a held one makes the next tab that starts logging wait for a
+        // `versionchange` round trip before it can create its store.
+        database.release();
     }
-    return sessions;
 }

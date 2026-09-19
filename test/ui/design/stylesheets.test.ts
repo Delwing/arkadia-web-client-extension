@@ -5,12 +5,18 @@ import { globSync } from "node:fs";
 
 const root = resolve(__dirname, "../../..");
 
-/** Every stylesheet the design system and its reference screen own. */
+/**
+ * Every stylesheet on the design system.
+ *
+ * Grows by one entry per migrated screen — that is what keeps a screen from
+ * quietly re-introducing a hex colour once it is off Bootstrap.
+ */
 const SHEETS = [
     "src/ui/design/css/base.css",
     "src/ui/design/css/tokens.css",
     "src/ui/design/css/scales.generated.css",
     "src/ui/logViewer/logViewer.css",
+    "src/web/logBrowser.css",
     "design/showcase.css",
     "log-viewer/log-viewer.css",
     ...globSync("src/ui/design/primitives/*.css", { cwd: root }),
@@ -69,6 +75,22 @@ describe("stylesheet structure", () => {
                     ).toBeUndefined();
                 }
             });
+
+            it.skipIf(sheet.endsWith("scales.generated.css"))(
+                "uses tokens rather than literal colours",
+                () => {
+                    // A hex here works in one theme and breaks in the other
+                    // seven. `#fff` on a solid danger/accent fill is the one
+                    // exception the primitives are allowed — see
+                    // `tokens.test.ts`. The generated scales file is where the
+                    // colours legitimately live, so it sits this one out.
+                    const literals = [...css.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0]);
+                    expect(
+                        literals.filter((value) => value.toLowerCase() !== "#fff"),
+                        `literal colour in ${sheet}`,
+                    ).toEqual([]);
+                },
+            );
 
             it("declares nothing outside a block", () => {
                 const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");

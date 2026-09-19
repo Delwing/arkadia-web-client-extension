@@ -29,7 +29,13 @@ export function LineMenu({ menu, hasRange, onSetBound, onClearRange, onClose }: 
     useEffect(() => {
         const close = () => onClose();
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
+            if (event.key !== "Escape") return;
+            // Captured on `window`, ahead of every other listener, and stopped
+            // there: in a modal host the dialog is also listening for Escape,
+            // and one press must close the menu WITHOUT closing the window
+            // underneath it.
+            event.stopPropagation();
+            onClose();
         };
 
         // Attach on the NEXT tick. The right-click that opened this menu is
@@ -43,14 +49,14 @@ export function LineMenu({ menu, hasRange, onSetBound, onClearRange, onClose }: 
             window.addEventListener("contextmenu", close);
             window.addEventListener("scroll", close, true);
         }, 0);
-        window.addEventListener("keydown", onKey);
+        window.addEventListener("keydown", onKey, true);
 
         return () => {
             window.clearTimeout(armed);
             window.removeEventListener("click", close);
             window.removeEventListener("contextmenu", close);
             window.removeEventListener("scroll", close, true);
-            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("keydown", onKey, true);
         };
     }, [onClose]);
 

@@ -1,35 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { applyTheme, Spinner, type ThemeId } from "@design";
 import { LogViewer, type LogSession, type PersistedPreferences } from "@ui/logViewer";
+import { readPreferences, writePreferences } from "./preferences";
 import { loadAllSessions } from "./sessionAdapter";
 
-const PREFERENCES_KEY = "arkadia.logViewer.preferences";
 const THEME_KEY = "arkadia.logViewer.theme";
-
-function readPreferences(): PersistedPreferences | null {
-    try {
-        const raw = window.localStorage.getItem(PREFERENCES_KEY);
-        return raw ? (JSON.parse(raw) as PersistedPreferences) : null;
-    } catch {
-        return null;
-    }
-}
-
-function writePreferences(preferences: PersistedPreferences): void {
-    try {
-        window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
-    } catch {
-        // Private mode or a full quota: preferences are a convenience, not state
-        // the viewer needs to work.
-    }
-}
 
 /**
  * Standalone log browser.
  *
  * The page owns the data and the chrome; the viewer itself is the shared
- * component, so whatever is fixed here shows up in the in-client modal when
- * that lands.
+ * component, so whatever is fixed here shows up in the in-client window too
+ * (`src/web/LogBrowser.tsx`), and the other way round.
  */
 export default function LogViewerApp() {
     const [sessions, setSessions] = useState<LogSession[] | null>(null);

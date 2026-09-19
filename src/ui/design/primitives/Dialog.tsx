@@ -94,10 +94,16 @@ export function DialogFooter({ children }: { children: ReactNode }) {
     return <div className="ark-dialog-footer">{children}</div>;
 }
 
-/** Close control with the Esc hint spelled out next to it. */
+/**
+ * Close control with the Esc hint spelled out next to it.
+ *
+ * `data-testid="dialog-close"` is the project's convention for a bare "x" that
+ * has no text to aim at — see `e2e/support/dialogs.ts`, whose `dialogClose()`
+ * helper every spec goes through.
+ */
 export function DialogClose({ title = "Zamknij  Esc" }: { title?: string }) {
     return (
-        <RadixDialog.Close className="ark-dialog-close" title={title}>
+        <RadixDialog.Close className="ark-dialog-close" title={title} data-testid="dialog-close">
             <Kbd bare>Esc</Kbd>
             <Icon name="close" />
         </RadixDialog.Close>
