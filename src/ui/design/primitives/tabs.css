@@ -1,0 +1,40 @@
+/* Tabs. */
+
+.ark-tabs-list {
+  display: flex;
+  gap: var(--ark-space-2);
+  border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.ark-tabs-trigger {
+  position: relative;
+  height: 36px;
+  padding: 0 var(--ark-space-6);
+  border: none;
+  background: transparent;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-5);
+  line-height: 1;
+}
+
+.ark-tabs-trigger:hover {
+  color: var(--ark-text);
+}
+
+.ark-tabs-trigger[data-state='active'] {
+  color: var(--ark-text);
+  font-weight: var(--ark-weight-medium);
+}
+
+.ark-tabs-trigger[data-state='active']::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 2px;
+  background: var(--ark-accent-solid);
+}
+
+.ark-tabs-content {
+  padding-top: var(--ark-space-6);
+  outline: none;
+}

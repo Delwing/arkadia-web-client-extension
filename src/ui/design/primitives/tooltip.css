@@ -1,0 +1,24 @@
+/* Tooltip — Radix-positioned, one look for every surface. */
+
+.ark-tooltip {
+  z-index: var(--ark-z-tooltip);
+  max-width: 280px;
+  padding: var(--ark-space-2) var(--ark-space-4);
+  border: 1px solid var(--ark-border-strong);
+  border-radius: var(--ark-radius-2);
+  background: var(--ark-bg-raised);
+  color: var(--ark-text);
+  font-size: var(--ark-text-2);
+  line-height: var(--ark-leading-normal);
+  box-shadow: var(--ark-shadow-2);
+  animation: ark-fade-in var(--ark-duration-1) var(--ark-ease);
+}
+
+.ark-tooltip--mono {
+  font-family: var(--ark-font-mono);
+  white-space: nowrap;
+}
+
+.ark-tooltip__arrow {
+  fill: var(--ark-bg-raised);
+}

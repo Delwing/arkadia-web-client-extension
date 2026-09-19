@@ -26,6 +26,8 @@ export default defineConfig({
             "@web": resolve("./src/web"),
             "@shared": resolve("./src/shared"),
             "@web-ui": resolve("./src/ui/web"),
+            "@design": resolve("./src/ui/design"),
+            "@ui": resolve("./src/ui"),
             "@modules": resolve("./src/modules"),
         },
     },
@@ -81,6 +83,8 @@ export default defineConfig({
                 editor: resolve('editor/index.html'),
                 viewer: resolve('viewer/index.html'),
                 'log-viewer': resolve('log-viewer/index.html'),
+                // Design-system showcase: every primitive in every theme.
+                design: resolve('design/index.html'),
                 'forge-ui': resolve('forge-ui/index.html'),
                 popup: resolve('popup/index.html'),
             },

@@ -1,0 +1,130 @@
+/* Dialog — the modal shell. Radix owns focus trapping, scroll locking and the
+   escape/outside-click behaviour; this file owns nothing but the look. */
+
+.ark-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ark-z-overlay);
+  background: var(--ark-bg-overlay);
+  animation: ark-fade-in var(--ark-duration-2) var(--ark-ease);
+}
+
+.ark-dialog-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--ark-z-dialog);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: min(1240px, calc(100vw - var(--ark-space-11)));
+  height: min(780px, calc(100vh - var(--ark-space-11)));
+  min-width: min(960px, calc(100vw - var(--ark-space-11)));
+  min-height: min(600px, calc(100vh - var(--ark-space-11)));
+  transform: translate(-50%, -50%);
+  background: var(--ark-bg-surface);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-5);
+  box-shadow: var(--ark-shadow-4);
+  animation: ark-dialog-in var(--ark-duration-3) var(--ark-ease);
+}
+
+/* Small dialogs size to their content instead of filling the viewport. */
+.ark-dialog-content--auto {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: calc(100vw - var(--ark-space-11));
+  max-height: calc(100vh - var(--ark-space-11));
+}
+
+.ark-dialog-content--sm {
+  width: min(480px, calc(100vw - var(--ark-space-11)));
+}
+
+.ark-dialog-content--md {
+  width: min(720px, calc(100vw - var(--ark-space-11)));
+}
+
+.ark-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-7);
+  flex-shrink: 0;
+  height: 64px;
+  padding: 0 var(--ark-space-7) 0 var(--ark-space-8);
+  border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.ark-dialog-header--sm {
+  height: 52px;
+}
+
+.ark-dialog-title {
+  font-size: var(--ark-text-7);
+  font-weight: var(--ark-weight-semibold);
+  letter-spacing: 0.01em;
+}
+
+.ark-dialog-subtitle {
+  font-size: var(--ark-text-4);
+  color: var(--ark-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ark-dialog-body {
+  flex-grow: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ark-dialog-body--padded {
+  padding: var(--ark-space-8);
+}
+
+.ark-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ark-space-4);
+  flex-shrink: 0;
+  padding: var(--ark-space-6) var(--ark-space-8);
+  border-top: 1px solid var(--ark-border-subtle);
+}
+
+/* Close control with its Esc hint, as in the reference design. */
+.ark-dialog-close {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-space-4);
+  height: var(--ark-control-lg);
+  padding: 0 var(--ark-space-4) 0 var(--ark-space-5);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+  background: transparent;
+  color: var(--ark-text-secondary);
+  transition:
+    background-color var(--ark-duration-1) linear,
+    color var(--ark-duration-1) linear;
+}
+
+.ark-dialog-close:hover {
+  background: var(--ark-bg-element-ghost-hover);
+  color: var(--ark-text);
+}
+
+@keyframes ark-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ark-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.985);
+  }
+}

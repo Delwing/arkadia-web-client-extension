@@ -1,0 +1,63 @@
+/* Layout helpers. A very small set on purpose: these exist so components stop
+   inventing one-off flex wrappers, not to become a utility framework. */
+
+.ark-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-4);
+  min-width: 0;
+}
+
+.ark-row--tight {
+  gap: var(--ark-space-2);
+}
+
+.ark-row--loose {
+  gap: var(--ark-space-7);
+}
+
+.ark-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-4);
+  min-width: 0;
+}
+
+.ark-col--tight {
+  gap: var(--ark-space-2);
+}
+
+/* Pushes everything after it to the far edge of a row. */
+.ark-spacer {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.ark-divider {
+  flex-shrink: 0;
+  background: var(--ark-border);
+}
+
+.ark-divider--vertical {
+  width: 1px;
+  height: var(--ark-space-10);
+  margin: 0 var(--ark-space-3);
+}
+
+.ark-divider--horizontal {
+  width: 100%;
+  height: 1px;
+  margin: var(--ark-space-4) 0;
+}
+
+.ark-truncate {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ark-scroll {
+  overflow: auto;
+  min-height: 0;
+}

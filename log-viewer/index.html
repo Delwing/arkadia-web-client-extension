@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#000000"/>
+    <meta name="theme-color" content="#111110"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <title>Arkadia - Logi</title>
 </head>
 <body>
-    <div id="root"></div>
+    <!-- `ark-root` opts this subtree into the design system; the theme attribute
+         is a placeholder that LogViewerApp rewrites from the stored setting. -->
+    <div id="root" class="ark-root" data-ark-theme="arkadia"></div>
     <script type="module" src="./main.tsx"></script>
 </body>
 </html>

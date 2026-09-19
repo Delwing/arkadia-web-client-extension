@@ -1,0 +1,31 @@
+/* Checkbox. */
+
+.ark-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-1);
+  background: var(--ark-bg-sunken);
+  color: var(--ark-accent-contrast);
+  transition:
+    background-color var(--ark-duration-1) linear,
+    border-color var(--ark-duration-1) linear;
+}
+
+.ark-checkbox:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
+}
+
+.ark-checkbox[data-state='checked'],
+.ark-checkbox[data-state='indeterminate'] {
+  background: var(--ark-accent-solid);
+  border-color: var(--ark-accent-solid);
+}
+
+.ark-checkbox:disabled {
+  opacity: 0.5;
+}

@@ -1,0 +1,22 @@
+/* Keycap — shortcut hints. Always shows the key, never only an icon. */
+
+.ark-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--ark-space-2);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-1);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  line-height: 1;
+  color: var(--ark-text-secondary);
+}
+
+.ark-kbd--bare {
+  border: none;
+  padding: 0;
+  min-width: 0;
+}

@@ -1,0 +1,67 @@
+/* Badge — a count or a state word. Never interactive. */
+
+.ark-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ark-space-3);
+  min-width: 20px;
+  height: 18px;
+  padding: 0 var(--ark-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--ark-radius-full);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  font-weight: var(--ark-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.ark-badge--neutral {
+  background: var(--ark-bg-element);
+  color: var(--ark-text-secondary);
+}
+
+.ark-badge--accent {
+  background: var(--ark-accent-solid);
+  color: var(--ark-accent-contrast);
+}
+
+.ark-badge--accent-soft {
+  background: var(--ark-accent-tint-strong);
+  color: var(--ark-accent-text-strong);
+}
+
+.ark-badge--success {
+  background: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.ark-badge--danger {
+  background: var(--ark-danger-bg);
+  border-color: var(--ark-danger-border);
+  color: var(--ark-danger-text);
+}
+
+/* The "RECORDING" pill: wider, letter-spaced, with a live dot. */
+.ark-badge--status {
+  height: 20px;
+  padding: 0 var(--ark-space-4);
+  font-family: var(--ark-font-sans);
+  font-size: var(--ark-text-1);
+  letter-spacing: var(--ark-tracking-wide);
+  text-transform: uppercase;
+}
+
+.ark-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ark-radius-full);
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.ark-badge__dot--live {
+  background: var(--ark-success-solid);
+}

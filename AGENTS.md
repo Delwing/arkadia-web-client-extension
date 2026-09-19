@@ -15,7 +15,7 @@ Arkadia Web Client Extension is a browser-based client for the Arkadia MUD (Mult
 
 - **Framework**: React 19 with TypeScript 5.8
 - **Build Tool**: Vite 7 (multi-entry: client + editor + viewer + log-viewer)
-- **UI**: React-Bootstrap + Bootstrap 5
+- **UI**: design system (Radix primitives + own CSS) for new screens; React-Bootstrap + Bootstrap 5 on the not-yet-migrated stock UI
 - **Code Editor**: Monaco Editor with Shiki syntax highlighting
 - **Backend**: Firebase
 - **Special**: lua-in-js (Lua interpreter), sql.js (SQLite in WASM), esbuild-wasm
@@ -46,11 +46,15 @@ src/
 │   ├── data/         # Data stores, people loader, IndexedDB strategies
 │   ├── firebase/     # Firebase auth, sync, and device sync
 │   └── device/       # Device management and settings bundles
-└── ui/web/           # Component mounting utilities
+└── ui/
+    ├── design/       # Design system: tokens, themes, Radix-based primitives
+    ├── logViewer/    # Log viewer component + its pure model (reference screen)
+    └── web/          # Component mounting utilities
 
+design/               # Design-system showcase (separate entry point)
 editor/               # Plugin editor application (separate entry point)
 viewer/               # Session log viewer (separate entry point)
-log-viewer/           # Alternative log viewer (separate entry point)
+log-viewer/           # Standalone log browser (separate entry point, design system)
 helper/               # Native helper app (Go) — system tray, hotkeys, window mgmt
 plugin-types/         # Auto-generated TypeScript types for plugin API
 examples/             # Example plugins
@@ -68,6 +72,8 @@ Use these TypeScript path aliases (defined in `tsconfig.base.json`):
 - `@shared` → `src/shared`
 - `@modules` → `src/modules`
 - `@web-ui` → `src/ui/web`
+- `@design` → `src/ui/design` (design system)
+- `@ui` → `src/ui`
 
 ## Development Commands
 
@@ -142,8 +148,14 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 - Keep patterns ASCII-compatible
 
 ### Styling
-- Use React-Bootstrap components where appropriate
-- Follow existing CSS patterns
+- **New screens use the design system** (`@design`): Radix primitives, semantic
+  CSS tokens, eight themes. Read `docs/dev/DESIGN_SYSTEM.md` before writing UI.
+  Never put a hex colour in a component stylesheet — use a token, or the screen
+  breaks in seven of the eight themes (a unit test enforces this).
+- Screens that have not been migrated still use React-Bootstrap; follow their
+  existing patterns rather than mixing the two systems inside one screen.
+- After changing `src/ui/design/themes/themes.config.mjs`, run
+  `yarn build:design-tokens` — the generated CSS is committed.
 
 ## Protected Directories
 
@@ -151,15 +163,22 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 
 ## Entry Points
 
-There are four Vite build entries (see `vite.config.ts`):
+There are six Vite build entries (see `vite.config.ts`):
 - **Client**: `index.html` → `src/web/main.ts` - Main web application
 - **Editor**: `editor/index.html` → `editor/main.ts` - Plugin editor
 - **Viewer**: `viewer/index.html` → `viewer/main.tsx` - Session log viewer
-- **Log Viewer**: `log-viewer/index.html` → `log-viewer/main.tsx` - Standalone log viewer
+- **Log Viewer**: `log-viewer/index.html` → `log-viewer/main.tsx` - Standalone log viewer (design system; see `docs/dev/LOG_VIEWER.md`)
+- **Design showcase**: `design/index.html` → `design/main.tsx` - Every primitive, token and theme
 
 The client-side scripts entry is `src/client/main.ts` (loaded dynamically by the web app, not a Vite entry itself). It bootstraps the `Client` class which manages triggers, plugins, and game communication.
 
 ## Key Architecture Patterns
+
+### Design System
+`src/ui/design` holds the client's visual foundation: Radix primitives wrapped in
+project components, a semantic CSS token layer, and eight themes generated from
+Radix Colours at build time. `src/ui/logViewer` is the reference screen built on
+it. See `docs/dev/DESIGN_SYSTEM.md` for the token rules and the migration recipe.
 
 ### Client/UI Decoupling
 The game client (`src/client`) is UI-agnostic: DOM-free, no runtime `@web` imports (enforced by an ESLint boundary rule), and driven only through injected ports (`@client/ports`), the event bus, and concern-scoped settings accessors (`@modules/core/settings`). This is what lets a second UI (`forge-ui/`) drive the real client. See `docs/CLIENT_UI_DECOUPLING.md` for the seam and a recipe for building a UI on it.

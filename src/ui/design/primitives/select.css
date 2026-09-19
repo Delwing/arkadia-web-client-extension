@@ -1,0 +1,71 @@
+/* Select — a native-feeling trigger over a Radix listbox. */
+
+.ark-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+  height: var(--ark-control-lg);
+  padding: 0 var(--ark-space-4) 0 var(--ark-space-5);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  background: var(--ark-bg-sunken);
+  color: var(--ark-text);
+  font-size: var(--ark-text-5);
+  line-height: 1;
+}
+
+.ark-select-trigger:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
+}
+
+.ark-select-trigger:disabled {
+  opacity: 0.5;
+}
+
+.ark-select-trigger__icon {
+  color: var(--ark-text-secondary);
+}
+
+.ark-select-content {
+  z-index: var(--ark-z-popover);
+  overflow: hidden;
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  background: var(--ark-bg-raised);
+  box-shadow: var(--ark-shadow-3);
+}
+
+.ark-select-viewport {
+  padding: var(--ark-space-2);
+}
+
+.ark-select-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-4);
+  height: var(--ark-control-md);
+  padding: 0 var(--ark-space-5);
+  border-radius: var(--ark-radius-2);
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-5);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.ark-select-item[data-highlighted] {
+  background: var(--ark-bg-element-hover);
+  color: var(--ark-text);
+}
+
+.ark-select-item[data-state='checked'] {
+  color: var(--ark-text);
+  font-weight: var(--ark-weight-medium);
+}
+
+.ark-select-item__indicator {
+  display: inline-flex;
+  width: 14px;
+  color: var(--ark-accent-text);
+}

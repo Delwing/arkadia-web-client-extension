@@ -1,0 +1,34 @@
+/* Segmented control — mutually exclusive views ("Ten log" | "Wszystkie logi"). */
+
+.ark-segmented {
+  display: inline-flex;
+  gap: var(--ark-space-1);
+  padding: var(--ark-space-1);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-4);
+  background: var(--ark-bg-sunken);
+}
+
+.ark-segmented__item {
+  height: var(--ark-control-md);
+  padding: 0 var(--ark-space-6);
+  border: none;
+  border-radius: var(--ark-radius-3);
+  background: transparent;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-4);
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--ark-duration-1) linear,
+    color var(--ark-duration-1) linear;
+}
+
+.ark-segmented__item:hover:not(:disabled) {
+  color: var(--ark-text);
+}
+
+.ark-segmented__item[data-state='on'] {
+  background: var(--ark-bg-element-active);
+  color: var(--ark-text);
+}

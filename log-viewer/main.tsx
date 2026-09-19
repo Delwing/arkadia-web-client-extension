@@ -1,11 +1,10 @@
-import 'bootswatch/dist/darkly/bootstrap.min.css';
-import '../src/web/style.css';
-import '../src/web/themes/fantasy.css';
-import '../src/web/themes/forest.css';
-import '../src/web/themes/icy.css';
-import '../src/web/themes/gray.css';
-import ReactDOM from 'react-dom/client';
-import LogViewerApp from './LogViewerApp';
-import './log-viewer.css';
+// The design system's stylesheet, once, before anything that uses it. No
+// Bootstrap and no bootswatch on this page: it is the first screen built
+// entirely on the new system.
+import "@design/css/index.css";
+import "./log-viewer.css";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<LogViewerApp />);
+import ReactDOM from "react-dom/client";
+import LogViewerApp from "./LogViewerApp";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(<LogViewerApp />);

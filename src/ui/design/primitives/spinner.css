@@ -1,0 +1,28 @@
+/* Spinner. */
+
+.ark-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ark-border-strong);
+  border-top-color: var(--ark-accent-solid);
+  border-radius: var(--ark-radius-full);
+  animation: ark-spin 700ms linear infinite;
+}
+
+.ark-spinner--lg {
+  width: 24px;
+  height: 24px;
+}
+
+@keyframes ark-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ark-spinner {
+    animation-duration: 2s;
+  }
+}

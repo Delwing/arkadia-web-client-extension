@@ -1,0 +1,198 @@
+/* ============================================================================
+   Arkadia design system — semantic tokens.
+   ============================================================================
+
+   This file is written ONCE and never per theme. A theme supplies twelve
+   neutral steps and twelve accent steps (see scales.generated.css); every role
+   below is expressed in terms of those steps, so adding a theme cannot break a
+   component and a component cannot need a new colour "just for this theme".
+
+   The step roles are Radix Colours' — the reason we borrowed their scales:
+
+     1   app background
+     2   subtle / surface background
+     3   element background (rest)
+     4   element background (hover)
+     5   element background (pressed / selected)
+     6   subtle border, separator
+     7   element border, focusable outline
+     8   strong border, focus ring
+     9   solid fill (the accent proper)
+     10  solid fill, hovered
+     11  low-contrast text (secondary)
+     12  high-contrast text (primary)
+
+   Rule of thumb when adding a component: reach for a SEMANTIC token. Reach for
+   a raw step only when you are defining a new semantic token here. Never put a
+   hex value in a component stylesheet — that is the one thing that makes a
+   theme impossible.
+
+   Everything is prefixed `--ark-`. There is deliberately NO aliasing of the old
+   `--popup-*` variables: the two systems run side by side until a screen is
+   migrated (see docs/dev/DESIGN_SYSTEM.md).
+   ========================================================================== */
+
+:where([data-ark-theme]) {
+  /* --- surfaces ---------------------------------------------------------- */
+  --ark-bg-app: var(--ark-gray-1);
+  --ark-bg-surface: var(--ark-gray-2);
+  --ark-bg-raised: var(--ark-gray-3);
+  /* Inputs, timeline tracks, log panes: reads as cut INTO the surface. */
+  --ark-bg-sunken: var(--ark-gray-1);
+  --ark-bg-overlay: var(--ark-black-a9);
+
+  /* --- interactive elements ---------------------------------------------- */
+  --ark-bg-element: var(--ark-gray-3);
+  --ark-bg-element-hover: var(--ark-gray-4);
+  --ark-bg-element-active: var(--ark-gray-5);
+  --ark-bg-element-ghost-hover: var(--ark-gray-a3);
+  --ark-bg-selected: var(--ark-gray-5);
+  --ark-bg-selected-hover: var(--ark-gray-6);
+
+  /* --- borders ----------------------------------------------------------- */
+  --ark-border-subtle: var(--ark-gray-5);
+  --ark-border: var(--ark-gray-6);
+  --ark-border-element: var(--ark-gray-7);
+  --ark-border-strong: var(--ark-gray-8);
+
+  /* --- text -------------------------------------------------------------- */
+  --ark-text: var(--ark-gray-12);
+  --ark-text-secondary: var(--ark-gray-11);
+  --ark-text-tertiary: var(--ark-gray-10);
+  --ark-text-faint: var(--ark-gray-9);
+  --ark-text-disabled: var(--ark-gray-8);
+
+  /* --- accent ------------------------------------------------------------ */
+  --ark-accent-bg: var(--ark-accent-3);
+  --ark-accent-bg-hover: var(--ark-accent-4);
+  --ark-accent-bg-active: var(--ark-accent-5);
+  --ark-accent-border: var(--ark-accent-7);
+  --ark-accent-border-strong: var(--ark-accent-8);
+  --ark-accent-solid: var(--ark-accent-9);
+  --ark-accent-solid-hover: var(--ark-accent-10);
+  --ark-accent-text: var(--ark-accent-11);
+  --ark-accent-text-strong: var(--ark-accent-12);
+  /* `--ark-accent-contrast` (text ON the solid) comes from the theme: bright
+     accents like amber need near-black, dark ones need white. */
+
+  /* Translucent accent films — search highlights, timeline ticks, match rows.
+     Alpha steps, not solid ones, so they layer over any surface. */
+  --ark-accent-tint: var(--ark-accent-a3);
+  --ark-accent-tint-strong: var(--ark-accent-a5);
+  --ark-accent-wash: var(--ark-accent-a8);
+
+  /* --- focus ------------------------------------------------------------- */
+  --ark-focus-ring: var(--ark-accent-8);
+  --ark-focus-ring-width: 2px;
+  --ark-focus-ring-offset: 1px;
+
+  /* --- status ------------------------------------------------------------ */
+  --ark-success-bg: var(--ark-success-3);
+  --ark-success-border: var(--ark-success-6);
+  --ark-success-solid: var(--ark-success-9);
+  --ark-success-text: var(--ark-success-11);
+
+  --ark-warning-bg: var(--ark-warning-3);
+  --ark-warning-border: var(--ark-warning-6);
+  --ark-warning-solid: var(--ark-warning-9);
+  --ark-warning-text: var(--ark-warning-11);
+
+  --ark-danger-bg: var(--ark-danger-3);
+  --ark-danger-bg-hover: var(--ark-danger-4);
+  --ark-danger-border: var(--ark-danger-6);
+  --ark-danger-solid: var(--ark-danger-9);
+  --ark-danger-solid-hover: var(--ark-danger-10);
+  --ark-danger-text: var(--ark-danger-11);
+
+  --ark-info-bg: var(--ark-info-3);
+  --ark-info-border: var(--ark-info-6);
+  --ark-info-solid: var(--ark-info-9);
+  --ark-info-text: var(--ark-info-11);
+
+  /* --- typography -------------------------------------------------------- */
+  --ark-font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ark-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+
+  --ark-text-1: 11px;   /* eyebrow labels, keycaps */
+  --ark-text-2: 11.5px; /* dense meta: counts, ranges */
+  --ark-text-3: 12px;   /* status bar, legends */
+  --ark-text-4: 12.5px; /* chips, toggles, secondary controls */
+  --ark-text-5: 13px;   /* body, inputs, log text */
+  --ark-text-6: 13.5px; /* list item titles */
+  --ark-text-7: 16px;   /* dialog titles */
+  --ark-text-8: 20px;   /* page titles */
+
+  --ark-weight-regular: 400;
+  --ark-weight-medium: 500;
+  --ark-weight-semibold: 600;
+
+  --ark-leading-tight: 1.25;
+  --ark-leading-normal: 1.5;
+  /* Log density: the two line heights the viewer's density switch picks between. */
+  --ark-leading-log-compact: 21px;
+  --ark-leading-log-comfortable: 26px;
+
+  --ark-tracking-wide: 0.06em;
+  --ark-tracking-eyebrow: 0.08em;
+
+  /* --- space (a 2px-based ramp; use these, not magic numbers) ------------- */
+  --ark-space-1: 2px;
+  --ark-space-2: 4px;
+  --ark-space-3: 6px;
+  --ark-space-4: 8px;
+  --ark-space-5: 10px;
+  --ark-space-6: 12px;
+  --ark-space-7: 14px;
+  --ark-space-8: 16px;
+  --ark-space-9: 20px;
+  --ark-space-10: 24px;
+  --ark-space-11: 32px;
+  --ark-space-12: 48px;
+
+  /* --- radius ------------------------------------------------------------ */
+  --ark-radius-1: 3px;
+  --ark-radius-2: 4px;
+  --ark-radius-3: 6px;
+  --ark-radius-4: 8px;
+  --ark-radius-5: 10px;
+  --ark-radius-full: 999px;
+
+  /* --- control sizes (the height ladder every control snaps to) ---------- */
+  --ark-control-xs: 24px;
+  --ark-control-sm: 26px;
+  --ark-control-md: 28px;
+  --ark-control-lg: 32px;
+  --ark-control-xl: 34px;
+
+  /* --- elevation --------------------------------------------------------- */
+  --ark-shadow-1: 0 1px 2px var(--ark-black-a3);
+  --ark-shadow-2: 0 4px 12px var(--ark-black-a6);
+  --ark-shadow-3: 0 12px 32px var(--ark-black-a8);
+  --ark-shadow-4: 0 24px 80px var(--ark-black-a11);
+
+  /* --- motion ------------------------------------------------------------ */
+  --ark-duration-1: 80ms;
+  --ark-duration-2: 140ms;
+  --ark-duration-3: 220ms;
+  --ark-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- layering ---------------------------------------------------------- */
+  --ark-z-sticky: 1;
+  --ark-z-overlay: 100;
+  --ark-z-dialog: 101;
+  --ark-z-popover: 200;
+  --ark-z-tooltip: 300;
+}
+
+/* Light themes get a lighter scrim and shallower shadows — the alphas that read
+   as depth on a dark surface read as dirt on a light one. That override lives in
+   scales.generated.css (it is derived from each theme's appearance), not here,
+   so this file stays free of theme names. */
+
+@media (prefers-reduced-motion: reduce) {
+  :where([data-ark-theme]) {
+    --ark-duration-1: 0ms;
+    --ark-duration-2: 0ms;
+    --ark-duration-3: 0ms;
+  }
+}

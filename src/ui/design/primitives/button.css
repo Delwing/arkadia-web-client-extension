@@ -1,0 +1,165 @@
+/* Button — the one filled/soft/ghost/danger ladder the whole client uses. */
+
+.ark-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ark-space-3);
+  height: var(--ark-control-lg);
+  padding: 0 var(--ark-space-6);
+  border: 1px solid transparent;
+  border-radius: var(--ark-radius-3);
+  font-size: var(--ark-text-5);
+  font-weight: var(--ark-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color var(--ark-duration-1) linear,
+    border-color var(--ark-duration-1) linear,
+    color var(--ark-duration-1) linear;
+}
+
+.ark-button:disabled {
+  opacity: 0.5;
+}
+
+/* --- sizes ---------------------------------------------------------------- */
+.ark-button--sm {
+  height: var(--ark-control-md);
+  padding: 0 var(--ark-space-5);
+  font-size: var(--ark-text-4);
+}
+
+.ark-button--lg {
+  height: var(--ark-control-xl);
+  padding: 0 var(--ark-space-8);
+}
+
+/* --- variants ------------------------------------------------------------- */
+.ark-button--solid {
+  background: var(--ark-accent-solid);
+  color: var(--ark-accent-contrast);
+  font-weight: var(--ark-weight-semibold);
+}
+
+.ark-button--solid:hover:not(:disabled) {
+  background: var(--ark-accent-solid-hover);
+}
+
+.ark-button--soft {
+  background: var(--ark-bg-element);
+  border-color: var(--ark-border);
+  color: var(--ark-text);
+}
+
+.ark-button--soft:hover:not(:disabled) {
+  background: var(--ark-bg-element-hover);
+  border-color: var(--ark-border-element);
+}
+
+.ark-button--soft:active:not(:disabled) {
+  background: var(--ark-bg-element-active);
+}
+
+.ark-button--outline {
+  background: transparent;
+  border-color: var(--ark-border-element);
+  color: var(--ark-text-secondary);
+}
+
+.ark-button--outline:hover:not(:disabled) {
+  background: var(--ark-bg-element-ghost-hover);
+  color: var(--ark-text);
+}
+
+.ark-button--ghost {
+  background: transparent;
+  color: var(--ark-text-secondary);
+}
+
+.ark-button--ghost:hover:not(:disabled) {
+  background: var(--ark-bg-element-ghost-hover);
+  color: var(--ark-text);
+}
+
+.ark-button--danger {
+  background: var(--ark-danger-solid);
+  color: #fff;
+  font-weight: var(--ark-weight-semibold);
+}
+
+.ark-button--danger:hover:not(:disabled) {
+  background: var(--ark-danger-solid-hover);
+}
+
+.ark-button--danger-soft {
+  background: var(--ark-danger-bg);
+  border-color: var(--ark-danger-border);
+  color: var(--ark-danger-text);
+}
+
+.ark-button--danger-soft:hover:not(:disabled) {
+  background: var(--ark-danger-bg-hover);
+}
+
+/* A link that behaves like a button — "Pokaz wszystkie", "Resetuj filtry". */
+.ark-button--link {
+  height: auto;
+  padding: 0;
+  background: none;
+  color: var(--ark-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ark-button--link:hover:not(:disabled) {
+  color: var(--ark-text);
+}
+
+.ark-button__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* --- icon-only ------------------------------------------------------------ */
+.ark-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--ark-control-lg);
+  height: var(--ark-control-lg);
+  padding: 0;
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+  background: transparent;
+  color: var(--ark-text-secondary);
+  transition:
+    background-color var(--ark-duration-1) linear,
+    border-color var(--ark-duration-1) linear,
+    color var(--ark-duration-1) linear;
+}
+
+.ark-icon-button:hover:not(:disabled) {
+  background: var(--ark-bg-element-ghost-hover);
+  border-color: var(--ark-border-element);
+  color: var(--ark-text);
+}
+
+.ark-icon-button:disabled {
+  opacity: 0.4;
+}
+
+.ark-icon-button--sm {
+  width: var(--ark-control-md);
+  height: var(--ark-control-md);
+}
+
+.ark-icon-button--plain {
+  border-color: transparent;
+}
+
+.ark-icon-button--plain:hover:not(:disabled) {
+  border-color: transparent;
+}
