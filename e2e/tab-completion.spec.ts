@@ -1,4 +1,5 @@
 import {expect, test} from './support/fixtures';
+import {dialogClose, subDialog} from './support/dialogs';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
@@ -35,12 +36,12 @@ async function loadSuggestionPlugin(page: Page, words: string[]): Promise<void> 
     await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
     await page.locator('.plugin-route', {hasText: 'Z adresu URL'}).click();
 
-    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    const dialog = subDialog(page, 'Dodaj skrypt z URL');
     await dialog.getByPlaceholder('URL skryptu').fill(SUGGESTION_PLUGIN_URL);
     await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
     await expect(modal.getByText('Suggestion Plugin')).toBeVisible();
 
-    await modal.locator('.btn-close').first().click();
+    await dialogClose(modal).first().click();
     await expect(modal).not.toBeVisible();
 }
 

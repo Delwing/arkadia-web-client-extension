@@ -1,4 +1,5 @@
 import {expect, test} from './support/fixtures';
+import {dialogClose} from './support/dialogs';
 import {ensureGameSocket, pushGmcp, pushText, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
 
@@ -23,7 +24,7 @@ async function openLogs(page: Page): Promise<void> {
 }
 
 async function closeLogs(page: Page): Promise<void> {
-    await page.locator('#logs-modal .btn-close').click();
+    await dialogClose(page.locator('#logs-modal')).click();
     await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
 }
 

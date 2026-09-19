@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushGmcp, pushText, waitForCharacter, waitForCommandInput} from './support/mocks';
+import {dialogClose} from './support/dialogs';
 import {openSettings, SETTINGS_MODAL} from './support/settings';
 import type {Page} from '@playwright/test';
 
@@ -15,7 +16,7 @@ async function login(page: Page): Promise<void> {
 }
 
 async function closeSettings(page: Page): Promise<void> {
-    await page.locator(`${SETTINGS_MODAL} .btn-close`).first().click();
+    await dialogClose(page.locator(SETTINGS_MODAL)).first().click();
     await expect(page.locator(SETTINGS_MODAL)).not.toBeVisible();
 }
 
@@ -42,7 +43,7 @@ test.describe('Logging toggle', () => {
     test('the switch is in UI settings, not in the Logi browser', async ({page}) => {
         await openLogs(page);
         await expect(page.locator('#logs-modal #logs-enabled')).toHaveCount(0);
-        await page.locator('#logs-modal .btn-close').click();
+        await dialogClose(page.locator('#logs-modal')).click();
         await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
 
         const modal = await openSettings(page, 'ui-other');

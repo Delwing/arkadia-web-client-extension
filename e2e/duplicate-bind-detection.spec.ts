@@ -8,6 +8,7 @@ import {
     waitForCommandInput,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
+import {dialogClose} from './support/dialogs';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -17,11 +18,11 @@ async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
     await page.waitForSelector('#binds-modal.show', {timeout: 5000});
-    await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
+    await page.locator('#binds-modal').getByRole('combobox').first().waitFor({timeout: 5000});
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal .btn-close').first().click();
+    await dialogClose(page.locator('#binds-modal')).first().click();
     await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
 }
 

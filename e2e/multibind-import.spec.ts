@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
+import {dialogClose, subDialog} from './support/dialogs';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
@@ -23,7 +24,7 @@ async function openBindsModal(page: Page) {
 
 async function closeBindsModal(page: Page) {
     const modal = page.locator('#binds-modal');
-    await modal.locator('.btn-close').click();
+    await dialogClose(modal).click();
     await expect(modal, 'should close binds modal after finishing checks').not.toBeVisible();
 }
 
@@ -66,12 +67,8 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        // The import dialog renders inline inside #binds-modal (see @web/SubDialog),
-        // so both the host modal and the dialog match — take the innermost, the
-        // same way scripts.spec.ts locates its sub-dialogs.
-        const importModal = page.locator('.modal.show').filter({
-            has: page.locator('.modal-title:has-text("Importuj bazę multibindów")'),
-        }).last();
+        // The import dialog renders inline inside #binds-modal (see @web/SubDialog).
+        const importModal = subDialog(page, 'Importuj bazę multibindów');
         await expect(importModal, 'should show import summary modal').toBeVisible();
         await expect(importModal, 'should summarize total rows to process').toContainText('Łącznie wierszy: 5');
         await expect(importModal, 'should list rows selected for import').toContainText('Wiersze do importu: 3');
@@ -143,7 +140,7 @@ test.describe('Multibind import', () => {
             'should display newly created alias entry',
         ).toContainText(aliasCommand);
 
-        await aliasesModal.locator('.btn-close').click();
+        await dialogClose(aliasesModal).click();
         await expect(aliasesModal, 'should close aliases modal after creating alias').not.toBeVisible();
 
         await submitCommand(page, `/mbind 3 ${aliasPattern}`);
@@ -214,9 +211,7 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        const importModal = page.locator('.modal.show').filter({
-            has: page.locator('.modal-title:has-text("Importuj bazę multibindów")'),
-        }).last();
+        const importModal = subDialog(page, 'Importuj bazę multibindów');
         await expect(importModal, 'should queue every row for import').toContainText(`Wiersze do importu: ${rows.length}`);
 
         await importModal.getByRole('button', { name: 'Importuj' }).click();
@@ -246,7 +241,7 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        const errorAlert = page.locator('#binds-modal .alert-danger');
+        const errorAlert = page.locator('#binds-modal').getByRole('alert');
         await expect(errorAlert, 'should display worker error alert').toBeVisible();
         await expect(errorAlert, 'should show worker error message').toHaveText('Nie udało się sparsować bazy.');
         await expect(triggerButton, 'should re-enable import trigger after failure').toBeEnabled();

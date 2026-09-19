@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, waitForCommandInput} from './support/mocks';
+import {dialogClose, dialogTitle} from './support/dialogs';
 import {
     goToSettingsPage,
     openButtonsSettings,
@@ -23,6 +24,9 @@ const settingsPage = (page: Page, category: string) =>
 const navItem = (page: Page, category: string) =>
     page.locator(`${SETTINGS_MODAL} .settings-dialog__nav-item[data-settings-category="${category}"]`);
 
+/** Every window the app has open - one element per window in index.html. */
+const openWindows = (page: Page) => page.locator('[id$="-modal"]').filter({visible: true});
+
 async function boot(page: Page) {
     await page.goto('/');
     await waitForCommandInput(page);
@@ -30,7 +34,7 @@ async function boot(page: Page) {
 }
 
 async function closeWithoutSaving(page: Page) {
-    await page.locator(`${SETTINGS_MODAL} .btn-close`).click();
+    await dialogClose(page.locator(SETTINGS_MODAL)).click();
     await expect(page.locator(SETTINGS_MODAL), 'settings modal should close').not.toBeVisible();
     await waitForSettingsModalClosed(page);
 }
@@ -43,8 +47,8 @@ test.describe('Settings dialog', () => {
         await page.click('#menu-button');
         await page.click('#options-button');
         await waitForSettingsModalShown(page);
-        await expect(page.locator('.modal.show'), 'only one settings modal is open').toHaveCount(1);
-        await expect(modal.locator('.modal-title')).toHaveText('Ustawienia');
+        await expect(openWindows(page), 'only one settings modal is open').toHaveCount(1);
+        await expect(dialogTitle(modal)).toHaveText('Ustawienia');
         await expect(settingsPage(page, 'character-general'), 'Ustawienia opens on Postac > Ogolne').toBeVisible();
         await expect(navItem(page, 'character-general')).toHaveClass(/settings-dialog__nav-item--active/);
         await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
@@ -54,8 +58,8 @@ test.describe('Settings dialog', () => {
         await page.click('#menu-button');
         await page.click('#ui-settings-button');
         await waitForSettingsModalShown(page);
-        await expect(page.locator('.modal.show'), 'only one settings modal is open').toHaveCount(1);
-        await expect(modal.locator('.modal-title')).toHaveText('Ustawienia');
+        await expect(openWindows(page), 'only one settings modal is open').toHaveCount(1);
+        await expect(dialogTitle(modal)).toHaveText('Ustawienia');
         await expect(settingsPage(page, 'ui-appearance'), 'Interfejs opens on Interfejs > Wyglad').toBeVisible();
         await expect(navItem(page, 'ui-appearance')).toHaveClass(/settings-dialog__nav-item--active/);
         await expect(settingsPage(page, 'character-general')).toBeHidden();
@@ -158,7 +162,7 @@ test.describe('Settings dialog', () => {
         await settingsPage(page, 'ui-mobile-buttons').locator('#mobile-buttons-preview-solo [data-button-id="button-1"]').click();
         const config = page.locator('.mobile-button-config');
         await config.locator('input[type="color"]').first().fill('#ff0000');
-        await config.locator('.btn-close').click();
+        await dialogClose(config).click();
         await expect(config).toHaveCount(0);
         await expect(mobileDot, 'a change made in the closed config popup still counts').toBeVisible();
 
@@ -193,7 +197,7 @@ test.describe('Settings dialog', () => {
         await settingsPage(page, 'ui-mobile-buttons').locator('#mobile-buttons-preview-solo [data-button-id="button-1"]').click();
         const config = page.locator('.mobile-button-config');
         await config.locator('.mobile-button-label').fill('Wspolny');
-        await config.locator('.btn-close').click();
+        await dialogClose(config).click();
 
         await saveSettings(page);
         await expect(

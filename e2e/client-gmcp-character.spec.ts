@@ -12,6 +12,7 @@ import {
     waitForCharacter,
     waitForOutputContaining,
 } from './support/mocks';
+import {dialogClose} from './support/dialogs';
 import {openSettings, SETTINGS_MODAL} from './support/settings';
 
 async function openOptions(page: Page) {
@@ -19,7 +20,7 @@ async function openOptions(page: Page) {
 }
 
 async function closeOptions(page: Page) {
-    await page.locator(`${SETTINGS_MODAL} .btn-close`).first().click();
+    await dialogClose(page.locator(SETTINGS_MODAL)).first().click();
     await expect(page.locator(SETTINGS_MODAL), 'settings modal should close').not.toBeVisible();
 }
 

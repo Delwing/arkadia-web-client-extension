@@ -25,14 +25,25 @@ const test = base.extend({
             window.__DISABLE_FIREBASE__ = true;
         });
 
-        // Disable Bootstrap modal CSS transitions so show/hide animations complete
-        // instantly, eliminating _isTransitioning race conditions in CI.
+        // Dialog open/close animations are what the dialog framework refuses to
+        // interrupt: a hide() issued mid-animation is dropped on the floor,
+        // which is the classic _isTransitioning race in CI. Nothing in the
+        // suite depends on a dialog animating, so switch those animations off
+        // - addressed by the app's own id convention rather than by framework
+        // class names. (Keep it to dialogs: MobileCommandRadial gates a
+        // `display:none` on `transitionend` and pipeStatus lands its smoke on
+        // `animationiteration`, so a blanket rule would stall both.)
         await context.addInitScript(() => {
             function injectNoTransitions() {
                 const style = document.createElement('style');
                 style.textContent =
-                    '.modal.fade .modal-dialog { transition: none !important; }' +
-                    '.modal-backdrop { transition: none !important; }';
+                    // The windows in index.html, and the card inside each one.
+                    '[id$="-modal"], [id$="-modal"] > div { transition: none !important; }' +
+                    // The dimmed backdrop is appended straight to <body> by the
+                    // dialog framework, so it is the one piece of dialog chrome
+                    // with no id of ours to name it by. `transition` does not
+                    // inherit, so this reaches no content inside those nodes.
+                    'body > div:not([id]) { transition: none !important; }';
                 document.head.appendChild(style);
             }
             if (document.readyState === 'loading') {

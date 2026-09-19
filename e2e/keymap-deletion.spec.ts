@@ -1,6 +1,10 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
+import {dialogClose, dialogTitle, subDialog} from './support/dialogs';
+
+/** The keymap dropdown at the top of the binds window. */
+const keymapDropdown = (page: Page) => page.locator('#binds-modal').getByRole('combobox').first();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -15,18 +19,16 @@ async function openBindsModal(page: Page): Promise<void> {
     });
     await page.click('#binds-button');
     await page.waitForSelector('#binds-modal.show', {timeout: 5000});
-    await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
-    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
+    await keymapDropdown(page).waitFor({timeout: 5000});
+    // Wait for the open animation to finish so modal.hide() won't be silently ignored
     await page.waitForFunction(() => {
-        const d = document.querySelector('#binds-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+        const el = document.getElementById('binds-modal');
+        return !!el && window.getComputedStyle(el).opacity === '1';
     });
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal .btn-close').first().click();
+    await dialogClose(page.locator('#binds-modal')).first().click();
     await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
 }
 
@@ -54,7 +56,7 @@ async function createKeymap(page: Page): Promise<void> {
     }
 
     // Wait for the keymap select to reappear after the rename completes
-    await page.locator('#binds-modal .form-select').first().waitFor({state: 'visible', timeout: 3000});
+    await keymapDropdown(page).waitFor({state: 'visible', timeout: 3000});
 }
 
 // ---------------------------------------------------------------------------
@@ -73,7 +75,7 @@ test.describe('Keymap deletion', () => {
     test('delete button is disabled when only one keymap exists', async ({page}) => {
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
         const optionCount = await keymapSelect.locator('option').count();
 
         // This test only makes sense when there is exactly one keymap in storage
@@ -113,7 +115,7 @@ test.describe('Keymap deletion', () => {
     test('deleting a keymap removes it from the dropdown list', async ({page}) => {
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
 
         // Ensure we start with a known second keymap
         await createKeymap(page);
@@ -128,8 +130,8 @@ test.describe('Keymap deletion', () => {
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
 
         // Confirmation modal should appear; click the danger "Usuń" button inside it
-        const confirmModal = page.locator('.modal.show').last();
-        await confirmModal.locator('button.btn-danger:has-text("Usuń")').click();
+        const confirmModal = subDialog(page, 'Usunąć mapę klawiszy?');
+        await confirmModal.getByRole('button', {name: 'Usuń', exact: true}).click();
 
         // Wait for the select to refresh
         await page.waitForTimeout(300);
@@ -157,7 +159,7 @@ test.describe('Keymap deletion', () => {
     test('another keymap is selected after the current one is deleted', async ({page}) => {
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
 
         // Create a second keymap so we can delete it
         await createKeymap(page);
@@ -167,8 +169,8 @@ test.describe('Keymap deletion', () => {
 
         // Delete it
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
-        const confirmModal = page.locator('.modal.show').last();
-        await confirmModal.locator('button.btn-danger:has-text("Usuń")').click();
+        const confirmModal = subDialog(page, 'Usunąć mapę klawiszy?');
+        await confirmModal.getByRole('button', {name: 'Usuń', exact: true}).click();
         await page.waitForTimeout(300);
 
         // After deletion the select should show a different (existing) keymap
@@ -192,7 +194,7 @@ test.describe('Keymap deletion', () => {
         test.slow();
         await openBindsModal(page);
 
-        const keymapSelect = page.locator('#binds-modal .form-select').first();
+        const keymapSelect = keymapDropdown(page);
 
         // Create a second keymap
         await createKeymap(page);
@@ -201,8 +203,8 @@ test.describe('Keymap deletion', () => {
 
         // Delete it
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
-        const confirmModal = page.locator('.modal.show').last();
-        await confirmModal.locator('button.btn-danger:has-text("Usuń")').click();
+        const confirmModal = subDialog(page, 'Usunąć mapę klawiszy?');
+        await confirmModal.getByRole('button', {name: 'Usuń', exact: true}).click();
         await page.waitForTimeout(300);
 
         await closeBindsModal(page);
@@ -214,7 +216,7 @@ test.describe('Keymap deletion', () => {
 
         await openBindsModal(page);
 
-        const keymapSelectAfter = page.locator('#binds-modal .form-select').first();
+        const keymapSelectAfter = keymapDropdown(page);
         const values: string[] = [];
         const opts = keymapSelectAfter.locator('option');
         const n = await opts.count();
@@ -241,9 +243,9 @@ test.describe('Keymap deletion', () => {
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
 
         // Confirmation modal should be visible with the expected title text
-        const confirmModal = page.locator('.modal.show').last();
+        const confirmModal = subDialog(page, 'Usunąć mapę klawiszy?');
         await expect(confirmModal).toBeVisible();
-        await expect(confirmModal.locator('.modal-title')).toContainText('map');
+        await expect(dialogTitle(confirmModal)).toContainText('map');
 
         // Dismiss the confirmation (cancel)
         await confirmModal.locator('button:has-text("Anuluj")').click();

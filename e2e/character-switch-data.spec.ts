@@ -11,6 +11,7 @@ import {
     waitForCommandInput,
     waitForOutputContaining,
 } from './support/mocks';
+import {dialogClose} from './support/dialogs';
 import {openSettings, saveSettings} from './support/settings';
 
 async function simulateHerbBagScan(
@@ -326,7 +327,7 @@ test.describe('Character switch clears per-character data', () => {
         ).toBeChecked();
 
         // Close modal without saving using the X button
-        await optionsModal.locator('.btn-close').first().click();
+        await dialogClose(optionsModal).first().click();
         await expect(optionsModal).not.toBeVisible();
 
         // Switch back to CollectCharA and verify its stored (non-default) values are shown
@@ -348,7 +349,7 @@ test.describe('Character switch clears per-character data', () => {
             'collectGold should be unchecked for CharA (was explicitly set to false)'
         ).not.toBeChecked();
 
-        await optionsModalA.locator('.btn-close').first().click();
+        await dialogClose(optionsModalA).first().click();
         await expect(optionsModalA).not.toBeVisible();
     });
 });
@@ -742,7 +743,7 @@ test.describe('Lua gags colors character switch', () => {
         // Default color for moje_ciosy is #f0f8ff
         await expect(colorInputB, 'GagColorB should show default color').toHaveValue('#f0f8ff');
 
-        await modal2.locator('.btn-close').first().click();
+        await dialogClose(modal2).first().click();
         await expect(modal2).not.toBeVisible();
 
         // Switch back to GagColorA
