@@ -460,20 +460,32 @@ body {
    because themes/bridge.css maps --popup-* onto --ark-*, and it would break
    outright the day that bridge is deleted. Same zero-specificity guard as the
    `button` rules below; .form-control/.form-select are Bootstrap's own classes
-   and no design-system element carries them, so they are left alone. */
+   and no design-system element carries them, so they are left alone.
+
+   The guard excludes `settings-` as well as `ark-`, and that is not belt and
+   braces. The migrated settings layer keeps three controls native on purpose
+   -- .settings-native-select, .settings-color and .settings-range, because
+   @design has no <optgroup>, no colour picker and Playwright cannot drive a
+   Radix listbox with selectOption() -- and styles them from tokens under their
+   own class names. Those names do not start with `ark-`, so `.modal select`
+   and `.modal input` (0,1,1) went on out-specifying .settings-native-select
+   (0,1,0) and painting them from --popup-* anyway: the token declarations in
+   settingsDialog.css were dead for background, border and radius. The whole
+   `settings-` namespace lives in that one migrated stylesheet, so excluding
+   the prefix is exactly "this layer paints itself". */
 .form-control,
 .form-select,
-textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-.modal textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-.modal input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-.modal select:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+.modal textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+.modal input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+.modal select:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   background-color: var(--popup-input-bg);
   border: 1px solid var(--popup-border-control);
   color: var(--popup-input-text);
@@ -483,14 +495,14 @@ input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], 
 
 .form-control:focus,
 .form-select:focus,
-textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus {
   background-color: var(--popup-input-bg);
   border-color: var(--popup-input-focus-border);
   box-shadow: 0 0 0 0.2rem var(--popup-input-focus-border);
@@ -498,23 +510,30 @@ input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], 
   outline: none;
 }
 
+/* The third of these. `input::placeholder` is (0,0,1) plus a pseudo-element
+   and nothing in the design system out-specifies it, so every migrated
+   placeholder in the client -- the settings dialog's own search box included --
+   was drawn in --popup-text-faint. The guarded rules above and below it were
+   fixed in PR 1 and PR 2; this one sits between them and was missed, because
+   the bridge maps --popup-text-faint onto the same value the token resolves to
+   and the two are indistinguishable on screen. Same zero-specificity guard. */
 .form-control::placeholder,
-textarea::placeholder,
-input::placeholder {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-']))::placeholder,
+input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-']))::placeholder {
   color: var(--popup-text-faint);
   opacity: 1;
 }
 
 .form-control:disabled,
 .form-select:disabled,
-textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled {
   background-color: var(--popup-subtle-bg);
   border-color: var(--popup-border-subtle);
   color: var(--popup-text-dim);
@@ -1759,7 +1778,7 @@ h1 {
    `:where()` around the `:not()` keeps the selector at a bare element's
    specificity, so nothing else in the stock cascade moves. Add a namespace
    here when a screen migrates; the whole block goes when Bootstrap does. */
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
   padding: 0.75vh 2vw;
@@ -1773,11 +1792,11 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   transition: border-color 0.25s;
   opacity: 0.75;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):hover {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):hover {
   border-color: #646cff;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus-visible {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus-visible {
   outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
@@ -1789,7 +1808,7 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   a:hover {
   color: #747bff;
   }
-  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   background-color: #f9f9f9;
   }
 }
@@ -2064,7 +2083,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
      Migrated screens are out for the same reason as the skin above: their
      controls carry their own sizing from the --ark-control-* ladder, and
      8vmin would square off every checkbox on a phone. */
-  button:where(:not(.popout-root *)):where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+  button:where(:not(.popout-root *)):where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   min-height: 8vmin; /* Minimum touch target size */
   min-width: 8vmin;
   }
