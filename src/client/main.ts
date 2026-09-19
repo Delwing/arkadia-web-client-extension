@@ -15,6 +15,7 @@ import initLamp from './scripts/lamp'
 import initCoverTimer from './scripts/coverTimer'
 import initOrderTimer from './scripts/orderTimer'
 import initCombatState from './scripts/combatState'
+import initDeath from './scripts/death'
 import initCombatTimer from './scripts/combatTimer'
 import initWeaponState from './scripts/weaponState'
 import initZaskTimer from './scripts/zaskTimer'
@@ -254,6 +255,7 @@ export function registerScripts(client: Client) {
     initCoverTimer(client)
     initOrderTimer(client)
     initCombatState(client)
+    initDeath(client)
     initCombatTimer(client)
     initWeaponState(client)
     initZaskTimer(client)

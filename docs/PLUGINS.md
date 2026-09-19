@@ -453,6 +453,7 @@ api.events.emit(eventName, payload);
 **Popularne wydarzenia:**
 - `mapMove` - Przesunięcie na mapie
 - `enemyKilled` - Zabicie przeciwnika
+- `playerDeath` - Śmierć twojej postaci (linia `Umierasz.`), bez danych
 - `command` - Wysłana komenda
 - `gmcp` - Wiadomość GMCP
 - `gmcp.{path}` - Konkretna ścieżka GMCP (np. `gmcp.char.vitals`)
