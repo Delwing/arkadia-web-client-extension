@@ -8,7 +8,7 @@
  * components actually use live in tokens.css and are written ONCE, in terms
  * of these steps — see the step-role table there.
  */
-/* Arkadia (ciemny) — sand / amber, dark */
+/* Arkadia (ciemny) — sand / blue, dark */
 [data-ark-theme="arkadia"] {
   color-scheme: dark;
   --ark-appearance: dark;
@@ -39,32 +39,32 @@
   --ark-gray-a11: #fffcf4b0;
   --ark-gray-a12: #fffffded;
 
-  /* accent: amber */
-  --ark-accent-1: #16120c;
-  --ark-accent-2: #1d180f;
-  --ark-accent-3: #302008;
-  --ark-accent-4: #3f2700;
-  --ark-accent-5: #4d3000;
-  --ark-accent-6: #5c3d05;
-  --ark-accent-7: #714f19;
-  --ark-accent-8: #8f6424;
-  --ark-accent-9: #ffc53d;
-  --ark-accent-10: #ffd60a;
-  --ark-accent-11: #ffca16;
-  --ark-accent-12: #ffe7b3;
-  --ark-accent-a1: #e63c0006;
-  --ark-accent-a2: #fd9b000d;
-  --ark-accent-a3: #fa820022;
-  --ark-accent-a4: #fc820032;
-  --ark-accent-a5: #fd8b0041;
-  --ark-accent-a6: #fd9b0051;
-  --ark-accent-a7: #ffab2567;
-  --ark-accent-a8: #ffae3587;
-  --ark-accent-a9: #ffc53d;
-  --ark-accent-a10: #ffd60a;
-  --ark-accent-a11: #ffca16;
-  --ark-accent-a12: #ffe7b3;
-  --ark-accent-contrast: var(--ark-gray-1);
+  /* accent: blue */
+  --ark-accent-1: #0d1520;
+  --ark-accent-2: #111927;
+  --ark-accent-3: #0d2847;
+  --ark-accent-4: #003362;
+  --ark-accent-5: #004074;
+  --ark-accent-6: #104d87;
+  --ark-accent-7: #205d9e;
+  --ark-accent-8: #2870bd;
+  --ark-accent-9: #0090ff;
+  --ark-accent-10: #3b9eff;
+  --ark-accent-11: #70b8ff;
+  --ark-accent-12: #c2e6ff;
+  --ark-accent-a1: #004df211;
+  --ark-accent-a2: #1166fb18;
+  --ark-accent-a3: #0077ff3a;
+  --ark-accent-a4: #0075ff57;
+  --ark-accent-a5: #0081fd6b;
+  --ark-accent-a6: #0f89fd7f;
+  --ark-accent-a7: #2a91fe98;
+  --ark-accent-a8: #3094feb9;
+  --ark-accent-a9: #0090ff;
+  --ark-accent-a10: #3b9eff;
+  --ark-accent-a11: #70b8ff;
+  --ark-accent-a12: #c2e6ff;
+  --ark-accent-contrast: #fff;
 
   /* status hues — fixed per appearance, never follow the accent */
   --ark-success-3: #1b2a1e;
