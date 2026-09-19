@@ -1,0 +1,391 @@
+/* Woreczki ziol ("Woreczki ziol") popup — the /ziola bags, pills and the
+   give-to-a-teammate panel. The window's own toggles live here too, because
+   `.herb-window__toggle` has exactly one caller: this component's header.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   CO SIE ZMIENILO POZA ZAMIANA ZMIENNYCH
+
+   1. Stan woreczka (dobry / zuzyty / dziurawy) juz byl na success / warning /
+      danger i tam zostaje - to jedyny ranking w tym oknie i czyta sie jako
+      ranking w kazdym motywie.
+   2. Zniknely obwodki wpisane jako rgba(34, 197, 94, 0.4), czyli ta sama
+      zielen co --popup-success, tylko recznie. Dwie warstwy tej samej barwy
+      to dwa miejsca do rozjechania sie.
+   3. Efekty na pigulce mialy tlo rgba(0, 0, 0, 0.3). Pigulka jest tintem
+      akcentu, wiec w motywach jasnych czarny film na jasnym tincie dawal
+      szary klocek z nieczytelnym napisem. Film neutralny (--ark-gray-a3) jest
+      czernia na jasnym i biela na ciemnym, czyli robi to, co mial robic.
+   4. Pigulka stracila cien tekstu (rgba(10, 13, 20, 0.65) pod napisem). Cien
+      czerni pod tekstem ma sens na ciemnym tincie i tylko tam; w motywach
+      jasnych rozmazywal litery. Kontrast niesie teraz sama rola tekstu.
+   5. Cienie i wewnetrzne rozjasnienia zostaja literalami rgba(). To czysta
+      glebia, nie barwa motywu - tak samo jak w pozostalych zmigrowanych
+      arkuszach tej fazy (CombatStatusPopup.css). Testu to nie rusza: pilnuje
+      zapisow szesnastkowych, a nie kazdej alfy. */
+
+/* ── window header toggles ───────────────────────────────────────────── */
+
+.herb-window__toggle {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.herb-window__toggle:hover {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
+}
+
+.herb-window__toggle--active {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.herb-window__toggle--active:hover {
+  background-color: var(--ark-success-4);
+}
+
+/* ── bags ─────────────────────────────────────────────────────────────── */
+
+.herb-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.75rem;
+}
+
+.herb-manager--busy {
+  pointer-events: none;
+  opacity: 0.88;
+  filter: saturate(0.85);
+}
+
+.herb-manager-status {
+  margin-bottom: 0;
+}
+
+.herb-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.herb-bag {
+  background: linear-gradient(160deg, var(--ark-bg-raised), var(--ark-bg-surface));
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  min-height: 9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px rgba(4, 6, 12, 0.55);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.herb-bag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.15rem;
+  font-weight: 600;
+  color: var(--ark-text);
+  letter-spacing: 0.01em;
+}
+
+.herb-bag-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.herb-bag-condition {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--ark-border-strong);
+  background: var(--ark-gray-a2);
+  color: var(--ark-text);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.herb-bag-condition--good {
+  border-color: var(--ark-success-border);
+  background: var(--ark-success-bg);
+  color: var(--ark-success-text);
+}
+
+.herb-bag-condition--warn {
+  border-color: var(--ark-warning-border);
+  background: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+}
+
+.herb-bag-condition--bad {
+  border-color: var(--ark-danger-border);
+  background: var(--ark-danger-bg);
+  color: var(--ark-danger-text);
+}
+
+.herb-bag-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+}
+
+.herb-bag-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.herb-bag-empty {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ark-text-tertiary);
+}
+
+.herb-bag-drop-target {
+  border-color: var(--ark-accent-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px var(--ark-accent-border),
+    0 18px 36px rgba(4, 6, 12, 0.5);
+  transform: translateY(-2px);
+}
+
+/* ── pills ────────────────────────────────────────────────────────────── */
+
+.herb-pill {
+  --herb-pill-bg: linear-gradient(145deg, var(--ark-accent-bg-hover), var(--ark-accent-bg-active));
+  --herb-pill-bg-hover: linear-gradient(145deg, var(--ark-accent-bg-active), var(--ark-accent-bg-active));
+  --herb-pill-border: var(--ark-accent-border);
+  --herb-pill-border-hover: var(--ark-accent-text);
+  --herb-pill-bg-split: linear-gradient(145deg, var(--ark-accent-bg), var(--ark-accent-bg-active));
+  --herb-pill-border-split: var(--ark-accent-text);
+  --herb-pill-text: var(--ark-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--herb-pill-border);
+  background: var(--herb-pill-bg);
+  color: var(--herb-pill-text);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 18px rgba(4, 7, 12, 0.35);
+}
+
+.herb-pill:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.herb-pill:hover {
+  background: var(--herb-pill-bg-hover);
+  border-color: var(--herb-pill-border-hover);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 22px rgba(4, 7, 12, 0.45);
+}
+
+.herb-pill-split {
+  --herb-pill-bg: var(--herb-pill-bg-split);
+  --herb-pill-border: var(--herb-pill-border-split);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 12px 26px rgba(4, 6, 12, 0.5);
+}
+
+.herb-pill-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.herb-pill-label {
+  white-space: nowrap;
+}
+
+.herb-pill--with-effects {
+  align-items: flex-start;
+  flex-direction: column;
+  border-radius: 0.55rem;
+  gap: 0.25rem;
+}
+
+.herb-pill-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.herb-pill-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.herb-pill-effect {
+  font-size: 0.65rem;
+  line-height: 1.2;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background-color: var(--ark-gray-a3);
+  color: var(--ark-text-secondary);
+  white-space: nowrap;
+}
+
+/* ── compact mode ─────────────────────────────────────────────────────── */
+
+.herb-manager--compact {
+  gap: 0.5rem;
+}
+
+.herb-manager--compact .herb-grid {
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.herb-manager--compact .herb-bag {
+  padding: 0.5rem;
+  min-height: 5rem;
+  gap: 0.25rem;
+}
+
+.herb-manager--compact .herb-bag-header {
+  margin-bottom: 0.1rem;
+  font-size: 0.85rem;
+}
+
+.herb-manager--compact .herb-bag-content {
+  gap: 0.3rem;
+}
+
+.herb-manager--compact .herb-pill {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  gap: 0.25rem;
+}
+
+.herb-manager--compact .herb-bag-condition {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+}
+
+.herb-manager--compact .herb-bag-count {
+  font-size: 0.65rem;
+}
+
+.herb-manager--compact .herb-bag-empty {
+  font-size: 0.7rem;
+}
+
+/* ── give panel — drop herbs here, pick a team member, hand it over ────── */
+
+.herb-give-panel {
+  background: linear-gradient(160deg, var(--ark-bg-raised), var(--ark-bg-surface));
+  border: 1px dashed var(--ark-border-strong);
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.herb-give-panel--active {
+  border-color: var(--ark-accent-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 1px var(--ark-accent-border);
+}
+
+.herb-give-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-weight: 600;
+  color: var(--ark-text);
+}
+
+.herb-give-target {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.herb-give-select {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-secondary);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  max-width: 14rem;
+}
+
+.herb-give-basket {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  min-height: 2.4rem;
+  align-items: center;
+}
+
+.herb-give-hint {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ark-text-tertiary);
+}
+
+.herb-give-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.herb-give-btn {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.herb-give-btn:hover:not(:disabled) {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
+}
+
+.herb-give-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.herb-give-btn--primary {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+  font-weight: 600;
+}
+
+.herb-give-btn--primary:hover:not(:disabled) {
+  background-color: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
