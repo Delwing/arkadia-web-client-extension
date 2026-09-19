@@ -14,6 +14,7 @@ import FooterSections from "./sections/FooterSections";
 import MapSections from "./sections/MapSections";
 import NotificationsSection from "./sections/NotificationsSection";
 import SoundSection from "./sections/SoundSection";
+import LogsSection from "./sections/LogsSection";
 import { MobileButtonsSection, OtherSection } from "./sections/OtherSections";
 import ManageSoundsModal from "./ManageSoundsModal";
 import { SettingsSection } from "./fields";
@@ -285,7 +286,12 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
                 />
             </>
         ),
-        "ui-other": <OtherSection draft={draft} update={update} />,
+        "ui-other": (
+            <>
+                <OtherSection draft={draft} update={update} />
+                <LogsSection />
+            </>
+        ),
     };
 
     const extras = (

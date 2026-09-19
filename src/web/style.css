@@ -884,7 +884,20 @@ h1 {
   background-color: var(--popup-control-bg, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--popup-border, rgba(255, 255, 255, 0.12));
   border-radius: 3px;
-  cursor: pointer;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* What the preview currently shows. */
+.logs-timeline-viewport {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 2px;
+  border: 1px solid darkorange;
+  background-color: rgba(255, 140, 0, 0.15);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .logs-timeline-hist {
@@ -928,6 +941,16 @@ h1 {
   cursor: ew-resize;
   z-index: 2;
   touch-action: none;
+}
+
+/* Wider invisible grab area than the 3px line. */
+.logs-timeline-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  right: -6px;
 }
 
 .logs-timeline-handle:hover {
@@ -987,13 +1010,33 @@ h1 {
   border-bottom: 0;
 }
 
+/* Session group label: body font on a tinted strip with an accent edge, so it
+   reads as a heading and not as another (monospace) result row. Sticky, so the
+   background must be opaque: the tint is layered over the list's own colour. */
 .logs-search-session-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.3rem 0.75rem;
+  font-family: var(--bs-body-font-family);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--bs-secondary-color);
+  background:
+    linear-gradient(rgba(var(--bs-primary-rgb, 13, 110, 253), 0.14), rgba(var(--bs-primary-rgb, 13, 110, 253), 0.14)),
+    var(--output-bg, #242424);
+  border-left: 3px solid var(--bs-primary, #0d6efd);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.logs-search-summary {
+  margin-bottom: -0.25rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
 }
 
 .logs-search-session-title {
@@ -1012,8 +1055,7 @@ h1 {
 }
 
 .logs-search-session-active .logs-search-session-header {
-  color: var(--popup-text);
-  background-color: var(--popup-accent-team-bg);
+  color: var(--popup-text, var(--bs-body-color));
 }
 
 .logs-search-input-wrapper {
@@ -1051,22 +1093,37 @@ h1 {
 
 .logs-search-controls {
   display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.logs-search-position {
+  min-width: 4.5rem;
+  text-align: center;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
 }
 
 #logs-search-results .logs-search-result {
+  scroll-margin-top: 2rem;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
   border: 0;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   background: transparent;
   text-align: left;
-  padding: 0.35rem 0.75rem;
+  padding: 0.25rem 0.75rem;
   cursor: pointer;
+}
+
+/* Results under a session heading are indented beneath it. */
+#logs-search-results .logs-search-session-header + .logs-search-session-results .logs-search-result {
+  padding-left: 1.75rem;
 }
 
 #logs-search-results .logs-search-result:hover,
@@ -1128,6 +1185,76 @@ h1 {
 #logs-preview .logs-preview-highlight {
   background-color: rgba(255, 193, 7, 0.2);
   outline: 1px solid rgba(255, 193, 7, 0.6);
+}
+
+::highlight(logs-match) {
+  background-color: rgba(255, 193, 7, 0.35);
+}
+
+::highlight(logs-match-active) {
+  background-color: rgba(255, 152, 0, 0.9);
+  color: #000;
+}
+
+#logs-preview:focus-visible {
+  outline: 1px solid var(--bs-primary, #0d6efd);
+  outline-offset: -1px;
+}
+
+#logs-preview:focus {
+  outline: none;
+}
+
+/* Hidden sample row: the preview measures a character cell and the time
+   column from it to estimate wrapped line heights. */
+#logs-preview .logs-preview-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre;
+}
+
+/* Stock Logi dialog: as wide as the screen allows and full height, so the
+   preview (not the dialog) takes the extra space and is the only scroller. */
+#logs-modal .logs-modal-dialog {
+  height: calc(100% - var(--bs-modal-margin) * 2);
+}
+
+@media (min-width: 1200px) {
+  #logs-modal .logs-modal-dialog {
+    --bs-modal-width: min(1800px, calc(100vw - 4rem));
+  }
+}
+
+#logs-modal .modal-content {
+  height: 100%;
+}
+
+#logs-modal .logs-modal-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#logs-modal .logs-browser {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#logs-modal #logs-preview {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 12rem;
+}
+
+.logs-toolbar #logs-session-select {
+  flex: 1 1 12rem;
+  width: auto;
 }
 
 .logs-manage-table { width: 100%; font-size: 0.85rem; }
