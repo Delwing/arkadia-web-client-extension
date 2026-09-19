@@ -190,7 +190,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
      * provides one, so the moment forge grows its own attribute this stops
      * applying by itself. `.ark-root` is deliberately NOT set: that is the
      * visual opt-in (background, font, element resets), and claiming it would
-     * repaint the fourteen tabs that are still on Bootstrap.
+     * repaint the pages that are still on Bootstrap.
      */
     useLayoutEffect(() => {
         const host = hostRef.current;
