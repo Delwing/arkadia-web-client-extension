@@ -1,0 +1,183 @@
+/* Transport route ("Trasa") popup — the timetable of a boat/coach line drawn as
+   a vertical graph: nodes are stops, edges carry the leg times and the
+   countdown for the leg you are riding.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   ---------------------------------------------------------------------------
+   BARWY: DWA ZNACZENIA, NIE CZTERY
+
+   Stary arkusz mial tu cztery literaly - springgreen, dwa rgba() i jeden zapis
+   szesnastkowy zlota - i zaden nie byl zmienna, wiec zaden nie szedl za
+   motywem. Audyt uzyc daje dwa znaczenia, nie cztery:
+
+     zielen  = jestes tutaj / dotarles (--active na wezle, --arrived w blysku)
+     bursztyn = zaznaczone przez gracza i to, co dzieje sie TERAZ
+                (--alert: dzwonek postawiony klikiem; --active na krawedzi
+                 i na odliczanym czasie)
+
+   Zielen to obecnosc i domkniecie, czyli status - idzie na --ark-success-*.
+   Bursztyn NIE jest ostrzezeniem: nic tu nie idzie zle, gracz sam postawil
+   dzwonek, a jadaca krawedz to po prostu biezacy odcinek. "Biezace/zaznaczone"
+   to w tym systemie robota akcentu, wiec ten bursztyn idzie na --ark-accent-*.
+   Naciagniecie go na --ark-warning-* trzymalo by barwe we wszystkich osmiu
+   motywach, ale zlamalo by regule z DESIGN_SYSTEM.md §3, ze barwa statusu
+   znaczy jedno - a kiedys ktos zobaczylby ostrzezenie tam, gdzie go nie ma.
+
+   SKUTEK WIDOCZNY NA ZRZUTACH: w motywach o akcencie innym niz cieply (arkadia
+   jest blekitna) zaznaczony wezel i odliczanie sa teraz w barwie akcentu, a nie
+   zlote. To zmiana zamierzona, nie regresja kaskady. Gdyby mialy zostac zlote
+   mimo motywu, to decyzja o palecie, czyli §8 planu (strojenie po fazie 6). */
+
+.transport-route-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.transport-route-popup__empty {
+  padding: 1rem 0.75rem;
+  color: var(--ark-text-tertiary);
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+}
+
+/* --- Transport graph view --- */
+
+.transport-graph {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Node */
+
+.transport-graph__node {
+  padding: 0.15rem 0.25rem;
+  color: var(--ark-text);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.transport-graph__node:hover {
+  background-color: var(--ark-bg-element-ghost-hover);
+}
+
+.transport-graph__node--active {
+  color: var(--ark-success-text);
+  font-weight: bold;
+}
+
+.transport-graph__node--alert {
+  border-color: var(--ark-accent-border-strong);
+}
+
+.transport-graph__node--arrived {
+  border-color: var(--ark-success-border);
+  background-color: var(--ark-success-bg);
+  animation: transport-arrived-flash 1s ease-in-out 3;
+}
+
+/* Blysk musi miec dwa rozne kroki, a --ark-success-bg to jedna wartosc. Drugi
+   krok bierze wiec ten sam token zmieszany z powierzchnia w druga strone -
+   mocniejszy, ale wciaz wyliczony z motywu. */
+@keyframes transport-arrived-flash {
+  0%, 100% { background-color: var(--ark-success-bg); }
+  50% { background-color: color-mix(in srgb, var(--ark-success-border) 70%, var(--ark-bg-surface)); }
+}
+
+.transport-graph__node-dot {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  width: 1em;
+  text-align: center;
+}
+
+.transport-graph__node-label {
+  white-space: nowrap;
+}
+
+.transport-graph__alert-icon {
+  margin-left: auto;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Edge */
+
+.transport-graph__edge {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.15rem 0 0.15rem 0.55rem;
+  min-height: 1.6rem;
+}
+
+.transport-graph__edge-line {
+  width: 2px;
+  background-color: var(--ark-text-tertiary);
+  border-radius: 1px;
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+
+.transport-graph__edge--active .transport-graph__edge-line {
+  background-color: var(--ark-accent-solid);
+  opacity: 0.7;
+}
+
+.transport-graph__edge--traveling .transport-graph__edge-line {
+  opacity: 1;
+  animation: transport-edge-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes transport-edge-glow {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 3px var(--ark-accent-solid); }
+  50% { opacity: 1; box-shadow: 0 0 8px var(--ark-accent-solid), 0 0 3px var(--ark-accent-solid); }
+}
+
+.transport-graph__edge-times {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  font-size: 0.78rem;
+  color: var(--ark-text-tertiary);
+}
+
+.transport-graph__edge-time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.transport-graph__edge-time--active {
+  color: var(--ark-accent-text);
+  font-weight: bold;
+}
+
+/* Loop-back node */
+
+.transport-graph__node--loop-back {
+  opacity: 0.65;
+}
+
+.transport-graph__node--loop-back .transport-graph__node-dot {
+  font-size: 0.85rem;
+}

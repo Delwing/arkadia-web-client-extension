@@ -102,7 +102,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
-3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status) done
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -242,6 +242,10 @@ kalkulator, Slonce - tracker, Informacje o lokacji. **Okno mapy (StaticMap) was
 deliberately left behind**; why, and the two other things this PR found, are
 below.
 
+**PR 3 (travel/transport) is done** — seven popups: Wozy, Blokady wozu, Trasa,
+Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
+worth keeping are in "What PR 3 found" below.
+
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
 
@@ -352,12 +356,23 @@ Follow this literally; it is what PR 1 converged on.
    bespoke markup: `Table`, `Button`, `Segmented`, `EmptyState`, `Input`,
    `Icon`. Do not force it; a tokenised bespoke gauge beats a primitive that
    does not fit.
-7. **Add the stylesheet to `MIGRATED_SHEETS`** in
-   `test/ui/design/stylesheets.test.ts` — or, if the popup has no stylesheet and
-   is styled from inline `style={{ ... }}` objects, add the component to
-   `MIGRATED_POPUP_COMPONENTS` in the same file. That is what enforces no-hex
-   and no-`--popup-*` from then on; a migrated popup left off both lists keeps
-   the tokens but loses the rule.
+7. **Add it to the three lists that hold it.** Two are in
+   `test/ui/design/stylesheets.test.ts`: `MIGRATED_SHEETS` for a stylesheet,
+   or `MIGRATED_POPUP_COMPONENTS` for a popup styled from inline
+   `style={{ ... }}` objects rather than a sheet. Between them they enforce
+   no-hex and no-`--popup-*` from then on; a migrated popup left off both keeps
+   the tokens but loses the rule. The third is the expected manifest contents in
+   `test/web/popups/hostTokens.test.ts` ("lists every migrated sheet the
+   manifest owns") — it fails the moment the manifest grows, so a PR that
+   misses it is red rather than silently wrong, but it costs a round trip.
+
+   Two things the rules do not say out loud. The no-hex check **does not strip
+   comments**, so a hex quoted in a header comment to record *what the old value
+   was* fails the test — describe it in words instead. And a hex handed to
+   `createColorFormat` for a line printed into the **game output** is not a
+   theme decision: that window's background is the player's own setting, and
+   there is no token for it. Such a component stays off
+   `MIGRATED_POPUP_COMPONENTS` rather than being forced onto a token.
 8. **Screenshot before and after, in at least three themes**, one dark, one
    light, one with a strong accent. Diff them. A pure token swap should come out
    near-identical; anything that moved and should not have is a cascade or
@@ -387,6 +402,66 @@ its own; it should not be smuggled in under one popup's name.
 Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
 would half-migrate the screen, which §5 forbids for exactly the reason that
 applies here — the body would re-theme and the header would not.
+
+#### What PR 3 (travel/transport) found
+
+**The recipe's step 1 paid off, in the sense that there was nothing to pay.**
+The plan warns that the resistances popup borrows `.carriage-remove-btn` from
+travel. It no longer does — PR 1 moved that popup onto `Table` and dropped the
+borrow, so by the time this family came round the class was cleanly its own.
+What remained was an internal borrow: `CarriageBlocksPopup` uses the carriages
+popup's remove button. Splitting those into two sheets would have left the
+class in one file and its only other use in another, so both windows share
+`CarriagesPopup.css`. Worth stating as a rule: **the slice boundary is the
+class graph, not the file name.**
+
+**Two popups had no stylesheet at all.** `TransportTimesDebugPopup` and
+`TransportDebugPopup` were built entirely from inline `style={{...}}` — the
+first reading `--popup-*`, the second reading nothing at all (hard-coded greys
+plus a `KIND_COLOR` map in TypeScript). The plan's headline measurement, "the
+popup layer is already variable-driven, 1 020 `var(--popup-*)` uses in
+`popups.css`", counts only the stylesheet. It does not see a popup whose
+styling never reached a stylesheet, and those cost a rewrite rather than a
+token swap. Anyone sizing the remaining families should grep for
+`style={{` as well as for `var(--popup-`.
+
+**`--ark-bg-overlay` is a scrim, not a surface.** It resolves to
+`--ark-black-a9`. Used as the background of a floating panel it gives a dark
+box with dark text in the two light themes — a window that is simply
+unreadable. The name invites the mistake; the token for a floating panel is
+`--ark-bg-raised`. Found on a screenshot, not by any test.
+
+**A primitive can fit and still need a delta.** The times-debug table is a good
+fit for `Table`, but `Table` sets `white-space: nowrap` on every cell (right for
+a dense data table) and this one's first column is a long leg description. Left
+alone it pushed the table past the window edge and hid the last column's
+button. The delta that re-enables wrapping has to be **two classes deep**
+(`.transport-times-debug .ark-table td:first-child`): a one-class selector ties
+with `.ark-table td`, and a tie between a per-popup sheet and a primitive sheet
+is decided by Rollup's chunk order, which the manifest does not control. The
+manifest fixed ordering *among popup sheets*; it does nothing for popup sheet
+versus primitive sheet. **Any delta that overrides a primitive needs the extra
+specificity, not the manifest.**
+
+**A popup outside `POPUP_CATALOG` needs `data-popup-overlay` to survive forge.**
+`TransportDebugPopup` is mounted by `LayoutManagerWrapper` directly and portals
+to `document.body` — and forge renders `LayoutManagerWrapper` too. It therefore
+sits outside the `.managed-panel, [data-popup-overlay]` scope that
+`popup-host-tokens.css` uses, so migrating it would have left it with no tokens
+at all in forge. Adding `data-popup-overlay` to the portal root fixes it: forge
+already defines its full `--popup-*` palette on that attribute, and in the
+stock client the attribute changes nothing.
+
+**Both Phase-3 popup families found inline-styled popups, and answered
+differently.** World/time kept theirs inline (the calendar, sun calculator and
+sun tracker are ~1 500 lines between them; rewriting was not a migration) and
+extended the rules to cover the TSX. Travel extracted its two into real
+stylesheets, because they were small. Both answers are legitimate and the
+choice is a size judgement — but the *rule* must reach the popup either way, so
+`test/ui/design/stylesheets.test.ts` now carries `MIGRATED_SHEETS` and
+`MIGRATED_POPUP_COMPONENTS` over one shared pair of checks rather than two
+copies of them. When the two families merged, the copies were identical.
+
 
 #### `--popup-data-*`: decided
 
@@ -682,6 +757,16 @@ Two things are deliberately parked until then:
   Phase 3 (it is a Phase-1 bridge characteristic, not a migration regression),
   so it is parked here rather than fixed. The fix is probably a stronger step
   for the active tab's fill, not a per-theme special case.
+
+- **The travelling leg on the route popup is no longer gold.** The transport
+  graph had two hard-coded ambers: the bell a player pins to a stop, and the
+  leg being ridden with its countdown. Neither is a warning — nothing is going
+  wrong in either — so PR 3 put both on the accent, which is what "current /
+  marked" means in this system. Where the accent is warm (parchment, fantasy)
+  it still reads close to the old gold; in `arkadia` it is blue. Forcing it
+  back to gold in every theme means either misusing `--ark-warning-*`, which
+  breaks the one-meaning-per-status rule, or giving the data palette a warm
+  slot on purpose. That is a palette decision, so it waits here.
 
 - **Anything else that is "the new palette is different", rather than "this
   screen is broken".** File it here; do not fix it mid-migration.

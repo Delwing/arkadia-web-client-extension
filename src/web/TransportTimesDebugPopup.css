@@ -1,0 +1,178 @@
+/* Transport times (debug) popup — every recorded leg duration per transport,
+   with the shortest/longest/original spread and a per-leg reset.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Pulled in by the manifest at
+   src/web/popups/popups.css, which both UIs load — through an @import, NOT a
+   component import, because the cascade here is decided by source order and
+   Rollup reorders chunks (see that manifest). In forge-ui the tokens come from
+   popup-host-tokens.css, not from a theme.
+
+   TEN ARKUSZ NIE ISTNIAL. Popup byl w calosci na stylach inline - trzydziesci
+   kilka obiektow `style={{ ... }}` czytajacych --popup-*. Migracja to tutaj nie
+   podmiana zmiennej, tylko wyprowadzenie tych stylow do klas; dopiero wtedy
+   arkusz da sie trzymac regula "bez literalow" z test/ui/design/stylesheets.
+
+   Tabela legow poszla na prymityw <Table compact>. Pasuje bez naciagania: ma
+   naglowek, kolumny liczbowe wyrownane do prawej i gesty wiersz - dokladnie to,
+   po co Table powstal. Zostaly tylko deltay szerokosci i barw per kolumna.
+
+   Okno zostaje na monospace i 11px, bo to okno diagnostyczne czytane obok
+   surowego wyjscia gry, a nie ekran interfejsu. */
+
+.transport-times-debug {
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  padding: var(--ark-space-4);
+  color: var(--ark-text);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.transport-times-debug__toolbar {
+  display: flex;
+  gap: var(--ark-space-3);
+  margin-bottom: var(--ark-space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* = .popup-input + monospace/rozmiar okna diagnostycznego */
+.transport-times-debug__filter,
+.transport-times-debug__sort {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 3px var(--ark-space-3);
+  border-radius: var(--ark-radius-1);
+}
+
+.transport-times-debug__filter {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+.transport-times-debug__sort {
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text-secondary);
+}
+
+.transport-times-debug__only {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-2);
+  color: var(--ark-text-tertiary);
+}
+
+.transport-times-debug__summary {
+  font-size: var(--ark-text-1);
+  color: var(--ark-text-tertiary);
+  margin-bottom: var(--ark-space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ark-space-3);
+}
+
+/* = .popup-btn + monospace okna */
+.transport-times-debug__refresh {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.transport-times-debug__list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: var(--ark-space-2);
+}
+
+.transport-times-debug__status {
+  color: var(--ark-text-tertiary);
+}
+
+.transport-times-debug__group {
+  margin-bottom: var(--ark-space-4);
+}
+
+.transport-times-debug__group-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ark-space-3);
+  padding: 3px var(--ark-space-2);
+  background-color: var(--ark-gray-a2);
+  border-radius: var(--ark-radius-1);
+  margin-bottom: var(--ark-space-1);
+}
+
+.transport-times-debug__group-name {
+  color: var(--ark-text-secondary);
+  font-weight: bold;
+}
+
+.transport-times-debug__group-count {
+  color: var(--ark-text-tertiary);
+}
+
+/* Prymityw ma wlasna typografie; okno diagnostyczne trzyma swoja. */
+.transport-times-debug__table {
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+}
+
+/* Table zaklada `white-space: nowrap` w KAZDEJ komorce - slusznie, bo to gesta
+   tabela danych. Tutaj pierwsza kolumna to opis odcinka ("Ard Skellig ->
+   Hindarsfjall (10314->23678)"), ktory bez zawijania rozpycha tabele poza okno
+   i scina ostatnia kolumne z przyciskiem "reset". Zlapane na zrzucie przed/po,
+   nie przez zaden test - dokladnie po to jest krok 8 przepisu.
+
+   Selektor celowo dwuklasowy (0,2,1). `.transport-times-debug__table td`
+   remisuje z `.ark-table td` (0,1,1), a o remisie decyduje kolejnosc zrodla -
+   ktora dla arkuszy prymitywow ustala Rollup, nie manifest. To ta sama pulapka,
+   ktora w PR 1 zjadla bursztyn przycisku w Cechach. Wyzsza specyficznosc
+   wyjmuje regule spod tej loterii.
+
+   Kolumny liczbowe zostaja na nowrap - tam zawijanie psuje wyrownanie. */
+.transport-times-debug .ark-table td:first-child,
+.transport-times-debug .ark-table th:first-child {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.transport-times-debug__leg-index,
+.transport-times-debug__leg-arrow {
+  color: var(--ark-text-tertiary);
+}
+
+.transport-times-debug__leg-ids {
+  color: var(--ark-text-tertiary);
+  margin-left: var(--ark-space-3);
+}
+
+/* Czas biezacy rozny od oryginalnego: nie jest ani lepszy, ani gorszy - jest
+   INNY, czyli to paleta kategoryczna, nie status. Slot 4 dlatego, ze
+   popup-host-tokens.css mapuje go na --popup-data-gold, czyli dokladnie to,
+   czym ta komorka byla przed migracja (i w forge zostaje nia nadal). */
+.transport-times-debug__now--overridden {
+  color: var(--ark-data-4-text);
+}
+
+/* Najkrotszy zmierzony czas - z trojki min/max/orig to ten "najlepszy", wiec
+   status, nie paleta. */
+.transport-times-debug__min {
+  color: var(--ark-success-text);
+}
+
+.transport-times-debug__updated {
+  font-size: var(--ark-text-1);
+}
+
+/* = .popup-btn.popup-btn--sm + monospace okna */
+.transport-times-debug__reset {
+  font-family: inherit;
+  font-size: inherit;
+}

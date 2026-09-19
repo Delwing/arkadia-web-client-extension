@@ -32,6 +32,13 @@ const MIGRATED_SHEETS = [
     "src/web/ClockPopup.css",
     "src/web/RoomInfoPopup.css",
     "src/web/WorldTimePopup.css",
+    // Faza 3, rodzina 3 — podroze i transport.
+    "src/web/CarriagesPopup.css",
+    "src/web/TransportDebugPopup.css",
+    "src/web/TransportRoutePopup.css",
+    "src/web/TransportTimesDebugPopup.css",
+    "src/web/TripPlannerPopup.css",
+    "src/web/WalkerPopup.css",
     // Faza 4 — powloka ustawien i pierwsze strony.
     "src/web/settings/settingsDialog.css",
     "src/web/options/guildsSettings.css",
@@ -39,14 +46,24 @@ const MIGRATED_SHEETS = [
 ];
 
 /**
- * Migrated popups that have NO stylesheet of their own — they are styled from
- * `style={{ ... }}` objects in the component, so `MIGRATED_SHEETS` above cannot
- * reach them and the rule it enforces would quietly not apply.
+ * Migrated popups whose colours must not drift back into the component.
+ * `MIGRATED_SHEETS` above can only see stylesheets, so a popup styled from
+ * `style={{ ... }}` objects would slip the rule entirely.
  *
- * Found in Faza 3, rodzina 2: the calendar, the sun calculator and the sun
- * tracker are between them ~1 500 lines of inline styles and zero CSS files.
- * Rewriting them into stylesheets would have been a rewrite, not a migration,
- * so instead the same two rules are held against the TSX.
+ * Two families arrived here from opposite directions, and both belong:
+ *
+ * - Faza 3, rodzina 2 (swiat i czas) has popups with NO stylesheet at all: the
+ *   calendar, the sun calculator and the sun tracker are between them ~1 500
+ *   lines of inline styles. Rewriting those into stylesheets would have been a
+ *   rewrite, not a migration, so the rules are held against the TSX instead.
+ * - Faza 3, rodzina 3 (podroze i transport) had two popups in the same state
+ *   and DID extract them into stylesheets. They are listed here as well, so
+ *   that the inline styling cannot quietly come back.
+ *
+ * `TransportRoutePopup.tsx` is deliberately absent: it passes one hex to
+ * `createColorFormat` for a line printed into the GAME output, whose background
+ * is the player's own setting rather than a theme surface. That is not a theme
+ * decision and there is no token for it.
  */
 const MIGRATED_POPUP_COMPONENTS = [
     "src/web/CalendarPopup.tsx",
@@ -56,6 +73,8 @@ const MIGRATED_POPUP_COMPONENTS = [
     "src/web/SunTrackerPopup.tsx",
     "src/web/WorldTimePopup.tsx",
     "src/web/popups/worldPalette.ts",
+    "src/web/TransportDebugPopup.tsx",
+    "src/web/TransportTimesDebugPopup.tsx",
 ];
 
 /**
@@ -140,15 +159,42 @@ describe("stylesheet structure", () => {
     }
 });
 
+/**
+ * The two rules, written once.
+ *
+ * Both Phase-3 popup families landed a copy of these loops in the same merge —
+ * one over stylesheets, one over components — and the bodies were identical.
+ * A rule with two implementations drifts, so they live here and the describes
+ * below only choose what to point them at.
+ *
+ * `--popup-split-gutter` is a local length, not a palette token, so it is not
+ * a legacy read. A colour arriving from the GAME (a room's envColor) is data
+ * rather than a theme decision, which is why only literals written INTO the
+ * source count.
+ */
+function literalColours(source: string): string[] {
+    // A hex here is a colour that survives exactly one of the eight themes.
+    // `#fff` on a solid fill is the system-wide exception.
+    return [...source.matchAll(/#[0-9a-f]{3,8}\b/gi)]
+        .map((match) => match[0])
+        .filter((value) => value.toLowerCase() !== "#fff");
+}
+
+function legacyTokenReads(source: string): string[] {
+    // Half a migration is worse than none: themes/bridge.css cannot be deleted
+    // while one of these still reads the old layer, and a screen on both layers
+    // goes wrong in ways nobody notices.
+    return [...source.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)]
+        .map((match) => match[1])
+        .filter((name) => name !== "--popup-split-gutter");
+}
+
 describe("migrated screens", () => {
     for (const sheet of [...MIGRATED_SHEETS, ...BRIDGE_SHEETS]) {
         const css = readFileSync(resolve(root, sheet), "utf8");
 
         it(`${sheet} uses tokens rather than literal colours`, () => {
-            // A hex here is a colour that survives exactly one of the eight
-            // themes. `#fff` on a solid fill is the system-wide exception.
-            const literals = [...css.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0]);
-            expect(literals.filter((value) => value.toLowerCase() !== "#fff")).toEqual([]);
+            expect(literalColours(css)).toEqual([]);
         });
     }
 
@@ -156,14 +202,7 @@ describe("migrated screens", () => {
         const css = readFileSync(resolve(root, sheet), "utf8");
 
         it(`${sheet} has no --popup-* reads left`, () => {
-            // Half a migration is worse than none: themes/bridge.css cannot be
-            // deleted while one of these still reads the old layer, and a
-            // screen on both layers goes wrong in ways nobody notices.
-            // `--popup-split-gutter` is a local length, not a palette token.
-            const legacy = [...css.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)]
-                .map((match) => match[1])
-                .filter((name) => name !== "--popup-split-gutter");
-            expect(legacy).toEqual([]);
+            expect(legacyTokenReads(css)).toEqual([]);
         });
     }
 });
@@ -175,17 +214,11 @@ describe("migrated popup components", () => {
         it(`${component} uses tokens rather than literal colours`, () => {
             // Inline styles break a theme exactly as a stylesheet does; the
             // only difference is that nothing used to be watching them.
-            // A colour arriving from the GAME (a room's envColor) is data, not
-            // a theme decision, so only literals written INTO the source count.
-            const literals = [...source.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0]);
-            expect(literals.filter((value) => value.toLowerCase() !== "#fff")).toEqual([]);
+            expect(literalColours(source)).toEqual([]);
         });
 
         it(`${component} has no --popup-* reads left`, () => {
-            const legacy = [...source.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)].map(
-                (match) => match[1],
-            );
-            expect(legacy).toEqual([]);
+            expect(legacyTokenReads(source)).toEqual([]);
         });
     }
 });

@@ -1,0 +1,239 @@
+/* Trip planner ("Planer trasy") popup.
+   A reorderable list of stops, saved routes, and the two actions that walk it.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   UWAGA NA SELEKTORY e2e. e2e/trip-planner.spec.ts celuje w .trip-planner-stop,
+   -stop-color, -stop-id, -stop-name, -stop-number, -stop-distance, -stop-remove,
+   -total, -input, -select i -btn--danger. Klasy zostaja nawet tam, gdzie regula
+   zwinela sie do zera - sa haczykiem testu, nie stylem. */
+
+.trip-planner-window-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  overflow: auto;
+  background-color: var(--ark-bg-surface);
+}
+
+.trip-planner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trip-planner-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.trip-planner-label {
+  color: var(--ark-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.trip-planner-empty {
+  padding: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.trip-planner-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 150px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.trip-planner-stop {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.25rem;
+}
+
+.trip-planner-stop:hover {
+  background-color: var(--ark-bg-element);
+}
+
+.trip-planner-stop--unreachable {
+  background-color: var(--ark-danger-bg);
+  border: 1px solid var(--ark-danger-bg-hover);
+}
+
+.trip-planner-stop-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.trip-planner-stop-handle {
+  color: var(--ark-text-faint);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  font-size: 0.75rem;
+}
+
+.trip-planner-stop-handle:hover {
+  color: var(--ark-text-secondary);
+}
+
+.trip-planner-stop-warning {
+  color: var(--ark-warning-text);
+  font-size: 0.75rem;
+}
+
+.trip-planner-stop-distance {
+  color: var(--ark-accent-text);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  background-color: var(--ark-accent-bg);
+  border-radius: 0.2rem;
+  flex-shrink: 0;
+}
+
+.trip-planner-total {
+  color: var(--ark-text-secondary);
+  font-size: 0.75rem;
+  text-align: right;
+  padding: 0.35rem 0.5rem;
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+/* Bylo rgba(251, 191, 36, ...), czyli bursztyn wpisany na sztywno. To
+   ostrzezenie ("czesc przystankow jest nieosiagalna"), wiec idzie na role
+   statusowa, a nie na palete kategoryczna. */
+.trip-planner-warning {
+  color: var(--ark-warning-text);
+  font-size: 0.7rem;
+  padding: 0.35rem 0.5rem;
+  background-color: var(--ark-warning-bg);
+  border: 1px solid var(--ark-warning-border);
+  border-radius: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.trip-planner-stop-number {
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+  min-width: 1.2rem;
+}
+
+/* Identyfikator i nazwa przystanku to dwie kolumny tych samych danych, ktore
+   maja sie od siebie odroznic - nic tu nie rankuje. Stad paleta kategoryczna,
+   a nie statusy: slot 3 dla id (byl --popup-data-green), slot 4 dla nazwy
+   (byla rgba(255, 165, 0, 0.7)). Slot 4 to zreszta ta sama decyzja, co
+   .postepy2-header__name w warstwie 2 - nazwy siedza na czworce. */
+.trip-planner-stop-id {
+  color: var(--ark-data-3-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.trip-planner-stop-name {
+  color: var(--ark-data-4-text);
+  font-size: 0.75rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-planner-stop-remove {
+  background: none;
+  border: none;
+  color: var(--ark-text-faint);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.trip-planner-stop-remove:hover {
+  color: var(--ark-danger-text);
+}
+
+.trip-planner-mode-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Wlasny, mniejszy pasek zakladek niz .popup-tab z warstwy 2 (0.7rem kontra
+   0.8rem, brak flex: 1, wezsze wypelnienie). Zwijanie go na .popup-tab zmienia
+   uklad tej sekcji, a krok 6 przepisu mowi wprost: stonowany wlasny widget bije
+   prymityw, ktory nie pasuje. Zostaje wlasny, tyle ze na tokenach. */
+.trip-planner-mode-tab {
+  background-color: var(--ark-bg-element-ghost-hover);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trip-planner-mode-tab:hover {
+  background-color: var(--ark-bg-element-hover);
+}
+
+.trip-planner-mode-tab--active {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+}
+
+.trip-planner-input-row {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* inputs folded to .popup-input; only the row-fill delta remains (classes
+   kept for e2e selectors). */
+.trip-planner-input,
+.trip-planner-select {
+  flex: 1;
+}
+
+.trip-planner-select option {
+  background-color: var(--ark-bg-sunken);
+  color: var(--ark-text);
+}
+
+/* .trip-planner-btn--danger i .trip-planner-action-btn--danger byly recznym
+   rgba(239, 68, 68, ...) - czyli dokladnie tym, co warstwa 2 ma juz jako
+   .popup-btn--danger. Komponent dostal ta klase, a te dwie zostaja w TSX tylko
+   jako haczyk e2e; reguly po nich nie zostalo. */
+
+.trip-planner-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--ark-border);
+}
+
+/* base = .popup-btn.popup-btn--md (+ .popup-btn--primary / --danger);
+   only the equal-width layout + taller padding remain */
+.trip-planner-action-btn {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+}

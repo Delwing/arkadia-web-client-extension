@@ -453,7 +453,7 @@ const TripPlannerPopup: React.FC = () => {
                             </button>
                             <button
                                 type="button"
-                                className="popup-btn popup-btn--md trip-planner-btn--danger"
+                                className="popup-btn popup-btn--md popup-btn--danger trip-planner-btn--danger"
                                 onClick={handleDeleteRoute}
                                 disabled={!selectedRoute}
                                 title="Usun zapisana trase"
@@ -610,7 +610,7 @@ const TripPlannerPopup: React.FC = () => {
                     </button>
                     <button
                         type="button"
-                        className="popup-btn popup-btn--md trip-planner-action-btn trip-planner-action-btn--danger"
+                        className="popup-btn popup-btn--md popup-btn--danger trip-planner-action-btn trip-planner-action-btn--danger"
                         onClick={clearStops}
                         disabled={stops.length === 0}
                         title="Wyczysc wszystkie przystanki"

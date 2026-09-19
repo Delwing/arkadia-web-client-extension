@@ -146,6 +146,7 @@ describe("popup stylesheet ordering", () => {
             .sort();
         expect(manifestSheets).toEqual(
             [
+                "src/web/CarriagesPopup.css",
                 "src/web/CechyPopup.css",
                 "src/web/ClockPopup.css",
                 "src/web/RoomInfoPopup.css",
@@ -156,6 +157,11 @@ describe("popup stylesheet ordering", () => {
                 "src/web/Postepy2Popup.css",
                 "src/web/PostepyPopup.css",
                 "src/web/StatPopup.css",
+                "src/web/TransportDebugPopup.css",
+                "src/web/TransportRoutePopup.css",
+                "src/web/TransportTimesDebugPopup.css",
+                "src/web/TripPlannerPopup.css",
+                "src/web/WalkerPopup.css",
                 "src/web/ZabiciPopup.css",
                 "src/web/Zabici2Popup.css",
             ].sort(),

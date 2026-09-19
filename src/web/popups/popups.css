@@ -32,6 +32,7 @@
 @import './popup-host-tokens.css';
 @import './popups-base.css';
 
+@import '../CarriagesPopup.css';
 @import '../CechyPopup.css';
 @import '../ClockPopup.css';
 @import '../CombatPopup.css';
@@ -41,6 +42,11 @@
 @import '../PostepyPopup.css';
 @import '../RoomInfoPopup.css';
 @import '../StatPopup.css';
+@import '../TransportDebugPopup.css';
+@import '../TransportRoutePopup.css';
+@import '../TransportTimesDebugPopup.css';
+@import '../TripPlannerPopup.css';
+@import '../WalkerPopup.css';
 @import '../WorldTimePopup.css';
 @import '../ZabiciPopup.css';
 @import '../Zabici2Popup.css';
