@@ -1,0 +1,38 @@
+/*
+ * Postac > Gildie. Migrated screen: --ark-* tokens only, no Bootstrap.
+ *
+ * The list is long (one row per guild), so the rows are separated by a hairline
+ * rather than by whitespace — at this length gaps alone stop reading as a list.
+ */
+
+.guild-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.guild-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-4) var(--ark-space-8);
+  padding: var(--ark-space-5) 0;
+}
+
+.guild-row + .guild-row {
+  border-top: 1px solid var(--ark-border-subtle);
+}
+
+.guild-row__name {
+  min-width: 7rem;
+  margin: 0;
+  color: var(--ark-text);
+  font-size: var(--ark-text-6);
+  font-weight: var(--ark-weight-semibold);
+}
+
+.guild-row__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-4) var(--ark-space-8);
+}

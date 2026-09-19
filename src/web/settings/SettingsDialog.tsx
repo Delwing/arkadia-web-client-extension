@@ -17,6 +17,15 @@ import {
     WandSparkles,
     type LucideIcon,
 } from "lucide-react";
+import { Badge, Callout, DEFAULT_THEME, Icon, Input, InputShell } from "@design";
+/**
+ * The stock client already @imports this in main-theme.css, but forge lazy-imports
+ * SettingsDialog into a shell that never loads the design system, so the screen
+ * has to carry its own stylesheet. Loading it is harmless outside `.ark-root`:
+ * scales/tokens only declare custom properties, base.css is scoped to
+ * `.ark-root`, and every primitive sheet is scoped to its own `.ark-*` class.
+ */
+import "@design/css/index.css";
 import { useCharacterSettingsPages } from "@web/options/useCharacterSettingsPages.tsx";
 import { useUiSettingsPages, type UiSettingsPagesProps } from "@web/uiSettings/useUiSettingsPages.tsx";
 import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
@@ -39,7 +48,13 @@ import "./settingsDialog.css";
 
 const GROUPS: readonly SettingsGroup[] = ["character", "ui"];
 
-// Kept here rather than in categories.ts, which the assistant-KB build reads in Node.
+/**
+ * Kept here rather than in categories.ts, which the assistant-KB build reads in
+ * Node — and imported straight from lucide rather than through `@design`'s
+ * `Icon`. That vocabulary is fifteen shared meanings; these fifteen are this
+ * screen's own subject matter (plecak, miecze, tarcza), and nothing else will
+ * ever ask for them. If a second screen does, they belong in `Icon` instead.
+ */
 const CATEGORY_ICONS: Record<SettingsCategoryKey, LucideIcon> = {
     "character-general": SlidersHorizontal,
     "character-items": Backpack,
@@ -94,6 +109,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     const [searchHits, setSearchHits] = useState<ReadonlySet<SettingsCategoryKey> | null>(null);
     const [dirty, setDirty] = useState<ReadonlySet<SettingsCategoryKey>>(() => new Set());
 
+    const hostRef = useRef<HTMLDivElement>(null);
     const pagesRef = useRef<HTMLDivElement>(null);
     const pageRefs = useRef(new Map<SettingsCategoryKey, HTMLDivElement>());
     const searchRef = useRef<HTMLInputElement>(null);
@@ -164,6 +180,24 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             cancelAnimationFrame(dirtyFrame.current);
         };
     }, [checkDirty]);
+
+    /**
+     * The `--ark-*` tokens resolve off the nearest `data-ark-theme`. The stock
+     * client has it on <body> (index.html), so the dialog follows whichever
+     * theme the player picked. forge's shell has none, and without one every
+     * token here would be invalid-at-computed-value — borderless controls and
+     * transparent fills. Set a fallback on the host only when nothing above it
+     * provides one, so the moment forge grows its own attribute this stops
+     * applying by itself. `.ark-root` is deliberately NOT set: that is the
+     * visual opt-in (background, font, element resets), and claiming it would
+     * repaint the pages that are still on Bootstrap.
+     */
+    useLayoutEffect(() => {
+        const host = hostRef.current;
+        if (host && !host.parentElement?.closest("[data-ark-theme]")) {
+            host.setAttribute("data-ark-theme", DEFAULT_THEME);
+        }
+    }, []);
 
     useLayoutEffect(() => {
         categoryRef.current = category;
@@ -283,20 +317,21 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         : { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci" };
 
     return (
-        <div className="settings-dialog-host" onKeyDown={onHostKeyDown}>
+        <div ref={hostRef} className="settings-dialog-host" onKeyDown={onHostKeyDown}>
             <div className={`settings-dialog${searching ? " settings-dialog--searching" : ""}`}>
                 <div className="settings-dialog__search">
-                    <input
-                        ref={searchRef}
-                        id="settings-search"
-                        type="search"
-                        className="form-control form-control-sm"
-                        placeholder="Szukaj w ustawieniach"
-                        autoComplete="off"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={onSearchKeyDown}
-                    />
+                    <InputShell icon={<Icon name="search" size={14} />}>
+                        <Input
+                            ref={searchRef}
+                            id="settings-search"
+                            type="search"
+                            placeholder="Szukaj w ustawieniach"
+                            autoComplete="off"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={onSearchKeyDown}
+                        />
+                    </InputShell>
                 </div>
                 <nav className="settings-dialog__nav">
                     {GROUPS.map(group => (
@@ -322,7 +357,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                 </nav>
                 <select
                     id="settings-category-select"
-                    className="form-select form-select-sm settings-dialog__select"
+                    className="settings-dialog__select"
                     value={searching ? "" : category}
                     onChange={(e) => e.target.value && navigate(e.target.value as SettingsCategoryKey)}
                 >
@@ -358,12 +393,14 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                         {searching && <span className="settings-page__group">{SETTINGS_GROUP_LABELS[c.group]} › </span>}
                                         {c.label}
                                     </h5>
-                                    <span className={`settings-scope-chip settings-scope-chip--${c.group}`} title={chip.title}>{chip.text}</span>
+                                    <Badge className={`settings-scope-chip settings-scope-chip--${c.group}`} title={chip.title}>
+                                        {chip.text}
+                                    </Badge>
                                 </div>
                                 {locked && !searching && (
-                                    <div className="alert alert-info py-2">
+                                    <Callout tone="info">
                                         Opcje zależne od postaci są zablokowane do momentu jej wybrania.
-                                    </div>
+                                    </Callout>
                                 )}
                                 <fieldset disabled={locked} className="settings-page__fieldset">
                                     <div className="settings-page__layout">

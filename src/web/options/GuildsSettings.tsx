@@ -3,6 +3,7 @@ import { characterStorage } from "@modules/core/storage";
 import GuildSection from "./GuildSection";
 import guilds from "./guilds";
 import { Settings } from "./defaultSettings";
+import "./guildsSettings.css";
 
 function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: Settings) => void) => void }) {
     const [selected, setSelected] = useState<string[]>([]);

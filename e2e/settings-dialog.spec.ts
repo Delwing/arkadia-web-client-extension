@@ -141,6 +141,39 @@ test.describe('Settings dialog', () => {
         ).toBeChecked({checked: initiallyChecked});
     });
 
+    test('a migrated page raises the unsaved dot and saves like any other', async ({page}) => {
+        // Komendy is on the design system: its checkbox is a Radix
+        // <button role="checkbox">, not an <input>. Nothing about that is
+        // visible to a user, and nothing fails loudly if it regresses — the
+        // page just quietly stops reporting itself as dirty, and a <label for>
+        // stops toggling it. Both are what this test is here for.
+        await boot(page);
+        let modal = await openSettings(page, 'ui-commands');
+        const dot = navItem(page, 'ui-commands').locator('.settings-dialog__dirty');
+        const checkbox = modal.locator('#ui-command-echo');
+        const initiallyChecked = await checkbox.isChecked();
+
+        await expect(dot).toHaveCount(0);
+
+        // Through the label, which cannot activate a <button> on its own.
+        await modal.locator('label[for="ui-command-echo"]').click();
+        await expect(checkbox, 'the label toggles the checkbox').toBeChecked({checked: !initiallyChecked});
+        await expect(dot, 'toggling a migrated checkbox marks the page').toBeVisible();
+
+        await modal.locator('label[for="ui-command-echo"]').click();
+        await expect(dot, 'setting it back clears the marker').toHaveCount(0);
+
+        await checkbox.setChecked(!initiallyChecked);
+        await saveSettings(page);
+
+        modal = await openSettings(page, 'ui-commands');
+        await expect(
+            modal.locator('#ui-command-echo'),
+            'the change survived the save',
+        ).toBeChecked({checked: !initiallyChecked});
+        await expect(dot, 'reopening drops the marker').toHaveCount(0);
+    });
+
     test('button editors are pages saved by the dialog', async ({page}) => {
         await page.setViewportSize({width: 1280, height: 900});
         await boot(page);

@@ -1,0 +1,99 @@
+/*
+ * Postac > Magiki. Migrated screen: --ark-* tokens only, no Bootstrap.
+ */
+
+.magiki-suggest {
+  position: relative;
+}
+
+/* The suggestion list hangs off the field, so it needs a surface of its own and
+   a layer above the cards around it. --ark-z-popover is what the design
+   system's own popper content uses. */
+.magiki-suggest__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: var(--ark-z-popover);
+  max-height: 12.5rem;
+  overflow-y: auto;
+  margin-top: var(--ark-space-1);
+  background: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  box-shadow: var(--ark-shadow-2);
+}
+
+/* `opacity` and `border-radius` are declared because style.css skins every bare
+   <button> in the stock shell and a class only wins for what it declares. The
+   design system's own controls are excluded there by their `ark-` prefix; a
+   screen's bespoke button has to say it itself. */
+.magiki-suggest__item {
+  display: block;
+  width: 100%;
+  padding: var(--ark-space-4) var(--ark-space-5);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  opacity: 1;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-5);
+  text-align: left;
+  cursor: pointer;
+}
+
+.magiki-suggest__item + .magiki-suggest__item {
+  border-top: 1px solid var(--ark-border-subtle);
+}
+
+.magiki-suggest__item:hover {
+  background: var(--ark-bg-element-hover);
+  color: var(--ark-text);
+}
+
+.magiki-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ark-space-4);
+}
+
+.magiki-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-space-3);
+  height: var(--ark-control-xs);
+  padding: 0 var(--ark-space-3) 0 var(--ark-space-5);
+  background: var(--ark-accent-tint-strong);
+  border: 1px solid var(--ark-accent-border);
+  border-radius: var(--ark-radius-full);
+  color: var(--ark-accent-text-strong);
+  font-size: var(--ark-text-4);
+}
+
+/* Smaller than IconButton's ladder goes (sm is 28px), inside a 24px chip. */
+.magiki-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--ark-radius-full);
+  opacity: 1;
+  color: inherit;
+  cursor: pointer;
+}
+
+.magiki-chip__remove:hover {
+  background: var(--ark-accent-bg-active);
+}
+
+/* auto-fill rather than auto-fit: with three guild types selected the row
+   should stay in its columns instead of stretching them across the card. */
+.magiki-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: var(--ark-space-4);
+}

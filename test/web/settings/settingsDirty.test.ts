@@ -38,6 +38,21 @@ describe('pageSignature', () => {
         expect(pageSignature(el), 'back in order').toBe(before);
     });
 
+    it('reads a Radix control through data-state', () => {
+        // A migrated page's checkbox is a <button role="checkbox">, so there is
+        // no `checked` property to read. Without this the page would save fine
+        // and simply stop reporting itself as dirty.
+        const el = page('<button role="checkbox" data-state="unchecked">Echo</button>');
+        const box = el.querySelector('button')!;
+        const before = pageSignature(el);
+
+        box.setAttribute('data-state', 'checked');
+        expect(pageSignature(el)).not.toBe(before);
+
+        box.setAttribute('data-state', 'unchecked');
+        expect(pageSignature(el)).toBe(before);
+    });
+
     it('skips anything marked data-settings-ignore', () => {
         const el = page('<input id="setting" type="text" value="x"><div data-settings-ignore><input id="scratch" type="text"><span>suggestion</span></div>');
         const before = pageSignature(el);

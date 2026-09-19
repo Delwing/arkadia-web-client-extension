@@ -2052,8 +2052,11 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
   /* Not inside a popped-out window: that is a narrow desktop window, not a
      phone, and 8vmin of its viewport blows every panel button up. :where()
-     keeps the specificity of a bare `button`, so phone overrides still win. */
-  button:where(:not(.popout-root *)) {
+     keeps the specificity of a bare `button`, so phone overrides still win.
+     Migrated screens are out for the same reason as the skin above: their
+     controls carry their own sizing from the --ark-control-* ladder, and
+     8vmin would square off every checkbox on a phone. */
+  button:where(:not(.popout-root *)):where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
   min-height: 8vmin; /* Minimum touch target size */
   min-width: 8vmin;
   }
