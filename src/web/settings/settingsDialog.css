@@ -353,6 +353,353 @@
   border-color: var(--ark-border-strong);
 }
 
+.settings-field__value {
+  font-family: var(--ark-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ark-text);
+}
+
+/* Native range input. The design system has no slider primitive; the platform
+   one is driven by e2e with fill() and is the right control on a phone, so it
+   is styled from tokens rather than replaced. Track and thumb need the
+   vendor-prefixed pseudo-elements -- they cannot be grouped in one rule, a
+   selector the browser does not know invalidates the whole list. */
+.settings-range {
+  width: 100%;
+  height: var(--ark-space-5);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.settings-range::-webkit-slider-runnable-track {
+  height: var(--ark-space-3);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-2);
+}
+
+.settings-range::-moz-range-track {
+  height: var(--ark-space-3);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-2);
+}
+
+.settings-range::-webkit-slider-thumb {
+  width: var(--ark-space-6);
+  height: var(--ark-space-6);
+  margin-top: calc((var(--ark-space-3) - var(--ark-space-6)) / 2);
+  background: var(--ark-accent-solid);
+  border: 0;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.settings-range::-moz-range-thumb {
+  width: var(--ark-space-6);
+  height: var(--ark-space-6);
+  background: var(--ark-accent-solid);
+  border: 0;
+  border-radius: 50%;
+}
+
+.settings-range:focus-visible {
+  outline: 2px solid var(--ark-focus-ring);
+  outline-offset: 2px;
+}
+
+/* A control row that may run out of width (a swatch, a slider, its readout and
+   a reset button on one line). */
+.settings-row__controls--wrap {
+  flex-wrap: wrap;
+}
+
+/* A slider sharing its line with other controls takes the leftover width
+   rather than the full one. */
+.settings-range--inline {
+  flex: 1 1 7.5rem;
+  width: auto;
+}
+
+/* A checkbox subordinate to the one above it (the old markup used Bootstrap's
+   .ms-3 for this). */
+.settings-check--indent {
+  margin-left: var(--ark-space-8);
+}
+
+/* A button parked at the start of its column instead of stretching across it.
+   Both containers are flex columns with `align-items: stretch`, so without
+   this a lone button is as wide as the card -- which on a phone is the whole
+   dialog. */
+.settings-card > .settings-action,
+.settings-stack > .settings-action {
+  align-self: flex-start;
+}
+
+/* Muted inline text inside a label (the exploration counter). */
+.settings-muted {
+  color: var(--ark-text-tertiary);
+}
+
+/* A row of buttons that wraps rather than overflowing its card. */
+.settings-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-4);
+}
+
+/* The outcome of an action that already ran. Status colours never follow the
+   accent (DESIGN_SYSTEM.md §3), so both are status roles. */
+.settings-status {
+  margin: 0;
+  font-size: var(--ark-text-3);
+}
+
+.settings-status--ok {
+  color: var(--ark-success-text);
+}
+
+.settings-status--error {
+  color: var(--ark-danger-text);
+}
+
+.settings-pairing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ark-space-4);
+}
+
+/* Intentionally a literal, and the one in this sheet: a QR code is read by a
+   camera, which needs the light quiet zone the spec calls for. A themed plate
+   would make the code unscannable in the dark themes. */
+.settings-pairing__qr {
+  width: 200px;
+  padding: var(--ark-space-5);
+  background: #fff;
+  border-radius: var(--ark-radius-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Interfejs > Dzwiek i powiadomienia.
+   ------------------------------------------------------------------------ */
+.settings-sound-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.75rem, 1fr));
+  gap: var(--ark-space-5);
+}
+
+.settings-sound-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-4);
+  padding: var(--ark-space-5);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-sound-tile__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ark-space-3);
+}
+
+.settings-sound-tile__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-sound-tile__title {
+  font-size: var(--ark-text-3);
+  font-weight: var(--ark-weight-semibold);
+  color: var(--ark-text);
+}
+
+.settings-sound-tile__hint {
+  font-size: var(--ark-text-1);
+  color: var(--ark-text-tertiary);
+}
+
+/* One stored sound in the manage sub-dialog. */
+.settings-sound-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-5);
+  padding: var(--ark-space-5);
+  background: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-sound-row__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-sound-row__name {
+  font-weight: var(--ark-weight-semibold);
+  color: var(--ark-text);
+}
+
+.settings-sound-row__size {
+  font-size: var(--ark-text-3);
+  color: var(--ark-text-tertiary);
+}
+
+/* ---------------------------------------------------------------------------
+   Interfejs > Mapa.
+
+   The version pill doubles as the refresh button, so it spins while the data
+   is being fetched. Its keyframe is named for this sheet: style.css still
+   carries a bare `spin`, which forge's _stock-settings.scss references, and
+   two sheets owning one animation name is how one of them silently wins.
+   ------------------------------------------------------------------------ */
+.settings-map-version {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-space-3);
+  padding: var(--ark-space-2) var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: 1rem;
+  color: var(--ark-text-tertiary);
+  font-size: var(--ark-text-2);
+  font-weight: var(--ark-weight-medium);
+  cursor: pointer;
+  transition: color var(--ark-duration-1), background var(--ark-duration-1), border-color var(--ark-duration-1);
+}
+
+.settings-map-version:hover:not(:disabled) {
+  background: var(--ark-bg-element-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-text);
+}
+
+.settings-map-version:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.settings-map-version:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.settings-map-version__icon {
+  display: inline-block;
+  font-size: var(--ark-text-3);
+  line-height: 1;
+}
+
+.settings-map-version:disabled .settings-map-version__icon {
+  animation: settings-map-refresh 1s linear infinite;
+}
+
+@keyframes settings-map-refresh {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* The marker preview. The canvas is painted with clearRect, so what shows
+   through behind the marker is this background rather than a fill. */
+.settings-map-preview {
+  display: flex;
+  justify-content: center;
+}
+
+.settings-map-preview__canvas {
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Chip editor: a text field that holds removable tokens (the object context
+   menu's commands). Not the design system's Chip -- that one is a Radix Toggle
+   for filters, pressed/unpressed, with no remove affordance.
+   ------------------------------------------------------------------------ */
+.settings-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-3);
+  min-height: var(--ark-control-md);
+  padding: var(--ark-space-2) var(--ark-space-3);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  cursor: text;
+}
+
+.settings-chips:focus-within {
+  border-color: var(--ark-border-strong);
+}
+
+.settings-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-space-2);
+  padding: var(--ark-space-1) var(--ark-space-3);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-2);
+  line-height: 1.4;
+}
+
+.settings-chip--button {
+  cursor: pointer;
+}
+
+.settings-chip--button:hover {
+  background: var(--ark-bg-element-hover);
+  color: var(--ark-text);
+}
+
+.settings-chip__remove {
+  opacity: 0.7;
+}
+
+/* The chip editor's own input: it grows with what is typed and carries no
+   chrome of its own, so the field around it reads as one control. */
+.settings-chip__input {
+  min-width: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--ark-text);
+  font-family: inherit;
+  font-size: var(--ark-text-2);
+  line-height: 1.4;
+}
+
+.settings-chip__input:focus {
+  outline: none;
+}
+
+@keyframes settings-chip-duplicate {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.settings-chip--duplicate {
+  border-color: var(--ark-danger-border);
+  color: var(--ark-danger-text);
+  animation: settings-chip-duplicate 0.3s ease-out;
+}
+
 @container settings-pages (min-width: 44rem) {
   .settings-page__layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,9 +1,18 @@
 import { useEffect, useRef } from "react";
+import { Button } from "@design";
 import type { UiSettings } from "../../uiSettingsCore";
 import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiSettingsCore";
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
-import { CheckboxRow, ColorField, DeviceOnlyBadge, NumberField, SelectField, SettingsSection } from "../fields";
+import {
+    CheckboxField,
+    ColorField,
+    NumberField,
+    SelectField,
+    SettingsCard,
+    TextField,
+} from "@web/settings/controls.tsx";
+import { DeviceOnlyBadge } from "../fields";
 
 interface AppearanceSectionProps {
     draft: UiSettings;
@@ -11,6 +20,7 @@ interface AppearanceSectionProps {
     commitCustomDark: (color: string) => void;
 }
 
+/** Interfejs > Wyglad. Migrated onto the design system (UI_MIGRATION.md §4). */
 function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectionProps) {
     const isCustomFont = draft.fontFamily === 'custom';
     const isCustomDark = draft.colorTheme === 'custom-dark';
@@ -66,7 +76,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
     };
 
     return (
-        <SettingsSection title="Wygląd">
+        <SettingsCard title="Wygląd">
             <SelectField id="ui-font-family" label="Czcionka okna wyjścia i listy obiektów" value={draft.fontFamily} onChange={(v) => {
                 update({ fontFamily: v as UiSettings['fontFamily'] });
                 if (v !== 'custom') {
@@ -84,40 +94,51 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                 <option value="custom">Własna (link)</option>
             </SelectField>
             {isCustomFont && (
-                <div id="ui-custom-font-settings" className="d-flex flex-column gap-2">
-                    <div>
-                        <label className="form-label" htmlFor="ui-custom-font-url">Adres arkusza czcionki</label>
-                        <input id="ui-custom-font-url" type="url" className="form-control" placeholder="https://..." value={draft.customFontUrl} onChange={(e) => update({ customFontUrl: e.target.value })} />
-                        <div className="form-text">Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts).</div>
-                    </div>
-                    <div>
-                        <label className="form-label" htmlFor="ui-custom-font-family">Nazwa rodziny czcionki</label>
-                        <input id="ui-custom-font-family" type="text" className="form-control" placeholder="np. Roboto" value={draft.customFontFamily} onChange={(e) => onCustomFontFamilyInput(e.target.value)} />
-                        <div className="form-text">Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku).</div>
-                    </div>
+                <div id="ui-custom-font-settings" className="settings-stack">
+                    <TextField
+                        id="ui-custom-font-url"
+                        type="url"
+                        label="Adres arkusza czcionki"
+                        placeholder="https://..."
+                        value={draft.customFontUrl}
+                        onChange={(v) => update({ customFontUrl: v })}
+                        hint="Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts)."
+                    />
+                    <TextField
+                        id="ui-custom-font-family"
+                        label="Nazwa rodziny czcionki"
+                        placeholder="np. Roboto"
+                        value={draft.customFontFamily}
+                        onChange={onCustomFontFamilyInput}
+                        hint="Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku)."
+                    />
                 </div>
             )}
-            <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" settingKey="contentFontSize" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
-            <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" settingKey="objectsFontSize" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
-            <div>
-                <label className="form-label" htmlFor="ui-objectlist-bg-color">Kolor tła listy obiektów<DeviceOnlyBadge settingKey="objectListBackgroundColor" /></label>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <input id="ui-objectlist-bg-color" type="color" className="form-control form-control-color" value={draft.objectListBackgroundColor} onChange={(e) => update({ objectListBackgroundColor: e.target.value })} />
-                    <label htmlFor="ui-objectlist-bg-alpha" className="form-label mb-0">Przezroczystość:</label>
-                    <input id="ui-objectlist-bg-alpha" type="range" min={0} max={1} step={0.01} className="form-range" style={{ flex: '1 1 120px' }} value={draft.objectListBackgroundAlpha} onChange={(e) => update({ objectListBackgroundAlpha: parseFloat(e.target.value) })} />
-                    <span id="ui-objectlist-bg-alpha-value" className="text-muted small" style={{ minWidth: '2.5rem' }}>{draft.objectListBackgroundAlpha}</span>
-                    <button id="ui-objectlist-bg-reset" type="button" className="btn btn-outline-secondary btn-sm" onClick={() => update({ objectListBackgroundColor: defaultUiSettings.objectListBackgroundColor, objectListBackgroundAlpha: defaultUiSettings.objectListBackgroundAlpha })}>
+            <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" labelExtra={<DeviceOnlyBadge settingKey="contentFontSize" />} value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
+            <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" labelExtra={<DeviceOnlyBadge settingKey="objectsFontSize" />} value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
+            {/* Colour and its alpha edit one setting together, so they share a
+                row rather than each taking a ColorField of their own. */}
+            <div className="settings-field">
+                <label className="settings-field__label" htmlFor="ui-objectlist-bg-color">
+                    Kolor tła listy obiektów<DeviceOnlyBadge settingKey="objectListBackgroundColor" />
+                </label>
+                <div className="settings-row__controls settings-row__controls--wrap">
+                    <input id="ui-objectlist-bg-color" type="color" className="settings-color" value={draft.objectListBackgroundColor} onChange={(e) => update({ objectListBackgroundColor: e.target.value })} />
+                    <label htmlFor="ui-objectlist-bg-alpha" className="settings-field__label">Przezroczystość:</label>
+                    <input id="ui-objectlist-bg-alpha" type="range" min={0} max={1} step={0.01} className="settings-range settings-range--inline" value={draft.objectListBackgroundAlpha} onChange={(e) => update({ objectListBackgroundAlpha: parseFloat(e.target.value) })} />
+                    <span id="ui-objectlist-bg-alpha-value" className="settings-field__value">{draft.objectListBackgroundAlpha}</span>
+                    <Button id="ui-objectlist-bg-reset" size="sm" variant="outline" onClick={() => update({ objectListBackgroundColor: defaultUiSettings.objectListBackgroundColor, objectListBackgroundAlpha: defaultUiSettings.objectListBackgroundAlpha })}>
                         Przywróć domyślny
-                    </button>
+                    </Button>
                 </div>
             </div>
             <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
-            <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
+            <CheckboxField id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
             <SelectField id="ui-xterm-palette" label="Paleta kolorów" value={draft.xtermPalette} onChange={(v) => update({ xtermPalette: v as UiSettings['xtermPalette'] })}>
                 <option value="arkadia">Arkadia</option>
                 <option value="proper">XTerm</option>
             </SelectField>
-            <div>
+            <div className="settings-field">
                 <SelectField id="ui-color-theme" label="Motyw kolorystyczny" value={draft.colorTheme} onChange={(v) => update({ colorTheme: v as UiSettings['colorTheme'] })}>
                     <option value="default">Domyślny</option>
                     <option value="fantasy">Fantasy</option>
@@ -130,13 +151,15 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                     <option value="custom-dark">Własny (ciemny)</option>
                 </SelectField>
                 {isCustomDark && (
-                    <div id="ui-random-theme-controls" className="d-flex align-items-center gap-2 mt-2" data-settings-ignore>
-                        <input id="ui-random-theme-color" type="color" className="form-control form-control-color" value={draft.customThemeColor ? computeAccentHex(draft.customThemeColor) : '#000000'} onChange={(e) => commitCustomDark(e.target.value)} />
-                        <button id="ui-randomize-theme" type="button" className="btn btn-sm btn-outline-secondary" onClick={() => commitCustomDark(generateRandomColor())}>Losuj</button>
+                    /* Saves on its own (commitCustomDark writes through), so it
+                       stays out of the unsaved-changes signature. */
+                    <div id="ui-random-theme-controls" className="settings-row__controls" data-settings-ignore>
+                        <input id="ui-random-theme-color" type="color" className="settings-color" value={draft.customThemeColor ? computeAccentHex(draft.customThemeColor) : '#000000'} onChange={(e) => commitCustomDark(e.target.value)} />
+                        <Button id="ui-randomize-theme" size="sm" variant="outline" onClick={() => commitCustomDark(generateRandomColor())}>Losuj</Button>
                     </div>
                 )}
             </div>
-        </SettingsSection>
+        </SettingsCard>
     );
 }
 

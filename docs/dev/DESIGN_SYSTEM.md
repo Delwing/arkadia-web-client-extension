@@ -262,7 +262,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `src/web/` combat + status popups (9) | **on the design system**, `--ark-*` only (Phase 3, PR 1) |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
-| `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki |
+| `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki (Faza 4, PR 1), Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2) |
 | `src/web/` remaining popups, settings, layout | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |

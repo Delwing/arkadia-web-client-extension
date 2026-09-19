@@ -453,19 +453,27 @@ body {
   color: var(--popup-text-subtle);
 }
 
+/* The bare-element half of these selectors is (0,1,1) and so out-specifies
+   .ark-input (0,1,0): without the guard every design-system Input inside the
+   client -- the settings dialog's search box, the migrated pages' number and
+   text fields -- is repainted from --popup-*. It looks almost right today only
+   because themes/bridge.css maps --popup-* onto --ark-*, and it would break
+   outright the day that bridge is deleted. Same zero-specificity guard as the
+   `button` rules below; .form-control/.form-select are Bootstrap's own classes
+   and no design-system element carries them, so they are left alone. */
 .form-control,
 .form-select,
-textarea,
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-.modal textarea,
-.modal input,
-.modal select {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+.modal textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+.modal input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
+.modal select:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
   background-color: var(--popup-input-bg);
   border: 1px solid var(--popup-border-control);
   color: var(--popup-input-text);
@@ -475,14 +483,14 @@ input[type="url"],
 
 .form-control:focus,
 .form-select:focus,
-textarea:focus,
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus,
-input[type="search"]:focus,
-input[type="tel"]:focus,
-input[type="url"]:focus {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus {
   background-color: var(--popup-input-bg);
   border-color: var(--popup-input-focus-border);
   box-shadow: 0 0 0 0.2rem var(--popup-input-focus-border);
@@ -499,14 +507,14 @@ input::placeholder {
 
 .form-control:disabled,
 .form-select:disabled,
-textarea:disabled,
-input[type="text"]:disabled,
-input[type="email"]:disabled,
-input[type="password"]:disabled,
-input[type="number"]:disabled,
-input[type="search"]:disabled,
-input[type="tel"]:disabled,
-input[type="url"]:disabled {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled {
   background-color: var(--popup-subtle-bg);
   border-color: var(--popup-border-subtle);
   color: var(--popup-text-dim);
@@ -2960,46 +2968,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   align-items: center;
 }
 
-.ui-map-version-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--popup-text-dim);
-  background: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 1rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.ui-map-version-badge:hover {
-  color: var(--popup-text-bright);
-  border-color: var(--popup-accent);
-  background: var(--popup-control-hover-bg);
-}
-
-.ui-map-version-badge:active {
-  transform: scale(0.95);
-}
-
-.ui-map-refresh-icon {
-  display: inline-block;
-  font-size: 0.8rem;
-  line-height: 1;
-  transition: transform 0.3s ease;
-}
-
-.ui-map-version-badge:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.ui-map-version-badge:disabled .ui-map-refresh-icon {
-  animation: spin 1s linear infinite;
-}
+/* Interfejs > Mapa moved to settings/settingsDialog.css (Phase 4, PR 2). */
 
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -3035,17 +3004,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   cursor: pointer;
 }
 
-/* Sound category tiles (Dźwięk tab) */
-.ui-sound-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.5rem;
-}
-
-.ui-sound-tile {
-  background-color: var(--popup-control-bg);
-  border-color: var(--popup-border) !important;
-}
+/* Interfejs > Dzwiek moved to settings/settingsDialog.css (Phase 4, PR 2). */
 
 .modal-dialog {
   max-height: 85%;
@@ -3717,23 +3676,6 @@ body.layout-manager-enabled #notification-center {
 
 /* contracts popup — moved to src/web/popups/popups.css (shared by both UIs). */
 /* fishing popup — moved to src/web/popups/popups.css (shared by both UIs). */
-/* Context menu badge duplicate flash animation */
-@keyframes duplicate-flash {
-  0% {
-    box-shadow: inset 0 0 0 0 rgba(255, 193, 7, 0);
-  }
-  50% {
-    box-shadow: inset 0 0 8px 2px rgba(255, 193, 7, 0.6);
-  }
-  100% {
-    box-shadow: inset 0 0 0 0 rgba(255, 193, 7, 0);
-  }
-}
-
-.context-menu-badge.duplicate-flash {
-  animation: duplicate-flash 0.3s ease-out;
-}
-
 /* chat popup — moved to src/web/popups/popups.css (shared by both UIs). */
 /* combat popup — moved to src/web/popups/popups.css (shared by both UIs). */
 
