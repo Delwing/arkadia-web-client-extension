@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
+import { Table, TableCell, TableHeadCell, TableRow } from '@design';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import type { TransportTimesDebugPayload, TransportTimesDebugEntry } from '@client/types/transport';
@@ -107,40 +108,27 @@ const TransportTimesDebugPopup: React.FC = () => {
             className="transport-times-debug-popup"
             bodyClassName="transport-times-debug-popup-body"
         >
-            <div style={{
-                fontFamily: 'monospace', fontSize: 11, padding: 8,
-                color: 'var(--popup-text)', display: 'flex', flexDirection: 'column',
-                height: '100%', overflow: 'hidden',
-            }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="transport-times-debug">
+                <div className="transport-times-debug__toolbar">
                     <input
                         type="text"
                         placeholder="Filtruj (nazwa, miasto)..."
                         value={filter}
                         onChange={e => setFilter(e.target.value)}
-                        style={{
-                            flex: '1 1 160px', minWidth: 140,
-                            background: 'var(--popup-input-bg)',
-                            border: '1px solid var(--popup-border-control)',
-                            borderRadius: 3, color: 'var(--popup-input-text)',
-                            padding: '3px 6px', fontSize: 11, fontFamily: 'monospace',
-                        }}
+                        className="popup-input transport-times-debug__filter"
                     />
+                    {/* Natywny <select>: @design/Select to listbox Radiksa, ktorego
+                        Playwright nie steruje przez selectOption (DESIGN_SYSTEM.md). */}
                     <select
                         value={sortMode}
                         onChange={e => setSortMode(e.target.value as SortMode)}
-                        style={{
-                            background: 'var(--popup-control-bg)',
-                            border: '1px solid var(--popup-border-control)',
-                            borderRadius: 3, color: 'var(--popup-text-subtle)',
-                            padding: '3px 6px', fontSize: 11, fontFamily: 'monospace',
-                        }}
+                        className="popup-input transport-times-debug__sort"
                     >
                         <option value="name">Sort: nazwa</option>
                         <option value="updated">Sort: ostatnio</option>
                         <option value="recorded">Sort: zapisane</option>
                     </select>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--popup-text-dim)' }}>
+                    <label className="transport-times-debug__only">
                         <input
                             type="checkbox"
                             checked={onlyRecorded}
@@ -149,29 +137,20 @@ const TransportTimesDebugPopup: React.FC = () => {
                         tylko zapisane
                     </label>
                 </div>
-                <div style={{
-                    fontSize: 10, color: 'var(--popup-text-dim)',
-                    marginBottom: 6, display: 'flex', justifyContent: 'space-between',
-                }}>
+                <div className="transport-times-debug__summary">
                     <span>{totals.transports} transportow, {totals.recorded}/{totals.legs} segmentow zapisanych</span>
                     <button
                         type="button"
                         onClick={() => eventBus.emit('transportTimesDebug.request')}
-                        style={{
-                            padding: '2px 8px', fontSize: 10, fontFamily: 'monospace',
-                            background: 'var(--popup-control-bg)',
-                            border: '1px solid var(--popup-border-control)',
-                            borderRadius: 3, color: 'var(--popup-text-subtle)',
-                            cursor: 'pointer',
-                        }}
+                        className="popup-btn transport-times-debug__refresh"
                     >
                         Odswiez
                     </button>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: 4 }}>
-                    {!payload && <div style={{ color: 'var(--popup-text-dim)' }}>Ladowanie...</div>}
+                <div className="transport-times-debug__list">
+                    {!payload && <div className="transport-times-debug__status">Ladowanie...</div>}
                     {payload && transports.length === 0 && (
-                        <div style={{ color: 'var(--popup-text-dim)' }}>Brak wynikow.</div>
+                        <div className="transport-times-debug__status">Brak wynikow.</div>
                     )}
                     {transports.map(t => (
                         <TransportSection key={t.name} entry={t} />
@@ -193,35 +172,30 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
         eventBus.emit('transportTimesDebug.resetLeg', { transport: entry.name, fromId, toId });
     };
     return (
-        <div style={{ marginBottom: 8 }}>
+        <div className="transport-times-debug__group">
             <div
                 onClick={() => setOpen(o => !o)}
-                style={{
-                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'baseline', padding: '3px 4px',
-                    background: 'var(--popup-subtle-bg)',
-                    borderRadius: 3, marginBottom: 2,
-                }}
+                className="transport-times-debug__group-header"
             >
-                <span style={{ color: 'var(--popup-text-bright)', fontWeight: 'bold' }}>
+                <span className="transport-times-debug__group-name">
                     {open ? '▾' : '▸'} {entry.name}
                 </span>
-                <span style={{ color: 'var(--popup-text-dim)', fontSize: 10 }}>
+                <span className="transport-times-debug__group-count">
                     {recordedCount}/{entry.legs.length}
                 </span>
             </div>
             {open && (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                <Table compact className="transport-times-debug__table">
                     <thead>
-                        <tr style={{ color: 'var(--popup-text-dim)', textAlign: 'right' }}>
-                            <th style={{ textAlign: 'left', padding: '2px 4px', fontWeight: 'normal' }}>leg</th>
-                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>now</th>
-                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>min</th>
-                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>max</th>
-                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>orig</th>
-                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}>updated</th>
-                            <th style={{ padding: '2px 4px', fontWeight: 'normal' }}></th>
-                        </tr>
+                        <TableRow>
+                            <TableHeadCell align="grow">leg</TableHeadCell>
+                            <TableHeadCell align="num">now</TableHeadCell>
+                            <TableHeadCell align="num">min</TableHeadCell>
+                            <TableHeadCell align="num">max</TableHeadCell>
+                            <TableHeadCell align="num">orig</TableHeadCell>
+                            <TableHeadCell align="num">updated</TableHeadCell>
+                            <TableHeadCell align="num"></TableHeadCell>
+                        </TableRow>
                     </thead>
                     <tbody>
                         {entry.legs.map((l, i) => {
@@ -229,56 +203,48 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                                 && l.originalTime !== null
                                 && Math.abs((l.currentTime ?? l.originalTime) - l.originalTime) > 0.5;
                             return (
-                                <tr key={i} style={{ borderTop: '1px solid var(--popup-subtle-bg)' }}>
-                                    <td style={{ padding: '2px 4px', color: 'var(--popup-text)' }}>
-                                        <span style={{ color: 'var(--popup-text-dim)' }}>{i}.</span>{' '}
-                                        {l.fromLabel} <span style={{ color: 'var(--popup-text-dim)' }}>&rarr;</span> {l.toLabel}
-                                        <span style={{ color: 'var(--popup-text-dim)', marginLeft: 6, fontSize: 10 }}>
+                                <TableRow key={i}>
+                                    <TableCell align="grow">
+                                        <span className="transport-times-debug__leg-index">{i}.</span>{' '}
+                                        {l.fromLabel} <span className="transport-times-debug__leg-arrow">&rarr;</span> {l.toLabel}
+                                        <span className="transport-times-debug__leg-ids">
                                             ({l.fromId}&rarr;{l.toId})
                                         </span>
-                                    </td>
-                                    <td style={{
-                                        padding: '2px 4px', textAlign: 'right',
-                                        color: overridden ? 'var(--popup-data-gold)' : 'var(--popup-text)',
-                                    }}>
+                                    </TableCell>
+                                    <TableCell
+                                        align="num"
+                                        className={overridden ? 'transport-times-debug__now--overridden' : undefined}
+                                    >
                                         {formatSeconds(l.currentTime)}
-                                    </td>
-                                    <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-success)' }}>
+                                    </TableCell>
+                                    <TableCell align="num" className="transport-times-debug__min">
                                         {formatSeconds(l.shortest)}
-                                    </td>
-                                    <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)' }}>
+                                    </TableCell>
+                                    <TableCell align="num" tone="muted">
                                         {formatSeconds(l.longest)}
-                                    </td>
-                                    <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)' }}>
+                                    </TableCell>
+                                    <TableCell align="num" tone="muted">
                                         {formatSeconds(l.originalTime)}
-                                    </td>
-                                    <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)', fontSize: 10 }}>
+                                    </TableCell>
+                                    <TableCell align="num" tone="muted" className="transport-times-debug__updated">
                                         {formatRelative(l.updatedAt)}
-                                    </td>
-                                    <td style={{ padding: '2px 4px', textAlign: 'right' }}>
+                                    </TableCell>
+                                    <TableCell align="num">
                                         <button
                                             type="button"
                                             title="Skasuj zapisany czas (przywroc oryginalny)"
                                             disabled={l.shortest === null}
                                             onClick={() => resetLeg(l.fromId, l.toId)}
-                                            style={{
-                                                padding: '1px 6px', fontSize: 10, fontFamily: 'monospace',
-                                                background: 'var(--popup-control-bg)',
-                                                border: '1px solid var(--popup-border-control)',
-                                                borderRadius: 3,
-                                                color: l.shortest === null ? 'var(--popup-text-dim)' : 'var(--popup-text-subtle)',
-                                                cursor: l.shortest === null ? 'default' : 'pointer',
-                                                opacity: l.shortest === null ? 0.4 : 1,
-                                            }}
+                                            className="popup-btn popup-btn--sm transport-times-debug__reset"
                                         >
                                             reset
                                         </button>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             );
                         })}
                     </tbody>
-                </table>
+                </Table>
             )}
         </div>
     );

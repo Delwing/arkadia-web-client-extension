@@ -40,5 +40,10 @@
 @import '../Postepy2Popup.css';
 @import '../PostepyPopup.css';
 @import '../StatPopup.css';
+@import '../TransportDebugPopup.css';
+@import '../TransportRoutePopup.css';
+@import '../TransportTimesDebugPopup.css';
+@import '../TripPlannerPopup.css';
+@import '../WalkerPopup.css';
 @import '../ZabiciPopup.css';
 @import '../Zabici2Popup.css';

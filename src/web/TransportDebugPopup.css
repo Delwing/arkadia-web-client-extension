@@ -1,0 +1,108 @@
+/* Transport state (debug) overlay — a small non-interactive HUD in the top
+   right corner showing the transport tracker's current state and its last few
+   transitions.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Pulled in by the manifest at
+   src/web/popups/popups.css, which both UIs load — through an @import, NOT a
+   component import, because the cascade here is decided by source order and
+   Rollup reorders chunks (see that manifest).
+
+   TEN ARKUSZ NIE ISTNIAL. Cale okno bylo na stylach inline z wpisanymi na
+   sztywno szarosciami (tlo, ramka, cztery odcienie tekstu) i mapa KIND_COLOR w
+   TypeScripcie. Nie czytalo wiec ani --popup-*, ani niczego innego - w kazdym z
+   osmiu motywow wygladalo tak samo.
+
+   DLACZEGO KOMPONENT WOLA data-popup-overlay. To jedyny popup tej rodziny,
+   ktory nie idzie przez POPUP_CATALOG, tylko portalem wprost do document.body
+   (LayoutManagerWrapper renderuje go osobno - i robi to takze forge-ui).
+   popup-host-tokens.css celuje w `.managed-panel, [data-popup-overlay]`, wiec
+   bez tego atrybutu zmigrowane okno w forge nie dostalo by ANI JEDNEGO tokenu
+   --ark-* i zgaslo by do konca: bez tla, bez ramki, bez kontrastu tekstu.
+   W kliencie stockowym atrybut nic nie zmienia (tokeny sa juz na <body>), a
+   uchwyt klikniec z useDockablePopup nie ma tu czego zlapac, bo overlay ma
+   pointer-events: none.
+
+   STANY IDA NA PALETE KATEGORYCZNA. idle / pending / at_stop / traveling /
+   exiting nie tworza drabinki - "na przystanku" nie jest lepsze od "w drodze".
+   To dokladnie przypadek z DESIGN_SYSTEM.md §3: ma byc rozroznialne, nie ma
+   rankowac, wiec --ark-data-*, a nie --ark-success/warning/danger. */
+
+.transport-debug {
+  position: fixed;
+  top: var(--ark-space-4);
+  right: var(--ark-space-4);
+  /* Bylo 9999 i zostaje 9999: overlay ma swiadomie siedziec POD wlasnym stosem
+     stockowego klienta (siega 10100), a nie nad nim. Tokeny --ark-z-* sa
+     piecocyfrowe wlasnie po to, zeby ten stos przebic - tutaj byla by to zmiana
+     zachowania, nie migracja. */
+  z-index: 9999;
+  background: var(--ark-bg-overlay);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+  padding: var(--ark-space-4) var(--ark-space-6);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-1);
+  color: var(--ark-text);
+  min-width: 260px;
+  max-width: 360px;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.transport-debug__head {
+  margin-bottom: var(--ark-space-2);
+  border-bottom: 1px solid var(--ark-border-subtle);
+  padding-bottom: var(--ark-space-2);
+}
+
+.transport-debug__def {
+  color: var(--ark-text-secondary);
+  margin-left: var(--ark-space-4);
+}
+
+.transport-debug__row {
+  display: flex;
+  gap: var(--ark-space-3);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.transport-debug__row-label {
+  color: var(--ark-text-tertiary);
+  min-width: 52px;
+}
+
+.transport-debug__row-value {
+  color: var(--ark-text);
+  word-break: break-all;
+}
+
+.transport-debug__log {
+  margin-top: var(--ark-space-3);
+  border-top: 1px solid var(--ark-border-subtle);
+  padding-top: var(--ark-space-2);
+  opacity: 0.6;
+}
+
+/* Stan sledzenia. Baza to barwa drugorzednego tekstu, czyli to, co dostaje
+   stan spoza listy (payload.kind przychodzi z klienta i moze urosnac). */
+.transport-debug__kind {
+  color: var(--ark-text-secondary);
+}
+
+.transport-debug__kind--head {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.transport-debug__kind--idle { color: var(--ark-data-muted); }
+.transport-debug__kind--pending { color: var(--ark-data-4-text); }
+.transport-debug__kind--at_stop { color: var(--ark-data-3-text); }
+.transport-debug__kind--traveling { color: var(--ark-data-1-text); }
+.transport-debug__kind--exiting { color: var(--ark-data-6-text); }
+
+/* "leg" jest barwiony tak samo jak stan traveling, bo opisuje ten sam odcinek. */
+.transport-debug__row-value--leg {
+  color: var(--ark-data-1-text);
+}

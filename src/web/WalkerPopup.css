@@ -1,0 +1,179 @@
+/* Walker popup — the auto-walk status window: state, step delay, stop/resume.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   CO WYLECIALO. Slice w popups-base.css niosl dwanascie regul, do ktorych
+   WalkerPopup.tsx nie ma juz zadnego odwolania - zostaly po wycietej kiedys
+   liscie celow i panelu pomocy: __speed-row, __speed-controls, __speed-value,
+   __destinations, __destination (+ --done, --current), __destination-num,
+   __destination-text, __input (+ :focus, ::placeholder), __help-title,
+   __help-item, __section--input, __section--help oraz modyfikatory przyciskow
+   --primary i --warning. Sprawdzone gripem po calym repo (takze e2e/ i
+   forge-ui/): zero uzyc. Migrowanie martwego kodu tylko przenosi go w nowe
+   miejsce, wiec tutaj go nie ma - regula "kasuj po drodze" z §5 planu.
+
+   CZEGO NIE ZWINALEM. .walker-popup__btn wyglada jak .popup-btn z warstwy 2,
+   ale nim nie jest: ma flex: 1, wieksze wypelnienie (0.4rem 0.75rem) i
+   0.8rem zamiast 0.75rem. Zwiniecie go na .popup-btn--md przestawia caly pasek
+   sterowania, a krok 6 przepisu mowi, zeby tego nie robic na sile. Zostaje
+   wlasny przycisk, tyle ze na tokenach - zamiana jest wyliczeniowo neutralna. */
+
+.walker-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.walker-popup__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: var(--output-font-size, 0.875rem);
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.walker-popup__section {
+  padding: 0.5rem;
+  background-color: var(--ark-gray-a2);
+  border-radius: 0.25rem;
+}
+
+.walker-popup__status-row,
+.walker-popup__delay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.125rem 0;
+}
+
+.walker-popup__label {
+  color: var(--ark-text-secondary);
+  font-size: 0.75rem;
+}
+
+.walker-popup__value {
+  color: var(--ark-text);
+}
+
+.walker-popup__status {
+  font-weight: bold;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Trzy stany chodzenia rankuja (idzie / wstrzymany / stoi), wiec to statusy,
+   a nie paleta kategoryczna. Tla byly recznymi rgba() - zielonym i
+   bursztynowym - i schodza na role statusowe. */
+.walker-popup__status--active {
+  color: var(--ark-success-text);
+  background-color: var(--ark-success-bg);
+}
+
+.walker-popup__status--paused {
+  color: var(--ark-warning-text);
+  background-color: var(--ark-warning-bg);
+}
+
+.walker-popup__status--inactive {
+  color: var(--ark-text-tertiary);
+  background-color: var(--ark-bg-element-ghost-hover);
+}
+
+.walker-popup__delay-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.walker-popup__delay-input {
+  width: 4rem;
+  padding: 0.2rem 0.4rem;
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: 0.25rem;
+  color: var(--ark-text);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: right;
+}
+
+.walker-popup__delay-input:focus {
+  outline: none;
+  border-color: var(--ark-focus-ring);
+}
+
+.walker-popup__delay-unit {
+  color: var(--ark-text-tertiary);
+}
+
+.walker-popup__controls {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-top: 1px solid var(--ark-border);
+}
+
+.walker-popup__btn {
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: 0.25rem;
+  color: var(--ark-text-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.walker-popup__btn:hover:not(:disabled) {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text);
+}
+
+.walker-popup__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.walker-popup__btn--small {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.5rem;
+  min-width: 1.5rem;
+}
+
+.walker-popup__btn--success {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.walker-popup__btn--success:hover:not(:disabled) {
+  background-color: var(--ark-success-4);
+}
+
+.walker-popup__btn--danger {
+  background-color: var(--ark-danger-bg);
+  border-color: var(--ark-danger-bg-hover);
+  color: var(--ark-danger-text);
+}
+
+.walker-popup__btn--danger:hover:not(:disabled) {
+  background-color: var(--ark-danger-bg-hover);
+}
+
+.walker-popup__value--target {
+  color: var(--ark-accent-text);
+  font-weight: bold;
+}

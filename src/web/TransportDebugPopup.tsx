@@ -3,13 +3,11 @@ import { createPortal } from 'react-dom';
 import eventBus from '@modules/core/eventBus';
 import type { TransportDebugState } from '@client/types/transport';
 
-const KIND_COLOR: Record<string, string> = {
-    idle: '#888',
-    pending: '#f0a500',
-    at_stop: '#4caf50',
-    traveling: '#2196f3',
-    exiting: '#ff5722',
-};
+/** Tracker states are categorical, not ranked — the colours live in
+ *  TransportDebugPopup.css as `--kind` modifiers on `--ark-data-*`. */
+function kindClass(kind: string | undefined): string {
+    return kind ? `transport-debug__kind transport-debug__kind--${kind}` : 'transport-debug__kind';
+}
 
 export default function TransportDebugPopup() {
     const [visible, setVisible] = useState(false);
@@ -30,21 +28,16 @@ export default function TransportDebugPopup() {
 
     if (!visible) return null;
 
-    const kindColor = KIND_COLOR[state?.kind ?? ''] ?? '#ccc';
-
     const content = (
-        <div style={{
-            position: 'fixed', top: 8, right: 8, zIndex: 9999,
-            background: '#1a1a1a', border: '1px solid #444', borderRadius: 6,
-            padding: '8px 12px', fontFamily: 'monospace', fontSize: 11, color: '#ddd',
-            minWidth: 260, maxWidth: 360, opacity: 0.92,
-            pointerEvents: 'none',
-        }}>
-            <div style={{ marginBottom: 4, borderBottom: '1px solid #333', paddingBottom: 4 }}>
-                <span style={{ color: kindColor, fontWeight: 'bold', textTransform: 'uppercase' }}>
+        /* `data-popup-overlay` is what carries the design-system tokens into
+           forge-ui: this overlay portals to <body>, outside the panel that
+           popup-host-tokens.css scopes to. See the stylesheet header. */
+        <div className="transport-debug" data-popup-overlay>
+            <div className="transport-debug__head">
+                <span className={`${kindClass(state?.kind)} transport-debug__kind--head`}>
                     {state?.kind ?? 'no data'}
                 </span>
-                {state?.def && <span style={{ color: '#aaa', marginLeft: 8 }}>{state.def}</span>}
+                {state?.def && <span className="transport-debug__def">{state.def}</span>}
             </div>
 
             {state?.locationId !== null && state?.locationId !== undefined && (
@@ -52,12 +45,12 @@ export default function TransportDebugPopup() {
             )}
             {state?.pendingDefs && <Row label="pending" value={state.pendingDefs} />}
             {state?.next && <Row label="next" value={state.next} />}
-            {state?.leg && <Row label="leg" value={state.leg} color="#2196f3" />}
+            {state?.leg && <Row label="leg" value={state.leg} valueClass="transport-debug__row-value--leg" />}
 
             {log.length > 0 && (
-                <div style={{ marginTop: 6, borderTop: '1px solid #333', paddingTop: 4, opacity: 0.6 }}>
+                <div className="transport-debug__log">
                     {log.slice(-5).map((e, i) => (
-                        <div key={i} style={{ color: KIND_COLOR[e.kind] ?? '#ccc' }}>
+                        <div key={i} className={kindClass(e.kind)}>
                             {e.time} {e.kind}
                         </div>
                     ))}
@@ -69,11 +62,13 @@ export default function TransportDebugPopup() {
     return createPortal(content, document.body);
 }
 
-function Row({ label, value, color }: { label: string; value: string; color?: string }) {
+function Row({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
     return (
-        <div style={{ display: 'flex', gap: 6, marginTop: 2, lineHeight: 1.4 }}>
-            <span style={{ color: '#666', minWidth: 52 }}>{label}</span>
-            <span style={{ color: color ?? '#e0e0e0', wordBreak: 'break-all' }}>{value}</span>
+        <div className="transport-debug__row">
+            <span className="transport-debug__row-label">{label}</span>
+            <span className={valueClass ? `transport-debug__row-value ${valueClass}` : 'transport-debug__row-value'}>
+                {value}
+            </span>
         </div>
     );
 }
