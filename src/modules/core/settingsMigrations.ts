@@ -127,16 +127,35 @@ function addGemsOnlyOverride(enemy: string): Migration['migrate'] {
  * Elementals drop silver and gold alongside gems. They are bodiless, so the loot lands on
  * the floor - the collector picks it up there for any bodiless enemy with an override.
  */
+const ELEMENTALS = ['zywiolak ziemi', 'zywiolak wody', 'zywiolak powietrza', 'zywiolak ognia'];
+
 function migrateElementalCoins(settings: Partial<Settings>): Partial<Settings> {
     if (!settings.collectOverrides) {
         return settings;
     }
-    const { overrides, changed } = grantCoinsToStockOverrides(settings.collectOverrides, [
-        'zywiolak ziemi',
-        'zywiolak wody',
-        'zywiolak powietrza',
-        'zywiolak ognia',
-    ]);
+    const { overrides, changed } = grantCoinsToStockOverrides(settings.collectOverrides, ELEMENTALS);
+    return changed ? { ...settings, collectOverrides: overrides } : settings;
+}
+
+/**
+ * Undoes migrateElementalCoins: elementals should only yield gems. Only rows still carrying
+ * the stock shape it left behind (silver + gold + gems, no copper, no extras) are reverted,
+ * so a player who tuned them keeps their choices.
+ */
+function migrateElementalGemsOnly(settings: Partial<Settings>): Partial<Settings> {
+    if (!settings.collectOverrides) {
+        return settings;
+    }
+    let changed = false;
+    const overrides = settings.collectOverrides.map(override => {
+        const isStockWithCoins = !override.collectCopper && override.collectSilver && override.collectGold
+            && override.collectGems && (override.collectExtra?.length ?? 0) === 0;
+        if (ELEMENTALS.includes(override.enemy.toLowerCase()) && isStockWithCoins) {
+            changed = true;
+            return { ...override, collectSilver: false, collectGold: false };
+        }
+        return override;
+    });
     return changed ? { ...settings, collectOverrides: overrides } : settings;
 }
 
@@ -237,6 +256,11 @@ const migrations: Migration[] = [
         version: 15,
         description: 'Add the amfisbena gems override',
         migrate: addGemsOnlyOverride('amfisbena'),
+    },
+    {
+        version: 16,
+        description: 'Elementals yield only gems: drop silver and gold from the stock elemental overrides',
+        migrate: migrateElementalGemsOnly,
     },
 ];
 
