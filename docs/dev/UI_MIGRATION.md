@@ -26,7 +26,7 @@ of the UI" means **the client entry**, plus whatever `forge-ui` borrows from it.
 | `src/web/options/` + `hostProxy/` (settings) | 46 files, ~13 000 lines | Real component rewrites — this is where react-bootstrap lives |
 | `src/web/*Popup.tsx` (39 popups) | ~8 600 lines of `popups.css` | Mostly **token remapping**, not rewrites |
 | Shell: `index.html`, `layout.css`, `style.css` | 144 Bootstrap class uses, 15 declarative modals | Markup + layout CSS |
-| `src/web/LogBrowser.tsx` | ~1 700 lines | **Delete** — the shared `LogViewer` already does this |
+| `src/web/LogBrowser.tsx` | ~1 700 lines | Fold its newer UX into `@ui/logViewer`, then host that in a popup |
 | Bootstrap JS | 3 import sites | `Dropdown`, `Modal` → Radix primitives |
 
 Two measurements matter more than the totals:
@@ -73,7 +73,7 @@ riskier than it needs to be.
 ```
 0. Cut the tests loose from Bootstrap classes   ← no product change, unblocks all
 1. Token bridge + theme attribute               ← small diff, whole app re-themes
-2. In-client log browser → shared LogViewer     ← deletes 1 700 lines
+2. One log viewer, hosted twice                  ← fold master's UX in, then share
 3. Popups (39)                                  ← mostly token work
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
@@ -126,20 +126,44 @@ in each theme before and after.
 it being a pure re-pointing of variables — no markup, no components — so a
 regression shows up as a wrong colour, not a broken screen, and reverts cleanly.
 
-### Phase 2 — In-client log browser → shared component *(1 PR)*
+### Phase 2 — One log viewer, hosted twice *(2 PRs)*
 
-`src/web/LogBrowser.tsx` (~1 700 lines) becomes a mount of the existing
-`@ui/logViewer` inside a Radix `Dialog`, reusing `log-viewer/sessionAdapter.ts`.
+**Revised after `d76a392` ("przeglad UX okna logow") landed on master.** That
+commit put ~915 lines of UX work into `src/web/LogBrowser.tsx` in parallel with
+`@ui/logViewer` being built, so the original plan — delete the old browser and
+mount the new one — would throw away work that is newer and in places better.
 
-The component is already host-agnostic and was built for exactly this. What does
-*not* come across for free, and must be ported or consciously dropped:
+The agreed shape instead: **one component, two hosts.** The standalone page and
+the in-client browser render the same `@ui/logViewer`; in the client it lives in
+a popup rather than getting its own screen. Nothing is deleted until the shared
+component is at least as good as what master has today.
+
+**PR 1 — fold master's improvements into `@ui/logViewer`.** Measured against
+master, the shared component is missing:
+
+| Gap | Where master does it |
+|---|---|
+| A third search scope, **Zakres** — search within the selected range only | scopes are `Wszystkie` / `Ten log` / `Zakres` |
+| `PageUp` / `PageDown` scrolling | `LogBrowser.tsx:1255` |
+| Row height estimated from text length, rather than one fixed height | `estimateSize(index)`, `LogBrowser.tsx:935` |
+| A cancellable scroll job instead of `scrollToIndex`, so a cross-session jump lands on the first click | `cancelScrollJob` |
+
+The last two are worth taking seriously rather than porting mechanically: both
+are fixes for the same class of virtualizer problem that produced three bugs in
+this work already (frozen scroll height, density overlap, oversized viewport
+box). Master's variable-height estimate is the better answer for wrapped lines
+than the fixed `lineHeight` the shared component uses now.
+
+**PR 2 — host it in the client.** `LogBrowser.tsx` becomes a popup mounting the
+shared component, reusing `log-viewer/sessionAdapter.ts`. What does *not* come
+across for free, and must be ported or consciously dropped:
 
 - the ZIP export of all sessions (`logsExport.worker.ts`)
 - the sessions-management tab (delete, download-status, file-save directory)
 - JSON export and the highlight-preserving HTML export
 
-Net: a large deletion and one screen off Bootstrap. Good early morale, and it
-proves the "build it once, host it twice" claim before we lean on it further.
+`e2e/logs-browser.spec.ts` (new on master, 179 lines) is the acceptance test for
+this phase: it describes the behaviour the shared component has to keep.
 
 ### Phase 3 — Popups *(4–6 PRs, grouped by family)*
 
