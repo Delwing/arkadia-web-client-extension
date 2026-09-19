@@ -3,7 +3,9 @@ import { allChannelsOn } from "@ui/logViewer/model/channels";
 import type { LogLine, LogSession } from "@ui/logViewer/model/types";
 import {
     applyPreferences,
+    appliedRange,
     deriveView,
+    effectiveScope,
     initialSessionId,
     initialViewerState,
     orderSessions,
@@ -150,23 +152,33 @@ describe("range", () => {
     // sessionA's four lines sit one second apart from T0 + 1s.
     const at = (second: number) => T0 + second * 1000;
 
+    /**
+     * Every case below pins the scope to "Zakres", because that is the scope in
+     * which a slice is applied. In "Ten log" and "Wszystkie logi" the slice is
+     * still selected — the handles stay on the timeline — but it hides nothing,
+     * so that a scope promising the whole log can deliver it. See
+     * `appliedRange`.
+     */
+    const sliced = (overrides: Partial<ViewerState> = {}): ViewerState =>
+        state({ scope: "range", ...overrides });
+
     it("drops lines outside the slice", () => {
-        const view = deriveView([sessionA], state({ range: { from: at(2), to: at(3) } }));
+        const view = deriveView([sessionA], sliced({ range: { from: at(2), to: at(3) } }));
         expect(view.rows.map((entry) => entry.number)).toEqual([2, 3]);
     });
 
     it("keeps original line numbers inside the slice", () => {
-        const view = deriveView([sessionA], state({ range: { from: at(3), to: at(4) } }));
+        const view = deriveView([sessionA], sliced({ range: { from: at(3), to: at(4) } }));
         expect(view.rows.map((entry) => entry.number)).toEqual([3, 4]);
     });
 
     it("includes lines exactly on each bound", () => {
-        const view = deriveView([sessionA], state({ range: { from: at(1), to: at(1) } }));
+        const view = deriveView([sessionA], sliced({ range: { from: at(1), to: at(1) } }));
         expect(view.rows.map((entry) => entry.number)).toEqual([1]);
     });
 
     it("counts every channel regardless of the slice, so chip counts stay put", () => {
-        const view = deriveView([sessionA], state({ range: { from: at(4), to: at(4) } }));
+        const view = deriveView([sessionA], sliced({ range: { from: at(4), to: at(4) } }));
         expect(view.rows).toHaveLength(1);
         expect(view.channelCounts.combat).toBe(2);
         expect(view.channelCounts.room).toBe(1);
@@ -175,8 +187,8 @@ describe("range", () => {
     it("scopes the match counter to the slice", () => {
         const all = deriveView([sessionA], state({ query: "troll" }));
         expect(all.totalMatches).toBe(3);
-        const sliced = deriveView([sessionA], state({ query: "troll", range: { from: at(1), to: at(1) } }));
-        expect(sliced.totalMatches).toBe(1);
+        const inSlice = deriveView([sessionA], sliced({ query: "troll", range: { from: at(1), to: at(1) } }));
+        expect(inSlice.totalMatches).toBe(1);
     });
 
     it("leaves other sessions' hit badges alone", () => {
@@ -192,14 +204,44 @@ describe("range", () => {
     it("combines with channel filters", () => {
         const view = deriveView(
             [sessionA],
-            state({ range: { from: at(1), to: at(3) }, channels: { ...allChannelsOn(), room: false } }),
+            sliced({ range: { from: at(1), to: at(3) }, channels: { ...allChannelsOn(), room: false } }),
         );
         expect(view.rows.map((entry) => entry.number)).toEqual([1, 3]);
     });
 
     it("can select nothing, which the empty state then explains", () => {
-        const view = deriveView([sessionA], state({ range: { from: at(90), to: at(99) } }));
+        const view = deriveView([sessionA], sliced({ range: { from: at(90), to: at(99) } }));
         expect(view.rows).toEqual([]);
+    });
+
+    it("hides nothing in the wider scopes, so 'Ten log' really is the whole log", () => {
+        const slice = { from: at(1), to: at(1) };
+        expect(deriveView([sessionA], state({ scope: "log", range: slice })).rows).toHaveLength(4);
+        expect(deriveView([sessionA], state({ scope: "all", range: slice })).rows).toHaveLength(4);
+        expect(deriveView([sessionA], sliced({ range: slice })).rows).toHaveLength(1);
+    });
+
+    it("reports the slice actually in force, which is what the timeline scrims", () => {
+        const slice = { from: at(1), to: at(2) };
+        expect(deriveView([sessionA], sliced({ range: slice })).range).toEqual(slice);
+        expect(deriveView([sessionA], state({ scope: "log", range: slice })).range).toBeNull();
+    });
+});
+
+describe("effectiveScope", () => {
+    it("leaves the two log scopes alone", () => {
+        expect(effectiveScope({ scope: "log", range: null })).toBe("log");
+        expect(effectiveScope({ scope: "all", range: null })).toBe("all");
+    });
+
+    it("falls back to the open log when the range it named is gone", () => {
+        expect(effectiveScope({ scope: "range", range: null })).toBe("log");
+        expect(appliedRange({ scope: "range", range: null })).toBeNull();
+    });
+
+    it("searches a log whole in 'range' scope with no range, rather than nothing", () => {
+        const view = deriveView([sessionA], state({ scope: "range", query: "troll" }));
+        expect(view.totalMatches).toBe(3);
     });
 });
 

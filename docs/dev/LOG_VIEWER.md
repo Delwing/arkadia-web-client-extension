@@ -94,6 +94,15 @@ it. Invalid regexes show an error state instead of throwing. Zero-length matches
 are stepped over (`a*` would otherwise never terminate), and matches per line
 are capped.
 
+**Three scopes: `Wszystkie logi` / `Ten log` / `Zakres`.** The first two differ
+only in how many sessions they cover. `Zakres` is the odd one out — it is the
+scope in which a selected range is *applied*, so the rows, the counter, the
+timeline and all four exports narrow to it together. It is offered only once a
+range exists, selecting a range switches to it, clearing one switches back to
+whatever you were searching before, and if the range disappears underneath it
+the search falls back to the open log rather than reporting nothing found in a
+slice that is gone.
+
 **Switching sessions keeps the query and every filter** — comparing one search
 across sessions is the second thing this viewer is for. Only the match index
 resets.
@@ -106,7 +115,33 @@ grace window; without it, turning follow on immediately turns it off again.
 tracking reads the virtualizer's range rather than scanning the DOM — with rows
 unmounted outside the window there is nothing in the DOM to scan.
 
-**A range is a span of time, not a pair of line numbers.** Time is what the
+Three things about it are worth knowing, because all three are fixes rather
+than choices:
+
+- **A row is as tall as the number of visual lines it wraps to.** Rows are
+  measured once rendered, but everything above the viewport is only estimated,
+  and the estimate is what decides where a jump lands and how steady the
+  scrollbar is. A hidden probe row goes through the same grid as a real one and
+  reports the text column's width, one character's width and one line's height;
+  the estimate is `ceil(length / cols)` lines. With wrapping off it is one
+  fixed height, because nothing can wrap.
+- **Rows are keyed by their line index in the session**, not by their position
+  in the filtered list, so a channel toggle does not throw away every height
+  the pane has measured. The cost is that the measurement cache has to be
+  invalidated explicitly — `virtualizer.measure()` — whenever density,
+  wrapping, the pane's width or the session changes. Without that, offsets go
+  on stepping by the old height while the rows are drawn at the new one, and
+  they overlap.
+- **Jumping to a row is a cancellable job, not `scrollToIndex`.** The offset a
+  jump aims at moves as the rows above it stop being estimates and start being
+  measurements, so the job re-reads the offset each frame until it holds, and
+  any input of the player's own abandons it. `scrollToIndex` instead keeps
+  re-snapping for seconds, fighting a player who scrolls away, and gives up
+  when the scroll is clamped by a list that has not grown yet — which is why a
+  hit in another session used to need a second click.
+
+**A range is a span of time, not a pair of line numbers**, and it narrows the
+log only in `Zakres` search scope (see above). Time is what the
 timeline handles move along, and it survives a change of channel filters —
 "20:31 to 20:40" still means the same moment after you hide the combat channel,
 where "line 900" does not. It is set three ways, all equivalent:
@@ -138,6 +173,7 @@ that listens globally steals keys from the game input.
 | `Esc` | clear a non-empty query; otherwise falls through to the host |
 | `[` / `]` | previous / next session |
 | `Home` / `End` | start / end of the log |
+| `PageUp` / `PageDown` | one viewport up / down |
 | right-click a line | range menu |
 | `Esc` (menu open) | close the range menu |
 

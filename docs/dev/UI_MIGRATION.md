@@ -154,6 +154,14 @@ this work already (frozen scroll height, density overlap, oversized viewport
 box). Master's variable-height estimate is the better answer for wrapped lines
 than the fixed `lineHeight` the shared component uses now.
 
+**Done.** All four landed, plus a fourth cross-session-jump bug that was the
+shared component's own: two scroll effects fired on the same render and the
+session one ran last, so a hit in another log was overridden by "start this
+session at the top". `Zakres` scope is where the shared component departs from
+master deliberately — a range narrows the log only in that scope, so the two
+wider scopes can search the whole log without master's trick of silently
+destroying the range to reach a hit outside it. See `LOG_VIEWER.md`.
+
 **PR 2 — host it in the client.** `LogBrowser.tsx` becomes a popup mounting the
 shared component, reusing `log-viewer/sessionAdapter.ts`. What does *not* come
 across for free, and must be ported or consciously dropped:

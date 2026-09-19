@@ -82,6 +82,32 @@ export function initialViewerState(sessionId: string): ViewerState {
     };
 }
 
+/**
+ * The scope a search actually runs in.
+ *
+ * "Zakres" can outlive the range it was chosen for: the range is cleared from
+ * the status bar, by switching sessions, or by a drag that covers the whole
+ * log. Falling back to the open log is what the in-client browser does
+ * (`LogBrowser.tsx:1304`), and it beats reporting nothing found in a slice that
+ * no longer exists.
+ */
+export function effectiveScope(state: Pick<ViewerState, "scope" | "range">): SearchScope {
+    return state.scope === "range" && !state.range ? "log" : state.scope;
+}
+
+/**
+ * The slice the viewer is currently narrowed to, or null for the whole log.
+ *
+ * A range is only APPLIED in "Zakres" scope. In "Ten log" and "Wszystkie logi"
+ * it stays drawn on the timeline, ready to be picked up again, but it does not
+ * hide anything — otherwise those two scopes would promise a search wider than
+ * the rows they can show, and the counter would start naming hits the player
+ * cannot scroll to.
+ */
+export function appliedRange(state: Pick<ViewerState, "scope" | "range">): TimeRange | null {
+    return effectiveScope(state) === "range" ? state.range : null;
+}
+
 /** The slice that outlives a session: view preferences, not what is on screen. */
 export interface PersistedPreferences {
     channels: ChannelFilter;
@@ -102,7 +128,9 @@ export function pickPreferences(state: ViewerState): PersistedPreferences {
         showMeta: state.showMeta,
         showColors: state.showColors,
         wrap: state.wrap,
-        scope: state.scope,
+        // "Zakres" is not storable: the range it depends on is deliberately not
+        // persisted either, so the scope to come back to is the wider one.
+        scope: state.scope === "range" ? "log" : state.scope,
         density: state.density,
         sessionId: state.sessionId,
     };
@@ -169,6 +197,8 @@ export interface DerivedView {
     channelCounts: Record<Channel, number>;
     invalidPattern: boolean;
     searching: boolean;
+    /** The slice actually in force — see `appliedRange`. */
+    range: TimeRange | null;
 }
 
 function matchesSessionFilter(session: LogSession, filter: string): boolean {
@@ -179,6 +209,7 @@ function matchesSessionFilter(session: LogSession, filter: string): boolean {
 
 export function deriveView(sessions: LogSession[], state: ViewerState): DerivedView {
     const matcher = makeMatcher(state.query, { regex: state.regex, caseSensitive: state.caseSensitive });
+    const range = appliedRange(state);
     const filter = state.sessionFilter.trim().toLowerCase();
     const ordered = orderSessions(sessions);
     const visibleSessions = ordered.filter((session) => matchesSessionFilter(session, filter));
@@ -207,8 +238,10 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
             if (!state.channels[line.channel]) return;
             // The range narrows the log BEFORE anything else looks at it, so
             // exporting, copying and the match counter all agree with what is
-            // on screen.
-            if (state.range && (line.timestamp < state.range.from || line.timestamp > state.range.to)) return;
+            // on screen. `appliedRange` above is what decides whether there is
+            // one to apply: outside "Zakres" scope a selected slice is drawn
+            // but not in force.
+            if (range && (line.timestamp < range.from || line.timestamp > range.to)) return;
 
             let segments: MatchSegment[] = [{ text: line.text, match: false }];
             let matchCount = 0;
@@ -251,6 +284,7 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
         channelCounts,
         invalidPattern: matcher.invalid,
         searching: Boolean(matcher.regex),
+        range,
     };
 }
 

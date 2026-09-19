@@ -135,22 +135,76 @@ export function LogViewer({
     /* --- scroll targets -------------------------------------------------- */
 
     const currentRow = view.currentRow;
+    const sessionId = state.sessionId;
 
-    // Centre the current match whenever it moves. Following live wins: a player
-    // watching a live session does not want the view yanked to an old hit.
+    /**
+     * Set by `step` when a match carries the search into another session, and
+     * consumed by the session-change scroll below.
+     *
+     * Both effects fire on the same render, and the session one runs last, so
+     * without this the jump a player asked for landed at the top of the new log
+     * and they had to click the hit a second time.
+     */
+    const matchJump = useRef<string | null>(null);
+
+    // Centre the current match whenever it moves. `sessionId` is a dependency
+    // as well: crossing into another log can land on the same row number, and
+    // that jump still has to happen. Following live wins — a player watching a
+    // live session does not want the view yanked to an old hit.
     useEffect(() => {
         if (state.follow) return;
         if (currentRow === null) return;
         requestScroll({ kind: "row", row: currentRow, align: "center" });
-    }, [currentRow, state.follow, requestScroll]);
+    }, [currentRow, sessionId, state.follow, requestScroll]);
 
     // A new session starts at its end when live, at its top otherwise.
-    const sessionId = state.sessionId;
     useEffect(() => {
         const session = sessions.find((candidate) => candidate.id === sessionId);
         if (!session) return;
+        if (matchJump.current === sessionId) {
+            matchJump.current = null;
+            return;
+        }
         requestScroll({ kind: session.live ? "bottom" : "top" });
     }, [sessionId, sessions, requestScroll]);
+
+    /* --- scope and range ------------------------------------------------- */
+
+    /**
+     * The scope to fall back to once the range goes away.
+     *
+     * The in-client browser hardcodes "Ten log" (`LogBrowser.tsx:1671`), which
+     * quietly ends a cross-log search the moment you drag a range. Remembering
+     * what you were doing costs one ref.
+     */
+    const scopeBeforeRange = useRef<SearchScope>("log");
+
+    const selectScope = useCallback(
+        (scope: SearchScope) => {
+            if (scope !== "range") scopeBeforeRange.current = scope;
+            // The match set changes with the scope, so the counter starts over —
+            // this is what "zmiana zakresu przeszukuje ponownie" amounts to when
+            // the search is derived rather than run.
+            patch({ scope, matchIndex: 0, notice: "" });
+        },
+        [patch],
+    );
+
+    // A range appearing narrows the search to it; the range going away widens
+    // the search back out. Mirrors `LogBrowser.tsx:1668-1675`.
+    const hasRange = state.range !== null;
+    useEffect(() => {
+        setState((previous) => {
+            if (hasRange && previous.scope !== "range") {
+                scopeBeforeRange.current = previous.scope;
+                return { ...previous, scope: "range", matchIndex: 0, notice: "" };
+            }
+            if (!hasRange && previous.scope === "range") {
+                return { ...previous, scope: scopeBeforeRange.current, matchIndex: 0, notice: "" };
+            }
+            return previous;
+        });
+    }, [hasRange]);
 
     // A range belongs to the session it was drawn on; carrying it across would
     // silently hide most of the log you just opened.
@@ -180,6 +234,7 @@ export function LogViewer({
         (direction: 1 | -1) => {
             const result = stepMatch(direction, { ...state, query: activeQuery }, view, view.visibleSessions);
             if (!result) return;
+            if (result.sessionId) matchJump.current = result.sessionId;
             patch({
                 matchIndex: result.matchIndex,
                 notice: result.notice,
@@ -254,13 +309,19 @@ export function LogViewer({
 
     /* --- export ---------------------------------------------------------- */
 
-    /** Base file name for exports, with the range marked when one is set. */
+    /**
+     * Base file name for exports, marked when a range is in force.
+     *
+     * It follows the APPLIED range, not the selected one: every export works on
+     * `view.rows`, and those are only narrowed in "Zakres" scope. A file named
+     * `_zakres` that held the whole log would be a lie about its own contents.
+     */
     const exportName = useCallback(
         (extension: string) => {
             const base = (view.session?.file ?? "log").replace(/\.[^.]+$/, "");
-            return `${base}${state.range ? "_zakres" : ""}.${extension}`;
+            return `${base}${view.range ? "_zakres" : ""}.${extension}`;
         },
-        [view.session, state.range],
+        [view.session, view.range],
     );
 
     const plainText = useCallback(
@@ -311,8 +372,8 @@ export function LogViewer({
             title: view.session.character,
             meta: [
                 view.session.dateLabel,
-                state.range
-                    ? `zakres ${formatClock(state.range.from)}\u2013${formatClock(state.range.to)}`
+                view.range
+                    ? `zakres ${formatClock(view.range.from)}\u2013${formatClock(view.range.to)}`
                     : "caly log",
                 `${view.rows.length} z ${view.session.lines.length} linii`,
             ].join("  \u00b7  "),
@@ -329,7 +390,7 @@ export function LogViewer({
             },
         });
         downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), exportName("html"));
-    }, [view.session, view.rows, state.range, state.showTimestamps, state.showMeta, state.showColors, readPaneStyle, exportName]);
+    }, [view.session, view.rows, view.range, state.showTimestamps, state.showMeta, state.showColors, readPaneStyle, exportName]);
 
     /** Renders what is on screen to a PNG, then hands it to `deliver`. */
     const withImage = useCallback(
@@ -404,10 +465,18 @@ export function LogViewer({
             if (event.key === "]") stepSession(1);
             else if (event.key === "[") stepSession(-1);
             else if (event.key === "Home") {
+                event.preventDefault();
                 patch({ follow: false });
                 requestScroll({ kind: "top" });
             } else if (event.key === "End") {
+                event.preventDefault();
                 requestScroll({ kind: "bottom" });
+            } else if (event.key === "PageUp" || event.key === "PageDown") {
+                // Paging is a plain scroll, not a jump to a row: it is NOT
+                // marked programmatic, so paging up off the bottom releases
+                // follow exactly as dragging the scrollbar would.
+                event.preventDefault();
+                requestScroll({ kind: "page", delta: event.key === "PageDown" ? 1 : -1 });
             }
         },
         [step, stepSession, patch, requestScroll],
@@ -471,7 +540,7 @@ export function LogViewer({
 
     // The histogram must show activity OUTSIDE the range too, or the part of
     // the track you need in order to move the handles is empty.
-    const activityLines = state.range
+    const activityLines = view.range
         ? view.session.lines.filter((line) => state.channels[line.channel])
         : view.rows;
 
@@ -502,7 +571,7 @@ export function LogViewer({
                 onDownloadImage={downloadImage}
                 onCopyImage={copyImage}
                 busy={busy}
-                ranged={state.range !== null}
+                ranged={view.range !== null}
                 trailing={headerTrailing}
             />
 
@@ -531,7 +600,8 @@ export function LogViewer({
                         onlyMatches={state.onlyMatches}
                         onOnlyMatchesChange={(value) => patch({ onlyMatches: value, matchIndex: 0 })}
                         scope={state.scope}
-                        onScopeChange={(value: SearchScope) => patch({ scope: value, notice: "" })}
+                        onScopeChange={selectScope}
+                        hasRange={hasRange}
                         onStep={step}
                         onKeyDown={onSearchKeyDown}
                         counter={counter}
@@ -564,11 +634,13 @@ export function LogViewer({
                         }}
                         onJumpToEnd={() => requestScroll({ kind: "bottom" })}
                         range={state.range}
+                        rangeActive={view.range !== null}
                         onRangeChange={setRange}
                     />
 
                     <LogPane
                         rows={view.rows}
+                        sessionKey={view.session.id}
                         showTimestamps={state.showTimestamps}
                         showMeta={state.showMeta}
                         showColors={state.showColors}
@@ -602,6 +674,7 @@ export function LogViewer({
                         totalLines={view.session.lines.length}
                         viewport={viewport}
                         range={state.range}
+                        rangeActive={view.range !== null}
                         onClearRange={clearRange}
                         error={exportError}
                         showTimestamps={state.showTimestamps}

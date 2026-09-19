@@ -4,6 +4,9 @@ export interface SegmentedOption<T extends string> {
     value: T;
     label: string;
     title?: string;
+    /** An option that exists but cannot be chosen yet — still shown, so the
+        control does not change width when it becomes available. */
+    disabled?: boolean;
 }
 
 export interface SegmentedProps<T extends string> {
@@ -30,6 +33,7 @@ export function Segmented<T extends string>({ value, onValueChange, options, cla
                     title={option.title}
                     data-state={option.value === value ? "on" : "off"}
                     className="ark-segmented__item"
+                    disabled={option.disabled}
                     onClick={() => onValueChange(option.value)}
                 >
                     {option.label}
