@@ -65,10 +65,13 @@ export default function HoldConfig({
                             showUnavailableWarning
                         />
                     </div>
+                    {/* The hold action's editor sits beside the button's own,
+                        so its plugin config fields need their own id space. */}
                     <MacroConfigEditor
                         config={holdCfg}
                         onChange={updates => updateHold(updates)}
                         pluginMacros={pluginMacros}
+                        idPrefix={`hold-${idSuffix}-`}
                     />
                 </>
             )}

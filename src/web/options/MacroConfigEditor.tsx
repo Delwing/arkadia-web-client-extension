@@ -17,9 +17,16 @@ interface MacroConfigEditorProps {
     pluginMacros: PluginButtonMacro[];
     /** Button color — used for plugin state color defaults. */
     buttonColor?: string;
+    /**
+     * Namespaces the ids of a plugin macro's config fields. A compound macro
+     * renders one editor per step, so two steps on the same plugin macro would
+     * otherwise mint the same id twice and `<label for>` would reach the first
+     * step's field from the second step's label.
+     */
+    idPrefix?: string;
 }
 
-export default function MacroConfigEditor({ config, onChange, pluginMacros, buttonColor }: MacroConfigEditorProps) {
+export default function MacroConfigEditor({ config, onChange, pluginMacros, buttonColor, idPrefix = '' }: MacroConfigEditorProps) {
     return (
         <>
             {config.macroType === 'command' && (
@@ -64,6 +71,7 @@ export default function MacroConfigEditor({ config, onChange, pluginMacros, butt
                     steps={config.steps || []}
                     onChange={steps => onChange({ steps })}
                     pluginMacros={pluginMacros}
+                    idPrefix={idPrefix}
                 />
             )}
 
@@ -72,6 +80,7 @@ export default function MacroConfigEditor({ config, onChange, pluginMacros, butt
                 pluginConfig={config.pluginConfig}
                 onChange={pluginConfig => onChange({ pluginConfig })}
                 pluginMacros={pluginMacros}
+                idPrefix={idPrefix}
             />
 
             <PluginStateConfig
@@ -90,9 +99,10 @@ interface CompoundStepsEditorProps {
     steps: ButtonMacroConfig[];
     onChange: (steps: ButtonMacroConfig[]) => void;
     pluginMacros: PluginButtonMacro[];
+    idPrefix: string;
 }
 
-function CompoundStepsEditor({ steps, onChange, pluginMacros }: CompoundStepsEditorProps) {
+function CompoundStepsEditor({ steps, onChange, pluginMacros, idPrefix }: CompoundStepsEditorProps) {
     function updateStep(index: number, updates: Partial<ButtonMacroConfig>) {
         const newSteps = [...steps];
         newSteps[index] = { ...newSteps[index], ...updates };
@@ -154,6 +164,7 @@ function CompoundStepsEditor({ steps, onChange, pluginMacros }: CompoundStepsEdi
                         onChange={updates => updateStep(index, updates)}
                         pluginMacros={pluginMacros}
                         buttonColor={undefined}
+                        idPrefix={`${idPrefix}step${index}-`}
                     />
                 </div>
             ))}
