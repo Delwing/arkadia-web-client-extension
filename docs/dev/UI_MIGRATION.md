@@ -237,6 +237,11 @@ world/travel, knowledge/reports, inventory/economy, debug.
 Postepy, Postepy 2, Cechy, Zabici, Zabici 2, Odpornosci przeciwnikow. It also
 landed the shared pieces every later popup PR depends on, described below.
 
+**PR 2 (world/time) is done** — six popups: Zegar, Kalendarz, Czas, Slonce -
+kalkulator, Slonce - tracker, Informacje o lokacji. **Okno mapy (StaticMap) was
+deliberately left behind**; why, and the two other things this PR found, are
+below.
+
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
 
@@ -290,6 +295,40 @@ So `src/web/popups/popups.css` is now a **manifest**: nothing but an ordered
 reorder, and the path forge-ui imports is unchanged. Three unit tests hold the
 rule.
 
+#### Three more things PR 2 found
+
+**(4) `forge-ui` now loads `@design/css/index.css`.** The plan says twice, in
+capitals, that "forge loads no part of the design system". That stopped being
+true at `f087744`: `forge-ui/main.tsx` imports the system's stylesheet so the
+stock screens it hosts keep their primitives. What forge still does *not* have
+is `.ark-root` or `data-ark-theme`, so `popup-host-tokens.css` (`body:not(.ark-root)`)
+still applies and still supplies the token *values* from forge's bronze
+palette. The practical consequence is the useful half: **an `@design` primitive
+inside a popup is safe in forge** — `.ark-table` and friends are styled there —
+which is what PR 1's `Table` was already relying on. Nothing else about §4's
+constraint (a) or §9's open question changes.
+
+**(5) Not every popup has a stylesheet, and `MIGRATED_SHEETS` cannot see the
+ones that do not.** Recipe step 7 assumes a sheet per popup. Three popups in
+this family — Kalendarz, Slonce - kalkulator, Slonce - tracker — are ~1 500
+lines of `style={{ ... }}` objects and no CSS file at all. Migrating them is a
+token swap in the TSX, and rewriting them into stylesheets would be a rewrite,
+not a migration. So `test/ui/design/stylesheets.test.ts` grew a second list,
+`MIGRATED_POPUP_COMPONENTS`, holding the same two rules (no hex, no
+`--popup-*`) against the component source. **Step 7 should read "add it to
+`MIGRATED_SHEETS`, or to `MIGRATED_POPUP_COMPONENTS` if the popup has no
+sheet".**
+
+**(6) One legacy variable was doing two unrelated jobs.** `--popup-data-gold`
+painted both the sun (Kalendarz, tracker) and the selected day / selected range
+(tracker). The §4 decision splits them correctly and they must not both become
+one `--ark-data-*` slot: the sun is categorical data, the selection is interface
+state and belongs on the accent. The same audit moved `--popup-data-tomato`
+apart twice — Geheimnisnacht and "this observation contradicts the grid" are
+both genuinely `--ark-danger-*`, but the four season hues next to them are not.
+The lesson generalises: **audit a legacy data variable by its call sites, not by
+its name**, because the old layer had no way to say which job it meant.
+
 #### The per-popup recipe
 
 Follow this literally; it is what PR 1 converged on.
@@ -314,13 +353,40 @@ Follow this literally; it is what PR 1 converged on.
    `Icon`. Do not force it; a tokenised bespoke gauge beats a primitive that
    does not fit.
 7. **Add the stylesheet to `MIGRATED_SHEETS`** in
-   `test/ui/design/stylesheets.test.ts`. That is what enforces no-hex and
-   no-`--popup-*` from then on; a migrated sheet left off the list keeps the
-   tokens but loses the rule.
+   `test/ui/design/stylesheets.test.ts` — or, if the popup has no stylesheet and
+   is styled from inline `style={{ ... }}` objects, add the component to
+   `MIGRATED_POPUP_COMPONENTS` in the same file. That is what enforces no-hex
+   and no-`--popup-*` from then on; a migrated popup left off both lists keeps
+   the tokens but loses the rule.
 8. **Screenshot before and after, in at least three themes**, one dark, one
    light, one with a strong accent. Diff them. A pure token swap should come out
    near-identical; anything that moved and should not have is a cascade or
    specificity bug. This is the step that found (3).
+
+#### Okno mapy (StaticMap): deferred, and why
+
+The world/time family on paper is seven popups. Six migrated; **Okno mapy did
+not**, and the reason is recipe step 1 rather than its size.
+
+`StaticMapPopup.tsx` builds its entire header out of `.map-header-menu__*` — 22
+uses. That class family is not the popup's: it is shared chrome, used by
+`layout/components/MapHeaderMenu.tsx` (32 uses), `ObjectListHeaderMenu.tsx`
+(12) and `ChatPopup.tsx` (8), and it lives in **`layout/layout.css`**, not in
+`popups-base.css`. The popup's own rules are in **`style.css`**. Both files are
+Phase 5's, and both sit inside `main-theme.css`'s cascade lock.
+
+So there is no migration of this one popup that is not also a migration of the
+shell's map panel, the object list and a popup from another family — which is
+Layer 2's situation all over again, and it wants the same answer: **migrate
+`.map-header-menu__*` for everyone, in place in `layout.css`, as its own
+change.** In place, because moving it into the popups manifest would move it
+past the rest of `layout.css` in the cascade, which that file's header warns
+about specifically. That change belongs either to Phase 5 or to a small PR of
+its own; it should not be smuggled in under one popup's name.
+
+Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
+would half-migrate the screen, which §5 forbids for exactly the reason that
+applies here — the body would re-theme and the header would not.
 
 #### `--popup-data-*`: decided
 
@@ -574,6 +640,19 @@ than it adds.
   in Phase 4 PR 2. Nothing imported it; the live short-exits UI is a section of
   `Settings.tsx`. Found while picking Phase 4's first tabs — the plan had it
   queued for migration.
+
+- **Migrate `.map-header-menu__*` onto `--ark-*`, in place in
+  `layout/layout.css`.** Shared by `MapHeaderMenu`, `ObjectListHeaderMenu`,
+  `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
+  it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
+  popups manifest — `layout.css`'s own header says why.
+
+- **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
+  hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3
+  PR 2 left it alone. When Phase 5 reaches the footer it should read
+  `src/web/popups/worldPalette.ts` like the three popups now do. Until then the
+  chip and the popups disagree about what Wiosna looks like — as they already
+  did before, in the other direction.
 
 - ~~**Character attribution for logs**~~ — done, see
   `LOG_CHARACTER_ATTRIBUTION.md` and `LOG_VIEWER.md` §1. The log carries a
