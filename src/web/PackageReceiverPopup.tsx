@@ -135,7 +135,7 @@ const PackageReceiverPopup: React.FC = () => {
                         placeholder="Filtruj..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="form-control form-control-sm"
+                        className="popup-input"
                     />
                     {search && (
                         <button

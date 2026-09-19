@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Callout } from "@design";
 import { characterStorage } from "@modules/core/storage";
 import type { HerbBagState, HerbBagsState, HerbGiveTarget, HerbMoveOptions } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
@@ -740,9 +741,9 @@ const HerbManager = () => {
                     onPointerDownCapture={closeContextMenu}
                 >
                     {error && (
-                        <div className="alert alert-danger herb-manager-status" role="alert">
+                        <Callout tone="danger" className="herb-manager-status">
                             {error}
-                        </div>
+                        </Callout>
                     )}
                     {giveMode && (
                         <div
@@ -828,9 +829,9 @@ const HerbManager = () => {
                         </div>
                     )}
                     {emptyState ? (
-                        <div className="alert alert-info herb-manager-status" role="alert">
+                        <Callout tone="info" className="herb-manager-status">
                             Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
-                        </div>
+                        </Callout>
                     ) : (
                         <div className="herb-grid" style={gridStyle}>
                             {bags.map(bag => {

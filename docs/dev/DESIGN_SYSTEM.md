@@ -253,8 +253,18 @@ Primitives available: `Badge`, `Button`/`IconButton`, `Callout`/`EmptyState`,
 
 ### The specificity trap
 
-It runs both ways. Inside the system, `base.css` wraps its element resets in
-`:where()` so they carry **zero** specificity. Without that, `.ark-root button { padding: 0 }` (0,1,1) outranks
+It runs three ways, and the third one is inside a single primitive.
+`Table` declares `text-align` and `white-space` on `.ark-table th, .ark-table
+td` (0,1,1) and then tried to override them from `.ark-table__cell--num`
+(0,1,0). The modifier lost, silently, for every popup that used it — a column
+of numbers simply stayed left-aligned, and `align="grow"` never let a cell
+wrap. Its layout modifiers are now written `.ark-table .ark-table__cell--*`.
+**A modifier that overrides a base rule written with an element selector needs
+a second class**, even when both live in the same file; its colour siblings did
+not, because `color` is inherited rather than declared on the same element.
+
+It also runs both ways across the boundary. Inside the system, `base.css` wraps
+its element resets in `:where()` so they carry **zero** specificity. Without that, `.ark-root button { padding: 0 }` (0,1,1) outranks
 `.ark-button--solid` (0,1,0) and every button in the system renders as bare
 text. If you add to the reset, keep it inside `:where()`.
 
@@ -279,6 +289,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `src/web/` combat + status popups (9) | **on the design system**, `--ark-*` only (Phase 3, PR 1) |
 | `src/web/` world + time popups (6) | **on the design system**, `--ark-*` only (Phase 3, PR 2). Okno mapy is not among them — see `UI_MIGRATION.md` §4 |
 | `src/web/` travel + transport popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 3) |
+| `src/web/` inventory + economy popups (10) | **on the design system**, `--ark-*` only (Phase 3, PR 4) |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | migrating one page per PR; done: Komendy, Inne, Gildie, Magiki (Faza 4, PR 1), Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2) |

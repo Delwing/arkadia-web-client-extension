@@ -1,0 +1,186 @@
+/* Wedka ("Wedka") popup — the fishing state machine and its two buttons.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   CZTERY STANY, TRZY STATUSY I AKCENT — a nie paleta danych.
+
+   Naglowek popups-base.css nazywal barwy wedki "genuinely game-specific hues
+   ... a generic status var can't [carry]". Audyt po miejscach uzycia mowi co
+   innego, i to on rozstrzyga (plan, §4):
+
+     zarzucone    akcent      - stan biezacy, nic sie nie dzieje
+     bierze       warning     - masz sekunde na reakcje, inaczej ryba schodzi
+     zacinasz     success     - to jest ruch, ktory chcesz wykonac
+     wyciagasz    danger      - przerywasz polow
+
+   To jest ranking, nie kategoria, a stara warstwa juz to wiedziala: polowa
+   tych regul czytala --popup-warning / --popup-danger, a druga polowa te same
+   barwy wpisane recznie jako rgba(). Zostaje wiec jedna warstwa - statusy -
+   i znikaja literaly.
+
+   Puls "bierze" idzie od tla ostrzezenia do stopnia 4 tej samej skali. Stopien
+   surowy, bo jasniejszego tla ostrzezenia zbior nazw semantycznych nie ma, a
+   animacja potrzebuje dwoch punktow tej samej barwy. */
+
+.fishing-window {
+  --fw-width: 220px;
+  --fw-min-width: 180px;
+}
+
+.fishing-window-body {
+  padding: 0.75rem;
+}
+
+.fishing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fishing-status {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  width: 100%;
+}
+
+.fishing-status--idle {
+  color: var(--ark-text-tertiary);
+  background-color: var(--ark-gray-a2);
+}
+
+.fishing-status--fishing {
+  color: var(--ark-accent-text);
+  background-color: var(--ark-accent-bg);
+}
+
+.fishing-status--biting {
+  color: var(--ark-warning-text);
+  background-color: var(--ark-warning-bg);
+  animation: fishing-biting-pulse 0.5s ease-in-out infinite alternate;
+}
+
+.fishing-status--pulling {
+  color: var(--ark-success-text);
+  background-color: var(--ark-success-bg);
+}
+
+@keyframes fishing-biting-pulse {
+  0% {
+    background-color: var(--ark-warning-bg);
+  }
+  100% {
+    background-color: var(--ark-warning-4);
+  }
+}
+
+.fishing-timer {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ark-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fishing-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* fishing buttons folded to .popup-btn.popup-btn--lg; the state colours below
+   are the deltas. */
+.fishing-btn--cast {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+}
+
+.fishing-btn--cast:hover {
+  background-color: var(--ark-accent-bg-active);
+  border-color: var(--ark-accent-text);
+}
+
+.fishing-btn--pull {
+  background-color: var(--ark-danger-bg);
+  border-color: var(--ark-danger-bg-hover);
+  color: var(--ark-danger-text);
+}
+
+.fishing-btn--pull:hover {
+  background-color: var(--ark-danger-bg-hover);
+  border-color: var(--ark-danger-text);
+}
+
+.fishing-btn--strike {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.fishing-btn--strike:hover {
+  background-color: var(--ark-success-4);
+  border-color: var(--ark-success-text);
+}
+
+.fishing-btn--biting {
+  background-color: var(--ark-warning-4);
+  border-color: var(--ark-warning-text);
+  color: var(--ark-warning-text);
+  animation: fishing-btn-biting-pulse 0.4s ease-in-out infinite alternate;
+}
+
+.fishing-btn--biting:hover {
+  background-color: var(--ark-warning-border);
+}
+
+@keyframes fishing-btn-biting-pulse {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+.fishing-bait-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.fishing-bait-btn {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-gray-a2);
+  color: var(--ark-text-secondary);
+  text-align: left;
+}
+
+.fishing-bait-btn:hover {
+  background-color: var(--ark-bg-element-ghost-hover);
+  color: var(--ark-text);
+}
+
+.fishing-bait-btn--selected {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+}
+
+.fishing-bait-btn--selected:hover {
+  background-color: var(--ark-accent-bg-active);
+}

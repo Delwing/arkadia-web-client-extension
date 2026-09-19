@@ -1,0 +1,154 @@
+/* Odbiorcy paczek ("Odbiorcy paczek") popup — the NPCs that take a package.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   POLE FILTRA PRZESTALO BYC BOOTSTRAPEM. Bylo `form-control form-control-sm`
+   nadpisane trzema wlasnymi deklaracjami; teraz jest `.popup-input` z warstwy
+   2, ktora jest juz zmigrowana i wyglada tak samo. Migracja ekranu znaczy
+   takze wyprowadzenie go z Bootstrapa (plan, §5) - inaczej faza 6 potknie sie
+   o popup, ktory nikomu nie przyszedl do glowy.
+
+   Delta `.package-receiver__search .popup-input` jest dwuklasowa celowo:
+   jednoklasowy selektor remisowal by z warstwa 2, a remis rozstrzyga kolejnosc
+   zrodel - tu akurat manifest ja kontroluje, ale regula z planu (delta nad
+   prymitywem potrzebuje dodatkowej specyficznosci) nie kosztuje nic. */
+
+.package-receiver-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.package-receiver__sort-buttons {
+  display: flex;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+}
+
+.package-receiver__controls {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--ark-border);
+}
+
+.package-receiver__search {
+  flex: 1;
+  position: relative;
+}
+
+.package-receiver__search .popup-input {
+  width: 100%;
+  padding-right: 1.5rem;
+  font-size: 0.75rem;
+  background-color: var(--ark-bg-element-ghost-hover);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text);
+}
+
+.package-receiver__search-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+  padding: 0.125rem 0.25rem;
+}
+
+.package-receiver__search-clear:hover {
+  color: var(--ark-danger-text);
+}
+
+.package-receiver__content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0.25rem;
+}
+
+.package-receiver__empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--ark-text-tertiary);
+  font-style: italic;
+  padding: 1rem;
+}
+
+.package-receiver__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.package-receiver__npc-item {
+  display: grid;
+  grid-template-columns: 1fr 60px auto;
+  gap: 0.5rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.2rem;
+  align-items: center;
+}
+
+.package-receiver__npc-item:hover {
+  background-color: var(--ark-bg-element-ghost-hover);
+}
+
+.package-receiver__npc-name {
+  color: var(--ark-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.package-receiver__npc-loc {
+  color: var(--ark-text-tertiary);
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+.package-receiver__npc-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.package-receiver__npc-btn {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-secondary);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.package-receiver__npc-btn:hover {
+  background-color: var(--ark-bg-element-active);
+  color: var(--ark-text);
+}
+
+/* Bylo rgba(239, 68, 68, 0.7) — czerwien z alfa, czyli "danger, ale ciszej".
+   System ma na to jedna role i to ona ma sie czytac w kazdym motywie. */
+.package-receiver__npc-btn--delete {
+  color: var(--ark-danger-text);
+}
+
+.package-receiver__npc-btn--delete:hover {
+  background-color: var(--ark-danger-bg);
+  color: var(--ark-danger-text);
+}

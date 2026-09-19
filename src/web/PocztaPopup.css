@@ -1,0 +1,97 @@
+/* Poczta ("Poczta") popup — the mailbox list.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   Czysta zamiana zmiennych: caly ten arkusz byl juz zmienny, wiec kazda linia
+   idzie przez tabele z themes/bridge.css czytana wstecz i nic sie nie zmienia
+   w wartosci wyliczonej. Nieprzeczytany list zostaje na akcencie (stan
+   interfejsu), przeczytany schodzi na powierzchnie stlumiona. */
+
+.poczta-window {
+  --fw-width: 500px;
+  --fw-min-width: 350px;
+}
+
+.poczta-window-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.poczta-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+}
+
+.poczta-loading,
+.poczta-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.poczta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  border-left: 3px solid var(--ark-accent-text);
+  margin-bottom: 1px;
+  background-color: var(--ark-accent-tint);
+  font-size: 0.85rem;
+}
+
+.poczta-item:hover {
+  background-color: var(--ark-accent-bg-active);
+}
+
+.poczta-item--read {
+  border-left-color: var(--ark-border-strong);
+  background-color: var(--ark-gray-a2);
+}
+
+.poczta-item--read:hover {
+  background-color: var(--ark-gray-a2);
+}
+
+.poczta-item-number {
+  color: var(--ark-text-faint);
+  font-size: 0.75rem;
+  min-width: 1.75rem;
+  text-align: right;
+}
+
+.poczta-item-subject {
+  color: var(--ark-text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.poczta-item:not(.poczta-item--read) .poczta-item-subject {
+  font-weight: 600;
+}
+
+.poczta-item-sender {
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.poczta-item-date {
+  color: var(--ark-text-faint);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
