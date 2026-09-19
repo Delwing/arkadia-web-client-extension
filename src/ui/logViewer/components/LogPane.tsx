@@ -101,17 +101,78 @@ export function LogPane({
 
     const virtualRows = virtualizer.getVirtualItems();
 
-    // Viewport range, from the virtualizer rather than from the DOM: with rows
-    // unmounted outside the window there is nothing in the DOM to scan.
-    useEffect(() => {
-        if (virtualRows.length === 0 || rows.length === 0) {
+    /*
+     * Mirrors of the current render, read by the scroll handler below. The
+     * handler is installed once and must see the latest items and rows without
+     * being re-created on every render.
+     */
+    const virtualRowsRef = useRef(virtualRows);
+    virtualRowsRef.current = virtualRows;
+    const rowsRef = useRef(rows);
+    rowsRef.current = rows;
+    const sizerRef = useRef<HTMLDivElement>(null);
+
+    /**
+     * Reports the time range genuinely on screen, for the timeline's "Widok" box.
+     *
+     * Two things make this less obvious than it looks:
+     *
+     * 1. `getVirtualItems()` returns the rendered window, which includes the
+     *    overscan buffer above and below — about twice the viewport. Reporting
+     *    its first and last item made the box roughly three times too wide.
+     *    So the items are filtered to those that actually intersect the scroll
+     *    viewport. The rendered set always covers the visible window, so this
+     *    never comes up short.
+     *
+     * 2. The virtualizer only notifies when the rendered RANGE changes, so
+     *    scrolling inside the overscan buffer triggers no re-render at all.
+     *    That is why this is driven from the scroll event rather than from a
+     *    dependency on the virtual items.
+     */
+    const reportViewport = useCallback(() => {
+        const element = scrollRef.current;
+        const items = virtualRowsRef.current;
+        const currentRows = rowsRef.current;
+        if (!element || items.length === 0 || currentRows.length === 0) {
             onViewportChange(null);
             return;
         }
-        const first = rows[virtualRows[0].index];
-        const last = rows[virtualRows[virtualRows.length - 1].index];
-        if (first && last) onViewportChange({ from: first.timestamp, to: last.timestamp });
-    }, [virtualRows, rows, onViewportChange]);
+
+        // Measured against the sizer, not against `scrollTop`: the pane has top
+        // padding, so the virtualizer's offsets (which start at the sizer) and
+        // `scrollTop` (which starts at the padding box) are a few pixels apart.
+        // Using rects sidesteps that entirely, and they already reflect the
+        // current scroll position.
+        const sizer = sizerRef.current;
+        if (!sizer) return;
+        const top = element.getBoundingClientRect().top - sizer.getBoundingClientRect().top;
+        const bottom = top + element.clientHeight;
+        let first: RenderedRow | undefined;
+        let last: RenderedRow | undefined;
+        for (const item of items) {
+            if (item.start + item.size <= top || item.start >= bottom) continue;
+            const row = currentRows[item.index];
+            if (!row) continue;
+            first ??= row;
+            last = row;
+        }
+
+        // Scrolled into padding with nothing intersecting: fall back to the
+        // nearest rendered row rather than blanking the box.
+        if (!first || !last) {
+            const fallback = currentRows[items[0].index];
+            if (!fallback) return;
+            onViewportChange({ from: fallback.timestamp, to: fallback.timestamp });
+            return;
+        }
+        onViewportChange({ from: first.timestamp, to: last.timestamp });
+    }, [onViewportChange]);
+
+    // Covers everything that is not a scroll: a new range, a channel filter,
+    // a density change, lines arriving.
+    useEffect(() => {
+        reportViewport();
+    }, [virtualRows, rows, reportViewport]);
 
     // Follow live: pin to the bottom as lines arrive.
     useEffect(() => {
@@ -169,6 +230,7 @@ export function LogPane({
             data-meta={showMeta}
             data-wrap={wrap}
             onScroll={(event) => {
+                reportViewport();
                 if (!follow) return;
                 if (Date.now() < ignoreScrollUntil.current) return;
                 const element = event.currentTarget;
@@ -177,7 +239,7 @@ export function LogPane({
                 }
             }}
         >
-            <div style={{ minHeight: `${totalSize}px`, position: "relative" }}>
+            <div ref={sizerRef} style={{ minHeight: `${totalSize}px`, position: "relative" }}>
                 {virtualRows.map((virtualRow) => {
                     const row = rows[virtualRow.index];
                     if (!row) return null;

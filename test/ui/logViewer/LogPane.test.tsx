@@ -191,3 +191,89 @@ describe("LogPane columns", () => {
         expect(cells()).toBe(1);
     });
 });
+
+describe("LogPane reported viewport", () => {
+    let container: HTMLElement;
+    let root: Root;
+    const PANE_HEIGHT = 600;
+
+    beforeEach(() => {
+        // The virtualizer sizes its viewport from offsetHeight; the viewport
+        // report measures with rects and clientHeight. jsdom lays nothing out,
+        // so all three need faking.
+        for (const [property, value] of [
+            ["offsetWidth", 900],
+            ["offsetHeight", PANE_HEIGHT],
+            ["clientHeight", PANE_HEIGHT],
+        ] as const) {
+            Object.defineProperty(HTMLElement.prototype, property, {
+                configurable: true,
+                get: () => value,
+            });
+        }
+
+        container = document.createElement("div");
+        document.body.appendChild(container);
+        root = createRoot(container);
+    });
+
+    afterEach(() => {
+        act(() => root.unmount());
+        container.remove();
+        for (const property of ["offsetWidth", "offsetHeight", "clientHeight"] as const) {
+            Reflect.deleteProperty(HTMLElement.prototype, property);
+        }
+    });
+
+    /**
+     * `getVirtualItems()` returns the rendered window, which includes the
+     * overscan buffer — roughly twice the viewport again. Reporting its first
+     * and last item made the timeline's "Widok" box about three times too wide,
+     * which was glaring once a channel filter left the visible rows spread
+     * thinly across the session.
+     */
+    it("reports only the rows on screen, not the overscan buffer", () => {
+        const rows = makeRows(400);
+        let reported: { from: number; to: number } | null = null;
+
+        act(() => {
+            root.render(
+                <LogPane
+                    rows={rows}
+                    showTimestamps
+                    showMeta
+                    showColors={false}
+                    wrap={false}
+                    lineHeight={LINE_HEIGHT}
+                    currentRow={null}
+                    currentOccurrence={-1}
+                    emptyMessage={null}
+                    onResetFilters={() => undefined}
+                    onViewportChange={(range) => {
+                        reported = range;
+                    }}
+                    onScrollAwayFromBottom={() => undefined}
+                    follow={false}
+                    scrollRequest={null}
+                    onLineContextMenu={() => undefined}
+                />,
+            );
+        });
+
+        expect(reported).not.toBeNull();
+        const range = reported as unknown as { from: number; to: number };
+        const firstIndex = rows.findIndex((row) => row.timestamp === range.from);
+        const lastIndex = rows.findIndex((row) => row.timestamp === range.to);
+
+        expect(firstIndex).toBe(0);
+
+        // A 600px pane at 21px a row holds about 29 of them. The rendered set
+        // is far larger; the report must not follow it.
+        const fits = Math.ceil(PANE_HEIGHT / LINE_HEIGHT);
+        expect(lastIndex).toBeGreaterThanOrEqual(fits - 2);
+        expect(lastIndex).toBeLessThanOrEqual(fits + 1);
+
+        const rendered = container.querySelectorAll(".lv-log__row").length;
+        expect(rendered).toBeGreaterThan(lastIndex + 10);
+    });
+});
