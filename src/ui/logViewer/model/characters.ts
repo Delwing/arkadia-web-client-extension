@@ -8,9 +8,9 @@
  *
  * Two sources feed it, and they differ only in how the marks are found:
  *
- * 1. **Marks recorded while logging.** `sessionLogger` stamps the name
- *    `PlayerIdentity` settled on onto the next line it writes. Exact, and only
- *    in logs recorded after that landed.
+ * 1. **Marks recorded while logging.** The name `PlayerIdentity` settled on is
+ *    stamped by `sessionLogger` onto the first record written after it changed.
+ *    Exact, and only in logs recorded since that landed.
  * 2. **The login banner**, matched against the characters this device holds
  *    settings for. Old logs carry no GMCP and never will, so the banner is the
  *    only trace of who was playing; see `matchCharacter` for why that is a
