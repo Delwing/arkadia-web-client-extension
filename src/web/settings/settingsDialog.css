@@ -443,6 +443,117 @@
   color: var(--ark-text-tertiary);
 }
 
+/* A row of buttons that wraps rather than overflowing its card. */
+.settings-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-4);
+}
+
+/* The outcome of an action that already ran. Status colours never follow the
+   accent (DESIGN_SYSTEM.md §3), so both are status roles. */
+.settings-status {
+  margin: 0;
+  font-size: var(--ark-text-3);
+}
+
+.settings-status--ok {
+  color: var(--ark-success-text);
+}
+
+.settings-status--error {
+  color: var(--ark-danger-text);
+}
+
+.settings-pairing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ark-space-4);
+}
+
+/* Intentionally a literal, and the one in this sheet: a QR code is read by a
+   camera, which needs the light quiet zone the spec calls for. A themed plate
+   would make the code unscannable in the dark themes. */
+.settings-pairing__qr {
+  width: 200px;
+  padding: var(--ark-space-5);
+  background: #fff;
+  border-radius: var(--ark-radius-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Interfejs > Dzwiek i powiadomienia.
+   ------------------------------------------------------------------------ */
+.settings-sound-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13.75rem, 1fr));
+  gap: var(--ark-space-5);
+}
+
+.settings-sound-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-4);
+  padding: var(--ark-space-5);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-sound-tile__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ark-space-3);
+}
+
+.settings-sound-tile__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-sound-tile__title {
+  font-size: var(--ark-text-3);
+  font-weight: var(--ark-weight-semibold);
+  color: var(--ark-text);
+}
+
+.settings-sound-tile__hint {
+  font-size: var(--ark-text-1);
+  color: var(--ark-text-tertiary);
+}
+
+/* One stored sound in the manage sub-dialog. */
+.settings-sound-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-5);
+  padding: var(--ark-space-5);
+  background: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-sound-row__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-sound-row__name {
+  font-weight: var(--ark-weight-semibold);
+  color: var(--ark-text);
+}
+
+.settings-sound-row__size {
+  font-size: var(--ark-text-3);
+  color: var(--ark-text-tertiary);
+}
+
 /* ---------------------------------------------------------------------------
    Interfejs > Mapa.
 

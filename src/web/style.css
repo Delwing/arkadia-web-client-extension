@@ -3004,17 +3004,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   cursor: pointer;
 }
 
-/* Sound category tiles (Dźwięk tab) */
-.ui-sound-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.5rem;
-}
-
-.ui-sound-tile {
-  background-color: var(--popup-control-bg);
-  border-color: var(--popup-border) !important;
-}
+/* Interfejs > Dzwiek moved to settings/settingsDialog.css (Phase 4, PR 2). */
 
 .modal-dialog {
   max-height: 85%;

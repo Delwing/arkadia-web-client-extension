@@ -3,7 +3,8 @@ import type { SoundCategory } from "@shared/events/clientEvents.ts";
 import { saveCustomSounds, type CustomSound } from "@modules/core/customSounds";
 import type { UiSettings } from "../../uiSettingsCore";
 import { ALL_SOUND_CATEGORIES } from "../../uiSettingsCore";
-import { SettingsSection } from "../fields";
+import { Button } from "@design";
+import { SelectField, SettingsCard } from "@web/settings/controls.tsx";
 
 interface SoundSectionProps {
     draft: UiSettings;
@@ -117,28 +118,30 @@ function SoundSection({ draft, update, customSounds, onCustomSoundsChange, previ
     };
 
     return (
-        <SettingsSection title="Dźwięki" full>
-            <div>
-                <label className="form-label" htmlFor="ui-custom-beep-sound">Własny dźwięk beep</label>
-                <select id="ui-custom-beep-sound" className="form-select" value={draft.customBeepSoundKey || ''} onChange={(e) => onBeepSelect(e.target.value)}>
-                    <option value="">Domyślny beep</option>
-                    {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
-                    <option value="__upload__">Dodaj dźwięk…</option>
-                </select>
-            </div>
-            <div className="ui-sound-tiles">
+        <SettingsCard title="Dźwięki" full>
+            <SelectField
+                id="ui-custom-beep-sound"
+                label="Własny dźwięk beep"
+                value={draft.customBeepSoundKey || ''}
+                onChange={onBeepSelect}
+            >
+                <option value="">Domyślny beep</option>
+                {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
+                <option value="__upload__">Dodaj dźwięk…</option>
+            </SelectField>
+            <div className="settings-sound-tiles">
                 {ALL_SOUND_CATEGORIES.map(cat => (
-                    <div key={cat} className="ui-sound-tile border rounded p-2 d-flex flex-column gap-1">
-                        <div className="d-flex justify-content-between align-items-start gap-1">
-                            <div className="d-flex flex-column" style={{ lineHeight: 1.15 }}>
-                                <span className="small fw-semibold">{CATEGORY_TITLES[cat]}</span>
+                    <div key={cat} className="settings-sound-tile">
+                        <div className="settings-sound-tile__header">
+                            <div className="settings-sound-tile__titles">
+                                <span className="settings-sound-tile__title">{CATEGORY_TITLES[cat]}</span>
                                 {CATEGORY_HINTS[cat] && (
-                                    <span className="text-muted" style={{ fontSize: '0.65rem' }}>{CATEGORY_HINTS[cat]}</span>
+                                    <span className="settings-sound-tile__hint">{CATEGORY_HINTS[cat]}</span>
                                 )}
                             </div>
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                            <Button
+                                size="sm"
+                                variant="outline"
                                 title="Odtwórz"
                                 onClick={() => {
                                     const v = categoryValue(cat);
@@ -148,10 +151,10 @@ function SoundSection({ draft, update, customSounds, onCustomSoundsChange, previ
                                     previewKey(v || draft.customBeepSoundKey || 'beep');
                                 }}
                             >
-                                {'▶'}
-                            </button>
+                                {'\u25b6'}
+                            </Button>
                         </div>
-                        <select id={`ui-sound-category-${cat}`} className="form-select form-select-sm" value={categoryValue(cat)} onChange={(e) => onCategorySelect(cat, e.target.value)}>
+                        <select id={`ui-sound-category-${cat}`} className="settings-native-select" value={categoryValue(cat)} onChange={(e) => onCategorySelect(cat, e.target.value)}>
                             <option value="">Domyślny beep</option>
                             <option value="__disabled__">Wyciszony</option>
                             {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
@@ -160,9 +163,9 @@ function SoundSection({ draft, update, customSounds, onCustomSoundsChange, previ
                     </div>
                 ))}
             </div>
-            <input ref={fileRef} id="ui-sound-category-file" type="file" accept="audio/*" style={{ display: 'none' }} onChange={onFileChange} />
-            <button type="button" className="btn btn-secondary btn-sm align-self-start" id="ui-manage-sounds-button" onClick={onManage}>Zarządzaj dźwiękami</button>
-        </SettingsSection>
+            <input ref={fileRef} id="ui-sound-category-file" type="file" accept="audio/*" hidden onChange={onFileChange} />
+            <Button className="settings-action" size="sm" id="ui-manage-sounds-button" onClick={onManage}>Zarządzaj dźwiękami</Button>
+        </SettingsCard>
     );
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "@design";
 import type { CustomSound } from "@modules/core/customSounds";
 import SubDialog from "../SubDialog";
 import { calculateBase64Size, formatBytes } from "../uiSettingsCore";
@@ -15,6 +16,12 @@ interface ManageSoundsModalProps {
  * Opened from the sound page of `#settings-modal`, so it uses the shared
  * inline `SubDialog` rather than a portaled react-bootstrap `<Modal>` — see
  * `@web/SubDialog` for why.
+ *
+ * The list inside is migrated onto the design system with the rest of the
+ * Dzwiek page; `SubDialog`'s own chrome is not. That shell is Bootstrap and is
+ * shared with `#scripts-modal`, `#binds-modal` and `#export-import-modal`, so
+ * it moves with the other declarative modals in Phase 5 — the same split PR 1
+ * made between `SettingsDialog`'s body and `#settings-modal`'s chrome.
  */
 function ManageSoundsModal({ show, onHide, customSounds, onDelete, previewKey }: ManageSoundsModalProps) {
     const [defaultBeepSize, setDefaultBeepSize] = useState(0);
@@ -34,26 +41,27 @@ function ManageSoundsModal({ show, onHide, customSounds, onDelete, previewKey }:
 
     return (
         <SubDialog title="Zarządzaj dźwiękami" onClose={onHide}>
-            <div className="d-flex flex-column gap-2">
-                <div className="d-flex align-items-center justify-content-between p-2 border rounded">
-                    <div className="d-flex flex-column">
-                        <span className="fw-semibold">Domyślny beep</span>
-                        <span className="text-muted small">{formatBytes(defaultBeepSize)}</span>
+            <div className="settings-stack">
+                <div className="settings-sound-row">
+                    <div className="settings-sound-row__titles">
+                        <span className="settings-sound-row__name">Domyślny beep</span>
+                        <span className="settings-sound-row__size">{formatBytes(defaultBeepSize)}</span>
                     </div>
-                    <div className="d-flex gap-2">
-                        <button className="btn btn-primary btn-sm" onClick={() => previewKey('beep')}>{'▶'}</button>
+                    <div className="settings-button-row">
+                        <Button size="sm" title="Odtwórz" onClick={() => previewKey('beep')}>{'\u25b6'}</Button>
                     </div>
                 </div>
                 {customSounds.map(sound => (
-                    <div key={sound.key} className="d-flex align-items-center justify-content-between p-2 border rounded">
-                        <div className="d-flex flex-column">
-                            <span className="fw-semibold">{sound.name}</span>
-                            <span className="text-muted small">{formatBytes(calculateBase64Size(sound.data))}</span>
+                    <div key={sound.key} className="settings-sound-row">
+                        <div className="settings-sound-row__titles">
+                            <span className="settings-sound-row__name">{sound.name}</span>
+                            <span className="settings-sound-row__size">{formatBytes(calculateBase64Size(sound.data))}</span>
                         </div>
-                        <div className="d-flex gap-2">
-                            <button className="btn btn-primary btn-sm" onClick={() => previewKey(sound.key)}>{'▶'}</button>
-                            <button
-                                className="btn btn-danger btn-sm"
+                        <div className="settings-button-row">
+                            <Button size="sm" title="Odtwórz" onClick={() => previewKey(sound.key)}>{'\u25b6'}</Button>
+                            <Button
+                                size="sm"
+                                variant="danger"
                                 onClick={() => {
                                     if (confirm(`Czy na pewno chcesz usunąć dźwięk "${sound.name}"?`)) {
                                         onDelete(sound);
@@ -61,7 +69,7 @@ function ManageSoundsModal({ show, onHide, customSounds, onDelete, previewKey }:
                                 }}
                             >
                                 Usuń
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ))}
