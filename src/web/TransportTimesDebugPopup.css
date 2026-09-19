@@ -124,6 +124,25 @@
   width: 100%;
 }
 
+/* Table zaklada `white-space: nowrap` w KAZDEJ komorce - slusznie, bo to gesta
+   tabela danych. Tutaj pierwsza kolumna to opis odcinka ("Ard Skellig ->
+   Hindarsfjall (10314->23678)"), ktory bez zawijania rozpycha tabele poza okno
+   i scina ostatnia kolumne z przyciskiem "reset". Zlapane na zrzucie przed/po,
+   nie przez zaden test - dokladnie po to jest krok 8 przepisu.
+
+   Selektor celowo dwuklasowy (0,2,1). `.transport-times-debug__table td`
+   remisuje z `.ark-table td` (0,1,1), a o remisie decyduje kolejnosc zrodla -
+   ktora dla arkuszy prymitywow ustala Rollup, nie manifest. To ta sama pulapka,
+   ktora w PR 1 zjadla bursztyn przycisku w Cechach. Wyzsza specyficznosc
+   wyjmuje regule spod tej loterii.
+
+   Kolumny liczbowe zostaja na nowrap - tam zawijanie psuje wyrownanie. */
+.transport-times-debug .ark-table td:first-child,
+.transport-times-debug .ark-table th:first-child {
+  white-space: normal;
+  word-break: break-word;
+}
+
 .transport-times-debug__leg-index,
 .transport-times-debug__leg-arrow {
   color: var(--ark-text-tertiary);

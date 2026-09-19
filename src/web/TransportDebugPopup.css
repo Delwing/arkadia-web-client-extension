@@ -37,7 +37,12 @@
      piecocyfrowe wlasnie po to, zeby ten stos przebic - tutaj byla by to zmiana
      zachowania, nie migracja. */
   z-index: 9999;
-  background: var(--ark-bg-overlay);
+  /* --ark-bg-raised, a NIE --ark-bg-overlay. Ta druga nazwa brzmi jak
+     powierzchnia okna, ale jest przyciemnieniem tla pod dialogiem
+     (--ark-black-a9) - w motywach jasnych wyszedl z tego ciemny panel z
+     ciemnym tekstem, czyli okno nieczytelne. Zlapane na zrzucie w motywie
+     parchment; z samych tokenow tego nie widac. */
+  background: var(--ark-bg-raised);
   border: 1px solid var(--ark-border);
   border-radius: var(--ark-radius-3);
   padding: var(--ark-space-4) var(--ark-space-6);
