@@ -11,7 +11,9 @@ import type {
     CoverStateSnapshot,
 } from '@client/scripts/coverTracker';
 import { ANY_ATTACKER } from '@client/coverPatterns';
-import './CoverDebugPopup.css';
+import { Table, TableCell, TableHeadCell, TableRow, TableScroll } from '@design';
+/* Arkusz tego okna celowo NIE jest tu importowany - wciaga go manifest
+   src/web/popups/popups.css. Patrz naglowek tamtego pliku. */
 
 const POPUP_ID = 'popup:coverDebug';
 /** The log is a debug tape, not a history - keep it short enough to stay readable. */
@@ -192,21 +194,23 @@ const CoverDebugPopup: React.FC = () => {
 
     const renderGroup = (label: string, group: Row[]) => (
         <>
-            <tr className="cover-dbg-group">
-                <td colSpan={5}>{label}</td>
-            </tr>
+            <TableRow section>
+                <TableCell colSpan={5}>{label}</TableCell>
+            </TableRow>
             {group.length === 0 ? (
-                <tr><td colSpan={5} className="cover-dbg-none">brak</td></tr>
+                <TableRow>
+                    <TableCell colSpan={5} className="cover-dbg-none">brak</TableCell>
+                </TableRow>
             ) : group.map(row => (
-                <tr key={row.obj.num} className="zlom-row">
-                    <td className={`zlom-cell${row.obj.category === 'player' ? ' cover-dbg-me' : ''}`}>
+                <TableRow key={row.obj.num}>
+                    <TableCell className={row.obj.category === 'player' ? 'cover-dbg-me' : undefined}>
                         {row.obj.desc}
-                    </td>
-                    <td className="zlom-cell cover-dbg-num">ob_{row.obj.num}</td>
-                    <td className="zlom-cell">{statusCell(row)}</td>
-                    <td className="zlom-cell">{attackerCell(row.covered)}</td>
-                    <td className="zlom-cell cover-dbg-since">{sinceCell(row)}</td>
-                </tr>
+                    </TableCell>
+                    <TableCell className="cover-dbg-num">ob_{row.obj.num}</TableCell>
+                    <TableCell>{statusCell(row)}</TableCell>
+                    <TableCell>{attackerCell(row.covered)}</TableCell>
+                    <TableCell className="cover-dbg-since">{sinceCell(row)}</TableCell>
+                </TableRow>
             ))}
         </>
     );
@@ -232,23 +236,23 @@ const CoverDebugPopup: React.FC = () => {
                 </span>
             </div>
 
-            <div className="cover-dbg-state">
-                <table className="zlom-table cover-dbg-table">
+            <TableScroll className="cover-dbg-state">
+                <Table compact hoverable>
                     <thead>
                         <tr>
-                            <th>opis</th>
-                            <th>num</th>
-                            <th>status</th>
-                            <th>przed kim</th>
-                            <th>od</th>
+                            <TableHeadCell>opis</TableHeadCell>
+                            <TableHeadCell>num</TableHeadCell>
+                            <TableHeadCell>status</TableHeadCell>
+                            <TableHeadCell>przed kim</TableHeadCell>
+                            <TableHeadCell>od</TableHeadCell>
                         </tr>
                     </thead>
                     <tbody>
                         {renderGroup('Druzyna', team)}
                         {renderGroup('Wrogowie', enemies)}
                     </tbody>
-                </table>
-            </div>
+                </Table>
+            </TableScroll>
 
             <div className="cover-dbg-log">
                 {visibleLog.length === 0 ? (

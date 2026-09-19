@@ -1,0 +1,306 @@
+/* Assistant popup — the AI helper panel: the message stream, the proposal
+   cards it renders and the composer under them. Also the small settings
+   sub-dialog opened from its header (`.assistant-settings__*`), which is part
+   of this window rather than of the settings pages.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   AWARYJNE WARTOSCI PO ZMIENNYCH ZNIKAJA. Slice niosl cztery odczyty starej
+   warstwy z wartoscia zapasowa po przecinku: trzy razy stary czerwony status
+   z przygaszona czerwienia w odwodzie, raz stara ramka akcentu ze stara ramka
+   neutralna. Fallback mial sens, dopoki stara warstwa mogla byc
+   niezdefiniowana u innego hosta; --ark-* jest zdefiniowany zawsze — w stocku
+   przez tokens.css, w forge przez popup-host-tokens.css — wiec fallback tylko
+   przemycalby wartosc wpisana na sztywno przez test. Razem z nimi poszlo tlo
+   ramki ostrzezen, czyli ta sama czerwien na 12 procentach, na
+   --ark-danger-bg.
+
+   CZEGO NIE ZWINALEM. `.assistant-btn` i `.assistant-header-btn` wygladaja jak
+   `.popup-btn` z warstwy 2, ale maja wlasny rozmiar (0.75rem / 0.7rem zamiast
+   0.7rem i wieksze wypelnienie). Zwiniecie ich przestawiloby pasek naglowka i
+   composer, a krok 6 przepisu mowi, zeby nie robic tego na sile — zostaja
+   wlasne, tyle ze na tokenach. To samo co z .walker-popup__btn w PR 3. */
+
+.assistant-popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+}
+
+.assistant-popup__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  color: var(--ark-text);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.assistant-popup__empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--ark-text-tertiary);
+  font-style: italic;
+}
+
+.assistant-msg {
+  margin-bottom: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.3rem;
+}
+
+.assistant-msg__text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.assistant-msg--user {
+  background-color: var(--ark-accent-tint);
+  border-left: 2px solid var(--ark-accent-text);
+  color: var(--ark-text-secondary);
+}
+
+.assistant-msg--system {
+  color: var(--ark-text-tertiary);
+  font-style: italic;
+}
+
+.assistant-msg--failed .assistant-msg__text {
+  color: var(--ark-danger-text);
+}
+
+.assistant-msg__pending {
+  color: var(--ark-text-tertiary);
+  font-style: italic;
+}
+
+.assistant-msg__dropped {
+  margin-top: 0.35rem;
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+}
+
+/* proposal card */
+.assistant-card {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--ark-accent-border);
+  border-radius: 0.35rem;
+  background-color: var(--ark-bg-element);
+}
+
+.assistant-card--applied {
+  border-color: var(--ark-accent-text);
+}
+
+.assistant-card--rejected {
+  opacity: 0.6;
+}
+
+/* "You set this one yourself." Not a failure, so it is not dimmed like a
+   rejected card — it carries a useful action and should read as an answer. */
+.assistant-card--hint {
+  border-style: dashed;
+}
+
+.assistant-card__note {
+  color: var(--ark-text-tertiary);
+  font-size: 0.78rem;
+  margin-bottom: 0.4rem;
+}
+
+.assistant-card__title {
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.assistant-card__reason {
+  color: var(--ark-text-tertiary);
+  font-size: 0.78rem;
+  margin-bottom: 0.35rem;
+}
+
+.assistant-card__rows {
+  margin: 0 0 0.4rem;
+}
+
+.assistant-card__row {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.assistant-card__row dt {
+  flex: 0 0 8rem;
+  color: var(--ark-text-tertiary);
+  font-weight: 400;
+}
+
+.assistant-card__row dd {
+  flex: 1;
+  margin: 0;
+  word-break: break-word;
+  color: var(--ark-text);
+}
+
+.assistant-card__flags {
+  margin-bottom: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border-left: 3px solid var(--ark-danger-text);
+  background-color: var(--ark-danger-bg);
+  font-size: 0.78rem;
+}
+
+.assistant-card__flags-title {
+  font-weight: 600;
+  color: var(--ark-danger-text);
+}
+
+.assistant-card__flags ul,
+.assistant-card__repairs ul,
+.assistant-card__warnings {
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.assistant-card__repairs {
+  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ark-text-tertiary);
+}
+
+.assistant-card__repairs-title {
+  font-weight: 600;
+}
+
+.assistant-card__diff code {
+  word-break: break-all;
+}
+
+.assistant-card__warnings {
+  font-size: 0.78rem;
+  color: var(--ark-text-tertiary);
+  margin-bottom: 0.4rem;
+}
+
+.assistant-card__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.assistant-card__status {
+  font-size: 0.78rem;
+  color: var(--ark-text-tertiary);
+}
+
+/* composer + buttons */
+.assistant-popup__composer {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border-top: 1px solid var(--ark-border);
+  align-items: flex-end;
+}
+
+/* Each question is answered independently - no conversation history is sent.
+   Stated permanently because the composer placeholder is gone once typing starts. */
+.assistant-popup__hint {
+  margin: 0;
+  padding: 0 0.45rem 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  opacity: 0.6;
+}
+
+.assistant-popup__input {
+  flex: 1;
+  resize: none;
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: 0.25rem;
+  color: var(--ark-text);
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+.assistant-btn,
+.assistant-header-btn {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.assistant-header-btn {
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+}
+
+.assistant-btn:hover,
+.assistant-header-btn:hover {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
+}
+
+.assistant-btn--primary {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+}
+
+.assistant-btn--primary:hover {
+  background-color: var(--ark-accent-bg-active);
+}
+
+.assistant-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* settings sub-dialog */
+.assistant-settings__field {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.assistant-settings__field > span {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.assistant-settings__field small {
+  display: block;
+  margin-top: 0.2rem;
+  opacity: 0.75;
+}
+
+.assistant-settings__section-title {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.assistant-settings__note {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.assistant-settings__check {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}

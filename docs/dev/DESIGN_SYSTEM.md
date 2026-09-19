@@ -129,6 +129,17 @@ the non-colour ramps: `--ark-space-1..12`, `--ark-radius-1..5`,
 `--ark-duration-1..3`, `--ark-z-*`. Read `css/tokens.css`; it is the reference
 and it is commented.
 
+### The tints are accent-only
+
+`--ark-accent-tint` and `--ark-accent-tint-strong` are alphas
+(`--ark-accent-a3` / `a5`), and there is no status equivalent: `--ark-success-bg`
+and its siblings are opaque step-3 surfaces, not films. That matters when a
+screen wants a row to read as *barely* marked. Phase 3 mapped three 3-6%-alpha
+green row tints onto `--ark-success-bg` and turned a whole table into a solid
+green plate. For a neutral whisper the token is `--ark-gray-a2` (`#ffffff09`),
+which is the same weight and layers the same way; for anything that has to stay
+in a hue, the only alpha on offer is the accent's.
+
 ### One surface name that is not a surface
 
 `--ark-bg-overlay` is the **scrim** a dialog lays over the page
@@ -154,6 +165,14 @@ from Radix like the status hues, so every theme gets them for free.
 slot 2. Anything that ranks — good / middling / bad — is a *status* and belongs
 on `--ark-success/warning/danger`, which is what keeps it reading correctly in
 all eight themes.
+
+**Distinguishable is not the same as prominent.** Slot 4 is a muted brown in
+every theme (`#d4b3a5` dark, `#7d5e54` light) and it sits close to ordinary body
+text, most visibly in the light ones. It tells apart a column perfectly well; it
+is the wrong home for a mark that has to catch the eye. Slots 1, 3, 5 and 6 stay
+loud in both directions, and four is as many loud categories as this palette
+gives you. Phase 3 PR 5 put a "next target" marker on slot 4 and lost it against
+plain text in parchment.
 
 They are numbered rather than named after their hue, and that is deliberate. A
 slot called `--ark-data-tomato` invites the next person to reach for it when
@@ -290,6 +309,8 @@ the exclusion inside `:where()` so nothing else changes.
 | `src/web/` world + time popups (6) | **on the design system**, `--ark-*` only (Phase 3, PR 2). Okno mapy is not among them — see `UI_MIGRATION.md` §4 |
 | `src/web/` travel + transport popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 3) |
 | `src/web/` inventory + economy popups (10) | **on the design system**, `--ark-*` only (Phase 3, PR 4) |
+| `src/web/` debug + misc popups (3) | **on the design system**, `--ark-*` only (Phase 3, PR 5). Okno mapy is still not among them — see `UI_MIGRATION.md` §4 |
+| `src/web/` knowledge + report popups (7) | **on the design system**, `--ark-*` only (Phase 3, PR 6). Czat is not among them — it is blocked by `.map-header-menu__*`, exactly as Okno mapy is; see `UI_MIGRATION.md` §4 |
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | **all 15 on the design system.** Komendy, Inne, Gildie, Magiki (Faza 4, PR 1); Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2); Ogolne, Przedmioty, Walka, Przyciski, Przyciski mobilne, Menu kolowe, Stopka (PR 3) |

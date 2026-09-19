@@ -102,7 +102,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
-3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (inventory/economy) done
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (inventory/economy), PR 5 (debug), PR 6 (knowledge/reports) done
 4. Settings (46 files)                          ← ALL 15 PAGES DONE (PR 1-3); only the 10 standalone modals are left, and they are Phase 5
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -250,6 +250,15 @@ worth keeping are in "What PR 3 found" below.
 Zlecenia, Poczta, List, Odbiorcy paczek, Wedka, Woreczki ziol, Ziola (tekst).
 See "What PR 4 found" below; one of the two things it found is a bug in the
 `Table` primitive that every earlier PR in this phase shipped past.
+
+**PR 5 (debug and the rest) is done** — three popups: Zaslony (debug), Zrodla
+danych, Demo listy obiektow. **Okno mapy (StaticMap) is still not migrated**;
+PR 5 re-checked the block and it holds unchanged — see "Okno mapy" below.
+What PR 5 found is below it.
+
+**PR 6 (knowledge/reports) is done** — seven popups: Wiedza (raport), Wiedza
+(szczegoly), Baza postaci, Skroty, Zawod, Oswajanie, Asystent. **Czat was
+deliberately left behind**, for the same reason Okno mapy was: see below.
 
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
@@ -404,6 +413,16 @@ past the rest of `layout.css` in the cascade, which that file's header warns
 about specifically. That change belongs either to Phase 5 or to a small PR of
 its own; it should not be smuggled in under one popup's name.
 
+**Phase 3 PR 5 re-checked this and it holds, with the counts higher than
+recorded above.** `.map-header-menu*` appears 32 times in `StaticMapPopup.tsx`,
+49 in `MapHeaderMenu.tsx`, 20 in `ObjectListHeaderMenu.tsx` and 12 in
+`ChatPopup.tsx`; the class family is still defined in `layout/layout.css` (and
+mirrored in `forge-ui/layout-theme.css`), and the popup's own rules are still in
+`style.css`. Both files are still inside `main-theme.css`'s cascade lock. So the
+blocker is the class graph, not the popup's size — at 1 154 lines it is the
+largest popup in the codebase, and that is a red herring: were it a third the
+size it would be blocked by exactly the same four consumers.
+
 Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
 would half-migrate the screen, which §5 forbids for exactly the reason that
 applies here — the body would re-theme and the header would not.
@@ -531,6 +550,132 @@ now", success for the move you want, danger for aborting — and half the rules
 already read `--popup-warning` / `--popup-danger` while the other half spelled
 the same colours by hand as `rgba()`. They are statuses, and saying so deleted
 the literals.
+
+#### What PR 5 (debug and the rest) found
+
+**A sheet can sit outside the manifest and nothing notices.** `CoverDebugPopup.css`
+was pulled in by `import './CoverDebugPopup.css'` in its own component — the one
+thing the manifest's header forbids — and it had been there since before the
+manifest existed. The test that guards this (`hostTokens.test.ts`, "no migrated
+sheet is imported by its component") only checks sheets that are already on the
+manifest's list, so an unmigrated sheet importing itself is invisible to it. The
+rule to draw: **the guard tests check the sheets they know about; they cannot
+tell you about a file nobody has listed.** That is the same shape as a popup
+left off `MIGRATED_SHEETS` entirely, and it is worth a grep for
+`import '.*Popup.css'` before each family is declared done.
+
+**Two sessions found the `Table` specificity bug independently, from opposite
+ends.** PR 4 found it on `align="num"` and fixed the three layout modifiers;
+this PR found the same thing on `align="grow"`'s dead `white-space: normal`,
+while wondering why PR 3 had hand-written a wrap delta next to a modifier that
+was supposed to do exactly that. The fix landed in PR 4, so nothing is left to
+do here — but it is worth recording that **the bug was reachable from any popup
+that used a modifier and looked closely**, and that three PRs used the modifiers
+without noticing. What made it visible in both cases was the same question:
+*why does this screen need a workaround for something the primitive claims to
+do?* PR 4 states the general form of that ("the workaround is the symptom").
+
+**Reach for `grow` only when a column should really eat the slack.** Put on this
+popup's first column it pushed `num` / `status` / `przed kim` / `od` against the
+right edge and left a gulf between an object's name and its data. Dropping the
+modifier let the table distribute columns the way the old `.zlom-table` did.
+Caught on the before/after screenshot; nothing else would have shown it.
+
+**The same family can need both answers on `--popup-data-*`.** Two popups in
+this one went opposite ways and both are right. The cover debug tape ranks —
+a cover standing means you cannot hit the target, breaking it means you can —
+so its four-step green/yellow/orange/red ladder went to the three status roles
+(the two middle steps merge; both mean "something in between"). The object-list
+demo's marks do not rank — "attack target" is not worse than "defense target" —
+so they went to `--ark-data-*`. **Deciding per call site, not per popup, is what
+§4's `--popup-data-*` decision actually asks for.**
+
+**Not every `--ark-data-*` slot is equally loud.** Slot 4 is a muted brown in
+every theme (`#d4b3a5` dark, `#7d5e54` light). The demo's gold "next target"
+mark — the most operationally important mark in that window, the head of the
+attack queue — landed on it and went nearly invisible against ordinary text in
+parchment. Slots 1, 3, 5 and 6 are the four that stay loud in both directions.
+**A categorical palette guarantees distinguishable, not prominent**; if a mark
+has to shout, check it on a light theme before trusting the slot.
+
+**A migration can be a bug fix, and the light themes are where.** The demo's
+`select` had a hard-coded `rgba(0, 0, 0, 0.3)` background under
+`--popup-text-strong` text. In the two light themes that is dark text on a
+mid-grey plate — the same unreadable-panel failure as PR 3's
+`--ark-bg-overlay`, arrived at from the other direction. Its gold and pink
+checkbox labels had the same problem against a near-white card. None of it was
+visible in a dark theme and no test could see it.
+
+#### What PR 6 (knowledge/reports) found
+
+**Czat is blocked by exactly what blocks Okno mapy, and the plan did not say
+so.** The deferral note above names `StaticMapPopup` and lists `ChatPopup` only
+in passing, as one of the four users of `.map-header-menu__*`. In practice that
+class family *is* Czat's entire header: the hamburger, the dropdown and both
+checkbox rows, 8 uses, and the popup has no header chrome of its own. Migrating
+Czat therefore means migrating `.map-header-menu__*` in `layout/layout.css`
+for everyone, which this plan reserves for Phase 5 or a PR of its own and says
+explicitly should not be smuggled in under one popup's name. So Czat is left,
+its slice untouched in `popups-base.css`.
+
+That makes the queued follow-up bigger than it reads: migrating
+`.map-header-menu__*` unblocks **two** popups, not one. It is also not
+sufficient on its own for either — `.static-map-popup__*` and the chat body's
+`.chat-popup__*` still have to move in the same change, or the window
+half-migrates the other way round.
+
+**A legacy variable can be one the bridge never covered.** `.oswajanie-table th`
+read `var(--text-secondary)`, not `--popup-*`. `bridge.css` lists `--text-*`
+among the families it deliberately leaves alone, and only `src/web/style.css`
+defines it — which forge-ui does not load, so those table headers had no colour
+there at all, and in the stock client they were a fixed light grey that read
+badly on parchment and silver. Grepping for `var(--popup-` finds none of this.
+**Grep the slice for every `var(--`, not just the legacy prefix.**
+
+**The whisper tint has no token, and `--ark-*-bg` is not it.** Three knowledge
+rules tinted a row with 3-6% alpha green — a film over the card, invisible
+unless you knew to look. Mapped onto `--ark-success-bg` they became step 3,
+which is an opaque surface: the history table turned into a solid green plate
+across its whole width. The design system has alpha tints only for the accent
+(`--ark-accent-tint`), so the honest answer for a neutral whisper is
+`--ark-gray-a2` — `#ffffff09`, which is the same 3.5% weight and layers the
+same way. **A tint that reads as "barely there" is an alpha, and mapping it to
+a `-bg` role changes its kind, not just its hue.** Found on a screenshot.
+
+**Two of the bugs the screenshots caught were older than the migration.** Both
+were dark-theme assumptions written as literals, and both broke the light
+themes:
+
+- Zawod's progress track was `#222` with a `#333` border — a solid black bar
+  across a parchment-coloured card. On `--ark-bg-sunken` it is a well in every
+  theme.
+- The knowledge level chips coloured their labels with pale yellows and pale
+  greens (`rgba(254, 240, 138, 0.95)` and friends), which on parchment and
+  silver were pale-on-pale and effectively unreadable. Step 11 flips per
+  theme, so `--ark-warning-text` / `--ark-success-text` fixed them for free.
+
+This is worth stating because §8 parks "the new palette is different" but these
+are not that: the screens were broken in two of the eight themes before this
+PR, and the token swap repaired them as a side effect.
+
+**Forge's token coverage is narrower than the design system's, and that limits
+what a ladder can spend.** The knowledge levels run seven steps (none, low,
+mid, good, high, almost, full) and were painted with six rgba families. Only
+`--ark-success-4` and `--ark-warning-4` exist as raw steps in
+`popup-host-tokens.css`; `--ark-success-5` exists in neither host. So a ladder
+that wants more gradation than success/warning/danger has exactly one extra
+rung per status, and reaching past it renders as nothing at all in forge.
+**Check `popup-host-tokens.css`, not `scales.generated.css`, before spending a
+raw step.** The bars themselves flattened to three colours without loss — their
+*length* already carries the value.
+
+**A hex map in `src/client/` can be feeding a popup as well as the game.**
+`TAMING_LEVEL_COLORS` in `animalTaming.ts` was read twice: once through
+`createColorFormat` for the line printed into the game window (the documented
+exception, no token applies) and once by `OswajaniePopup.tsx` as an inline
+`color:` on a themed surface. The rules in step 7 only look at popup sources,
+so the second use was invisible to them. **Grep a colour map's call sites
+before concluding it is game-output-only.**
 
 #### `--popup-data-*`: decided
 
@@ -746,6 +891,24 @@ dialogs mounted from React.
 declarative where it is genuinely static, and move only the modal shells into
 React.
 
+**What Phase 4 hands over.** All 15 settings *pages* are on the design system,
+so what is left in `src/web/options/` is this phase's: the ten standalone
+modals (`Binds`, `Shortcuts`, `Aliases`, `Scripts`, `Recordings`,
+`UserTriggers`, `LocationNotes`, `ExportImport`, `CharacterManagementModal`,
+`HelperSettings`), the tabs they host (`FirebaseTab`, `DeviceManagementTab`,
+`GoogleDriveTab`, `LocalExportTab`, `ConflictResolutionModal`,
+`TriggerEditModal`, `PluginCard`, the `Scripts*` files), the settings dialog's
+own chrome (`#settings-modal` in `index.html`, driven by
+`bootstrap/js/dist/modal` and faked by forge's `MenuModalHost`), and
+`src/web/SubDialog.tsx`, which renders Bootstrap modal chrome inline and is
+shared by all of them — read its header before replacing it, the portal
+problem it documents is why it exists.
+
+> **Do not delete `.character-settings-section` yet.** It looks dead: no
+> settings page uses it any more. The modals and tabs above still do, and they
+> are this phase's, so the markup layer and its CSS go when the last of them
+> moves — not when the last page did.
+
 ### Phase 6 — Delete Bootstrap *(1 PR)*
 
 Drop the `bootswatch` import from `main-theme.css`, remove `bootstrap`,
@@ -864,6 +1027,13 @@ than it adds.
   `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
   it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
   popups manifest — `layout.css`'s own header says why.
+
+  **It blocks Czat too**, which PR 6 found the hard way: the class family is
+  that popup's entire header. The change is therefore worth more than it looks
+  — it is the last thing standing between Phase 3 and two of its 39 popups —
+  but it has to carry `.static-map-popup__*` (in `style.css`) and
+  `.chat-popup__*` (in `popups-base.css`) with it, or each window
+  half-migrates in the opposite direction.
 
 - **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
   hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3

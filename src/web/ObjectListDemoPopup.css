@@ -1,0 +1,241 @@
+/* ============================================================================
+   Demo listy obiektow (popup:objectListDemo, /demo_kondycje) — Faza 3, rodzina
+   "debug i reszta".
+   ============================================================================
+
+   Arkusz wjezdza przez manifest src/web/popups/popups.css, NIE przez import w
+   komponencie — patrz naglowek manifestu.
+
+   Okno jest mountowane z POPUP_CATALOG, ktory forge-ui renderuje przez
+   LayoutManagerWrapper tak samo jak klient stockowy — czyli siedzi w zasiegu
+   `.managed-panel` z popup-host-tokens.css i po migracji dostaje tokeny takze
+   w forge. Nie potrzebuje data-popup-overlay (to byl przypadek
+   TransportDebugPopup, ktory idzie portalem wprost do document.body).
+
+   CIECIE NIE OBEJMUJE .atk--* ANI .obj--*. Te klasy siedza w popups-base.css
+   tuz nad ta sekcja i wygladaja na czesc tego samego demo, ale nie sa: maluje
+   nimi PRAWDZIWA lista obiektow w powloce. Demo tylko wpycha do niej sztuczne
+   obiekty przez eventBus (objectListDemo.setQueue) i samo ich nie renderuje.
+   Zostaja wiec w calosci na starej warstwie — przepis, krok 1: albo cala klasa,
+   albo zadna.
+
+   ZNACZNIKI CHECKBOXOW IDA NA PALETE KATEGORYCZNA. atak / obrona / cel /
+   nastepny to rodzaje znacznika, nie drabinka: "cel ataku" nie jest gorsze od
+   "obrona". To dokladnie przypadek z DESIGN_SYSTEM.md §3 — ma byc
+   rozroznialne, nie ma rankowac — wiec --ark-data-*, a nie
+   --ark-success/warning/danger. Odwrotnie niz w CoverDebugPopup.css, gdzie
+   barwy odpowiadaja na pytanie "czy moge uderzyc" i rankuja naprawde.
+
+   Sloty dobrane na ROZROZNIALNOSC, nie na podobienstwo do starego hexa.
+   Paleta swiadomie nie ma ani czerwieni, ani bursztynu (DESIGN_SYSTEM.md §3:
+   barwa danych nie ma czytac sie jak status obok niej), wiec czerwonego
+   "cel ataku" i zlotego "nastepny cel" nie da sie odwzorowac co do odcienia.
+   Wybrane cztery sloty leza daleko od siebie na kole: 1 (indygo), 3 (zielen),
+   5 (fiolet), 6 (roz).
+
+   Slot 4 jest tu SWIADOMIE NIEUZYTY. To przygaszony braz - w motywach ciemnych
+   jasny, w jasnych ciemny, ale w obie strony blisko barwy zwyklego tekstu. Na
+   zrzucie w pergaminie "nastepny cel" zlewal sie z nia zupelnie, a to
+   najwazniejszy znacznik w tym oknie (glowa kolejki atakow). Zlapane na
+   zrzucie, nie przez test.
+
+   Karta obiektu zostaje na statusach (--popup-success-* / --popup-danger-* szly
+   na --ark-success-* / --ark-danger-*): tam podzial druzyna/wrog JEST
+   wartosciujacy i tak byl pomyslany.
+
+   TRZY SUROWE FILMY rgba() ida na role, ktore i tak udawaly: tlo pola tekstowego
+   i selecta (czern z alfa) to powierzchnia wpadnieta, a czerwien przycisku
+   "danger" to rola statusowa.
+   ========================================================================== */
+
+.object-list-demo-popup__body {
+  padding: 0;
+  overflow-y: auto;
+}
+
+.demo-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.demo-popup-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ark-border);
+}
+
+.demo-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--ark-gray-a9);
+  border-radius: 4px;
+  background: var(--ark-bg-element-hover);
+  color: var(--ark-text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.demo-btn:hover {
+  background: var(--ark-accent-bg-hover);
+}
+
+.demo-btn--primary {
+  background: var(--ark-accent-bg-active);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+}
+
+.demo-btn--primary:hover {
+  background: var(--ark-accent-bg-active);
+}
+
+.demo-btn--small {
+  padding: 2px 8px;
+  font-size: 0.65rem;
+}
+
+.demo-btn--danger {
+  background: var(--ark-danger-bg);
+  border-color: var(--ark-danger-border);
+  color: var(--ark-danger-text);
+}
+
+.demo-btn--danger:hover {
+  background: var(--ark-danger-bg-hover);
+}
+
+.demo-popup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-popup-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ark-border);
+}
+
+.demo-object-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--ark-success-bg);
+  border: 1px solid var(--ark-success-border);
+  border-radius: 6px;
+}
+
+.demo-object-card--enemy {
+  background: var(--ark-danger-bg);
+  border-color: var(--ark-danger-border);
+}
+
+.demo-object-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+}
+
+.demo-object-checkboxes {
+  flex-wrap: wrap;
+}
+
+.demo-object-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--ark-gray-a9);
+  border-radius: 4px;
+  background: var(--ark-bg-sunken);
+  color: var(--ark-text);
+  font-size: 0.7rem;
+}
+
+.demo-input:focus {
+  outline: none;
+  border-color: var(--ark-accent-border);
+}
+
+.demo-select {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--ark-gray-a9);
+  border-radius: 4px;
+  background: var(--ark-bg-sunken);
+  color: var(--ark-text);
+  font-size: 0.7rem;
+}
+
+.demo-select:focus {
+  outline: none;
+  border-color: var(--ark-accent-border);
+}
+
+.demo-hp-value {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.demo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--ark-text-secondary);
+  cursor: pointer;
+}
+
+/* Kontrolki natywne chodza za akcentem panelu (blekit w stocku, braz w forge)
+   zamiast za domyslnym kolorem przegladarki. */
+.demo-popup-content input[type="checkbox"],
+.demo-popup-content input[type="range"] {
+  accent-color: var(--ark-accent-text);
+  cursor: pointer;
+}
+
+.demo-popup-content input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+}
+
+.demo-checkbox--small {
+  font-size: 0.65rem;
+}
+
+.demo-checkbox--attack {
+  color: var(--ark-data-1-text);
+}
+
+.demo-checkbox--defense {
+  color: var(--ark-data-3-text);
+}
+
+.demo-checkbox--target {
+  color: var(--ark-data-6-text);
+}
+
+.demo-checkbox--next {
+  color: var(--ark-data-5-text);
+}
+
+.demo-checkbox--ogluch {
+  color: var(--ark-text);
+}
