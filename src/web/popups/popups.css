@@ -38,11 +38,14 @@
 @import '../CombatPopup.css';
 @import '../CombatStatusPopup.css';
 @import '../ContractsPopup.css';
+@import '../CoverDebugPopup.css';
+@import '../DataSourcesPopup.css';
 @import '../DepositsPopup.css';
 @import '../EnemyResistancesPopup.css';
 @import '../FishingPopup.css';
 @import '../LetterViewPopup.css';
 @import '../LootPopup.css';
+@import '../ObjectListDemoPopup.css';
 @import '../PackageReceiverPopup.css';
 @import '../PocztaPopup.css';
 @import '../Postepy2Popup.css';

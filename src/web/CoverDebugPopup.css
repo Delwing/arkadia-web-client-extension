@@ -1,14 +1,42 @@
-/*
- * Cover tracker debug popup. Deliberately plain - no icons, no shield glyphs.
- * It exists to validate the state machine, so raw honesty beats polish.
- */
+/* Zaslony - debug. Okno diagnostyczne stanu trackera zaslon: tabela stanu na
+   gorze, tasma zdarzen pod nia. Swiadomie surowe - bez ikon i ozdobnikow, bo
+   sluzy do weryfikacji maszyny stanow, nie do ogladania.
+
+   Migrowane na system projektowy (docs/dev/UI_MIGRATION.md, faza 3): czyta
+   wylacznie --ark-*, bez hexow. Wciagane przez manifest
+   src/web/popups/popups.css, ktory laduja oba UI - przez @import, a NIE przez
+   import w komponencie. Import w komponencie oddaje kolejnosc Rollupowi i
+   odwraca kaskade (patrz naglowek manifestu). TAK WLASNIE BYLO TUTAJ: ten
+   arkusz wjezdzal przez `import './CoverDebugPopup.css'` w TSX-ie i jako jedyny
+   arkusz popupu stal poza manifestem.
+
+   ARKUSZ NIE CZYTAL ZADNEJ WARSTWY ZMIENNYCH. Osiem hexow (tomato, orange,
+   spring green, yellow) plus dwie szarosci w rgba - czyli w kazdym z osmiu
+   motywow okno wygladalo tak samo, takze w jasnych, gdzie szarosci siadaly na
+   jasnym tle. To nie byl wiec swap zmiennych, tylko pierwsze ubarwienie tego
+   okna motywem.
+
+   CZTERY STOPNIE STAREJ SKALI SCHODZA DO TRZECH. Stara tasma zdarzen miala
+   drabinke zielony -> zolty -> pomaranczowy -> czerwony. System projektowy ma
+   dla rankingu trzy role (success / warning / danger), wiec dwa srodkowe
+   stopnie lacza sie w warning. Lacza sie wlasnie te dwa, bo oba znacza "cos
+   posredniego": BLOKADA to skutek zaslony, NIEJASNE to niepewnosc parsera.
+   Skrajne stopnie - zaslona stanela (danger) i zaslona padla (success) - nie
+   traca nic.
+
+   DLACZEGO STATUS, A NIE --ark-data-*. Sasiedni popup debugowy transportu
+   poszedl na palete kategoryczna i slusznie: idle / at_stop / traveling nie
+   tworza drabinki. Tutaj jest odwrotnie - barwy sa o tym, czy gracz moze
+   uderzyc w cel. ZASLONIETY jest gorsze od zaslaniany, PRZELAM-OK lepsze od
+   ZASLONA. To jest ranking, czyli dokladnie przypadek, o ktorym DESIGN_SYSTEM.md
+   §3 mowi, ze ma isc na role statusowe. */
 
 .cover-dbg-popup-body {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--ark-space-3);
     min-height: 0;
-    padding: 6px 8px;
+    padding: var(--ark-space-3) var(--ark-space-4);
     overflow: hidden;
 }
 
@@ -18,99 +46,105 @@
     opacity: 0.8;
 }
 
+/* Tracker ocenia sam siebie: niezerowa wartosc w normalnej walce znaczy, ze
+   linia stawiajaca zaslone zostala przeoczona - to blad, nie szum. */
 .cover-dbg-counter--bad {
-    color: #ff6347;
-    font-weight: 600;
+    color: var(--ark-danger-text);
+    font-weight: var(--ark-weight-semibold);
     opacity: 1;
 }
 
 /*
- * The table sizes to its content and is never squeezed: it is the live state, and
- * a row scrolled out of view is the one you needed. The log takes what is left.
- * A cap only for the pathological room, so the log cannot vanish entirely.
+ * Tabela dostaje tyle wysokosci, ile ma tresci, i nigdy nie jest sciskana: to
+ * stan biezacy, a wiersz wypchniety poza widok to ten, ktorego sie szukalo.
+ * Log bierze reszte. Limit tylko na patologiczna lokacje, zeby log nie znikl.
  */
 .cover-dbg-state {
     flex: 0 0 auto;
     max-height: 75%;
     overflow: auto;
+    min-height: 0;
 }
 
-.cover-dbg-table {
-    width: 100%;
-    font-size: 0.9em;
-}
+/* Gestosc bierze sie z modyfikatora `compact` prymitywu, ktory ustawia
+   font-size wprost na komorkach. Wlasna regula font-size na samej tabeli nic by
+   tu nie dala - nie dlatego, ze przegrywa specyficznoscia, tylko dlatego, ze
+   dotyczy INNEGO elementu: komorka ma swoja reguly i dziedziczenie do niej nie
+   dochodzi. Stare .cover-dbg-table { font-size: 0.9em } dzialalo, bo .zlom-cell
+   nie podawalo rozmiaru wcale.
 
-.cover-dbg-table th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    text-align: left;
-    white-space: nowrap;
-}
+   Kolumna "opis" bywa dluga (pelny opis obiektu z gry). Table trzyma
+   `white-space: nowrap` w kazdej komorce - slusznie dla gestej tabeli liczb,
+   ale tutaj rozpycha okno i scina ostatnie kolumny.
 
-.cover-dbg-table td {
-    vertical-align: top;
-}
+   DLACZEGO WLASNA DELTA, A NIE `align="grow"`. Modyfikator od PR 4 dziala juz
+   poprawnie (jest dwuklasowy, patrz naglowek sekcji "cells" w table.css), wiec
+   zawijanie by dal. Ale daje przy okazji `width: 100%`, a tego to okno nie
+   chce: na zrzucie przed/po pierwsza kolumna zjadla cala swobodna szerokosc i
+   zepchnela num / status / przed kim / od do prawej krawedzi, zostawiajac
+   przepasc miedzy nazwa obiektu a jego danymi. Potrzebne jest samo zawijanie,
+   wiec zawijanie jest tu wpisane wprost.
 
-.cover-dbg-group td {
-    padding-top: 6px;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8em;
-    letter-spacing: 0.04em;
-    opacity: 0.7;
+   Selektor dwuklasowy z tego samego powodu, dla ktorego dwuklasowe sa
+   modyfikatory prymitywu: `.ark-table td` to (0,1,1) i jednoklasowa delta
+   przegrywa z nim bezwarunkowo. */
+.cover-dbg-state .ark-table td:first-child {
+    white-space: normal;
+    word-break: break-word;
 }
 
 .cover-dbg-num,
 .cover-dbg-since {
-    font-family: monospace;
+    font-family: var(--ark-font-mono);
     white-space: nowrap;
 }
 
-/* The player's own entries - "can I hit it" has to read at a glance. */
+/* Wpisy samego gracza - "czy moge w to uderzyc" ma byc widoczne od razu. */
 .cover-dbg-me {
     font-weight: 700;
 }
 
+/* ZASLONIETY: zaslona stoi przeciwko TOBIE, czyli nie trafisz. */
 .cover-dbg-blocked {
     font-weight: 700;
-    color: #ff6347;
+    color: var(--ark-danger-text);
 }
 
+/* zaslaniany: zaslona stoi, ale nie przeciwko tobie. */
 .cover-dbg-open {
-    color: #ffa500;
+    color: var(--ark-warning-text);
 }
 
 .cover-dbg-none {
     opacity: 0.45;
 }
 
-/* Suspected edges are guesses - they must not read like facts. */
+/* Zaslony wywnioskowane to domysly - nie moga czytac sie jak fakty. */
 .cover-dbg-suspected {
     font-style: italic;
     opacity: 0.7;
 }
 
 .cover-dbg-tag {
-    margin-left: 4px;
-    padding: 0 4px;
-    border-radius: 3px;
-    background: rgba(127, 127, 127, 0.25);
-    font-family: monospace;
+    margin-left: var(--ark-space-2);
+    padding: 0 var(--ark-space-2);
+    border-radius: var(--ark-radius-1);
+    background: var(--ark-bg-element);
+    font-family: var(--ark-font-mono);
     font-size: 0.75em;
     white-space: nowrap;
 }
 
 .cover-dbg-log {
-    /* Zero basis, not `auto`: with a content-sized basis every new entry grew the
-       pane and pushed the table out of the popup. */
+    /* Baza zero, nie `auto`: przy bazie z tresci kazdy nowy wpis powiekszal
+       panel i wypychal tabele poza popup. */
     flex: 1 1 0;
     min-height: 0;
     overflow: auto;
-    font-family: monospace;
+    font-family: var(--ark-font-mono);
     font-size: 0.82em;
-    border-top: 1px solid rgba(127, 127, 127, 0.3);
-    padding-top: 4px;
+    border-top: 1px solid var(--ark-border-subtle);
+    padding-top: var(--ark-space-2);
 }
 
 .cover-dbg-log-entry {
@@ -120,7 +154,7 @@
 .cover-dbg-log-head {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--ark-space-3);
     white-space: nowrap;
 }
 
@@ -133,28 +167,29 @@
     font-weight: 700;
 }
 
+/* Zaslona stanela / wrog sie wycofal - w obu wypadkach cel przestal byc
+   osiagalny. */
 .cover-dbg-log-kind--established,
 .cover-dbg-log-kind--retreat {
-    color: #ff6347;
+    color: var(--ark-danger-text);
 }
 
-.cover-dbg-log-kind--blocked {
-    color: #ffa500;
+/* BLOKADA to skutek stojacej juz zaslony, NIEJASNE to linia, ktorej parser nie
+   przypisal. Roznej natury, ale oba sa stopniem posrednim (patrz naglowek). */
+.cover-dbg-log-kind--blocked,
+.cover-dbg-log-kind--ambiguous {
+    color: var(--ark-warning-text);
 }
 
 .cover-dbg-log-kind--break-ok,
 .cover-dbg-log-kind--released {
-    color: #00ff7f;
+    color: var(--ark-success-text);
 }
 
 .cover-dbg-log-kind--gmcp-suspect,
 .cover-dbg-log-kind--expired,
 .cover-dbg-log-kind--failed {
     opacity: 0.6;
-}
-
-.cover-dbg-log-kind--ambiguous {
-    color: #ffff00;
 }
 
 .cover-dbg-log-pair {
@@ -170,8 +205,9 @@
     font-style: italic;
 }
 
+/* Blokada, ktorej nie poprzedzila zadna znana zaslona - tracker cos przeoczyl. */
 .cover-dbg-log-unknown {
-    color: #ff6347;
+    color: var(--ark-danger-text);
     font-weight: 700;
 }
 
