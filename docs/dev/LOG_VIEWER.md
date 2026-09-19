@@ -13,14 +13,46 @@ the same component can become a modal inside the client without a rewrite.
 ## 1. Data
 
 ```ts
-interface LogLine  { number; timestamp; channel; text; html?; event? }
-interface LogSession { id; character; dayLabel; dateLabel; startedAt; endedAt;
+interface LogLine  { number; timestamp; channel; text; html?; event?; character? }
+interface LogSession { id; characters; dayLabel; dateLabel; startedAt; endedAt;
                        live; file; lines }
 ```
 
 The viewer never touches IndexedDB. `log-viewer/sessionAdapter.ts` is the only
 module that knows about stores, `session_<ms>` names and stored record shapes;
 the showcase drives the same component from generated mock data.
+
+### Whose log it is, is a list
+
+`characters` is a list because a session is not one character's. The log runs
+from page load to page close and a player can re-log in between; a session that
+never reached the game has no character at all, so **an empty list is a normal
+state** and the date label stands in for a name.
+
+`model/characters.ts` works it out, and the adapter calls it on the way out of
+the store — nothing is ever written back into IndexedDB for a label. Two
+sources, both ending in the same thing (a name at a line index):
+
+- **GMCP, exact, for logs recorded from now on.** `PlayerIdentity` fires
+  `player.character` when a *life* starts, and `sessionLogger` stamps that name
+  on the first record after it changed and on no other. The source is
+  PlayerIdentity rather than the raw `gmcp.char.info` frame on purpose: it
+  already tells a new character from a new body, so a przeobrazenie does not
+  reach the log looking like a re-login.
+- **The login banner, for logs already recorded.** `Witaj, Dargocie.` is all an
+  old log has, and the name in it is a vocative. Nothing generates Polish
+  declension here: the candidates are the characters this device has settings
+  for (`collectCharacters()`), a small closed set, so the job is to *recognise*
+  one — declension changes the ending and keeps the stem, so the longest common
+  prefix picks the winner. It has to win by a clear margin and share most of the
+  candidate's name, or the log stays unattributed: `Dargoth` and `Dargon` both
+  answer to `Dargo...`, and a wrong name is worse than no name. A character
+  never played on this device has no settings, so no candidate, and is never
+  recognised — a property of the method, not a bug.
+
+What is shown is always the candidate's own name, in titlecase — never the
+token read out of the text, which is a vocative. The match only says *which*
+character it is.
 
 ### Channels come from the parser layer, not from the view
 
@@ -44,9 +76,15 @@ already recorded — no re-parsing of game text, and no regexes over Polish.
 
 ### Events
 
-`model/events.ts` marks three things on the timeline: `login` (from the message
-type), `death` and `trait` (from lines the game itself prints as markers, whose
-patterns already exist in `src/client/scripts/lvlCalc.ts`).
+`model/events.ts` marks two things on the timeline: `login` (from the message
+type) and `death` (from a line the game itself prints as a marker, whose pattern
+already exists in `src/client/scripts/lvlCalc.ts`).
+
+A `login` marker carries the character it let in, and the lane writes the name
+next to it wherever the session had more than one — which is what makes a
+re-login visible rather than merely marked. The name travels back onto the login
+line from the record it was stamped on, since the game says who we are a moment
+after the banner the player sees.
 
 Deliberately conservative. A marker on the wrong line is worse than no marker,
 because the timeline is the one thing a player trusts to say *it happened here*.
@@ -66,8 +104,8 @@ src/ui/logViewer/
 │                             LineMenu
 ├── export/                 ← logHtml (standalone .html), logImage (canvas PNG)
 └── model/                  ← pure, fully unit-tested
-    ├── channels.ts  events.ts  format.ts
-    ├── search.ts    timeline.ts
+    ├── channels.ts  characters.ts  events.ts
+    ├── format.ts    search.ts       timeline.ts
     ├── types.ts     viewerState.ts
 ```
 

@@ -267,11 +267,10 @@ than it adds.
 
 ## 7. Queued follow-up
 
-- **Character attribution for logs** — `LOG_CHARACTER_ATTRIBUTION.md`. Record
-  the character on the log (a *list*: one session can span re-logins), mark it
-  on the timeline so switches are visible, drop the `trait` marker. Sequenced
-  after Phase 2 because it lands in `Timeline.tsx` and `model/events.ts`, which
-  that phase rebuilds.
+- ~~**Character attribution for logs**~~ — done, see
+  `LOG_CHARACTER_ATTRIBUTION.md` and `LOG_VIEWER.md` §1. The log carries a
+  *list* of characters, re-logins are named on the timeline, and the `trait`
+  marker is gone.
 
 ---
 

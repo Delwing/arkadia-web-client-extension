@@ -294,6 +294,40 @@ describe("stepMatch, all-logs scope", () => {
         expect(result.notice).toContain("Powrot");
     });
 
+    it("names the character playing where the jump lands, not the whole list", () => {
+        // The sub-line does not wrap, so a session spanning three characters
+        // still gets one name: the one on the match being jumped to.
+        const twoChars = session(
+            "c",
+            [
+                { ...line(1, "troll na poczatku", "combat"), character: "Dargoth" },
+                { ...line(2, "troll na koncu", "combat"), character: "Kethra" },
+            ],
+            { dayLabel: "Wczoraj" },
+        );
+        const order = [sessionA, twoChars];
+
+        const forward = state({ query: "troll", scope: "all", matchIndex: 2 });
+        expect(stepMatch(1, forward, deriveView(order, forward), order)!.notice).toBe(
+            "Dalej w: Dargoth, Wczoraj",
+        );
+
+        // Backwards the jump lands on that session's LAST match, so it is the
+        // character playing there that gets named.
+        const back = state({ sessionId: "a", query: "troll", scope: "all", matchIndex: 0 });
+        expect(stepMatch(-1, back, deriveView(order, back), order)!.notice).toBe("Powrot do: Kethra, Wczoraj");
+    });
+
+    it("says only the day for a session whose character is not known", () => {
+        const unnamed = session("c", [line(1, "troll bez imienia", "combat")], {
+            characters: [],
+            dayLabel: "Wczoraj",
+        });
+        const order = [sessionA, unnamed];
+        const current = state({ query: "troll", scope: "all", matchIndex: 2 });
+        expect(stepMatch(1, current, deriveView(order, current), order)!.notice).toBe("Dalej w: Wczoraj");
+    });
+
     it("skips sessions that have no matches", () => {
         const quiet = session("c", [line(1, "nic")]);
         const withQuiet = [sessionA, quiet, sessionB];

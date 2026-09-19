@@ -129,20 +129,24 @@ export default async function initSessionLogger(client: SessionClient) {
   }
 
   async function write(text: string, type?: string, timestamp?: number) {
+    // Claimed before the first await: lines arrive in bursts and every one of
+    // them waits on the same open, so a name read afterwards would land on
+    // whichever of them happened to resume first.
+    const character = pendingCharacter;
+    pendingCharacter = undefined;
     // A second attempt covers the connection being released for another
     // tab's upgrade between opening it and writing.
     for (let attempt = 0; attempt < 2; attempt++) {
       const currentDb = await ensureDb();
-      if (!currentDb) return;
-      const character = pendingCharacter;
-      if (await save(currentDb, text, type, timestamp, character)) {
-        // Cleared only once the record is actually in: a write that fails
-        // keeps the name for the next line rather than losing the switch.
-        if (character === pendingCharacter) pendingCharacter = undefined;
+      if (currentDb && (await save(currentDb, text, type, timestamp, character))) {
         scheduleClose();
         return;
       }
+      if (!currentDb) break;
     }
+    // Nothing was stored, so the switch has not been recorded yet; hand the
+    // name back, unless a newer one has taken its place in the meantime.
+    if (character && !pendingCharacter) pendingCharacter = character;
   }
 
   function scheduleClose() {

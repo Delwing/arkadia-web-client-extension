@@ -1,8 +1,19 @@
 # Przypisanie postaci do logow
 
-Spec pracy do wykonania **po** scaleniu PR-a fazy 2 (fold `@ui/logViewer`).
-Dotyka `Timeline.tsx` i `model/events.ts`, ktore ten PR przebudowuje — stad
-kolejnosc, a nie rownolegle.
+**Zrobione.** Dopasowanie mieszka w `src/ui/logViewer/model/characters.ts`
+(z testami w `test/ui/logViewer/characters.test.ts`), strona zapisu w
+`PlayerIdentity` + `sessionLogger`, strona odczytu w
+`log-viewer/sessionAdapter.ts`. Skrot dla czytajacego kod jest w `LOG_VIEWER.md`
+§1; ponizszy tekst zostaje jako uzasadnienie decyzji.
+
+Dwie rzeczy wyszly w trakcie inaczej, niz mowi spec:
+
+- **Titlecase jest w jednym miejscu dla obu poziomow** (`titleCase` w
+  `characters.ts`), a nie tylko na sciezce GMCP. Kandydaci pochodza z kluczy
+  `localStorage`, ktore zapisuje GMCP, wiec i oni bywaja malymi literami —
+  sekcja 3(c) i tak wymaga titlecase przy wyswietlaniu.
+- **Numery linii w tabeli sekcji 4 sa sprzed fold-u fazy 2.** Miejsca sie
+  zgadzaja, numery nie.
 
 Companion do `LOG_VIEWER.md` i `UI_MIGRATION.md`.
 
