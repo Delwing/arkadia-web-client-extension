@@ -102,7 +102,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
-3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel) done
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (inventory/economy), PR 5 (debug) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -246,10 +246,15 @@ below.
 Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
 worth keeping are in "What PR 3 found" below.
 
-**PR 4 (debug and the rest) is done** — three popups: Zaslony (debug), Zrodla
+**PR 4 (inventory/economy) is done** — ten popups: Zlom, Loot, Depozyty,
+Zlecenia, Poczta, List, Odbiorcy paczek, Wedka, Woreczki ziol, Ziola (tekst).
+See "What PR 4 found" below; one of the two things it found is a bug in the
+`Table` primitive that every earlier PR in this phase shipped past.
+
+**PR 5 (debug and the rest) is done** — three popups: Zaslony (debug), Zrodla
 danych, Demo listy obiektow. **Okno mapy (StaticMap) is still not migrated**;
-PR 4 re-checked the block and it holds unchanged — see "Okno mapy" below.
-What PR 4 found is below it.
+PR 5 re-checked the block and it holds unchanged — see "Okno mapy" below.
+What PR 5 found is below it.
 
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
@@ -404,7 +409,7 @@ past the rest of `layout.css` in the cascade, which that file's header warns
 about specifically. That change belongs either to Phase 5 or to a small PR of
 its own; it should not be smuggled in under one popup's name.
 
-**Phase 3 PR 4 re-checked this and it holds, with the counts higher than
+**Phase 3 PR 5 re-checked this and it holds, with the counts higher than
 recorded above.** `.map-header-menu*` appears 32 times in `StaticMapPopup.tsx`,
 49 in `MapHeaderMenu.tsx`, 20 in `ObjectListHeaderMenu.tsx` and 12 in
 `ChatPopup.tsx`; the class family is still defined in `layout/layout.css` (and
@@ -417,63 +422,6 @@ size it would be blocked by exactly the same four consumers.
 Migrating only `.static-map-popup__*` and leaving the header on `--popup-*`
 would half-migrate the screen, which §5 forbids for exactly the reason that
 applies here — the body would re-theme and the header would not.
-
-#### What PR 4 (debug and the rest) found
-
-**A sheet can sit outside the manifest and nothing notices.** `CoverDebugPopup.css`
-was pulled in by `import './CoverDebugPopup.css'` in its own component — the one
-thing the manifest's header forbids — and it had been there since before the
-manifest existed. The test that guards this (`hostTokens.test.ts`, "no migrated
-sheet is imported by its component") only checks sheets that are already on the
-manifest's list, so an unmigrated sheet importing itself is invisible to it. The
-rule to draw: **the guard tests check the sheets they know about; they cannot
-tell you about a file nobody has listed.** That is the same shape as a popup
-left off `MIGRATED_SHEETS` entirely, and it is worth a grep for
-`import '.*Popup.css'` before each family is declared done.
-
-**`--ark-table__cell--grow` does not do what its name says.** `Table`'s `grow`
-modifier is documented as "the one column allowed to wrap and absorb the leftover
-width". The width half works. The wrap half does not: `.ark-table__cell--grow`
-is (0,1,0) and `.ark-table th, .ark-table td { white-space: nowrap }` in the same
-sheet is (0,1,1), so the modifier's `white-space: normal` is dead in every table
-in the codebase. PR 3 worked around it without naming it (the times-debug sheet
-carries a two-class delta *and* passes `align="grow"`), and
-`EnemyResistancesPopup` passes `align="grow"` with no delta, so its description
-column has never wrapped. **Fixing the primitive is a one-line change
-(`.ark-table td.ark-table__cell--grow`) but it touches every migrated table, so
-it wants its own PR and its own screenshots** — it is queued in §7 rather than
-smuggled in here.
-
-**Reach for `grow` only when a column should really eat the slack.** Put on this
-popup's first column it pushed `num` / `status` / `przed kim` / `od` against the
-right edge and left a gulf between an object's name and its data. Dropping the
-modifier let the table distribute columns the way the old `.zlom-table` did.
-Caught on the before/after screenshot; nothing else would have shown it.
-
-**The same family can need both answers on `--popup-data-*`.** Two popups in
-this one went opposite ways and both are right. The cover debug tape ranks —
-a cover standing means you cannot hit the target, breaking it means you can —
-so its four-step green/yellow/orange/red ladder went to the three status roles
-(the two middle steps merge; both mean "something in between"). The object-list
-demo's marks do not rank — "attack target" is not worse than "defense target" —
-so they went to `--ark-data-*`. **Deciding per call site, not per popup, is what
-§4's `--popup-data-*` decision actually asks for.**
-
-**Not every `--ark-data-*` slot is equally loud.** Slot 4 is a muted brown in
-every theme (`#d4b3a5` dark, `#7d5e54` light). The demo's gold "next target"
-mark — the most operationally important mark in that window, the head of the
-attack queue — landed on it and went nearly invisible against ordinary text in
-parchment. Slots 1, 3, 5 and 6 are the four that stay loud in both directions.
-**A categorical palette guarantees distinguishable, not prominent**; if a mark
-has to shout, check it on a light theme before trusting the slot.
-
-**A migration can be a bug fix, and the light themes are where.** The demo's
-`select` had a hard-coded `rgba(0, 0, 0, 0.3)` background under
-`--popup-text-strong` text. In the two light themes that is dark text on a
-mid-grey plate — the same unreadable-panel failure as PR 3's
-`--ark-bg-overlay`, arrived at from the other direction. Its gold and pink
-checkbox labels had the same problem against a near-white card. None of it was
-visible in a dark theme and no test could see it.
 
 #### What PR 3 (travel/transport) found
 
@@ -534,6 +482,125 @@ choice is a size judgement — but the *rule* must reach the popup either way, s
 `MIGRATED_POPUP_COMPONENTS` over one shared pair of checks rather than two
 copies of them. When the two families merged, the copies were identical.
 
+
+#### What PR 4 (inventory/economy) found
+
+**`align="num"` on `Table` had never worked, in any popup, since PR 1 added
+it.** `.ark-table th, .ark-table td` sets `text-align: left` and
+`white-space: nowrap`, and it is (0,1,1); `.ark-table__cell--num` is (0,1,0).
+The modifier lost every time. Nothing showed it: the prop type-checked, the
+class landed in the DOM, and a column of numbers merely sat on the left. The
+same specificity killed `align="grow"`, which is why PR 3 ended up writing
+`.transport-times-debug .ark-table td:first-child { white-space: normal }` by
+hand — that workaround was not a delta over a primitive that did not fit, it
+was a reimplementation of a primitive that was silently inert.
+
+The three *layout* modifiers are now two classes deep in `table.css`. The
+*tone* modifiers are left alone and the file says why: they set `color`, which
+the th/td pair does not declare, so they were only ever competing with an
+inherited value and won.
+
+Two things to carry from this. First, PR 3's rule — "any delta that overrides a
+primitive needs the extra specificity, not the manifest" — **applies inside the
+system too**, and a primitive's own modifiers are the easiest place to forget
+it, because the modifier and the thing it overrides are in the same file.
+Second, **the workaround is the symptom**: if a screen has to re-implement a
+primitive's modifier with a longer selector, check whether the modifier works
+at all before writing the delta. Measured effect of the fix: Transport times
+(debug) gains the right-aligned numeric columns it always asked for, and
+Odpornosci is pixel-identical in all three themes (its own deltas were already
+covering it).
+
+**A class family can be owned by a family that has not migrated yet.** The plan
+told this PR that `.zlom-*` was the family PR 1 had stopped borrowing, so it
+would arrive clean. It did not: `CoverDebugPopup.tsx` — a *debug* popup, in a
+sibling PR — builds its table out of `.zlom-table`, `.zlom-row` and
+`.zlom-cell`. Moving those three into `ZlomPopup.css` would have half-migrated
+someone else's window, and worse: `CoverDebugPopup.css` arrives through
+`import './CoverDebugPopup.css'` in its component, so `.cover-dbg-num` and
+`.zlom-cell` (both 0,1,0) would have had their tie settled by Rollup.
+
+The answer was PR 1's, applied again: **Zlom moved onto `Table` and stopped
+borrowing**, and the three classes stay in `popups-base.css` with a header
+naming their single remaining owner. Generalised: recipe step 1 says to grep
+before moving a class, and the interesting outcome is not "nothing borrows it"
+but "something in a *different, unmigrated* family does" — in which case the
+popup being migrated is the one that has to give the class up.
+
+**Two `--popup-data-*` decisions that the name would have got wrong.** Deposits
+painted the bank name with `--popup-data-tomato` and the item count with
+`--popup-data-green`: neither ranks anything, so both went to `--ark-data-*`
+rather than to danger/success. The four coin denominations were four hex
+literals, and the honest-looking mapping — silver onto a neutral text role,
+because silver *is* neutral — turned out to be the wrong one: in the light
+themes bronze's step 11 is a dark brown, which is what a neutral text role also
+looks like, so gold and silver stopped being distinguishable in the one row
+where they always appear together. A slot's contract is "distinct from the
+other slots", not "faithful to the material".
+
+**Fishing was the opposite case, and the file header was wrong about it.**
+`popups-base.css` said the cast / strike / pull / biting hues were
+"genuinely game-specific hues a generic status var can't [carry]". Audited by
+call site they rank cleanly — accent for the current state, warning for "react
+now", success for the move you want, danger for aborting — and half the rules
+already read `--popup-warning` / `--popup-danger` while the other half spelled
+the same colours by hand as `rgba()`. They are statuses, and saying so deleted
+the literals.
+
+#### What PR 5 (debug and the rest) found
+
+**A sheet can sit outside the manifest and nothing notices.** `CoverDebugPopup.css`
+was pulled in by `import './CoverDebugPopup.css'` in its own component — the one
+thing the manifest's header forbids — and it had been there since before the
+manifest existed. The test that guards this (`hostTokens.test.ts`, "no migrated
+sheet is imported by its component") only checks sheets that are already on the
+manifest's list, so an unmigrated sheet importing itself is invisible to it. The
+rule to draw: **the guard tests check the sheets they know about; they cannot
+tell you about a file nobody has listed.** That is the same shape as a popup
+left off `MIGRATED_SHEETS` entirely, and it is worth a grep for
+`import '.*Popup.css'` before each family is declared done.
+
+**Two sessions found the `Table` specificity bug independently, from opposite
+ends.** PR 4 found it on `align="num"` and fixed the three layout modifiers;
+this PR found the same thing on `align="grow"`'s dead `white-space: normal`,
+while wondering why PR 3 had hand-written a wrap delta next to a modifier that
+was supposed to do exactly that. The fix landed in PR 4, so nothing is left to
+do here — but it is worth recording that **the bug was reachable from any popup
+that used a modifier and looked closely**, and that three PRs used the modifiers
+without noticing. What made it visible in both cases was the same question:
+*why does this screen need a workaround for something the primitive claims to
+do?* PR 4 states the general form of that ("the workaround is the symptom").
+
+**Reach for `grow` only when a column should really eat the slack.** Put on this
+popup's first column it pushed `num` / `status` / `przed kim` / `od` against the
+right edge and left a gulf between an object's name and its data. Dropping the
+modifier let the table distribute columns the way the old `.zlom-table` did.
+Caught on the before/after screenshot; nothing else would have shown it.
+
+**The same family can need both answers on `--popup-data-*`.** Two popups in
+this one went opposite ways and both are right. The cover debug tape ranks —
+a cover standing means you cannot hit the target, breaking it means you can —
+so its four-step green/yellow/orange/red ladder went to the three status roles
+(the two middle steps merge; both mean "something in between"). The object-list
+demo's marks do not rank — "attack target" is not worse than "defense target" —
+so they went to `--ark-data-*`. **Deciding per call site, not per popup, is what
+§4's `--popup-data-*` decision actually asks for.**
+
+**Not every `--ark-data-*` slot is equally loud.** Slot 4 is a muted brown in
+every theme (`#d4b3a5` dark, `#7d5e54` light). The demo's gold "next target"
+mark — the most operationally important mark in that window, the head of the
+attack queue — landed on it and went nearly invisible against ordinary text in
+parchment. Slots 1, 3, 5 and 6 are the four that stay loud in both directions.
+**A categorical palette guarantees distinguishable, not prominent**; if a mark
+has to shout, check it on a light theme before trusting the slot.
+
+**A migration can be a bug fix, and the light themes are where.** The demo's
+`select` had a hard-coded `rgba(0, 0, 0, 0.3)` background under
+`--popup-text-strong` text. In the two light themes that is dark text on a
+mid-grey plate — the same unreadable-panel failure as PR 3's
+`--ark-bg-overlay`, arrived at from the other direction. Its gold and pink
+checkbox labels had the same problem against a near-white card. None of it was
+visible in a dark theme and no test could see it.
 
 #### `--popup-data-*`: decided
 
@@ -793,15 +860,6 @@ than it adds.
   `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
   it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
   popups manifest — `layout.css`'s own header says why.
-
-- **Fix `white-space` on `Table`'s `grow` modifier.** `.ark-table__cell--grow`
-  (0,1,0) loses to `.ark-table th, .ark-table td` (0,1,1) in the same sheet, so
-  the modifier's `white-space: normal` never applies and only its `width: 100%`
-  works. `.ark-table td.ark-table__cell--grow` fixes it. Deliberately not done
-  under Phase 3 PR 4: it changes wrapping in every migrated table at once
-  (`EnemyResistancesPopup` has been passing `align="grow"` with no delta and no
-  wrapping since PR 1), so it wants its own before/after pass. Popups that today
-  carry a two-class delta for this can drop it afterwards.
 
 - **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
   hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3

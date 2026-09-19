@@ -77,16 +77,17 @@
    `white-space: nowrap` w kazdej komorce - slusznie dla gestej tabeli liczb,
    ale tutaj rozpycha okno i scina ostatnie kolumny.
 
-   Selektor celowo dwuklasowy. `.ark-table td` to (0,1,1); zeby je przebic,
-   delta musi miec wiecej niz jedna klase - remis rozstrzygalaby kolejnosc
-   chunkow Rollupa, ktorej manifest NIE ustala (porzadkuje tylko arkusze popupow
-   miedzy soba). Ta sama pulapka zjadla bursztyn przycisku w Cechach w PR 1.
+   DLACZEGO WLASNA DELTA, A NIE `align="grow"`. Modyfikator od PR 4 dziala juz
+   poprawnie (jest dwuklasowy, patrz naglowek sekcji "cells" w table.css), wiec
+   zawijanie by dal. Ale daje przy okazji `width: 100%`, a tego to okno nie
+   chce: na zrzucie przed/po pierwsza kolumna zjadla cala swobodna szerokosc i
+   zepchnela num / status / przed kim / od do prawej krawedzi, zostawiajac
+   przepasc miedzy nazwa obiektu a jego danymi. Potrzebne jest samo zawijanie,
+   wiec zawijanie jest tu wpisane wprost.
 
-   Modyfikator `align="grow"` tego NIE zalatwia: `.ark-table__cell--grow`
-   (0,1,0) przegrywa z `.ark-table td` (0,1,1) i jego `white-space: normal` jest
-   martwe w calym repo. Dziala z niego tylko `width: 100%` - i wlasnie dlatego
-   ta kolumna go nie dostaje: na zrzucie przed/po szerokosc 100% na pierwszej
-   kolumnie zepchnela num / status / przed kim / od do prawej krawedzi. */
+   Selektor dwuklasowy z tego samego powodu, dla ktorego dwuklasowe sa
+   modyfikatory prymitywu: `.ark-table td` to (0,1,1) i jednoklasowa delta
+   przegrywa z nim bezwarunkowo. */
 .cover-dbg-state .ark-table td:first-child {
     white-space: normal;
     word-break: break-word;

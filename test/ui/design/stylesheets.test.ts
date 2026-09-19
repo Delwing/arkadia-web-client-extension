@@ -39,7 +39,18 @@ const MIGRATED_SHEETS = [
     "src/web/TransportTimesDebugPopup.css",
     "src/web/TripPlannerPopup.css",
     "src/web/WalkerPopup.css",
-    // Faza 3, rodzina 4 — debug i reszta.
+    // Faza 3, rodzina 4 — ekwipunek i gospodarka.
+    "src/web/ContractsPopup.css",
+    "src/web/DepositsPopup.css",
+    "src/web/FishingPopup.css",
+    "src/web/LetterViewPopup.css",
+    "src/web/LootPopup.css",
+    "src/web/PackageReceiverPopup.css",
+    "src/web/PocztaPopup.css",
+    "src/web/ZlomPopup.css",
+    "src/web/herbs/HerbManager.css",
+    "src/web/herbs/HerbTextWindow.css",
+    // Faza 3, rodzina 5 — debug i reszta.
     "src/web/CoverDebugPopup.css",
     "src/web/DataSourcesPopup.css",
     "src/web/ObjectListDemoPopup.css",
@@ -68,6 +79,13 @@ const MIGRATED_SHEETS = [
  * `createColorFormat` for a line printed into the GAME output, whose background
  * is the player's own setting rather than a theme surface. That is not a theme
  * decision and there is no token for it.
+ *
+ * `ZlomPopup.tsx` (faza 3, rodzina 4) is absent for the same reason, twice
+ * over: `#dadada` is the default value of the player's own "colour a silvered
+ * weapon like this" setting, which paints a line of GAME output, and `#ffffff`
+ * is what `<input type="color">` falls back to when a row has no colour yet.
+ * Both are seeds for a native colour picker; neither has a token form. The
+ * popup's stylesheet is on MIGRATED_SHEETS and carries the theme decisions.
  */
 const MIGRATED_POPUP_COMPONENTS = [
     "src/web/CalendarPopup.tsx",

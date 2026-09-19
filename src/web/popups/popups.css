@@ -37,10 +37,17 @@
 @import '../ClockPopup.css';
 @import '../CombatPopup.css';
 @import '../CombatStatusPopup.css';
+@import '../ContractsPopup.css';
 @import '../CoverDebugPopup.css';
 @import '../DataSourcesPopup.css';
+@import '../DepositsPopup.css';
 @import '../EnemyResistancesPopup.css';
+@import '../FishingPopup.css';
+@import '../LetterViewPopup.css';
+@import '../LootPopup.css';
 @import '../ObjectListDemoPopup.css';
+@import '../PackageReceiverPopup.css';
+@import '../PocztaPopup.css';
 @import '../Postepy2Popup.css';
 @import '../PostepyPopup.css';
 @import '../RoomInfoPopup.css';
@@ -53,3 +60,6 @@
 @import '../WorldTimePopup.css';
 @import '../ZabiciPopup.css';
 @import '../Zabici2Popup.css';
+@import '../ZlomPopup.css';
+@import '../herbs/HerbManager.css';
+@import '../herbs/HerbTextWindow.css';
