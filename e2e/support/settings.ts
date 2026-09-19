@@ -34,14 +34,14 @@ export async function waitForSettingsModalClosed(page: Page) {
     });
 }
 
-/** Waits for Bootstrap's show animation, so a following hide() is not silently ignored. */
+/** Waits for the open animation, so a following hide() is not silently ignored. */
 export async function waitForSettingsModalShown(page: Page) {
     await page.waitForSelector('#settings-modal.show', {timeout: 5000});
+    // The dialog fades in; until that has settled the framework treats it as
+    // still opening and drops a hide() on the floor.
     await page.waitForFunction(() => {
-        const d = document.querySelector('#settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+        const el = document.getElementById('settings-modal');
+        return !!el && window.getComputedStyle(el).opacity === '1';
     });
 }
 

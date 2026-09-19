@@ -1,6 +1,7 @@
 import { expect, test } from './support/fixtures';
 import { ensureGameSocket, getLastOutgoingCommand, waitForCommandInput } from './support/mocks';
 import {Page} from "@playwright/test";
+import {dialogClose} from "./support/dialogs";
 import {openButtonsSettings, SETTINGS_SAVE} from "./support/settings";
 
 function openMobileButtonsSettings(page: Page) {
@@ -92,7 +93,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(buttonText, 'button label should be updated in preview').toBe('Test Button');
 
         // Close the config panel first
-        const closeConfigButton = configPanel.locator('.btn-close');
+        const closeConfigButton = dialogClose(configPanel);
         await closeConfigButton.click();
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 
@@ -212,7 +213,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(directionSelect, 'direction select should be visible for kierunek macro').toBeVisible();
 
         // Close config panel
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = dialogClose(configPanel);
         await closeButton.click();
         await expect(configPanel).not.toBeVisible();
 
@@ -297,7 +298,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await labelInput.fill('Zerknij');
 
         // Close the config panel first
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = dialogClose(configPanel);
         await closeButton.click();
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 

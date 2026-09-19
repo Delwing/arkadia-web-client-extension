@@ -1,4 +1,5 @@
 import { expect, test } from './support/fixtures';
+import { dialogClose } from './support/dialogs';
 import {
     ensureGameSocket,
     waitForCommandInput,
@@ -38,9 +39,9 @@ async function openNoteModalViaContextMenu(
 
 /** Return a locator scoped to the LocationNoteEditor modal. */
 function noteModal(page: import('@playwright/test').Page) {
-    // React-Bootstrap appends the modal to the DOM when show=true. We locate
-    // it by the unique title text inside .modal-content.
-    return page.locator('.modal-content').filter({ hasText: NOTE_MODAL_TITLE });
+    // React-Bootstrap mounts the dialog when show=true; it is the only one
+    // carrying this title.
+    return page.getByRole('dialog').filter({ hasText: NOTE_MODAL_TITLE });
 }
 
 /** Clear any saved note for a room via IndexedDB so tests start clean. */
@@ -225,8 +226,7 @@ test.describe('LocationNoteEditor', () => {
 
         await modal.locator('textarea').fill('Unsaved draft');
 
-        // Bootstrap modal close button
-        await modal.locator('.btn-close').click();
+        await dialogClose(modal).click();
         await expect(modal).not.toBeVisible();
 
         const savedText = await readNote(page, ROOM_ID);

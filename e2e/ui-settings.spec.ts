@@ -7,6 +7,7 @@ import {
     resetEmbeddedCalls,
     waitForCommandInput,
 } from './support/mocks';
+import {dialogClose, subDialog} from './support/dialogs';
 import {goToSettingsPage, openSettings, SETTINGS_SAVE, type SettingsCategory} from './support/settings';
 
 const MENU_BUTTON = '#menu-button';
@@ -343,7 +344,7 @@ test.describe('UI settings', () => {
         const modal = await openUiSettings(page, 'ui-sound');
         await modal.locator('#ui-manage-sounds-button').click();
 
-        const soundManager = modal.locator('.modal.show', {hasText: 'Zarządzaj dźwiękami'});
+        const soundManager = subDialog(modal, 'Zarządzaj dźwiękami');
         await expect(soundManager, 'sound manager should open').toBeVisible();
 
         await soundManager.getByRole('button', {name: '▶'}).first().click();
@@ -354,7 +355,7 @@ test.describe('UI settings', () => {
         expect(focusChurn, 'focus must not bounce between the two dialogs').toBeLessThan(50);
 
         // The settings window underneath stays usable
-        await soundManager.locator('.btn-close').click();
+        await dialogClose(soundManager).click();
         await expect(soundManager, 'sound manager should close').toBeHidden();
         await selectPage(modal, 'ui-map');
         await expect(modal.locator('#ui-map-render-scale-container, [id^="ui-map"]').first()).toBeVisible();
@@ -371,7 +372,9 @@ test.describe('UI settings', () => {
         // swallows every click.
         await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'settings window should close').not.toBeVisible();
-        await expect(page.locator('.modal-backdrop'), 'no stray backdrop').toHaveCount(0);
+        // A leftover dialog backdrop covers the viewport and swallows every
+        // click, so the menu click is the guard: Playwright will not click
+        // through an overlay, it waits for the click to land and fails.
         await page.click(MENU_BUTTON);
         await expect(
             page.locator(UI_SETTINGS_BUTTON),

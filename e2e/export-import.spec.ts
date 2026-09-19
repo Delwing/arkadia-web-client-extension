@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page, Download} from '@playwright/test';
+import {dialogClose, dialogTitle} from './support/dialogs';
 import {
     ensureGameSocket,
     primeCharInfo,
@@ -25,7 +26,7 @@ async function openExportImportModal(page: Page) {
 
 async function closeExportImportModal(page: Page) {
     const modal = page.locator(EXPORT_IMPORT_MODAL);
-    await modal.locator('.btn-close').click();
+    await dialogClose(modal).click();
     await expect(modal, 'should close export/import modal').not.toBeVisible();
 }
 
@@ -54,7 +55,7 @@ test.describe('Export/Import', () => {
             await ensureGameSocket(page);
 
             const modal = await openExportImportModal(page);
-            await expect(modal.locator('.modal-title')).toContainText('Eksport i import');
+            await expect(dialogTitle(modal)).toContainText('Eksport i import');
             await closeExportImportModal(page);
         });
     });
@@ -238,7 +239,7 @@ test.describe('Export/Import', () => {
             expect(filename, 'filename should end with .json').toMatch(/\.json$/);
 
             // Verify success message
-            const successAlert = modal.locator('.alert-success');
+            const successAlert = modal.getByRole('alert');
             await expect(successAlert, 'should show success message').toContainText('Eksport zakończony sukcesem');
 
             await closeExportImportModal(page);
@@ -347,7 +348,7 @@ test.describe('Export/Import', () => {
             });
 
             // Verify success message
-            const successAlert = modal.locator('.alert-success');
+            const successAlert = modal.getByRole('alert');
             await expect(successAlert, 'should show success message').toContainText('Import zakończony sukcesem');
 
             // Verify data was imported
@@ -402,7 +403,7 @@ test.describe('Export/Import', () => {
             });
 
             // Verify error message
-            const errorAlert = modal.locator('.alert-danger');
+            const errorAlert = modal.getByRole('alert');
             await expect(errorAlert, 'should show error message').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -428,7 +429,7 @@ test.describe('Export/Import', () => {
                 buffer: Buffer.from(JSON.stringify(invalidPayload)),
             });
 
-            const errorAlert = modal.locator('.alert-danger');
+            const errorAlert = modal.getByRole('alert');
             await expect(errorAlert, 'should show error for wrong version').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -452,7 +453,7 @@ test.describe('Export/Import', () => {
                 buffer: Buffer.from(JSON.stringify(incompletePayload)),
             });
 
-            const errorAlert = modal.locator('.alert-danger');
+            const errorAlert = modal.getByRole('alert');
             await expect(errorAlert, 'should show error for incomplete payload').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -506,7 +507,7 @@ test.describe('Export/Import', () => {
             });
 
             // Verify success
-            const successAlert = modal.locator('.alert-success');
+            const successAlert = modal.getByRole('alert');
             await expect(successAlert, 'should show import success').toContainText('Import zakończony sukcesem');
 
             // Verify data was restored

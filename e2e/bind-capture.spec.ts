@@ -36,7 +36,7 @@ async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
     await page.waitForSelector('#binds-modal.show', {timeout: 5000});
-    await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
+    await page.locator('#binds-modal').getByRole('combobox').first().waitFor({timeout: 5000});
 }
 
 async function saveBindsModal(page: Page): Promise<void> {

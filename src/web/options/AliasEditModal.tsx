@@ -86,6 +86,7 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
     return (
         <div
             className="modal show d-block"
+            data-testid="sub-dialog"
             style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
             onClick={onClose}
         >
@@ -93,12 +94,12 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                 className="modal-dialog modal-dialog-centered modal-lg"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="modal-content">
+                <div className="modal-content" data-testid="sub-dialog-content">
                     <div className="modal-header">
                         <h5 className="modal-title">
                             {isEdit ? 'Edytuj alias' : 'Dodaj alias'}
                         </h5>
-                        <button type="button" className="btn-close" onClick={onClose} />
+                        <button type="button" className="btn-close" data-testid="dialog-close" onClick={onClose} />
                     </div>
                     <div className="modal-body">
                         <div className="mb-3">
@@ -180,6 +181,7 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                                     <button
                                         type="button"
                                         className="btn btn-sm btn-outline-secondary"
+                                        data-testid="alias-add-override"
                                         onClick={addOverride}
                                     >
                                         Dodaj
@@ -208,6 +210,7 @@ const AliasEditModal: React.FC<AliasEditModalProps> = ({
                         <button
                             type="button"
                             className="btn btn-primary"
+                            data-testid="alias-submit"
                             onClick={handleSave}
                             disabled={!pattern.trim() || !command.trim() || isDuplicate}
                         >

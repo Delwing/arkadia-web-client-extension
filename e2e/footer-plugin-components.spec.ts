@@ -1,4 +1,5 @@
 import {expect, test} from './support/fixtures';
+import {dialogClose, subDialog} from './support/dialogs';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, installEmbeddedMock, waitForCommandInput} from './support/mocks';
 import {openSettings, SETTINGS_SAVE} from './support/settings';
@@ -41,12 +42,12 @@ async function loadPlugin(page: Page): Promise<void> {
     await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
     await page.locator('.plugin-route', {hasText: 'Z adresu URL'}).click();
 
-    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    const dialog = subDialog(page, 'Dodaj skrypt z URL');
     await dialog.getByPlaceholder('URL skryptu').fill(PLUGIN_URL);
     await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
     await expect(modal.getByText(PLUGIN_NAME), 'plugin should load and show its name').toBeVisible();
 
-    await modal.locator('.btn-close').first().click();
+    await dialogClose(modal).first().click();
     await expect(modal).not.toBeVisible();
 }
 
@@ -97,10 +98,10 @@ test.describe('plugin footer components in the footer settings', () => {
         // which is the whole reason the registry carries a label.
         const row = list.locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
         await expect(row, 'plugin should have a row in the footer settings').toHaveCount(1);
-        await expect(row.locator('.badge'), 'plugin rows are marked as such').toHaveText('plugin');
+        await expect(row.getByText('plugin', {exact: true}), 'plugin rows are marked as such').toBeVisible();
 
         // Switching it off has to reach the footer, not just the config.
-        const toggle = row.locator('.form-check-input');
+        const toggle = row.getByRole('checkbox');
         await expect(toggle, 'plugin chip starts visible').toBeChecked();
         await toggle.uncheck();
         await modal.locator(SETTINGS_SAVE).click();
@@ -113,7 +114,7 @@ test.describe('plugin footer components in the footer settings', () => {
             .locator('#ui-footer-components-settings')
             .locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
         await expect(rowAgain, 'a hidden plugin is still offered in the list').toHaveCount(1);
-        await rowAgain.locator('.form-check-input').check();
+        await rowAgain.getByRole('checkbox').check();
         await modalAgain.locator(SETTINGS_SAVE).click();
         await expect(modalAgain).not.toBeVisible();
         await expect(chip(page), 'switching it back on should restore the chip').toBeVisible();

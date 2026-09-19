@@ -6,6 +6,7 @@ import {
     waitForCommandInput,
 } from './support/mocks';
 import { Page } from '@playwright/test';
+import { dialogClose } from './support/dialogs';
 import { openButtonsSettings, SETTINGS_SAVE } from './support/settings';
 
 function openMobileButtonsSettings(page: Page) {
@@ -85,7 +86,7 @@ test.describe('Mobile buttons compound macro', () => {
         await labelInput.fill('Combo');
 
         // Close config panel and save
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = dialogClose(configPanel);
         await closeButton.click();
         await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });
@@ -204,7 +205,7 @@ test.describe('Mobile buttons compound macro', () => {
         const labelInput = configPanel.locator('.mobile-button-label');
         await labelInput.fill('Persist');
 
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = dialogClose(configPanel);
         await closeButton.click();
         await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });

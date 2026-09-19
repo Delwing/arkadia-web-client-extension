@@ -152,7 +152,7 @@
                     <div class="d-flex align-items-center gap-2 ms-auto">
                         <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="settings-export-import-btn">Eksport/Import</button>
                         <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="settings-characters-btn">Postacie</button>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                     </div>
                 </div>
                 <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
@@ -169,7 +169,7 @@
             <div class="modal-content h-100">
                 <div class="modal-header">
                     <h5 class="modal-title">Eksport i import ustawień</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
                     <div id="export-import-root" class="h-100 flex-grow-1 overflow-hidden p-3" style="min-height:0;"></div>
@@ -182,7 +182,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Zarządzanie postaciami</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="character-management-root"></div>
@@ -198,7 +198,7 @@
                     <div class="d-flex align-items-center gap-2 ms-auto">
                         <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="binds-import-btn">Importuj bazę multibindów…</button>
                         <span id="binds-import-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                     </div>
                 </div>
                 <div class="modal-body">
@@ -216,7 +216,7 @@
             <div class="modal-content h-100">
                 <div class="modal-header">
                     <h5 class="modal-title">Skrypty</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <!-- The panel scrolls its own list under a fixed tab bar and toolbar
                      (like #options-modal), so the body itself must not scroll. -->
@@ -231,7 +231,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Aliasy</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="aliases-options"></div>
@@ -244,7 +244,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Triggery</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="triggers-options"></div>
@@ -257,7 +257,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Nagrania</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="recordings-options"></div>
@@ -270,7 +270,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Skróty</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="shortcuts-options"></div>
@@ -283,7 +283,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Notatki lokacji</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="location-notes-options"></div>
@@ -296,7 +296,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Arkadia Helper</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body p-0">
                     <div id="helper-options"></div>
@@ -428,7 +428,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Tester triggerów</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body d-flex flex-column gap-2">
                     <div>
@@ -458,7 +458,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Trigger finder</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body d-flex flex-column gap-2">
                     <div>
@@ -484,7 +484,7 @@
                         <button class="btn btn-primary" data-logs-tab="logs">Logi</button>
                         <button class="btn btn-outline-secondary" data-logs-tab="manage">Zarzadzanie</button>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body logs-modal-body">
                     <!-- Filled by logBrowserMount.tsx -->
@@ -498,7 +498,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Kod QR lokacji</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-testid="dialog-close"></button>
                 </div>
                 <div class="modal-body d-flex justify-content-center">
                     <img id="location-qr-image" alt="QR code">

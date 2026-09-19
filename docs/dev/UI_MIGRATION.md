@@ -265,11 +265,23 @@ than it adds.
 
 ---
 
-## 7. Open questions
+## 7. Queued follow-up
 
-- **Do the 7 legacy themes survive by name?** The new system ships 8. The
-  mapping is needed for Phase 1 either way, but if some legacy themes can be
-  retired, the bridge gets simpler and the picker gets shorter.
+- **Character attribution for logs** — `LOG_CHARACTER_ATTRIBUTION.md`. Record
+  the character on the log (a *list*: one session can span re-logins), mark it
+  on the timeline so switches are visible, drop the `trait` marker. Sequenced
+  after Phase 2 because it lands in `Timeline.tsx` and `model/events.ts`, which
+  that phase rebuilds.
+
+---
+
+## 8. Open questions
+
+- ~~**Do the 7 legacy themes survive by name?**~~ **Answered:** there are 8, and
+  they map 1:1 onto the new set, with two renames and one default:
+  `light-parchment → parchment`, `light-silver → silver`, `default → arkadia`;
+  `custom-dark` becomes `custom` plus a seed colour. The mapping table lives in
+  Phase 1's change to `src/web/uiSettingsCore.ts`.
 - **Does `forge-ui` eventually consume `@design` too?** Out of scope today. If
   the answer is ever yes, Phase 4 should stop re-styling stock components for
   forge's scoped Bootstrap and let forge adopt the system instead.

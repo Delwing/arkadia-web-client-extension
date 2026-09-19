@@ -1,4 +1,5 @@
 import { test, expect } from './support/fixtures';
+import { dialogTitle, subDialog } from './support/dialogs';
 
 /**
  * The forge-ui command-rail menu: the "⋮" button in the rail opens a dropdown
@@ -114,23 +115,22 @@ test.describe('forge menu', () => {
 
     test('nested edit sub-modal opens as a centred overlay', async ({ page }) => {
         // The editors (Aliasy, Triggery, …) open their "add / edit" form as an
-        // inline Bootstrap `.modal.show.d-block`. forge loads no global
-        // Bootstrap, so without the scoped `.modal*` chrome in menu.css that
-        // form used to dump into the list's flow with no header/footer framing.
-        // It must instead render as a fixed, full-viewport overlay with a
-        // bounded content card.
+        // inline sub-dialog. forge loads no global Bootstrap, so without the
+        // scoped dialog chrome in menu.css that form used to dump into the
+        // list's flow with no header/footer framing. It must instead render as
+        // a fixed, full-viewport overlay with a bounded content card.
         await page.locator('.forge-menu__button').click();
         await page.locator('.forge-menu__list').getByRole('button', { name: 'Aliasy' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 
         await modal.getByRole('button', { name: 'Dodaj alias' }).click();
-        const dialog = modal.locator('.modal.show');
+        const dialog = subDialog(modal);
         await expect(dialog).toBeVisible();
         await expect(dialog).toHaveCSS('position', 'fixed');
         // The header lays out its title and close button on one row.
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj alias');
-        await expect(dialog.locator('.modal-content')).toBeVisible();
+        await expect(dialogTitle(dialog)).toHaveText('Dodaj alias');
+        await expect(dialog.getByTestId('sub-dialog-content')).toBeVisible();
 
         // Backdrop click on the sub-modal dismisses just it, not the list.
         await dialog.click({ position: { x: 5, y: 5 } });
@@ -149,11 +149,11 @@ test.describe('forge menu', () => {
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 
-        const dialog = modal.locator('.modal.show');
+        const dialog = subDialog(modal);
         await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin');
+        await expect(dialogTitle(dialog)).toHaveText('Dodaj plugin');
         await dialog.locator('.plugin-route', { hasText: 'Wklej kod' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
+        await expect(dialogTitle(dialog)).toHaveText('Dodaj plugin z kodu');
         // Typing must land in the dialog's fields, not be swallowed by a trap.
         const code = dialog.getByPlaceholder('export async function init(api) { ... }');
         await code.click();
@@ -164,10 +164,10 @@ test.describe('forge menu', () => {
 
         await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
         await dialog.locator('.plugin-route', { hasText: 'Wygeneruj z AI' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Wygeneruj plugin z AI');
+        await expect(dialogTitle(dialog)).toHaveText('Wygeneruj plugin z AI');
         // "Mam kod, wklej go" hands over to the paste dialog.
         await dialog.getByRole('button', { name: 'Mam kod, wklej go' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
+        await expect(dialogTitle(dialog)).toHaveText('Dodaj plugin z kodu');
         await dialog.getByRole('button', { name: 'Anuluj' }).click();
 
         // The editor is a sibling entry at the app root; resolving its link

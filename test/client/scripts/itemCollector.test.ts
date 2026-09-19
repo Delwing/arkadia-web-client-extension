@@ -42,7 +42,7 @@ describe('ItemCollector', () => {
         localStorage.clear();
     });
 
-    it('picks coins and gems up off the floor after a bodiless elemental', () => {
+    it('picks only gems up off the floor after a bodiless elemental', () => {
         kill('wielki ognisty zywiolak ognia', false);
         client.emit('allEnemiesKilled');
 
@@ -50,12 +50,9 @@ describe('ItemCollector', () => {
         pressBind();
 
         expect(client.sendCommand.mock.calls.map(c => c[0])).toEqual([
-            'wez srebrne monety',
-            'wez zlote monety',
             'wez kamienie',
             'ocen kamienie',
             'otworz swoj plecak',
-            'wloz monety do swojego plecaka',
             'wloz kamienie do swojego plecaka',
             'zamknij swoj plecak',
         ]);
@@ -68,8 +65,8 @@ describe('ItemCollector', () => {
         pressBind();
 
         const commands = client.sendCommand.mock.calls.map(c => c[0]);
-        expect(commands.filter(c => c === 'wez srebrne monety')).toHaveLength(1);
         expect(commands.filter(c => c === 'wez kamienie')).toHaveLength(1);
+        expect(commands).not.toContain('wez srebrne monety');
     });
 
     it('does not search the floor after a bodiless enemy without an override', () => {
@@ -92,8 +89,6 @@ describe('ItemCollector', () => {
             'wez srebrne monety z 1. ciala',
             'wez zlote monety z 1. ciala',
             'wez kamienie z 1. ciala',
-            'wez srebrne monety',
-            'wez zlote monety',
             'wez kamienie',
             'ocen kamienie',
             'otworz swoj plecak',
@@ -110,7 +105,7 @@ describe('ItemCollector', () => {
 
         expect(client.bind?.label).toBe('wez z ziemi');
         pressBind();
-        expect(client.sendCommand).toHaveBeenCalledWith('wez srebrne monety');
+        expect(client.sendCommand).toHaveBeenCalledWith('wez kamienie');
         expect(client.bind).toBeNull();
     });
 });

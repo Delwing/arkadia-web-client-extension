@@ -566,7 +566,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         {/* Header */}
                         <div className="mobile-button-config-header">
                             <h6 className="mobile-button-config-header-title">Konfiguracja przycisku</h6>
-                            <button type="button" className="btn-close" onClick={close} />
+                            <button type="button" className="btn-close" data-testid="dialog-close" onClick={close} />
                         </div>
 
                         {/* Body */}
