@@ -357,14 +357,11 @@ describe('settingsMigrations', () => {
             enemy, collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] as string[],
         });
 
-        it('grants silver and gold on all four stock elemental overrides', () => {
+        it('ends gems-only after the full chain (v16 reverts the v13 grant)', () => {
             const { settings } = migrateSettings({ collectOverrides: elementals.map(gemsOnly) });
 
-            for (const enemy of elementals) {
-                expect(settings.collectOverrides).toContainEqual(
-                    { enemy, collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
-                );
-            }
+            const elementalRows = settings.collectOverrides?.filter(o => elementals.includes(o.enemy));
+            expect(elementalRows).toEqual(elementals.map(gemsOnly));
         });
 
         it('leaves elemental rows the player already tuned', () => {
@@ -411,6 +408,40 @@ describe('settingsMigrations', () => {
             const { settings } = migrateSettings({ collectOverrides: [custom] }, 14);
 
             expect(settings.collectOverrides).toEqual([custom]);
+        });
+    });
+
+    describe('migration v16: elementals gems only', () => {
+        const elementals = ['zywiolak ziemi', 'zywiolak wody', 'zywiolak powietrza', 'zywiolak ognia'];
+        const withCoins = (enemy: string) => ({
+            enemy, collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] as string[],
+        });
+
+        it('drops silver and gold from all four stock elemental overrides', () => {
+            const { settings } = migrateSettings({ collectOverrides: elementals.map(withCoins) }, 15);
+
+            expect(settings.collectOverrides).toEqual(elementals.map(enemy => (
+                { enemy, collectCopper: false, collectSilver: false, collectGold: false, collectGems: true, collectExtra: [] }
+            )));
+        });
+
+        it('leaves elemental rows the player already tuned', () => {
+            const tuned = [
+                { enemy: 'zywiolak ognia', collectCopper: true, collectSilver: true, collectGold: true, collectGems: true, collectExtra: [] },
+                { enemy: 'zywiolak wody', collectCopper: false, collectSilver: true, collectGold: true, collectGems: true, collectExtra: ['kamien'] },
+            ];
+
+            const { settings } = migrateSettings({ collectOverrides: tuned }, 15);
+
+            expect(settings.collectOverrides).toEqual(tuned);
+        });
+
+        it('leaves other enemies with coins untouched', () => {
+            const troll = withCoins('troll');
+
+            const { settings } = migrateSettings({ collectOverrides: [troll] }, 15);
+
+            expect(settings.collectOverrides).toEqual([troll]);
         });
     });
 
