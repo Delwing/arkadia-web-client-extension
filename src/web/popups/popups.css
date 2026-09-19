@@ -39,12 +39,15 @@
 @import '../CombatPopup.css';
 @import '../CombatStatusPopup.css';
 @import '../ContractsPopup.css';
+@import '../CoverDebugPopup.css';
+@import '../DataSourcesPopup.css';
 @import '../DepositsPopup.css';
 @import '../EnemyResistancesPopup.css';
 @import '../FishingPopup.css';
 @import '../KnowledgeReport.css';
 @import '../LetterViewPopup.css';
 @import '../LootPopup.css';
+@import '../ObjectListDemoPopup.css';
 @import '../OswajaniePopup.css';
 @import '../PackageReceiverPopup.css';
 @import '../PeopleBrowser/PeopleBrowser.css';

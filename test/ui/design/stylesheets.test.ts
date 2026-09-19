@@ -50,7 +50,11 @@ const MIGRATED_SHEETS = [
     "src/web/ZlomPopup.css",
     "src/web/herbs/HerbManager.css",
     "src/web/herbs/HerbTextWindow.css",
-    // Faza 3, rodzina 5 — wiedza i raporty.
+    // Faza 3, rodzina 5 — debug i reszta.
+    "src/web/CoverDebugPopup.css",
+    "src/web/DataSourcesPopup.css",
+    "src/web/ObjectListDemoPopup.css",
+    // Faza 3, rodzina 6 — wiedza i raporty.
     "src/web/AssistantPopup.css",
     "src/web/KnowledgeReport.css",
     "src/web/OswajaniePopup.css",
@@ -100,7 +104,7 @@ const MIGRATED_POPUP_COMPONENTS = [
     "src/web/popups/worldPalette.ts",
     "src/web/TransportDebugPopup.tsx",
     "src/web/TransportTimesDebugPopup.tsx",
-    // Faza 3, rodzina 5 — Zawod przyszedl tu z 27 obiektami `style={{ ... }}`
+    // Faza 3, rodzina 6 — Zawod przyszedl tu z 27 obiektami `style={{ ... }}`
     // i zostal przepisany na arkusz; wpis pilnuje, zeby nie wrocily.
     "src/web/ProfessionPopup.tsx",
 ];

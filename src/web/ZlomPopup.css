@@ -23,8 +23,15 @@
    zjadla bursztyn w Cechach (patrz naglowek manifestu).
 
    Wyjscie jest to samo, co PR 1 zastosowal do Odpornosci: popup przechodzi na
-   prymityw `Table` i przestaje pozyczac. Trzy klasy zostaja w popups-base.css
-   z jednym wlascicielem - rodzina debug wezmie je razem z CoverDebugPopup.
+   prymityw `Table` i przestaje pozyczac.
+
+   DOPISANE PRZY SCALANIU RODZINY DEBUGOWEJ (PR 5). Trzy klasy zostaly wtedy
+   w popups-base.css z jednym wlascicielem, zeby wzial je ten PR. Wzial: on tez
+   przeniosl CoverDebugPopup na prymityw `Table`, wiec `.zlom-table`,
+   `.zlom-row` i `.zlom-cell` stracily ostatniego uzytkownika i zostaly
+   skasowane razem ze swoim naglowkiem. Ten akapit opisuje juz tylko historie.
+   Przy okazji zniknal drugi powod z tamtej analizy: arkusz CoverDebugPopup nie
+   wjezdza juz importem w komponencie, tylko manifestem.
 
    CO TO ZMIENIA WIZUALNIE. Naglowek kolumny dostaje wyglad prymitywu
    (wersaliki, mniejszy stopien, szersza swiatla), tak samo jak w Odpornosciach
