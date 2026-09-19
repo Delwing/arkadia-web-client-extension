@@ -1,0 +1,502 @@
+/* People browser popup — the character database window: search, guild/status
+   filters, the paged list and the add/edit dialog it opens
+   (`.people-modal__*`, whose only other user is PersonEditModal.tsx).
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   OKNO I JEGO DIALOG TO JEDEN KAWALEK. W popups-base.css byly to dwie sekcje,
+   ale `.people-modal__*` ma dokladnie jednego uzytkownika poza tym oknem —
+   PersonEditModal.tsx, ktory to okno otwiera. Granica kawalka to graf klas, a
+   nie nazwa pliku (regula z PR 3), wiec obie sekcje ida razem.
+
+   PRZYKRYCIE DIALOGU TO JEDYNE POPRAWNE UZYCIE --ark-bg-overlay. Ten token
+   jest kurtyna, nie powierzchnia (DESIGN_SYSTEM.md §3) — i tu chodzi wlasnie o
+   kurtyne pod modalem. Plyta dialogu obok niego bierze --ark-bg-raised, bo to
+   juz powierzchnia. Kurtyna przy okazji ciemnieje z 0.5 na 0.7 (tyle ma
+   --ark-black-a9); w forge bez znaczenia, bo forge-ui/layout-theme.css i tak
+   nadpisuje tlo `.people-modal` wlasnym.
+
+   ODZNAKA "EDYTOWANO" ZOSTAJE BURSZTYNEM. Cztery odznaki przy nazwisku to
+   wrog (czerwona), sojusznik i "dodano lokalnie" (obie zielone) oraz
+   "edytowano lokalnie" — jedyna wpisana na sztywno, jako bursztyn na
+   trzydziestoprocentowym podkladzie. To ten sam bursztyn, ktory most nazywa --popup-warning, wiec
+   idzie na --ark-warning-*: zamiana wyliczeniowo neutralna, a trojpodzial
+   czerwony / bursztyn / zielony zostaje czytelny.
+
+   SKROT GILDII TO DANE, NIE STATUS. `--popup-data-blue` w kolumnie gildii
+   odroznia jedna gildie od drugiej i niczego nie ocenia, wiec idzie na palete
+   kategoryczna (--ark-data-1-text), a nie na --ark-info-*.
+
+   BARWA NAZWISKA POCHODZI Z BAZY, nie z motywu: `style={{ color: person.color }}`
+   w PeopleBrowser.tsx niesie wartosc wpisana przez gracza w rekordzie postaci.
+   Tak samo jak envColor pokoju — to dane z gry, wiec zostaje inline. */
+
+/* People Browser Popup */
+/* People browser refresh header action */
+.people-browser__refresh {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.people-browser__refresh:hover {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
+}
+
+.people-browser__refresh--active {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-accent-text);
+  cursor: wait;
+}
+
+.people-browser__refresh:disabled {
+  cursor: wait;
+}
+
+.people-browser-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--ark-bg-surface);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.people-browser__controls {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--ark-border);
+  flex-wrap: wrap;
+}
+
+.people-browser__search {
+  flex: 1;
+  min-width: 120px;
+  position: relative;
+}
+
+.people-browser__search input {
+  width: 100%;
+  padding-right: 1.5rem;
+  font-size: 0.75rem;
+  background-color: var(--ark-bg-element-ghost-hover);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text);
+}
+
+.people-browser__search input::placeholder {
+  color: var(--ark-text-faint);
+}
+
+.people-browser__search-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ark-text-tertiary);
+  font-size: 0.7rem;
+  padding: 0.125rem 0.25rem;
+}
+
+.people-browser__search-clear:hover {
+  color: var(--ark-danger-text);
+}
+
+.people-browser__guild-filter select,
+.people-browser__status-filter select,
+.people-browser__page-size select {
+  width: 100%;
+  font-size: 0.75rem;
+  background-color: var(--ark-bg-element-ghost-hover);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text);
+  padding: 0.25rem 0.4rem;
+}
+
+.people-browser__guild-filter {
+  min-width: 115px;
+}
+
+.people-browser__status-filter {
+  min-width: 105px;
+}
+
+.people-browser__page-size {
+  min-width: 100px;
+}
+
+.people-browser__content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0.25rem;
+}
+
+.people-browser__loading,
+.people-browser__empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: var(--ark-text-tertiary);
+  font-style: italic;
+  padding: 1rem;
+}
+
+.people-browser__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.people-browser__item {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 45px minmax(100px, 2fr) 28px;
+  gap: 0.5rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.2rem;
+  align-items: center;
+}
+
+.people-browser__item:hover {
+  background-color: var(--ark-bg-element-ghost-hover);
+}
+
+.people-browser__item--ignored {
+  opacity: 0.4;
+}
+
+.people-browser__item--ignored .people-browser__item-name,
+.people-browser__item--ignored .people-browser__item-guild,
+.people-browser__item--ignored .people-browser__item-desc {
+  text-decoration: line-through;
+}
+
+.people-browser__item-name {
+  color: var(--ark-text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.people-browser__item-guild {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ark-data-1-text);
+  font-weight: 600;
+}
+
+.people-browser__item-desc {
+  color: var(--ark-text-tertiary);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-browser__item-actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Bare glyph button (edit / restore) — no plate, just the icon. */
+.people-browser__item-edit {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ark-text-tertiary);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.people-browser__item-edit:hover {
+  color: var(--ark-text);
+}
+
+.people-browser__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0 0.2rem;
+  border-radius: 0.15rem;
+  flex-shrink: 0;
+}
+
+.people-browser__badge--local {
+  background-color: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.people-browser__badge--edited {
+  background-color: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+}
+
+.people-browser__badge--enemy {
+  background-color: var(--ark-danger-bg-hover);
+  color: var(--ark-danger-text);
+}
+
+.people-browser__badge--ally {
+  background-color: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.people-browser__item--enemy .people-browser__item-name {
+  color: var(--ark-danger-text);
+}
+
+.people-browser__item--ally .people-browser__item-name {
+  color: var(--ark-success-text);
+}
+
+.people-browser__badge--color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.people-browser__local-only {
+  display: flex;
+  align-items: center;
+}
+
+.people-browser__local-only-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ark-text-tertiary);
+  cursor: pointer;
+}
+
+.people-browser__local-only-label input {
+  margin: 0;
+  accent-color: var(--ark-accent-text);
+  cursor: pointer;
+}
+
+.people-browser__pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem;
+  border-top: 1px solid var(--ark-border);
+}
+
+.people-browser__pagination button {
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-secondary);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.people-browser__pagination button:hover:not(:disabled) {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text);
+}
+
+.people-browser__pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.people-browser__pagination-info {
+  margin: 0 0.5rem;
+  font-size: 0.7rem;
+  color: var(--ark-text-tertiary);
+}
+
+/* ── people browser: add / edit dialog ─────────────────────────────────────
+   Portaled to <body> (see PersonEditModal), so it covers the viewport rather
+   than the popup that opened it. Token-driven like the rest of the popup — it
+   used to be raw Bootstrap markup, which left it completely unstyled in any UI
+   that doesn't load Bootstrap globally. */
+.people-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: var(--ark-bg-overlay);
+}
+
+.people-modal__dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 500px;
+  max-height: 100%;
+  background-color: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border-strong);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5);
+  color: var(--ark-text);
+}
+
+.people-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--ark-border);
+}
+
+.people-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ark-text-secondary);
+}
+
+.people-modal__close {
+  background: none;
+  border: 0;
+  padding: 0 0.25rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ark-text-tertiary);
+}
+
+.people-modal__close:hover {
+  color: var(--ark-text-secondary);
+}
+
+.people-modal__body {
+  padding: 0.85rem;
+  overflow-y: auto;
+}
+
+.people-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.85rem;
+}
+
+.people-modal__field:last-child {
+  margin-bottom: 0;
+}
+
+.people-modal__label {
+  font-size: 0.8rem;
+  color: var(--ark-text-tertiary);
+}
+
+.people-modal__hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ark-text-tertiary);
+}
+
+/* The "this entry was edited locally" recap block. */
+.people-modal__original {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.35rem;
+  background-color: var(--ark-gray-a2);
+  font-size: 0.8rem;
+}
+
+.people-modal__color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.people-modal__color {
+  width: 3rem;
+  height: 1.9rem;
+  padding: 2px;
+  border: 1px solid var(--ark-border-element);
+  border-radius: 0.25rem;
+  background-color: var(--ark-bg-element);
+  cursor: pointer;
+}
+
+.people-modal__footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-top: 1px solid var(--ark-border);
+}
+
+.people-modal__footer-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Outline variants of the shared popup-btn: the "not marked yet" state of the
+   enemy / ally / ignore toggles, so the filled variant reads as "marked". */
+.people-modal__btn--danger-outline {
+  background-color: transparent;
+  border-color: var(--ark-danger-border);
+  color: var(--ark-danger-text);
+}
+
+.people-modal__btn--danger-outline:hover {
+  background-color: var(--ark-danger-bg);
+  color: var(--ark-danger-text);
+}
+
+.people-modal__btn--success-outline {
+  background-color: transparent;
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.people-modal__btn--success-outline:hover {
+  background-color: var(--ark-success-bg);
+  color: var(--ark-success-text);
+}
+
+.people-modal__btn--warning-outline {
+  background-color: transparent;
+  border-color: var(--ark-warning-border);
+  color: var(--ark-warning-text);
+}
+
+.people-modal__btn--warning-outline:hover {
+  background-color: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+}

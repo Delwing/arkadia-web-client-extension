@@ -102,7 +102,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
-3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel) done
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (knowledge/reports) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -245,6 +245,10 @@ below.
 **PR 3 (travel/transport) is done** — seven popups: Wozy, Blokady wozu, Trasa,
 Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
 worth keeping are in "What PR 3 found" below.
+
+**PR 4 (knowledge/reports) is done** — seven popups: Wiedza (raport), Wiedza
+(szczegoly), Baza postaci, Skroty, Zawod, Oswajanie, Asystent. **Czat was
+deliberately left behind**, for the same reason Okno mapy was: see below.
 
 *Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
@@ -462,6 +466,77 @@ choice is a size judgement — but the *rule* must reach the popup either way, s
 `MIGRATED_POPUP_COMPONENTS` over one shared pair of checks rather than two
 copies of them. When the two families merged, the copies were identical.
 
+
+#### What PR 4 (knowledge/reports) found
+
+**Czat is blocked by exactly what blocks Okno mapy, and the plan did not say
+so.** The deferral note above names `StaticMapPopup` and lists `ChatPopup` only
+in passing, as one of the four users of `.map-header-menu__*`. In practice that
+class family *is* Czat's entire header: the hamburger, the dropdown and both
+checkbox rows, 8 uses, and the popup has no header chrome of its own. Migrating
+Czat therefore means migrating `.map-header-menu__*` in `layout/layout.css`
+for everyone, which this plan reserves for Phase 5 or a PR of its own and says
+explicitly should not be smuggled in under one popup's name. So Czat is left,
+its slice untouched in `popups-base.css`.
+
+That makes the queued follow-up bigger than it reads: migrating
+`.map-header-menu__*` unblocks **two** popups, not one. It is also not
+sufficient on its own for either — `.static-map-popup__*` and the chat body's
+`.chat-popup__*` still have to move in the same change, or the window
+half-migrates the other way round.
+
+**A legacy variable can be one the bridge never covered.** `.oswajanie-table th`
+read `var(--text-secondary)`, not `--popup-*`. `bridge.css` lists `--text-*`
+among the families it deliberately leaves alone, and only `src/web/style.css`
+defines it — which forge-ui does not load, so those table headers had no colour
+there at all, and in the stock client they were a fixed light grey that read
+badly on parchment and silver. Grepping for `var(--popup-` finds none of this.
+**Grep the slice for every `var(--`, not just the legacy prefix.**
+
+**The whisper tint has no token, and `--ark-*-bg` is not it.** Three knowledge
+rules tinted a row with 3-6% alpha green — a film over the card, invisible
+unless you knew to look. Mapped onto `--ark-success-bg` they became step 3,
+which is an opaque surface: the history table turned into a solid green plate
+across its whole width. The design system has alpha tints only for the accent
+(`--ark-accent-tint`), so the honest answer for a neutral whisper is
+`--ark-gray-a2` — `#ffffff09`, which is the same 3.5% weight and layers the
+same way. **A tint that reads as "barely there" is an alpha, and mapping it to
+a `-bg` role changes its kind, not just its hue.** Found on a screenshot.
+
+**Two of the bugs the screenshots caught were older than the migration.** Both
+were dark-theme assumptions written as literals, and both broke the light
+themes:
+
+- Zawod's progress track was `#222` with a `#333` border — a solid black bar
+  across a parchment-coloured card. On `--ark-bg-sunken` it is a well in every
+  theme.
+- The knowledge level chips coloured their labels with pale yellows and pale
+  greens (`rgba(254, 240, 138, 0.95)` and friends), which on parchment and
+  silver were pale-on-pale and effectively unreadable. Step 11 flips per
+  theme, so `--ark-warning-text` / `--ark-success-text` fixed them for free.
+
+This is worth stating because §8 parks "the new palette is different" but these
+are not that: the screens were broken in two of the eight themes before this
+PR, and the token swap repaired them as a side effect.
+
+**Forge's token coverage is narrower than the design system's, and that limits
+what a ladder can spend.** The knowledge levels run seven steps (none, low,
+mid, good, high, almost, full) and were painted with six rgba families. Only
+`--ark-success-4` and `--ark-warning-4` exist as raw steps in
+`popup-host-tokens.css`; `--ark-success-5` exists in neither host. So a ladder
+that wants more gradation than success/warning/danger has exactly one extra
+rung per status, and reaching past it renders as nothing at all in forge.
+**Check `popup-host-tokens.css`, not `scales.generated.css`, before spending a
+raw step.** The bars themselves flattened to three colours without loss — their
+*length* already carries the value.
+
+**A hex map in `src/client/` can be feeding a popup as well as the game.**
+`TAMING_LEVEL_COLORS` in `animalTaming.ts` was read twice: once through
+`createColorFormat` for the line printed into the game window (the documented
+exception, no token applies) and once by `OswajaniePopup.tsx` as an inline
+`color:` on a themed surface. The rules in step 7 only look at popup sources,
+so the second use was invisible to them. **Grep a colour map's call sites
+before concluding it is game-output-only.**
 
 #### `--popup-data-*`: decided
 
@@ -721,6 +796,13 @@ than it adds.
   `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
   it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
   popups manifest — `layout.css`'s own header says why.
+
+  **It blocks Czat too**, which PR 4 found the hard way: the class family is
+  that popup's entire header. The change is therefore worth more than it looks
+  — it is the last thing standing between Phase 3 and two of its 39 popups —
+  but it has to carry `.static-map-popup__*` (in `style.css`) and
+  `.chat-popup__*` (in `popups-base.css`) with it, or each window
+  half-migrates in the opposite direction.
 
 - **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
   hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3

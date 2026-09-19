@@ -1,0 +1,1504 @@
+/* Knowledge windows — the two report popups behind /biblioteki and /wiedza.
+   `.knowledge-*` is the report (tabs: Wiedza / Biblioteki / Ksiegi /
+   Kategorie / Historia, plus the import panel) and `.knowledge-details-*` is
+   the per-category detail window.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   DWA OKNA, JEDEN ARKUSZ. KnowledgeReport.tsx i KnowledgeDetailsReport.tsx to
+   osobne popupy, ale dziela `.knowledge-window`, `.knowledge-window-body`,
+   `.knowledge-tabs` i `.knowledge-empty`. Granica kawalka to graf klas, a nie
+   nazwa pliku (regula z PR 3), wiec ida razem — rozdzielenie zostawiloby
+   klase w jednym pliku, a jej drugiego uzytkownika w drugim.
+
+   POZIOM WIEDZY TO RANKING, WIEC STATUS. Drabinka none -> low -> mid -> good
+   -> high -> almost -> full byla malowana szescioma rodzinami rgba()
+   (czerwien, pomarancz, zolc, trzy zielenie). To dobre-srednie-zle, czyli
+   status przebrany za dane — ida na --ark-danger/warning/success
+   (DESIGN_SYSTEM.md §3, ta sama decyzja co przy odpornosciach w PR 1).
+
+   CO SIE PRZY TYM SPLASZCZA, I DLACZEGO TO W PORZADKU. Stara warstwa
+   odrozniala pomarancz od zolci (mid vs good) i trzy natezenia zieleni
+   (high / almost / full). Tokenow na siedem stopni nie ma i byc nie powinno:
+   siegniecie po surowy stopien skali lamie regule "stopien to surowiec, nie
+   rola". Plakietki zachowuja rozroznienie w obrebie poziomu przez stopien 4
+   (--ark-warning-4 / --ark-success-4) — jedyny surowy stopien, ktory
+   popup-host-tokens.css definiuje takze dla forge, wiec nie wywroci sie tam w
+   nic. Sam PASEK splaszcza sie do trzech barw i to jest bez straty: jego
+   DLUGOSC juz niesie wartosc (6/10 wypelnionych segmentow przy "dobra"), a
+   barwa tylko powtarza, w ktorym progu jestesmy.
+
+   "OBECNA BIBLIOTEKA" IDZIE NA AKCENT, NIE NA ZIELEN. Naglowek tej grupy byl
+   limonkowa zielenia, ale nie znaczy "dobrze" — znaczy "ta, ktora teraz czytasz". Stan
+   biezacy to w tym systemie akcent (UI_MIGRATION.md §8, ta sama decyzja co z
+   jadaca noga trasy w PR 3). W motywach cieplych wyjdzie blisko starej
+   zieleni-limonki, w arkadii bedzie blekitny.
+
+   WSKAZNIKI WPISOW: known -> success, missing -> danger, unknown i
+   unavailable -> warning. Nazwy modyfikatorow mowia o stanie wiedzy gracza o
+   wpisie, a nie o kategorii wpisu, wiec to statusy, nie dane.
+
+   HEXY, KTORE ZOSTAJA POZA TYM PLIKIEM. src/client/scripts/knowledge.ts ma
+   LEVEL_COLORS — jedenascie wartosci podawanych do createColorFormat dla
+   paska rysowanego w OKNIE GRY. Tam tlo jest ustawieniem gracza, nie motywem,
+   i tokenu na to nie ma; ten plik zostaje na hexach celowo (UI_MIGRATION.md
+   §4, krok 7). */
+
+/* Knowledge Window - size overrides */
+.knowledge-window {
+  --fw-width: 960px;
+  --fw-height: min(75vh, calc(100vh - 2rem));
+  --fw-min-width: 500px;
+  --fw-min-height: 350px;
+}
+
+.knowledge-window-progress {
+  margin-left: 0.75rem;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--ark-text-secondary);
+  white-space: nowrap;
+}
+
+/* Knowledge window body uses overflow: hidden instead of auto */
+.knowledge-window-body {
+  padding: 1rem 1.25rem 1.35rem;
+  overflow: hidden;
+}
+
+.knowledge-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.knowledge-tab-button {
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text-secondary);
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.knowledge-tab-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.knowledge-tab-button--active {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.knowledge-content {
+  flex: 1 1 auto;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.knowledge-libraries {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  align-content: start;
+}
+
+@media (min-width: 720px) {
+  .knowledge-libraries {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  }
+}
+
+.knowledge-library {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.knowledge-library-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.knowledge-library-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.knowledge-library-name {
+  font-weight: 600;
+  font-size: 1rem;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.knowledge-library-name:hover {
+  text-decoration: underline;
+}
+
+.knowledge-library-remaining {
+  font-size: 0.9rem;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+/* knowledge library lead/action/reset folded to
+   .popup-btn.popup-btn--md.popup-btn--pill (+--primary/--success); the lift
+   hover (translateY/shadow) is dropped in favour of the primitive's hover. */
+
+.knowledge-library-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.knowledge-library-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.knowledge-library-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.knowledge-library-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.knowledge-library-group-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-library-group--current {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.knowledge-library-group--current .knowledge-library-group-title {
+  color: var(--ark-accent-text);
+}
+
+.knowledge-chip {
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease;
+}
+
+.knowledge-chip:hover {
+  transform: translateY(-1px);
+}
+
+.knowledge-chip:focus,
+.knowledge-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ark-success-border);
+}
+
+.knowledge-chip--active {
+  box-shadow: 0 0 0 1px var(--ark-gray-a9);
+}
+
+.knowledge-chip--not-started {
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text);
+  border: 1px solid var(--ark-border-element);
+}
+
+.knowledge-chip--in-progress {
+  background-color: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+  border: 1px solid var(--ark-warning-border);
+}
+
+.knowledge-chip--completed {
+  background-color: var(--ark-success-bg);
+  color: var(--ark-success-text);
+  border: 1px solid var(--ark-success-border);
+}
+
+.knowledge-library-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-left: 0.2rem;
+}
+
+.knowledge-library-category {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.knowledge-library-category:hover {
+  transform: translateY(-1px);
+}
+
+.knowledge-library-category--not_started {
+  background-color: var(--ark-bg-element);
+  border-color: var(--ark-border-element);
+  color: var(--ark-text);
+}
+
+.knowledge-library-category--in_progress {
+  background-color: var(--ark-warning-bg);
+  border-color: var(--ark-warning-border);
+  color: var(--ark-warning-text);
+}
+
+.knowledge-library-category--completed {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.knowledge-category-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.knowledge-category-tile {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.6rem;
+  padding: 0.85rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.knowledge-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.knowledge-category-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.knowledge-category-command {
+  border: 1px solid var(--ark-success-border);
+  background-color: var(--ark-success-bg);
+  color: var(--ark-success-text);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.knowledge-category-command:hover {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-text);
+}
+
+.knowledge-category-libraries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.knowledge-category-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  color: var(--ark-text);
+}
+
+.knowledge-status-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--ark-gray-a9);
+  flex: 0 0 auto;
+}
+
+.knowledge-status-dot--not_started {
+  background-color: var(--ark-text);
+  border-color: var(--ark-border-strong);
+}
+
+.knowledge-status-dot--in_progress {
+  background-color: var(--ark-warning-solid);
+  border-color: var(--ark-warning-border);
+}
+
+.knowledge-status-dot--completed {
+  background-color: var(--ark-success-text);
+  border-color: var(--ark-success-border);
+}
+
+.knowledge-category-entry-name {
+  flex: 1 1 auto;
+}
+
+.knowledge-category-entry-name--book {
+  font-style: italic;
+  color: var(--ark-text);
+}
+
+.knowledge-empty {
+  padding: 1rem;
+  text-align: center;
+  border: 1px dashed var(--ark-border-strong);
+  border-radius: 0.5rem;
+  color: var(--ark-text-secondary);
+  background-color: var(--ark-bg-element);
+}
+
+/* ── Wiedza Total (levels) ────────────────────────────── */
+
+.knowledge-wiedza-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.knowledge-wiedza-row {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.knowledge-wiedza-row--full {
+  border-color: var(--ark-success-4);
+  /* Szept, nie powierzchnia: w starej warstwie byl to film o kryciu 3-6%
+     nalozony na tlo karty, a --ark-success-bg to juz pelny stopien 3, czyli
+     zielona plyta przez cala szerokosc tabeli. --ark-gray-a2 ma dokladnie te
+     wage (alfa ~3.5%) i tak samo sie naklada. Zlapane na zrzucie, nie przez
+     test (UI_MIGRATION.md §4, krok 8). */
+  background-color: var(--ark-gray-a2);
+}
+
+.knowledge-wiedza-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  flex: 0 0 11rem;
+  width: 11rem;
+}
+
+.knowledge-wiedza-level-label {
+  flex: 0 0 7.5rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--ark-border-strong);
+  background: var(--ark-gray-a2);
+  color: var(--ark-text);
+  text-align: center;
+  box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.knowledge-level--none .knowledge-wiedza-level-label {
+  border-color: var(--ark-border-strong);
+  background: var(--ark-gray-a2);
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-level--low .knowledge-wiedza-level-label {
+  border-color: var(--ark-danger-border);
+  background: var(--ark-danger-bg);
+  color: var(--ark-danger-text);
+}
+
+.knowledge-level--mid .knowledge-wiedza-level-label {
+  border-color: var(--ark-warning-border);
+  background: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+}
+
+.knowledge-level--good .knowledge-wiedza-level-label {
+  border-color: var(--ark-warning-border);
+  background: var(--ark-warning-4);
+  color: var(--ark-warning-text);
+}
+
+.knowledge-level--high .knowledge-wiedza-level-label {
+  border-color: var(--ark-success-border);
+  background: var(--ark-success-bg);
+  color: var(--ark-success-text);
+}
+
+.knowledge-level--almost .knowledge-wiedza-level-label {
+  border-color: var(--ark-success-border);
+  background: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.knowledge-level--full .knowledge-wiedza-level-label {
+  border-color: var(--ark-success-solid);
+  background: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.knowledge-wiedza-bar {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+}
+
+.knowledge-wiedza-bar-track {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 1px;
+  height: 0.5rem;
+  background: var(--ark-bg-sunken);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.knowledge-wiedza-bar-segment {
+  flex: 1 1 0;
+  background: var(--ark-gray-a2);
+  border-right: 1px solid var(--ark-border-subtle);
+  transition: background-color 0.2s ease;
+}
+
+.knowledge-wiedza-bar-segment:last-child {
+  border-right: none;
+}
+
+.knowledge-level--low .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-danger-text);
+}
+
+.knowledge-level--mid .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-warning-text);
+}
+
+.knowledge-level--good .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-warning-solid);
+}
+
+.knowledge-level--high .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-success-text);
+}
+
+.knowledge-level--almost .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-success-solid);
+}
+
+.knowledge-level--full .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-success-text);
+}
+
+.knowledge-level--none .knowledge-wiedza-bar-segment--filled {
+  background: var(--ark-bg-element-active);
+}
+
+.knowledge-wiedza-percent {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.knowledge-wiedza-ticks {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  min-width: 2rem;
+  text-align: right;
+}
+
+.knowledge-wiedza-ticks--active {
+  color: var(--ark-warning-text);
+}
+
+.knowledge-wiedza-row--has-sub {
+  flex-wrap: wrap;
+}
+
+.knowledge-wiedza-sub-levels {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--ark-border-subtle);
+  margin-top: 0.15rem;
+}
+
+.knowledge-wiedza-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.knowledge-wiedza-sub-name {
+  flex: 0 0 11rem;
+  font-size: 0.72rem;
+  color: var(--ark-text-secondary);
+  white-space: nowrap;
+}
+
+.knowledge-wiedza-sub-level-label {
+  flex: 0 0 7.5rem;
+  min-width: 7.5rem;
+  width: 7.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--ark-border-strong);
+  background: var(--ark-gray-a2);
+  color: var(--ark-text);
+  text-align: center;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+
+.knowledge-level--none .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-border-strong);
+  background: var(--ark-gray-a2);
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-level--low .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-danger-border);
+  background: var(--ark-danger-bg);
+  color: var(--ark-danger-text);
+}
+
+.knowledge-level--mid .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-warning-border);
+  background: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+}
+
+.knowledge-level--good .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-warning-border);
+  background: var(--ark-warning-4);
+  color: var(--ark-warning-text);
+}
+
+.knowledge-level--high .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-success-border);
+  background: var(--ark-success-bg);
+  color: var(--ark-success-text);
+}
+
+.knowledge-level--almost .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-success-border);
+  background: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.knowledge-level--full .knowledge-wiedza-sub-level-label {
+  border-color: var(--ark-success-solid);
+  background: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.knowledge-wiedza-sub-bar {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.knowledge-wiedza-sub-bar .knowledge-wiedza-bar-track {
+  height: 0.25rem;
+}
+
+/* ── Books (Ksiegi) — reuses .knowledge-library card layout ── */
+
+.knowledge-books {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  align-content: start;
+}
+
+@media (min-width: 720px) {
+  .knowledge-books {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+.knowledge-book {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.knowledge-book--complete {
+  border-color: var(--ark-success-border);
+  /* Szept, nie powierzchnia: w starej warstwie byl to film o kryciu 3-6%
+     nalozony na tlo karty, a --ark-success-bg to juz pelny stopien 3, czyli
+     zielona plyta przez cala szerokosc tabeli. --ark-gray-a2 ma dokladnie te
+     wage (alfa ~3.5%) i tak samo sie naklada. Zlapane na zrzucie, nie przez
+     test (UI_MIGRATION.md §4, krok 8). */
+  background-color: var(--ark-gray-a2);
+}
+
+.knowledge-book-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.knowledge-book-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Book category chips reuse .knowledge-library-category styling */
+.knowledge-book-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.knowledge-book-category .knowledge-status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+/* ── Import ───────────────────────────────────────────── */
+
+.knowledge-header-import-btn {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--ark-accent-border);
+  background-color: var(--ark-accent-tint);
+  color: var(--ark-accent-text);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.knowledge-header-import-btn:hover:not(:disabled) {
+  background-color: var(--ark-accent-bg-hover);
+}
+
+.knowledge-header-import-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.knowledge-import-panel {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.5rem;
+  background-color: var(--ark-gray-a2);
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.knowledge-import {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.5rem;
+}
+
+.knowledge-import p {
+  margin: 0;
+  color: var(--ark-text-secondary);
+  font-size: 0.9rem;
+}
+
+.knowledge-import-btn {
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text-secondary);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  align-self: flex-start;
+}
+
+.knowledge-import-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--ark-border-strong);
+}
+
+.knowledge-import-btn--confirm {
+  background-color: var(--ark-success-bg);
+  color: var(--ark-success-text);
+  border-color: var(--ark-success-border);
+}
+
+.knowledge-import-btn--confirm:hover {
+  background-color: var(--ark-success-4);
+}
+
+.knowledge-import-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.knowledge-import-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-import-select {
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-bg-surface);
+  color: var(--ark-text-secondary);
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.knowledge-import-select option {
+  background-color: var(--ark-bg-surface);
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-import-summary {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-import-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.knowledge-import-error {
+  color: var(--ark-danger-text);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.knowledge-import-done {
+  color: var(--ark-success-text);
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: pre-line;
+}
+
+/* ── History ──────────────────────────────────────────── */
+
+.knowledge-history {
+  overflow: auto;
+}
+
+.knowledge-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.knowledge-history-count {
+  font-size: 0.78rem;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  table-layout: fixed;
+}
+
+.knowledge-history-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ark-text-secondary);
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--ark-border-subtle);
+  position: sticky;
+  top: 0;
+  background-color: var(--ark-bg-surface);
+}
+
+.knowledge-history-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--ark-border-subtle);
+  vertical-align: middle;
+}
+
+.knowledge-history-table tbody tr:hover {
+  background-color: var(--ark-gray-a2);
+}
+
+.knowledge-history-col-date { width: 17ch; }
+.knowledge-history-col-type { width: 11ch; }
+.knowledge-history-col-detail { width: 19ch; }
+
+.knowledge-history-date {
+  white-space: nowrap;
+  color: var(--ark-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.knowledge-history-category {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-history-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knowledge-history-badge {
+  display: inline-block;
+  padding: 0.1rem 0.3rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.knowledge-history-badge--tick {
+  background: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+  border: 1px solid var(--ark-warning-border);
+}
+
+.knowledge-history-badge--level {
+  background: var(--ark-success-bg);
+  color: var(--ark-success-text);
+  border: 1px solid var(--ark-success-border);
+}
+
+.knowledge-history-row--level {
+  /* Szept, nie powierzchnia: w starej warstwie byl to film o kryciu 3-6%
+     nalozony na tlo karty, a --ark-success-bg to juz pelny stopien 3, czyli
+     zielona plyta przez cala szerokosc tabeli. --ark-gray-a2 ma dokladnie te
+     wage (alfa ~3.5%) i tak samo sie naklada. Zlapane na zrzucie, nie przez
+     test (UI_MIGRATION.md §4, krok 8). */
+  background-color: var(--ark-gray-a2);
+}
+
+.knowledge-history-location {
+  color: var(--ark-accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.knowledge-history-detail .knowledge-wiedza-level-label {
+  font-size: 0.7rem;
+  padding: 0.08rem 0.4rem;
+}
+
+.knowledge-details-body {
+  flex: 1 1 auto;
+  padding: 1rem 1.25rem 1.35rem;
+  background-color: var(--ark-bg-surface);
+  overflow: hidden;
+}
+
+.knowledge-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  scrollbar-gutter: stable;
+}
+
+.knowledge-details-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  background-color: var(--ark-bg-surface);
+  border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.knowledge-details-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.knowledge-details-toggle-button {
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-accent-tint);
+  color: var(--ark-text-secondary);
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.knowledge-details-toggle-button:hover,
+.knowledge-details-toggle-button:focus-visible {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-text);
+  outline: none;
+}
+
+.knowledge-details-toggle-button--active {
+  background-color: var(--ark-success-bg);
+  border-color: var(--ark-success-border);
+  color: var(--ark-success-text);
+}
+
+.knowledge-details-toggle-button--active:hover,
+.knowledge-details-toggle-button--active:focus-visible {
+  background-color: var(--ark-success-4);
+  border-color: var(--ark-success-text);
+  color: var(--ark-success-text);
+}
+
+.knowledge-details-build-button {
+  border: 1px solid var(--ark-warning-border);
+  background-color: var(--ark-warning-bg);
+  color: var(--ark-warning-text);
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.knowledge-details-build-button:hover,
+.knowledge-details-build-button:focus-visible {
+  background-color: var(--ark-warning-4);
+  border-color: var(--ark-warning-text);
+  color: var(--ark-warning-text);
+  outline: none;
+}
+
+.knowledge-details-nav {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  padding-bottom: 0.25rem;
+  flex-wrap: wrap;
+}
+
+/* = .popup-btn.popup-btn--md.popup-btn--pill + weight/nowrap delta (class kept as e2e hook) */
+.knowledge-details-nav-button {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.knowledge-details-nav-button:hover,
+.knowledge-details-nav-button:focus-visible {
+  background-color: var(--ark-bg-element-active);
+  border-color: var(--ark-border-strong);
+  color: var(--ark-text);
+  outline: none;
+}
+
+.knowledge-details-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.knowledge-details-category {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.6rem;
+  padding: 0.95rem 1rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  scroll-margin-top: 6rem;
+}
+
+.knowledge-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.knowledge-details-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.knowledge-details-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.knowledge-details-updated {
+  font-size: 0.85rem;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-details-counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+}
+
+.knowledge-details-counter {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  font-size: 0.78rem;
+  color: var(--ark-text);
+}
+
+.knowledge-details-counter-type {
+  font-weight: 600;
+}
+
+.knowledge-details-counter-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  background-color: var(--ark-accent-bg-hover);
+  color: var(--ark-accent-text);
+}
+
+.knowledge-details-counter-label--empty {
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-tertiary);
+}
+
+.knowledge-details-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.knowledge-details-badge--entries {
+  background-color: var(--ark-success-bg);
+  color: var(--ark-success-text);
+}
+
+.knowledge-details-type-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.knowledge-details-type-group {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.knowledge-details-type-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ark-text);
+}
+
+.knowledge-details-type-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+}
+
+.knowledge-details-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.knowledge-details-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.88rem;
+}
+
+.knowledge-details-entry-name {
+  flex: 1 1 auto;
+  color: var(--ark-text);
+}
+
+.knowledge-details-entry-indicator {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  border: 2px solid var(--ark-gray-a9);
+  background-color: transparent;
+  box-shadow: 0 0 0 1px var(--ark-border-subtle);
+}
+
+.knowledge-details-entry-indicator--known {
+  border-color: var(--ark-success-solid);
+  background-color: var(--ark-success-solid);
+  box-shadow: 0 0 0 1px var(--ark-success-border);
+}
+
+.knowledge-details-entry-indicator--missing {
+  border-color: var(--ark-danger-border);
+}
+
+.knowledge-details-entry-indicator--unknown {
+  border-color: var(--ark-warning-border);
+  background-color: var(--ark-warning-4);
+}
+
+.knowledge-details-entry--known .knowledge-details-entry-name {
+  color: var(--ark-text-tertiary);
+}
+
+.knowledge-details-entry--unknown .knowledge-details-entry-name {
+  color: var(--ark-warning-text);
+}
+
+.knowledge-details-entry-indicator--unavailable {
+  border-color: var(--ark-warning-border);
+  background-color: var(--ark-warning-4);
+}
+
+.knowledge-details-entry--unavailable .knowledge-details-entry-name {
+  color: var(--ark-warning-text);
+}
+
+.knowledge-details-entry-categories {
+  flex-basis: 100%;
+  margin-left: 1.15rem;
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.knowledge-details-entry-category-badge {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.7rem;
+  background: var(--ark-accent-tint);
+  color: var(--ark-accent-text);
+  border: 1px solid var(--ark-accent-bg);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.knowledge-details-entry-location {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.78rem;
+  background: var(--ark-accent-tint);
+  color: var(--ark-accent-text);
+  border: 1px solid var(--ark-accent-bg);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
+.knowledge-details-entry-location:hover {
+  background: var(--ark-accent-bg-hover);
+  color: var(--ark-accent-text);
+}
+
+.knowledge-details-entry-map {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.78rem;
+  background: var(--ark-success-bg);
+  color: var(--ark-success-text);
+  border: 1px solid var(--ark-success-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.knowledge-details-entry-map:hover {
+  background: var(--ark-success-4);
+  color: var(--ark-success-text);
+}
+
+.knowledge-details-entry--known .knowledge-details-entry-map {
+  opacity: 0.5;
+}
+
+.knowledge-details-entry-note {
+  flex-basis: 100%;
+  margin-left: 1.15rem;
+  font-size: 0.78rem;
+  color: var(--ark-text-tertiary);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-details-entry--known .knowledge-details-entry-location {
+  opacity: 0.5;
+}
+
+.knowledge-details-entry--known .knowledge-details-entry-note {
+  opacity: 0.5;
+}
+
+.knowledge-details-empty {
+  font-size: 0.85rem;
+  color: var(--ark-text-secondary);
+}
+
+.knowledge-details-unknown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.knowledge-details-unknown-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ark-warning-text);
+}
+
+.knowledge-details-toolbar .knowledge-tabs {
+  margin-bottom: 0;
+}
+
+.knowledge-details-area-select {
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.knowledge-details-area-select option {
+  background-color: var(--ark-bg-surface);
+  color: var(--ark-text);
+}
+
+.knowledge-details-copy-button {
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-accent-tint);
+  color: var(--ark-text-secondary);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.knowledge-details-copy-button:hover,
+.knowledge-details-copy-button:focus-visible {
+  background-color: var(--ark-accent-bg-hover);
+  border-color: var(--ark-accent-border);
+  color: var(--ark-text);
+  outline: none;
+}
+
+.knowledge-details-copy-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.knowledge-details-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 160px;
+}
+
+.knowledge-details-filter-input {
+  border: 1px solid var(--ark-border);
+  background-color: var(--ark-bg-element);
+  color: var(--ark-text);
+  border-radius: 999px;
+  padding: 0.2rem 1.6rem 0.2rem 0.6rem;
+  font-size: 0.78rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.knowledge-details-filter-input::placeholder {
+  color: var(--ark-text-tertiary);
+}
+
+.knowledge-details-filter-input:focus {
+  border-color: var(--ark-border-strong);
+  background-color: var(--ark-bg-element-hover);
+}
+
+.knowledge-details-filter-clear {
+  position: absolute;
+  right: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--ark-text-tertiary);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.1rem;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.knowledge-details-filter-clear:hover {
+  color: var(--ark-text);
+}
+
+.knowledge-details-area {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.6rem;
+  padding: 0.95rem 1rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.knowledge-details-area-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.knowledge-details-area-category {
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  background-color: var(--ark-gray-a2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}

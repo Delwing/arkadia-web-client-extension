@@ -1,0 +1,264 @@
+/* Oswajanie popup — the animal-taming tracker: help, the fed-animals table and
+   the "ready to feed now" shortcut list.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme.
+
+   JEDNA ZMIENNA SPOZA WARSTWY. `.oswajanie-table th` czytalo
+   `var(--text-secondary)`, a nie `--popup-*`. Most jej nie obejmuje (naglowek
+   bridge.css wymienia --text-* wsrod rodzin swiadomie zostawionych) i — co
+   gorsza — definiuje ja wylacznie src/web/style.css, ktorego forge-ui nie
+   laduje: naglowki tej tabeli nie mialy tam zadnego koloru. W stocku byl to
+   staly jasny szary, wiec w motywach jasnych i tak czytal sie zle. Idzie na
+   --ark-text-secondary, bo dokladnie tak spina to style.css
+   (`--popup-text-subtle: var(--text-secondary)`). Naprawa przy okazji, nie
+   zmiana projektowa.
+
+   POZIOM OSWOJENIA TO RANKING, WIEC STATUS. Skala plochliwe(1) ->
+   calkowicie oddane(10) byla malowana dziesiecioma wartosciami z
+   TAMING_LEVEL_COLORS (czerwony / pomaranczowy / zolty / zielony / blekit).
+   To jest dobre-srednie-zle, czyli status przebrany za dane — a te ida na
+   --ark-danger/warning/success (DESIGN_SYSTEM.md §3, ta sama decyzja co przy
+   odpornosciach w PR 1). Szczyt skali dostaje akcent, bo "maks" to stan
+   wyrozniony, a nie kolejny stopien dobroci. Tablica hexow zostaje w
+   src/client/scripts/animalTaming.ts, ale juz TYLKO dla linii wypisywanej do
+   okna gry — tam tlo jest ustawieniem gracza, nie motywem, i tokenu na to nie
+   ma (UI_MIGRATION.md §4, krok 7).
+
+   CIEN MENU jest efektem glebi (czarna alfa), nie barwa motywu — zostaje
+   dokladnie tak, jak w reszcie zmigrowanych arkuszy. */
+
+.oswajanie-popup {
+  height: 100%;
+  /* Column layout so the tab nav stays put and only the view scrolls. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ark-text);
+  background: var(--ark-bg-surface);
+}
+/* Fixed tab strip; the scrollable region is the content below it. */
+.oswajanie-nav {
+  flex: 0 0 auto;
+}
+.oswajanie-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+.oswajanie-popup a {
+  color: var(--ark-accent-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.oswajanie-popup a:hover {
+  text-decoration: underline;
+}
+.oswajanie-popup__heading {
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  margin-bottom: 0.4rem;
+}
+.oswajanie-popup__intro {
+  color: var(--ark-text-secondary);
+  margin: 0.4rem 0;
+}
+.oswajanie-popup__subheading {
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+  margin: 0.6rem 0 0.25rem;
+}
+.oswajanie-popup__list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.oswajanie-popup__hint {
+  color: var(--ark-text-tertiary);
+  font-size: 0.85em;
+  margin-top: 0.4rem;
+}
+
+.oswajanie-nav,
+.oswajanie-topbar,
+.oswajanie-controls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.oswajanie-nav {
+  margin-bottom: 0.6rem;
+}
+.oswajanie-topbar {
+  margin-bottom: 0.6rem;
+}
+.oswajanie-controls {
+  margin-top: 0.35rem;
+  font-size: 0.85em;
+}
+
+/* oswajanie nav tabs → .popup-tab, action buttons → .popup-btn (folded). */
+
+/* = .popup-input + inherit font / max-width delta */
+.oswajanie-select {
+  font: inherit;
+  max-width: 100%;
+}
+
+.oswajanie-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+.oswajanie-table th {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  background: var(--ark-bg-element);
+  border-bottom: 1px solid var(--ark-border-strong);
+  color: var(--ark-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 0.78em;
+}
+.oswajanie-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--ark-border-subtle);
+  vertical-align: top;
+}
+.oswajanie-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.oswajanie-td--center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.oswajanie-count {
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+}
+.oswajanie-count--toggle {
+  cursor: pointer;
+  color: var(--ark-accent-text);
+}
+.oswajanie-prev {
+  color: var(--ark-text-tertiary);
+}
+.oswajanie-ready {
+  color: var(--ark-warning-text);
+  font-weight: 600;
+}
+.oswajanie-muted {
+  color: var(--ark-text-tertiary);
+}
+
+.oswajanie-empty {
+  color: var(--ark-text-tertiary);
+  margin: 0.4rem 0;
+}
+
+.oswajanie-linkmenu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border-strong);
+  border-radius: 0.4rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+  padding: 0.25rem;
+  min-width: 150px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.875rem;
+}
+.oswajanie-linkmenu__title {
+  color: var(--ark-text-tertiary);
+  font-size: 0.8em;
+  padding: 0.2rem 0.4rem;
+}
+.oswajanie-linkmenu__item {
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--ark-text);
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font: inherit;
+}
+.oswajanie-linkmenu__item:hover {
+  background: var(--ark-accent-bg-hover);
+}
+
+/* Oswajanie animal table column sizing: keep date/level columns tight and let
+   the "pokarm" column absorb the remaining width (no trailing whitespace). */
+.oswajanie-col-when,
+.oswajanie-col-next,
+.oswajanie-col-level {
+  white-space: nowrap;
+  width: 1%;
+}
+.oswajanie-col-food {
+  width: 100%;
+}
+
+/* Oswajanie pokarm cell: food + link icon buttons on one row */
+.oswajanie-foodrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+/* icon buttons folded to .popup-btn.popup-btn--icon; only the danger tint (a
+   red glyph, NOT a filled danger button) remains as a delta. */
+.oswajanie-iconbtn--danger {
+  color: var(--ark-danger-text);
+}
+.oswajanie-iconbtn--danger:hover {
+  background: var(--ark-danger-bg-hover);
+  border-color: var(--ark-danger-border);
+}
+
+/* Oswajanie "ready to feed now" shortcut list above the table */
+.oswajanie-ready-block {
+  margin: 0.75rem 0;
+}
+.oswajanie-ready-block__label {
+  color: var(--ark-text-secondary);
+  margin-right: 0.3rem;
+}
+.oswajanie-ready-block a {
+  color: var(--ark-warning-text);
+  font-weight: 600;
+}
+
+/* --- poziom oswojenia: drabinka statusow zamiast dziesieciu hexow --------- */
+
+.oswajanie-level--low {
+  color: var(--ark-danger-text);
+}
+
+.oswajanie-level--mid {
+  color: var(--ark-warning-text);
+}
+
+.oswajanie-level--high {
+  color: var(--ark-success-text);
+}
+
+.oswajanie-level--max {
+  color: var(--ark-accent-text);
+}

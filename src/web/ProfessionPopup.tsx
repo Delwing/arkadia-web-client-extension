@@ -73,6 +73,7 @@ const ProfessionPopup: React.FC = () => {
     const plusPoints = state ? getPlusPoints(state) : 0;
     const totalPoints = timePoints + plusPoints;
     const percentage = state ? Math.min((totalPoints / FULL_PROFESSION_POINTS) * 100, 100) : 0;
+    const isDone = percentage >= 100;
     const weeks = state ? getNumberOfWeeks(state, now) : 0;
     const nextBreakpoint = state ? getNextBreakPoint(now) : 0;
     const secondsToNext = nextBreakpoint - now;
@@ -139,41 +140,6 @@ const ProfessionPopup: React.FC = () => {
         eventBus.emit('profession.updated');
     };
 
-    const inputStyle: React.CSSProperties = {
-        background: 'var(--popup-input-bg)',
-        border: '1px solid var(--popup-border-control)',
-        borderRadius: 3,
-        color: 'var(--popup-input-text)',
-        padding: '2px 6px',
-        fontSize: 11,
-        fontFamily: 'monospace',
-    };
-
-    const btnStyle: React.CSSProperties = {
-        padding: '2px 8px',
-        border: '1px solid var(--popup-border-control)',
-        borderRadius: 3,
-        cursor: 'pointer',
-        fontSize: 11,
-        fontFamily: 'monospace',
-        background: 'var(--popup-control-bg)',
-        color: 'var(--popup-text-subtle)',
-    };
-
-    const saveBtnStyle: React.CSSProperties = {
-        ...btnStyle,
-        background: 'var(--popup-success-subtle-bg)',
-        border: '1px solid var(--popup-success-border)',
-        color: 'var(--popup-success)',
-    };
-
-    const dangerBtnStyle: React.CSSProperties = {
-        ...btnStyle,
-        background: 'var(--popup-danger-subtle-bg)',
-        border: '1px solid var(--popup-danger-border)',
-        color: 'var(--popup-danger)',
-    };
-
     return (
         <DockablePopupWrapper
             {...wrapperProps}
@@ -184,11 +150,11 @@ const ProfessionPopup: React.FC = () => {
             initialWidth={340}
             className="profession-window"
         >
-            <div style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, color: 'var(--popup-text)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="profession-body">
                 {!state ? (
-                    <div style={{ textAlign: 'center', padding: 16 }}>
-                        <div style={{ color: 'var(--popup-text-dim)', marginBottom: 12 }}>Brak danych o zawodzie</div>
-                        <button type="button" style={saveBtnStyle} onClick={handleInit}>
+                    <div className="profession-init">
+                        <div className="profession-init__note">Brak danych o zawodzie</div>
+                        <button type="button" className="popup-btn popup-btn--success" onClick={handleInit}>
                             Rozpocznij trening
                         </button>
                     </div>
@@ -196,44 +162,42 @@ const ProfessionPopup: React.FC = () => {
                     <>
                         {/* Progress bar */}
                         <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span style={{ color: 'var(--popup-text-subtle)' }}>Postep</span>
-                                <span style={{ color: percentage >= 100 ? '#4a4' : '#ffd700', fontWeight: 'bold' }}>
+                            <div className="profession-progress__head">
+                                <span className="profession-progress__label">Postep</span>
+                                <span className={`profession-progress__percent${isDone ? ' profession-progress__percent--done' : ''}`}>
                                     {percentage.toFixed(1)}%
                                 </span>
                             </div>
-                            <div style={{ background: '#222', borderRadius: 4, height: 14, overflow: 'hidden', border: '1px solid #333' }}>
-                                <div style={{
-                                    width: `${Math.min(percentage, 100)}%`,
-                                    height: '100%',
-                                    background: percentage >= 100 ? '#2a5a2a' : '#8b6914',
-                                    transition: 'width 0.3s',
-                                }} />
+                            <div className="profession-progress__track">
+                                <div
+                                    className={`profession-progress__fill${isDone ? ' profession-progress__fill--done' : ''}`}
+                                    style={{ width: `${Math.min(percentage, 100)}%` }}
+                                />
                             </div>
-                            <div style={{ color: 'var(--popup-text-faint)', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
+                            <div className="profession-progress__points">
                                 {totalPoints} / {FULL_PROFESSION_POINTS} pkt
                             </div>
                         </div>
 
                         {/* Stats */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
+                        <div className="profession-stats">
                             {/* Start time */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--popup-text-dim)' }}>Rozpoczecie:</span>
+                            <div className="profession-stat">
+                                <span className="profession-stat__label">Rozpoczecie:</span>
                                 {editingStart ? (
-                                    <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                    <span className="profession-stat__edit">
                                         <input
                                             type="datetime-local"
+                                            className="popup-input profession-stat__input profession-stat__input--date"
                                             value={startInput}
                                             onChange={e => setStartInput(e.target.value)}
-                                            style={{ ...inputStyle, width: 170 }}
                                         />
-                                        <button type="button" style={saveBtnStyle} onClick={handleSaveStart}>OK</button>
-                                        <button type="button" style={btnStyle} onClick={() => setEditingStart(false)}>X</button>
+                                        <button type="button" className="popup-btn popup-btn--success" onClick={handleSaveStart}>OK</button>
+                                        <button type="button" className="popup-btn" onClick={() => setEditingStart(false)}>X</button>
                                     </span>
                                 ) : (
                                     <span
-                                        style={{ color: 'var(--popup-text-bright)', cursor: 'pointer', borderBottom: '1px dashed var(--popup-border-control)' }}
+                                        className="profession-stat__editable"
                                         onClick={() => { setStartInput(formatDateInput(state.start_time)); setEditingStart(true); }}
                                         title="Kliknij aby edytowac"
                                     >
@@ -243,37 +207,37 @@ const ProfessionPopup: React.FC = () => {
                             </div>
 
                             {/* Weeks */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--popup-text-dim)' }}>Tygodnie:</span>
-                                <span style={{ color: 'var(--popup-text-bright)' }}>{weeks} ({timePoints} pkt, {WEEKLY_POINTS}/tydz)</span>
+                            <div className="profession-stat">
+                                <span className="profession-stat__label">Tygodnie:</span>
+                                <span className="profession-stat__value">{weeks} ({timePoints} pkt, {WEEKLY_POINTS}/tydz)</span>
                             </div>
 
                             {/* Next breakpoint */}
                             {secondsToNext > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--popup-text-dim)' }}>Nastepne +{WEEKLY_POINTS}:</span>
-                                    <span style={{ color: 'var(--popup-data-blue)' }}>{formatTimeUntil(secondsToNext)}</span>
+                                <div className="profession-stat">
+                                    <span className="profession-stat__label">Nastepne +{WEEKLY_POINTS}:</span>
+                                    <span className="profession-stat__countdown">{formatTimeUntil(secondsToNext)}</span>
                                 </div>
                             )}
 
                             {/* Plus events */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--popup-text-dim)' }}>Bonusy (+staz):</span>
+                            <div className="profession-stat">
+                                <span className="profession-stat__label">Bonusy (+staz):</span>
                                 {editingPlus ? (
-                                    <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                    <span className="profession-stat__edit">
                                         <input
                                             type="number"
                                             min={0}
+                                            className="popup-input profession-stat__input profession-stat__input--count"
                                             value={plusInput}
                                             onChange={e => setPlusInput(e.target.value)}
-                                            style={{ ...inputStyle, width: 50 }}
                                         />
-                                        <button type="button" style={saveBtnStyle} onClick={handleSavePlus}>OK</button>
-                                        <button type="button" style={btnStyle} onClick={() => setEditingPlus(false)}>X</button>
+                                        <button type="button" className="popup-btn popup-btn--success" onClick={handleSavePlus}>OK</button>
+                                        <button type="button" className="popup-btn" onClick={() => setEditingPlus(false)}>X</button>
                                     </span>
                                 ) : (
                                     <span
-                                        style={{ color: 'var(--popup-text-bright)', cursor: 'pointer', borderBottom: '1px dashed var(--popup-border-control)' }}
+                                        className="profession-stat__editable"
                                         onClick={() => { setPlusInput(String(plusEventCount)); setEditingPlus(true); }}
                                         title="Kliknij aby edytowac"
                                     >
@@ -284,8 +248,8 @@ const ProfessionPopup: React.FC = () => {
                         </div>
 
                         {/* Actions */}
-                        <div style={{ display: 'flex', gap: 4, marginTop: 4, borderTop: '1px solid #333', paddingTop: 8 }}>
-                            <button type="button" style={dangerBtnStyle} onClick={handleReset}>
+                        <div className="profession-actions">
+                            <button type="button" className="popup-btn popup-btn--danger" onClick={handleReset}>
                                 Resetuj
                             </button>
                         </div>

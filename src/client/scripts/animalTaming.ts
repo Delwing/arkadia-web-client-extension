@@ -2,7 +2,17 @@ import Client from "../Client";
 import { createColorFormat } from "@modules/core/Colors";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "../ansi/FormatState";
 
-/** Hex color per taming level (1-based index maps via value - 1). */
+/**
+ * Hex color per taming level (1-based index maps via value - 1).
+ *
+ * GAME OUTPUT ONLY. These are written into the line the client prints into the
+ * game window, whose background is the player's own `outputBackground` setting
+ * rather than a theme surface — so there is no design-system token for them
+ * (UI_MIGRATION.md §4, recipe step 7). The Oswajanie popup used to read the
+ * same array for an inline `color:`; it now ranks the level onto
+ * `--ark-danger/warning/success` instead, because a themed surface has to
+ * re-theme.
+ */
 export const TAMING_LEVEL_COLORS: string[] = [
     "#ff0000",
     "#ff0000",

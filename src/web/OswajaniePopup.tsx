@@ -131,10 +131,25 @@ async function loadHistory(): Promise<HistoryRow[]> {
 // Small presentational pieces
 // ---------------------------------------------------------------------------
 
+// Taming runs 1 (plochliwe) to 10 (calkowicie oddane), so it RANKS — which
+// makes it a status rather than categorical data, and status is what still
+// reads as "bad" in all eight themes (DESIGN_SYSTEM.md §3). The hex ladder in
+// animalTaming.ts stays behind for the game-output line only.
+function levelTier(value: number): string {
+    if (value >= 10) return 'max';
+    if (value >= 8) return 'high';
+    if (value >= 4) return 'mid';
+    return 'low';
+}
+
 const LevelText: React.FC<{ level: string }> = ({ level }) => {
     const info = getTamingLevelInfo(level);
     if (!info) return <>{level}</>;
-    return <span style={{ color: info.color }}>{`${level} [${info.value}/10]`}</span>;
+    return (
+        <span className={`oswajanie-level--${levelTier(info.value)}`}>
+            {`${level} [${info.value}/10]`}
+        </span>
+    );
 };
 
 interface LinkMenuState {

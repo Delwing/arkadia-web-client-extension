@@ -164,6 +164,12 @@ describe("popup stylesheet ordering", () => {
                 "src/web/WalkerPopup.css",
                 "src/web/ZabiciPopup.css",
                 "src/web/Zabici2Popup.css",
+                "src/web/AssistantPopup.css",
+                "src/web/KnowledgeReport.css",
+                "src/web/OswajaniePopup.css",
+                "src/web/PeopleBrowser/PeopleBrowser.css",
+                "src/web/ProfessionPopup.css",
+                "src/web/SkrotyPopup.css",
             ].sort(),
         );
     });

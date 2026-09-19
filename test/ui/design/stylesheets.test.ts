@@ -39,6 +39,13 @@ const MIGRATED_SHEETS = [
     "src/web/TransportTimesDebugPopup.css",
     "src/web/TripPlannerPopup.css",
     "src/web/WalkerPopup.css",
+    // Faza 3, rodzina 4 — wiedza i raporty.
+    "src/web/AssistantPopup.css",
+    "src/web/KnowledgeReport.css",
+    "src/web/OswajaniePopup.css",
+    "src/web/PeopleBrowser/PeopleBrowser.css",
+    "src/web/ProfessionPopup.css",
+    "src/web/SkrotyPopup.css",
     // Faza 4 — powloka ustawien i pierwsze strony.
     "src/web/settings/settingsDialog.css",
     "src/web/options/guildsSettings.css",
@@ -75,6 +82,9 @@ const MIGRATED_POPUP_COMPONENTS = [
     "src/web/popups/worldPalette.ts",
     "src/web/TransportDebugPopup.tsx",
     "src/web/TransportTimesDebugPopup.tsx",
+    // Faza 3, rodzina 4 — Zawod przyszedl tu z 27 obiektami `style={{ ... }}`
+    // i zostal przepisany na arkusz; wpis pilnuje, zeby nie wrocily.
+    "src/web/ProfessionPopup.tsx",
 ];
 
 /**
