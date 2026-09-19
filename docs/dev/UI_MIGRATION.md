@@ -102,7 +102,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
-3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (knowledge/reports) done
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (inventory/economy), PR 5 (knowledge/reports) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -246,7 +246,12 @@ below.
 Planer trasy, Walker, Transport times (debug), Transport state (debug). Notes
 worth keeping are in "What PR 3 found" below.
 
-**PR 4 (knowledge/reports) is done** — seven popups: Wiedza (raport), Wiedza
+**PR 4 (inventory/economy) is done** — ten popups: Zlom, Loot, Depozyty,
+Zlecenia, Poczta, List, Odbiorcy paczek, Wedka, Woreczki ziol, Ziola (tekst).
+See "What PR 4 found" below; one of the two things it found is a bug in the
+`Table` primitive that every earlier PR in this phase shipped past.
+
+**PR 5 (knowledge/reports) is done** — seven popups: Wiedza (raport), Wiedza
 (szczegoly), Baza postaci, Skroty, Zawod, Oswajanie, Asystent. **Czat was
 deliberately left behind**, for the same reason Okno mapy was: see below.
 
@@ -467,7 +472,71 @@ choice is a size judgement — but the *rule* must reach the popup either way, s
 copies of them. When the two families merged, the copies were identical.
 
 
-#### What PR 4 (knowledge/reports) found
+#### What PR 4 (inventory/economy) found
+
+**`align="num"` on `Table` had never worked, in any popup, since PR 1 added
+it.** `.ark-table th, .ark-table td` sets `text-align: left` and
+`white-space: nowrap`, and it is (0,1,1); `.ark-table__cell--num` is (0,1,0).
+The modifier lost every time. Nothing showed it: the prop type-checked, the
+class landed in the DOM, and a column of numbers merely sat on the left. The
+same specificity killed `align="grow"`, which is why PR 3 ended up writing
+`.transport-times-debug .ark-table td:first-child { white-space: normal }` by
+hand — that workaround was not a delta over a primitive that did not fit, it
+was a reimplementation of a primitive that was silently inert.
+
+The three *layout* modifiers are now two classes deep in `table.css`. The
+*tone* modifiers are left alone and the file says why: they set `color`, which
+the th/td pair does not declare, so they were only ever competing with an
+inherited value and won.
+
+Two things to carry from this. First, PR 3's rule — "any delta that overrides a
+primitive needs the extra specificity, not the manifest" — **applies inside the
+system too**, and a primitive's own modifiers are the easiest place to forget
+it, because the modifier and the thing it overrides are in the same file.
+Second, **the workaround is the symptom**: if a screen has to re-implement a
+primitive's modifier with a longer selector, check whether the modifier works
+at all before writing the delta. Measured effect of the fix: Transport times
+(debug) gains the right-aligned numeric columns it always asked for, and
+Odpornosci is pixel-identical in all three themes (its own deltas were already
+covering it).
+
+**A class family can be owned by a family that has not migrated yet.** The plan
+told this PR that `.zlom-*` was the family PR 1 had stopped borrowing, so it
+would arrive clean. It did not: `CoverDebugPopup.tsx` — a *debug* popup, in a
+sibling PR — builds its table out of `.zlom-table`, `.zlom-row` and
+`.zlom-cell`. Moving those three into `ZlomPopup.css` would have half-migrated
+someone else's window, and worse: `CoverDebugPopup.css` arrives through
+`import './CoverDebugPopup.css'` in its component, so `.cover-dbg-num` and
+`.zlom-cell` (both 0,1,0) would have had their tie settled by Rollup.
+
+The answer was PR 1's, applied again: **Zlom moved onto `Table` and stopped
+borrowing**, and the three classes stay in `popups-base.css` with a header
+naming their single remaining owner. Generalised: recipe step 1 says to grep
+before moving a class, and the interesting outcome is not "nothing borrows it"
+but "something in a *different, unmigrated* family does" — in which case the
+popup being migrated is the one that has to give the class up.
+
+**Two `--popup-data-*` decisions that the name would have got wrong.** Deposits
+painted the bank name with `--popup-data-tomato` and the item count with
+`--popup-data-green`: neither ranks anything, so both went to `--ark-data-*`
+rather than to danger/success. The four coin denominations were four hex
+literals, and the honest-looking mapping — silver onto a neutral text role,
+because silver *is* neutral — turned out to be the wrong one: in the light
+themes bronze's step 11 is a dark brown, which is what a neutral text role also
+looks like, so gold and silver stopped being distinguishable in the one row
+where they always appear together. A slot's contract is "distinct from the
+other slots", not "faithful to the material".
+
+**Fishing was the opposite case, and the file header was wrong about it.**
+`popups-base.css` said the cast / strike / pull / biting hues were
+"genuinely game-specific hues a generic status var can't [carry]". Audited by
+call site they rank cleanly — accent for the current state, warning for "react
+now", success for the move you want, danger for aborting — and half the rules
+already read `--popup-warning` / `--popup-danger` while the other half spelled
+the same colours by hand as `rgba()`. They are statuses, and saying so deleted
+the literals.
+
+#### What PR 5 (knowledge/reports) found
 
 **Czat is blocked by exactly what blocks Okno mapy, and the plan did not say
 so.** The deferral note above names `StaticMapPopup` and lists `ChatPopup` only
@@ -797,7 +866,7 @@ than it adds.
   it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
   popups manifest — `layout.css`'s own header says why.
 
-  **It blocks Czat too**, which PR 4 found the hard way: the class family is
+  **It blocks Czat too**, which PR 5 found the hard way: the class family is
   that popup's entire header. The change is therefore worth more than it looks
   — it is the last thing standing between Phase 3 and two of its 39 popups —
   but it has to carry `.static-map-popup__*` (in `style.css`) and

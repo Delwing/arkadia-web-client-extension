@@ -72,21 +72,33 @@
   font-weight: var(--ark-weight-semibold);
 }
 
-/* --- cells --------------------------------------------------------------- */
+/* --- cells ---------------------------------------------------------------
+
+   The three LAYOUT modifiers are written two classes deep on purpose. They
+   override `text-align` and `white-space`, and those are declared by
+   `.ark-table th, .ark-table td` — which is (0,1,1) and beat a bare
+   `.ark-table__cell--num` (0,1,0). The effect was silent: `align="num"`
+   compiled, rendered, and left the column aligned left, and `align="grow"`
+   never let a cell wrap (which is why a popup ended up re-implementing it as
+   `.transport-times-debug .ark-table td:first-child`).
+
+   The TONE modifiers below need no such treatment: they set `color`, which the
+   pair above does not declare — it is inherited from `.ark-table`, and an
+   inherited value loses to any declaration on the element itself. */
 
 /* Numbers line up only when the glyphs are the same width. */
-.ark-table__cell--num {
+.ark-table .ark-table__cell--num {
   font-family: var(--ark-font-mono);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-.ark-table__cell--center {
+.ark-table .ark-table__cell--center {
   text-align: center;
 }
 
 /* The one column allowed to wrap and absorb the leftover width. */
-.ark-table__cell--grow {
+.ark-table .ark-table__cell--grow {
   width: 100%;
   white-space: normal;
 }
