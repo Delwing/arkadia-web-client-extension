@@ -18,7 +18,7 @@ import LogsSection from "./sections/LogsSection";
 import { MobileButtonsSection } from "./sections/OtherSections";
 import OtherSection from "./sections/OtherSection";
 import ManageSoundsModal from "./ManageSoundsModal";
-import { SettingsSection } from "./fields";
+import { SettingsCard } from "@web/settings/controls.tsx";
 import DesktopButtons from "../options/DesktopButtons";
 import MobileButtons from "../options/MobileButtons";
 import MobileRadialCommands from "../options/MobileRadialCommands";
@@ -250,22 +250,22 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         ),
         "ui-commands": <CommandsSection draft={draft} update={update} />,
         "ui-buttons": (
-            <SettingsSection title="Przyciski na ekranie" full>
+            <SettingsCard title="Przyciski na ekranie" full>
                 <DesktopButtons key={buttonsGeneration} registerSave={registerButtonSave.desktop} />
-            </SettingsSection>
+            </SettingsCard>
         ),
         "ui-mobile-buttons": (
             <>
                 <MobileButtonsSection draft={draft} update={update} />
-                <SettingsSection title="Układ przycisków" full>
+                <SettingsCard title="Układ przycisków" full>
                     <MobileButtons key={buttonsGeneration} registerSave={registerButtonSave.mobile} />
-                </SettingsSection>
+                </SettingsCard>
             </>
         ),
         "ui-radial": (
-            <SettingsSection title="Konfiguracja" full>
+            <SettingsCard title="Konfiguracja" full>
                 <MobileRadialCommands key={buttonsGeneration} registerSave={registerButtonSave.radial} />
-            </SettingsSection>
+            </SettingsCard>
         ),
         "ui-footer": <FooterSections draft={draft} update={update} />,
         "ui-map": (

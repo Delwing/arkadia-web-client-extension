@@ -1,4 +1,3 @@
-import { Form } from "react-bootstrap";
 import { macroOptions } from "../buttonSettings";
 import type { MacroType } from "../buttonSettings";
 import {
@@ -37,11 +36,10 @@ export default function MacroSelect({
     }
 
     return (
-        <Form.Select
-            size="sm"
+        <select
+            className={`settings-native-select${isUnavailable ? ' settings-native-select--warning' : ''}${className ? ` ${className}` : ''}`}
             value={value}
             onChange={e => onChange(e.target.value)}
-            className={`${className || ''} ${isUnavailable ? 'border-warning' : ''}`.trim()}
         >
             {filtered.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -58,6 +56,6 @@ export default function MacroSelect({
                     {value} (wtyczka niedostępna)
                 </option>
             )}
-        </Form.Select>
+        </select>
     );
 }

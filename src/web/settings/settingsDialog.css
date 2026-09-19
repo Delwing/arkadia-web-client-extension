@@ -536,6 +536,138 @@
   margin-left: auto;
 }
 
+/* The panel that edits one item of a list -- a desktop button, a mobile slot.
+   Nested inside a card, so it steps down a surface rather than up. */
+.settings-editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-5);
+  padding: var(--ark-space-6);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-editor-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+}
+
+.settings-editor-panel__title {
+  margin: 0;
+  font-size: var(--ark-text-5);
+  font-weight: var(--ark-weight-semibold);
+}
+
+/* One step of a compound macro. */
+.settings-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-3);
+  padding: var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+}
+
+.settings-step-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+}
+
+.settings-step-card__title {
+  font-size: var(--ark-text-3);
+  font-weight: var(--ark-weight-semibold);
+}
+
+/* Fields side by side, collapsing to one column when the card is narrow. */
+.settings-grid {
+  display: grid;
+  gap: var(--ark-space-4);
+}
+
+.settings-grid--2 {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.settings-grid--3 {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+}
+
+.settings-block-button {
+  width: 100%;
+}
+
+.settings-button-row__end {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* A hint that is a caution rather than an aside. Status colours never follow
+   the accent (DESIGN_SYSTEM.md section 3), so this is the warning role. */
+.settings-hint--warning {
+  color: var(--ark-warning-text);
+}
+
+/* Multi-line command field. The design system has no textarea primitive and
+   the e2e suite drives these as `textarea`, so it stays native and is styled
+   from tokens -- the `settings-` prefix is what keeps style.css's bare
+   `textarea` rule off it. */
+.settings-textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: var(--ark-space-3) var(--ark-space-4);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  color: var(--ark-text);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-3);
+  resize: vertical;
+}
+
+.settings-textarea:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
+}
+
+.settings-textarea::placeholder {
+  color: var(--ark-text-faint);
+  opacity: 1;
+}
+
+/* A select whose current value names something that is not loaded. */
+.settings-native-select--warning {
+  border-color: var(--ark-warning-border);
+}
+
+.settings-state-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-4);
+  padding-left: var(--ark-space-4);
+  border-left: 1px solid var(--ark-border);
+}
+
+.settings-state-list__id {
+  font-size: var(--ark-text-2);
+}
+
+/* Where a live control is shown as it will really look. Deliberately neutral:
+   the thing on it carries the player's own colours. */
+.settings-preview-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ark-space-5);
+  background: var(--ark-bg-surface);
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: var(--ark-radius-2);
+}
+
 .settings-stack--tight {
   gap: var(--ark-space-4);
 }

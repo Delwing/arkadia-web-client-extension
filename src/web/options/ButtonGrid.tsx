@@ -25,7 +25,7 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
         <div
             ref={gridRef}
             id={`mobile-buttons-preview-${mode}`}
-            className={`mobile-direction-buttons preview mb-2 ${view === mode ? '' : 'd-none'}`}
+            className={`mobile-direction-buttons preview${view === mode ? '' : ' mobile-buttons-preview--hidden'}`}
             style={{
                 gridTemplateColumns: `repeat(${set.cols}, auto)`,
                 backgroundColor: bgColor,
