@@ -46,7 +46,7 @@ export function ViewerHeader({
     ].join("  ·  ");
 
     return (
-        <div className="ark-dialog-header">
+        <div className="ark-dialog-header lv__header">
             <div className="ark-row ark-row--tight">
                 <IconButton title="Poprzednia sesja  [" onClick={onPrevSession} disabled={!hasPrev}>
                     <Icon name="chevron-left" />

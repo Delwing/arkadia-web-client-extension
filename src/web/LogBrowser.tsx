@@ -14,7 +14,7 @@
  * the design system has any tokens to read.
  */
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Button, Icon, Spinner } from "@design";
+import { Icon, IconButton, Spinner } from "@design";
 import { LogViewer, type LogSession, type PersistedPreferences } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../log-viewer/preferences";
 import { loadAllSessions } from "../../log-viewer/sessionAdapter";
@@ -99,25 +99,25 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
                     sessions={sessions}
                     preferences={initialPreferences}
                     onPreferencesChange={onPreferencesChange}
+                    // Icon-only, like the session arrows at the other end of
+                    // the same header: labelled, these two pushed the header
+                    // past the dialog's width on a small laptop and took the
+                    // close control off the edge with them.
                     headerTrailing={
                         <>
-                            <Button
-                                size="sm"
-                                icon={<Icon name="open-external" size={14} />}
+                            <IconButton
                                 disabled={!openSessionId}
                                 onClick={() => openSessionId && openInNewTab(openSessionId)}
                                 title="Otworz ten log w nowej karcie"
                             >
-                                Nowa karta
-                            </Button>
-                            <Button
-                                size="sm"
-                                icon={<Icon name="archive" size={14} />}
+                                <Icon name="open-external" />
+                            </IconButton>
+                            <IconButton
                                 onClick={() => setManageOpen(true)}
-                                title="Usuwanie, archiwizacja i import sesji"
+                                title="Zarzadzanie logami: usuwanie, archiwum, import"
                             >
-                                Zarzadzanie
-                            </Button>
+                                <Icon name="archive" />
+                            </IconButton>
                             {headerTrailing}
                         </>
                     }
