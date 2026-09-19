@@ -5,9 +5,25 @@
 // (#content-area, footer, badges, popups, …) that, once loaded, repaints
 // forge's whole base UI. forge instead provides the modal chrome via its scoped
 // bootstrap-compat.css. Re-adding this import would reintroduce that leak.
+//
+// The nine sections below are spread over three pages of the settings dialog —
+// Postać > Ogólne, Przedmioty and Walka — and all three moved onto the design
+// system together, because they share one file and a page migrates whole
+// (UI_MIGRATION.md §4, §5).
 import {useState} from "react";
-import {Form, Button} from "react-bootstrap";
+import {Button, Table, TableCell, TableHeadCell, TableRow} from "@design";
 import {CircleHelp} from "lucide-react";
+import {
+    CheckboxField,
+    ColorField,
+    NumberField,
+    SegmentedField,
+    SelectField,
+    SettingsCard,
+    SettingsHint,
+    SettingsRow,
+    TextField,
+} from "@web/settings/controls.tsx";
 import {defaultSettings} from "./defaultSettings";
 import {CollectOverridesModal} from "./CollectOverridesModal";
 import type {GeneralSettingsSectionProps} from "./useGeneralSettingsForm";
@@ -63,325 +79,236 @@ const lowHpAlertOptions = [
 const LETTER_LINE_WIDTH_MIN = 40;
 const LETTER_LINE_WIDTH_MAX = 120;
 
-export function ExitsSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
+const SHORT_EXITS_PREFIX_DEFAULT = '-----:';
+const SHORT_EXITS_PREFIX_ARROW = '→';
+const SHORT_EXITS_COLOR_DEFAULT = '#ffa500';
+const SHORT_EXITS_BG_DEFAULT = 'transparent';
+
+type ShortExitsFormat = 'compact' | 'arrow' | 'custom';
+
+function shortExitsFormat(prefix: string | undefined): ShortExitsFormat {
+    const value = prefix ?? SHORT_EXITS_PREFIX_DEFAULT;
+    if (value === SHORT_EXITS_PREFIX_DEFAULT) return 'compact';
+    if (value === SHORT_EXITS_PREFIX_ARROW) return 'arrow';
+    return 'custom';
+}
+
+/** A hint icon that explains a setting whose label cannot carry the whole story. */
+function Help({text}: {text: string}) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Wyjścia</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0" htmlFor="inlineCompassRose">Roza wiatrow:</Form.Label>
-                    <Form.Select
-                        id="inlineCompassRose"
-                        size="sm"
-                        style={{width: 'auto'}}
-                        value={settings.inlineCompassRose}
-                        onChange={e => onChangeSetting(s => s.inlineCompassRose = Number(e.target.value))}
-                    >
-                        <option value={0}>Wyl.</option>
-                        <optgroup label="Inline">
-                            <option value={1}>Domyslna</option>
-                            <option value={3}>ASCII</option>
-                        </optgroup>
-                        <optgroup label="Ramka">
-                            <option value={2}>Domyslna</option>
-                            <option value={4}>ASCII</option>
-                        </optgroup>
-                    </Form.Select>
-                </Form.Group>
-                <Form.Check
-                    type="checkbox"
-                    id="compassBackExits"
-                    label="Powrót na czerwono"
-                    checked={settings.compassBackExits}
-                    onChange={e => onChangeSetting(s => s.compassBackExits = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="shortenExits"
-                    label="Skrócone wyjścia"
-                    checked={settings.shortenExits}
-                    onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
-                    className="me-2"
-                />
-            </div>
+        <span className="settings-help" title={text}><CircleHelp size={14}/></span>
+    );
+}
+
+export function ExitsSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
+    const format = shortExitsFormat(settings.shortExitsPrefix);
+    const prefix = settings.shortExitsPrefix ?? SHORT_EXITS_PREFIX_DEFAULT;
+    const separator = settings.shortExitsSeparator ?? ' ';
+    const color = settings.shortExitsColor ?? SHORT_EXITS_COLOR_DEFAULT;
+    const background = settings.shortExitsBackgroundColor ?? SHORT_EXITS_BG_DEFAULT;
+
+    return (
+        <SettingsCard title="Wyjścia">
+            <SelectField
+                id="inlineCompassRose"
+                label="Roza wiatrow"
+                value={String(settings.inlineCompassRose)}
+                onChange={v => onChangeSetting(s => s.inlineCompassRose = Number(v))}
+            >
+                <option value={0}>Wyl.</option>
+                <optgroup label="Inline">
+                    <option value={1}>Domyslna</option>
+                    <option value={3}>ASCII</option>
+                </optgroup>
+                <optgroup label="Ramka">
+                    <option value={2}>Domyslna</option>
+                    <option value={4}>ASCII</option>
+                </optgroup>
+            </SelectField>
+            <CheckboxField
+                id="compassBackExits"
+                label="Powrót na czerwono"
+                checked={settings.compassBackExits}
+                onChange={v => onChangeSetting(s => s.compassBackExits = v)}
+            />
+            <CheckboxField
+                id="shortenExits"
+                label="Skrócone wyjścia"
+                checked={settings.shortenExits}
+                onChange={v => onChangeSetting(s => s.shortenExits = v)}
+            />
             {settings.shortenExits && (
-                <div className="mt-3 pt-3 border-top">
-                    <div className="d-flex flex-column gap-3">
-                        <div className="d-flex gap-3">
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={() => onChangeSetting(s => {
-                                    s.shortExitsPrefix = '-----:';
-                                    s.shortExitsSeparator = ' ';
-                                    s.shortExitsColor = '#ffa500';
-                                    s.shortExitsBackgroundColor = 'transparent';
-                                })}
-                                title="Przywróć wszystkie domyślne ustawienia"
-                                style={{ padding: "0.25rem 0.5rem", height: "36px" }}
-                            >
-                                Przywróć domyślne
-                            </button>
-                        </div>
-                        <div className="d-flex gap-3 align-items-flex-start flex-wrap">
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label className="mb-0">Przedrostek</Form.Label>
-                                <div className="d-flex flex-column gap-2">
-                                    <Form.Check
-                                        type="radio"
-                                        id="format-compact"
-                                        label='Kompaktowy (-----:)'
-                                        name="shortExitsFormat"
-                                        value="compact"
-                                        checked={(settings.shortExitsPrefix ?? '-----:') === '-----:'}
-                                        onChange={() => onChangeSetting(s => s.shortExitsPrefix = '-----:')}
-                                    />
-                                    <Form.Check
-                                        type="radio"
-                                        id="format-arrow"
-                                        label='Strzałka (→)'
-                                        name="shortExitsFormat"
-                                        value="arrow"
-                                        checked={(settings.shortExitsPrefix ?? '-----:') === '→'}
-                                        onChange={() => onChangeSetting(s => s.shortExitsPrefix = '→')}
-                                    />
-                                    <Form.Check
-                                        type="radio"
-                                        id="format-custom"
-                                        label="Niestandardowy"
-                                        name="shortExitsFormat"
-                                        value="custom"
-                                        checked={(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→'}
-                                        onChange={() => onChangeSetting(s => s.shortExitsPrefix = '>>>')}
-                                    />
-                                </div>
-                                {(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→' && (
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        value={settings.shortExitsPrefix ?? ''}
-                                        onChange={e => onChangeSetting(s => s.shortExitsPrefix = e.target.value)}
-                                        placeholder="np. >>>"
-                                        style={{maxWidth: '8rem'}}
-                                    />
-                                )}
-                            </Form.Group>
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label htmlFor="exits-color" className="mb-0">Kolor tekstu</Form.Label>
-                                <div className="d-flex gap-2 align-items-center">
-                                    <Form.Control
-                                        type="color"
-                                        id="exits-color"
-                                        value={settings.shortExitsColor ?? '#ffa500'}
-                                        onChange={e => onChangeSetting(s => s.shortExitsColor = e.target.value)}
-                                        className="form-control-color"
-                                        style={{ width: '3rem', height: '2rem' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-secondary btn-sm"
-                                        onClick={() => onChangeSetting(s => s.shortExitsColor = '#ffa500')}
-                                        title="Przywróć domyślny kolor"
-                                        style={{ padding: "0.25rem 0.5rem" }}
-                                    >
-                                        ↺
-                                    </button>
-                                </div>
-                            </Form.Group>
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label htmlFor="exits-bg-color" className="mb-0">Kolor tła</Form.Label>
-                                <div className="d-flex gap-2 align-items-center">
-                                    <Form.Control
-                                        type="color"
-                                        id="exits-bg-color"
-                                        value={settings.shortExitsBackgroundColor ?? 'transparent'}
-                                        onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
-                                        className="form-control-color"
-                                        style={{ width: '3rem', height: '2rem' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-secondary btn-sm"
-                                        onClick={() => onChangeSetting(s => s.shortExitsBackgroundColor = 'transparent')}
-                                        title="Przywróć domyślny kolor tła"
-                                        style={{ padding: "0.25rem 0.5rem" }}
-                                    >
-                                        ↺
-                                    </button>
-                                </div>
-                            </Form.Group>
-                        </div>
-                        <div className="d-flex gap-3 align-items-flex-end flex-wrap">
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label htmlFor="separator" className="mb-0">Separator</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    id="separator"
-                                    size="sm"
-                                    value={settings.shortExitsSeparator ?? ' '}
-                                    onChange={e => onChangeSetting(s => s.shortExitsSeparator = e.target.value)}
-                                    placeholder=" "
-                                    maxLength={5}
-                                    style={{maxWidth: '6rem'}}
-                                />
-                                <small className="text-muted d-block" style={{fontSize: '0.75rem'}}>Między kierunkami</small>
-                            </Form.Group>
-                        </div>
-                        <Form.Group className="d-flex flex-column gap-2">
-                            <Form.Label className="mb-0">Podgląd</Form.Label>
-                            <div
-                                style={{
-                                    padding: '0.5rem',
-                                    backgroundColor: settings.shortExitsBackgroundColor ?? 'transparent',
-                                    color: settings.shortExitsColor ?? '#ffa500',
-                                    fontFamily: 'monospace',
-                                    borderRadius: '0.25rem',
-                                    border: '1px solid #333',
-                                    whiteSpace: 'nowrap',
-                                    fontSize: '0.9rem',
-                                    maxWidth: '20rem'
-                                }}
-                            >
-                                {(settings.shortExitsPrefix ?? '-----:') + (settings.shortExitsSeparator ?? ' ') + 'N' + (settings.shortExitsSeparator ?? ' ') + 'E' + (settings.shortExitsSeparator ?? ' ') + 'NE'}
-                            </div>
-                        </Form.Group>
+                <div className="settings-subsection">
+                    <SegmentedField
+                        label="Przedrostek"
+                        value={format}
+                        options={[
+                            {value: 'compact', label: 'Kompaktowy', title: SHORT_EXITS_PREFIX_DEFAULT},
+                            {value: 'arrow', label: 'Strzałka', title: SHORT_EXITS_PREFIX_ARROW},
+                            {value: 'custom', label: 'Niestandardowy'},
+                        ]}
+                        onChange={next => onChangeSetting(s => {
+                            if (next === 'compact') s.shortExitsPrefix = SHORT_EXITS_PREFIX_DEFAULT;
+                            else if (next === 'arrow') s.shortExitsPrefix = SHORT_EXITS_PREFIX_ARROW;
+                            else s.shortExitsPrefix = '>>>';
+                        })}
+                    />
+                    {format === 'custom' && (
+                        <TextField
+                            id="shortExitsPrefix"
+                            label="Własny przedrostek"
+                            value={prefix}
+                            placeholder="np. >>>"
+                            onChange={v => onChangeSetting(s => s.shortExitsPrefix = v)}
+                        />
+                    )}
+                    <TextField
+                        id="separator"
+                        label="Separator"
+                        value={separator}
+                        placeholder=" "
+                        hint="Między kierunkami"
+                        onChange={v => onChangeSetting(s => s.shortExitsSeparator = v)}
+                    />
+                    <ColorField
+                        id="exits-color"
+                        label="Kolor tekstu"
+                        value={color}
+                        onChange={v => onChangeSetting(s => s.shortExitsColor = v)}
+                        onReset={() => onChangeSetting(s => s.shortExitsColor = SHORT_EXITS_COLOR_DEFAULT)}
+                    />
+                    <ColorField
+                        id="exits-bg-color"
+                        label="Kolor tła"
+                        value={background}
+                        onChange={v => onChangeSetting(s => s.shortExitsBackgroundColor = v)}
+                        onReset={() => onChangeSetting(s => s.shortExitsBackgroundColor = SHORT_EXITS_BG_DEFAULT)}
+                    />
+                    <SettingsRow label="Podgląd">
+                        {/* The two colours are the player's own setting, not theme
+                            roles, so they stay inline. */}
+                        <span
+                            className="settings-exits-preview"
+                            style={{backgroundColor: background, color}}
+                        >
+                            {prefix + separator + 'N' + separator + 'E' + separator + 'NE'}
+                        </span>
+                    </SettingsRow>
+                    <div className="settings-button-row">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            title="Przywróć wszystkie domyślne ustawienia"
+                            onClick={() => onChangeSetting(s => {
+                                s.shortExitsPrefix = SHORT_EXITS_PREFIX_DEFAULT;
+                                s.shortExitsSeparator = ' ';
+                                s.shortExitsColor = SHORT_EXITS_COLOR_DEFAULT;
+                                s.shortExitsBackgroundColor = SHORT_EXITS_BG_DEFAULT;
+                            })}
+                        >
+                            Przywróć domyślne
+                        </Button>
                     </div>
                 </div>
             )}
-        </section>
+        </SettingsCard>
     );
 }
 
 export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Pozostałe opcje</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Check
-                    type="checkbox"
-                    id="packageHelper"
-                    label="Asystent paczek"
-                    checked={settings.packageHelper}
-                    onChange={e => onChangeSetting(s => s.packageHelper = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="packageInContainer"
-                    label="Paczka do pojemnika"
-                    checked={settings.packageInContainer}
-                    onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="fullHpMessage"
-                    label={<>Informacja o pelnym zdrowiu <span title="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
-                    checked={settings.fullHpMessage}
-                    onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="sunTracker"
-                    label={<>Ramki wschodu/zachodu <span title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
-                    checked={settings.sunTracker}
-                    onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="carriageTeamTickets"
-                    label={<>Bilety dla druzyny przy wjezdzie wozem <span title="Gdy wjezdzasz wozem na statek, bind wejscia kupuje bilety takze dla czlonkow druzyny na lokacji i wrecza im je (jak /bilety). Wylaczone: kupuje tylko twoj bilet." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
-                    checked={settings.carriageTeamTickets}
-                    onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii
-                        listu:</Form.Label>
-                    <Form.Control
-                        type="number"
-                        min={LETTER_LINE_WIDTH_MIN}
-                        max={LETTER_LINE_WIDTH_MAX}
-                        id="letterLineWidth"
-                        value={settings.letterLineWidth}
-                        onChange={ev => {
-                            const parsed = parseInt(ev.target.value, 10);
-                            const fallback = defaultSettings.letterLineWidth;
-                            const clamped = Math.min(
-                                LETTER_LINE_WIDTH_MAX,
-                                Math.max(LETTER_LINE_WIDTH_MIN, Number.isFinite(parsed) ? parsed : fallback)
-                            );
-                            onChangeSetting(s => s.letterLineWidth = clamped);
-                        }}
-                        style={{width: '100%', maxWidth: '5rem'}}
-                    />
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0" htmlFor="lowHpAlert">Alarm niskiego
-                        zdrowia:</Form.Label>
-                    <Form.Select
-                        size="sm"
-                        id="lowHpAlert"
-                        value={settings.lowHpAlert}
-                        onChange={e => onChangeSetting(s => s.lowHpAlert = parseInt(e.target.value) || 0)}
-                        className="w-auto"
-                    >
-                        {lowHpAlertOptions.map(option => (
-                            <option value={option.value} key={option.value}>{option.label}</option>
-                        ))}
-                    </Form.Select>
-                </Form.Group>
-            </div>
-        </section>
+        <SettingsCard title="Pozostałe opcje">
+            <CheckboxField
+                id="packageHelper"
+                label="Asystent paczek"
+                checked={settings.packageHelper}
+                onChange={v => onChangeSetting(s => s.packageHelper = v)}
+            />
+            <CheckboxField
+                id="packageInContainer"
+                label="Paczka do pojemnika"
+                checked={settings.packageInContainer}
+                onChange={v => onChangeSetting(s => s.packageInContainer = v)}
+            />
+            <CheckboxField
+                id="fullHpMessage"
+                label="Informacja o pelnym zdrowiu"
+                labelExtra={<Help text="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione."/>}
+                checked={settings.fullHpMessage}
+                onChange={v => onChangeSetting(s => s.fullHpMessage = v)}
+            />
+            <CheckboxField
+                id="sunTracker"
+                label="Ramki wschodu/zachodu"
+                labelExtra={<Help text="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz."/>}
+                checked={settings.sunTracker}
+                onChange={v => onChangeSetting(s => s.sunTracker = v)}
+            />
+            <CheckboxField
+                id="carriageTeamTickets"
+                label="Bilety dla druzyny przy wjezdzie wozem"
+                labelExtra={<Help text="Gdy wjezdzasz wozem na statek, bind wejscia kupuje bilety takze dla czlonkow druzyny na lokacji i wrecza im je (jak /bilety). Wylaczone: kupuje tylko twoj bilet."/>}
+                checked={settings.carriageTeamTickets}
+                onChange={v => onChangeSetting(s => s.carriageTeamTickets = v)}
+            />
+            <NumberField
+                id="letterLineWidth"
+                label="Szerokosc linii listu"
+                value={settings.letterLineWidth}
+                min={LETTER_LINE_WIDTH_MIN}
+                max={LETTER_LINE_WIDTH_MAX}
+                onChange={n => {
+                    const clamped = Math.min(
+                        LETTER_LINE_WIDTH_MAX,
+                        Math.max(LETTER_LINE_WIDTH_MIN, Number.isFinite(n) ? n : defaultSettings.letterLineWidth),
+                    );
+                    onChangeSetting(s => s.letterLineWidth = clamped);
+                }}
+            />
+            <SelectField
+                id="lowHpAlert"
+                label="Alarm niskiego zdrowia"
+                value={String(settings.lowHpAlert)}
+                onChange={v => onChangeSetting(s => s.lowHpAlert = parseInt(v) || 0)}
+            >
+                {lowHpAlertOptions.map(option => (
+                    <option value={option.value} key={option.value}>{option.label}</option>
+                ))}
+            </SelectField>
+        </SettingsCard>
     );
 }
 
 export function ContainersSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Pojemniki</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Check
-                    type="checkbox"
-                    id="prettyContainers"
-                    label="Formatuj pojemniki"
-                    checked={settings.prettyContainers}
-                    onChange={e => onChangeSetting(s => s.prettyContainers = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0">Kolumny:</Form.Label>
-                    <Form.Control
-                        type="number"
-                        min={1}
-                        max={4}
-                        id="containerColumns"
-                        value={settings.containerColumns}
-                        onChange={ev => onChangeSetting(s => s.containerColumns = parseInt(ev.target.value) || 1)}
-                        style={{width: '100%', maxWidth: '4rem'}}
-                    />
-                </Form.Group>
-                <Form.Check
-                    type="checkbox"
-                    id="containerOpen"
-                    label="Otwieraj pojemnik"
-                    checked={settings.containerOpen}
-                    onChange={e => onChangeSetting(s => s.containerOpen = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="containerClose"
-                    label="Zamykaj pojemnik"
-                    checked={settings.containerClose}
-                    onChange={e => onChangeSetting(s => s.containerClose = e.target.checked)}
-                    className="me-2"
-                />
-            </div>
-        </section>
+        <SettingsCard title="Pojemniki">
+            <CheckboxField
+                id="prettyContainers"
+                label="Formatuj pojemniki"
+                checked={settings.prettyContainers}
+                onChange={v => onChangeSetting(s => s.prettyContainers = v)}
+            />
+            <NumberField
+                id="containerColumns"
+                label="Kolumny"
+                value={settings.containerColumns}
+                min={1}
+                max={4}
+                onChange={n => onChangeSetting(s => s.containerColumns = n || 1)}
+            />
+            <CheckboxField
+                id="containerOpen"
+                label="Otwieraj pojemnik"
+                checked={settings.containerOpen}
+                onChange={v => onChangeSetting(s => s.containerOpen = v)}
+            />
+            <CheckboxField
+                id="containerClose"
+                label="Zamykaj pojemnik"
+                checked={settings.containerClose}
+                onChange={v => onChangeSetting(s => s.containerClose = v)}
+            />
+        </SettingsCard>
     );
 }
 
@@ -389,351 +316,211 @@ export function CollectSection({settings, onChangeSetting}: GeneralSettingsSecti
     const [extraInput, setExtraInput] = useState<string>('');
     const [showOverridesModal, setShowOverridesModal] = useState(false);
 
+    const addExtra = () => {
+        const value = extraInput.trim();
+        if (!value) return;
+        onChangeSetting(s => s.collectExtra = [...s.collectExtra, value]);
+        setExtraInput('');
+    };
+
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Zbieranie przedmiotów</h5>
-            <div className="character-settings-stack">
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Tryb zbierania:</Form.Label>
-                    <Form.Select
-                        id="collectMode"
-                        size="sm"
-                        value={settings.collectMode}
-                        onChange={e => onChangeSetting(s => s.collectMode = parseInt(e.target.value))}
-                        className="w-auto"
-                    >
-                        {collectModeOptions.map((label, i) => (
-                            <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
-                        ))}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Kiedy zbierac:</Form.Label>
-                    <Form.Select
-                        size="sm"
-                        value={settings.collectTiming}
-                        onChange={e => onChangeSetting(s => s.collectTiming = parseInt(e.target.value))}
-                        className="w-auto"
-                    >
-                        {collectTimingOptions.map((label, i) => (
-                            <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
-                        ))}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Co zbierac:</Form.Label>
-                    <div className="d-flex flex-wrap gap-3">
-                        <Form.Check
-                            type="checkbox"
-                            id="collectCopper"
-                            label="Miedziane monety"
-                            checked={settings.collectCopper}
-                            onChange={e => onChangeSetting(s => s.collectCopper = e.target.checked)}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="collectSilver"
-                            label="Srebrne monety"
-                            checked={settings.collectSilver}
-                            onChange={e => onChangeSetting(s => s.collectSilver = e.target.checked)}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="collectGold"
-                            label="Zlote monety"
-                            checked={settings.collectGold}
-                            onChange={e => onChangeSetting(s => s.collectGold = e.target.checked)}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="collectGems"
-                            label="Kamienie"
-                            checked={settings.collectGems}
-                            onChange={e => onChangeSetting(s => s.collectGems = e.target.checked)}
-                        />
-                    </div>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1">Dodatkowe przedmioty:</Form.Label>
-                    <Form.Control
-                        id="extraItem"
-                        data-settings-ignore
-                        type="text"
-                        size="sm"
-                        value={extraInput}
-                        onChange={e => setExtraInput(e.target.value)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (extraInput.trim()) {
-                                    onChangeSetting(s => s.collectExtra = [...s.collectExtra, extraInput.trim()]);
-                                    setExtraInput('');
-                                }
-                            }
-                        }}
-                        className="d-inline-block me-1 w-auto"
-                        style={{width: '100%', maxWidth: '10rem'}}
-                    />
-                    <Button
-                        size="sm"
-                        onClick={() => {
-                            if (extraInput.trim()) {
-                                onChangeSetting(s => s.collectExtra = [...s.collectExtra, extraInput.trim()]);
-                                setExtraInput('');
-                            }
-                        }}
-                    >
-                        Dodaj
-                    </Button>
-                </Form.Group>
-                <ul className="list-unstyled ms-3">
-                    {settings.collectExtra.map(item => (
-                        <li key={item} className="d-flex align-items-center gap-2">
-                            <span>{item}</span>
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => onChangeSetting(s => s.collectExtra = s.collectExtra.filter(i => i !== item))}
-                            >
-                                Usuń
-                            </Button>
-                        </li>
-                    ))}
-                </ul>
-                {settings.collectExtra.length > 0 && (
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        className="mt-1"
-                        onClick={() => onChangeSetting(s => s.collectExtra = [])}
-                    >
-                        Wyczyść wszystko
-                    </Button>
-                )}
-                <Form.Group className="mt-3 d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Nadpisania dla wrogów:</Form.Label>
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setShowOverridesModal(true)}
-                    >
-                        Konfiguruj ({settings.collectOverrides.length})
-                    </Button>
-                </Form.Group>
-                <CollectOverridesModal
-                    show={showOverridesModal}
-                    overrides={settings.collectOverrides}
-                    onClose={() => setShowOverridesModal(false)}
-                    onSave={(overrides) => onChangeSetting(s => s.collectOverrides = overrides)}
+        <SettingsCard title="Zbieranie przedmiotów">
+            <SelectField
+                id="collectMode"
+                label="Tryb zbierania"
+                value={String(settings.collectMode)}
+                onChange={v => onChangeSetting(s => s.collectMode = parseInt(v))}
+            >
+                {collectModeOptions.map((label, i) => (
+                    <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
+                ))}
+            </SelectField>
+            <SelectField
+                id="collectTiming"
+                label="Kiedy zbierac"
+                value={String(settings.collectTiming)}
+                onChange={v => onChangeSetting(s => s.collectTiming = parseInt(v))}
+            >
+                {collectTimingOptions.map((label, i) => (
+                    <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
+                ))}
+            </SelectField>
+
+            <div className="settings-field">
+                <span className="settings-field__label">Co zbierac</span>
+                <CheckboxField
+                    id="collectCopper"
+                    label="Miedziane monety"
+                    checked={settings.collectCopper}
+                    onChange={v => onChangeSetting(s => s.collectCopper = v)}
+                />
+                <CheckboxField
+                    id="collectSilver"
+                    label="Srebrne monety"
+                    checked={settings.collectSilver}
+                    onChange={v => onChangeSetting(s => s.collectSilver = v)}
+                />
+                <CheckboxField
+                    id="collectGold"
+                    label="Zlote monety"
+                    checked={settings.collectGold}
+                    onChange={v => onChangeSetting(s => s.collectGold = v)}
+                />
+                <CheckboxField
+                    id="collectGems"
+                    label="Kamienie"
+                    checked={settings.collectGems}
+                    onChange={v => onChangeSetting(s => s.collectGems = v)}
                 />
             </div>
-        </section>
+
+            <div className="settings-field">
+                <label className="settings-field__label" htmlFor="extraItem">Dodatkowe przedmioty</label>
+                {settings.collectExtra.length > 0 && (
+                    <div className="settings-chips">
+                        {settings.collectExtra.map(item => (
+                            <span
+                                key={item}
+                                className="settings-chip settings-chip--button"
+                                title="Kliknij, aby usunąć"
+                                onClick={() => onChangeSetting(s => s.collectExtra = s.collectExtra.filter(i => i !== item))}
+                            >
+                                {item}
+                                <span className="settings-chip__remove">{'×'}</span>
+                            </span>
+                        ))}
+                    </div>
+                )}
+                {/* The add field is scratch, not a setting: it must not count
+                    towards the page's unsaved-changes signature. */}
+                <div className="settings-button-row" data-settings-ignore>
+                    <TextField
+                        id="extraItem"
+                        value={extraInput}
+                        onChange={setExtraInput}
+                    />
+                    <Button size="sm" onClick={addExtra}>Dodaj</Button>
+                    {settings.collectExtra.length > 0 && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onChangeSetting(s => s.collectExtra = [])}
+                        >
+                            Wyczyść wszystko
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            <SettingsRow label="Nadpisania dla wrogów">
+                <Button size="sm" onClick={() => setShowOverridesModal(true)}>
+                    Konfiguruj ({settings.collectOverrides.length})
+                </Button>
+            </SettingsRow>
+            <CollectOverridesModal
+                show={showOverridesModal}
+                overrides={settings.collectOverrides}
+                onClose={() => setShowOverridesModal(false)}
+                onSave={(overrides) => onChangeSetting(s => s.collectOverrides = overrides)}
+            />
+        </SettingsCard>
     );
 }
 
 export function CombatCommandsSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Walka</h5>
-            <div className="character-settings-stack">
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda ataku:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.attackCommand}
-                        placeholder="zabij"
-                        onChange={e => onChangeSetting(s => s.attackCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">
-                        Uzywana przy ataku na numery obiektow. Domyslnie "zabij".
-                    </Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda wsparcia:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.supportCommand}
-                        placeholder="wesprzyj"
-                        onChange={e => onChangeSetting(s => s.supportCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">
-                        Uzywana przy wspieraniu lidera druzyny. Domyslnie "wesprzyj".
-                    </Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda dobycia broni:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.drawWeaponCommand}
-                        placeholder="dobadz"
-                        onChange={e => onChangeSetting(s => s.drawWeaponCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">
-                        Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane
-                        automatycznie.
-                    </Form.Text>
-                </Form.Group>
-            </div>
-        </section>
+        <SettingsCard title="Walka">
+            <TextField
+                id="attackCommand"
+                label="Komenda ataku:"
+                value={settings.attackCommand}
+                placeholder="zabij"
+                hint={'Uzywana przy ataku na numery obiektow. Domyslnie "zabij".'}
+                onChange={v => onChangeSetting(s => s.attackCommand = v)}
+            />
+            <TextField
+                id="supportCommand"
+                label="Komenda wsparcia:"
+                value={settings.supportCommand}
+                placeholder="wesprzyj"
+                hint={'Uzywana przy wspieraniu lidera druzyny. Domyslnie "wesprzyj".'}
+                onChange={v => onChangeSetting(s => s.supportCommand = v)}
+            />
+            <TextField
+                id="drawWeaponCommand"
+                label="Komenda dobycia broni:"
+                value={settings.drawWeaponCommand}
+                placeholder="dobadz"
+                hint='Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane automatycznie.'
+                onChange={v => onChangeSetting(s => s.drawWeaponCommand = v)}
+            />
+        </SettingsCard>
     );
 }
 
 export function HerbsSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Zioła</h5>
-            <div className="character-settings-stack">
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy przed użyciem:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.herbPreUseCommand}
-                        onChange={e => onChangeSetting(s => s.herbPreUseCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy po użyciu:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.herbPostUseCommand}
-                        onChange={e => onChangeSetting(s => s.herbPostUseCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Ilosc "wiele":</Form.Label>
-                    <Form.Control
-                        type="number"
-                        min={1}
-                        id="herbWieleCount"
-                        value={settings.herbWieleCount}
-                        onChange={ev => {
-                            const parsed = parseInt(ev.target.value, 10);
-                            const value = Number.isFinite(parsed) && parsed > 0 ? parsed : 25;
-                            onChangeSetting(s => s.herbWieleCount = value);
-                        }}
-                        style={{width: '100%', maxWidth: '5rem'}}
-                    />
-                </Form.Group>
-            </div>
-        </section>
+        <SettingsCard title="Zioła">
+            <TextField
+                id="herbPreUseCommand"
+                label="Komendy przed użyciem:"
+                value={settings.herbPreUseCommand}
+                hint="Oddziel komendy średnikiem (;)"
+                onChange={v => onChangeSetting(s => s.herbPreUseCommand = v)}
+            />
+            <TextField
+                id="herbPostUseCommand"
+                label="Komendy po użyciu:"
+                value={settings.herbPostUseCommand}
+                hint="Oddziel komendy średnikiem (;)"
+                onChange={v => onChangeSetting(s => s.herbPostUseCommand = v)}
+            />
+            <NumberField
+                id="herbWieleCount"
+                label={'Ilosc "wiele"'}
+                value={settings.herbWieleCount}
+                min={1}
+                onChange={n => onChangeSetting(s => s.herbWieleCount = n > 0 ? n : 25)}
+            />
+        </SettingsCard>
     );
 }
 
 export function CuttingSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Wycinanie/Wyrywanie</h5>
-            <div className="character-settings-stack">
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy przed wycinaniem:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.cuttingPreAction}
-                        onChange={e => onChangeSetting(s => s.cuttingPreAction = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy po wycinaniu:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.cuttingPostAction}
-                        onChange={e => onChangeSetting(s => s.cuttingPostAction = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-            </div>
-        </section>
+        <SettingsCard title="Wycinanie/Wyrywanie">
+            <TextField
+                id="cuttingPreAction"
+                label="Komendy przed wycinaniem:"
+                value={settings.cuttingPreAction}
+                hint="Oddziel komendy średnikiem (;)"
+                onChange={v => onChangeSetting(s => s.cuttingPreAction = v)}
+            />
+            <TextField
+                id="cuttingPostAction"
+                label="Komendy po wycinaniu:"
+                value={settings.cuttingPostAction}
+                hint="Oddziel komendy średnikiem (;)"
+                onChange={v => onChangeSetting(s => s.cuttingPostAction = v)}
+            />
+        </SettingsCard>
     );
 }
 
 export function DrawSheatheSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
     return (
-        <section className="character-settings-section">
-            <h5 className="character-settings-section-title">Dobywanie/Opuszczanie</h5>
-            <div className="character-settings-stack">
-                <Form.Text className="text-muted mb-2">
-                    /dob bez argumentu wysyla komendy 1 i 2, /dob [1-3] wysyla wybrany slot. Analogicznie /op.
-                    Oddziel komendy srednikiem (;).
-                </Form.Text>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /dob 1:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.dobCommand1}
-                        onChange={e => onChangeSetting(s => s.dobCommand1 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /dob 2:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.dobCommand2}
-                        onChange={e => onChangeSetting(s => s.dobCommand2 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /dob 3:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.dobCommand3}
-                        onChange={e => onChangeSetting(s => s.dobCommand3 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /op 1:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.opCommand1}
-                        onChange={e => onChangeSetting(s => s.opCommand1 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /op 2:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.opCommand2}
-                        onChange={e => onChangeSetting(s => s.opCommand2 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /op 3:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.opCommand3}
-                        onChange={e => onChangeSetting(s => s.opCommand3 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-            </div>
-        </section>
+        <SettingsCard title="Dobywanie/Opuszczanie">
+            <SettingsHint>
+                /dob bez argumentu wysyla komendy 1 i 2, /dob [1-3] wysyla wybrany slot. Analogicznie /op.
+                Oddziel komendy srednikiem (;).
+            </SettingsHint>
+            <TextField id="dobCommand1" label="Komenda /dob 1:" value={settings.dobCommand1} onChange={v => onChangeSetting(s => s.dobCommand1 = v)}/>
+            <TextField id="dobCommand2" label="Komenda /dob 2:" value={settings.dobCommand2} onChange={v => onChangeSetting(s => s.dobCommand2 = v)}/>
+            <TextField id="dobCommand3" label="Komenda /dob 3:" value={settings.dobCommand3} onChange={v => onChangeSetting(s => s.dobCommand3 = v)}/>
+            <TextField id="opCommand1" label="Komenda /op 1:" value={settings.opCommand1} onChange={v => onChangeSetting(s => s.opCommand1 = v)}/>
+            <TextField id="opCommand2" label="Komenda /op 2:" value={settings.opCommand2} onChange={v => onChangeSetting(s => s.opCommand2 = v)}/>
+            <TextField id="opCommand3" label="Komenda /op 3:" value={settings.opCommand3} onChange={v => onChangeSetting(s => s.opCommand3 = v)}/>
+        </SettingsCard>
     );
 }
 
@@ -742,114 +529,87 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
     const [aliasAdjInput, setAliasAdjInput] = useState<string>('');
     const [aliasLangInput, setAliasLangInput] = useState<string>('potoczna');
 
+    const addAlias = () => {
+        const alias = aliasInput.trim();
+        if (!alias) return;
+        onChangeSetting(s => s.languageAliases = [...s.languageAliases, {
+            alias,
+            adjective: aliasAdjInput.trim(),
+            language: aliasLangInput,
+        }]);
+        setAliasInput('');
+        setAliasAdjInput('');
+    };
+
     return (
-        <section className="character-settings-section character-settings-section--full">
-            <h5 className="character-settings-section-title">Język</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Przyslowek:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.languageAdjective}
-                        onChange={e => onChangeSetting(s => s.languageAdjective = e.target.value)}
-                        style={{width: '100%', maxWidth: '10rem'}}
-                    />
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Domyślny język:</Form.Label>
-                    <Form.Select
-                        size="sm"
-                        value={settings.language}
-                        onChange={e => onChangeSetting(s => s.language = e.target.value)}
-                        className="w-auto"
-                    >
-                        {languageOptions.map(lang => (
-                            <option key={lang} value={lang}>{lang}</option>
-                        ))}
-                    </Form.Select>
-                </Form.Group>
-            </div>
-            <table className="table table-modern table-sm table-hover table-zebra mt-3 mb-0">
+        <SettingsCard title="Język" full>
+            <TextField
+                id="languageAdjective"
+                label="Przyslowek"
+                value={settings.languageAdjective}
+                onChange={v => onChangeSetting(s => s.languageAdjective = v)}
+            />
+            {/* This one comes before the alias row's own language select on
+                purpose: character-settings.spec.ts reaches it as the first
+                <select> in the dialog offering "potoczna". */}
+            <SelectField
+                id="language"
+                label="Domyślny język"
+                value={settings.language}
+                onChange={v => onChangeSetting(s => s.language = v)}
+            >
+                {languageOptions.map(lang => (
+                    <option key={lang} value={lang}>{lang}</option>
+                ))}
+            </SelectField>
+            <Table compact zebra hoverable>
                 <thead>
-                <tr>
-                    <th>Alias</th>
-                    <th>Przyslowek</th>
-                    <th>Język</th>
-                    <th></th>
-                </tr>
+                <TableRow>
+                    <TableHeadCell>Alias</TableHeadCell>
+                    <TableHeadCell>Przyslowek</TableHeadCell>
+                    <TableHeadCell>Język</TableHeadCell>
+                    <TableHeadCell/>
+                </TableRow>
                 </thead>
                 <tbody>
                 {settings.languageAliases.map(item => (
-                    <tr key={item.alias}>
-                        <td>{item.alias}</td>
-                        <td>{item.adjective}</td>
-                        <td>{item.language}</td>
-                        <td>
+                    <TableRow key={item.alias}>
+                        <TableCell>{item.alias}</TableCell>
+                        <TableCell>{item.adjective}</TableCell>
+                        <TableCell>{item.language}</TableCell>
+                        <TableCell>
                             <Button
                                 size="sm"
-                                variant="secondary"
+                                variant="ghost"
                                 onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}
                             >
                                 Usuń
                             </Button>
-                        </td>
-                    </tr>
+                        </TableCell>
+                    </TableRow>
                 ))}
+                {/* Scratch row, not a setting: TableRow takes no data-* props
+                    and the table styles plain <tr>, so this one stays raw. */}
                 <tr data-settings-ignore>
-                    <td>
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            value={aliasInput}
-                            onChange={e => setAliasInput(e.target.value)}
-                            placeholder="np. /po"
-                            style={{width: '100%', maxWidth: '10rem'}}
-                        />
-                    </td>
-                    <td>
-                        <Form.Control
-                            type="text"
-                            size="sm"
-                            value={aliasAdjInput}
-                            onChange={e => setAliasAdjInput(e.target.value)}
-                            placeholder="np. potocznie"
-                            style={{width: '100%', maxWidth: '10rem'}}
-                        />
-                    </td>
-                    <td>
-                        <Form.Select
-                            size="sm"
-                            value={aliasLangInput}
-                            onChange={e => setAliasLangInput(e.target.value)}
-                            className="w-auto"
-                        >
+                    <TableCell>
+                        <TextField id="languageAliasNew" value={aliasInput} placeholder="np. /po" onChange={setAliasInput}/>
+                    </TableCell>
+                    <TableCell>
+                        <TextField id="languageAliasAdjNew" value={aliasAdjInput} placeholder="np. potocznie" onChange={setAliasAdjInput}/>
+                    </TableCell>
+                    <TableCell>
+                        <SelectField id="languageAliasLangNew" value={aliasLangInput} onChange={setAliasLangInput}>
                             {languageOptions.map(lang => (
                                 <option key={lang} value={lang}>{lang}</option>
                             ))}
-                        </Form.Select>
-                    </td>
-                    <td>
-                        <Button
-                            size="sm"
-                            onClick={() => {
-                                if (aliasInput.trim()) {
-                                    onChangeSetting(s => s.languageAliases = [...s.languageAliases, {
-                                        alias: aliasInput.trim(),
-                                        adjective: aliasAdjInput.trim(),
-                                        language: aliasLangInput
-                                    }]);
-                                    setAliasInput('');
-                                    setAliasAdjInput('');
-                                }
-                            }}
-                        >
-                            Dodaj
-                        </Button>
-                    </td>
+                        </SelectField>
+                    </TableCell>
+                    <TableCell>
+                        <Button size="sm" onClick={addAlias}>Dodaj</Button>
+                    </TableCell>
                 </tr>
                 </tbody>
-            </table>
-        </section>
+            </Table>
+        </SettingsCard>
     );
 }

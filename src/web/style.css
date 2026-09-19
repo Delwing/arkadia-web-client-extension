@@ -460,20 +460,32 @@ body {
    because themes/bridge.css maps --popup-* onto --ark-*, and it would break
    outright the day that bridge is deleted. Same zero-specificity guard as the
    `button` rules below; .form-control/.form-select are Bootstrap's own classes
-   and no design-system element carries them, so they are left alone. */
+   and no design-system element carries them, so they are left alone.
+
+   The guard excludes `settings-` as well as `ark-`, and that is not belt and
+   braces. The migrated settings layer keeps three controls native on purpose
+   -- .settings-native-select, .settings-color and .settings-range, because
+   @design has no <optgroup>, no colour picker and Playwright cannot drive a
+   Radix listbox with selectOption() -- and styles them from tokens under their
+   own class names. Those names do not start with `ark-`, so `.modal select`
+   and `.modal input` (0,1,1) went on out-specifying .settings-native-select
+   (0,1,0) and painting them from --popup-* anyway: the token declarations in
+   settingsDialog.css were dead for background, border and radius. The whole
+   `settings-` namespace lives in that one migrated stylesheet, so excluding
+   the prefix is exactly "this layer paints itself". */
 .form-control,
 .form-select,
-textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-.modal textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-.modal input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])),
-.modal select:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+.modal textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+.modal input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])),
+.modal select:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   background-color: var(--popup-input-bg);
   border: 1px solid var(--popup-border-control);
   color: var(--popup-input-text);
@@ -483,14 +495,14 @@ input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], 
 
 .form-control:focus,
 .form-select:focus,
-textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus {
   background-color: var(--popup-input-bg);
   border-color: var(--popup-input-focus-border);
   box-shadow: 0 0 0 0.2rem var(--popup-input-focus-border);
@@ -498,23 +510,30 @@ input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], 
   outline: none;
 }
 
+/* The third of these. `input::placeholder` is (0,0,1) plus a pseudo-element
+   and nothing in the design system out-specifies it, so every migrated
+   placeholder in the client -- the settings dialog's own search box included --
+   was drawn in --popup-text-faint. The guarded rules above and below it were
+   fixed in PR 1 and PR 2; this one sits between them and was missed, because
+   the bridge maps --popup-text-faint onto the same value the token resolves to
+   and the two are indistinguishable on screen. Same zero-specificity guard. */
 .form-control::placeholder,
-textarea::placeholder,
-input::placeholder {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-']))::placeholder,
+input:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-']))::placeholder {
   color: var(--popup-text-faint);
   opacity: 1;
 }
 
 .form-control:disabled,
 .form-select:disabled,
-textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled,
-input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):disabled {
+textarea:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="text"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="email"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="password"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="number"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="search"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="tel"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled,
+input[type="url"]:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):disabled {
   background-color: var(--popup-subtle-bg);
   border-color: var(--popup-border-subtle);
   color: var(--popup-text-dim);
@@ -1759,7 +1778,7 @@ h1 {
    `:where()` around the `:not()` keeps the selector at a bare element's
    specificity, so nothing else in the stock cascade moves. Add a namespace
    here when a screen migrates; the whole block goes when Bootstrap does. */
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
   padding: 0.75vh 2vw;
@@ -1773,11 +1792,11 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   transition: border-color 0.25s;
   opacity: 0.75;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):hover {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):hover {
   border-color: #646cff;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus,
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])):focus-visible {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus-visible {
   outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
@@ -1789,7 +1808,7 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   a:hover {
   color: #747bff;
   }
-  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   background-color: #f9f9f9;
   }
 }
@@ -2064,7 +2083,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
      Migrated screens are out for the same reason as the skin above: their
      controls carry their own sizing from the --ark-control-* ladder, and
      8vmin would square off every checkbox on a phone. */
-  button:where(:not(.popout-root *)):where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'])) {
+  button:where(:not(.popout-root *)):where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
   min-height: 8vmin; /* Minimum touch target size */
   min-width: 8vmin;
   }
@@ -2086,452 +2105,21 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Direction Buttons (visible on both mobile and desktop) — moved to
    src/ui/web/buttons/mobileDirectionButtons.css (shared with forge-ui, since
    MobileDirectionButtons is now a shared React component imported from
-   @web-ui/buttons/MobileDirectionButtons). Imported below. The settings-editor
-   preview grid below (#mobile-buttons-preview*) stays here — it's stock-only. */
+   @web-ui/buttons/MobileDirectionButtons). Imported below. */
 
-#mobile-buttons-preview,
-#mobile-buttons-preview-solo,
-#mobile-buttons-preview-team,
-#mobile-buttons-preview-leader {
-  position: static;
-  display: grid;
-  grid-template-columns: repeat(4, auto);
-  gap: 10px;
-}
-
-/* Mobile button config popup - enhanced styling */
-.mobile-button-config {
-  position: fixed;
-  background-color: var(--popup-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.75rem;
-  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4);
-  z-index: 1060;
-  width: 380px;
-  max-height: 70vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Mobile bottom sheet transformation */
-@media (max-width: 767px) {
-  .mobile-button-config {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    width: auto;
-    max-width: none;
-    max-height: 85vh;
-    border-radius: 1rem 1rem 0 0;
-    transform: translateY(100%);
-    transition: transform 0.3s ease-out;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-  }
-
-  .mobile-button-config.open {
-    transform: translateY(0);
-  }
-}
-
-/* Config popup header */
-.mobile-button-config-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--popup-border-subtle);
-  position: sticky;
-  top: 0;
-  background-color: var(--popup-bg);
-  z-index: 1;
-}
-
-.mobile-button-config-header-title {
-  font-weight: 600;
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* Mobile drag handle indicator */
-@media (max-width: 767px) {
-  .mobile-button-config-header::before {
-    content: '';
-    position: absolute;
-    top: 0.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2.5rem;
-    height: 0.25rem;
-    background-color: var(--popup-border);
-    border-radius: 2px;
-  }
-
-  .mobile-button-config-header {
-    padding-top: 1.25rem;
-  }
-}
-
-/* Config popup body */
-.mobile-button-config-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-@media (max-width: 767px) {
-  .mobile-button-config-body {
-    max-height: calc(85vh - 3.5rem);
-    overflow-y: auto;
-  }
-}
-
-/* Config sections */
-.mobile-button-config-section {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  min-width: 0;
-}
-
-.mobile-button-config-section-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  margin: 0 0 0.25rem 0;
-}
-
-/* Inline form rows in config sections */
-.mobile-button-config-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.mobile-button-config-row .form-label {
-  flex-shrink: 0;
-  min-width: 60px;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.mobile-button-config-row .form-select,
-.mobile-button-config-row .form-control {
-  flex: 1;
-}
-
-/* Constrain alerts in config popup */
-.mobile-button-config .alert {
-  word-break: break-word;
-}
-
-/* Color control rows */
-.mobile-button-color-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.mobile-button-color-row .form-label {
-  flex: 1;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.mobile-button-color-row input[type="color"] {
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0.125rem;
-  border-radius: 0.375rem;
-  flex-shrink: 0;
-}
-
-/* Hold section styling */
-.mobile-button-config-hold-section {
-  border-top: 1px solid var(--popup-border);
-  padding-top: 1rem;
-  margin-top: 0.5rem;
-}
-
-.mobile-button-config-hold-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.mobile-button-config-hold-toggle.form-check {
-  padding-left: 0.75rem;
-}
-
-.mobile-button-config-hold-toggle .form-check-input {
-  position: static;
-  margin: 0;
-  margin-right: 0.5rem;
-  float: none;
-}
-
-/* Backdrop for mobile bottom sheet */
-.mobile-button-config-backdrop {
-  display: none;
-}
-
-@media (max-width: 767px) {
-  .mobile-button-config-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1049;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-
-  .mobile-button-config-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-/* Touch target improvements for mobile */
-@media (max-width: 768px) {
-  .mobile-button-config .form-select,
-  .mobile-button-config .form-control,
-  .mobile-button-config .btn {
-    min-height: 44px;
-    font-size: 1rem;
-  }
-
-  .mobile-button-config input[type="color"] {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .mobile-button-config .form-check {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-  }
-
-  .mobile-button-config .form-check-input {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.75rem;
-  }
-}
-
-/* Grid toolbar */
-.mobile-buttons-grid-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.5rem;
-  align-items: center;
-  justify-content: center;
-}
-
-.mobile-buttons-grid-toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.mobile-buttons-grid-toolbar-group .btn {
-  padding: 0.375rem 0.5rem;
-  font-size: 0.8rem;
-  min-width: 2rem;
-}
-
-.mobile-buttons-grid-toolbar-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-right: 0.25rem;
-  white-space: nowrap;
-}
-
-@media (max-width: 576px) {
-  .mobile-buttons-grid-toolbar {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .mobile-buttons-grid-toolbar-group {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .mobile-buttons-grid-toolbar-group .btn {
-    min-height: 36px;
-    min-width: 36px;
-  }
-}
-
-/* Top row with mode toggle and lock switch */
-.mobile-buttons-top-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Enhanced mode toggles - segmented control pattern */
-.mobile-buttons-mode-toggle {
-  display: inline-flex;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.5rem;
-  padding: 0.25rem;
-  gap: 0;
-}
-
-.mobile-buttons-mode-toggle .btn {
-  border: none !important;
-  background: transparent;
-  color: var(--text-secondary);
-  border-radius: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  font-weight: 500;
-  font-size: 0.8rem;
-  transition: all 0.15s ease;
-}
-
-.mobile-buttons-mode-toggle .btn:hover {
-  color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.mobile-buttons-mode-toggle .btn-primary,
-.mobile-buttons-mode-toggle .btn.btn-primary {
-  background-color: var(--bs-primary) !important;
-  color: #fff !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-@media (max-width: 480px) {
-  .mobile-buttons-mode-toggle .btn {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.75rem;
-  }
-}
-
-/* Background picker section */
-.mobile-buttons-background-section {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.mobile-buttons-background-section .form-label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.mobile-buttons-background-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-}
-
-.mobile-buttons-background-color {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.25rem;
-  padding: 0.125rem;
-  flex-shrink: 0;
-}
-
-.mobile-buttons-background-alpha {
-  flex: 1;
-  min-width: 80px;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.mobile-buttons-background-alpha-value {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  min-width: 2rem;
-  text-align: right;
-}
-
-/* Mobile button size/gap sliders - stack on mobile for better slider width */
-@media (max-width: 480px) {
-  .mobile-buttons-background-section {
-    flex-wrap: wrap;
-  }
-
-  .mobile-buttons-background-section > .form-label {
-    width: 100%;
-    margin-bottom: 0.25rem;
-  }
-
-  .mobile-buttons-background-section > .mobile-buttons-background-controls {
-    width: 100%;
-    margin-bottom: 0.5rem;
-  }
-
-  .mobile-buttons-background-section > .mobile-buttons-background-controls:last-child {
-    margin-bottom: 0;
-  }
-}
-
-/* Enhanced grid preview styling */
-.mobile-direction-buttons.preview {
-  border: 2px dashed var(--popup-border);
-  background-color: var(--popup-control-bg);
-  padding: 5px;
-  border-radius: 5px;
-}
-
-.mobile-direction-buttons.preview .mobile-button {
-  width: 36px;
-  height: 36px;
-}
-
-.mobile-direction-buttons.preview .mobile-button.editing {
-  outline: 2px solid var(--bs-primary);
-  outline-offset: 1px;
-}
+/* Mobile buttons settings editor (.mobile-button-config*, .mobile-buttons-*,
+   the .preview grid) -- moved to src/web/options/mobileButtons.css when the
+   "Przyciski mobilne" page moved onto the design system (UI_MIGRATION.md
+   section 4). It is imported by MobileButtons.tsx, which is the only thing
+   that renders it. The live buttons keep their own shared sheet. */
 
 /* Mobile direction buttons runtime CSS (.mobile-button, .direction-button,
    .mobile-z-buttons, the collapsed-state rule, etc.) — moved to
    src/ui/web/buttons/mobileDirectionButtons.css (shared with forge-ui, since
    MobileDirectionButtons is now a shared React component imported from
-   @web-ui/buttons/MobileDirectionButtons). Imported below. Still relied on
-   here by the settings-editor preview grid above (.preview .mobile-button*),
-   which stays stock-only. */
-
-.mobile-direction-buttons.preview .mobile-button.empty {
-  border: 1px dashed #888;
-}
+   @web-ui/buttons/MobileDirectionButtons). Imported below. The settings
+   editor's preview grid restyles .preview .mobile-button* on top of it, from
+   src/web/options/mobileButtons.css. */
 
 /* Mobile command radial — moved to src/ui/web/buttons/mobileCommandRadial.css
    (shared with forge-ui, since MobileCommandRadial is now a shared React

@@ -65,6 +65,8 @@ const MIGRATED_SHEETS = [
     "src/web/settings/settingsDialog.css",
     "src/web/options/guildsSettings.css",
     "src/web/options/magikiSettings.css",
+    // Faza 4 — pozostale strony ustawien (PR 3).
+    "src/web/options/mobileButtons.css",
 ];
 
 /**

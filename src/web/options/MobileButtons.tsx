@@ -1,5 +1,6 @@
 import {RefObject, useEffect, useRef, useState} from "react";
-import {Button, Form} from "react-bootstrap";
+import {Button, IconButton, Input} from "@design";
+import {CheckboxField} from "@web/settings/controls.tsx";
 import {
     applySettings,
     createDefaultLayout,
@@ -26,6 +27,12 @@ import MacroSelect from "./MacroSelect";
 import MacroConfigEditor from "./MacroConfigEditor";
 import HoldConfig from "./HoldConfig";
 import { SettingsValue } from "@web/settings/SettingsValue.tsx";
+import "./mobileButtons.css";
+
+/** The live button's own 'active' tint, not a theme role. */
+const DEFAULT_ACTIVE_COLOR = '#2fa7c5';
+
+const MODE_LABELS = { solo: 'Bez druzyny', team: 'W druzynie', leader: 'Prowadzacy' } as const;
 
 const emptySetting: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent', fontColor: defaultFontColor };
 
@@ -361,42 +368,31 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
     return (
         <>
             <SettingsValue value={settings} />
-            <div onClick={close} className="w-100 position-relative" data-settings-ignore>
+            <div onClick={close} className="mobile-buttons-editor" data-settings-ignore>
                 <div className="mobile-buttons-top-row">
                     <div className="mobile-buttons-mode-toggle">
-                        <Button
-                            size="sm"
-                            variant={view === 'solo' ? 'primary' : 'secondary'}
-                            onClick={() => changeView('solo')}
-                        >
-                            Bez druzyny
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant={view === 'team' ? 'primary' : 'secondary'}
-                            onClick={() => changeView('team')}
-                        >
-                            W druzynie
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant={view === 'leader' ? 'primary' : 'secondary'}
-                            onClick={() => changeView('leader')}
-                        >
-                            Prowadzacy
-                        </Button>
+                        {(['solo', 'team', 'leader'] as const).map(mode => (
+                            <Button
+                                key={mode}
+                                size="sm"
+                                variant={view === mode ? 'solid' : 'soft'}
+                                onClick={() => changeView(mode)}
+                            >
+                                {MODE_LABELS[mode]}
+                            </Button>
+                        ))}
                     </div>
-                    <div className="d-flex align-items-center gap-2">
-                        <Button size="sm" variant="outline-secondary" onClick={resetPosition}>
+                    <div className="settings-button-row">
+                        <Button size="sm" variant="outline" onClick={resetPosition}>
                             Resetuj pozycje
                         </Button>
-                        <Form.Check
+                        {/* A Checkbox, not a Switch: written by the dialog's
+                            Save button. See BarOrderSettings. */}
+                        <CheckboxField
                             id="mobile-buttons-lock"
-                            type="switch"
-                            className="user-select-none"
                             label="Zablokuj"
                             checked={settings.locked}
-                            onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
+                            onChange={checked => setSettings(prev => ({ ...prev, locked: checked }))}
                         />
                     </div>
                 </div>
@@ -408,10 +404,11 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                     onMouseDown={ev => ev.stopPropagation()}
                     onTouchStart={ev => ev.stopPropagation()}
                 >
-                    <Form.Label>Rozmiar przycisku</Form.Label>
+                    <span className="mobile-buttons-section-label">Rozmiar przycisku</span>
                     <div className="mobile-buttons-background-controls">
-                        <Form.Range
-                            className="flex-grow-1"
+                        <input
+                            type="range"
+                            className="settings-range"
                             min={20}
                             max={80}
                             value={settings.buttonSize ?? defaultButtonSize}
@@ -420,17 +417,19 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         <span className="mobile-buttons-background-alpha-value">{settings.buttonSize ?? defaultButtonSize}px</span>
                         <Button
                             size="sm"
-                            variant="outline-secondary"
+                            variant="outline"
+                            title="Przywróć domyślny rozmiar"
                             data-testid="reset-button-size"
                             onClick={() => setSettings(prev => ({ ...prev, buttonSize: defaultButtonSize }))}
                         >
                             ↺
                         </Button>
                     </div>
-                    <Form.Label className="mt-2">Odstep</Form.Label>
+                    <span className="mobile-buttons-section-label">Odstep</span>
                     <div className="mobile-buttons-background-controls">
-                        <Form.Range
-                            className="flex-grow-1"
+                        <input
+                            type="range"
+                            className="settings-range"
                             min={0}
                             max={20}
                             value={settings.buttonGap ?? defaultButtonGap}
@@ -439,7 +438,8 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         <span className="mobile-buttons-background-alpha-value">{settings.buttonGap ?? defaultButtonGap}px</span>
                         <Button
                             size="sm"
-                            variant="outline-secondary"
+                            variant="outline"
+                            title="Przywróć domyślny odstep"
                             data-testid="reset-button-gap"
                             onClick={() => setSettings(prev => ({ ...prev, buttonGap: defaultButtonGap }))}
                         >
@@ -449,15 +449,15 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                 </div>
 
                 {/* Button grid with spatial controls */}
-                <div className="d-flex flex-column align-items-center mb-3">
-                    <div className="d-flex gap-1 mb-2">
-                        <Button size="sm" variant="outline-secondary" onClick={() => addRow('top')} title="Dodaj wiersz">+</Button>
-                        <Button size="sm" variant="outline-secondary" onClick={() => removeRow('top')} title="Usun wiersz">-</Button>
+                <div className="mobile-buttons-grid-editor">
+                    <div className="mobile-buttons-grid-toolbar-group">
+                        <Button size="sm" variant="outline" onClick={() => addRow('top')} title="Dodaj wiersz">+</Button>
+                        <Button size="sm" variant="outline" onClick={() => removeRow('top')} title="Usun wiersz">-</Button>
                     </div>
-                    <div className="d-flex align-items-center gap-2">
-                        <div className="d-flex flex-column gap-1">
-                            <Button size="sm" variant="outline-secondary" onClick={() => addCol('left')} title="Dodaj kolumne">+</Button>
-                            <Button size="sm" variant="outline-secondary" onClick={() => removeCol('left')} title="Usun kolumne">-</Button>
+                    <div className="mobile-buttons-grid-editor__middle">
+                        <div className="mobile-buttons-grid-toolbar-group mobile-buttons-grid-toolbar-group--column">
+                            <Button size="sm" variant="outline" onClick={() => addCol('left')} title="Dodaj kolumne">+</Button>
+                            <Button size="sm" variant="outline" onClick={() => removeCol('left')} title="Usun kolumne">-</Button>
                         </div>
                         <div>
                             {modes.map(mode => (
@@ -474,14 +474,14 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                 />
                             ))}
                         </div>
-                        <div className="d-flex flex-column gap-1">
-                            <Button size="sm" variant="outline-secondary" onClick={() => addCol('right')} title="Dodaj kolumne">+</Button>
-                            <Button size="sm" variant="outline-secondary" onClick={() => removeCol('right')} title="Usun kolumne">-</Button>
+                        <div className="mobile-buttons-grid-toolbar-group mobile-buttons-grid-toolbar-group--column">
+                            <Button size="sm" variant="outline" onClick={() => addCol('right')} title="Dodaj kolumne">+</Button>
+                            <Button size="sm" variant="outline" onClick={() => removeCol('right')} title="Usun kolumne">-</Button>
                         </div>
                     </div>
-                    <div className="d-flex gap-1 mt-2">
-                        <Button size="sm" variant="outline-secondary" onClick={() => addRow('bottom')} title="Dodaj wiersz">+</Button>
-                        <Button size="sm" variant="outline-secondary" onClick={() => removeRow('bottom')} title="Usun wiersz">-</Button>
+                    <div className="mobile-buttons-grid-toolbar-group">
+                        <Button size="sm" variant="outline" onClick={() => addRow('bottom')} title="Dodaj wiersz">+</Button>
+                        <Button size="sm" variant="outline" onClick={() => removeRow('bottom')} title="Usun wiersz">-</Button>
                     </div>
                 </div>
 
@@ -492,11 +492,11 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                     onMouseDown={ev => ev.stopPropagation()}
                     onTouchStart={ev => ev.stopPropagation()}
                 >
-                    <Form.Label>Kolor tla</Form.Label>
+                    <span className="mobile-buttons-section-label">Kolor tla</span>
                     <div className="mobile-buttons-background-controls">
-                        <Form.Control
+                        <input
                             type="color"
-                            className="mobile-buttons-background-color"
+                            className="settings-color mobile-buttons-background-color"
                             value={backgroundHex}
                             onChange={e => {
                                 const hex = e.target.value;
@@ -514,8 +514,9 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                             }}
                         />
                         <div className="mobile-buttons-background-alpha">
-                            <Form.Range
-                                className="flex-grow-1"
+                            <input
+                                type="range"
+                                className="settings-range"
                                 min={0}
                                 max={100}
                                 value={Math.round(backgroundAlpha * 100)}
@@ -538,7 +539,8 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         </div>
                         <Button
                             size="sm"
-                            variant="outline-secondary"
+                            variant="outline"
+                            title="Przywróć domyślne tlo"
                             onClick={() => {
                                 setSettings(prev => ({
                                     ...prev,
@@ -546,7 +548,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                 }));
                             }}
                         >
-                            ↺
+                            {'↺'}
                         </Button>
                     </div>
                 </div>
@@ -566,7 +568,9 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         {/* Header */}
                         <div className="mobile-button-config-header">
                             <h6 className="mobile-button-config-header-title">Konfiguracja przycisku</h6>
-                            <button type="button" className="btn-close" data-testid="dialog-close" onClick={close} />
+                            <IconButton plain size="sm" title="Zamknij" data-testid="dialog-close" onClick={close}>
+                                {'\u00d7'}
+                            </IconButton>
                         </div>
 
                         {/* Body */}
@@ -575,7 +579,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                             <div className="mobile-button-config-section">
                                 <div className="mobile-button-config-section-title">Podstawowe</div>
                                 <div className="mobile-button-config-row">
-                                    <Form.Label>Makro</Form.Label>
+                                    <span className="mobile-button-config-row__label">Makro</span>
                                     <MacroSelect
                                         value={activeCfg.macroType}
                                         onChange={val => {
@@ -594,15 +598,15 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                     />
                                 </div>
                                 {!isButtonMacroAvailable(activeCfg.macroType) && (
-                                    <Form.Text className="text-warning">
+                                    <p className="settings-hint settings-hint--warning">
                                         Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
-                                    </Form.Text>
+                                    </p>
                                 )}
                                 {activeCfg.macroType !== 'empty' && (
                                     <div className="mobile-button-config-row">
-                                        <Form.Label>Etykieta</Form.Label>
-                                        <Form.Control
-                                            size="sm"
+                                        <label className="mobile-button-config-row__label" htmlFor="mobile-button-label">Etykieta</label>
+                                        <Input
+                                            id="mobile-button-label"
                                             className="mobile-button-label"
                                             type="text"
                                             value={activeCfg.label}
@@ -633,9 +637,9 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                 <div className="mobile-button-config-section">
                                     <div className="mobile-button-config-section-title">Wyglad</div>
                                     <div className="mobile-button-color-row">
-                                        <Form.Label>Kolor</Form.Label>
-                                        <Form.Control
-                                            size="sm"
+                                        <span className="mobile-button-config-row__label">Kolor</span>
+                                        <input
+                                            className="settings-color"
                                             type="color"
                                             value={activeCfg.color}
                                             onChange={e => {
@@ -647,12 +651,12 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                                 }
                                             }}
                                         />
-                                        <Button size="sm" variant="outline-secondary" onClick={() => resetColor(active!.set, active!.id)}>↺</Button>
+                                        <Button size="sm" variant="outline" title="Przywróć domyślny kolor" onClick={() => resetColor(active!.set, active!.id)}>{'↺'}</Button>
                                     </div>
                                     <div className="mobile-button-color-row">
-                                        <Form.Label>Kolor czcionki</Form.Label>
-                                        <Form.Control
-                                            size="sm"
+                                        <span className="mobile-button-config-row__label">Kolor czcionki</span>
+                                        <input
+                                            className="settings-color"
                                             type="color"
                                             value={activeCfg.fontColor || defaultSettings[active!.id]?.fontColor || defaultFontColor}
                                             onChange={e => {
@@ -664,15 +668,15 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                                 }
                                             }}
                                         />
-                                        <Button size="sm" variant="outline-secondary" onClick={() => resetFontColor(active!.set, active!.id)}>↺</Button>
+                                        <Button size="sm" variant="outline" title="Przywróć domyślny kolor" onClick={() => resetFontColor(active!.set, active!.id)}>{'↺'}</Button>
                                     </div>
                                     {activeCfg.macroType === 'kierunek' && (
                                         <div className="mobile-button-color-row">
-                                            <Form.Label>Kolor aktywny</Form.Label>
-                                            <Form.Control
-                                                size="sm"
+                                            <span className="mobile-button-config-row__label">Kolor aktywny</span>
+                                            <input
+                                                className="settings-color"
                                                 type="color"
-                                                value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || '#2fa7c5'}
+                                                value={activeCfg.activeColor || defaultSettings[active!.id]?.activeColor || DEFAULT_ACTIVE_COLOR}
                                                 onChange={e => {
                                                     const val = e.target.value;
                                                     if (syncDirs) {
@@ -682,15 +686,15 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                                     }
                                                 }}
                                             />
-                                            <Button size="sm" variant="outline-secondary" onClick={() => resetActiveColor(active!.set, active!.id)}>↺</Button>
+                                            <Button size="sm" variant="outline" title="Przywróć domyślny kolor" onClick={() => resetActiveColor(active!.set, active!.id)}>{'↺'}</Button>
                                         </div>
                                     )}
                                     {activeCfg.macroType === 'kierunek' && (
-                                        <Form.Check
-                                            type="checkbox"
+                                        <CheckboxField
+                                            id="mobile-button-sync-directions"
                                             label="Synchronizuj kolory kierunkow"
                                             checked={syncDirs}
-                                            onChange={e => setSyncDirs(e.target.checked)}
+                                            onChange={setSyncDirs}
                                         />
                                     )}
                                 </div>
@@ -699,22 +703,22 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                             {activeCfg.macroType === "specialExit" && (
                                 <div className="mobile-button-config-section">
                                     <div className="mobile-button-config-section-title">Opcje</div>
-                                    <Form.Check
-                                        type="checkbox"
+                                    <CheckboxField
+                                        id="mobile-button-sync-with-directions"
                                         label="Synchronizuj z kierunkami"
                                         checked={activeCfg.syncWithDirections || false}
-                                        onChange={e => update(active!.set, active!.id, "syncWithDirections", e.target.checked)}
+                                        onChange={checked => update(active!.set, active!.id, "syncWithDirections", checked)}
                                     />
                                     {!activeCfg.syncWithDirections && (
                                         <div className="mobile-button-color-row">
-                                            <Form.Label>Kolor aktywny</Form.Label>
-                                            <Form.Control
-                                                size="sm"
+                                            <span className="mobile-button-config-row__label">Kolor aktywny</span>
+                                            <input
+                                                className="settings-color"
                                                 type="color"
-                                                value={activeCfg.activeColor || '#2fa7c5'}
+                                                value={activeCfg.activeColor || DEFAULT_ACTIVE_COLOR}
                                                 onChange={e => update(active!.set, active!.id, 'activeColor', e.target.value)}
                                             />
-                                            <Button size="sm" variant="outline-secondary" onClick={() => update(active!.set, active!.id, 'activeColor', '#2fa7c5')}>↺</Button>
+                                            <Button size="sm" variant="outline" title="Przywróć domyślny kolor" onClick={() => update(active!.set, active!.id, 'activeColor', DEFAULT_ACTIVE_COLOR)}>{'↺'}</Button>
                                         </div>
                                     )}
                                 </div>
@@ -735,21 +739,20 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         </div>
                     </div>
                 )}
-                <div className="d-flex flex-wrap align-items-center gap-2 mt-2">
-                    <Button size="sm" variant="outline-secondary" onClick={() => restoreDefaults(view)}>
+                <div className="settings-button-row">
+                    <Button size="sm" variant="outline" onClick={() => restoreDefaults(view)}>
                         Domyslne
                     </Button>
-                    <Form.Select
-                        size="sm"
+                    <select
+                        className="settings-native-select"
                         value={copyFrom}
                         onChange={e => setCopyFrom(e.target.value as Mode)}
-                        style={{ width: 'auto', minWidth: '120px' }}
                     >
                         <option value="solo">Bez druzyny</option>
                         <option value="team">W druzynie</option>
                         <option value="leader">Prowadzacy</option>
-                    </Form.Select>
-                    <Button size="sm" variant="secondary" onClick={() => copyLayout(copyFrom)}>
+                    </select>
+                    <Button size="sm" onClick={() => copyLayout(copyFrom)}>
                         Kopiuj
                     </Button>
                 </div>

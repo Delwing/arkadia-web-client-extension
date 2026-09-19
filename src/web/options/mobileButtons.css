@@ -1,0 +1,322 @@
+/* Interfejs > Przyciski mobilne — the editor, on the design system.
+ *
+ * These rules used to live in src/web/style.css and read --popup-*. They came
+ * here with the page (UI_MIGRATION.md §4) rather than staying behind, because
+ * they style the settings editor only: the live mobile buttons are a shared
+ * component with its own sheet (@web-ui/buttons/mobileDirectionButtons.css),
+ * which forge-ui renders too and which this file must not touch.
+ *
+ * The Bootstrap-descendant selectors the old rules leaned on (.form-label,
+ * .form-select, .btn, .form-check-input, .alert) are gone with the markup;
+ * the design system's own primitives size themselves, so what is left here is
+ * layout plus the surfaces the editor invents.
+ */
+
+.mobile-buttons-editor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-5);
+  width: 100%;
+}
+
+/* --- Top row: mode toggle and the lock --- */
+
+.mobile-buttons-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+}
+
+/* A segmented control built from buttons, so the three layouts read as one
+   of three rather than three separate actions. */
+.mobile-buttons-mode-toggle {
+  display: inline-flex;
+  gap: var(--ark-space-1);
+  padding: var(--ark-space-1);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+/* --- Slider strips: button size, gap, background --- */
+
+.mobile-buttons-background-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ark-space-4);
+  padding: var(--ark-space-3) var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.mobile-buttons-section-label {
+  flex-shrink: 0;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-3);
+  font-weight: var(--ark-weight-medium);
+  white-space: nowrap;
+}
+
+.mobile-buttons-background-controls {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 10rem;
+  gap: var(--ark-space-4);
+}
+
+.mobile-buttons-background-color {
+  flex-shrink: 0;
+}
+
+.mobile-buttons-background-alpha {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 5rem;
+  gap: var(--ark-space-3);
+}
+
+.mobile-buttons-background-alpha-value {
+  min-width: 2.5rem;
+  color: var(--ark-text-tertiary);
+  font-family: var(--ark-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ark-text-2);
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .mobile-buttons-background-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* --- The grid, with its add/remove row and column controls --- */
+
+.mobile-buttons-grid-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ark-space-4);
+}
+
+.mobile-buttons-grid-editor__middle {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-4);
+}
+
+.mobile-buttons-grid-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-2);
+}
+
+.mobile-buttons-grid-toolbar-group--column {
+  flex-direction: column;
+}
+
+/* The preview grid lays its buttons out itself rather than taking the live
+   bar's fixed positioning. */
+#mobile-buttons-preview,
+#mobile-buttons-preview-solo,
+#mobile-buttons-preview-team,
+#mobile-buttons-preview-leader {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 10px;
+}
+
+/* Dashed, because it stands for the real thing rather than being it; its fill
+   is the player's chosen background, set inline. */
+.mobile-direction-buttons.preview {
+  padding: var(--ark-space-3);
+  border: 2px dashed var(--ark-border);
+  border-radius: var(--ark-radius-2);
+}
+
+.mobile-direction-buttons.preview .mobile-button {
+  width: 36px;
+  height: 36px;
+}
+
+.mobile-direction-buttons.preview .mobile-button.editing {
+  outline: 2px solid var(--ark-accent-solid);
+  outline-offset: 1px;
+}
+
+.mobile-direction-buttons.preview .mobile-button.empty {
+  border: 1px dashed var(--ark-border-element);
+}
+
+.mobile-buttons-preview--hidden {
+  display: none;
+}
+
+/* --- The per-button config panel --- */
+
+.mobile-button-config {
+  position: fixed;
+  z-index: var(--ark-z-popover);
+  width: 380px;
+  max-height: 70vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--ark-bg-raised);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-4);
+  box-shadow: var(--ark-shadow-4);
+}
+
+.mobile-button-config-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ark-space-4) var(--ark-space-5);
+  background: var(--ark-bg-raised);
+  border-bottom: 1px solid var(--ark-border-subtle);
+}
+
+.mobile-button-config-header-title {
+  margin: 0;
+  font-size: var(--ark-text-5);
+  font-weight: var(--ark-weight-semibold);
+}
+
+.mobile-button-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-5);
+  padding: var(--ark-space-5);
+}
+
+.mobile-button-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-4);
+  min-width: 0;
+  padding: var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.mobile-button-config-section-title {
+  margin: 0;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-2);
+  font-weight: var(--ark-weight-semibold);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.mobile-button-config-row,
+.mobile-button-color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-4);
+}
+
+.mobile-button-config-row__label {
+  flex-shrink: 0;
+  min-width: 60px;
+  color: var(--ark-text-secondary);
+  font-size: var(--ark-text-3);
+}
+
+.mobile-button-color-row .mobile-button-config-row__label {
+  flex: 1;
+}
+
+.mobile-button-config-row > .ark-input,
+.mobile-button-config-row > .settings-native-select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Phone: the panel becomes a bottom sheet --- */
+
+.mobile-button-config-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-button-config {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: auto;
+    max-width: none;
+    max-height: 85vh;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    border-radius: var(--ark-radius-5) var(--ark-radius-5) 0 0;
+    transform: translateY(100%);
+    transition: transform var(--ark-duration-3) ease-out;
+  }
+
+  .mobile-button-config.open {
+    transform: translateY(0);
+  }
+
+  /* The grab bar a bottom sheet is expected to have. */
+  .mobile-button-config-header {
+    padding-top: var(--ark-space-7);
+  }
+
+  .mobile-button-config-header::before {
+    content: '';
+    position: absolute;
+    top: var(--ark-space-3);
+    left: 50%;
+    width: 2.5rem;
+    height: 0.25rem;
+    transform: translateX(-50%);
+    background: var(--ark-border-element);
+    border-radius: var(--ark-radius-full);
+  }
+
+  .mobile-button-config-body {
+    max-height: calc(85vh - 3.5rem);
+    overflow-y: auto;
+  }
+
+  .mobile-button-config-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: var(--ark-z-overlay);
+    background: var(--ark-bg-overlay);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--ark-duration-3) ease;
+  }
+
+  .mobile-button-config-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Touch targets. The design system's controls are already comfortable on a
+   phone; the native ones it has no primitive for are not. */
+@media (max-width: 768px) {
+  .mobile-button-config .settings-native-select,
+  .mobile-button-config .ark-input {
+    min-height: 44px;
+  }
+
+  .mobile-button-config input[type="color"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

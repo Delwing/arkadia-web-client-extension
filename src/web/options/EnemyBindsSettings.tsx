@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Form } from "react-bootstrap";
+import { CheckboxField, SelectField, SettingsCard } from "@web/settings/controls.tsx";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings, Settings } from "./defaultSettings";
 
@@ -45,52 +45,40 @@ function EnemyBindsSettings({ registerSave }: { registerSave: (cb: (sharedSettin
     }, [registerSave, keepUnchanged, showMode, enabledSlots]);
 
     return (
-        <>
-            <section className="character-settings-section">
-                <h5 className="character-settings-section-title">Bindy wrogów (F1-F3)</h5>
-                <div className="d-flex flex-column gap-3">
-                    <Form.Check
-                        type="checkbox"
-                        id="enemyBindsKeepUnchanged"
-                        label="Zachowaj bindy bez zmian (raz przypisane, nie zmieniają się)"
-                        checked={keepUnchanged}
-                        onChange={(e) => setKeepUnchanged(e.target.checked)}
+        <SettingsCard title="Bindy wrogów (F1-F3)">
+            <CheckboxField
+                id="enemyBindsKeepUnchanged"
+                label="Zachowaj bindy bez zmian (raz przypisane, nie zmieniają się)"
+                checked={keepUnchanged}
+                onChange={setKeepUnchanged}
+            />
+            <SelectField
+                id="enemyBindsShowMode"
+                label="Wyświetlanie bindów"
+                value={showMode}
+                onChange={(v) => setShowMode(v as 'always' | 'whenBound' | 'never')}
+            >
+                <option value="always">Zawsze (przy każdej zmianie)</option>
+                <option value="whenBound">Przy pierwszym przypisaniu</option>
+                <option value="never">Nigdy</option>
+            </SelectField>
+            <div className="settings-field">
+                <span className="settings-field__label">Włączone sloty</span>
+                {(['F1', 'F2', 'F3'] as const).map((key, index) => (
+                    <CheckboxField
+                        key={key}
+                        id={`enemyBindSlot${index}`}
+                        label={`${key} - Slot ${index + 1}`}
+                        checked={enabledSlots[index]}
+                        onChange={(checked) => {
+                            const newSlots: [boolean, boolean, boolean] = [...enabledSlots] as [boolean, boolean, boolean];
+                            newSlots[index] = checked;
+                            setEnabledSlots(newSlots);
+                        }}
                     />
-
-                    <Form.Group>
-                        <Form.Label>Wyświetlanie bindów</Form.Label>
-                        <Form.Select
-                            value={showMode}
-                            onChange={(e) => setShowMode(e.target.value as 'always' | 'whenBound' | 'never')}
-                        >
-                            <option value="always">Zawsze (przy każdej zmianie)</option>
-                            <option value="whenBound">Przy pierwszym przypisaniu</option>
-                            <option value="never">Nigdy</option>
-                        </Form.Select>
-                    </Form.Group>
-
-                    <Form.Group>
-                        <Form.Label>Włączone sloty</Form.Label>
-                        <div className="d-flex flex-column gap-2">
-                            {(['F1', 'F2', 'F3'] as const).map((key, index) => (
-                                <Form.Check
-                                    key={key}
-                                    type="checkbox"
-                                    id={`enemyBindSlot${index}`}
-                                    label={`${key} - Slot ${index + 1}`}
-                                    checked={enabledSlots[index]}
-                                    onChange={(e) => {
-                                        const newSlots: [boolean, boolean, boolean] = [...enabledSlots] as [boolean, boolean, boolean];
-                                        newSlots[index] = e.target.checked;
-                                        setEnabledSlots(newSlots);
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </Form.Group>
-                </div>
-            </section>
-        </>
+                ))}
+            </div>
+        </SettingsCard>
     );
 }
 

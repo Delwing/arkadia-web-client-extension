@@ -103,7 +103,7 @@ riskier than it needs to be.
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← DONE (#1334, #1341)
 3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status), PR 2 (world/time), PR 3 (travel), PR 4 (inventory/economy), PR 5 (debug), PR 6 (knowledge/reports) done
-4. Settings (46 files)                          ← the long pole, sub-phased
+4. Settings (46 files)                          ← ALL 15 PAGES DONE (PR 1-3); only the 10 standalone modals are left, and they are Phase 5
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
 ```
@@ -701,6 +701,24 @@ status colours mean one thing.
 
 ### Phase 4 — Settings *(8–10 PRs, by page)*
 
+> **Status: the 15 pages are done** (PR 1: 4, PR 2: 4, PR 3: 7). Nothing
+> reachable from the settings dialog's sidebar is on react-bootstrap any more,
+> and `src/web/style.css` no longer carries any settings-page CSS.
+>
+> **What Phase 4 still leaves behind, and it is all Phase 5's:** the dialog
+> *chrome* (`#settings-modal` in `index.html`, driven by `bootstrap/js/dist/modal`
+> and faked by forge's `MenuModalHost`), `src/web/SubDialog.tsx`, and the ten
+> standalone modals — `Binds`, `Shortcuts`, `Aliases`, `Scripts`, `Recordings`,
+> `UserTriggers`, `LocationNotes`, `ExportImport`, `CharacterManagementModal`,
+> `HelperSettings` — together with the tabs they host (`FirebaseTab`,
+> `DeviceManagementTab`, `GoogleDriveTab`, `LocalExportTab`,
+> `ConflictResolutionModal`, `TriggerEditModal`, `PluginCard`, the `Scripts*`
+> files). Those still use `.character-settings-section`, so **that markup layer
+> and its CSS must not be deleted yet** even though no *page* uses it.
+>
+> Phase 5 owns the settings modal chrome, so it must not start while any of
+> Phase 4 is still in flight.
+
 The long pole: 46 files, ~13 000 lines, all the react-bootstrap. Of those 46,
 the ones reachable from the settings dialog are 15 *pages*; the other ten are
 standalone modals that belong to Phase 5 (see below).
@@ -749,30 +767,57 @@ Sequence within the phase:
    `ColorField`, the counterpart of `uiSettings/fields.tsx` and of the
    hand-rolled `.character-settings-section` markup. Both old layers stay until
    the last page leaves them.
-2. **Then a page per PR**, smallest first. Done: `ui-commands`, `ui-other`,
-   `character-guilds`, `character-magics` (PR 1); `ui-windows`,
-   `ui-appearance`, `ui-map`, `ui-sound` (PR 2). Remaining, roughly by size:
-   `ui-footer` → `character-items` / `character-general` (both are sections of
-   `Settings.tsx`, 855 lines, so they land together) → `character-combat`
-   (CombatCommands + DrawSheathe + EnemyBinds + LuaGags) → `ui-buttons` /
-   `ui-mobile-buttons` / `ui-radial` (the button editors, 761 lines).
+2. **Then a page per PR.** ~~Remaining~~ — **all 15 pages are done.**
+   `ui-commands`, `ui-other`, `character-guilds`, `character-magics` (PR 1);
+   `ui-windows`, `ui-appearance`, `ui-map`, `ui-sound` (PR 2);
+   `character-general`, `character-items`, `character-combat`, `ui-buttons`,
+   `ui-mobile-buttons`, `ui-radial`, `ui-footer` (PR 3).
 
-   **`ui-footer` is not the small page this order assumed**, which is why PR 2
-   took the four after it instead. It is `FooterSections` (76 lines) plus two
-   dnd-kit list editors, and the editors are the work: `BarOrderSettings` and
-   `FooterComponentSettings` are react-bootstrap `Form.Check type="switch"`
-   rows that read `--popup-control-bg` inline. Worse, two e2e specs are pinned
-   to their markup in ways a migration breaks —
-   `footer-plugin-components.spec.ts` locates a row by the Bootstrap utility
-   class `.d-flex.align-items-center` and its toggle by
-   `getByRole('checkbox')`, which stops matching the moment the switch becomes
-   `@design`'s `Switch` (`role="switch"`). Phase 0's exit grep never covered
-   `.d-flex`, so this is not a regression of that rule, but it is the same
-   problem, and whoever takes `ui-footer` pays for it there and not here.
-   Before swapping in `Switch`, confirm Playwright's `isChecked()` drives it:
-   PR 1 proved `check()`/`isChecked()` work against `@design`'s `Checkbox`
-   (`role="checkbox"`), and `role="switch"` has not been tried.
-3. **Coordinate with forge-ui** on the ten modules it imports. Note that
+   PR 3 took all seven remaining pages in one go, because the units are larger
+   than "a page": the three `character-*` pages are nine sections of one file
+   (`Settings.tsx`), and `ui-buttons` / `ui-mobile-buttons` share three
+   components (`MacroSelect`, `MacroConfigEditor`, `HoldConfig`), so neither of
+   those groups can be split without half-migrating a page.
+
+   **`ui-footer` was budgeted as the hard one and was not.** PR 2 recorded it
+   as `FooterSections` (76 lines) plus two dnd-kit editors whose
+   `Form.Check type="switch"` rows would become `@design`'s `Switch`
+   (`role="switch"`) and so break `footer-plugin-components.spec.ts`, which
+   drives them with `getByRole('checkbox')`. It left an open question: does
+   Playwright drive `role="switch"` at all?
+
+   **The question turned out not to matter, because `Switch` is the wrong
+   primitive here.** The design system draws the line itself — `Switch` is for
+   a setting that takes effect immediately, `Checkbox` for a field in a form
+   (`Switch.tsx`'s own doc comment). None of these take effect immediately:
+   `BarOrderSettings` and `FooterComponentSettings` hand their changes up
+   through `onChange` into the dialog's draft, and the dialog's Save button
+   writes it. They are form fields, so they are checkboxes, so
+   `getByRole('checkbox')`, `toBeChecked()`, `check()` and `uncheck()` all keep
+   working untouched — PR 1 had already proved those against `@design`'s
+   `Checkbox`. The same reasoning moved `#mobile-buttons-lock`,
+   `#mobile-radial-enabled` and `#desktop-buttons-lock` off `type="switch"`.
+   **If a later page really does need `Switch`, the Playwright question is
+   still open** — nothing in the client uses one yet.
+
+   What did have to change in the specs was the Bootstrap *utility classes*
+   used as selectors, which Phase 0's exit grep never covered:
+   `.d-flex.align-items-center` for a footer row (now `.settings-sortable-row`),
+   `.border.rounded.mb-2.p-2` for a compound-macro step card (now
+   `.settings-step-card`) and `:not(.d-none)` for the hidden mobile preview grid
+   (now `.mobile-buttons-preview--hidden`). Four one-line changes across three
+   specs; no coverage moved.
+3. **A page's sub-dialog goes with the page; its chrome does not.** Two pages
+   open one: `ui-sound` has `ManageSoundsModal`, `character-items` has
+   `CollectOverridesModal`. Neither is one of the ten standalone modals, so
+   neither is Phase 5 — and a page whose dialog is still Bootstrap is not
+   migrated. What they share is `src/web/SubDialog.tsx`, which renders
+   Bootstrap modal chrome *inline* (read its header for why it cannot be a
+   react-bootstrap `Modal`); that file is shared with the Phase-5 modals and
+   migrates with them. So the contents move and the shell waits — what PR 2 did
+   for the sounds dialog and PR 3 for the overrides one.
+
+4. **Coordinate with forge-ui** on the ten modules it imports. Note that
    `forge-modal-bootstrap.scss` compiles Bootstrap *whole*; it cannot shrink
    per module, only be deleted once nothing forge renders needs Bootstrap at
    all. Since forge renders the entire `SettingsDialog`, that means after the
@@ -846,6 +891,24 @@ dialogs mounted from React.
 declarative where it is genuinely static, and move only the modal shells into
 React.
 
+**What Phase 4 hands over.** All 15 settings *pages* are on the design system,
+so what is left in `src/web/options/` is this phase's: the ten standalone
+modals (`Binds`, `Shortcuts`, `Aliases`, `Scripts`, `Recordings`,
+`UserTriggers`, `LocationNotes`, `ExportImport`, `CharacterManagementModal`,
+`HelperSettings`), the tabs they host (`FirebaseTab`, `DeviceManagementTab`,
+`GoogleDriveTab`, `LocalExportTab`, `ConflictResolutionModal`,
+`TriggerEditModal`, `PluginCard`, the `Scripts*` files), the settings dialog's
+own chrome (`#settings-modal` in `index.html`, driven by
+`bootstrap/js/dist/modal` and faked by forge's `MenuModalHost`), and
+`src/web/SubDialog.tsx`, which renders Bootstrap modal chrome inline and is
+shared by all of them — read its header before replacing it, the portal
+problem it documents is why it exists.
+
+> **Do not delete `.character-settings-section` yet.** It looks dead: no
+> settings page uses it any more. The modals and tabs above still do, and they
+> are this phase's, so the markup layer and its CSS go when the last of them
+> moves — not when the last page did.
+
 ### Phase 6 — Delete Bootstrap *(1 PR)*
 
 Drop the `bootswatch` import from `main-theme.css`, remove `bootstrap`,
@@ -900,6 +963,35 @@ delete `forge-modal-bootstrap.scss`, and remove the `scss` handling from
   The lesson to carry: grep `style.css` for a bare element selector matching
   whatever primitive the next screen introduces, *before* trusting that it
   renders correctly — the bridge hides this class of bug completely.
+
+  **And two more, found by Phase 4 PR 3 — so assume there are others.**
+  The first is the same shape again: `input::placeholder` /
+  `textarea::placeholder` sits *between* the two rules PR 2 guarded and was
+  missed. Nothing in the system out-specifies it (`:where(.ark-root)
+  ::placeholder` carries zero specificity by design), so every placeholder in
+  the client, the settings dialog's own search box included, was drawn from
+  `--popup-text-faint`.
+
+  The second is a different shape and the more useful one to remember: **the
+  guard's exclusion list is a list of prefixes, and migrated markup does not
+  all start with `ark-`.** The settings layer deliberately keeps three controls
+  native — `.settings-native-select`, `.settings-color`, `.settings-range`,
+  because `@design` has no `<optgroup>`, no colour picker and no slider — and
+  styles them from tokens under its own class names. `.modal select` and
+  `.modal input` are (0,1,1) and went on out-specifying
+  `.settings-native-select` (0,1,0), so the token declarations PR 1 wrote in
+  `settingsDialog.css` were **dead** for background, border and radius from the
+  day they landed. The guard now excludes `settings-` as well; the whole
+  namespace lives in that one migrated stylesheet, so the prefix means exactly
+  "this layer paints itself".
+
+  Both were confirmed by measurement rather than by reading: override
+  `--popup-input-bg` and `--popup-text-faint` on `<body>` in the live dialog
+  and see whether the computed value moves. It moved before the fix and does
+  not after, and **the rendered values are identical either way**, because the
+  bridge maps the old layer onto the same numbers. That is the whole reason
+  this class of bug survives screenshots — it is only findable by perturbing
+  the legacy variable, or by deleting the bridge.
 
 ---
 

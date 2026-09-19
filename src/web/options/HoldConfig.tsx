@@ -1,4 +1,5 @@
-import { Alert, Form } from "react-bootstrap";
+import { Callout } from "@design";
+import { CheckboxField } from "@web/settings/controls.tsx";
 import type { MacroType, ButtonMacroConfig } from "../buttonSettings";
 import {
     type PluginButtonMacro,
@@ -34,24 +35,22 @@ export default function HoldConfig({
     const holdFilter = (opt: { value: MacroType }) => opt.value !== 'empty';
 
     return (
-        <div className="mb-2 pt-2 border-top">
-            <Form.Check
+        <div className="settings-subsection">
+            <CheckboxField
                 id={`hold-toggle-${idSuffix}`}
-                type="checkbox"
-                className="mb-2"
                 label="Przytrzymanie (hold)"
                 checked={holdEnabled}
-                onChange={e => onToggle(e.target.checked)}
+                onChange={onToggle}
             />
             {holdEnabled && !locked && (
-                <Alert variant="warning" className="py-1 px-2 mb-2 small">
+                <Callout tone="warning">
                     Odblokowane przyciski moga kolidowac z przytrzymaniem (przeciaganie po 1s).
-                </Alert>
+                </Callout>
             )}
             {holdEnabled && (
                 <>
-                    <Form.Group className="mb-2">
-                        <Form.Label className="small mb-1">Makro (hold)</Form.Label>
+                    <div className="settings-field">
+                        <span className="settings-field__label">Makro (hold)</span>
                         <MacroSelect
                             value={holdCfg.macroType || 'command'}
                             onChange={value => {
@@ -65,11 +64,14 @@ export default function HoldConfig({
                             filter={holdFilter}
                             showUnavailableWarning
                         />
-                    </Form.Group>
+                    </div>
+                    {/* The hold action's editor sits beside the button's own,
+                        so its plugin config fields need their own id space. */}
                     <MacroConfigEditor
                         config={holdCfg}
                         onChange={updates => updateHold(updates)}
                         pluginMacros={pluginMacros}
+                        idPrefix={`hold-${idSuffix}-`}
                     />
                 </>
             )}

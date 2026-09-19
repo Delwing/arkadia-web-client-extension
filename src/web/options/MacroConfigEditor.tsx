@@ -1,4 +1,5 @@
-import { Button, Form } from "react-bootstrap";
+import { Button, Input } from "@design";
+import { CheckboxField } from "@web/settings/controls.tsx";
 import { directionOptions } from "../buttonSettings";
 import type { MacroType, ButtonMacroConfig } from "../buttonSettings";
 import {
@@ -7,21 +8,30 @@ import {
 } from "@modules/core/pluginButtonMacroRegistry";
 import MacroSelect from "./MacroSelect";
 
+/** Matches the runtime default for a plugin state with no colour of its own. */
+const DEFAULT_STATE_COLOR = "#6EB4DC";
+
 interface MacroConfigEditorProps {
     config: ButtonMacroConfig;
     onChange: (updates: Partial<ButtonMacroConfig>) => void;
     pluginMacros: PluginButtonMacro[];
     /** Button color — used for plugin state color defaults. */
     buttonColor?: string;
+    /**
+     * Namespaces the ids of a plugin macro's config fields. A compound macro
+     * renders one editor per step, so two steps on the same plugin macro would
+     * otherwise mint the same id twice and `<label for>` would reach the first
+     * step's field from the second step's label.
+     */
+    idPrefix?: string;
 }
 
-export default function MacroConfigEditor({ config, onChange, pluginMacros, buttonColor }: MacroConfigEditorProps) {
+export default function MacroConfigEditor({ config, onChange, pluginMacros, buttonColor, idPrefix = '' }: MacroConfigEditorProps) {
     return (
         <>
             {config.macroType === 'command' && (
-                <Form.Control
-                    as="textarea"
-                    size="sm"
+                <textarea
+                    className="settings-textarea"
                     placeholder="Komenda"
                     value={config.command || ''}
                     onChange={e => onChange({ command: e.target.value })}
@@ -33,27 +43,27 @@ export default function MacroConfigEditor({ config, onChange, pluginMacros, butt
             )}
 
             {config.macroType === 'kierunek' && (
-                <Form.Select
-                    size="sm"
+                <select
+                    className="settings-native-select"
                     value={config.direction || 'n'}
                     onChange={e => onChange({ direction: e.target.value })}
                 >
                     {directionOptions.map(d => (
                         <option key={d} value={d}>{d}</option>
                     ))}
-                </Form.Select>
+                </select>
             )}
 
             {(config.macroType === 'attackEnemy' || config.macroType === 'blockEnemy') && (
-                <Form.Select
-                    size="sm"
+                <select
+                    className="settings-native-select"
                     value={config.enemySlot ?? 0}
                     onChange={e => onChange({ enemySlot: parseInt(e.target.value) })}
                 >
                     <option value={0}>Slot 1</option>
                     <option value={1}>Slot 2</option>
                     <option value={2}>Slot 3</option>
-                </Form.Select>
+                </select>
             )}
 
             {config.macroType === 'compound' && (
@@ -61,6 +71,7 @@ export default function MacroConfigEditor({ config, onChange, pluginMacros, butt
                     steps={config.steps || []}
                     onChange={steps => onChange({ steps })}
                     pluginMacros={pluginMacros}
+                    idPrefix={idPrefix}
                 />
             )}
 
@@ -69,6 +80,7 @@ export default function MacroConfigEditor({ config, onChange, pluginMacros, butt
                 pluginConfig={config.pluginConfig}
                 onChange={pluginConfig => onChange({ pluginConfig })}
                 pluginMacros={pluginMacros}
+                idPrefix={idPrefix}
             />
 
             <PluginStateConfig
@@ -87,9 +99,10 @@ interface CompoundStepsEditorProps {
     steps: ButtonMacroConfig[];
     onChange: (steps: ButtonMacroConfig[]) => void;
     pluginMacros: PluginButtonMacro[];
+    idPrefix: string;
 }
 
-function CompoundStepsEditor({ steps, onChange, pluginMacros }: CompoundStepsEditorProps) {
+function CompoundStepsEditor({ steps, onChange, pluginMacros, idPrefix }: CompoundStepsEditorProps) {
     function updateStep(index: number, updates: Partial<ButtonMacroConfig>) {
         const newSteps = [...steps];
         newSteps[index] = { ...newSteps[index], ...updates };
@@ -114,28 +127,28 @@ function CompoundStepsEditor({ steps, onChange, pluginMacros }: CompoundStepsEdi
     const stepFilter = (opt: { value: MacroType }) => opt.value !== 'empty' && opt.value !== 'compound';
 
     return (
-        <div>
-            <Form.Label className="small fw-bold">Kroki</Form.Label>
+        <div className="settings-stack settings-stack--tight">
+            <span className="settings-field__label">Kroki</span>
             {steps.map((step, index) => (
-                <div key={index} className="mb-2 p-2 border rounded">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                        <span className="small fw-bold">Krok {index + 1}</span>
-                        <div className="d-flex gap-1">
+                <div key={index} className="settings-step-card">
+                    <div className="settings-step-card__header">
+                        <span className="settings-step-card__title">Krok {index + 1}</span>
+                        <div className="settings-button-row">
                             <Button
                                 size="sm"
-                                variant="outline-secondary"
+                                variant="outline"
                                 disabled={index === 0}
                                 onClick={() => moveStep(index, -1)}
                             >^</Button>
                             <Button
                                 size="sm"
-                                variant="outline-secondary"
+                                variant="outline"
                                 disabled={index === steps.length - 1}
                                 onClick={() => moveStep(index, 1)}
                             >v</Button>
                             <Button
                                 size="sm"
-                                variant="outline-danger"
+                                variant="danger-soft"
                                 onClick={() => removeStep(index)}
                             >X</Button>
                         </div>
@@ -145,20 +158,20 @@ function CompoundStepsEditor({ steps, onChange, pluginMacros }: CompoundStepsEdi
                         onChange={value => updateStep(index, { macroType: value })}
                         pluginMacros={pluginMacros}
                         filter={stepFilter}
-                        className="mb-1"
                     />
                     <MacroConfigEditor
                         config={step}
                         onChange={updates => updateStep(index, updates)}
                         pluginMacros={pluginMacros}
                         buttonColor={undefined}
+                        idPrefix={`${idPrefix}step${index}-`}
                     />
                 </div>
             ))}
             <Button
                 size="sm"
-                variant="outline-primary"
-                className="w-100"
+                variant="outline"
+                className="settings-block-button"
                 onClick={addStep}
             >+ Dodaj krok</Button>
         </div>
@@ -184,55 +197,63 @@ function PluginConfigFields({ macroType, pluginConfig, onChange, pluginMacros, i
 
     return (
         <>
-            {pluginMacro.configFields.map(field => (
-                <Form.Group key={field.name} className="mb-2">
-                    <Form.Label>{field.label}</Form.Label>
-                    {field.type === 'text' && (
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            value={config[field.name] ?? field.defaultValue ?? ''}
-                            onChange={e => onChange({ ...config, [field.name]: e.target.value })}
-                        />
-                    )}
-                    {field.type === 'textarea' && (
-                        <Form.Control
-                            as="textarea"
-                            size="sm"
-                            rows={2}
-                            value={config[field.name] ?? field.defaultValue ?? ''}
-                            onChange={e => onChange({ ...config, [field.name]: e.target.value })}
-                        />
-                    )}
-                    {field.type === 'number' && (
-                        <Form.Control
-                            size="sm"
-                            type="number"
-                            value={config[field.name] ?? field.defaultValue ?? 0}
-                            onChange={e => onChange({ ...config, [field.name]: Number(e.target.value) })}
-                        />
-                    )}
-                    {field.type === 'select' && field.options && (
-                        <Form.Select
-                            size="sm"
-                            value={config[field.name] ?? field.defaultValue ?? ''}
-                            onChange={e => onChange({ ...config, [field.name]: e.target.value })}
-                        >
-                            {field.options.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </Form.Select>
-                    )}
-                    {field.type === 'checkbox' && (
-                        <Form.Check
-                            id={`${idPrefix}plugin-config-${field.name}`}
-                            type="checkbox"
-                            checked={config[field.name] ?? field.defaultValue ?? false}
-                            onChange={e => onChange({ ...config, [field.name]: e.target.checked })}
-                        />
-                    )}
-                </Form.Group>
-            ))}
+            {pluginMacro.configFields.map(field => {
+                const id = `${idPrefix}plugin-config-${field.name}`;
+                const value = config[field.name] ?? field.defaultValue ?? '';
+                return (
+                    <div key={field.name} className="settings-field">
+                        {field.type === 'checkbox' ? (
+                            <CheckboxField
+                                id={id}
+                                label={field.label}
+                                checked={config[field.name] ?? field.defaultValue ?? false}
+                                onChange={checked => onChange({ ...config, [field.name]: checked })}
+                            />
+                        ) : (
+                            <>
+                                <label className="settings-field__label" htmlFor={id}>{field.label}</label>
+                                {field.type === 'text' && (
+                                    <Input
+                                        id={id}
+                                        type="text"
+                                        value={value}
+                                        onChange={e => onChange({ ...config, [field.name]: e.target.value })}
+                                    />
+                                )}
+                                {field.type === 'textarea' && (
+                                    <textarea
+                                        id={id}
+                                        className="settings-textarea"
+                                        rows={2}
+                                        value={value}
+                                        onChange={e => onChange({ ...config, [field.name]: e.target.value })}
+                                    />
+                                )}
+                                {field.type === 'number' && (
+                                    <Input
+                                        id={id}
+                                        type="number"
+                                        value={config[field.name] ?? field.defaultValue ?? 0}
+                                        onChange={e => onChange({ ...config, [field.name]: Number(e.target.value) })}
+                                    />
+                                )}
+                                {field.type === 'select' && field.options && (
+                                    <select
+                                        id={id}
+                                        className="settings-native-select"
+                                        value={value}
+                                        onChange={e => onChange({ ...config, [field.name]: e.target.value })}
+                                    >
+                                        {field.options.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </>
+                        )}
+                    </div>
+                );
+            })}
         </>
     );
 }
@@ -256,15 +277,14 @@ function PluginStateConfig({ macroType, pluginConfig, onChange, color }: PluginS
     const stateColors = (config.stateColors || {}) as Record<string, string>;
 
     return (
-        <div className="mb-2">
-            <Form.Label>Stany przycisku</Form.Label>
-            <div className="ps-2 border-start">
+        <div className="settings-field">
+            <span className="settings-field__label">Stany przycisku</span>
+            <div className="settings-state-list">
                 {states.map(state => (
-                    <div key={state.id} className="mb-2">
-                        <div className="small text-muted mb-1">{state.id}</div>
-                        <div className="d-flex gap-1 align-items-center">
-                            <Form.Control
-                                size="sm"
+                    <div key={state.id} className="settings-field">
+                        <span className="settings-muted settings-state-list__id">{state.id}</span>
+                        <div className="settings-row__controls">
+                            <Input
                                 type="text"
                                 placeholder={state.label}
                                 value={stateLabels[state.id] ?? ''}
@@ -278,11 +298,10 @@ function PluginStateConfig({ macroType, pluginConfig, onChange, color }: PluginS
                                     onChange({ ...config, stateLabels: newStateLabels });
                                 }}
                             />
-                            <Form.Control
-                                size="sm"
+                            <input
                                 type="color"
-                                style={{ width: '40px', flexShrink: 0 }}
-                                value={stateColors[state.id] || state.color || color || '#6EB4DC'}
+                                className="settings-color"
+                                value={stateColors[state.id] || state.color || color || DEFAULT_STATE_COLOR}
                                 onChange={e => {
                                     const newStateColors = { ...stateColors };
                                     newStateColors[state.id] = e.target.value;
@@ -291,14 +310,15 @@ function PluginStateConfig({ macroType, pluginConfig, onChange, color }: PluginS
                             />
                             <Button
                                 size="sm"
-                                variant="outline-secondary"
+                                variant="outline"
+                                title="Przywróć domyślny kolor"
                                 onClick={() => {
                                     const newStateColors = { ...stateColors };
                                     delete newStateColors[state.id];
                                     onChange({ ...config, stateColors: newStateColors });
                                 }}
                             >
-                                ↺
+                                {'↺'}
                             </Button>
                         </div>
                     </div>

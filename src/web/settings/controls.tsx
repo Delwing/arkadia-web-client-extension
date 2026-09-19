@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Button, Checkbox, Input } from "@design";
+import { Button, Checkbox, Input, Segmented, type SegmentedOption } from "@design";
 
 /**
  * Building blocks for a settings page that has moved onto the design system.
@@ -112,12 +112,13 @@ export function SelectField({ id, label, value, onChange, disabled, labelExtra, 
  * of `uiSettings/fields.tsx`'s NumberField; it stays an <input type="number">
  * because e2e drives several of these with `fill()`.
  */
-export function NumberField({ id, label, value, step, min, onChange, labelExtra }: {
+export function NumberField({ id, label, value, step, min, max, onChange, labelExtra }: {
     id: string;
     label: ReactNode;
     value: number;
     step?: number | string;
     min?: number | string;
+    max?: number | string;
     onChange: (value: number) => void;
     labelExtra?: ReactNode;
 }) {
@@ -131,6 +132,7 @@ export function NumberField({ id, label, value, step, min, onChange, labelExtra 
                 type="number"
                 step={step}
                 min={min}
+                max={max}
                 value={text}
                 onChange={(e) => {
                     setText(e.target.value);
@@ -175,10 +177,14 @@ export function RangeField({ id, label, value, min, max, step, onChange }: {
     );
 }
 
-/** Single-line text/url field with an optional hint under it. */
+/**
+ * Single-line text/url field with an optional hint under it. The label is
+ * optional: a field that sits in a table cell or beside an Add button is named
+ * by its column or its neighbour, and an empty <label> there is noise.
+ */
 export function TextField({ id, label, value, onChange, type = "text", placeholder, hint }: {
     id: string;
-    label: ReactNode;
+    label?: ReactNode;
     value: string;
     onChange: (value: string) => void;
     type?: "text" | "url";
@@ -187,9 +193,34 @@ export function TextField({ id, label, value, onChange, type = "text", placehold
 }) {
     return (
         <div className="settings-field">
-            <label className="settings-field__label" htmlFor={id}>{label}</label>
+            {label && <label className="settings-field__label" htmlFor={id}>{label}</label>}
             <Input id={id} type={type} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
             {hint && <SettingsHint>{hint}</SettingsHint>}
+        </div>
+    );
+}
+
+/**
+ * One-of-N choice, for a setting whose options are few and short enough to show
+ * at once. The Bootstrap pages spelled these as a radio group; the design
+ * system has no radio primitive and `Segmented` carries exactly the same
+ * semantics, so the migration folds them together.
+ *
+ * `Segmented` writes `data-state` on each button, which is what keeps the
+ * unsaved-changes dot working -- `settingsDirty.ts` reads that attribute, and a
+ * control that fed neither an input value nor a `data-state` would go unnoticed
+ * by it (see the note there).
+ */
+export function SegmentedField<T extends string>({ label, value, options, onChange }: {
+    label: ReactNode;
+    value: T;
+    options: SegmentedOption<T>[];
+    onChange: (value: T) => void;
+}) {
+    return (
+        <div className="settings-field">
+            <span className="settings-field__label">{label}</span>
+            <Segmented value={value} options={options} onValueChange={onChange} />
         </div>
     );
 }

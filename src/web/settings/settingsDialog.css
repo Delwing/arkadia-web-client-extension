@@ -446,6 +446,302 @@
   color: var(--ark-text-tertiary);
 }
 
+/* A help affordance next to a label, for a setting whose name cannot carry the
+   whole explanation. The tooltip is the `title`: this project sets no aria-*
+   (AGENTS.md), so title is both the accessible name and the hover text. */
+.settings-help {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--ark-space-3);
+  color: var(--ark-text-tertiary);
+  vertical-align: middle;
+  cursor: help;
+}
+
+/* Options that only exist while their parent checkbox is on. Ruled off rather
+   than indented, so the card does not grow a second left edge. */
+.settings-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-6);
+  padding-top: var(--ark-space-6);
+  border-top: 1px solid var(--ark-border);
+}
+
+/* The short-exits sample line. Both colours are the player's own setting and
+   arrive inline; everything else here is a token. */
+.settings-exits-preview {
+  padding: var(--ark-space-3);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-3);
+  white-space: nowrap;
+}
+
+/* One entry in a drag-and-drop list editor (radial commands, button rows).
+   The row is a card in miniature: it has to read as a unit you can pick up. */
+.settings-sortable-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ark-space-4);
+  padding: var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-sortable-row__field {
+  flex: 1 1 8rem;
+}
+
+.settings-drag-handle {
+  align-self: center;
+  padding: 0 var(--ark-space-2);
+  color: var(--ark-text-tertiary);
+  font-size: var(--ark-text-5);
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.settings-drag-handle[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The compact flavour: a handle, a checkbox and a name on one line, for the
+   reorder lists that are a list of toggles rather than a list of forms. */
+.settings-sortable-row--inline {
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: var(--ark-space-2) var(--ark-space-3);
+}
+
+.settings-sortable-row__toggle {
+  display: inline-flex;
+}
+
+.settings-sortable-row__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ark-text-3);
+}
+
+.settings-sortable-row__badge {
+  margin-left: auto;
+}
+
+/* The panel that edits one item of a list -- a desktop button, a mobile slot.
+   Nested inside a card, so it steps down a surface rather than up. */
+.settings-editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-5);
+  padding: var(--ark-space-6);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-3);
+}
+
+.settings-editor-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+}
+
+.settings-editor-panel__title {
+  margin: 0;
+  font-size: var(--ark-text-5);
+  font-weight: var(--ark-weight-semibold);
+}
+
+/* One step of a compound macro. */
+.settings-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-3);
+  padding: var(--ark-space-4);
+  background: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-2);
+}
+
+.settings-step-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+}
+
+.settings-step-card__title {
+  font-size: var(--ark-text-3);
+  font-weight: var(--ark-weight-semibold);
+}
+
+/* Fields side by side, collapsing to one column when the card is narrow. */
+.settings-grid {
+  display: grid;
+  gap: var(--ark-space-4);
+}
+
+.settings-grid--2 {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.settings-grid--3 {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+}
+
+.settings-block-button {
+  width: 100%;
+}
+
+.settings-button-row__end {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* A hint that is a caution rather than an aside. Status colours never follow
+   the accent (DESIGN_SYSTEM.md section 3), so this is the warning role. */
+.settings-hint--warning {
+  color: var(--ark-warning-text);
+}
+
+/* Multi-line command field. The design system has no textarea primitive and
+   the e2e suite drives these as `textarea`, so it stays native and is styled
+   from tokens -- the `settings-` prefix is what keeps style.css's bare
+   `textarea` rule off it. */
+.settings-textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: var(--ark-space-3) var(--ark-space-4);
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-3);
+  color: var(--ark-text);
+  font-family: var(--ark-font-mono);
+  font-size: var(--ark-text-3);
+  resize: vertical;
+}
+
+.settings-textarea:hover:not(:disabled) {
+  border-color: var(--ark-border-strong);
+}
+
+.settings-textarea::placeholder {
+  color: var(--ark-text-faint);
+  opacity: 1;
+}
+
+/* A select whose current value names something that is not loaded. */
+.settings-native-select--warning {
+  border-color: var(--ark-warning-border);
+}
+
+.settings-state-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ark-space-4);
+  padding-left: var(--ark-space-4);
+  border-left: 1px solid var(--ark-border);
+}
+
+.settings-state-list__id {
+  font-size: var(--ark-text-2);
+}
+
+/* Where a live control is shown as it will really look. Deliberately neutral:
+   the thing on it carries the player's own colours. */
+.settings-preview-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ark-space-5);
+  background: var(--ark-bg-surface);
+  border: 1px solid var(--ark-border-subtle);
+  border-radius: var(--ark-radius-2);
+}
+
+/* The collect-overrides table: one row per enemy, with a chip list of extra
+   items that has to wrap inside its cell. */
+.settings-overrides__extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ark-space-2);
+}
+
+.settings-overrides__add {
+  display: flex;
+  align-items: center;
+  gap: var(--ark-space-2);
+}
+
+.settings-overrides__add .ark-input {
+  width: 100%;
+  min-width: 6rem;
+  max-width: 12rem;
+}
+
+.settings-overrides__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ark-space-4);
+  width: 100%;
+}
+
+.settings-stack--tight {
+  gap: var(--ark-space-4);
+}
+
+/* Preview of the radial menu. The per-command fill and text colour are the
+   player's own setting and arrive inline; the plate and the threshold ring
+   are theme surfaces. */
+.radial-preview {
+  position: relative;
+  margin: 0 auto;
+  background: var(--ark-bg-sunken);
+  border: 1px solid var(--ark-border);
+  border-radius: var(--ark-radius-full);
+}
+
+.radial-preview__threshold {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  background: var(--ark-bg-surface);
+  border: 1px solid var(--ark-border-element);
+  border-radius: var(--ark-radius-full);
+}
+
+.radial-preview__command {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  background: var(--ark-accent-solid);
+  color: var(--ark-accent-contrast);
+  border-radius: var(--ark-radius-full);
+  box-shadow: var(--ark-shadow-2);
+  font-size: 0.5rem;
+  font-weight: var(--ark-weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* A row of buttons that wraps rather than overflowing its card. */
 .settings-button-row {
   display: flex;
