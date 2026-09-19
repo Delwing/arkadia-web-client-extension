@@ -41,6 +41,19 @@ const GOSSIP = [
     "zbieramy druzyne na rozstajach, sa dwa miejsca",
 ];
 
+/**
+ * Long room descriptions, because a real log is mostly made of them.
+ *
+ * Without a single line past the pane's width the showcase could not show
+ * wrapping at all, and wrapping is what the variable row height exists for.
+ */
+const ROOM_DESCRIPTIONS = [
+    "Szeroki, brukowany rynek otaczaja kamienice o spadzistych dachach, a posrodku stoi kamienna studnia, przy ktorej zawsze klebi sie tlum handlarzy, poslancow i gapiow liczacych na darmowe widowisko.",
+    "Trakt wije sie miedzy polami, ubity setkami kol i kopyt; po obu stronach ciagna sie plytkie rowy zarosniete pokrzywa, a w oddali widac ciemna sciane puszczy, nad ktora krazy stado wron.",
+    "Wilgotne sciany groty ocieka woda, ktora zbiera sie w plytkich kaluzach na nierownym dnie; kazdy krok odbija sie echem gdzies w glebi korytarza, skad dolatuje ciezki, niemily zapach.",
+    "Most ze sczernialych bali przerzucono nad leniwie plynaca, czarna woda; porecze dawno zgnily, a spomiedzy desek widac wirujacy nurt, w ktorym co jakis czas cos ciezkiego uderza o filary.",
+];
+
 const SPEAKERS = ["Brannoc", "Ysolda", "Thessaly", "Merrow", "Stary Gaunt"];
 const HITS = ["tniesz", "rabiesz", "przebijasz", "uderzasz", "walisz"];
 const MOB_HITS = ["drapie", "gryzie", "uderza", "tratuje"];
@@ -96,6 +109,7 @@ function generateLines(plan: SessionPlan): { text: string; type: string; timesta
             case "walk":
                 for (let index = 0; index < step[1]; index += 1) {
                     add("room.short", pick(ROOMS), between(4, 14));
+                    if (random() < 0.45) add("room.long", pick(ROOM_DESCRIPTIONS), 0);
                     if (random() < 0.5) add("room.exits", "Wyjscia: polnoc, wschod, poludnie.", 0);
                 }
                 break;

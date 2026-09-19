@@ -478,7 +478,8 @@
     justify-content: center;
 }
 
-.lv-log__row {
+.lv-log__row,
+.lv-log__probe {
     display: grid;
     grid-template-columns: 64px 40px 46px minmax(0, 1fr);
     column-gap: var(--ark-space-6);
@@ -489,16 +490,36 @@
 /* Column layout follows the two visibility toggles. Four explicit rules rather
    than anything clever: the grid has to match the children the row actually
    renders, and a mismatch silently collapses the text column. */
-.lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row {
+.lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row,
+.lv-log[data-timestamps='false'][data-meta='true'] .lv-log__probe {
     grid-template-columns: 40px 46px minmax(0, 1fr);
 }
 
-.lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row {
+.lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row,
+.lv-log[data-timestamps='true'][data-meta='false'] .lv-log__probe {
     grid-template-columns: 64px minmax(0, 1fr);
 }
 
-.lv-log[data-timestamps='false'][data-meta='false'] .lv-log__row {
+.lv-log[data-timestamps='false'][data-meta='false'] .lv-log__row,
+.lv-log[data-timestamps='false'][data-meta='false'] .lv-log__probe {
     grid-template-columns: minmax(0, 1fr);
+}
+
+/* The measuring row. Hidden but laid out, because the numbers it exists to
+   produce — how wide the text column is, how wide one character is, how tall
+   one visual line is — only exist once the browser has laid it out. */
+.lv-log__probe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Unwrapped, so its width is the text's own width rather than the column's. */
+.lv-log__probe-text {
+    white-space: pre;
 }
 
 .lv-log__row[data-current='true'] {

@@ -118,6 +118,168 @@ describe("LogPane scroll height", () => {
     });
 });
 
+/**
+ * Variable row heights: a wrapped line is as tall as the number of visual lines
+ * it takes, so the height a row is laid out at no longer follows from one
+ * constant. That moves the cache-invalidation problem that produced the
+ * overlapping-rows bug: rows are now keyed by their line index (stable across
+ * filters, which is what makes measured heights worth keeping), so a density
+ * change no longer invalidates anything by itself and has to say so explicitly.
+ */
+describe("LogPane row height estimate", () => {
+    let container: HTMLElement;
+    let root: Root;
+
+    beforeEach(() => {
+        container = document.createElement("div");
+        document.body.appendChild(container);
+        root = createRoot(container);
+    });
+
+    afterEach(() => {
+        act(() => root.unmount());
+        container.remove();
+    });
+
+    const sizer = () => container.querySelector(".lv-log")?.firstElementChild as HTMLElement | null;
+
+    const renderRows = (rows: RenderedRow[], lineHeight: number) =>
+        act(() => {
+            root.render(
+                <LogPane
+                    rows={rows}
+                    sessionKey="a"
+                    showTimestamps
+                    showMeta
+                    showColors={false}
+                    wrap={false}
+                    lineHeight={lineHeight}
+                    currentRow={null}
+                    currentOccurrence={-1}
+                    emptyMessage={null}
+                    onResetFilters={() => undefined}
+                    onViewportChange={() => undefined}
+                    onScrollAwayFromBottom={() => undefined}
+                    follow={false}
+                    scrollRequest={null}
+                    onLineContextMenu={() => undefined}
+                />,
+            );
+        });
+
+    it("follows a density change that the rows themselves do not signal", () => {
+        // The same array is handed over twice on purpose. The virtualizer
+        // memoises its measurements on the item KEYS and the measured-size
+        // cache — not on the estimator — and a key made from the line index
+        // does not move when only the density does. A fresh array would change
+        // `getItemKey`'s identity and paper over exactly what this covers: the
+        // offsets would go on stepping by the old height while the rows were
+        // drawn at the new one, which is the overlap bug again.
+        const rows = makeRows(10);
+        renderRows(rows, LINE_HEIGHT);
+        expect(sizer()?.style.minHeight).toBe(`${10 * LINE_HEIGHT}px`);
+
+        renderRows(rows, 26);
+        expect(sizer()?.style.minHeight).toBe(`${10 * 26}px`);
+    });
+
+    it("leaves the height fixed while wrapping is off — nothing can wrap", () => {
+        const rows = makeRows(10).map((row) => ({ ...row, text: "x".repeat(4000) }));
+        renderRows(rows, LINE_HEIGHT);
+        expect(sizer()?.style.minHeight).toBe(`${10 * LINE_HEIGHT}px`);
+    });
+});
+
+/**
+ * The estimate itself. jsdom lays nothing out, so the measuring probe reads
+ * zeros and the pane falls back to the fixed height — which is what every test
+ * above relies on. Here the probe's rects are faked instead, so the pane
+ * resolves a real column width and a real character width and can be asked
+ * whether a long line is estimated as the several lines it will wrap to.
+ */
+describe("LogPane wrapped row height", () => {
+    let container: HTMLElement;
+    let root: Root;
+    const PANE_WIDTH = 900;
+    const TEXT_WIDTH = 800;
+    const CHAR_WIDTH = 8;
+    const ROW_HEIGHT = 21;
+    const COLS = TEXT_WIDTH / CHAR_WIDTH;
+
+    const rect = (width: number, height: number) =>
+        ({ width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0 }) as DOMRect;
+
+    beforeEach(() => {
+        Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
+            configurable: true,
+            value(this: HTMLElement) {
+                if (this.classList.contains("lv-log__probe-text")) {
+                    return rect(this.textContent!.length * CHAR_WIDTH, ROW_HEIGHT);
+                }
+                if (this.classList.contains("lv-log__probe")) return rect(PANE_WIDTH, ROW_HEIGHT);
+                if (this.classList.contains("lv-log__text")) return rect(TEXT_WIDTH, ROW_HEIGHT);
+                return rect(PANE_WIDTH, 600);
+            },
+        });
+        container = document.createElement("div");
+        document.body.appendChild(container);
+        root = createRoot(container);
+    });
+
+    afterEach(() => {
+        act(() => root.unmount());
+        container.remove();
+        Reflect.deleteProperty(HTMLElement.prototype, "getBoundingClientRect");
+    });
+
+    const sizer = () => container.querySelector(".lv-log")?.firstElementChild as HTMLElement | null;
+
+    const renderWrapped = (rows: RenderedRow[], wrap: boolean) =>
+        act(() => {
+            root.render(
+                <LogPane
+                    rows={rows}
+                    sessionKey="a"
+                    showTimestamps
+                    showMeta
+                    showColors={false}
+                    wrap={wrap}
+                    lineHeight={ROW_HEIGHT}
+                    currentRow={null}
+                    currentOccurrence={-1}
+                    emptyMessage={null}
+                    onResetFilters={() => undefined}
+                    onViewportChange={() => undefined}
+                    onScrollAwayFromBottom={() => undefined}
+                    follow={false}
+                    scrollRequest={null}
+                    onLineContextMenu={() => undefined}
+                />,
+            );
+        });
+
+    it("counts a long line as the rows it wraps to", () => {
+        // Three visual lines' worth of text, in a log of ten such lines: with
+        // one fixed height the scrollbar would claim the log is a third of its
+        // real length, and a jump aimed past the viewport would land nowhere
+        // near the line it named.
+        const rows = makeRows(10).map((row) => ({ ...row, text: "x".repeat(COLS * 2 + 1) }));
+        renderWrapped(rows, true);
+        expect(sizer()?.style.minHeight).toBe(`${10 * 3 * ROW_HEIGHT}px`);
+    });
+
+    it("still gives a short line exactly one row", () => {
+        renderWrapped(makeRows(10), true);
+        expect(sizer()?.style.minHeight).toBe(`${10 * ROW_HEIGHT}px`);
+    });
+
+    it("ignores the text length once wrapping is off", () => {
+        const rows = makeRows(10).map((row) => ({ ...row, text: "x".repeat(COLS * 5) }));
+        renderWrapped(rows, false);
+        expect(sizer()?.style.minHeight).toBe(`${10 * ROW_HEIGHT}px`);
+    });
+});
+
 describe("LogPane columns", () => {
     let container: HTMLElement;
     let root: Root;

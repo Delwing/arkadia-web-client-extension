@@ -135,20 +135,36 @@ export function LogViewer({
     /* --- scroll targets -------------------------------------------------- */
 
     const currentRow = view.currentRow;
+    const sessionId = state.sessionId;
 
-    // Centre the current match whenever it moves. Following live wins: a player
-    // watching a live session does not want the view yanked to an old hit.
+    /**
+     * Set by `step` when a match carries the search into another session, and
+     * consumed by the session-change scroll below.
+     *
+     * Both effects fire on the same render, and the session one runs last, so
+     * without this the jump a player asked for landed at the top of the new log
+     * and they had to click the hit a second time.
+     */
+    const matchJump = useRef<string | null>(null);
+
+    // Centre the current match whenever it moves. `sessionId` is a dependency
+    // as well: crossing into another log can land on the same row number, and
+    // that jump still has to happen. Following live wins — a player watching a
+    // live session does not want the view yanked to an old hit.
     useEffect(() => {
         if (state.follow) return;
         if (currentRow === null) return;
         requestScroll({ kind: "row", row: currentRow, align: "center" });
-    }, [currentRow, state.follow, requestScroll]);
+    }, [currentRow, sessionId, state.follow, requestScroll]);
 
     // A new session starts at its end when live, at its top otherwise.
-    const sessionId = state.sessionId;
     useEffect(() => {
         const session = sessions.find((candidate) => candidate.id === sessionId);
         if (!session) return;
+        if (matchJump.current === sessionId) {
+            matchJump.current = null;
+            return;
+        }
         requestScroll({ kind: session.live ? "bottom" : "top" });
     }, [sessionId, sessions, requestScroll]);
 
@@ -218,6 +234,7 @@ export function LogViewer({
         (direction: 1 | -1) => {
             const result = stepMatch(direction, { ...state, query: activeQuery }, view, view.visibleSessions);
             if (!result) return;
+            if (result.sessionId) matchJump.current = result.sessionId;
             patch({
                 matchIndex: result.matchIndex,
                 notice: result.notice,
@@ -448,10 +465,18 @@ export function LogViewer({
             if (event.key === "]") stepSession(1);
             else if (event.key === "[") stepSession(-1);
             else if (event.key === "Home") {
+                event.preventDefault();
                 patch({ follow: false });
                 requestScroll({ kind: "top" });
             } else if (event.key === "End") {
+                event.preventDefault();
                 requestScroll({ kind: "bottom" });
+            } else if (event.key === "PageUp" || event.key === "PageDown") {
+                // Paging is a plain scroll, not a jump to a row: it is NOT
+                // marked programmatic, so paging up off the bottom releases
+                // follow exactly as dragging the scrollbar would.
+                event.preventDefault();
+                requestScroll({ kind: "page", delta: event.key === "PageDown" ? 1 : -1 });
             }
         },
         [step, stepSession, patch, requestScroll],
@@ -615,6 +640,7 @@ export function LogViewer({
 
                     <LogPane
                         rows={view.rows}
+                        sessionKey={view.session.id}
                         showTimestamps={state.showTimestamps}
                         showMeta={state.showMeta}
                         showColors={state.showColors}
