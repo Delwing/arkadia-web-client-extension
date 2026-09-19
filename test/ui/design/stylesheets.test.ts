@@ -109,6 +109,11 @@ const MIGRATED_POPUP_COMPONENTS = [
     // Faza 3, rodzina 6 — Zawod przyszedl tu z 27 obiektami `style={{ ... }}`
     // i zostal przepisany na arkusz; wpis pilnuje, zeby nie wrocily.
     "src/web/ProfessionPopup.tsx",
+    // Faza 5 — chip stopki, nie popup. Nazwa tej listy jest juz mylaca
+    // (worldPalette.ts tez nie jest popupem): trzyma ona ZRODLA komponentow
+    // trzymanych na dwoch regulach, a nie popupy. Zegar w stopce niosl czwarta
+    // kopie tabeli por roku; teraz czyta worldPalette.ts jak trzy popupy.
+    "src/ui/web/components/timers/ClockDisplay.tsx",
 ];
 
 /**
@@ -206,19 +211,61 @@ describe("stylesheet structure", () => {
  * rather than a theme decision, which is why only literals written INTO the
  * source count.
  */
+/**
+ * Block comments, and line comments that own their whole line.
+ *
+ * Two reasons. A header that explains what a colour USED to be should not fail
+ * the rule it is describing -- until now the only way out was to spell the old
+ * value in words. And the selector-shaped checks trip over punctuation inside
+ * prose. Line comments are stripped only when the line holds nothing else, so
+ * a trailing `// ...` cannot be used to smuggle a literal past the rule, and a
+ * `//` inside a string (a URL) is never touched.
+ */
+function stripComments(source: string): string {
+    return source
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^[ \t]*\/\/.*$/gm, "");
+}
+
+/**
+ * CSS named colours that are a theme decision wherever they appear.
+ *
+ * Deliberately short: only the achromatic ladder plus the handful of hues that
+ * turned up in practice. `white` and `lightgray` on a footer chip read fine in
+ * the six dark themes and vanish on parchment and silver, which is the same
+ * failure a hex causes and was invisible to the hex check.
+ */
+const NAMED_COLOURS =
+    "white|black|gray|grey|lightgray|lightgrey|darkgray|darkgrey|silver" +
+    "|red|blue|green|yellow|orange|gold|pink|purple|cyan|magenta";
+
 function literalColours(source: string): string[] {
     // A hex here is a colour that survives exactly one of the eight themes.
     // `#fff` on a solid fill is the system-wide exception.
-    return [...source.matchAll(/#[0-9a-f]{3,8}\b/gi)]
+    const clean = stripComments(source);
+    const hex = [...clean.matchAll(/#[0-9a-f]{3,8}\b/gi)]
         .map((match) => match[0])
         .filter((value) => value.toLowerCase() !== "#fff");
+    // A named colour is a hex with a friendlier spelling. Matched only where it
+    // is the whole value of a colour-bearing property, so prose and identifiers
+    // (`white-space`, `blueprint`) stay out of it.
+    const named = [
+        ...clean.matchAll(
+            new RegExp(
+                String.raw`(?:color|background|backgroundColor|background-color|fill|stroke|borderColor|border-color)` +
+                    String.raw`\s*[:=]\s*["']?(` + NAMED_COLOURS + String.raw`)["']?(?=\s*[;,}"'\n])`,
+                "gi",
+            ),
+        ),
+    ].map((match) => match[1]);
+    return [...hex, ...named];
 }
 
 function legacyTokenReads(source: string): string[] {
     // Half a migration is worse than none: themes/bridge.css cannot be deleted
     // while one of these still reads the old layer, and a screen on both layers
     // goes wrong in ways nobody notices.
-    return [...source.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)]
+    return [...stripComments(source).matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)]
         .map((match) => match[1])
         .filter((name) => name !== "--popup-split-gutter");
 }

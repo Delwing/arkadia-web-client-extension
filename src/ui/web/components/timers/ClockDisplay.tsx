@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useClientEvent } from "../../hooks";
 import eventBus from "@modules/core/eventBus";
+import { MOON_COLOR, SEASON_COLORS, SUN_COLOR } from "@web/popups/worldPalette.ts";
 
 type ClockData = {
     domain: "Empire" | "Ishtar";
@@ -16,13 +17,10 @@ type ClockData = {
     season?: number;
 };
 
-// Season colors matching seasonPrint.ts
-const SEASON_COLORS = [
-    "#00ff7f", // wiosna (spring)
-    "#ffff00", // lato (summer)
-    "#ff8c00", // jesien (autumn)
-    "#00bfff"  // zima (winter)
-];
+// The season table, the sun and the moon come from @web/popups/worldPalette.ts
+// -- the same source the Zegar / Kalendarz / Czas / Slonce popups read. This
+// chip used to carry a fourth copy of the four season hues, spelled as raw hex,
+// so the footer and the popups disagreed about what Wiosna looks like.
 
 /**
  * ClockDisplay component - displays current time and precision
@@ -66,7 +64,7 @@ export const ClockDisplay: React.FC = () => {
     }, [handleClick]);
 
     if (!clockData) {
-        return <span style={{ color: "gray" }}>--- | --:--</span>;
+        return <span style={{ color: "var(--ark-text-tertiary)" }}>--- | --:--</span>;
     }
 
     const hours = clockData.hours.toString().padStart(2, "0");
@@ -76,15 +74,21 @@ export const ClockDisplay: React.FC = () => {
 
     const seasonIndex = typeof clockData.season === "number" && clockData.season >= 0 && clockData.season < SEASON_COLORS.length
         ? clockData.season : -1;
-    const dayColor = seasonIndex >= 0 ? SEASON_COLORS[seasonIndex] : "lightgray";
-    const timeColor = clockData.daylight === true ? "#fbbf24" : clockData.daylight === false ? "#60a5fa" : "white";
+    const dayColor = seasonIndex >= 0 ? SEASON_COLORS[seasonIndex] : "var(--ark-text-secondary)";
+    // Daylight vs night is the sun/moon axis the palette already names, so the
+    // chip and the sun popups now agree. The unknown case used to be a hard
+    // named colour at the bright end of the scale, which on parchment and
+    // silver put near-invisible text on a light footer.
+    const timeColor = clockData.daylight === true
+        ? SUN_COLOR
+        : clockData.daylight === false ? MOON_COLOR : "var(--ark-text)";
 
     return (
         <>
             <span style={{ color: dayColor }}>{clockData.dayLabel}</span>
             {" | "}
             <span style={{ color: timeColor }}>{timeValue}</span>
-            {precisionValue && <> <span style={{ color: "gray" }}>{precisionValue}</span></>}
+            {precisionValue && <> <span style={{ color: "var(--ark-text-tertiary)" }}>{precisionValue}</span></>}
         </>
     );
 };
